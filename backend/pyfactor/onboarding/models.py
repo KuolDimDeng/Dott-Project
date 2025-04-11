@@ -263,3 +263,16 @@ class OnboardingProgress(models.Model):
         """Validate model data"""
         super().clean()
         self.validate_attribute_lengths()
+        
+
+class UserProfile(models.Model):
+    """User profile for onboarding and setup tracking"""
+    user_id = models.UUIDField(primary_key=True)
+    setup_status = models.CharField(max_length=20, default='not_started')
+    setup_error = models.TextField(null=True, blank=True)
+    setup_started_at = models.DateTimeField(null=True, blank=True)
+    setup_completed_at = models.DateTimeField(null=True, blank=True)
+    schema_name = models.CharField(max_length=63, null=True, blank=True)
+    
+    class Meta:
+        db_table = 'onboarding_userprofile'

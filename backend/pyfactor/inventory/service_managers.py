@@ -1,8 +1,10 @@
 from django.db import models, connection, transaction
 from django.db.models import Case, When, F, ExpressionWrapper, BooleanField, DurationField, Sum, Avg, Count
+from django.db.models.functions import Now
 from django.utils import timezone
 import logging
 from django.core.cache import cache
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -22,25 +24,25 @@ class OptimizedServiceManager(models.Manager):
         """
         return super().get_queryset()
     
-    def for_tenant(self, schema_name):
+    def for_tenant(self, tenant_id):
         """
         Get queryset with proper tenant context
         
         Args:
-            schema_name (str): The tenant schema name
+            tenant_id (uuid.UUID): The tenant ID
             
         Returns:
             QuerySet: Queryset with tenant context
         """
-        if not schema_name:
-            logger.warning("No schema name provided, using default schema")
+        if not tenant_id:
+            logger.warning("No tenant ID provided, using default schema")
             return self.get_queryset()
         
         # Use a single transaction for better performance
         with transaction.atomic():
-            # Set search path once
+            # Set tenant context
             with connection.cursor() as cursor:
-                cursor.execute(f'SET LOCAL search_path TO "{schema_name}",public')
+                cursor.execute(f"SET app.current_tenant_id = '{str(tenant_id)}'")
             
             # Return optimized queryset
             return self.get_queryset()
@@ -59,30 +61,30 @@ class OptimizedServiceManager(models.Manager):
                 output_field=BooleanField()
             ),
             days_available=ExpressionWrapper(
-                timezone.now() - F('created_at'),
+                Now() - F('created_at'),
                 output_field=DurationField()
             ),
             service_value=F('price')
         )
     
-    def get_stats(self, schema_name=None):
+    def get_stats(self, tenant_id=None):
         """
         Get service statistics
         
         Args:
-            schema_name (str, optional): The tenant schema name
+            tenant_id (str, optional): The tenant schema name
             
         Returns:
             dict: Dictionary with service statistics
         """
         # Try to get from cache first
-        cache_key = f"{CACHE_KEY_PREFIX}stats_{schema_name or 'default'}"
+        cache_key = f"{CACHE_KEY_PREFIX}stats_{tenant_id or 'default'}"
         cached_stats = cache.get(cache_key)
         if cached_stats:
-            logger.debug(f"Retrieved service stats from cache for schema {schema_name}")
+            logger.debug(f"Retrieved service stats from cache for schema {tenant_id}")
             return cached_stats
             
-        queryset = self.for_tenant(schema_name) if schema_name else self.get_queryset()
+        queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
         # Use aggregation for efficient statistics calculation
         stats = queryset.aggregate(
@@ -152,26 +154,26 @@ class OptimizedServiceManager(models.Manager):
             'is_for_sale', 'is_recurring'
         )
     
-    def get_by_code(self, code, schema_name=None):
+    def get_by_code(self, code, tenant_id=None):
         """
         Get service by code with caching
         
         Args:
             code (str): The service code
-            schema_name (str, optional): The tenant schema name
+            tenant_id (str, optional): The tenant schema name
             
         Returns:
             Service: The service object
         """
         # Try to get from cache first
-        cache_key = f"{CACHE_KEY_PREFIX}code_{schema_name or 'default'}_{code}"
+        cache_key = f"{CACHE_KEY_PREFIX}code_{tenant_id or 'default'}_{code}"
         cached_service = cache.get(cache_key)
         if cached_service:
             logger.debug(f"Retrieved service by code from cache: {code}")
             return cached_service
             
         # Get from database if not in cache
-        queryset = self.for_tenant(schema_name) if schema_name else self.get_queryset()
+        queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         service = queryset.get(service_code=code)
         
         # Cache the result
@@ -179,20 +181,20 @@ class OptimizedServiceManager(models.Manager):
         
         return service
     
-    def bulk_create_services(self, services_data, schema_name=None):
+    def bulk_create_services(self, services_data, tenant_id=None):
         """
         Efficiently create multiple services
         
         Args:
             services_data (list): List of service data dictionaries
-            schema_name (str, optional): The tenant schema name
+            tenant_id (str, optional): The tenant schema name
             
         Returns:
             list: The created service objects
         """
         from .models import Service
         
-        queryset = self.for_tenant(schema_name) if schema_name else self.get_queryset()
+        queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
         with transaction.atomic():
             # Generate service codes
@@ -204,20 +206,45 @@ class OptimizedServiceManager(models.Manager):
             services = [Service(**data) for data in services_data]
             return Service.objects.bulk_create(services)
     
-    def bulk_update_services(self, services, fields, schema_name=None):
+    def bulk_update_services(self, services_data, tenant_id=None):
         """
         Efficiently update multiple services
         
         Args:
-            services (list): List of service objects
-            fields (list): List of fields to update
-            schema_name (str, optional): The tenant schema name
+            services_data (list): List of service data dictionaries with IDs
+            tenant_id (uuid.UUIDoptional): The tenant ID
             
         Returns:
-            int: Number of services updated
+            int: Number of updated services
         """
-        queryset = self.for_tenant(schema_name) if schema_name else self.get_queryset()
+        queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
         with transaction.atomic():
-            # Bulk update
-            return queryset.bulk_update(services, fields)
+            updated_count = 0
+            
+            # Process each service in services_data
+            for service_data in services_data:
+                service_id = service_data.get('id')
+                if not service_id:
+                    logger.warning("Skipping update for service without ID")
+                    continue
+                
+                try:
+                    # Update service with the provided data
+                    service = queryset.get(id=service_id)
+                    
+                    # Update fields from service_data
+                    for field, value in service_data.items():
+                        if field != 'id' and hasattr(service, field):
+                            setattr(service, field, value)
+                    
+                    service.save()
+                    updated_count += 1
+                except Exception as e:
+                    logger.error(f"Error updating service {service_id}: {str(e)}")
+            
+            # Invalidate cache for this tenant
+            cache_key = f"{CACHE_KEY_PREFIX}stats_{tenant_id or 'default'}"
+            cache.delete(cache_key)
+            
+            return updated_count

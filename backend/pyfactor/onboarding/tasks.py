@@ -5,12 +5,12 @@ import signal
 import logging
 import uuid
 import asyncio
-from typing import Dict, Any, Tuple
+from typing import Dict, Any, Tuple, Optional, Union
 from contextlib import contextmanager
 from functools import wraps
 
 from celery import shared_task
-from django.db import transaction, connections, DatabaseError
+from django.db import transaction, connections, DatabaseError, models
 from django.conf import settings
 from django.core.management import call_command
 from django.utils import timezone
@@ -19,20 +19,18 @@ from psycopg2 import OperationalError
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from django.db.migrations.exceptions import InconsistentMigrationHistory
 from django.db.migrations import loader as migrations_loader
-from onboarding.utils import create_table_from_model
-
-
-
+from onboarding.utils import create_table_for_model
+from custom_auth.rls import set_current_tenant_id
 
 from custom_auth.models import Tenant
-from onboarding.models import OnboardingProgress
+from onboarding.models import OnboardingProgress, UserProfile
 from onboarding.locks import get_setup_lock, LockAcquisitionError
 from onboarding.utils import (
-    generate_unique_schema_name,
-    create_tenant_schema,
-    validate_schema_creation,
-    tenant_schema_context,
-    cleanup_schema
+    generate_unique_tenant_id,
+    initialize_tenant_environment,
+    validate_tenant_isolation,
+    tenant_context_manager,
+    cleanup_tenant_resources
 )
 from onboarding.task_utils import (
     get_db_connection,
@@ -63,16 +61,16 @@ VALID_STATUS_TRANSITIONS = {
     'payment': ['complete', 'business-info']  # Allow direct transition to complete or back to business-info
 }
 
-class SchemaSetupError(Exception):
-    """Base class for schema setup errors"""
+class TenantSetupError(Exception):
+    """Base class for tenant setup errors"""
     pass
 
-class SchemaMigrationError(SchemaSetupError):
-    """Raised when schema migrations fail"""
+class TenantMigrationError(TenantSetupError):
+    """Raised when tenant migrations fail"""
     pass
 
-class SchemaHealthCheckError(SchemaSetupError):
-    """Raised when schema health check fails"""
+class TenantHealthCheckError(TenantSetupError):
+    """Raised when tenant health check fails"""
     pass
 
 def validate_status_transition(current_status: str, new_status: str) -> bool:
@@ -88,7 +86,7 @@ def validate_status_transition(current_status: str, new_status: str) -> bool:
     return new_status in allowed_transitions.get(current_status, [])
 
 @shared_task(
-    name='setup_user_schema_task',
+    name='setup_user_tenant_task',
     bind=True,
     max_retries=5,
     retry_backoff=True,
@@ -98,31 +96,31 @@ def validate_status_transition(current_status: str, new_status: str) -> bool:
     autoretry_for=(DatabaseError, OperationalError),
     retry_kwargs={'max_retries': 5}
 )
-def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Dict[str, Any]:
+def setup_user_tenant_task(self, user_id: str, business_id: str, **kwargs) -> Dict[str, Any]:
     """
-    Sets up a new tenant schema with comprehensive configuration and progress tracking.
+    Sets up a new tenant environment with comprehensive configuration and progress tracking.
     
-    This task handles the complete schema setup process including:
-    - Schema creation and configuration
-    - Schema migration
+    This task handles the complete tenant setup process including:
+    - Tenant environment initialization
+    - RLS policy application
     - Health verification
     - Status updates and notifications
     - Storage quota setup based on subscription plan
     
     Args:
-        user_id: The ID of the user requesting schema setup
+        user_id: The ID of the user requesting tenant setup
         business_id: The ID of the associated business
         **kwargs: Additional parameters including:
-            - force_setup: Force recreation of schema even if it exists
+            - force_setup: Force recreation of tenant environment even if it exists
             - request_id: Unique ID for tracking this request
             - tenant_id: Optional direct reference to tenant ID
-            - schema_name: Optional schema name if already known
+            - schema_name: Optional legacy schema name if already known
         
     Returns:
-        Dict containing setup status and schema information
+        Dict containing setup status and tenant information
         
     Raises:
-        SchemaSetupError: If any part of the setup process fails
+        TenantSetupError: If any part of the setup process fails
     """
     # Import Django migrations module
     from django.db import migrations
@@ -141,10 +139,10 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
     # Validate input parameters with minimal processing
     try:
         user_id = str(user_id).strip()
-        business_id = str(business_id).strip() if business_id else None
+        business_id = str(business_id).strip() if business_id else ""
     except Exception as e:
         logger.error(f"Error validating input parameters: {str(e)}")
-        raise SchemaSetupError(f"Error validating input parameters: {str(e)}")
+        raise TenantSetupError(f"Error validating input parameters: {str(e)}")
 
     # Log inputs with improved context
     logger.info(f"Schema setup task started with force_setup={force_setup}", extra={
@@ -196,7 +194,7 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
             logger.info("Created direct database connection")
         except Exception as conn_error:
             logger.error(f"Failed to create direct database connection: {str(conn_error)}")
-            raise SchemaSetupError(f"Database connection error: {str(conn_error)}")
+            raise TenantSetupError(f"Database connection error: {str(conn_error)}")
 
         # Phase 1: Initial Setup and Validation (10%)
         update_state('initial_setup', 0)
@@ -217,13 +215,13 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
                 
             if existing_tenant:
                 tenant = existing_tenant
-                schema_name = provided_schema_name or getattr(tenant, 'schema_name', generate_unique_schema_name(tenant.id))
+                schema_name = provided_schema_name or getattr(tenant, 'schema_name', generate_unique_tenant_id(tenant.id))
                 logger.info(f"Using existing tenant with schema: {schema_name}")
                 
                 # If we're not forcing setup and schema exists and is healthy, return early with success
                 if not force_setup:
                     # Perform a quick health check
-                    is_healthy = check_schema_health(schema_name, direct_conn.cursor())
+                    is_healthy = check_schema_health(tenant.id)
                     if is_healthy:
                         update_state('schema_verified', 100, 'complete')
                         logger.info(f"Existing schema {schema_name} is healthy, skipping setup")
@@ -251,8 +249,8 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
         
         # Generate schema name if not provided
         if not schema_name:
-            schema_name = provided_schema_name or generate_unique_schema_name(tenant.id)
-            logger.info(f"Generated schema name: {schema_name}")
+            schema_name = provided_schema_name or generate_unique_tenant_id(tenant.id)
+            logger.info(f"Generated tenant ID: {schema_name}")
         
         # Phase 2: Schema Creation (30%)
         update_state('schema_creation', 20)
@@ -278,8 +276,8 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
                 else:
                     logger.info(f"Schema {schema_name} already exists")
         except Exception as e:
-            logger.error(f"Error creating schema: {str(e)}")
-            raise SchemaSetupError(f"Failed to create schema: {str(e)}")
+            logger.error(f"Error creating tenant environment: {str(e)}")
+            raise TenantSetupError(f"Failed to initialize tenant environment: {str(e)}")
 
         # Update progress
         update_state('schema_validation', 30)
@@ -292,10 +290,12 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
                 # Optimized approach using parallel execution where possible
                 with direct_conn.cursor() as cursor:
                     logger.info(f"Creating core tables for {schema_name}")
-                    cursor.execute(f"SET search_path TO {schema_name}, public")
+                    # RLS: Use tenant context instead of schema
+                    set_current_tenant_id(tenant_id)
+                    cursor.execute("SET search_path TO public")
                     
                     # Run core table creation
-                    create_core_tables(schema_name, cursor)
+                    create_core_tables(tenant.id, cursor)
                     
                     # Create health check table
                     cursor.execute("""
@@ -314,18 +314,18 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
                     """)
             else:
                 # Use the utility function for traditional setup
-                create_tenant_schema(schema_name)
-                logger.info(f"Created tenant schema using traditional approach: {schema_name}")
+                initialize_tenant_environment(tenant.id)
+                logger.info(f"Initialized tenant environment using traditional approach: {tenant.id}")
                 
             update_state('core_tables_created', 50)
         except Exception as e:
             logger.error(f"Error creating core tables: {str(e)}")
             try:
                 # Try to clean up on failure
-                cleanup_schema(schema_name)
+                cleanup_tenant_resources(tenant.id)
             except Exception as cleanup_error:
-                logger.error(f"Error during schema cleanup: {str(cleanup_error)}")
-            raise SchemaSetupError(f"Failed to create core tables: {str(e)}")
+                logger.error(f"Error during tenant cleanup: {str(cleanup_error)}")
+            raise TenantSetupError(f"Failed to create core tables: {str(e)}")
         
         # Phase 4: Health Check and Finalization (100%)
         update_state('finalizing', 90)
@@ -333,7 +333,9 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
         try:
             with direct_conn.cursor() as cursor:
                 # Mark schema as healthy
-                cursor.execute(f"SET search_path TO {schema_name}, public")
+                # RLS: Use tenant context instead of schema
+                set_current_tenant_id(tenant_id)
+                cursor.execute("SET search_path TO public")
                 
                 # Create application tenant link
                 cursor.execute("""
@@ -391,7 +393,7 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
             'message': 'Tenant schema setup completed successfully'
         }
             
-    except (SchemaSetupError, Exception) as e:
+    except (TenantSetupError, Exception) as e:
         error_message = f"Schema setup failed: {str(e)}"
         logger.error(error_message, exc_info=True)
         
@@ -428,7 +430,7 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
 
 
 @shared_task(
-    name='create_minimal_schema_task',
+    name='create_minimal_tenant_task',
     bind=True,
     max_retries=3,
     retry_backoff=True,
@@ -436,12 +438,12 @@ def setup_user_schema_task(self, user_id: str, business_id: str, **kwargs) -> Di
     time_limit=300,  # 5 minutes timeout
     soft_time_limit=270  # Soft timeout 30 seconds before hard timeout
 )
-def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: str = None) -> Dict[str, Any]:
+def create_minimal_tenant_task(self, user_id: str, business_id: str, tenant_id: Optional[str] = None) -> Dict[str, Any]:
     """
-    Creates a minimal tenant schema with essential tables only.
+    Creates a minimal tenant environment with essential tables only.
     
-    This task is lighter weight than the full setup_user_schema_task and creates
-    just enough structure to store onboarding data directly in the tenant schema.
+    This task is lighter weight than the full setup_user_tenant_task and creates
+    just enough structure to store onboarding data with proper tenant isolation.
     
     Args:
         user_id: The ID of the user
@@ -449,7 +451,7 @@ def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: 
         tenant_id: Optional tenant ID, will be generated if not provided
         
     Returns:
-        Dict containing schema information
+        Dict containing tenant information
     """
     # Validate input parameters
     try:
@@ -497,7 +499,7 @@ def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: 
                     logger.info(f"Schema {schema_name} already exists, using existing schema")
                 
                 # Create essential tables
-                with tenant_schema_context(cursor, schema_name):
+                with tenant_context_manager(cursor, tenant_id):
                     # Create django_migrations table first (needed for any Django migration tracking)
                     cursor.execute("""
                         CREATE TABLE IF NOT EXISTS django_migrations (
@@ -701,13 +703,13 @@ def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: 
         
     except Exception as e:
         logger.error(f"Minimal schema creation failed: {str(e)}")
-        # Try to clean up if schema creation failed
+        # Try to clean up if tenant environment creation failed
         try:
-            if schema_name:
-                cleanup_schema(schema_name)
-                logger.info(f"Cleaned up failed schema: {schema_name}")
+            if tenant_id:
+                cleanup_tenant_resources(tenant_id)
+                logger.info(f"Cleaned up failed tenant environment: {tenant_id}")
         except Exception as cleanup_error:
-            logger.error(f"Failed to clean up schema: {str(cleanup_error)}")
+            logger.error(f"Failed to clean up tenant resources: {str(cleanup_error)}")
         
         # Retry with exponential backoff
         self.retry(exc=e, countdown=30 * (2 ** self.request.retries))
@@ -724,19 +726,24 @@ def create_minimal_schema_task(self, user_id: str, business_id: str, tenant_id: 
         connections.close_all()
 
 
-def verify_tenant_schema(schema_name, cursor, logger=None):
+def verify_tenant_environment(tenant_id: Union[uuid.UUID, str], cursor=None):
     """
-    Verify and update tenant schema tables to match current model definitions.
-    Add missing columns if needed.
+    Verify and update tenant tables to match current model definitions.
+    Add missing columns if needed and ensure proper RLS policies.
     """
-    if logger is None:
+    # Ensure we have a logger
+    _logger = logger
+    if _logger is None:
         import logging
-        logger = logging.getLogger('Pyfactor')
+        _logger = logging.getLogger('Pyfactor')
     
-    logger.info(f"Verifying schema {schema_name} matches model definitions")
+    _logger.info(f"Verifying schema for tenant {tenant_id} matches model definitions")
     
-    # Set search path to tenant schema
-    cursor.execute(f"SET search_path TO {schema_name}")
+    # Set tenant context
+    set_current_tenant_id(tenant_id)
+    
+    # Legacy schema name for compatibility with existing tables
+    schema_name = f"tenant_{str(tenant_id).replace('-', '')}"
     
     # Define table columns that should exist based on models
     model_tables = {
@@ -811,9 +818,15 @@ def verify_tenant_schema(schema_name, cursor, logger=None):
         }
     }
     
+    # Create a cursor if one wasn't provided
+    connection_to_close = None
+    if cursor is None:
+        connection_to_close = connections['default']
+        cursor = connection_to_close.cursor()
+    
     for table_name, expected_columns in model_tables.items():
         # Check if table exists
-        cursor.execute(f"""
+        cursor.execute("""
             SELECT EXISTS (
                 SELECT FROM information_schema.tables 
                 WHERE table_schema = %s
@@ -823,11 +836,11 @@ def verify_tenant_schema(schema_name, cursor, logger=None):
         
         table_exists = cursor.fetchone()[0]
         if not table_exists:
-            logger.warning(f"Table {table_name} does not exist in schema {schema_name}")
+            _logger.warning(f"Table {table_name} does not exist in schema {schema_name}")
             continue
         
         # Get existing columns
-        cursor.execute(f"""
+        cursor.execute("""
             SELECT column_name, data_type, character_maximum_length, numeric_precision, numeric_scale
             FROM information_schema.columns 
             WHERE table_schema = %s 
@@ -840,20 +853,33 @@ def verify_tenant_schema(schema_name, cursor, logger=None):
         for column_name, definition in expected_columns.items():
             if column_name.lower() not in existing_columns:
                 try:
-                    logger.info(f"Adding missing column {column_name} to {table_name}")
+                    _logger.info(f"Adding missing column {column_name} to {table_name}")
                     cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
                 except Exception as e:
-                    logger.warning(f"Error adding column {column_name} to {table_name}: {str(e)}")
+                    _logger.warning(f"Error adding column {column_name} to {table_name}: {str(e)}")
     
-    logger.info(f"Schema verification completed for {schema_name}")
+    _logger.info(f"Schema verification completed for {schema_name}")
+    
+    # Close the connection if we created it
+    if connection_to_close:
+        connection_to_close.close()
 
 
-def create_core_tables(schema_name, cursor):
+def create_core_tables(tenant_id: Union[uuid.UUID, str], cursor=None):
     """Create all core tables for the tenant schema using model definitions"""
     from django.apps import apps
     
-    # Set search path to tenant schema
-    cursor.execute(f"SET search_path TO {schema_name}")
+    # Create a cursor if one wasn't provided
+    connection_to_close = None
+    if cursor is None:
+        connection_to_close = connections['default']
+        cursor = connection_to_close.cursor()
+    
+    # Set tenant context
+    set_current_tenant_id(tenant_id)
+    
+    # Legacy schema name for compatibility
+    schema_name = f"tenant_{str(tenant_id).replace('-', '')}"
     
     # Create django infrastructure tables
     cursor.execute("""
@@ -891,7 +917,7 @@ def create_core_tables(schema_name, cursor):
                 continue
                 
             try:
-                create_table_from_model(cursor, schema_name, model)
+                create_table_for_model(tenant_id, model)
             except Exception as e:
                 logger.warning(f"Error creating table for model {model.__name__}: {str(e)}")
     
@@ -926,20 +952,24 @@ def create_core_tables(schema_name, cursor):
                     except Exception as e:
                         logger.warning(f"Error adding foreign key constraint {constraint_name}: {str(e)}")
     
-    # Verify and fix any schema discrepancies
-    verify_tenant_schema(schema_name, cursor)
+    # Verify and fix any tenant environment discrepancies
+    verify_tenant_environment(tenant_id, cursor)
+    
+    # Close the connection if we created it
+    if connection_to_close:
+        connection_to_close.close()
     
     return True
 
 
 @shared_task(
-    name='verify_all_tenant_schemas',
+    name='verify_all_tenant_environments',
     bind=True
 )
-def verify_all_tenant_schemas(self):
+def verify_all_tenant_environments(self):
     """
-    Verify and fix schema issues across all tenant schemas.
-    This task should be scheduled to run periodically.
+    Verify and fix RLS issues across all tenant environments.
+    This task should be scheduled to run periodically to ensure data isolation.
     """
     from custom_auth.models import Tenant
     from django.db import connection
@@ -953,11 +983,11 @@ def verify_all_tenant_schemas(self):
         
         for tenant in tenants:
             try:
-                schema_name = tenant.schema_name
+                schema_name = tenant.id
                 logger.info(f"Verifying schema for tenant: {schema_name}")
                 
                 with connection.cursor() as cursor:
-                    verify_tenant_schema(schema_name, cursor)
+                    verify_tenant_environment(tenant.id, cursor)
                     
                 # Update tenant's last health check time
                 tenant.last_health_check = timezone.now()
@@ -965,8 +995,8 @@ def verify_all_tenant_schemas(self):
                 
                 results[schema_name] = "verified"
             except Exception as e:
-                logger.error(f"Error verifying schema for tenant {tenant.schema_name}: {str(e)}")
-                results[tenant.schema_name] = f"error: {str(e)}"
+                logger.error(f"Error verifying schema for tenant {tenant.id}: {str(e)}")
+                results[tenant.id] = f"error: {str(e)}"
         
         return {
             "status": "success",
@@ -975,14 +1005,14 @@ def verify_all_tenant_schemas(self):
             "results": results
         }
     except Exception as e:
-        logger.error(f"Error in verify_all_tenant_schemas task: {str(e)}")
+        logger.error(f"Error in verify_all_tenant_environments task: {str(e)}")
         return {
             "status": "error",
             "error": str(e)
         }
 
 @shared_task(
-    name='setup_tenant_schema_task',
+    name='setup_tenant_environment_task',
     bind=True,
     max_retries=5,
     retry_backoff=True,
@@ -992,25 +1022,24 @@ def verify_all_tenant_schemas(self):
     autoretry_for=(DatabaseError, OperationalError),
     retry_kwargs={'max_retries': 5}
 )
-def setup_tenant_schema_task(self, user_id: str, business_id: str, **kwargs) -> Dict[str, Any]:
+def setup_tenant_environment_task(self, user_id: str, business_id: str, **kwargs) -> Dict[str, Any]:
     """
-    Sets up a tenant schema and tracks progress for polling.
-    This is a wrapper around setup_user_schema_task that provides
+    Sets up a tenant environment and tracks progress for polling.
+    This is a wrapper around setup_user_tenant_task that provides
     additional tracking for the polling API.
     
     Args:
-        user_id: The ID of the user requesting schema setup
+        user_id: The ID of the user requesting tenant setup
         business_id: The ID of the associated business
         **kwargs: Additional parameters
         
     Returns:
-        Dict containing setup status and schema information
+        Dict containing setup status and tenant information
     """
     logger.info(f"Starting tenant schema setup for user {user_id} and business {business_id}")
     
     try:
         # Get or create UserProfile
-        from .models import UserProfile
         profile, created = UserProfile.objects.get_or_create(user_id=user_id)
         
         # Update profile with setup in progress
@@ -1019,7 +1048,7 @@ def setup_tenant_schema_task(self, user_id: str, business_id: str, **kwargs) -> 
         profile.save(update_fields=['setup_status', 'setup_started_at'])
         
         # Call the main setup task
-        result = setup_user_schema_task(user_id, business_id, **kwargs)
+        result = setup_user_tenant_task(user_id, business_id, **kwargs)
         
         # Update profile with complete status
         profile.setup_status = 'complete'
@@ -1032,7 +1061,6 @@ def setup_tenant_schema_task(self, user_id: str, business_id: str, **kwargs) -> 
         logger.error(f"Error in setup_tenant_schema_task: {str(e)}")
         
         # Update profile with error status
-        from .models import UserProfile
         profile, _ = UserProfile.objects.get_or_create(user_id=user_id)
         profile.setup_status = 'error'
         profile.setup_error = str(e)

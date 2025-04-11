@@ -13,7 +13,7 @@ DB_PORT = "5432"
 
 print(f"Connecting to {DB_NAME} on {DB_HOST}:{DB_PORT} as {DB_USER}...")
 
-def normalize_schema_name(schema_name):
+def normalize_schema_name(tenant_id: uuid.UUID:
     """Convert schema name to use underscores instead of hyphens"""
     if not schema_name:
         return schema_name
@@ -126,10 +126,10 @@ try:
                         print(f"    Copying table {table_name}")
                         
                         # Create table in new schema
-                        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{new_schema_name}"."{table_name}" (LIKE "{schema_name}"."{table_name}" INCLUDING ALL)')
+                        cursor.execute(f'CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "{table_name}" (LIKE "{schema_name}"."{table_name}" INCLUDING ALL)')
                         
                         # Copy data
-                        cursor.execute(f'INSERT INTO "{new_schema_name}"."{table_name}" SELECT * FROM "{schema_name}"."{table_name}"')
+                        cursor.execute(f'INSERT INTO /* RLS: Use tenant_id filtering */ "{table_name}" SELECT * FROM "{schema_name}"."{table_name}"')
                     
                     # Drop old schema
                     print(f"  Dropping old schema: {schema_name}")

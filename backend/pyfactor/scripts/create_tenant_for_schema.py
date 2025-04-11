@@ -52,7 +52,7 @@ def get_db_connection():
     conn.autocommit = True
     return conn
 
-def schema_exists(schema_name):
+def schema_exists(tenant_id: uuid.UUID:
     """Check if the schema exists"""
     try:
         conn = get_db_connection()
@@ -69,7 +69,7 @@ def schema_exists(schema_name):
         if conn:
             conn.close()
 
-def count_tables_in_schema(schema_name):
+def count_tables_in_schema(tenant_id: uuid.UUID:
     """Count tables in the schema"""
     try:
         conn = get_db_connection()
@@ -86,7 +86,7 @@ def count_tables_in_schema(schema_name):
         if conn:
             conn.close()
 
-def create_tenant_for_schema(schema_name, owner_email=None):
+def create_tenant_for_schema(tenant_id: uuid.UUID:
     """Create a tenant record for an existing schema"""
     try:
         # Check if schema exists

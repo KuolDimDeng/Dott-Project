@@ -80,11 +80,11 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         """
         # Get tenant schema from request
         tenant = getattr(self.request, 'tenant', None)
-        schema_name = tenant.schema_name if tenant else None
+        schema_name =  tenant.id if tenant else None
         
         # Log tenant information
         if tenant:
-            logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
         else:
             logger.debug("No tenant found in request")
         
@@ -157,7 +157,7 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         # Try to get from cache first
         pk = kwargs.get('pk')
         tenant = getattr(request, 'tenant', None)
-        schema_name = tenant.schema_name if tenant else None
+        schema_name =  tenant.id if tenant else None
         cache_key = f"{CACHE_KEY_PREFIX}detail_{schema_name or 'default'}_{pk}"
         
         cached_data = cache.get(cache_key)
@@ -189,7 +189,7 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         # Invalidate cache
         pk = kwargs.get('pk')
         tenant = getattr(request, 'tenant', None)
-        schema_name = tenant.schema_name if tenant else None
+        schema_name =  tenant.id if tenant else None
         cache_key = f"{CACHE_KEY_PREFIX}detail_{schema_name or 'default'}_{pk}"
         cache.delete(cache_key)
         
@@ -203,7 +203,7 @@ class OptimizedServiceViewSet(viewsets.ModelViewSet):
         # Invalidate cache
         pk = kwargs.get('pk')
         tenant = getattr(request, 'tenant', None)
-        schema_name = tenant.schema_name if tenant else None
+        schema_name =  tenant.id if tenant else None
         cache_key = f"{CACHE_KEY_PREFIX}detail_{schema_name or 'default'}_{pk}"
         cache.delete(cache_key)
         
@@ -220,7 +220,7 @@ def ultra_fast_services(request):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Check cache first
     cache_key = f"{CACHE_KEY_PREFIX}ultra_fast_{schema_name or 'default'}"
@@ -285,7 +285,7 @@ def service_stats(request):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
     with transaction.atomic():
@@ -320,7 +320,7 @@ def service_by_code(request, code):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
     with transaction.atomic():

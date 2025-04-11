@@ -100,7 +100,7 @@ const EstimateManagement = ({ newEstimate: isNewEstimate = false }) => {
       // Use paginated API request
       const response = await axiosInstance.get('/api/estimates/', {
         params: { 
-          schema: schema_name,
+          tenant_id: tenant.id /* RLS: using tenant_id for isolation */,
           page: page + 1, // API uses 1-indexed pages
           limit: pageSize
         },

@@ -1,121 +1,160 @@
 import { NextResponse } from 'next/server';
-import { createServerLogger } from '@/utils/serverLogger';
 import { getAuth } from '@/utils/auth-helpers';
-import { Pool } from 'pg';
-
-const logger = createServerLogger('tenant-verify');
+import { serverLogger } from '@/utils/serverLogger';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * GET handler to verify user access to a tenant
+ * Server-side UUID validation function
+ * @param {string} str - String to validate as UUID
+ * @returns {boolean} - Whether the string is a valid UUID
+ */
+function isValidUUID(str) {
+  if (!str) return false;
+  // UUID pattern: 8-4-4-4-12 hex digits with hyphens
+  const regex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return regex.test(str);
+}
+
+/**
+ * Format tenant ID for database compatibility
+ * @param {string} tenantId - The tenant ID to format
+ * @returns {string} - The formatted tenant ID
+ */
+function formatTenantId(tenantId) {
+  if (!tenantId) return '';
+  return tenantId.replace(/-/g, '_');
+}
+
+/**
+ * Verify tenant API - checks that a tenant ID is valid and accessible by the current user
+ * This API provides a security boundary for tenant access validation
  */
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const tenantId = searchParams.get('tenantId');
-  
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: 'Tenant ID is required', hasAccess: false },
-      { status: 400 }
-    );
-  }
-  
-  logger.info(`Verifying tenant access for tenant ID: ${tenantId}`);
-  
-  // Get authentication information
-  const auth = await getAuth();
-  
-  if (!auth.user) {
-    logger.warn('Unauthorized attempt to verify tenant access');
-    return NextResponse.json(
-      { error: 'Authentication required', hasAccess: false },
-      { status: 401 }
-    );
-  }
-  
-  // Create database connection
-  const pool = new Pool({
-    host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
-    port: process.env.RDS_PORT || 5432,
-    database: process.env.RDS_DB_NAME || 'dott_main',
-    user: process.env.RDS_USERNAME || 'dott_admin',
-    password: process.env.RDS_PASSWORD || 'RRfXU6uPPUbBEg1JqGTJ',
-    ssl: { rejectUnauthorized: false }
-  });
+  const requestId = uuidv4().slice(0, 8);
+  serverLogger.info(`[tenant/verify] Request started: ${requestId}`);
   
   try {
-    // Get tenant information to check if it exists
-    const tenantResult = await pool.query(`
-      SELECT id, name, schema_name, owner_id, is_active
-      FROM custom_auth_tenant
-      WHERE id = $1
-    `, [tenantId]);
+    // Get tenant ID from query params
+    const { searchParams } = new URL(request.url);
+    const tenantId = searchParams.get('tenantId');
     
-    if (tenantResult.rows.length === 0) {
-      logger.warn(`Tenant not found with ID: ${tenantId}`);
-      return NextResponse.json({ hasAccess: false, reason: 'tenant_not_found' });
+    // Validate tenant ID format
+    if (!tenantId || !isValidUUID(tenantId)) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid tenant ID format',
+          requestId
+        },
+        { status: 400 }
+      );
     }
     
-    const tenant = tenantResult.rows[0];
+    // Get authorization details
+    const auth = await getAuth();
     
-    // Check if tenant is active
-    if (!tenant.is_active) {
-      logger.warn(`Tenant is inactive: ${tenantId}`);
-      return NextResponse.json({ hasAccess: false, reason: 'tenant_inactive' });
+    // For unauthenticated requests, return minimal info
+    if (!auth.user) {
+      serverLogger.warn(`[tenant/verify] Unauthorized tenant verification attempt for tenant: ${tenantId}`);
+      return NextResponse.json(
+        { 
+          error: 'Authentication required for full tenant verification',
+          tenantExists: true, // Only verify the tenant exists, not access rights
+          requestId
+        },
+        { status: 401 }
+      );
     }
     
-    // Check if user is the owner
-    const userId = auth.user.sub;
-    const userEmail = auth.user.email;
-    const isOwner = tenant.owner_id === userId || tenant.owner_id === userEmail;
+    // For authenticated requests, call backend to verify tenant access
+    const userId = auth.user.id || auth.user.sub;
+    serverLogger.info(`[tenant/verify] Verifying tenant ${tenantId} for user ${userId}`);
     
-    if (isOwner) {
-      logger.info(`User ${userEmail} is the owner of tenant ${tenantId}`);
-      return NextResponse.json({ 
-        hasAccess: true, 
-        role: 'owner',
-        tenant: {
-          id: tenant.id,
-          name: tenant.name,
-          schemaName: tenant.schema_name
+    // Make request to Django backend for full verification
+    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${backendUrl}/api/tenant/verify/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${auth.accessToken}`,
+        'X-Request-ID': requestId
+      },
+      body: JSON.stringify({
+        tenantId,
+        userId
+      })
+    });
+    
+    // Handle non-200 responses
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        serverLogger.error(`[tenant/verify] Backend verification failed:`, errorData);
+        
+        // If backend tells us there's a mismatch but provides the correct tenant ID
+        if (errorData.correctTenantId) {
+          return NextResponse.json({
+            mismatch: true,
+            correctTenantId: errorData.correctTenantId,
+            error: errorData.error || 'Tenant mismatch',
+            requestId
+          }, { status: 409 }); // 409 Conflict - indicates a mismatch that can be fixed
         }
+        
+        return NextResponse.json(
+          {
+            error: errorData.error || 'Tenant verification failed',
+            requestId
+          },
+          { status: response.status }
+        );
+      } catch (jsonError) {
+        serverLogger.error(`[tenant/verify] Error parsing backend response:`, jsonError);
+        return NextResponse.json(
+          { 
+            error: 'Backend verification error',
+            status: response.status,
+            requestId
+          },
+          { status: 500 }
+        );
+      }
+    }
+    
+    // Process successful response
+    const verificationResult = await response.json();
+    
+    // Check for tenant mismatch
+    if (verificationResult.mismatch || verificationResult.correctTenantId) {
+      serverLogger.warn(`[tenant/verify] Tenant mismatch detected: Requested ${tenantId}, actual ${verificationResult.correctTenantId}`);
+      return NextResponse.json({
+        mismatch: true,
+        correctTenantId: verificationResult.correctTenantId,
+        message: verificationResult.message || 'Tenant ID mismatch detected',
+        requestId
       });
     }
     
-    // Check user membership
-    const userResult = await pool.query(`
-      SELECT id, email, is_admin
-      FROM custom_auth_user
-      WHERE (email = $1 OR id = $2) AND tenant_id = $3
-    `, [userEmail, userId, tenantId]);
-    
-    if (userResult.rows.length === 0) {
-      logger.warn(`User ${userEmail} does not have access to tenant ${tenantId}`);
-      return NextResponse.json({ hasAccess: false, reason: 'user_not_member' });
-    }
-    
-    // Determine role
-    const userRole = userResult.rows[0].is_admin ? 'admin' : 'member';
-    
-    logger.info(`User ${userEmail} has ${userRole} access to tenant ${tenantId}`);
-    
+    // Success case
+    serverLogger.info(`[tenant/verify] Tenant ${tenantId} verified successfully for user ${userId}`);
     return NextResponse.json({
-      hasAccess: true,
-      role: userRole,
-      tenant: {
-        id: tenant.id,
-        name: tenant.name,
-        schemaName: tenant.schema_name
-      }
+      verified: true,
+      tenantId: verificationResult.tenantId || tenantId,
+      name: verificationResult.name,
+      isActive: verificationResult.isActive !== false,
+      message: 'Tenant verification successful',
+      requestId
     });
+    
   } catch (error) {
-    logger.error(`Error verifying tenant access: ${error.message}`, error);
+    serverLogger.error(`[tenant/verify] Error processing request:`, error);
     return NextResponse.json(
-      { error: 'Failed to verify tenant access', hasAccess: false },
+      { 
+        error: 'Internal server error',
+        details: error.message,
+        requestId
+      },
       { status: 500 }
     );
-  } finally {
-    // Always close the pool
-    await pool.end();
   }
 }
 
@@ -124,7 +163,7 @@ export async function POST(request) {
   try {
     // Parse request body
     const body = await request.json();
-    const { tenantId, accessToken } = body;
+    const { tenantId, userId } = body;
     
     if (!tenantId) {
       console.error('[TenantVerify] No tenant ID provided in request');
@@ -142,8 +181,23 @@ export async function POST(request) {
     
     console.info('[TenantVerify] Verifying tenant:', { 
       originalId: tenantId,
-      formattedId: formattedTenantId
+      formattedId: formattedTenantId,
+      userId
     });
+    
+    // For development, since we may not have a database connection,
+    // just return the tenant as valid if the UUID format is correct
+    if (process.env.NODE_ENV === 'development' && isValidUUID(tenantId)) {
+      console.info('[TenantVerify] Development mode: returning mock tenant data');
+      
+      return NextResponse.json({
+        isValid: true,
+        tenantId: tenantId,
+        name: `Tenant ${tenantId.substring(0, 8)}`,
+        message: 'Tenant verified in development mode',
+        status: 'active'
+      });
+    }
     
     try {
       // Try to validate tenant ID with database
@@ -177,13 +231,15 @@ export async function POST(request) {
         if (result.rows && result.rows.length > 0) {
           console.info('[TenantVerify] Tenant found in database:', result.rows[0]);
           
+          const tenant = result.rows[0];
+          
           return NextResponse.json({
             isValid: true,
             tenant: {
-              id: formattedTenantId,
-              name: result.rows[0].name,
-              status: result.rows[0].status,
-              schema_name: `tenant_${formattedTenantId.replace(/-/g, '_')}`
+              id: tenant.id,
+              name: tenant.name,
+              status: tenant.status,
+              tenant_id: formatTenantId(tenant.id)
             },
             direct_db: true
           });
@@ -208,6 +264,19 @@ export async function POST(request) {
         error: 'DB_ERROR',
         details: dbError.message
       }, { status: 500 });
+    }
+    
+    // For development without DB, accept valid UUID format
+    if (process.env.NODE_ENV === 'development' && isValidUUID(tenantId)) {
+      console.info('[TenantVerify] Development mode: returning mock tenant data');
+      
+      return NextResponse.json({
+        isValid: true,
+        tenantId: tenantId,
+        name: `Tenant ${tenantId.substring(0, 8)}`,
+        message: 'Tenant verified in development mode',
+        status: 'active'
+      });
     }
     
     // Return invalid status since no tenant was found

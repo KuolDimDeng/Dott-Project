@@ -96,12 +96,36 @@ export async function getServerUser(request) {
         return null;
       }
       
-      // Return user with attributes
-      return {
+      // Enhanced attribute mapping to ensure names are properly mapped
+      // Map Cognito attributes to expected format
+      const enhancedUser = {
         ...user,
         attributes,
-        token: session.tokens.idToken.toString()
+        token: session.tokens.idToken.toString(),
+        // Explicitly map name fields - order matters for fallbacks
+        first_name: attributes.given_name || attributes.first_name || '',
+        last_name: attributes.family_name || attributes.last_name || '',
+        given_name: attributes.given_name || attributes.first_name || '',
+        family_name: attributes.family_name || attributes.last_name || '',
+        email: attributes.email || user.username,
+        name: attributes.name || `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
+        // Map custom attributes
+        'custom:tenantId': attributes['custom:tenantId'] || attributes['custom:businessid'] || '',
+        'custom:businessname': attributes['custom:businessname'] || '',
+        'custom:businesstype': attributes['custom:businesstype'] || '',
+        'custom:subplan': attributes['custom:subplan'] || 'free'
       };
+      
+      console.log('[getServerUser] Enhanced user attributes:', {
+        email: enhancedUser.email,
+        first_name: enhancedUser.first_name,
+        last_name: enhancedUser.last_name,
+        given_name: enhancedUser.given_name,
+        family_name: enhancedUser.family_name
+      });
+      
+      // Return enhanced user
+      return enhancedUser;
     } catch (authError) {
       // Handle authentication errors gracefully without throwing
       console.debug('[getServerUser] Authentication error, user not authenticated:', {

@@ -178,7 +178,7 @@ class VerifyTenantView(APIView):
                         'status': 'corrected',
                         'message': 'The provided tenant ID is incorrect for this user',
                         'correctTenantId': str(existing_tenant.id),
-                        'correctSchemaName': existing_tenant.schema_name
+                        'correctSchemaName': existing_tenant.id
                     })
                 else:
                     # Tenant ID is correct
@@ -204,7 +204,7 @@ class VerifyTenantView(APIView):
                             'status': 'corrected',
                             'message': 'Tenant was created by another process',
                             'correctTenantId': str(existing_tenant.id),
-                            'correctSchemaName': existing_tenant.schema_name
+                            'correctSchemaName': existing_tenant.id
                         })
                     
                     # Create a tenant with the provided ID
@@ -223,7 +223,7 @@ class VerifyTenantView(APIView):
                         'status': 'created',
                         'message': 'Tenant created successfully',
                         'tenantId': str(tenant.id),
-                        'schemaName': tenant.schema_name
+                        'schemaName':  tenant.id
                     })
                 finally:
                     release_user_lock(request.user.id)
@@ -236,7 +236,7 @@ class VerifyTenantView(APIView):
                         'status': 'corrected',
                         'message': 'Tenant already exists for this user',
                         'correctTenantId': str(existing_tenant.id),
-                        'correctSchemaName': existing_tenant.schema_name
+                        'correctSchemaName': existing_tenant.id
                     })
             logger.error(f"IntegrityError in tenant verification: {str(e)}")
             return Response({

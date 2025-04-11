@@ -271,7 +271,7 @@ const useOnboardingStore = create((set, get) => ({
         await updateUserAttributes({
           userAttributes: {
             'custom:setupdone': 'true',
-            'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+            'custom:onboarding': 'complete',
             'custom:updated_at': new Date().toISOString(),
             'custom:onboardingCompletedAt': new Date().toISOString()
           }
@@ -320,7 +320,7 @@ const useOnboardingStore = create((set, get) => ({
               body: JSON.stringify({
                 attributes: {
                   'custom:setupdone': 'true',
-                  'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+                  'custom:onboarding': 'complete',
                   'custom:updated_at': new Date().toISOString()
                 },
                 forceUpdate: true

@@ -44,7 +44,7 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
             # Log tenant information if available
             tenant = getattr(self.request, 'tenant', None)
             if tenant:
-                logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
             else:
                 logger.debug("No tenant found in request")
             
@@ -57,7 +57,7 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
             
             # Get optimized connection for tenant schema
             if tenant:
-                TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+                TenantSchemaRouter.get_connection_for_schema( tenant.id)
             
             # Use select_related to optimize queries
             queryset = InventoryItem.objects.select_related(
@@ -146,15 +146,15 @@ class ProductViewSet(viewsets.ModelViewSet):
             # Log tenant information if available
             tenant = getattr(self.request, 'tenant', None)
             if tenant:
-                logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
             else:
                 logger.debug("No tenant found in request")
             
             # Use the optimized manager to get products for this tenant
             if tenant:
                 # Use the optimized manager's for_tenant method
-                queryset = Product.optimized.for_tenant(tenant.schema_name)
-                logger.debug(f"Using optimized manager for tenant: {tenant.schema_name}")
+                queryset = Product.optimized.for_tenant( tenant.id)
+                logger.debug(f"Using optimized manager for tenant: { tenant.id}")
             else:
                 # Fall back to regular queryset
                 queryset = Product.objects.select_related('department').all()
@@ -221,7 +221,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
             # Log tenant information if available
             tenant = getattr(self.request, 'tenant', None)
             if tenant:
-                logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
             else:
                 logger.debug("No tenant found in request")
             
@@ -234,7 +234,7 @@ class ServiceViewSet(viewsets.ModelViewSet):
             
             # Get optimized connection for tenant schema
             if tenant:
-                TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+                TenantSchemaRouter.get_connection_for_schema( tenant.id)
             
             # Use select_related to optimize queries
             queryset = Service.objects.all()
@@ -395,11 +395,11 @@ def product_list(request):
         # Get tenant information if available
         tenant = getattr(request, 'tenant', None)
         if tenant:
-            logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
             
             # Use the optimized manager's for_tenant method
-            products = Product.optimized.for_tenant(tenant.schema_name)
-            logger.debug(f"Using optimized manager for tenant: {tenant.schema_name}")
+            products = Product.optimized.for_tenant( tenant.id)
+            logger.debug(f"Using optimized manager for tenant: { tenant.id}")
         else:
             logger.debug("No tenant found in request, using current schema")
             # Fall back to regular queryset
@@ -482,8 +482,8 @@ def service_list(request):
         # Get tenant information if available
         tenant = getattr(request, 'tenant', None)
         if tenant:
-            logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
-            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
+            TenantSchemaRouter.get_connection_for_schema( tenant.id)
         else:
             logger.debug("No tenant found in request, using current schema")
         

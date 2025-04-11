@@ -27,12 +27,12 @@ def get_current_schema():
     """Get the current schema from thread-local storage."""
     return getattr(_thread_local, 'schema_name', 'public')
 
-def set_current_schema(schema_name):
+def set_current_schema(tenant_id: uuid.UUID:
     """Set the current schema in thread-local storage."""
     setattr(_thread_local, 'schema_name', schema_name)
     logger.debug(f"Set current schema to {schema_name}")
 
-def get_connection_for_schema(schema_name, force_new=False):
+def get_connection_for_schema(tenant_id: uuid.UUID:
     """
     Get a database connection for the specified schema.
     
@@ -68,7 +68,7 @@ def get_connection_for_schema(schema_name, force_new=False):
     # No pooled connection available, create a new one
     return _create_new_connection(schema_name)
 
-def _create_new_connection(schema_name):
+def _create_new_connection(tenant_id: uuid.UUID:
     """Create a new connection with the specified schema."""
     start_time = time.time()
     
@@ -77,7 +77,9 @@ def _create_new_connection(schema_name):
     
     # Set the search path for this connection
     with connection.cursor() as cursor:
-        cursor.execute(f'SET search_path TO "{schema_name}",public')
+        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
     
     # Add to the connection pool if not full
     with _pool_lock:
@@ -113,6 +115,9 @@ def release_connections():
     with _pool_lock:
         _connection_pool.clear()
         logger.debug("Released all connections from pool")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 def get_pool_stats():
     """Get statistics about the connection pool."""

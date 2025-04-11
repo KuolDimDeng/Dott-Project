@@ -74,7 +74,7 @@ def get_tenant_schemas():
     conn.close()
     return schemas
 
-def get_schema_tables(schema_name):
+def get_schema_tables(tenant_id: uuid.UUID:
     """Get all tables in a schema."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -90,12 +90,12 @@ def get_schema_tables(schema_name):
     conn.close()
     return tables
 
-def check_migrations_table(schema_name):
+def check_migrations_table(tenant_id: uuid.UUID:
     """Check if the django_migrations table exists in the schema."""
     tables = get_schema_tables(schema_name)
     return 'django_migrations' in tables
 
-def reset_migrations_for_schema(schema_name):
+def reset_migrations_for_schema(tenant_id: uuid.UUID:
     """Reset migrations for a schema by removing entries from django_migrations table."""
     logger.info(f"Resetting migrations for schema {schema_name}")
     
@@ -108,7 +108,9 @@ def reset_migrations_for_schema(schema_name):
     cursor = conn.cursor()
     
     # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
+    # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
     
     # Delete all entries from django_migrations table
     cursor.execute("""
@@ -123,11 +125,14 @@ def reset_migrations_for_schema(schema_name):
     
     deleted_count = cursor.rowcount
     logger.info(f"Deleted {deleted_count} migration records from {schema_name}.django_migrations")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     
     cursor.close()
     conn.close()
 
-def create_migrations_table(schema_name):
+def create_migrations_table(tenant_id: uuid.UUID:
     """Create django_migrations table in the schema if it doesn't exist."""
     logger.info(f"Creating django_migrations table in schema {schema_name} if it doesn't exist")
     
@@ -135,7 +140,9 @@ def create_migrations_table(schema_name):
     cursor = conn.cursor()
     
     # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
+    # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
     
     # Check if django_migrations table exists
     cursor.execute("""
@@ -165,7 +172,7 @@ def create_migrations_table(schema_name):
     cursor.close()
     conn.close()
 
-def run_migrations_for_schema(schema_name, force=False):
+def run_migrations_for_schema(tenant_id: uuid.UUID:
     """Run migrations for a schema."""
     logger.info(f"Running migrations for schema {schema_name}")
     
@@ -181,7 +188,9 @@ def run_migrations_for_schema(schema_name, force=False):
     # Set search path to tenant schema
     with connection.cursor() as cursor:
         logger.info(f"Set search path to {schema_name}")
-        cursor.execute(f'SET search_path TO "{schema_name}", public')
+        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id), public')
         
         # Verify search path was set correctly
         cursor.execute('SHOW search_path')
@@ -215,7 +224,8 @@ def run_migrations_for_schema(schema_name, force=False):
     
     # Reset search path to public
     with connection.cursor() as cursor:
-        cursor.execute('SET search_path TO public')
+        cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
     
     logger.info(f"Successfully ran migrations for schema {schema_name}")
     return new_tables
@@ -229,7 +239,7 @@ def fix_tenant_schema(tenant_id=None, force=False):
         logger.info(f"[FIX-{process_id}] Fixing tenant schema for tenant {tenant_id}")
         try:
             tenant = Tenant.objects.get(id=tenant_id)
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"[FIX-{process_id}] Found tenant: {tenant.name} (Schema: {schema_name})")
             
             # Check if schema exists

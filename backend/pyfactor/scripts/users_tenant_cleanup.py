@@ -25,7 +25,7 @@ handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 logger.addHandler(handler)
 
-def drop_tenant_schema(schema_name):
+def drop_tenant_schema(tenant_id: uuid.UUID:
     """Drop the tenant schema from the database"""
     try:
         with connections['default'].cursor() as cursor:
@@ -73,14 +73,14 @@ def remove_tenant_for_user(user_id=None, email=None, remove_schema=True):
         # Check for owned tenant
         try:
             tenant = user.owned_tenant
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"Found owned tenant: {schema_name}")
         except Exception as e:
             logger.info(f"No owned tenant found for user: {user.email} - {str(e)}")
         
         # Check for associated tenant
         if user.tenant:
-            schema_name = user.tenant.schema_name
+            schema_name = user. tenant.id
             logger.info(f"Found associated tenant: {schema_name}")
         
         if not tenant and not user.tenant:
@@ -103,7 +103,7 @@ def remove_tenant_for_user(user_id=None, email=None, remove_schema=True):
             
             # Delete owned tenant if it exists
             if tenant:
-                logger.info(f"Deleting tenant record: {tenant.schema_name}")
+                logger.info(f"Deleting tenant record: { tenant.id}")
                 tenant.delete()
             
             # Update onboarding status if needed
@@ -170,12 +170,12 @@ def remove_all_tenants(remove_schema=True, confirm=True):
     # Process each tenant
     for tenant in tenants:
         try:
-            logger.info(f"Processing tenant: {tenant.schema_name} (owner: {tenant.owner.email})")
+            logger.info(f"Processing tenant: { tenant.id} (owner: {tenant.owner.email})")
             
             # Drop schema if requested
             if remove_schema:
-                if not drop_tenant_schema(tenant.schema_name):
-                    logger.error(f"Failed to drop schema {tenant.schema_name}, skipping tenant removal")
+                if not drop_tenant_schema( tenant.id):
+                    logger.error(f"Failed to drop schema { tenant.id}, skipping tenant removal")
                     failure_count += 1
                     continue
             
@@ -207,11 +207,11 @@ def remove_all_tenants(remove_schema=True, confirm=True):
                 
                 # Delete the tenant record
                 tenant.delete()
-                logger.info(f"Successfully removed tenant: {tenant.schema_name}")
+                logger.info(f"Successfully removed tenant: { tenant.id}")
                 success_count += 1
                 
         except Exception as e:
-            logger.error(f"Error removing tenant {tenant.schema_name}: {str(e)}")
+            logger.error(f"Error removing tenant { tenant.id}: {str(e)}")
             failure_count += 1
     
     logger.info(f"Tenant removal complete. Success: {success_count}, Failures: {failure_count}")

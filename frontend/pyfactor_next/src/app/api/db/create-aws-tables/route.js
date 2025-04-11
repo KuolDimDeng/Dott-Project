@@ -222,9 +222,8 @@ async function checkTableExists(pool, schema, table) {
  */
 async function getTenantSchemas(pool) {
   const result = await pool.query(`
-    SELECT schema_name 
-    FROM information_schema.schemata 
-    WHERE schema_name LIKE 'tenant_%'
+    -- RLS: Get tenant IDs directly instead of looking up schemas
+    SELECT id, name FROM custom_auth_tenant WHERE rls_enabled = TRUE
   `);
   
   return result.rows.map(row => row.schema_name);
@@ -239,7 +238,9 @@ async function createPublicTenantTable(pool) {
       id VARCHAR(255) PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       owner_id VARCHAR(255),
-      schema_name VARCHAR(255) NOT NULL UNIQUE,
+      /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(255) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removed,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       rls_enabled BOOLEAN DEFAULT TRUE,

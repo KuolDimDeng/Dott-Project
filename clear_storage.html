@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Browser Storage</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .warning {
+            background-color: #f44336;
+        }
+        .info {
+            color: #0059b3;
+            margin-top: 20px;
+            font-style: italic;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Clear Browser Storage Tool</h1>
+    
+    <div class="container">
+        <h2>Tenant Information</h2>
+        <div id="tenantInfo">
+            <p>Current tenant ID: <strong id="currentTenantId">Not found</strong></p>
+            <p>Business ID: <strong id="businessId">Not found</strong></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Clear Storage Options</h2>
+        <button id="clearCookiesBtn">Clear Cookies</button>
+        <button id="clearLocalStorageBtn">Clear LocalStorage</button>
+        <button id="clearSessionStorageBtn">Clear SessionStorage</button>
+        <button id="clearAllBtn" class="warning">Clear All Storage</button>
+        
+        <div id="successMessage" class="success">
+            Storage cleared successfully!
+        </div>
+        
+        <div class="info">
+            <p>After clearing storage, you should:</p>
+            <ol>
+                <li>Restart your Next.js development server</li>
+                <li>Log out and log in again</li>
+                <li>Create a new tenant through the normal flow</li>
+            </ol>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h2>Current Storage Contents</h2>
+        <h3>Cookies</h3>
+        <pre id="cookiesContent">Loading...</pre>
+        
+        <h3>LocalStorage</h3>
+        <pre id="localStorageContent">Loading...</pre>
+        
+        <h3>SessionStorage</h3>
+        <pre id="sessionStorageContent">Loading...</pre>
+    </div>
+
+    <script>
+        // Display current tenant information
+        function displayTenantInfo() {
+            const tenantId = localStorage.getItem('tenantId') || getCookie('tenantId') || 'Not found';
+            const businessId = localStorage.getItem('businessid') || getCookie('businessid') || 'Not found';
+            
+            document.getElementById('currentTenantId').textContent = tenantId;
+            document.getElementById('businessId').textContent = businessId;
+        }
+        
+        // Helper function to get cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        
+        // Display current storage contents
+        function displayStorageContents() {
+            // Display cookies
+            document.getElementById('cookiesContent').textContent = document.cookie.split(';')
+                .map(cookie => cookie.trim())
+                .join('\n');
+            
+            // Display localStorage
+            try {
+                const localStorageItems = Object.entries(localStorage)
+                    .map(([key, value]) => `${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`)
+                    .join('\n');
+                document.getElementById('localStorageContent').textContent = localStorageItems || 'Empty';
+            } catch (e) {
+                document.getElementById('localStorageContent').textContent = `Error: ${e.message}`;
+            }
+            
+            // Display sessionStorage
+            try {
+                const sessionStorageItems = Object.entries(sessionStorage)
+                    .map(([key, value]) => `${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`)
+                    .join('\n');
+                document.getElementById('sessionStorageContent').textContent = sessionStorageItems || 'Empty';
+            } catch (e) {
+                document.getElementById('sessionStorageContent').textContent = `Error: ${e.message}`;
+            }
+        }
+        
+        // Clear all cookies
+        function clearCookies() {
+            const cookies = document.cookie.split(';');
+            
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i];
+                const eqPos = cookie.indexOf('=');
+                const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+                document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+            }
+            
+            showSuccessMessage();
+            displayStorageContents();
+            displayTenantInfo();
+        }
+        
+        // Clear localStorage
+        function clearLocalStorage() {
+            try {
+                localStorage.clear();
+                showSuccessMessage();
+                displayStorageContents();
+                displayTenantInfo();
+            } catch (e) {
+                console.error('Error clearing localStorage:', e);
+            }
+        }
+        
+        // Clear sessionStorage
+        function clearSessionStorage() {
+            try {
+                sessionStorage.clear();
+                showSuccessMessage();
+                displayStorageContents();
+                displayTenantInfo();
+            } catch (e) {
+                console.error('Error clearing sessionStorage:', e);
+            }
+        }
+        
+        // Clear all storage
+        function clearAllStorage() {
+            clearCookies();
+            clearLocalStorage();
+            clearSessionStorage();
+        }
+        
+        // Show success message
+        function showSuccessMessage() {
+            const successMessage = document.getElementById('successMessage');
+            successMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Add event listeners
+        document.getElementById('clearCookiesBtn').addEventListener('click', clearCookies);
+        document.getElementById('clearLocalStorageBtn').addEventListener('click', clearLocalStorage);
+        document.getElementById('clearSessionStorageBtn').addEventListener('click', clearSessionStorage);
+        document.getElementById('clearAllBtn').addEventListener('click', clearAllStorage);
+        
+        // Initialize
+        displayTenantInfo();
+        displayStorageContents();
+    </script>
+</body>
+</html> 

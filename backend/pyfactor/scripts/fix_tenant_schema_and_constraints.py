@@ -44,14 +44,14 @@ def get_all_tenant_schemas():
         """)
         return [row[0] for row in cursor.fetchall()]
 
-def get_tenant_by_schema(schema_name):
+def get_tenant_by_schema(tenant_id: uuid.UUID:
     """Get tenant object by schema name."""
     try:
         return Tenant.objects.get(schema_name=schema_name)
     except Tenant.DoesNotExist:
         return None
 
-def check_business_exists_in_schema(cursor, schema_name, business_id):
+def check_business_exists_in_schema(tenant_id: uuid.UUID:
     """Check if a business exists in the specified schema."""
     cursor.execute(f"""
         SET search_path TO "{schema_name}";
@@ -75,7 +75,7 @@ def get_business_details_from_public(business_id):
     except BusinessDetails.DoesNotExist:
         return None
 
-def copy_business_to_tenant_schema(cursor, schema_name, business):
+def copy_business_to_tenant_schema(tenant_id: uuid.UUID:
     """Copy business record from public schema to tenant schema."""
     # Format the business fields for SQL insertion
     business_id = str(business.id)
@@ -120,7 +120,7 @@ def copy_business_to_tenant_schema(cursor, schema_name, business):
     
     return True
 
-def fix_userprofile_updated_at(cursor, schema_name):
+def fix_userprofile_updated_at(tenant_id: uuid.UUID:
     """Fix UserProfile records with null updated_at values."""
     now = timezone.now().isoformat()
     
@@ -225,6 +225,9 @@ def fix_tenant_schema_constraints():
                         
                         # Get business from public schema
                         business = get_business_from_public(business_id)
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
                         if not business:
                             logger.warning(f"Business {business_id} not found in public schema, skipping")
                             continue

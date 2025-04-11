@@ -50,14 +50,14 @@ def list_all_tenants():
         logger.info(f"Found {len(tenants)} tenants in the database")
         
         for tenant in tenants:
-            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: {tenant.schema_name})")
+            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: { tenant.id})")
         
         return tenants
     except Exception as e:
         logger.error(f"Error listing tenants: {str(e)}")
         return []
 
-def check_schema_tables(schema_name):
+def check_schema_tables(tenant_id: uuid.UUID:
     """Check if the required tables exist in the schema"""
     try:
         conn = get_db_connection()
@@ -87,13 +87,15 @@ def check_schema_tables(schema_name):
         logger.error(f"Error checking schema tables: {str(e)}")
         return False, False
 
-def find_orphaned_profiles(schema_name):
+def find_orphaned_profiles(tenant_id: uuid.UUID:
     """Find UserProfile records with business_id values that don't exist in the business_business table"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to the tenant schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Check if both tables exist
             cursor.execute("""
@@ -133,7 +135,8 @@ def get_business_from_public_schema(business_id):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to public schema
-            cursor.execute("SET search_path TO public")
+            cursor.execute("-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public")
             
             # Check if business exists in public schema
             cursor.execute("""
@@ -156,13 +159,15 @@ def get_business_from_public_schema(business_id):
         logger.error(f"Error getting business from public schema: {str(e)}")
         return None
 
-def copy_business_to_tenant_schema(schema_name, business_data, dry_run=False):
+def copy_business_to_tenant_schema(tenant_id: uuid.UUID:
     """Copy business record from public schema to tenant schema"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to tenant schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Check if business already exists in tenant schema
             cursor.execute("""
@@ -205,7 +210,7 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
         try:
             tenant = Tenant.objects.get(id=tenant_id)
             tenants = [tenant]
-            logger.info(f"Found tenant: {tenant.name} (ID: {tenant.id}, Schema: {tenant.schema_name})")
+            logger.info(f"Found tenant: {tenant.name} (ID: {tenant.id}, Schema: { tenant.id})")
         except Tenant.DoesNotExist:
             logger.error(f"Tenant with ID {tenant_id} not found")
             return False
@@ -219,18 +224,18 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
     error_count = 0
     
     for tenant in tenants:
-        logger.info(f"Processing tenant: {tenant.name} (Schema: {tenant.schema_name})")
+        logger.info(f"Processing tenant: {tenant.name} (Schema: { tenant.id})")
         
         try:
             # Check if required tables exist
-            business_table_exists, profile_table_exists = check_schema_tables(tenant.schema_name)
+            business_table_exists, profile_table_exists = check_schema_tables( tenant.id)
             
             if not business_table_exists:
-                logger.warning(f"Business table doesn't exist in schema {tenant.schema_name}. Creating it...")
+                logger.warning(f"Business table doesn't exist in schema { tenant.id}. Creating it...")
                 if not dry_run:
                     conn = get_db_connection()
                     with conn.cursor() as cursor:
-                        cursor.execute(f"SET search_path TO {tenant.schema_name}")
+                        cursor.execute(f"SET search_path TO { tenant.id}")
                         cursor.execute("""
                             CREATE TABLE IF NOT EXISTS business_business (
                                 id UUID PRIMARY KEY,
@@ -240,14 +245,14 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
                                 modified_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                             )
                         """)
-                        logger.info(f"Created business_business table in schema {tenant.schema_name}")
+                        logger.info(f"Created business_business table in schema { tenant.id}")
             
             if not profile_table_exists:
-                logger.warning(f"UserProfile table doesn't exist in schema {tenant.schema_name}. Skipping...")
+                logger.warning(f"UserProfile table doesn't exist in schema { tenant.id}. Skipping...")
                 continue
             
             # Find orphaned profiles
-            orphaned_profiles = find_orphaned_profiles(tenant.schema_name)
+            orphaned_profiles = find_orphaned_profiles( tenant.id)
             
             # Fix orphaned profiles
             for profile in orphaned_profiles:
@@ -258,8 +263,8 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
                 
                 if business_data:
                     # Copy business to tenant schema
-                    if copy_business_to_tenant_schema(tenant.schema_name, business_data, dry_run):
-                        logger.info(f"Fixed orphaned profile {profile_id} by copying business {business_id} to schema {tenant.schema_name}")
+                    if copy_business_to_tenant_schema( tenant.id, business_data, dry_run):
+                        logger.info(f"Fixed orphaned profile {profile_id} by copying business {business_id} to schema { tenant.id}")
                     else:
                         logger.error(f"Failed to fix orphaned profile {profile_id}")
                 else:
@@ -269,7 +274,7 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
                         # Create a placeholder business
                         conn = get_db_connection()
                         with conn.cursor() as cursor:
-                            cursor.execute(f"SET search_path TO {tenant.schema_name}")
+                            cursor.execute(f"SET search_path TO { tenant.id}")
                             
                             # Generate a unique business number
                             business_num = f"{uuid.uuid4().int % 1000000:06d}"
@@ -289,7 +294,7 @@ def fix_tenant_schema(tenant_id=None, dry_run=False):
                                 timezone.now()
                             ])
                             
-                            logger.info(f"Created placeholder business {business_id} in schema {tenant.schema_name}")
+                            logger.info(f"Created placeholder business {business_id} in schema { tenant.id}")
             
             success_count += 1
             logger.info(f"Successfully processed schema for tenant: {tenant.name}")
@@ -373,13 +378,16 @@ def patch_save_business_info_method():
             f"{indent}# Get tenant schema name\n",
             f"{indent}try:\n",
             f"{indent}    tenant = Tenant.objects.get(id=tenant_id)\n",
-            f"{indent}    schema_name = tenant.schema_name\n",
+            f"{indent}    schema_name =  tenant.id\n",
             f"{indent}except Tenant.DoesNotExist:\n",
             f"{indent}    logger.error(f\"Tenant {tenant_id} not found\")\n",
             f"{indent}    raise ValidationError(\"Tenant not found\")\n",
             f"{indent}\n",
             f"{indent}# Use tenant schema context for database operations\n",
             f"{indent}from custom_auth.utils import tenant_schema_context\n",
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
             f"{indent}with tenant_schema_context(schema_name):\n"
         ]
         

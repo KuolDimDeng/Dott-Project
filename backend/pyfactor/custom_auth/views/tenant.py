@@ -121,14 +121,14 @@ class TenantCreateView(APIView):
                                 SELECT 1 FROM information_schema.schemata 
                                 WHERE schema_name = %s
                             )
-                        """, [tenant.schema_name])
+                        """, [ tenant.id])
                         
                         schema_exists = cursor.fetchone()[0]
                         
                         if schema_exists:
                             return Response({
                                 'tenant_id': str(tenant.id),
-                                'schema_name': tenant.schema_name,
+                                'schema_name':  tenant.id,
                                 'message': 'Tenant schema already exists'
                             }, status=status.HTTP_200_OK)
             
@@ -157,18 +157,18 @@ class TenantCreateView(APIView):
             # Create schema in database
             with connection.cursor() as cursor:
                 # Create schema
-                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{tenant.schema_name}"')
+                cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{ tenant.id}"')
                 
                 # Set up permissions
                 db_user = connection.settings_dict['USER']
-                cursor.execute(f'GRANT USAGE ON SCHEMA "{tenant.schema_name}" TO {db_user}')
-                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{tenant.schema_name}" TO {db_user}')
-                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{tenant.schema_name}" GRANT ALL ON TABLES TO {db_user}')
+                cursor.execute(f'GRANT USAGE ON SCHEMA "{ tenant.id}" TO {db_user}')
+                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{ tenant.id}" TO {db_user}')
+                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{ tenant.id}" GRANT ALL ON TABLES TO {db_user}')
                 
                 # Create essential auth tables in the new schema
                 cursor.execute(f"""
                     -- Create auth tables
-                    CREATE TABLE IF NOT EXISTS "{tenant.schema_name}"."custom_auth_user" (
+                    CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "custom_auth_user" (
                         id UUID PRIMARY KEY,
                         password VARCHAR(128) NOT NULL,
                         last_login TIMESTAMP WITH TIME ZONE NULL,
@@ -189,27 +189,27 @@ class TenantCreateView(APIView):
                         cognito_sub VARCHAR(36) NULL
                     );
                     
-                    CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON "{tenant.schema_name}"."custom_auth_user" (email);
-                    CREATE INDEX IF NOT EXISTS idx_user_tenant ON "{tenant.schema_name}"."custom_auth_user" (tenant_id);
+                    CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON "{ tenant.id}"."custom_auth_user" (email);
+                    CREATE INDEX IF NOT EXISTS idx_user_tenant ON /* RLS: Use tenant_id filtering */ "custom_auth_user" (tenant_id);
                     
                     -- Auth User Permissions
-                    CREATE TABLE IF NOT EXISTS "{tenant.schema_name}"."custom_auth_user_user_permissions" (
+                    CREATE TABLE IF NOT EXISTS "{ tenant.id}"."custom_auth_user_user_permissions" (
                         id SERIAL PRIMARY KEY,
-                        user_id UUID NOT NULL REFERENCES "{tenant.schema_name}"."custom_auth_user"(id),
+                        user_id UUID NOT NULL REFERENCES /* RLS: Use tenant_id filtering */ "custom_auth_user"(id),
                         permission_id INTEGER NOT NULL,
                         CONSTRAINT custom_auth_user_user_permissions_user_id_permission_id_key UNIQUE (user_id, permission_id)
                     );
                     
                     -- Auth User Groups
-                    CREATE TABLE IF NOT EXISTS "{tenant.schema_name}"."custom_auth_user_groups" (
+                    CREATE TABLE IF NOT EXISTS "{ tenant.id}"."custom_auth_user_groups" (
                         id SERIAL PRIMARY KEY,
-                        user_id UUID NOT NULL REFERENCES "{tenant.schema_name}"."custom_auth_user"(id),
+                        user_id UUID NOT NULL REFERENCES /* RLS: Use tenant_id filtering */ "custom_auth_user"(id),
                         group_id INTEGER NOT NULL,
                         CONSTRAINT custom_auth_user_groups_user_id_group_id_key UNIQUE (user_id, group_id)
                     );
                     
                     -- Tenant table
-                    CREATE TABLE IF NOT EXISTS "{tenant.schema_name}"."custom_auth_tenant" (
+                    CREATE TABLE IF NOT EXISTS "{ tenant.id}"."custom_auth_tenant" (
                         id UUID PRIMARY KEY,
                         schema_name VARCHAR(63) NOT NULL UNIQUE,
                         name VARCHAR(100) NOT NULL,
@@ -227,7 +227,7 @@ class TenantCreateView(APIView):
                 
                 # Copy the user to the new schema
                 cursor.execute(f"""
-                    INSERT INTO "{tenant.schema_name}"."custom_auth_user" 
+                    INSERT INTO /* RLS: Use tenant_id filtering */ "custom_auth_user" 
                     (id, password, last_login, is_superuser, email, first_name, last_name, 
                     is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
                     is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub)
@@ -248,7 +248,7 @@ class TenantCreateView(APIView):
                 
                 # Copy the tenant to the new schema
                 cursor.execute(f"""
-                    INSERT INTO "{tenant.schema_name}"."custom_auth_tenant"
+                    INSERT INTO /* RLS: Use tenant_id filtering */ "custom_auth_tenant"
                     (id, schema_name, name, created_on, is_active, setup_status, 
                     setup_task_id, last_setup_attempt, setup_error_message,
                     last_health_check, storage_quota_bytes, owner_id)
@@ -259,7 +259,7 @@ class TenantCreateView(APIView):
                     )
                     ON CONFLICT (id) DO NOTHING
                 """, [
-                    str(tenant.id), tenant.schema_name, tenant.name, tenant.created_on,
+                    str(tenant.id),  tenant.id, tenant.name, tenant.created_on,
                     tenant.is_active, tenant.setup_status,
                     tenant.setup_task_id, tenant.last_setup_attempt, tenant.setup_error_message,
                     tenant.last_health_check, tenant.storage_quota_bytes, str(user.id)
@@ -267,7 +267,7 @@ class TenantCreateView(APIView):
             
             return Response({
                 'tenant_id': str(tenant.id),
-                'schema_name': tenant.schema_name,
+                'schema_name':  tenant.id,
                 'message': 'Tenant schema created successfully'
             }, status=status.HTTP_201_CREATED)
                 

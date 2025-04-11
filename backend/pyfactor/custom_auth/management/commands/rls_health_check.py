@@ -143,12 +143,12 @@ class Command(BaseCommand):
                 
                 for schema, table in test_tables:
                     # Count records for this tenant
-                    sql_query = f'SELECT COUNT(*) FROM "{schema}"."{table}" WHERE tenant_id = %s'
+                    sql_query = f'SELECT COUNT(*) FROM /* RLS: Use tenant_id filtering */ "{table}" WHERE tenant_id = %s'
                     test_cursor.execute(sql_query, [str(tenant_id)])
                     tenant_count = test_cursor.fetchone()[0]
                     
                     # Count total records returned (should be same with RLS)
-                    sql_query = f'SELECT COUNT(*) FROM "{schema}"."{table}"' 
+                    sql_query = f'SELECT COUNT(*) FROM /* RLS: Use tenant_id filtering */ "{table}"' 
                     test_cursor.execute(sql_query)
                     total_count = test_cursor.fetchone()[0]
                     

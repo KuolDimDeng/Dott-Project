@@ -84,17 +84,17 @@ class Command(BaseCommand):
                 
                 if dry_run:
                     for tenant in owned_tenants:
-                        self.stdout.write(f'  - Owned: {tenant.schema_name} (ID: {tenant.id})')
+                        self.stdout.write(f'  - Owned: { tenant.id} (ID: {tenant.id})')
                     for tenant in linked_tenants:
                         if tenant.id not in [t.id for t in owned_tenants]:
-                            self.stdout.write(f'  - Linked: {tenant.schema_name} (ID: {tenant.id})')
+                            self.stdout.write(f'  - Linked: { tenant.id} (ID: {tenant.id})')
                 else:
                     try:
                         # Consolidate tenants for this user
                         primary_tenant = consolidate_user_tenants(user)
                         if primary_tenant:
                             self.stdout.write(self.style.SUCCESS(
-                                f'Consolidated tenants for {user.email}, primary tenant: {primary_tenant.schema_name}'
+                                f'Consolidated tenants for {user.email}, primary tenant: {primary_ tenant.id}'
                             ))
                             consolidated_count += 1
                     except Exception as e:

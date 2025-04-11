@@ -1,7 +1,11 @@
 from django.db import models, connection, transaction
 from django.db.models import Case, When, F, ExpressionWrapper, BooleanField, DurationField, Sum, Avg, Count
+from django.db.models.functions import Now
 from django.utils import timezone
 import logging
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -17,79 +21,67 @@ class OptimizedProductManager(models.Manager):
         """
         return super().get_queryset().select_related('department')
     
-    def for_tenant(self, schema_name):
+    def for_tenant(self, tenant_id):
         """
         Get queryset with proper tenant context
         
         Args:
-            schema_name (str): The tenant schema name
+            tenant_id (uuid.UUID): The tenant ID
             
         Returns:
             QuerySet: Queryset with tenant context
         """
-        if not schema_name:
-            logger.warning("No schema name provided, using default schema")
+        if not tenant_id:
+            logger.warning("No tenant ID provided, using default schema")
             return self.get_queryset()
         
-        # Set search path directly without transaction
-        # This ensures the search path is maintained for the entire connection
+        # Set tenant context directly
         try:
             with connection.cursor() as cursor:
-                # First verify schema exists
-                cursor.execute("""
-                    SELECT 1 FROM information_schema.schemata
-                    WHERE schema_name = %s
-                """, [schema_name])
-                
-                result = cursor.fetchone()
-                if not result:
-                    logger.error(f"Schema {schema_name} does not exist in database")
-                    # Return empty queryset if schema doesn't exist
-                    return self.get_queryset().none()
-                
-                # Set search path globally for this connection
-                # Using double quotes to handle schemas with underscores and dashes
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                # Set tenant context
+                set_current_tenant_id(tenant_id)
+                cursor.execute('SET search_path TO public')
                 
                 # Verify search path was set
                 cursor.execute('SHOW search_path')
                 current_path = cursor.fetchone()[0]
                 logger.debug(f"Set search path to: {current_path}")
                 
-                if schema_name not in current_path:
-                    logger.error(f"Failed to set search_path to {schema_name}, got: {current_path}")
+                if 'public' not in current_path:
+                    logger.error(f"Failed to set search_path to public, got: {current_path}")
                     # Return empty queryset if search path couldn't be set
                     return self.get_queryset().none()
             
-            # Return queryset using the current connection with the schema set
+            # Return queryset using the current connection with the tenant context set
             return self.get_queryset()
             
         except Exception as e:
-            logger.error(f"Error setting tenant context for schema {schema_name}: {str(e)}", exc_info=True)
+            logger.error(f"Error setting tenant context for tenant {tenant_id}: {str(e)}", exc_info=True)
             # In case of errors, return empty queryset
             return self.get_queryset().none()
     
     # Added utility method to help with direct schema queries
-    def execute_in_schema(self, schema_name, sql, params=None):
+    def execute_in_schema(self, tenant_id, sql, params=None):
         """
         Execute raw SQL in a specific schema context
         
         Args:
-            schema_name (str): The tenant schema name
+            tenant_id (uuid.UUID): The tenant ID
             sql (str): SQL query to execute
             params (list, optional): Query parameters
             
         Returns:
             list: Result rows or None on error
         """
-        if not schema_name:
-            logger.error("No schema name provided for execute_in_schema")
+        if not tenant_id:
+            logger.error("No tenant ID provided for execute_in_schema")
             return None
             
         try:
             with connection.cursor() as cursor:
                 # Set schema context
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                set_current_tenant_id(tenant_id)
+                cursor.execute('SET search_path TO public')
                 
                 # Execute the query
                 cursor.execute(sql, params or [])
@@ -99,7 +91,7 @@ class OptimizedProductManager(models.Manager):
                 return [dict(zip(columns, row)) for row in cursor.fetchall()]
                 
         except Exception as e:
-            logger.error(f"Error executing SQL in schema {schema_name}: {str(e)}", exc_info=True)
+            logger.error(f"Error executing SQL in tenant {tenant_id}: {str(e)}", exc_info=True)
             return None
     
     def with_inventory_stats(self):
@@ -116,7 +108,7 @@ class OptimizedProductManager(models.Manager):
                 output_field=BooleanField()
             ),
             days_in_inventory=ExpressionWrapper(
-                timezone.now() - F('created_at'),
+                Now() - F('created_at'),
                 output_field=DurationField()
             ),
             inventory_value=ExpressionWrapper(
@@ -125,17 +117,17 @@ class OptimizedProductManager(models.Manager):
             )
         )
     
-    def get_stats(self, schema_name=None):
+    def get_stats(self, tenant_id):
         """
         Get inventory statistics
         
         Args:
-            schema_name (str, optional): The tenant schema name
+            tenant_id (uuid.UUID): The tenant ID
             
         Returns:
             dict: Dictionary with inventory statistics
         """
-        queryset = self.for_tenant(schema_name) if schema_name else self.get_queryset()
+        queryset = self.for_tenant(tenant_id) if tenant_id else self.get_queryset()
         
         # Use aggregation for efficient statistics calculation
         stats = queryset.aggregate(

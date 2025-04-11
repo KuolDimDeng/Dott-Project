@@ -173,7 +173,9 @@ class ConnectionPoolManager:
             
             # Set search path for PostgreSQL
             with conn.cursor() as cursor:
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
             
             # Store connection in thread-local storage with metadata
             _thread_local.connections[db_alias] = conn
@@ -264,7 +266,8 @@ class ConnectionPoolManager:
                 try:
                     # Reset search path before releasing
                     with conn.cursor() as cursor:
-                        cursor.execute('SET search_path TO public')
+                        cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
                     
                     conn.close()
                 except Exception as e:
@@ -308,7 +311,8 @@ class ConnectionPoolManager:
                     # Reset search path before releasing
                     try:
                         with conn.cursor() as cursor:
-                            cursor.execute('SET search_path TO public')
+                            cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
                     except Exception:
                         # Ignore errors in resetting search path
                         pass
@@ -456,6 +460,9 @@ class ConnectionPoolManager:
     def reset_connection_stats():
         """
         Reset connection statistics while preserving important values.
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         """
         with _stats_lock:
             # Keep track of current active connections

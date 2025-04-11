@@ -17,7 +17,7 @@ django.setup()
 from django.db import transaction, connections
 from custom_auth.models import User, Tenant
 
-def normalize_schema_name(schema_name):
+def normalize_schema_name(tenant_id: uuid.UUID:
     """Convert schema name to the proper format with underscores"""
     # Extract the tenant ID (everything after 'tenant_')
     match = re.match(r'^tenant_(.+)$', schema_name)
@@ -40,7 +40,7 @@ def update_tenant_schema_names():
     
     for tenant in tenants:
         try:
-            old_schema_name = tenant.schema_name
+            old_schema_name =  tenant.id
             
             # Skip if schema name is already properly formatted
             if re.match(r'^tenant_[a-z0-9_]+$', old_schema_name):
@@ -97,10 +97,10 @@ def update_tenant_schema_names():
                             print(f"  Copying table {table_name} from {old_schema_name} to {new_schema_name}")
                             
                             # Create table in new schema
-                            cursor.execute(f'CREATE TABLE IF NOT EXISTS "{new_schema_name}"."{table_name}" (LIKE "{old_schema_name}"."{table_name}" INCLUDING ALL)')
+                            cursor.execute(f'CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "{table_name}" (LIKE "{old_schema_name}"."{table_name}" INCLUDING ALL)')
                             
                             # Copy data
-                            cursor.execute(f'INSERT INTO "{new_schema_name}"."{table_name}" SELECT * FROM "{old_schema_name}"."{table_name}"')
+                            cursor.execute(f'INSERT INTO /* RLS: Use tenant_id filtering */ "{table_name}" SELECT * FROM "{old_schema_name}"."{table_name}"')
                         
                         # Drop old schema
                         cursor.execute(f'DROP SCHEMA IF EXISTS "{old_schema_name}" CASCADE')
@@ -109,7 +109,7 @@ def update_tenant_schema_names():
                     cursor.execute(f'SET search_path TO {original_search_path}')
                 
                 # Update tenant record
-                tenant.schema_name = new_schema_name
+                 tenant.id = new_schema_name
                 tenant.save(update_fields=['schema_name'])
                 updated_count += 1
                 
@@ -143,6 +143,9 @@ def update_user_roles():
             print(f"Error updating user {user.email}: {str(e)}")
     
     print(f"Updated {updated_count} users from EMPLOYEE to OWNER role")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 if __name__ == "__main__":
     print("Starting user role update...")

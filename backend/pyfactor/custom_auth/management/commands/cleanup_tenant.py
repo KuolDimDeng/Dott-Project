@@ -21,18 +21,18 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING(f'No tenant found for user {email}'))
                 return
                 
-            self.stdout.write(f'Found tenant {tenant.schema_name} for user {email}')
+            self.stdout.write(f'Found tenant { tenant.id} for user {email}')
             
             # Clean up schema
             try:
-                cleanup_schema(tenant.schema_name)
-                self.stdout.write(self.style.SUCCESS(f'Cleaned up schema {tenant.schema_name}'))
+                cleanup_schema( tenant.id)
+                self.stdout.write(self.style.SUCCESS(f'Cleaned up schema { tenant.id}'))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'Error cleaning up schema: {str(e)}'))
             
             # Delete tenant
             tenant.delete()
-            self.stdout.write(self.style.SUCCESS(f'Deleted tenant {tenant.schema_name}'))
+            self.stdout.write(self.style.SUCCESS(f'Deleted tenant { tenant.id}'))
             
             # Reset user onboarding status
             user.is_onboarded = False

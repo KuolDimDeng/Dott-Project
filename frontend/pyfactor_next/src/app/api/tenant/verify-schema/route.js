@@ -55,7 +55,7 @@ async function getAwsDbPool() {
 async function schemaExists(pool, schemaName) {
   try {
     const result = await pool.query(
-      'SELECT EXISTS(SELECT 1 FROM information_schema.schemata WHERE schema_name = $1)',
+      "SELECT EXISTS(SELECT TRUE FROM information_schema.schemata WHERE schema_name = $1) AS exists",
       [schemaName]
     );
     return result.rows[0].exists;
@@ -195,7 +195,7 @@ export async function POST(request) {
     let tenantRecord = null;
     try {
       const tenantResult = await pool.query(
-        'SELECT id, name, schema_name, rls_enabled FROM custom_auth_tenant WHERE id = $1',
+        'SELECT id, name, rls_enabled FROM custom_auth_tenant WHERE id = $1', /* RLS: Removed schema_name */
         [tenantId]
       );
       

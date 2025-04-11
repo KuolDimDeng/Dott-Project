@@ -1,244 +1,142 @@
 'use client';
 
 /**
- * Logger utility for consistent application logging
- * Includes tenant context in logs for easier debugging
+ * Simple logger that works in both browser and server environments
+ * This logger provides basic logging functionality with level filtering
  */
 
-import { getTenantId } from './tenantUtils';
-
-// Log levels
+// Log levels with numerical values for comparison
 const LOG_LEVELS = {
-  DEBUG: 0,
-  INFO: 1,
-  WARN: 2,
-  ERROR: 3,
-  NONE: 4
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3
 };
 
-// Current log level - can be overridden with environment variables
-let currentLogLevel = process.env.NODE_ENV === 'production' 
-  ? LOG_LEVELS.INFO 
-  : LOG_LEVELS.DEBUG;
+// Default minimum log level (can be overridden)
+let minLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 
-// Allow log level to be set via localStorage for debugging
-if (typeof window !== 'undefined') {
-  try {
-    const storedLogLevel = localStorage.getItem('logLevel');
-    if (storedLogLevel && LOG_LEVELS[storedLogLevel] !== undefined) {
-      currentLogLevel = LOG_LEVELS[storedLogLevel];
-    }
-  } catch (error) {
-    console.error('Error reading log level from localStorage', error);
-  }
-}
+// Determine if we're running in browser or server
+const isBrowser = typeof window !== 'undefined';
 
-// Message throttling mechanism to avoid excessive logs
-const messageCache = new Map();
-const MESSAGE_THROTTLE_INTERVAL = 5000; // 5 seconds
-
-// Service Management specific throttling
-const SERVICE_MANAGEMENT_THROTTLE_INTERVAL = 2000; // 2 seconds
-const RENDERING_THROTTLE_INTERVAL = 1000; // 1 second for rendering logs
-
-// Patterns for messages that should be heavily throttled
-const THROTTLE_PATTERNS = [
-  '[TenantUtils]',
-  '[apiService] Added tenant headers',
-  'Normalized subscription type',
-  '[useSession]',
-  'Session fetched successfully',
-  '[Dashboard]',
-  '[ServiceManagement] Rendering',
-  '[ServiceManagement] Component mounted',
-  '[ApiRequest] GET',
-  'Fetching services',
-  'with schema: tenant_',
-  'with activeTab',
-  'GET /api/'
-];
+// Determine if we're in production or development
+const isDev = process.env.NODE_ENV !== 'production';
 
 /**
- * Should the message be logged based on throttling rules
- * @param {string} message - Message to check
- * @returns {boolean} - Whether to log the message
- */
-function shouldLogMessage(message) {
-  // Check if this message matches any throttle pattern
-  let needsThrottling = false;
-  let throttleInterval = MESSAGE_THROTTLE_INTERVAL;
-  
-  for (const pattern of THROTTLE_PATTERNS) {
-    if (message.includes(pattern)) {
-      needsThrottling = true;
-      
-      // Apply different throttle intervals based on pattern
-      if (pattern.startsWith('[ServiceManagement] Rendering')) {
-        throttleInterval = RENDERING_THROTTLE_INTERVAL;
-      } else if (pattern.startsWith('[ServiceManagement]')) {
-        throttleInterval = SERVICE_MANAGEMENT_THROTTLE_INTERVAL;
-      } else if (pattern.startsWith('[ApiRequest]')) {
-        throttleInterval = RENDERING_THROTTLE_INTERVAL;
-      }
-      
-      break;
-    }
-  }
-  
-  // If it doesn't need throttling, log it
-  if (!needsThrottling) {
-    return true;
-  }
-  
-  const now = Date.now();
-  const lastLogTime = messageCache.get(message);
-  
-  // If this exact message hasn't been logged recently, allow it
-  if (!lastLogTime || (now - lastLogTime) > throttleInterval) {
-    messageCache.set(message, now);
-    
-    // Cleanup old messages from cache to prevent memory leaks
-    if (messageCache.size > 100) {
-      const oldMessages = [];
-      messageCache.forEach((time, msg) => {
-        if ((now - time) > throttleInterval) {
-          oldMessages.push(msg);
-        }
-      });
-      oldMessages.forEach(msg => messageCache.delete(msg));
-    }
-    
-    return true;
-  }
-  
-  return false;
-}
-
-/**
- * Format log messages with additional context
- */
-function formatMessage(message) {
-  try {
-    const timestamp = new Date().toISOString();
-    const tenantId = typeof window !== 'undefined' ? getTenantId() : 'server';
-    return `[${timestamp}] [${tenantId || 'no-tenant'}] ${message}`;
-  } catch (error) {
-    return message; // Fallback to original message if formatting fails
-  }
-}
-
-/**
- * Logger instance with methods for different log levels
+ * Logger utility for consistent logging across the application
  */
 export const logger = {
   /**
-   * Set the current log level
-   * @param {string} level - One of DEBUG, INFO, WARN, ERROR, NONE
+   * Set the minimum log level
+   * @param {string} level - Minimum log level (debug, info, warn, error)
    */
-  setLogLevel: (level) => {
+  setLevel(level) {
     if (LOG_LEVELS[level] !== undefined) {
-      currentLogLevel = LOG_LEVELS[level];
-      
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('logLevel', level);
-        } catch (error) {
-          console.error('Error saving log level to localStorage', error);
-        }
-      }
-      
-      console.info(`Log level set to ${level}`);
+      minLevel = level;
     }
   },
-  
+
   /**
-   * Log at DEBUG level
+   * Get the current minimum log level
+   * @returns {string} - Current minimum log level
+   */
+  getLevel() {
+    return minLevel;
+  },
+
+  /**
+   * Log debug messages (only in development)
+   * @param {string} message - The message to log
+   * @param {any} data - Optional data to log
    */
   debug: (message, data) => {
-    if (currentLogLevel <= LOG_LEVELS.DEBUG) {
-      const formattedMessage = formatMessage(message);
-      
-      // Apply throttling for debug messages
-      if (shouldLogMessage(formattedMessage)) {
-        if (data !== undefined) {
-          console.debug(formattedMessage, data);
-        } else {
-          console.debug(formattedMessage);
-        }
+    if (isDev) {
+      if (data) {
+        console.debug(message, data);
+      } else {
+        console.debug(message);
       }
     }
   },
   
   /**
-   * Log at INFO level
+   * Log info messages
+   * @param {string} message - The message to log
+   * @param {any} data - Optional data to log
    */
   info: (message, data) => {
-    if (currentLogLevel <= LOG_LEVELS.INFO) {
-      const formattedMessage = formatMessage(message);
-      
-      // Apply some throttling for info messages too
-      if (shouldLogMessage(formattedMessage)) {
-        if (data !== undefined) {
-          console.info(formattedMessage, data);
-        } else {
-          console.info(formattedMessage);
-        }
-      }
+    if (data) {
+      console.info(message, data);
+    } else {
+      console.info(message);
     }
   },
   
   /**
-   * Log at WARN level
+   * Log warning messages
+   * @param {string} message - The message to log
+   * @param {any} data - Optional data to log
    */
   warn: (message, data) => {
-    if (currentLogLevel <= LOG_LEVELS.WARN) {
-      const formattedMessage = formatMessage(message);
-      // Apply throttling for warnings that match patterns
-      if (shouldLogMessage(formattedMessage)) {
-        if (data !== undefined) {
-          console.warn(formattedMessage, data);
-        } else {
-          console.warn(formattedMessage);
-        }
-      }
+    if (data) {
+      console.warn(message, data);
+    } else {
+      console.warn(message);
     }
   },
   
   /**
-   * Log at ERROR level
+   * Log error messages
+   * @param {string} message - The message to log
+   * @param {any} error - Optional error object to log
    */
+  error: (message, error) => {
+    if (error) {
+      console.error(message, error);
+    } else {
+      console.error(message);
+    }
+  }
+};
+
+// Export a server-specific logger for server components
+export const serverLogger = {
+  debug: (message, data) => {
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.debug) {
+      if (data !== undefined) {
+        console.debug(`[SERVER DEBUG] ${message}`, JSON.stringify(data));
+      } else {
+        console.debug(`[SERVER DEBUG] ${message}`);
+      }
+    }
+  },
+  info: (message, data) => {
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.info) {
+      if (data !== undefined) {
+        console.info(`[SERVER INFO] ${message}`, JSON.stringify(data));
+      } else {
+        console.info(`[SERVER INFO] ${message}`);
+      }
+    }
+  },
+  warn: (message, data) => {
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.warn) {
+      if (data !== undefined) {
+        console.warn(`[SERVER WARN] ${message}`, JSON.stringify(data));
+      } else {
+        console.warn(`[SERVER WARN] ${message}`);
+      }
+    }
+  },
   error: (message, data) => {
-    if (currentLogLevel <= LOG_LEVELS.ERROR) {
-      const formattedMessage = formatMessage(message);
-      // Apply throttling for errors that match patterns
-      if (shouldLogMessage(formattedMessage)) {
-        if (data !== undefined) {
-          console.error(formattedMessage, data);
-        } else {
-          console.error(formattedMessage);
-        }
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.error) {
+      if (data !== undefined) {
+        console.error(`[SERVER ERROR] ${message}`, JSON.stringify(data));
+      } else {
+        console.error(`[SERVER ERROR] ${message}`);
       }
     }
   }
 };
 
-/**
- * Create a server-side logger
- * Used for API routes
- */
-export function createServerLogger(context = {}) {
-  return {
-    debug: (message, data) => {
-      console.debug(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
-    },
-    info: (message, data) => {
-      console.info(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
-    },
-    warn: (message, data) => {
-      console.warn(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
-    },
-    error: (message, data) => {
-      console.error(`[SERVER] [${context.tenantId || 'no-tenant'}] ${message}`, data || '');
-    }
-  };
-}
+export default logger;

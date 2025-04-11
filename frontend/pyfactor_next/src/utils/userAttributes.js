@@ -2,28 +2,28 @@ import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-ampl
 import { logger } from '@/utils/logger';
 
 export const ONBOARDING_STATES = {
-  NOT_STARTED: 'NOT_STARTED',
-  BUSINESS_INFO: 'BUSINESS_INFO',
-  SUBSCRIPTION: 'SUBSCRIPTION',
-  PAYMENT: 'PAYMENT',
-  SETUP: 'SETUP',        // When setup is in progress
-  COMPLETE: 'COMPLETE'   // When onboarding is fully complete
+  NOT_STARTED: 'not_started',
+  BUSINESS_INFO: 'business_info',
+  SUBSCRIPTION: 'subscription',
+  PAYMENT: 'payment',
+  SETUP: 'setup',        // When setup is in progress
+  COMPLETE: 'complete'   // When onboarding is fully complete
 };
 
 export const ONBOARDED_STATES = {
-  NOT_STARTED: 'NOT_STARTED',
-  SETUP: 'SETUP',        // During setup process
-  COMPLETE: 'COMPLETE'   // After setup is complete
+  NOT_STARTED: 'not_started',
+  SETUP: 'setup',        // During setup process
+  COMPLETE: 'complete'   // After setup is complete
 };
 
 export const USER_ROLES = {
-  OWNER: 'OWNER',
-  ADMIN: 'ADMIN'
+  OWNER: 'owner',
+  ADMIN: 'admin'
 };
 
 export const ACCOUNT_STATUSES = {
-  PENDING: 'PENDING',
-  ACTIVE: 'ACTIVE'
+  PENDING: 'pending',
+  ACTIVE: 'active'
 };
 
 export const STEP_ROUTES = {
@@ -43,14 +43,14 @@ export const STEP_ORDER = [
 ];
 
 export const SUBSCRIPTION_PLANS = {
-  FREE: 'FREE',
-  PROFESSIONAL: 'PROFESSIONAL',
-  ENTERPRISE: 'ENTERPRISE'
+  FREE: 'free',
+  PROFESSIONAL: 'professional',
+  ENTERPRISE: 'enterprise'
 };
 
 export const SUBSCRIPTION_INTERVALS = {
-  MONTHLY: 'MONTHLY',
-  YEARLY: 'YEARLY'
+  MONTHLY: 'monthly',
+  YEARLY: 'yearly'
 };
 
 /**
@@ -74,12 +74,12 @@ export const getSubscriptionPlanColor = (plan) => {
   if (!plan) return SUBSCRIPTION_PLAN_COLORS.DEFAULT;
   
   // Normalize the plan name
-  const normalizedPlan = typeof plan === 'string' ? plan.toUpperCase() : 'FREE';
+  const normalizedPlan = typeof plan === 'string' ? plan.toLowerCase() : 'free';
   
   // Check if it includes one of our plan names (for flexibility)
-  if (normalizedPlan.includes('FREE')) return SUBSCRIPTION_PLAN_COLORS.FREE;
-  if (normalizedPlan.includes('PRO')) return SUBSCRIPTION_PLAN_COLORS.PROFESSIONAL;
-  if (normalizedPlan.includes('ENT')) return SUBSCRIPTION_PLAN_COLORS.ENTERPRISE;
+  if (normalizedPlan.includes('free')) return SUBSCRIPTION_PLAN_COLORS.FREE;
+  if (normalizedPlan.includes('pro')) return SUBSCRIPTION_PLAN_COLORS.PROFESSIONAL;
+  if (normalizedPlan.includes('ent')) return SUBSCRIPTION_PLAN_COLORS.ENTERPRISE;
   
   // Default
   return SUBSCRIPTION_PLAN_COLORS.DEFAULT;
@@ -117,8 +117,8 @@ export async function setUserAttributes(attributes) {
     // Format attributes according to Amplify v6 requirements
     const formattedAttributes = {};
     Object.entries(attributes).forEach(([key, value]) => {
-      // Ensure all values are strings
-      formattedAttributes[key] = String(value);
+      // Ensure all values are strings and lowercase
+      formattedAttributes[key] = String(value).toLowerCase();
     });
 
     // Add updated_at timestamp
@@ -172,11 +172,11 @@ export async function validateAttributes(attributes) {
       required: false
     },
     'custom:setupdone': {
-      values: ['TRUE', 'FALSE'],
+      values: ['true', 'false'],
       required: false
     },
     'custom:payverified': {
-      values: ['TRUE', 'FALSE'],
+      values: ['true', 'false'],
       required: false
     }
   };
@@ -201,52 +201,39 @@ export async function validateAttributes(attributes) {
     }
   });
 
-  // Validate lengths
-  const lengthValidations = {
-    'custom:businessname': { min: 2, max: 100 },
-    'custom:businesstype': { min: 2, max: 50 },
-    'custom:businessid': { length: 36 },
-    'custom:businesscountry': { length: 2 },
-    'custom:legalstructure': { min: 2, max: 50 },
-    'custom:datefounded': { length: 10 }, // YYYY-MM-DD
-    'custom:paymentid': { min: 10, max: 100 }
-  };
-
-  Object.entries(attributes).forEach(([key, value]) => {
-    const validation = lengthValidations[key];
-    if (validation && value) {
-      if (validation.length && value.length !== validation.length) {
-        errors.push(`${key} must be exactly ${validation.length} characters`);
-      }
-      if (validation.min && value.length < validation.min) {
-        errors.push(`${key} must be at least ${validation.min} characters`);
-      }
-      if (validation.max && value.length > validation.max) {
-        errors.push(`${key} must be at most ${validation.max} characters`);
-      }
-    }
-  });
-
   if (errors.length > 0) {
-    throw new Error(errors.join('; '));
+    throw new Error(`Attribute validation failed: ${errors.join(', ')}`);
   }
 
   return true;
 }
 
+/**
+ * Special attributes with specific formatting/validation rules
+ */
+export const ATTRIBUTE_VALIDATIONS = {
+  'custom:tenantId': { length: 36 }, // UUID format
+  'custom:businessid': { length: 36 }, // UUID format
+  'custom:datefounded': { length: 10 }, // YYYY-MM-DD
+  'custom:updated_at': {}, // ISO date
+  'custom:created_at': {}, // ISO date
+  'custom:onboardingCompletedAt': {} // ISO date
+};
+
+/**
+ * Default attribute values for new users
+ * Used when creating new accounts
+ */
 export function getDefaultAttributes() {
-  const defaultAttributes = {
+  return {
     'custom:onboarding': ONBOARDING_STATES.NOT_STARTED,
     'custom:userrole': USER_ROLES.OWNER,
     'custom:acctstatus': ACCOUNT_STATUSES.PENDING,
     'custom:subplan': SUBSCRIPTION_PLANS.FREE,
     'custom:subscriptioninterval': SUBSCRIPTION_INTERVALS.MONTHLY,
-    'custom:setupdone': 'FALSE',
-    'custom:payverified': 'FALSE',
+    'custom:setupdone': 'false',
+    'custom:payverified': 'false',
     'custom:created_at': new Date().toISOString(),
     'custom:updated_at': new Date().toISOString()
   };
-
-  logger.debug('[UserAttributes] Generated default attributes');
-  return defaultAttributes;
 }

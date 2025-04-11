@@ -62,7 +62,7 @@ def get_db_connection():
     conn.autocommit = True
     return conn
 
-def schema_exists(schema_name):
+def schema_exists(tenant_id: uuid.UUID:
     """Check if the schema exists"""
     try:
         conn = get_db_connection()
@@ -79,7 +79,7 @@ def schema_exists(schema_name):
         if conn:
             conn.close()
 
-def get_tables_in_schema(schema_name):
+def get_tables_in_schema(tenant_id: uuid.UUID:
     """Get all tables in the schema"""
     try:
         conn = get_db_connection()
@@ -97,7 +97,7 @@ def get_tables_in_schema(schema_name):
         if conn:
             conn.close()
 
-def check_schema_name_format(schema_name):
+def check_schema_name_format(tenant_id: uuid.UUID:
     """Check if schema name follows the correct format"""
     issues = []
     
@@ -112,7 +112,7 @@ def check_schema_name_format(schema_name):
     
     return issues
 
-def check_expected_tables(schema_name, tables):
+def check_expected_tables(tenant_id: uuid.UUID:
     """Check if schema has all expected tables for tenant apps"""
     missing_app_tables = []
     tenant_apps = settings.TENANT_APPS
@@ -135,7 +135,7 @@ def check_expected_tables(schema_name, tables):
 
 def fix_schema_name(tenant):
     """Fix schema name format issues"""
-    original_schema_name = tenant.schema_name
+    original_schema_name =  tenant.id
     fixed_schema_name = original_schema_name
     
     # Add tenant_ prefix if missing
@@ -159,7 +159,7 @@ def fix_schema_name(tenant):
             return False
         
         # Update tenant record
-        tenant.schema_name = fixed_schema_name
+         tenant.id = fixed_schema_name
         tenant.save()
         
         # Rename schema in database if original schema exists
@@ -184,7 +184,7 @@ def fix_schema_name(tenant):
 
 def fix_missing_schema(tenant):
     """Create schema if it doesn't exist"""
-    schema_name = tenant.schema_name
+    schema_name =  tenant.id
     
     if not schema_exists(schema_name):
         logger.info(f"Creating missing schema: {schema_name}")
@@ -213,7 +213,7 @@ def fix_missing_schema(tenant):
 
 def fix_missing_tables(tenant):
     """Run migrations for schemas with missing tables"""
-    logger.info(f"Triggering migrations for tenant: {tenant.id} ({tenant.schema_name})")
+    logger.info(f"Triggering migrations for tenant: {tenant.id} ({ tenant.id})")
     
     try:
         # Update tenant status
@@ -258,13 +258,13 @@ def debug_tenant_schemas(tenant_id=None, fix=False):
     # Check each tenant
     for tenant in tenants:
         logger.info(f"\n{'='*80}\nChecking tenant: {tenant.id}")
-        logger.info(f"Schema name: {tenant.schema_name}")
+        logger.info(f"Schema name: { tenant.id}")
         logger.info(f"Owner: {tenant.owner.email if tenant.owner else 'None'}")
         logger.info(f"Database status: {tenant.database_status}")
         logger.info(f"Setup status: {tenant.setup_status}")
         
         # Check schema name format
-        schema_name_issues = check_schema_name_format(tenant.schema_name)
+        schema_name_issues = check_schema_name_format( tenant.id)
         if schema_name_issues:
             logger.warning(f"Schema name issues:")
             for issue in schema_name_issues:
@@ -277,7 +277,7 @@ def debug_tenant_schemas(tenant_id=None, fix=False):
                     tenant.refresh_from_db()
         
         # Check if schema exists
-        schema_name = tenant.schema_name
+        schema_name =  tenant.id
         schema_exists_flag = schema_exists(schema_name)
         
         if schema_exists_flag:

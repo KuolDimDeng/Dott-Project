@@ -102,8 +102,8 @@ class OnboardingFlowTester:
             logger.info(f"Deleting tenant: {self.user.tenant.id}")
             
             # Drop schema if exists
-            if self.user.tenant.schema_name:
-                schema_name = self.user.tenant.schema_name
+            if self.user. tenant.id:
+                schema_name = self.user. tenant.id
                 logger.info(f"Dropping schema: {schema_name}")
                 
                 from django.db import connection
@@ -347,7 +347,7 @@ class OnboardingFlowTester:
             return False
         
         logger.info(f"Tenant: {self.tenant.id}")
-        logger.info(f"Schema name: {self.tenant.schema_name}")
+        logger.info(f"Schema name: {self. tenant.id}")
         logger.info(f"Database status: {self.tenant.database_status}")
         logger.info(f"Setup status: {self.tenant.setup_status}")
         
@@ -357,7 +357,7 @@ class OnboardingFlowTester:
             cursor.execute("""
                 SELECT schema_name FROM information_schema.schemata
                 WHERE schema_name = %s
-            """, [self.tenant.schema_name])
+            """, [self. tenant.id])
             schema_exists = cursor.fetchone() is not None
         
         logger.info(f"Schema exists: {schema_exists}")
@@ -368,7 +368,7 @@ class OnboardingFlowTester:
                 cursor.execute("""
                     SELECT table_name FROM information_schema.tables
                     WHERE table_schema = %s
-                """, [self.tenant.schema_name])
+                """, [self. tenant.id])
                 tables = [row[0] for row in cursor.fetchall()]
             
             logger.info(f"Tables in schema: {len(tables)}")

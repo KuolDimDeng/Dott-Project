@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 TENANT_ID = 'b7fee399-ffca-4151-b636-94ccb65b3cd0'
 SCHEMA_NAME = f"tenant_{TENANT_ID.replace('-', '_')}"
 
-def fix_tenant_schema(schema_name):
+def fix_tenant_schema(tenant_id: uuid.UUID:
     """Fix a specific tenant schema by copying essential auth tables from public"""
     logger.info(f"Fixing tenant schema: {schema_name}")
 
@@ -57,7 +57,7 @@ def fix_tenant_schema(schema_name):
             # Create the auth tables in tenant schema
             cursor.execute(f"""
                 -- Create auth tables
-                CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user" (
+                CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "custom_auth_user" (
                     id UUID PRIMARY KEY,
                     password VARCHAR(128) NOT NULL,
                     last_login TIMESTAMP WITH TIME ZONE NULL,
@@ -79,12 +79,12 @@ def fix_tenant_schema(schema_name):
                 );
                 
                 CREATE INDEX IF NOT EXISTS custom_auth_user_email_key ON "{schema_name}"."custom_auth_user" (email);
-                CREATE INDEX IF NOT EXISTS idx_user_tenant ON "{schema_name}"."custom_auth_user" (tenant_id);
+                CREATE INDEX IF NOT EXISTS idx_user_tenant ON /* RLS: Use tenant_id filtering */ "custom_auth_user" (tenant_id);
                 
                 -- Auth User Permissions
                 CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_user_permissions" (
                     id SERIAL PRIMARY KEY,
-                    user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
+                    user_id UUID NOT NULL REFERENCES /* RLS: Use tenant_id filtering */ "custom_auth_user"(id),
                     permission_id INTEGER NOT NULL,
                     CONSTRAINT custom_auth_user_user_permissions_user_id_permission_id_key UNIQUE (user_id, permission_id)
                 );
@@ -92,7 +92,7 @@ def fix_tenant_schema(schema_name):
                 -- Auth User Groups
                 CREATE TABLE IF NOT EXISTS "{schema_name}"."custom_auth_user_groups" (
                     id SERIAL PRIMARY KEY,
-                    user_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id),
+                    user_id UUID NOT NULL REFERENCES /* RLS: Use tenant_id filtering */ "custom_auth_user"(id),
                     group_id INTEGER NOT NULL,
                     CONSTRAINT custom_auth_user_groups_user_id_group_id_key UNIQUE (user_id, group_id)
                 );
@@ -110,7 +110,7 @@ def fix_tenant_schema(schema_name):
                     setup_error_message TEXT NULL,
                     last_health_check TIMESTAMP WITH TIME ZONE NULL,
                     storage_quota_bytes BIGINT NOT NULL DEFAULT 2147483648,
-                    owner_id UUID NOT NULL REFERENCES "{schema_name}"."custom_auth_user"(id)
+                    owner_id UUID NOT NULL REFERENCES /* RLS: Use tenant_id filtering */ "custom_auth_user"(id)
                 );
             """)
             
@@ -142,7 +142,7 @@ def fix_tenant_schema(schema_name):
                     
                     # Copy user to tenant schema
                     cursor.execute(f"""
-                        INSERT INTO "{schema_name}"."custom_auth_user" 
+                        INSERT INTO /* RLS: Use tenant_id filtering */ "custom_auth_user" 
                         (id, password, last_login, is_superuser, email, first_name, last_name, 
                          is_active, is_staff, date_joined, email_confirmed, confirmation_token, 
                          is_onboarded, stripe_customer_id, role, occupation, tenant_id, cognito_sub)
@@ -171,7 +171,7 @@ def fix_tenant_schema(schema_name):
                 
                 # Copy tenant to tenant schema
                 cursor.execute(f"""
-                    INSERT INTO "{schema_name}"."custom_auth_tenant"
+                    INSERT INTO /* RLS: Use tenant_id filtering */ "custom_auth_tenant"
                     (id, schema_name, name, created_on, is_active, setup_status, 
                      setup_task_id, last_setup_attempt, setup_error_message,
                      last_health_check, storage_quota_bytes, owner_id)

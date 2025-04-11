@@ -108,10 +108,10 @@ async function checkBackendHealth(requestId) {
 // Update cognito attributes directly
 async function updateCognitoAttributes(requestId, token) {
   try {
-    // Update Cognito attributes directly with explicit strings
+    // Update Cognito attributes directly with lowercase strings
     await updateUserAttributes({
       userAttributes: {
-        'custom:onboarding': 'COMPLETE',
+        'custom:onboarding': 'complete',
         'custom:setupdone': 'true',
         'custom:updated_at': new Date().toISOString()
       }
@@ -139,7 +139,7 @@ async function updateCognitoAttributes(requestId, token) {
         },
         body: JSON.stringify({
           attributes: {
-            'custom:onboarding': 'COMPLETE',
+            'custom:onboarding': 'complete',
             'custom:setupdone': 'true',
             'custom:updated_at': new Date().toISOString()
           },
@@ -163,150 +163,204 @@ async function updateCognitoAttributes(requestId, token) {
   }
 }
 
+/**
+ * API endpoint to force mark onboarding as complete
+ * This endpoint has admin privileges for updating user attributes
+ * and should be used as a last resort when other methods fail
+ */
 export async function POST(request) {
-  const requestId = uuidv4();
-  logger.info('[SetupAPI] Starting setup completion', { requestId });
-
+  // Generate a request ID for tracking
+  const requestId = request.headers.get('X-Request-ID') || uuidv4();
+  logger.info(`[setup/complete:${requestId}] Request received`);
+  
   try {
-    // Configure Amplify if needed (server-side)
-    getAmplifyConfig();
-
-    // Get authentication token
-    const headers = new Headers(request.headers);
-    const authHeader = headers.get('Authorization') || headers.get('authorization');
-    const cookieHeader = headers.get('cookie');
-    const accessToken = getToken(request);
-
-    // Enhanced logging
-    logger.debug('[SetupAPI] Authentication details:', {
-      requestId,
-      hasAuthHeader: !!authHeader,
-      hasCookieHeader: !!cookieHeader,
-      hasAccessToken: !!accessToken,
-      tokenPreview: accessToken ? `${accessToken.substring(0, 10)}...` : null
-    });
-
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          error: 'No valid session',
-          details: {
-            hasAuthHeader: !!authHeader,
-            hasCookieHeader: !!cookieHeader
-          }
-        },
-        { status: 401 }
-      );
-    }
-
-    // Verify token
-    const isValidToken = await verifyToken(accessToken, requestId);
-    if (!isValidToken) {
-      return NextResponse.json(
-        {
-          error: 'Invalid or expired token',
-          details: {
-            tokenPreview: accessToken ? `${accessToken.substring(0, 10)}...` : null
-          }
-        },
-        { status: 401 }
-      );
-    }
-
-    // Check backend health
-    const isBackendHealthy = await checkBackendHealth(requestId);
-    let backendUpdateSuccess = false;
+    // Parse request body
+    const body = await request.json().catch(() => ({}));
+    const forceUpdate = body?.forceComplete === true;
     
-    // Only attempt backend API call if backend is healthy
-    if (isBackendHealthy) {
+    // Get the access token from request
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader ? authHeader.replace('Bearer ', '') : null;
+    
+    // Determine if this is a forced update
+    const isForceUpdate = forceUpdate || request.headers.get('X-Force-Update') === 'true';
+    
+    logger.info(`[setup/complete:${requestId}] Processing request`, { 
+      forceUpdate: isForceUpdate, 
+      hasAccessToken: !!accessToken 
+    });
+    
+    // Try to get the user attributes
+    let userId = null;
+    
+    // First try to get the user ID from the token
+    if (accessToken) {
       try {
-        const requestHeaders = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Request-ID': requestId,
-          'Origin': 'http://localhost:3000'
-        };
-
-        const response = await fetch('http://localhost:8000/api/onboarding/setup/complete/', {
-          method: 'POST',
-          headers: requestHeaders,
-          cache: 'no-store'
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          logger.error('[SetupAPI] Setup completion failed:', {
-            requestId,
-            status: response.status,
-            error: errorData.error || errorData.message || 'Unknown error'
-          });
-        } else {
-          const data = await response.json();
-          logger.info('[SetupAPI] Setup completed successfully by backend', {
-            requestId,
-            setupStatus: data.status,
-            nextStep: data.next_step
-          });
-          backendUpdateSuccess = true;
+        // Attempt to decode the JWT token
+        const tokenParts = accessToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString('utf8'));
+          userId = payload.sub;
+          logger.info(`[setup/complete:${requestId}] Extracted user ID from token: ${userId}`);
         }
-      } catch (error) {
-        logger.error('[SetupAPI] Setup completion request failed:', {
-          requestId,
-          error: error.message
-        });
+      } catch (tokenError) {
+        logger.warn(`[setup/complete:${requestId}] Error extracting user ID from token:`, tokenError.message);
       }
     }
-
-    // Always update Cognito attributes directly, even if backend succeeded
-    // This ensures consistency and avoids race conditions in status updates
-    const attributesUpdated = await updateCognitoAttributes(requestId, accessToken);
     
-    if (!backendUpdateSuccess && !attributesUpdated) {
-      return NextResponse.json(
-        {
-          error: 'Failed to update onboarding status',
-          details: 'Both backend and direct methods failed'
-        },
-        { status: 500 }
-      );
+    // If we couldn't get the user ID from the token, try to get it from the request body
+    if (!userId && body.userId) {
+      userId = body.userId;
+      logger.info(`[setup/complete:${requestId}] Using user ID from request body: ${userId}`);
     }
-
-    // Set cookies in the response
-    const response = NextResponse.json({
-      success: true,
-      message: 'Setup completed successfully',
-      status: 'COMPLETE',
-      next_step: '/dashboard',
-      requestId,
-    });
-
-    // Set cookies
-    const cookieOptions = {
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 1 week
-      sameSite: 'lax',
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production'
-    };
-
-    response.cookies.set('onboardingStep', 'COMPLETE', cookieOptions);
-    response.cookies.set('onboardedStatus', 'COMPLETE', cookieOptions);
-    response.cookies.set('setupCompleted', 'true', cookieOptions);
-
-    return response;
+    
+    // If we still don't have a user ID, check for user email in the request body
+    let userEmail = null;
+    if (body.email) {
+      userEmail = body.email;
+      logger.info(`[setup/complete:${requestId}] Using email from request body: ${userEmail}`);
+    }
+    
+    // If we have neither user ID nor email, this is an error
+    if (!userId && !userEmail) {
+      logger.error(`[setup/complete:${requestId}] No user identification provided`);
+      return NextResponse.json({
+        success: false,
+        error: 'No user identification provided',
+        message: 'Either user ID or email must be provided'
+      }, { status: 400 });
+    }
+    
+    // Update Cognito attributes using our admin permissions
+    try {
+      // Import AWS SDK dynamically to ensure it only loads on the server
+      const { CognitoIdentityProviderClient, AdminUpdateUserAttributesCommand, ListUsersCommand } = 
+        await import('@aws-sdk/client-cognito-identity-provider');
+      
+      // Get AWS credentials from environment variables
+      const region = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
+      const userPoolId = process.env.COGNITO_USER_POOL_ID;
+      
+      if (!userPoolId) {
+        logger.error(`[setup/complete:${requestId}] Missing user pool ID in environment variables`);
+        throw new Error('Server configuration error: Missing user pool ID');
+      }
+      
+      // Initialize Cognito client
+      const client = new CognitoIdentityProviderClient({ region });
+      
+      // If we only have email, we need to find the user ID first
+      if (!userId && userEmail) {
+        logger.info(`[setup/complete:${requestId}] Looking up user by email: ${userEmail}`);
+        
+        const listUsersCommand = new ListUsersCommand({
+          UserPoolId: userPoolId,
+          Filter: `email = "${userEmail}"`,
+          Limit: 1
+        });
+        
+        const listUsersResult = await client.send(listUsersCommand);
+        
+        if (listUsersResult.Users && listUsersResult.Users.length > 0) {
+          userId = listUsersResult.Users[0].Username;
+          logger.info(`[setup/complete:${requestId}] Found user ID for email: ${userId}`);
+        } else {
+          logger.error(`[setup/complete:${requestId}] User not found for email: ${userEmail}`);
+          throw new Error(`User not found for email: ${userEmail}`);
+        }
+      }
+      
+      // Now update the user attributes
+      logger.info(`[setup/complete:${requestId}] Updating attributes for user: ${userId}`);
+      
+      const updateCommand = new AdminUpdateUserAttributesCommand({
+        UserPoolId: userPoolId,
+        Username: userId,
+        UserAttributes: [
+          {
+            Name: 'custom:onboarding',
+            Value: 'complete' // Always lowercase for consistency
+          },
+          {
+            Name: 'custom:setupdone',
+            Value: 'true'
+          },
+          {
+            Name: 'custom:updated_at',
+            Value: new Date().toISOString()
+          },
+          {
+            Name: 'custom:onboardingCompletedAt',
+            Value: new Date().toISOString()
+          }
+        ]
+      });
+      
+      await client.send(updateCommand);
+      
+      logger.info(`[setup/complete:${requestId}] Successfully updated user attributes in Cognito`);
+      
+      return NextResponse.json({
+        success: true,
+        message: 'Onboarding marked as complete',
+        userId,
+        requestId
+      });
+    } catch (awsError) {
+      logger.error(`[setup/complete:${requestId}] AWS error updating user attributes:`, awsError);
+      
+      // Fall back to regular update if we have the access token
+      if (accessToken) {
+        try {
+          logger.info(`[setup/complete:${requestId}] Trying fallback method with access token`);
+          
+          // Make the direct request using the standard Cognito API
+          const cognitoEndpoint = `https://cognito-idp.${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}.amazonaws.com/`;
+          
+          const response = await fetch(cognitoEndpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-amz-json-1.1',
+              'X-Amz-Target': 'AWSCognitoIdentityProviderService.UpdateUserAttributes',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({
+              AccessToken: accessToken,
+              UserAttributes: [
+                { Name: 'custom:onboarding', Value: 'complete' },
+                { Name: 'custom:setupdone', Value: 'true' },
+                { Name: 'custom:updated_at', Value: new Date().toISOString() }
+              ]
+            })
+          });
+          
+          if (response.ok) {
+            logger.info(`[setup/complete:${requestId}] Successfully updated attributes with fallback method`);
+            
+            return NextResponse.json({
+              success: true,
+              message: 'Onboarding marked as complete using fallback method',
+              userId,
+              requestId
+            });
+          } else {
+            throw new Error(`Fallback request failed with status: ${response.status}`);
+          }
+        } catch (fallbackError) {
+          logger.error(`[setup/complete:${requestId}] Fallback method failed:`, fallbackError);
+          throw fallbackError;
+        }
+      } else {
+        throw awsError;
+      }
+    }
   } catch (error) {
-    logger.error('[SetupAPI] Unexpected error during setup completion:', {
-      requestId,
-      error: error.message,
-      stack: error.stack
-    });
-    return NextResponse.json(
-      {
-        error: error.message,
-        requestId,
-        details: { stack: error.stack }
-      },
-      { status: error.status || 500 }
-    );
+    logger.error(`[setup/complete:${requestId}] Error completing onboarding:`, error);
+    
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Internal server error',
+      requestId
+    }, { status: 500 });
   }
 }

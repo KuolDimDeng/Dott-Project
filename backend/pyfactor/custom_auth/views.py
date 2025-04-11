@@ -257,7 +257,7 @@ class CustomAuthToken(ObtainAuthToken):
                 try:
                     # Create tenant schema
                     tenant = create_tenant_schema_for_user(user)
-                    logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                    logger.info(f"Tenant schema created successfully: { tenant.id}")
                 except Exception as e:
                     logger.error(f"Failed to create tenant schema: {str(e)}")
                     # Continue with authentication even if tenant creation fails
@@ -277,7 +277,7 @@ class CustomAuthToken(ObtainAuthToken):
             
             if hasattr(user, 'tenant') and user.tenant:
                 response_data['tenant_id'] = str(user.tenant.id)
-                response_data['schema_name'] = user.tenant.schema_name
+                response_data['schema_name'] = user. tenant.id
 
             response = Response(response_data)
             
@@ -325,14 +325,14 @@ class SocialLoginView(APIView):
                             # Check if the user already has an owned tenant that's not properly linked
                             owned_tenant = Tenant.objects.filter(owner=user).first()
                             if owned_tenant:
-                                logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_tenant.schema_name} for user {user.email}")
+                                logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_ tenant.id} for user {user.email}")
                                 user.tenant = owned_tenant
                                 user.save(update_fields=['tenant'])
                             else:
                                 # Check for any tenant where user is the owner
                                 tenant = Tenant.objects.filter(owner=user).first()
                                 if tenant:
-                                    logger.info(f"[SOCIAL_LOGIN] Found existing tenant {tenant.schema_name} for user {user.email}")
+                                    logger.info(f"[SOCIAL_LOGIN] Found existing tenant { tenant.id} for user {user.email}")
                                     user.tenant = tenant
                                     user.save(update_fields=['tenant'])
                                 else:
@@ -344,7 +344,7 @@ class SocialLoginView(APIView):
                                     except Exception as e:
                                         logger.error(f"[SOCIAL_LOGIN] Failed to create tenant schema for user {user.email}: {str(e)}")
                         else:
-                            logger.info(f"[SOCIAL_LOGIN] User {user.email} already has a tenant {user.tenant.schema_name}")
+                            logger.info(f"[SOCIAL_LOGIN] User {user.email} already has a tenant {user. tenant.id}")
 
                         refresh = RefreshToken.for_user(user)
                         response_data = {
@@ -358,7 +358,7 @@ class SocialLoginView(APIView):
                         # Add tenant information to response if available
                         if hasattr(user, 'tenant') and user.tenant:
                             response_data['tenant_id'] = str(user.tenant.id)
-                            response_data['schema_name'] = user.tenant.schema_name
+                            response_data['schema_name'] = user. tenant.id
                             
                         logger.info(f"Social login successful for user: {user.email}")
                         return Response(response_data)
@@ -601,7 +601,7 @@ class ActivateAccountView(APIView):
                     try:
                         if hasattr(user, 'owned_tenant'):
                             owned_tenant = user.owned_tenant
-                            logger.info(f"Found owned tenant {owned_tenant.schema_name} for user {user.email}")
+                            logger.info(f"Found owned tenant {owned_ tenant.id} for user {user.email}")
                     except Exception as tenant_lookup_error:
                         logger.debug(f"No owned tenant found: {str(tenant_lookup_error)}")
                     
@@ -609,7 +609,7 @@ class ActivateAccountView(APIView):
                     if owned_tenant and not user.tenant:
                         user.tenant = owned_tenant
                         user.save(update_fields=['tenant'])
-                        logger.info(f"Linked user {user.email} to their owned tenant {owned_tenant.schema_name}")
+                        logger.info(f"Linked user {user.email} to their owned tenant {owned_ tenant.id}")
                         tenant = owned_tenant
                     else:
                         # Check for any tenant where user is the owner
@@ -623,7 +623,7 @@ class ActivateAccountView(APIView):
                             # No existing tenant found, create a new one
                             logger.info(f"No existing tenant found, creating new tenant schema for user {user.email}")
                             tenant = create_tenant_schema_for_user(user)
-                            logger.info(f"Tenant schema created successfully: {tenant.schema_name}")
+                            logger.info(f"Tenant schema created successfully: { tenant.id}")
                 except Exception as e:
                     logger.error(f"Failed to create tenant schema during activation: {str(e)}")
                     # Continue with activation even if tenant creation fails
@@ -633,7 +633,7 @@ class ActivateAccountView(APIView):
             # Add tenant information to response if available
             if tenant:
                 response_data["tenant_id"] = str(tenant.id)
-                response_data["schema_name"] = tenant.schema_name
+                response_data["schema_name"] =  tenant.id
                 
             return Response(response_data, status=status.HTTP_200_OK)
         else:
@@ -870,7 +870,7 @@ class SignupAPIView(APIView):
                         "email": existing_user.email,
                         "isOnboarded": existing_user.is_onboarded,
                         "tenantId": str(existing_tenant.id),
-                        "schemaName": existing_tenant.schema_name
+                        "schemaName": existing_ tenant.id
                     }
                     logger.info(f"[SIGNUP] Returning existing user and tenant info for {email}")
                     return Response(response_data)
@@ -904,13 +904,13 @@ class SignupAPIView(APIView):
                         try:
                             # Create new tenant with proper locking
                             tenant = create_tenant_schema_for_user(user)
-                            logger.info(f"[SIGNUP] Created tenant schema {tenant.schema_name} for user {email}")
+                            logger.info(f"[SIGNUP] Created tenant schema { tenant.id} for user {email}")
                         except Exception as e:
                             logger.error(f"[SIGNUP] Failed to create tenant schema for user {email}: {str(e)}")
                     else:
                         logger.warning(f"[SIGNUP] Non-OWNER user {email} cannot create a tenant")
                 elif tenant:
-                    logger.info(f"[SIGNUP] Using existing tenant {tenant.schema_name} for user {email}")
+                    logger.info(f"[SIGNUP] Using existing tenant { tenant.id} for user {email}")
                 
                 # Create user profile
                 try:
@@ -951,7 +951,7 @@ class SignupAPIView(APIView):
                 # Add tenant information to response if available
                 if tenant:
                     response_data["tenantId"] = str(tenant.id)
-                    response_data["schemaName"] = tenant.schema_name
+                    response_data["schemaName"] =  tenant.id
 
                 logger.info(f"User signup completed for {email}")
                 return Response(response_data)

@@ -228,9 +228,9 @@ def update_storage_quota(business_id, selected_plan):
         
         # Update database-level quota if needed
         from onboarding.utils import apply_database_quota
-        if tenant.schema_name and tenant.is_active:
+        if  tenant.id and tenant.is_active:
             try:
-                apply_database_quota(tenant.schema_name, quota_bytes)
+                apply_database_quota( tenant.id, quota_bytes)
             except Exception as e:
                 logger.error(f"Failed to apply database quota: {str(e)}")
                 # Continue even if database quota update fails

@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db import connection, transaction, models
-from django.db.models import Q, F, Case, When
+from django.db.models import Q, F, Case, When, Sum, Count, Avg
 from django.utils.decorators import method_decorator
 from functools import wraps
 from .models import Product, Department
@@ -12,6 +12,13 @@ from .serializers import ProductSerializer
 import logging
 import time
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -71,11 +78,11 @@ class OptimizedProductViewSet(viewsets.ModelViewSet):
         """
         # Get tenant schema from request
         tenant = getattr(self.request, 'tenant', None)
-        schema_name = tenant.schema_name if tenant else None
+        schema_name =  tenant.id if tenant else None
         
         # Log tenant information
         if tenant:
-            logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
         else:
             logger.debug("No tenant found in request")
         
@@ -202,7 +209,7 @@ def ultra_fast_products(request):
     
     # Try to get from tenant object first (set by middleware)
     if hasattr(request, 'tenant') and request.tenant:
-        schema_name = request.tenant.schema_name
+        schema_name = request. tenant.id
         tenant_id = str(request.tenant.id)
         logger.info(f"Using tenant from request.tenant: {schema_name} (ID: {tenant_id})")
     
@@ -239,7 +246,7 @@ def ultra_fast_products(request):
             tenant, _ = ensure_single_tenant_per_business(request.user, None)
             if tenant:
                 tenant_id = str(tenant.id)
-                schema_name = tenant.schema_name
+                schema_name =  tenant.id
                 logger.info(f"Retrieved tenant for user {request.user.email}: {schema_name} (ID: {tenant_id})")
                 # Add tenant to request for future use
                 request.tenant = tenant
@@ -316,7 +323,9 @@ def ultra_fast_products(request):
     try:
         with connection.cursor() as cursor:
             # Explicitly set the search path
-            cursor.execute(f'SET search_path TO "{schema_name}", public')
+            # RLS: Use tenant context instead of schema
+            # cursor.execute(f'SET search_path TO {schema_name}')
+            set_current_tenant_id(tenant_id)
             
             # Execute the query
             cursor.execute(sql)
@@ -381,7 +390,7 @@ def products_with_department(request):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
     with transaction.atomic():
@@ -443,7 +452,7 @@ def product_stats(request):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
     with transaction.atomic():
@@ -471,7 +480,7 @@ def product_by_code(request, code):
     
     # Get tenant schema from request
     tenant = getattr(request, 'tenant', None)
-    schema_name = tenant.schema_name if tenant else None
+    schema_name =  tenant.id if tenant else None
     
     # Use a transaction with a timeout
     with transaction.atomic():

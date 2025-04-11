@@ -45,6 +45,9 @@ from django.conf import settings
 from django.core.management import call_command
 from custom_auth.models import Tenant
 
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
+
 def get_db_connection():
     """Get a direct database connection using psycopg2."""
     db_settings = settings.DATABASES['default']
@@ -61,7 +64,7 @@ def get_db_connection():
 def create_test_schema():
     """Create a test schema with a unique name."""
     test_id = uuid.uuid4()
-    schema_name = f"tenant_test_{test_id}".replace('-', '_')
+    schema_name = f/* RLS: Use tenant_id filtering */ replace('-', '_')
     logger.info(f"Creating test schema: {schema_name}")
     
     conn = get_db_connection()
@@ -81,7 +84,7 @@ def create_test_schema():
     
     return schema_name
 
-def drop_schema(schema_name):
+def drop_schema(tenant_id: uuid.UUID:
     """Drop a schema."""
     logger.info(f"Dropping schema: {schema_name}")
     
@@ -94,7 +97,7 @@ def drop_schema(schema_name):
     cursor.close()
     conn.close()
 
-def get_schema_tables(schema_name):
+def get_schema_tables(tenant_id: uuid.UUID:
     """Get all tables in a schema."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -110,12 +113,12 @@ def get_schema_tables(schema_name):
     conn.close()
     return tables
 
-def check_migrations_table(schema_name):
+def check_migrations_table(tenant_id: uuid.UUID:
     """Check if the django_migrations table exists in the schema."""
     tables = get_schema_tables(schema_name)
     return 'django_migrations' in tables
 
-def check_expected_tables(schema_name):
+def check_expected_tables(tenant_id: uuid.UUID:
     """Check if all expected tables for tenant apps exist in the schema."""
     tables = get_schema_tables(schema_name)
     tenant_apps = settings.TENANT_APPS
@@ -138,7 +141,7 @@ def check_expected_tables(schema_name):
     
     return missing_app_tables
 
-def run_migrations_for_schema(schema_name):
+def run_migrations_for_schema(tenant_id: uuid.UUID:
     """Run migrations for a schema."""
     logger.info(f"Running migrations for schema {schema_name}")
     
@@ -149,7 +152,9 @@ def run_migrations_for_schema(schema_name):
     # Set search path to tenant schema
     with connection.cursor() as cursor:
         logger.info(f"Setting search path to {schema_name}")
-        cursor.execute(f'SET search_path TO "{schema_name}", public')
+        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id), public')
         
         # Verify search path was set correctly
         cursor.execute('SHOW search_path')
@@ -193,7 +198,8 @@ def run_migrations_for_schema(schema_name):
     
     # Reset search path to public
     with connection.cursor() as cursor:
-        cursor.execute('SET search_path TO public')
+        cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
     
     return {
         'tables_before': len(tables_before),

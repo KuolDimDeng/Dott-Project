@@ -21,7 +21,7 @@ import { appendLanguageParam, getLanguageQueryString } from '@/utils/languageUti
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { TextField, Button, CircularProgress, Alert, Checkbox } from '@/components/ui/TailwindComponents';
 import { setTenantIdCookies } from '@/utils/tenantUtils';
-import { ensureAmplifyConfigured, authenticateUser, getAuthSessionWithRetries } from '@/utils/authUtils';
+import { ensureAmplifyConfigured, authenticateUser, getAuthSessionWithRetries, clearAllAuthData } from '@/utils/authUtils';
 import { Auth } from 'aws-amplify';
 import jwtDecode from 'jwt-decode';
 
@@ -118,21 +118,65 @@ const [state, dispatch] = useReducer(reducer, initialState);
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
+        // Check for URL parameters requesting a fresh start
+        const urlParams = new URLSearchParams(window.location.search);
+        const forceFreshStart = urlParams.get('fresh') === 'true';
+        
+        if (forceFreshStart) {
+          logger.debug('[SignInForm] Force fresh start requested, clearing auth data immediately');
+          await handleSignOut();
+          // Force reload the page to clear any lingering Amplify state
+          window.location.href = '/auth/signin?cleared=true';
+          return;
+        }
+        
         // Use our improved function with retries
         const session = await getAuthSessionWithRetries();
         
         if (session?.tokens?.idToken) {
+          logger.debug('[SignInForm] Detected existing authentication session on signin page');
+          
           try {
+            // Check if we can get user attributes (valid token)
             const userAttributes = await Auth.fetchUserAttributes();
-            // User is already signed in, redirect to dashboard
-            logger.debug('[SignInForm] Valid session found on sign-in page, signing out for clean experience');
+            logger.debug('[SignInForm] Found authenticated user with attributes on signin page:', 
+              { email: userAttributes.email, sub: userAttributes.sub });
             
-            // Sign out to provide a clean experience
-            await handleSignOut();
+            // Only sign out if explicitly creating a new account or we're at the signin page
+            const isSigninPage = window.location.pathname.includes('/signin');
+            const isSignupPage = window.location.pathname.includes('/signup');
+            const isCreatingNewAccount = urlParams.get('new') === 'true';
+            const isExplicitSignout = urlParams.get('signout') === 'true';
+            
+            if ((isSigninPage || isSignupPage) && (isCreatingNewAccount || isExplicitSignout)) {
+              logger.debug('[SignInForm] Signing out existing user for clean experience');
+              await handleSignOut();
+              
+              // Reload the page to ensure a fresh start (important!)
+              if (isCreatingNewAccount) {
+                window.location.href = '/auth/signup?freshstart=true';
+                return;
+              } else {
+                window.location.href = '/auth/signin?cleared=true';
+                return;
+              }
+            } else if (isSignupPage) {
+              // Always sign out on signup page
+              logger.debug('[SignInForm] On signup page with existing session, forcing signout');
+              await handleSignOut();
+              window.location.href = '/auth/signup?freshstart=true';
+              return;
+            } else {
+              // If user is already signed in and not creating a new account, redirect to dashboard
+              logger.debug('[SignInForm] User already authenticated, redirecting to dashboard');
+              router.push('/dashboard');
+            }
           } catch (attributeError) {
             // Token exists but might be invalid
-            logger.debug('[SignInForm] Token exists but cannot fetch attributes, may be invalid');
+            logger.debug('[SignInForm] Token exists but cannot fetch attributes, may be invalid:', attributeError);
             await handleSignOut();
+            // Force reload after signout
+            window.location.reload();
           }
         }
       } catch (error) {
@@ -247,7 +291,24 @@ const [state, dispatch] = useReducer(reducer, initialState);
       'subscription': () => {
         // Sub-decision for subscription based on plan
         const plan = (userAttributes['custom:subscription_plan'] || '').toLowerCase();
+        // Check for free, basic, or paid plans that should skip payment
+        const skipPaymentPlans = ['free', 'basic', 'professional', 'enterprise'];
         const isPaidPlan = ['professional', 'enterprise'].includes(plan);
+        const isFreeOrBasicPlan = ['free', 'basic'].includes(plan);
+        
+        logger.debug('[SignInForm] Plan type detected:', { 
+          plan, 
+          isPaidPlan,
+          isFreeOrBasicPlan,
+          shouldSkipPayment: skipPaymentPlans.includes(plan)
+        });
+        
+        // Free and basic plans skip payment and go straight to setup
+        if (isFreeOrBasicPlan) {
+          return 'setup';
+        }
+        
+        // Paid plans go to payment
         return isPaidPlan ? 'payment' : 'setup';
       },
       'payment': 'setup',
@@ -536,6 +597,38 @@ const [state, dispatch] = useReducer(reducer, initialState);
     return false;
   };
 
+  // Get plan type from attributes, being flexible about attribute name variations
+  const getPlanType = (attributes) => {
+    // Check various attribute names that might contain plan info
+    const subscriptionPlan = attributes['custom:subscription_plan'];
+    const subPlan = attributes['custom:subplan'];
+    const plan = attributes['custom:plan'];
+    
+    // Use the first one that exists, convert to lowercase for consistency
+    const planValue = (subscriptionPlan || subPlan || plan || '').toLowerCase();
+    
+    logger.debug('[SignInForm] Detected plan type:', {
+      planValue,
+      fromSubscriptionPlan: !!subscriptionPlan,
+      fromSubPlan: !!subPlan,
+      fromPlan: !!plan
+    });
+    
+    return planValue;
+  };
+  
+  // Helper function to get business or tenant ID from attributes
+  const getBusinessOrTenantId = (attributes) => {
+    // Check various attribute names that might contain IDs
+    const businessId = attributes['custom:businessid'] || attributes['custom:business_id'];
+    const tenantId = attributes['custom:tenant_id'] || attributes['custom:tenantid'];
+    
+    return {
+      businessId,
+      tenantId
+    };
+  };
+
   // Update the signIn handling code to use the new function
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -694,9 +787,13 @@ const [state, dispatch] = useReducer(reducer, initialState);
     setIsLoading(true);
     
     try {
-      logger.debug('[SignInForm] Signing out current user');
-      await signOut();
+      logger.debug('[SignInForm] Signing out current user and clearing all auth data');
+      
+      // Use our new comprehensive cleanup function
+      await clearAllAuthData();
       setIsAuthenticated(false);
+      
+      logger.debug('[SignInForm] Successfully cleared all authentication data');
     } catch (error) {
       logger.error('[SignInForm] Error signing out:', error);
     } finally {

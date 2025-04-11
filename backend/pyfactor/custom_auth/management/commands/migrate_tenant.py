@@ -23,7 +23,7 @@ class Command(BaseCommand):
             except Tenant.DoesNotExist:
                 raise CommandError(f"Tenant with ID {tenant_id} does not exist")
             
-            self.stdout.write(self.style.SUCCESS(f"Found tenant: {tenant.name} (Schema: {tenant.schema_name})"))
+            self.stdout.write(self.style.SUCCESS(f"Found tenant: {tenant.name} (Schema: { tenant.id})"))
             
             if async_mode:
                 # Run migration asynchronously using Celery

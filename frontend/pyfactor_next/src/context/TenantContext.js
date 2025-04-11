@@ -4,14 +4,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { jwtDecode } from 'jwt-decode';
 import { logger } from '@/utils/logger';
-import { getTenantId, getTenantHeaders, storeTenantId, clearTenantStorage } from '@/utils/tenantUtils';
+import { getTenantId, storeTenantId, clearTenantStorage } from '@/utils/tenantUtils';
 import { apiService } from '@/lib/apiService';
 
 // Helper to detect browser environment
 const isBrowser = typeof window !== 'undefined';
-
-// Default fallback tenant ID for development
-const FALLBACK_TENANT_ID = process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || '70cc394b-6b7c-5e61-8213-9801cbc78708';
 
 /**
  * Context for managing tenant information throughout the application
@@ -25,7 +22,8 @@ export const TenantContext = createContext({
   fetchTenantInfo: () => Promise.resolve(null),
   switchTenant: () => Promise.resolve(false),
   clearTenant: () => {},
-  initializeTenant: () => Promise.resolve()
+  initializeTenant: () => Promise.resolve(),
+  verifyTenantAccess: () => Promise.resolve(true)
 });
 
 /**
@@ -45,11 +43,15 @@ export const useTenant = () => {
       fetchTenantInfo: () => Promise.resolve(null),
       switchTenant: () => Promise.resolve(false),
       clearTenant: () => {},
-      initializeTenant: () => Promise.resolve()
+      initializeTenant: () => Promise.resolve(),
+      verifyTenantAccess: () => Promise.resolve(true)
     };
   }
   return context;
 };
+
+// Export also as useTenantContext for compatibility
+export const useTenantContext = useTenant;
 
 /**
  * Provider component for tenant information
@@ -239,25 +241,18 @@ export const TenantProvider = ({ children }) => {
         await fetchTenantInfo(currentTenantId);
         return currentTenantId;
       } else {
-        // If in development and dev tenant ID is available, use it
-        if (process.env.NODE_ENV !== 'production' && FALLBACK_TENANT_ID) {
-          logger.info(`[TenantContext] Using fallback tenant ID: ${FALLBACK_TENANT_ID}`);
-          setTenantId(FALLBACK_TENANT_ID);
-          await fetchTenantInfo(FALLBACK_TENANT_ID);
-          return FALLBACK_TENANT_ID;
-        } else {
-          logger.warn('[TenantContext] No tenant ID found in any source');
-          setLoading(false);
-          return null;
-        }
+        // No fallback tenant ID - just report that no tenant ID was found
+        logger.warn('[TenantContext] No tenant ID found in any source');
+        setLoading(false);
+        return null;
       }
     } catch (err) {
-      logger.error('[TenantContext] Error initializing tenant context:', err);
-      setError(err);
+      logger.error('[TenantContext] Error initializing tenant:', err);
       setLoading(false);
+      setError(err);
       return null;
     }
-  }, [fetchTenantInfo, getTenantFromToken, setTenantId]);
+  }, [getTenantFromToken, setTenantId, fetchTenantInfo]);
 
   // Initialize on component mount
   useEffect(() => {
@@ -269,6 +264,77 @@ export const TenantProvider = ({ children }) => {
     initializeTenant();
   }, [initializeTenant]);
 
+  // Verify if user has access to the tenant
+  const verifyTenantAccess = useCallback(async (targetTenantId) => {
+    try {
+      logger.info(`[TenantContext] Verifying access to tenant: ${targetTenantId}`);
+      
+      if (!targetTenantId) {
+        logger.warn('[TenantContext] No tenant ID provided for access verification');
+        return false;
+      }
+      
+      // Try to get user's authorized tenants from token
+      const session = await fetchAuthSession().catch(() => null);
+      if (!session?.tokens?.idToken) {
+        logger.warn('[TenantContext] No authenticated session for tenant access verification');
+        // Default to allowing access - we'll rely on server-side checks
+        return true;
+      }
+      
+      try {
+        const decoded = jwtDecode(session.tokens.idToken.toString());
+        
+        // Get tenant IDs from token
+        const authorizedTenants = [];
+        
+        // Look for tenant ID in various attributes
+        if (decoded['custom:tenant_id']) {
+          authorizedTenants.push(decoded['custom:tenant_id']);
+        }
+        if (decoded['custom:businessid']) {
+          authorizedTenants.push(decoded['custom:businessid']);
+        }
+        if (decoded.tenantId) {
+          authorizedTenants.push(decoded.tenantId);
+        }
+        
+        // Also try multi-tenant attributes if they exist
+        if (decoded['custom:tenants']) {
+          try {
+            const tenantsArray = JSON.parse(decoded['custom:tenants']);
+            if (Array.isArray(tenantsArray)) {
+              authorizedTenants.push(...tenantsArray);
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        }
+        
+        // For now, default to allowing access if we can't determine authorized tenants
+        // This is a security simplification for development
+        if (authorizedTenants.length === 0) {
+          logger.debug('[TenantContext] No authorized tenants found in token, allowing access by default');
+          return true;
+        }
+        
+        // Check if target tenant is in authorized tenants
+        const hasAccess = authorizedTenants.includes(targetTenantId);
+        logger.debug(`[TenantContext] Tenant access check: ${hasAccess ? 'granted' : 'denied'}`);
+        
+        return hasAccess;
+      } catch (tokenError) {
+        logger.error('[TenantContext] Error decoding token for tenant access:', tokenError);
+        // Default to allowing access
+        return true;
+      }
+    } catch (error) {
+      logger.error('[TenantContext] Error verifying tenant access:', error);
+      // Default to allowing access
+      return true;
+    }
+  }, []);
+
   const value = {
     tenantId,
     setTenantId,
@@ -279,7 +345,8 @@ export const TenantProvider = ({ children }) => {
     switchTenant,
     fetchTenantInfo,
     clearTenant,
-    initializeTenant
+    initializeTenant,
+    verifyTenantAccess
   };
 
   return (

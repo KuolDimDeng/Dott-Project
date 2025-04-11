@@ -46,7 +46,9 @@ def get_product_by_id(tenant_id, product_id):
     try:
         # Set search path to tenant schema
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
             
             # Query for the product
             cursor.execute("""
@@ -84,7 +86,8 @@ def get_product_by_id(tenant_id, product_id):
             product = dict(zip(columns, result))
             
             # Reset search path
-            cursor.execute('SET search_path TO public')
+            cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
             
             return product
     except Exception as e:
@@ -94,6 +97,9 @@ def get_product_by_id(tenant_id, product_id):
 def list_products(tenant_id, limit=10):
     """
     List products from a specific tenant schema.
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     
     Args:
         tenant_id (str): The tenant ID
@@ -108,7 +114,9 @@ def list_products(tenant_id, limit=10):
     try:
         # Set search path to tenant schema
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
             
             # Query for products
             cursor.execute(f"""
@@ -136,7 +144,8 @@ def list_products(tenant_id, limit=10):
             products = [dict(zip(columns, row)) for row in results]
             
             # Reset search path
-            cursor.execute('SET search_path TO public')
+            cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
             
             return products
     except Exception as e:

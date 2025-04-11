@@ -23,13 +23,13 @@ class TenantDetailView(APIView):
             logger.debug(f"[TenantDetail] Available tenants for user:", {
                 'user_id': request.user.id,
                 'email': request.user.email,
-                'tenants': list(Tenant.objects.filter(owner=request.user).values('id', 'schema_name'))
+                'tenants': list(Tenant.objects.filter(owner_id=request.user.id).values('id', 'schema_name'))
             })
 
             tenant = get_object_or_404(Tenant, id=tenant_id)
             
             # Check if user has access to this tenant
-            if tenant.owner != request.user:
+            if str(tenant.owner_id) != str(request.user.id):
                 logger.warning(f"[TenantDetail] User {request.user.id} attempted to access tenant {tenant_id} but is not the owner")
                 return Response({
                     'error': 'You do not have access to this tenant',
@@ -38,12 +38,12 @@ class TenantDetailView(APIView):
             
             return Response({
                 'id': str(tenant.id),
-                'schema_name': tenant.schema_name,
+                'schema_name': str(tenant.id),
                 'owner': {
-                    'id': str(tenant.owner.id),
-                    'email': tenant.owner.email
+                    'id': str(tenant.owner_id),
+                    'email': User.objects.filter(id=tenant.owner_id).values_list('email', flat=True).first() or 'unknown'
                 },
-                'status': tenant.status,
+                'status': tenant.setup_status,
                 'created_at': tenant.created_at.isoformat() if tenant.created_at else None,
                 'updated_at': tenant.updated_at.isoformat() if tenant.updated_at else None
             })
@@ -165,7 +165,7 @@ class TenantExistsView(APIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # First check if this user owns any tenant
-            user_tenant = Tenant.objects.filter(owner=request.user).first()
+            user_tenant = Tenant.objects.filter(owner_id=request.user.id).first()
             if user_tenant:
                 # If user has a tenant, check if it matches the provided ID
                 exists = str(user_tenant.id) == str(tenant_id)
@@ -198,7 +198,7 @@ class CurrentTenantView(APIView):
             logger.debug(f"[CurrentTenant] Finding tenant for user {request.user.id}")
             
             # Get all tenants for the user
-            tenants = Tenant.objects.filter(owner=request.user).values('id', 'schema_name')
+            tenants = Tenant.objects.filter(owner_id=request.user.id).values('id', 'schema_name')
             tenant_list = list(tenants)
             
             logger.debug(f"[CurrentTenant] Found tenants:", {
@@ -219,7 +219,7 @@ class CurrentTenantView(APIView):
             
             return Response({
                 'id': str(tenant['id']),
-                'schema_name': tenant['schema_name'],
+                'schema_name': str(tenant['schema_name']),
                 'is_primary': True
             })
         except Exception as e:
@@ -267,7 +267,7 @@ class ValidateTenantView(APIView):
                     return Response({
                         'valid': True,
                         'tenantId': str(tenant.id),
-                        'schemaName': tenant.schema_name,
+                        'schemaName': str(tenant.id),
                         'message': 'Tenant ID is valid'
                     })
                 else:
@@ -278,7 +278,7 @@ class ValidateTenantView(APIView):
                         return Response({
                             'valid': False,
                             'correctTenantId': str(user_tenant.id),
-                            'schemaName': user_tenant.schema_name,
+                            'schemaName': str(user_tenant.id),
                             'message': 'Tenant ID belongs to another user. Corrected to your tenant.'
                         })
                     else:
@@ -294,7 +294,7 @@ class ValidateTenantView(APIView):
                     return Response({
                         'valid': False,
                         'correctTenantId': str(user_tenant.id),
-                        'schemaName': user_tenant.schema_name,
+                        'schemaName': str(user_tenant.id),
                         'message': 'Invalid tenant ID. Corrected to your tenant.'
                     })
                 else:
@@ -368,29 +368,29 @@ class TenantByEmailView(APIView):
                 )
             
             # If user exists, check if they have an associated tenant
-            if user.tenant_id:
-                tenant = Tenant.objects.filter(id=user.tenant_id).first()
+            if user.tenant:
+                tenant = user.tenant
                 if tenant:
                     logger.info(f"Found tenant for email {email}: {tenant.id}")
                     return Response({
                         "tenantId": str(tenant.id),
-                        "schemaName": tenant.schema_name,
+                        "schemaName": str(tenant.id),
                         "name": tenant.name,
                         "isActive": tenant.is_active
                     })
             
             # If no tenant directly associated with user, check for any tenant where user is the owner
-            tenant = Tenant.objects.filter(owner_id=user.id).first()
+            tenant = Tenant.objects.filter(owner_id=user.pk).first()
             if tenant:
                 logger.info(f"Found tenant where user is owner for email {email}: {tenant.id}")
                 
                 # Update user-tenant association for future lookups
-                user.tenant_id = tenant.id
+                user.tenant = tenant
                 user.save(update_fields=['tenant_id'])
                 
                 return Response({
                     "tenantId": str(tenant.id),
-                    "schemaName": tenant.schema_name,
+                    "schemaName": str(tenant.id),
                     "name": tenant.name,
                     "isActive": tenant.is_active
                 })

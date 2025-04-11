@@ -9,22 +9,25 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-from django.conf import settings
 
-from pathlib import Path
-from datetime import timedelta
-import sys
 import os
+from pathlib import Path
+import sys
 import logging
 import logging.config
+from datetime import timedelta
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
-from celery.schedules import crontab
 
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Ensure the path to .env is correct
-dotenv_path = os.path.join(BASE_DIR, ".env")
+# Load environment variables from .env file
+# Simplified path that points directly to the .env file in the pyfactor directory
+dotenv_path = os.path.join(BASE_DIR, '.env')
+
+# Load dotenv with a comment about RLS
+# RLS: Use tenant_id filtering
 
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
@@ -390,32 +393,50 @@ CELERY_QUEUES = {
 }
 }
 
-CELERY_BEAT_SCHEDULE = {
-    'cleanup_expired_onboarding': {
-        'task': 'onboarding.views.cleanup_expired_onboarding',
-        'schedule': crontab(hour='*/2'),  # Every 2 hours
-    },
-    'update_federal_tax_rates': {
-        'task': 'taxes.tasks.update_federal_tax_rates',
-        'schedule': crontab(day_of_week='1', hour='3', minute='0'),  # Every Monday at 3:00 AM
-    },
-    'update_state_tax_rates': {
-        'task': 'taxes.tasks.update_state_tax_rates',
-        'schedule': crontab(day_of_week='1', hour='4', minute='0'),  # Every Monday at 4:00 AM
-    },
-    'monitor_database_connections': {
-        'task': 'custom_auth.tasks.monitor_database_connections',
-        'schedule': crontab(minute='*/5'),  # Every 5 minutes
-    },
-    'check_and_migrate_tenant_schemas': {
-        'task': 'custom_auth.tasks.check_and_migrate_tenant_schemas',
-        'schedule': crontab(minute='*/15'),  # Every 15 minutes
-    },
-    'verify_tenant_schemas_daily': {
-        'task': 'onboarding.tasks.verify_all_tenant_schemas',
-        'schedule': timedelta(days=1),  # Run once per day
-    },
-}
+# Define crontab function here to avoid import issues
+def get_crontab(*args, **kwargs):
+    try:
+        from django_celery_beat.schedulers import crontab
+        return crontab(*args, **kwargs)
+    except ImportError:
+        return None
+
+# Define a startup configuration function that will be called after Django initializes
+def configure_tasks():
+    """
+    Configure Celery tasks after Django has fully loaded.
+    This function should be imported and called from your AppConfig.ready()
+    """
+    return {
+        'cleanup_expired_onboarding': {
+            'task': 'onboarding.views.cleanup_expired_onboarding',
+            'schedule': get_crontab(hour='*/2'),  # Every 2 hours
+        },
+        'update_federal_tax_rates': {
+            'task': 'taxes.tasks.update_federal_tax_rates',
+            'schedule': get_crontab(day_of_week='1', hour='3', minute='0'),  # Every Monday at 3:00 AM
+        },
+        'update_state_tax_rates': {
+            'task': 'taxes.tasks.update_state_tax_rates',
+            'schedule': get_crontab(day_of_week='1', hour='4', minute='0'),  # Every Monday at 4:00 AM
+        },
+        'monitor_database_connections': {
+            'task': 'custom_auth.tasks.monitor_database_connections',
+            'schedule': get_crontab(minute='*/5'),  # Every 5 minutes
+        },
+        'check_and_migrate_tenant_schemas': {
+            'task': 'custom_auth.tasks.check_and_migrate_tenant_schemas',
+            'schedule': get_crontab(minute='*/15'),  # Every 15 minutes
+        },
+        'verify_tenant_schemas_daily': {
+            'task': 'onboarding.tasks.verify_all_tenant_schemas',
+            'schedule': timedelta(days=1),  # Run once per day
+        },
+    }
+
+# Initialize with an empty CELERY_BEAT_SCHEDULE to avoid the "Apps aren't loaded yet" error
+# It will be populated later in the Django lifecycle
+CELERY_BEAT_SCHEDULE = {}
 
 # Session and authentication settings
 AUTH_USER_MODEL = 'custom_auth.User'

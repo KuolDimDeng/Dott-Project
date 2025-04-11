@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import InvoiceDetails from './InvoiceDetails';
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustomer = false }) => {
   const [customer, setCustomer] = useState(null);

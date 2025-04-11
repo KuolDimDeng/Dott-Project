@@ -10,17 +10,26 @@ from .tenant_base_model import TenantAwareModel, TenantAwareManager as TenantMan
 class Tenant(models.Model):
     """
     Tenant model for multi-tenant functionality.
-    This stores information about each tenant's database schema.
+    This uses Row-Level Security (RLS) for data isolation.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     owner_id = models.CharField(max_length=255, null=True, blank=True)
-    schema_name = models.CharField(max_length=255, unique=True)
+    # DEPRECATED: schema_name will be removed in a future version
+    # This field is maintained by the SchemaNameMiddleware for backward compatibility
+    # All new code should use tenant_id with RLS policies instead
+    schema_name = models.CharField(max_length=255, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(default=timezone.now)
     rls_enabled = models.BooleanField(default=True)
-    rls_setup_date = models.DateTimeField(null=True, blank=True)
+    rls_setup_date = models.DateTimeField(default=timezone.now)
     is_active = models.BooleanField(default=True)
+    # Account closure fields
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    is_recoverable = models.BooleanField(null=True, blank=True)
+    # Add fields that might have been in Profile before
+    setup_status = models.CharField(max_length=20, null=True, blank=True)
+    last_health_check = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = 'custom_auth_tenant'
@@ -28,12 +37,16 @@ class Tenant(models.Model):
 
     def save(self, *args, **kwargs):
         self.updated_at = timezone.now()
-        if not self.schema_name:
-            self.schema_name = f"tenant_{str(self.id).replace('-', '_')}"
+        
+        # Always ensure RLS is enabled for all tenants
+        self.rls_enabled = True
+        if not self.rls_setup_date:
+            self.rls_setup_date = timezone.now()
+            
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.name} ({self.schema_name})"
+        return f"{self.name} (ID: {self.id})"
 
 
 class UserManager(BaseUserManager):

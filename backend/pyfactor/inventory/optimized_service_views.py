@@ -7,6 +7,7 @@ from .models import Service
 from .serializers import ServiceSerializer
 import logging
 import time
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ def optimized_create_service(request):
     # Log tenant information if available
     tenant = getattr(request, 'tenant', None)
     if tenant:
-        logger.debug(f"Request has tenant: {tenant.schema_name} (Status: {tenant.database_status})")
+        logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
     else:
         logger.warning("No tenant found in request")
         # Check if tenant ID is in headers but not properly set in request
@@ -58,7 +59,7 @@ def optimized_create_service(request):
             try:
                 tenant = Tenant.objects.filter(id=tenant_id).first()
                 if tenant:
-                    logger.info(f"Found tenant in database: {tenant.schema_name}")
+                    logger.info(f"Found tenant in database: { tenant.id}")
                     request.tenant = tenant
                 else:
                     logger.error(f"Tenant with ID {tenant_id} not found in database")
@@ -84,16 +85,16 @@ def optimized_create_service(request):
                         SELECT schema_name
                         FROM information_schema.schemata
                         WHERE schema_name = %s
-                    """, [tenant.schema_name])
+                    """, [ tenant.id])
                     
                     if not cursor.fetchone():
-                        logger.error(f"Schema {tenant.schema_name} does not exist")
+                        logger.error(f"Schema { tenant.id} does not exist")
                         # Try to create the schema
                         from custom_auth.utils import create_tenant_schema_for_user
                         try:
-                            logger.info(f"Attempting to create schema for tenant: {tenant.schema_name}")
+                            logger.info(f"Attempting to create schema for tenant: { tenant.id}")
                             create_tenant_schema_for_user(tenant.owner)
-                            logger.info(f"Successfully created schema for tenant: {tenant.schema_name}")
+                            logger.info(f"Successfully created schema for tenant: { tenant.id}")
                         except Exception as schema_error:
                             logger.error(f"Failed to create schema: {str(schema_error)}")
                             return Response(
@@ -108,7 +109,7 @@ def optimized_create_service(request):
                 )
             
             # Now get the connection for the schema
-            TenantSchemaRouter.get_connection_for_schema(tenant.schema_name)
+            TenantSchemaRouter.get_connection_for_schema( tenant.id)
             
             # Verify the inventory_service table exists
             try:
@@ -119,14 +120,14 @@ def optimized_create_service(request):
                             WHERE table_schema = %s
                             AND table_name = 'inventory_service'
                         )
-                    """, [tenant.schema_name])
+                    """, [ tenant.id])
                     
                     if not cursor.fetchone()[0]:
-                        logger.error(f"inventory_service table does not exist in schema {tenant.schema_name}")
+                        logger.error(f"inventory_service table does not exist in schema { tenant.id}")
                         # Try to apply migrations for the inventory app
                         from django.core.management import call_command
                         try:
-                            logger.info(f"Applying inventory migrations to schema {tenant.schema_name}")
+                            logger.info(f"Applying inventory migrations to schema { tenant.id}")
                             call_command('migrate', 'inventory', verbosity=0)
                             logger.info("Successfully applied inventory migrations")
                         except Exception as migration_error:
@@ -183,11 +184,14 @@ def optimized_create_service(request):
                 # Get the schema name
                 schema_name = 'public'
                 if tenant:
-                    schema_name = tenant.schema_name
+                    schema_name = tenant.id
+                    tenant_id = tenant.id
                 
                 # Set search path to the tenant schema
                 with connection.cursor() as cursor:
-                    cursor.execute(f'SET search_path TO "{schema_name}",public')
+                    # RLS: Use tenant context instead of schema
+                    # cursor.execute(f'SET search_path TO {schema_name}')
+                    set_current_tenant_id(tenant_id)
                 
                 # Apply migrations
                 call_command('migrate', 'inventory', verbosity=0)

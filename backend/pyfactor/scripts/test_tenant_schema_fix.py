@@ -31,7 +31,7 @@ def create_test_tenant():
     """Create a test tenant for verification."""
     # Generate a unique tenant ID and schema name
     tenant_id = uuid.uuid4()
-    schema_name = f"test_tenant_{tenant_id}".replace('-', '_')
+    schema_name = f/* RLS: Use tenant_id filtering */ replace('-', '_')
     
     # Create test user
     test_user = User.objects.create(
@@ -100,7 +100,7 @@ def test_business_creation_in_tenant_schema():
     
     # Create test tenant and user
     tenant, test_user = create_test_tenant()
-    schema_name = tenant.schema_name
+    schema_name =  tenant.id
     logger.info(f"Created test tenant with schema: {schema_name}")
     
     # Create a new connection with autocommit=True
@@ -184,4 +184,7 @@ def test_business_creation_in_tenant_schema():
 
 if __name__ == "__main__":
     import random  # Import here for business_num generation
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     test_business_creation_in_tenant_schema()

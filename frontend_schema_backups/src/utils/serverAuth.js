@@ -1,0 +1,244 @@
+/**
+ * Server-side authentication utilities that don't rely on Amplify
+ * This is needed because Amplify v6 doesn't work in server components
+ */
+
+import { jwtVerify, createRemoteJWKSet } from 'jose';
+import { NextResponse } from 'next/server';
+import { logger } from '@/utils/logger';
+import { cookies } from 'next/headers';
+
+// Get Cognito configuration from environment variables
+const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
+const USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
+
+// Set up the JWKS (JSON Web Key Set) endpoint for Cognito
+const JWKS_URI = `https://cognito-idp.${AWS_REGION}.amazonaws.com/${USER_POOL_ID}/.well-known/jwks.json`;
+const JWKS = createRemoteJWKSet(new URL(JWKS_URI));
+
+/**
+ * Verify a JWT token from Cognito without relying on Amplify
+ * @param {string} token - The JWT token to verify
+ * @returns {Promise<Object|null>} - Decoded and verified token payload or null if invalid
+ */
+export async function verifyToken(token) {
+  if (!token) {
+    logger.debug('[ServerAuth] No token provided');
+    return null;
+  }
+
+  try {
+    // Verify the token using jose and the Cognito JWKS
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: `https://cognito-idp.${AWS_REGION}.amazonaws.com/${USER_POOL_ID}`,
+    });
+
+    logger.debug('[ServerAuth] Token verified successfully');
+    return payload;
+  } catch (error) {
+    logger.error('[ServerAuth] Token verification failed:', {
+      error: error.message,
+      code: error.code,
+      name: error.name
+    });
+    return null;
+  }
+}
+
+/**
+ * Get the authenticated user from the request
+ * Extracts the token from cookies or Authorization header
+ * @param {Request} request - The incoming request object
+ * @returns {Promise<Object|null>} - The authenticated user or null
+ */
+export async function getServerUser(request) {
+  try {
+    // Try to get token from cookies first
+    let token = null;
+    
+    // Try cookies
+    const cookies = request.cookies;
+    if (cookies.has('idToken')) {
+      token = cookies.get('idToken').value;
+      logger.debug('[ServerAuth] Found token in cookies');
+    } 
+    
+    // If no token in cookies, try Authorization header
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+        logger.debug('[ServerAuth] Found token in Authorization header');
+      }
+    }
+    
+    // Also check X-Id-Token header (set by our middleware)
+    if (!token) {
+      token = request.headers.get('X-Id-Token');
+      if (token) {
+        logger.debug('[ServerAuth] Found token in X-Id-Token header');
+      }
+    }
+    
+    if (!token) {
+      logger.debug('[ServerAuth] No token found in request');
+      return null;
+    }
+    
+    // Verify the token
+    const payload = await verifyToken(token);
+    if (!payload) {
+      return null;
+    }
+    
+    // Extract user information from token claims
+    const user = {
+      sub: payload.sub,
+      email: payload.email,
+      email_verified: payload.email_verified,
+      'custom:onboarding': payload['custom:onboarding'] || 'NOT_STARTED',
+      'custom:businessName': payload['custom:businessName'] || '',
+      'custom:businessType': payload['custom:businessType'] || '',
+      'custom:tenant_id': payload['custom:tenant_id'] || '',
+    };
+    
+    return user;
+  } catch (error) {
+    logger.error('[ServerAuth] Error getting server user:', {
+      message: error.message,
+      stack: error.stack
+    });
+    return null;
+  }
+}
+
+/**
+ * Middleware to require authentication for API routes
+ * @param {Function} handler - The API route handler
+ * @returns {Function} - Wrapped handler with authentication check
+ */
+export function withAuth(handler) {
+  return async function(request, ...args) {
+    // Get the user from the request
+    const user = await getServerUser(request);
+    
+    // If no user is found, return 401 Unauthorized
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Call the original handler with the user attached to the request
+    request.user = user;
+    return handler(request, ...args);
+  };
+}
+
+/**
+ * Extract JWT token from request
+ * @param {Request} request - The incoming request
+ * @returns {string|null} - The token or null if not found
+ */
+export function extractTokenFromRequest(request) {
+  // Try cookies first
+  if (request.cookies.has('idToken')) {
+    return request.cookies.get('idToken').value;
+  }
+  
+  // Then try headers
+  const authHeader = request.headers.get('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  
+  const idTokenHeader = request.headers.get('X-Id-Token');
+  if (idTokenHeader) {
+    return idTokenHeader;
+  }
+  
+  return null;
+}
+
+/**
+ * Decode a JWT token without verification
+ * Useful for debugging or non-critical information
+ * @param {string} token - The JWT token
+ * @returns {Object|null} - The decoded token or null
+ */
+export function decodeToken(token) {
+  if (!token) return null;
+  
+  try {
+    // Split the token and decode the payload
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = parts[1];
+    const decodedPayload = Buffer.from(payload, 'base64').toString('utf8');
+    return JSON.parse(decodedPayload);
+  } catch (error) {
+    logger.error('[ServerAuth] Error decoding token:', error);
+    return null;
+  }
+}
+
+export async function validateServerSession() {
+  try {
+    const cookieStore = cookies();
+    
+    // Get tokens from cookies
+    const idToken = cookieStore.get('idToken')?.value;
+    const accessToken = cookieStore.get('accessToken')?.value;
+    const userId = cookieStore.get('userId')?.value;
+    
+    if (!idToken || !accessToken) {
+      throw new Error('No valid tokens found');
+    }
+    
+    // Get user attributes from cookies
+    const getAllCookies = () => {
+      const allCookies = cookieStore.getAll();
+      return Object.fromEntries(
+        allCookies.map(cookie => [cookie.name, cookie.value])
+      );
+    };
+    
+    const allCookies = getAllCookies();
+    
+    // Extract user attributes from cookies
+    const attributes = {
+      email: allCookies.email,
+      'custom:businessname': allCookies.businessName,
+      'custom:businesstype': allCookies.businessType,
+      'custom:businessid': allCookies.businessId,
+      'custom:onboarding': allCookies.onboardedStatus,
+      'custom:subplan': allCookies.selectedPlan,
+      'custom:setupdone': allCookies.setupDone,
+      sub: userId,
+    };
+    
+    logger.debug('[ServerAuth] Validated session with tokens', {
+      hasIdToken: !!idToken,
+      hasAccessToken: !!accessToken,
+      userId,
+      attributes: Object.keys(attributes).filter(k => !!attributes[k])
+    });
+    
+    return {
+      tokens: {
+        idToken,
+        accessToken
+      },
+      user: {
+        userId,
+        attributes
+      }
+    };
+    
+  } catch (error) {
+    logger.error('[ServerAuth] Failed to validate session:', error);
+    throw error;
+  }
+}

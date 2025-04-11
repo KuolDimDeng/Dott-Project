@@ -109,7 +109,7 @@ def drop_all_tenant_schemas():
         if conn:
             conn.close()
 
-def drop_tenant_schema(schema_name):
+def drop_tenant_schema(tenant_id: uuid.UUID:
     """Drop a specific tenant schema from the database"""
     try:
         conn = get_db_connection()

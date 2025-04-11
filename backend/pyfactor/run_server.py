@@ -163,13 +163,15 @@ def run_uvicorn():
     """
     # Set environment variables for Uvicorn
     os.environ['PYTHONOPTIMIZE'] = '1'     # Enable basic optimizations
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'pyfactor.settings'  # Ensure Django settings are set
+    os.environ['DJANGO_ALLOW_ASYNC_UNSAFE'] = 'true'  # Allow Django in async context
     
     # Force garbage collection before starting server
     gc.collect()
     
     # Configure Uvicorn with memory optimizations
     config = uvicorn.Config(
-        "pyfactor.asgi:application",
+        "pyfactor.asgi:application",  # Changed from application factory to direct application
         host="0.0.0.0",
         port=8000,
         reload=True,        # Enable auto-reload for development
@@ -181,6 +183,7 @@ def run_uvicorn():
         http="h11",         # Use h11 for HTTP protocol (more memory efficient)
         proxy_headers=True, # Process proxy headers
         server_header=False, # Don't send server header to save bandwidth
+        factory=False,      # Use direct application instead of factory
     )
     
     logger.info("Starting Uvicorn with safer database connection settings")

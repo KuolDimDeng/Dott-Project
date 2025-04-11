@@ -55,12 +55,14 @@ def get_all_tenant_schemas():
         """)
         return [row[0] for row in cursor.fetchall()]
 
-def get_schema_creation_time(schema_name):
+def get_schema_creation_time(tenant_id: uuid.UUID:
     """Try to determine when a schema was created"""
     try:
         with connection.cursor() as cursor:
             # Set search path to the schema
-            cursor.execute(f'SET search_path TO "{schema_name}"')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
             
             # Try to get earliest migration time
             cursor.execute("""
@@ -86,7 +88,7 @@ def get_schema_creation_time(schema_name):
                     if cursor.fetchone()[0]:
                         cursor.execute(f"""
                             SELECT MIN(created_at) 
-                            FROM "{schema_name}"."{table}"
+                            FROM /* RLS: Use tenant_id filtering */ "{table}"
                             WHERE created_at IS NOT NULL
                         """)
                         result = cursor.fetchone()
@@ -105,7 +107,7 @@ def get_schema_creation_time(schema_name):
     # Default to current time if we can't determine
     return datetime.now()
 
-def find_owner_for_schema(schema_name):
+def find_owner_for_schema(tenant_id: uuid.UUID:
     """Find the owner for a given schema"""
     # First check Tenant record
     tenant = Tenant.objects.filter(schema_name=schema_name).first()
@@ -159,6 +161,9 @@ def consolidate_schemas(schema_to_keep, schemas_to_merge, owner=None):
                 """, [str(tenant_to_keep.id), str(tenant_to_merge.id)])
                 
                 logger.info(f"Updated {cursor.rowcount} users from tenant {schema} to {schema_to_keep}")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         else:
             logger.warning(f"No tenant record found for schema {schema}")
     
@@ -215,7 +220,7 @@ def main():
             # Use the utility function to update all references
             consolidated_tenant = consolidate_user_tenants(owner)
             if consolidated_tenant:
-                logger.info(f"Successfully consolidated tenants for {owner.email}, primary tenant: {consolidated_tenant.schema_name}")
+                logger.info(f"Successfully consolidated tenants for {owner.email}, primary tenant: {consolidated_ tenant.id}")
             else:
                 logger.error(f"Failed to consolidate tenants for {owner.email}")
                 

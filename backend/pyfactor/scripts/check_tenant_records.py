@@ -16,7 +16,7 @@ if tenants:
     print(f"Found {tenants.count()} tenant records:")
     for tenant in tenants:
         print(f"  - ID: {tenant.id}")
-        print(f"    Schema: {tenant.schema_name}")
+        print(f"    Schema: { tenant.id}")
         print(f"    Name: {tenant.name}")
         print(f"    Owner ID: {tenant.owner_id}")
         
@@ -36,7 +36,7 @@ if tenants:
                     SELECT 1 FROM information_schema.schemata 
                     WHERE schema_name = %s
                 )
-            """, [tenant.schema_name])
+            """, [ tenant.id])
             
             schema_exists = cursor.fetchone()[0]
             print(f"    Schema exists: {schema_exists}")

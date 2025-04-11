@@ -2185,13 +2185,7 @@ def fetch_west_virginia_tax_data():
 
     except Exception as e:
         logger.error(f"Error processing West Virginia tax data: {e}")
-        logger.exception("Full traceback:")
-        return None
-    
-def extract_with_textract(pdf_content):
-    try:
-        import textract
-        with NamedTemporaryFile(suffix=".pdf", delete=False) as temp_file:
+        logger.exception("Full traceback:/* RLS: Use tenant_id filtering */ pdf", delete=False) as temp_file:
             temp_file.write(pdf_content)
             temp_file_path = temp_file.name
         

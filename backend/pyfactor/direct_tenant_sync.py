@@ -1,16 +1,7 @@
 #!/usr/bin/env python3
 """
 Direct tenant synchronization script using psycopg2
-"""
-
-import os
-import psycopg2
-import psycopg2.extras
-import sys
-from dotenv import load_dotenv
-
-# Load environment variables
-dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+""/* RLS: Use tenant_id filtering */ env")
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
     print(f"✅ Loaded environment variables from: {dotenv_path}")

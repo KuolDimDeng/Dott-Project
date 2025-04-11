@@ -28,7 +28,7 @@ class ConnectionPoolManager:
     """Manages a pool of database connections for better performance"""
     
     @classmethod
-    def get_connection(cls, schema_name=None, using='default'):
+    def get_connection(tenant_id: uuid.UUID:
         """Get a connection from the pool or create a new one"""
         pool_key = f"{using}_{schema_name or 'public'}"
         
@@ -48,7 +48,9 @@ class ConnectionPoolManager:
         # Set the schema if provided
         if schema_name and schema_name != 'public':
             with connection.cursor() as cursor:
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
+                # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
         
         # Store in the pool
         connection_pool[pool_key] = {
@@ -96,9 +98,12 @@ def initialize_pool():
     # Pre-create connections for tenant schemas if available
     try:
         from custom_auth.models import Tenant
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         tenants = Tenant.objects.filter(database_status='active')
         for tenant in tenants[:5]:  # Limit to first 5 active tenants
-            ConnectionPoolManager.get_connection(schema_name=tenant.schema_name, using='default')
+            ConnectionPoolManager.get_connection(schema_name= tenant.id, using='default')
     except Exception as e:
         logger.warning(f"Could not pre-create tenant connections: {str(e)}")
     

@@ -214,7 +214,7 @@ class CustomAuthTokenSerializer(serializers.Serializer):
                 msg = 'Unable to log in with provided credentials.'
                 raise serializers.ValidationError(msg, code='authorization')
         else:
-            msg = 'Must include "email" and "password".'
+            msg = 'Must include "email" and /* RLS: Use tenant_id filtering */ '
             raise serializers.ValidationError(msg, code='authorization')
 
         attrs['user'] = user

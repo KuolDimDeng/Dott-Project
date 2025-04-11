@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { onboardingService } from '@/services/onboardingService';
-import { updateUserAttributes } from '@/utils/auth';
+import { updateUserAttributes } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 
 /**
@@ -72,14 +72,38 @@ export function useEnhancedOnboarding() {
           userAttributes['custom:businessType'] = data.businessType;
         }
       } else if (step === 'subscription' && data?.selectedPlan) {
-        userAttributes['custom:plan'] = data.selectedPlan;
+        // Handle both free and basic plan values consistently
+        let planValue = data.selectedPlan;
+        
+        // Normalize plan values - treat both 'free' and 'basic' as 'free' internally
+        if (planValue.toLowerCase() === 'basic') {
+          planValue = 'free';
+        }
+        
+        userAttributes['custom:plan'] = planValue;
         if (data.pricingTier) {
           userAttributes['custom:pricing_tier'] = data.pricingTier;
         }
       }
       
-      await updateUserAttributes({ userAttributes });
-      logger.debug('[useEnhancedOnboarding] Cognito attributes updated successfully');
+      // Convert user attributes to format expected by Amplify v6
+      const attributeUpdates = {};
+      Object.entries(userAttributes).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          attributeUpdates[key] = value;
+        }
+      });
+      
+      // Update the user attributes using Amplify
+      if (Object.keys(attributeUpdates).length > 0) {
+        // Correct format for Amplify v6: { userAttributes: { key: value } }
+        await updateUserAttributes({
+          userAttributes: attributeUpdates
+        });
+        logger.debug('[useEnhancedOnboarding] Cognito attributes updated successfully');
+      } else {
+        logger.debug('[useEnhancedOnboarding] No valid attributes to update');
+      }
       
       // Then update server state
       const result = await onboardingService.updateState(step, data);

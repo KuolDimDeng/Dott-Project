@@ -118,7 +118,7 @@ class Command(BaseCommand):
             clear_current_tenant()
     
     @transaction.atomic
-    def migrate_table(self, tenant_id, schema_name, table_name, batch_size, dry_run):
+    def migrate_table(tenant_id: uuid.UUID:
         """Migrate data from a specific table."""
         self.stdout.write(f"Migrating table {table_name}")
         
@@ -171,7 +171,7 @@ class Command(BaseCommand):
         with connection.cursor() as cursor:
             cursor.execute(f"""
                 SELECT COUNT(*) 
-                FROM "{schema_name}"."{table_name}"
+                FROM /* RLS: Use tenant_id filtering */ "{table_name}"
             """)
             count = cursor.fetchone()[0]
         
@@ -188,7 +188,7 @@ class Command(BaseCommand):
                 # Get a batch of records from the tenant schema
                 cursor.execute(f"""
                     SELECT {', '.join(columns)} 
-                    FROM "{schema_name}"."{table_name}"
+                    FROM /* RLS: Use tenant_id filtering */ "{table_name}"
                     LIMIT %s OFFSET %s
                 """, [batch_size, offset])
                 

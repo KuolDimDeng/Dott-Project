@@ -56,7 +56,7 @@ def get_users_with_duplicate_tenants(specific_email=None):
     with connection.cursor() as cursor:
         # Build query to find users with multiple tenants
         query = """
-            SELECT u.email, t.id, t.schema_name, t.name, t.created_at
+            SELECT u.email, t.id,  t.id, t.name, t.created_at
             FROM custom_auth_user u
             JOIN custom_auth_tenant t ON u.tenant_id = t.id
         """

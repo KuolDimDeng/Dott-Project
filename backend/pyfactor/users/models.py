@@ -38,6 +38,16 @@ class Business(models.Model):
     updated_at = models.DateTimeField(auto_now=True)  # This matches 'updated_at' in your DB
     business_num = models.CharField(max_length=6, unique=True, null=True, blank=True)
 
+    # Helper property for linter - Django automatically creates this reverse relationship
+    @property
+    def details(self):
+        """Get the related BusinessDetails instance"""
+        from users.models import BusinessDetails
+        try:
+            return BusinessDetails.objects.get(business=self)
+        except BusinessDetails.DoesNotExist:
+            return None
+
     # Virtual properties to maintain compatibility with existing code
     @property
     def business_name(self):
@@ -74,7 +84,8 @@ class Business(models.Model):
         Get business_type from the related BusinessDetails object
         """
         try:
-            return self.businessdetails.business_type
+            details_obj = self.details
+            return details_obj.business_type if details_obj else None
         except BusinessDetails.DoesNotExist:
             return None
 
@@ -215,7 +226,7 @@ class BusinessDetails(models.Model):
     Note: The business_type field here is the canonical source of the
     business_type value, accessed via a property on the Business model.
     """
-    business = models.OneToOneField(Business, on_delete=models.CASCADE, primary_key=True)
+    business = models.OneToOneField(Business, on_delete=models.CASCADE, primary_key=True, related_name='details')
     business_type = models.CharField(max_length=50, choices=BUSINESS_TYPES, blank=True, null=True)
     business_subtype_selections = models.JSONField(default=dict, blank=True)
     legal_structure = models.CharField(
@@ -270,8 +281,11 @@ class BusinessMember(models.Model):
     class Meta:
         unique_together = ('business', 'user')
 
+    # type: ignore[attr-defined] - Django automatically adds get_role_display method
     def __str__(self):
-        return f"{self.user.email} - {self.business.business_name} - {self.get_role_display()}"
+        # Get the display value for role manually to avoid linter error
+        role_display = dict(self.ROLE_CHOICES).get(self.role, self.role)
+        return f"{self.user.email} - {self.business.business_name} - {role_display}"
 
 
 class UserProfile(models.Model):
@@ -333,7 +347,8 @@ class UserProfile(models.Model):
 
     is_business_owner = models.BooleanField(default=False)
     shopify_access_token = models.CharField(max_length=255, null=True, blank=True)
-    schema_name = models.CharField(max_length=63, null=True, blank=True)
+    # Deprecated: schema_name is no longer used with RLS approach
+    # schema_name = models.CharField(max_length=63, null=True, blank=True)
     
     # Add metadata field to store additional information like pending schema setup
     metadata = models.JSONField(default=dict, blank=True, null=True)
@@ -376,43 +391,25 @@ class UserProfile(models.Model):
         if self.is_business_owner and not self.tenant_id:
             from custom_auth.models import Tenant  # Import here to avoid circular import
             
-            # Normalize user ID to ensure consistent schema naming
-            user_id_str = str(self.user.id).replace('-', '_')
-            
-            # Generate a schema name that is guaranteed to be PostgreSQL compatible
-            schema_name = f"tenant_{user_id_str}"
-            
-            # Ensure schema name length limit is respected (63 chars is PostgreSQL limit)
-            if len(schema_name) > 63:
-                # If too long, use a portion of the UUID and add a random suffix
-                import random
-                import string
-                truncated_id = user_id_str[:50] # Leave room for prefix and random chars
-                random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=5))
-                schema_name = f"tenant_{truncated_id}_{random_suffix}"
-                schema_name = schema_name[:63]  # Ensure it's exactly at the limit
-                
+            # Use UUID directly for tenant_id
             try:
                 # Try to get existing tenant first
                 tenant = Tenant.objects.get(owner_id=self.user.id)
-                if not tenant.schema_name:
-                    tenant.schema_name = schema_name
-                    tenant.save(update_fields=['schema_name'])
             except Tenant.DoesNotExist:
-                # Create new tenant with properly formatted schema name
+                # Create new tenant with tenant_id
                 business_name = self.business.name if self.business else f"Business-{self.user.id}"
                 tenant = Tenant.objects.create(
                     name=business_name,
                     owner_id=self.user.id,
-                    schema_name=schema_name,
-                    setup_status='pending'
+                    setup_status='pending',
+                    rls_enabled=True
                 )
     
                 # Store setup information in user profile metadata
                 if not hasattr(self, 'metadata') or not isinstance(self.metadata, dict):
                     self.metadata = {}
                 
-                self.metadata['pending_schema_setup'] = {
+                self.metadata['pending_tenant_setup'] = {
                     'user_id': str(self.user.id),
                     'business_id': str(self.business.id if self.business else None),
                     'timestamp': timezone.now().isoformat(),
@@ -424,11 +421,10 @@ class UserProfile(models.Model):
                 tenant.setup_status = 'deferred'
                 tenant.save(update_fields=['setup_status'])
                 
-                logger.info(f"Deferred schema setup for user {self.user.email} - schema: {schema_name}")
+                logger.info(f"Deferred tenant setup for user {self.user.email} - tenant_id: {tenant.id}")
             
-            # Use tenant_id directly instead of tenant to avoid circular references
+            # Use tenant_id directly
             self.tenant_id = tenant.id
-            self.schema_name = schema_name
         
         now = timezone.now()
         self.modified_at = now
@@ -436,13 +432,16 @@ class UserProfile(models.Model):
         super().save(*args, **kwargs)
 
     def to_dict(self):
+        # Get business first to avoid multiple property access
+        business = self.business
+        
         return {
             'email': self.user.email,
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
             'full_name': self.user.get_full_name(),
             'occupation': self.occupation,
-            'business_name': self.business.business_name if self.business_id is not None else None,
+            'business_name': business.business_name if business is not None else None,
             'tenant_name': self.tenant.name if self.tenant else None,
             'is_business_owner': self.is_business_owner,
             'country': str(self.country),

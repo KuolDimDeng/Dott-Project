@@ -133,6 +133,12 @@ export async function POST(request) {
         filteredAttributes['custom:updated_at'] = new Date().toISOString();
       }
       
+      // Set user role to OWNER if not specified
+      if (!filteredAttributes['custom:userrole']) {
+        filteredAttributes['custom:userrole'] = 'OWNER';
+        logger.info('[API] Adding user role OWNER for completed onboarding');
+      }
+      
       logger.info('[API] Setting complete onboarding attributes:', filteredAttributes);
     }
     
@@ -209,9 +215,10 @@ export async function POST(request) {
     // This will only work if the server is properly configured with AWS IAM permissions
     try {
       // Use dynamic import for AWS SDK to ensure it only loads on the server
-      const { CognitoIdentityServiceProvider } = await import('aws-sdk');
-      const cognitoProvider = new CognitoIdentityServiceProvider({ region });
-      const result = await cognitoProvider.adminUpdateUserAttributes(payload).promise();
+      const { CognitoIdentityProviderClient, AdminUpdateUserAttributesCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+      const client = new CognitoIdentityProviderClient({ region });
+      const command = new AdminUpdateUserAttributesCommand(payload);
+      const result = await client.send(command);
       
       logger.info('[API] User attributes updated successfully:', { attributes: filteredAttributes });
       

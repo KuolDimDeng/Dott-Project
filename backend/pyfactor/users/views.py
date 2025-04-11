@@ -45,7 +45,7 @@ class ProfileView(APIView):
                 # Log the result for debugging purposes
                 if profile:
                     logger.info(f"Profile details for {user.email}:", {
-                        'schema_name': profile.tenant.schema_name if profile.tenant else None,
+                        'schema_name': profile. tenant.id if profile.tenant else None,
                         'has_business': bool(profile.business),
                         'business_name': profile.business.business_name if profile.business else None,
                         'is_business_owner': profile.is_business_owner
@@ -209,8 +209,8 @@ class ProfileView(APIView):
 
             # Add schema information if tenant exists
             try:
-                if user_profile.tenant and user_profile.tenant.schema_name:
-                    profile_data['profile']['schema_name'] = user_profile.tenant.schema_name
+                if user_profile.tenant and user_profile. tenant.id:
+                    profile_data['profile']['schema_name'] = user_profile. tenant.id
             except Exception as e:
                 logger.error(f"Error adding schema name: {str(e)}")
                 # Continue without adding schema_name

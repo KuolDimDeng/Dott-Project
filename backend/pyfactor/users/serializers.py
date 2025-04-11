@@ -27,7 +27,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     phone_number = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     # Status and tracking fields
-    database_status = serializers.CharField(required=False)
     setup_status = serializers.CharField(required=False)
     last_setup_attempt = serializers.DateTimeField(required=False, allow_null=True)
 
@@ -46,8 +45,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'postcode',
             'country',
             'phone_number',
-            'database_name',
-            'database_status',
             'business_name',
             'business_type',
             'business_data',

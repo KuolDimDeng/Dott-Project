@@ -1,4 +1,3 @@
-#/Users/kuoldeng/projectx/backend/pyfactor/onboarding/utils.py
 import re
 import time
 import uuid
@@ -39,136 +38,91 @@ for handler in logging.getLogger('django').handlers:
 
 logger = get_logger()
 
-def generate_unique_schema_name(user):
-    """Generate standardized schema name with tenant_ prefix"""
+def generate_unique_tenant_id(user):
+    """Generate standardized tenant ID (UUID)"""
     if not user.email:
-        logger.error(f"Cannot generate schema name - user has no email: {user.id}")
+        logger.error(f"Cannot generate tenant ID - user has no email: {user.id}")
         return None
 
     try:
-        # Generate tenant ID and convert hyphens to underscores
-        # Ensure we're working with a string representation of the UUID
-        tenant_id = str(uuid.uuid4()).replace('-', '_')
+        # Generate a UUID
+        tenant_id = str(uuid.uuid4())
         
-        # Combine with tenant_ prefix
-        schema_name = f"tenant_{tenant_id}"
+        logger.debug(f"Generated tenant ID: {tenant_id} for user: {user.email}")
         
-        logger.debug(f"Generated schema name: {schema_name} for user: {user.email}")
+        # Validate format
+        if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', tenant_id, re.IGNORECASE):
+            logger.error(f"Generated invalid tenant ID format: {tenant_id}")
+            return None
         
-        # Validate format - ONLY allow underscores, not hyphens
-        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-            logger.warning(f"Generated invalid schema name format: {schema_name}")
-            # Try to fix it by replacing any remaining special characters
-            schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-            logger.debug(f"Fixed schema name to: {schema_name}")
-            
-            # Check again after fixing
-            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-                logger.error(f"Could not fix schema name format: {schema_name}")
-                return None
-        
-        logger.debug(f"Generated schema name: {schema_name} for user: {user.email}")
-        return schema_name
+        logger.debug(f"Generated tenant ID: {tenant_id} for user: {user.email}")
+        return tenant_id
 
     except Exception as e:
-        logger.error(f"Error generating schema name for user {user.email}: {str(e)}")
+        logger.error(f"Error generating tenant ID for user {user.email}: {str(e)}")
         return None
 
-def validate_schema_creation(cursor, schema_name):
-    """Validate schema exists and is accessible
+def validate_tenant_isolation(tenant_id, schema_name=None):
+    """Validate tenant isolation is properly configured
     
     Args:
-        cursor: Active database cursor
-        schema_name: Name of schema to validate
+        tenant_id: UUID of the tenant
+        schema_name: Legacy schema name (for backward compatibility)
         
     Returns:
-        bool: True if schema exists and is accessible
+        bool: True if tenant isolation is properly configured
         
     Raises:
-        Exception: If schema can't be accessed
+        Exception: If tenant isolation can't be established
     """
+    from django.db import connection
+    
     try:
-        # Always convert hyphens to underscores in schema names
-        if '-' in schema_name:
-            fixed_schema_name = schema_name.replace('-', '_')
-            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
-            schema_name = fixed_schema_name
+        # Get a cursor for database operations
+        cursor = connection.cursor()
         
-        # Validate schema name format - ONLY allow underscores, not hyphens
-        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-            # Try to fix it by replacing any remaining special characters
-            fixed_schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-            logger.debug(f"Fixed schema name to: {fixed_schema_name}")
-            schema_name = fixed_schema_name
-            
-            # Check again after fixing
-            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-                raise ValueError(f"Invalid schema name format: {schema_name}")
-
-        # Check schema existence
-        cursor.execute("""
-            SELECT schema_name FROM information_schema.schemata
-            WHERE schema_name = %s
-        """, [schema_name])
+        # Convert tenant_id to string if it's a UUID object
+        tenant_id_str = str(tenant_id)
         
-        exists = cursor.fetchone()
-        if exists:
-            # Try to access the schema using context manager
-            with tenant_schema_context(cursor, schema_name):
-                cursor.execute('SHOW search_path')
+        # Verify the tenant_id format
+        if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', tenant_id_str, re.IGNORECASE):
+            raise ValueError(f"Invalid tenant ID format: {tenant_id_str}")
+        
+        # Set the current tenant for RLS
+        try:
+            # Try to establish the tenant context using RLS
+            with tenant_context_manager(tenant_id_str):
+                # Run a simple query to verify isolation
+                cursor.execute('SELECT current_setting(\'app.current_tenant\')')
                 result = cursor.fetchone()
-                current_path = result[0] if result else ''
-                # Check if schema_name is in the current path
-                # Sometimes the schema might exist but not be in the search path
-                # In that case, we'll try to add it to the search path
-                if schema_name in current_path:
-                    logger.info(f"Successfully validated schema: {schema_name}")
+                current_tenant = result[0] if result else None
+                
+                if current_tenant == tenant_id_str:
+                    logger.info(f"Successfully validated tenant isolation for: {tenant_id_str}")
                     return True
                 else:
-                    logger.warning(f"Schema {schema_name} exists but is not in search path, attempting to add it")
-                    try:
-                        # Try to add the schema to the search path
-                        cursor.execute(f'SET search_path TO "{schema_name}",public')
-                        cursor.execute('SHOW search_path')
-                        result = cursor.fetchone()
-                        updated_path = result[0] if result else ''
-                        
-                        if schema_name in updated_path:
-                            logger.info(f"Successfully added schema {schema_name} to search path")
-                            return True
-                        else:
-                            logger.error(f"Failed to add schema {schema_name} to search path")
-                            # Instead of raising an exception, return False to trigger schema recreation
-                            return False
-                    except Exception as e:
-                        logger.error(f"Error adding schema {schema_name} to search path: {str(e)}")
-                        # Return False to trigger schema recreation
-                        return False
-        
-        # Schema doesn't exist, create it
-        logger.info(f"Schema {schema_name} does not exist, will be created")
-        return False
+                    logger.error(f"Tenant context verification failed. Expected: {tenant_id_str}, Got: {current_tenant}")
+                    return False
+        except Exception as e:
+            logger.error(f"Error establishing tenant context: {str(e)}")
+            return False
 
     except Exception as e:
-        logger.error(f"Schema validation failed for {schema_name}: {str(e)}")
+        logger.error(f"Tenant isolation validation failed for {tenant_id}: {str(e)}")
         raise
 
-def create_tenant_schema(cursor, schema_name, user_id):
-    """Create new schema for tenant with proper permissions"""
+def initialize_tenant_environment(tenant_id, legacy_schema_name=None):
+    """Initialize tenant environment with proper permissions
+    
+    This function sets up all the necessary database structures for a tenant.
+    The legacy_schema_name parameter is kept for backward compatibility.
+    """
     try:
-        logger.debug(f"Starting schema creation for {schema_name}")
-        # Memory optimization: Close all connections before starting schema creation
+        logger.debug(f"Starting tenant environment initialization for {tenant_id}")
+        # Memory optimization: Close all connections before starting
         from django.db import connections
         connections.close_all()
-        logger.debug("Closed all connections before schema creation")
-        
-        # Set a statement timeout to prevent long-running queries
-        cursor.execute("SET statement_timeout = '30s'")
-
-        # Memory optimization: Close all connections before starting schema creation
-        from django.db import connections
-        connections.close_all()
-        logger.debug("Closed all connections before schema creation")
+        logger.debug("Closed all connections before tenant initialization")
         
         # Create a new connection with autocommit=True to avoid transaction issues
         import psycopg2
@@ -183,52 +137,28 @@ def create_tenant_schema(cursor, schema_name, user_id):
             port=db_settings['PORT']
         )
         new_connection.autocommit = True
-        new_cursor = new_connection.cursor()
-        
-        # Use the new cursor instead of the original one
-        cursor = new_cursor
+        cursor = new_connection.cursor()
         
         # Set a statement timeout to prevent long-running queries
         cursor.execute("SET statement_timeout = '30s'")
         
         # Set a lock timeout to prevent deadlocks
         cursor.execute("SET lock_timeout = '5s'")
-
         
-        # Always convert hyphens to underscores in schema names
-        if '-' in schema_name:
-            fixed_schema_name = schema_name.replace('-', '_')
-            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
-            schema_name = fixed_schema_name
-        
-        # Validate schema name format - ONLY allow underscores, not hyphens
-        if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-            # Try to fix it by replacing any remaining special characters
-            fixed_schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-            logger.debug(f"Fixed schema name to: {fixed_schema_name}")
-            schema_name = fixed_schema_name
-            
-            # Check again after fixing
-            if not re.match(r'^tenant_[a-zA-Z0-9_]+$', schema_name):
-                raise ValueError(f"Invalid schema name format: {schema_name}")
-        
-        # Validate user_id is a valid UUID and ensure it's a string
+        # Validate tenant_id is a valid UUID and ensure it's a string
         try:
             # Convert to string first in case it's already a UUID object
-            user_id_str = str(user_id)
-            
-            # If user_id contains underscores, replace them with hyphens for UUID validation
-            uuid_validation_str = user_id_str.replace('_', '-')
+            tenant_id_str = str(tenant_id)
             
             # Validate as UUID
-            uuid_obj = uuid.UUID(uuid_validation_str)
+            uuid_obj = uuid.UUID(tenant_id_str)
             
-            # Use the original user_id_str which may contain underscores
-            user_id = user_id_str
-            logger.debug(f"Validated and formatted user_id: {user_id}")
+            # Use the string representation
+            tenant_id = tenant_id_str
+            logger.debug(f"Validated and formatted tenant_id: {tenant_id}")
         except ValueError:
-            logger.error(f"Invalid user_id format: {user_id}")
-            raise ValueError(f"Invalid user_id format: {user_id}")
+            logger.error(f"Invalid tenant_id format: {tenant_id}")
+            raise ValueError(f"Invalid tenant_id format: {tenant_id}")
             
         # Save current search path
         cursor.execute('SHOW search_path')
@@ -236,39 +166,11 @@ def create_tenant_schema(cursor, schema_name, user_id):
         original_search_path = result[0] if result else 'public'
         
         try:
-            # Check if schema already exists
-            cursor.execute("""
-                SELECT 1 FROM information_schema.schemata
-                WHERE schema_name = %s
-            """, [schema_name])
+            # Set current tenant ID for RLS
+            cursor.execute(f"SET app.current_tenant = '{tenant_id}'")
+            logger.debug(f"Set current tenant ID to {tenant_id} for RLS")
             
-            if cursor.fetchone():
-                logger.debug(f"Schema {schema_name} already exists")
-                return True
-                
-            # Create schema - ensure schema name is properly quoted
-            schema_name_sql = schema_name
-            cursor.execute(f'CREATE SCHEMA "{schema_name_sql}"')
-            logger.debug(f"Created schema {schema_name}")
-            
-            # Set up permissions with detailed logging
-            db_user = settings.DATABASES["default"]["USER"]
-            logger.debug(f"Setting up permissions for user {db_user}")
-            
-            permission_commands = [
-                f'GRANT USAGE ON SCHEMA "{schema_name_sql}" TO {db_user}',
-                f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name_sql}" TO {db_user}',
-                f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name_sql}" GRANT ALL ON TABLES TO {db_user}'
-            ]
-            
-            for cmd in permission_commands:
-                cursor.execute(cmd)
-                logger.debug(f"Executed permission command: {cmd}")
-            
-            # Set search path to new schema for migrations
-            cursor.execute(f'SET search_path TO "{schema_name_sql}",public')
-            
-            # Run migrations directly and FAIL if they don't succeed
+            # Run initialization SQL and create essential tables
             try:
                 # Create essential tables directly with SQL instead of relying on migrations
                 # This ensures we have the basic tables needed for the tenant
@@ -294,7 +196,8 @@ def create_tenant_schema(cursor, schema_name, user_id):
                         "modified_at" timestamp with time zone NOT NULL,
                         "legal_structure" varchar(50) NOT NULL,
                         "date_founded" date NULL,
-                        "owner_id" uuid NOT NULL
+                        "owner_id" uuid NOT NULL,
+                        "tenant_id" uuid NOT NULL
                     )
                     """,
                     # Add indexes for business_business
@@ -305,6 +208,10 @@ def create_tenant_schema(cursor, schema_name, user_id):
                     """
                     CREATE INDEX IF NOT EXISTS "business_business_owner_id_idx"
                     ON "business_business" ("owner_id")
+                    """,
+                    """
+                    CREATE INDEX IF NOT EXISTS "business_business_tenant_id_idx"
+                    ON "business_business" ("tenant_id")
                     """,
                     
                     # Create users_userprofile table
@@ -322,10 +229,9 @@ def create_tenant_schema(cursor, schema_name, user_id):
                         "modified_at" timestamp with time zone NOT NULL DEFAULT now(),
                         "is_business_owner" boolean NOT NULL DEFAULT false,
                         "shopify_access_token" varchar(255) NULL,
-                        "schema_name" varchar(63) NULL,
                         "metadata" jsonb NULL,
                         "business_id" uuid NULL,
-                        "tenant_id" uuid NULL,
+                        "tenant_id" uuid NOT NULL,
                         "user_id" uuid NOT NULL
                     )
                     """,
@@ -342,7 +248,7 @@ def create_tenant_schema(cursor, schema_name, user_id):
                             WHERE conname = 'unique_user_profile'
                         ) THEN
                             ALTER TABLE "users_userprofile"
-                            ADD CONSTRAINT "unique_user_profile" UNIQUE ("user_id");
+                            ADD CONSTRAINT "unique_user_profile" UNIQUE ("user_id", "tenant_id");
                         END IF;
                     EXCEPTION WHEN others THEN
                         -- Constraint might already exist
@@ -391,8 +297,14 @@ def create_tenant_schema(cursor, schema_name, user_id):
                         "setup_error" text NULL,
                         "selected_plan" varchar(12) NOT NULL,
                         "business_id" uuid NULL,
-                        "user_id" uuid NOT NULL UNIQUE
+                        "tenant_id" uuid NOT NULL,
+                        "user_id" uuid NOT NULL
                     )
+                    """,
+                    # Add index for tenant_id in onboarding_onboardingprogress
+                    """
+                    CREATE INDEX IF NOT EXISTS "onboarding_onboardingprogress_tenant_id_idx"
+                    ON "onboarding_onboardingprogress" ("tenant_id")
                     """,
                     # Add foreign key from onboarding_onboardingprogress to business_business
                     """
@@ -437,8 +349,14 @@ def create_tenant_schema(cursor, schema_name, user_id):
                         product_code VARCHAR(255),
                         stock_quantity INTEGER DEFAULT 0,
                         reorder_level INTEGER DEFAULT 0,
-                        department_id UUID
+                        department_id UUID,
+                        tenant_id UUID NOT NULL
                     )
+                    """,
+                    # Add tenant_id index to inventory_product
+                    """
+                    CREATE INDEX IF NOT EXISTS "inventory_product_tenant_id_idx"
+                    ON "inventory_product" ("tenant_id")
                     """,
                     """
                     CREATE TABLE IF NOT EXISTS inventory_category (
@@ -446,16 +364,28 @@ def create_tenant_schema(cursor, schema_name, user_id):
                         name VARCHAR(255) NOT NULL,
                         description TEXT,
                         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        tenant_id UUID NOT NULL
                     )
+                    """,
+                    # Add tenant_id index to inventory_category
+                    """
+                    CREATE INDEX IF NOT EXISTS "inventory_category_tenant_id_idx"
+                    ON "inventory_category" ("tenant_id")
                     """,
                     """
                     CREATE TABLE IF NOT EXISTS inventory_product_category (
                         id UUID PRIMARY KEY,
                         product_id UUID REFERENCES inventory_product(id) ON DELETE CASCADE,
                         category_id UUID REFERENCES inventory_category(id) ON DELETE CASCADE,
-                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                        tenant_id UUID NOT NULL
                     )
+                    """,
+                    # Add tenant_id index to inventory_product_category
+                    """
+                    CREATE INDEX IF NOT EXISTS "inventory_product_category_tenant_id_idx"
+                    ON "inventory_product_category" ("tenant_id")
                     """
                 ]
                 
@@ -471,18 +401,6 @@ def create_tenant_schema(cursor, schema_name, user_id):
                     ('onboarding', '0001_initial')
                 ]
                 
-                for app, name in migration_records:
-                    cursor.execute("""
-                        INSERT INTO django_migrations (app, name, applied)
-                        VALUES (%s, %s, NOW())
-                        ON CONFLICT DO NOTHING
-                    """, [app, name])
-                    logger.debug(f"Recorded migration {app}.{name} in django_migrations")
-                
-                # Now run migrations to create any additional tables
-                from django.core.management import call_command
-                # Using the global settings import instead of re-importing
-                
                 # Create django_migrations table if it doesn't exist
                 cursor.execute("""
                     CREATE TABLE IF NOT EXISTS django_migrations (
@@ -493,54 +411,13 @@ def create_tenant_schema(cursor, schema_name, user_id):
                     )
                 """)
                 
-                # Make sure we're using the correct schema before running migrations
-                cursor.execute(f'SET search_path TO "{schema_name_sql}",public')
-                
-                # Check which tables already exist to avoid migration conflicts
-                cursor.execute("""
-                    SELECT table_name FROM information_schema.tables
-                    WHERE table_schema = %s
-                """, [schema_name_sql])
-                existing_tables = set(row[0] for row in cursor.fetchall())
-                logger.debug(f"Existing tables in schema {schema_name_sql}: {existing_tables}")
-                
-                # Create a list of apps to skip migrations for
-                skip_migrations_for = []
-                # Only skip if the table actually exists and has the correct structure
-                if 'business_business' in existing_tables:
-                    # Verify the table structure is correct
+                for app, name in migration_records:
                     cursor.execute("""
-                        SELECT column_name FROM information_schema.columns
-                        WHERE table_schema = %s AND table_name = 'business_business'
-                    """, [schema_name_sql])
-                    columns = [row[0] for row in cursor.fetchall()]
-                    required_columns = ['id', 'business_name', 'business_type', 'owner_id']
-                    if all(col in columns for col in required_columns):
-                        skip_migrations_for.append('business')
-                    else:
-                        logger.warning(f"business_business table exists but has incorrect structure. Will run migrations.")
-                
-                if 'users_userprofile' in existing_tables:
-                    skip_migrations_for.append('users')
-                if 'onboarding_onboardingprogress' in existing_tables:
-                    skip_migrations_for.append('onboarding')
-                
-                logger.debug(f"Skipping migrations for apps: {skip_migrations_for}")
-                
-                # IMPORTANT: We're only creating essential tables here with direct SQL
-                # All migrations will be deferred until the dashboard setup
-                # We're not running any Django migrations here to avoid transaction issues
-                logger.info(f"Only creating essential tables in schema {schema_name_sql}. Full migrations will be run at dashboard.")
-                
-                # Create django_migrations table to record our essential migrations
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS django_migrations (
-                        id serial NOT NULL PRIMARY KEY,
-                        app varchar(255) NOT NULL,
-                        name varchar(255) NOT NULL,
-                        applied timestamp with time zone NOT NULL
-                    )
-                """)
+                        INSERT INTO django_migrations (app, name, applied)
+                        VALUES (%s, %s, NOW())
+                        ON CONFLICT DO NOTHING
+                    """, [app, name])
+                    logger.debug(f"Recorded migration {app}.{name} in django_migrations")
                 
                 # Record that we've deferred migrations for later
                 cursor.execute("""
@@ -549,48 +426,42 @@ def create_tenant_schema(cursor, schema_name, user_id):
                     ON CONFLICT DO NOTHING
                 """)
                 
-                # We're intentionally NOT running migrations for other apps here
-                # They will be run when the user reaches the dashboard
-                        # Continue with other apps even if one fails
-                
-                logger.info(f"Migrations successfully applied to schema {schema_name}")
-                
                 # Check if tables were created
                 cursor.execute("""
                     SELECT table_name FROM information_schema.tables
-                    WHERE table_schema = %s
-                """, [schema_name])
+                    WHERE table_schema = 'public' AND 
+                          table_name IN ('business_business', 'users_userprofile', 'onboarding_onboardingprogress')
+                """)
                 tables = [row[0] for row in cursor.fetchall()]
-                logger.info(f"Tables created in schema {schema_name}: {len(tables)} tables")
+                logger.info(f"Tables verified in environment for tenant {tenant_id}: {len(tables)} tables")
                 
                 if not tables:
-                    raise Exception(f"No tables were created in schema {schema_name} after migrations")
+                    raise Exception(f"No tables were created for tenant {tenant_id}")
+                
+                logger.info(f"Migrations successfully applied for tenant {tenant_id}")
             except Exception as migrate_error:
-                logger.error(f"Error applying migrations to schema {schema_name}: {str(migrate_error)}")
-                # Don't continue - raise the exception to fail schema creation
-                # We're not using a transaction, so no need to rollback
+                logger.error(f"Error applying migrations for tenant {tenant_id}: {str(migrate_error)}")
+                # Don't continue - raise the exception to fail initialization
                 raise migrate_error
             
-            # Verify schema exists and is accessible using context manager
-            with tenant_schema_context(cursor, schema_name):
-                cursor.execute('SHOW search_path')
+            # Verify tenant isolation is properly configured using context manager
+            with tenant_context_manager(tenant_id):
+                cursor.execute('SELECT current_setting(\'app.current_tenant\')')
                 result = cursor.fetchone()
-                current_path = result[0] if result else ''
-                if schema_name_sql not in current_path:
-                    raise Exception(f"Schema {schema_name} is not accessible")
+                current_tenant = result[0] if result else ''
+                if current_tenant != tenant_id:
+                    raise Exception(f"Tenant isolation is not properly configured for {tenant_id}")
             
-            # No need to commit as we're not using a transaction
-            
-            logger.info(f"Successfully created and verified schema {schema_name} for user {user_id}")
+            logger.info(f"Successfully initialized environment for tenant {tenant_id}")
             return True
             
         except Exception as e:
             # Close all connections to prevent connection leaks
             from django.db import connections
             connections.close_all()
-            logger.debug(f"Closed all connections after error for schema {schema_name}")
+            logger.debug(f"Closed all connections after error for tenant {tenant_id}")
 
-            logger.error(f"Error creating schema {schema_name}: {str(e)}")
+            logger.error(f"Error initializing tenant environment {tenant_id}: {str(e)}")
             raise
             
         finally:
@@ -600,30 +471,12 @@ def create_tenant_schema(cursor, schema_name, user_id):
                 logger.debug(f"Restored search path to: {original_search_path}")
             
     except Exception as e:
-        logger.error(f"Error in create_tenant_schema: {str(e)}")
-        # Try to clean up if schema creation failed
+        logger.error(f"Error in initialize_tenant_environment: {str(e)}")
+        # Try cleanup if initialization failed
         try:
-            # Create a fresh connection for cleanup to avoid transaction issues
-            import psycopg2
-            from django.conf import settings
-            
-            db_settings = settings.DATABASES['default']
-            cleanup_connection = psycopg2.connect(
-                dbname=db_settings['NAME'],
-                user=db_settings['USER'],
-                password=db_settings['PASSWORD'],
-                host=db_settings['HOST'],
-                port=db_settings['PORT']
-            )
-            cleanup_connection.autocommit = True
-            
-            with cleanup_connection.cursor() as cleanup_cursor:
-                cleanup_cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
-                logger.debug(f"Cleaned up failed schema creation for {schema_name}")
-            
-            cleanup_connection.close()
+            cleanup_tenant_resources(tenant_id)
         except Exception as cleanup_error:
-            logger.error(f"Error cleaning up failed schema: {str(cleanup_error)}")
+            logger.error(f"Error cleaning up tenant resources: {str(cleanup_error)}")
         
         # Close all connections to prevent connection leaks
         from django.db import connections
@@ -632,25 +485,24 @@ def create_tenant_schema(cursor, schema_name, user_id):
         raise
 
 @contextmanager
-def tenant_schema_context(cursor, schema_name, preserve_context=False):
-    """Context manager for schema operations that ensures proper connection handling
+def tenant_context_manager(tenant_id, legacy_schema_name=None, preserve_context=False):
+    """Context manager for tenant isolation that ensures proper connection handling
     
     Args:
-        cursor: Database cursor (will be replaced with a new cursor)
-        schema_name: Schema to use in context
-        preserve_context: If True, don't reset schema to public when exiting
+        tenant_id: The tenant ID
+        legacy_schema_name: Legacy schema name (no longer used with RLS)
+        preserve_context: If True, don't reset tenant context when exiting
     """
     from django.db import connections
-    from pyfactor.db_routers import TenantSchemaRouter, local
+    from pyfactor.db_routers import local
     import psycopg2
     from django.conf import settings
     
-    previous_schema = None
     start_time = time.time()
     
-    logger.info(f"[TRANSACTION DEBUG] Entering tenant_schema_context for schema: {schema_name}")
+    logger.info(f"[TRANSACTION DEBUG] Entering tenant context for tenant: {tenant_id}")
     
-    # CRITICAL IMPROVEMENT: Always create a completely new isolated connection
+    # Always create a completely new isolated connection
     # with autocommit mode to avoid nested transactions and abortion issues
     new_connection = None
     new_cursor = None
@@ -678,7 +530,7 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         new_cursor = new_connection.cursor()
         logger.info(f"[TRANSACTION DEBUG] Successfully created isolated autocommit connection")
         
-        # Replace the provided cursor with our new one
+        # We'll use this new cursor
         cursor = new_cursor
     except Exception as conn_error:
         logger.error(f"[TRANSACTION DEBUG] Error creating isolated connection: {str(conn_error)}")
@@ -688,7 +540,7 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
                 new_connection.close()
             except:
                 pass
-        # Re-raise the exception - don't proceed with original potentially broken cursor
+        # Re-raise the exception
         raise
     
     try:
@@ -724,47 +576,33 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         except Exception as check_error:
             logger.warning(f"[TRANSACTION DEBUG] Could not fully verify transaction status: {str(check_error)}")
         
-        # Normalize schema name (replace hyphens with underscores)
-        if '-' in schema_name:
-            schema_name = schema_name.replace('-', '_')
-            logger.info(f"[TRANSACTION DEBUG] Normalized schema name: {schema_name}")
+        # Convert UUID to string if needed
+        tenant_id_str = str(tenant_id)
         
-        # Ensure schema name is properly formatted for SQL identifiers
-        schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-        logger.info(f"[TRANSACTION DEBUG] Using sanitized schema name: {schema_name}")
+        # Set tenant ID for RLS
+        logger.info(f"[TRANSACTION DEBUG] Setting tenant context to {tenant_id_str}")
+        set_current_tenant_id(tenant_id_str)
+        cursor.execute('SET search_path TO public')
         
-        # Set search path to our schema
-        logger.info(f"[TRANSACTION DEBUG] Setting search_path to {schema_name}")
-        cursor.execute(f'SET search_path TO "{schema_name}",public')
-        
-        # Verify search path was set correctly
-        cursor.execute('SHOW search_path')
+        # Verify tenant context was set correctly
+        cursor.execute("SELECT current_setting('app.current_tenant')")
         result = cursor.fetchone()
-        current_path = result[0] if result else ''
-        logger.info(f"[TRANSACTION DEBUG] Current search_path: {current_path}")
+        current_tenant = result[0] if result else ''
+        logger.info(f"[TRANSACTION DEBUG] Current tenant context: {current_tenant}")
         
-        if schema_name not in current_path:
-            # Retry setting the search path if needed
-            logger.warning(f"[TRANSACTION DEBUG] Schema {schema_name} not in search path: {current_path}, retrying")
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
-            cursor.execute('SHOW search_path')
-            result = cursor.fetchone()
-            fixed_path = result[0] if result else ''
-            logger.info(f"[TRANSACTION DEBUG] Updated search_path: {fixed_path}")
-            
-            if schema_name not in fixed_path:
-                raise Exception(f"Failed to set search path to {schema_name}")
+        if current_tenant != tenant_id_str:
+            raise Exception(f"Failed to set tenant context to {tenant_id_str}")
         
-        # Store schema in thread local for routing
-        setattr(local, 'tenant_schema', schema_name)
+        # Store tenant ID in thread local for routing
+        setattr(local, 'tenant_id', tenant_id_str)
         
         # Hand control to caller code
         logger.info(f"[TRANSACTION DEBUG] Context ready, yielding to caller")
         yield cursor  # Important: yield the cursor so caller can use it
-        logger.info(f"[TRANSACTION DEBUG] Control returned to tenant_schema_context")
+        logger.info(f"[TRANSACTION DEBUG] Control returned to tenant_context_manager")
         
     except Exception as e:
-        logger.error(f"[TRANSACTION DEBUG] Error in tenant_schema_context: {str(e)}")
+        logger.error(f"[TRANSACTION DEBUG] Error in tenant_context_manager: {str(e)}")
         
         # Log stack trace for better debugging
         import traceback
@@ -774,7 +612,7 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         raise
         
     finally:
-        logger.info(f"[TRANSACTION DEBUG] Cleanup in tenant_schema_context finally block")
+        logger.info(f"[TRANSACTION DEBUG] Cleanup in tenant_context_manager finally block")
         
         # Always close our isolated connection to prevent leaks
         if new_connection:
@@ -789,156 +627,112 @@ def tenant_schema_context(cursor, schema_name, preserve_context=False):
         
         # Reset context if requested
         if not preserve_context:
-            # Reset thread local to public schema
-            setattr(local, 'tenant_schema', 'public')
-            logger.info(f"[TRANSACTION DEBUG] Reset tenant_schema to public")
+            # Reset thread local context
+            setattr(local, 'tenant_id', None)
+            logger.info(f"[TRANSACTION DEBUG] Reset tenant context")
         else:
-            logger.info(f"[TRANSACTION DEBUG] Preserved tenant schema context: {schema_name}")
+            logger.info(f"[TRANSACTION DEBUG] Preserved tenant context: {tenant_id}")
         
-        logger.info(f"[TRANSACTION DEBUG] Schema context completed in {time.time() - start_time:.4f}s")
+        logger.info(f"[TRANSACTION DEBUG] Tenant context completed in {time.time() - start_time:.4f}s")
 
-def set_tenant_schema(cursor, schema_name):
-    """Set search_path to tenant schema"""
-    from django.db import connections
-    from pyfactor.db_routers import TenantSchemaRouter
+def set_tenant_context(tenant_id):
+    """Set the current tenant context for RLS"""
+    from django.db import connection
     
     start_time = time.time()
     try:
-        logger.debug(f"Setting schema to: {schema_name}")
+        # Convert UUID to string if needed
+        tenant_id_str = str(tenant_id)
+        logger.debug(f"Setting tenant context to: {tenant_id_str}")
         
-        # Always convert hyphens to underscores in schema names
-        if schema_name != 'public' and '-' in schema_name:
-            fixed_schema_name = schema_name.replace('-', '_')
-            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
-            schema_name = fixed_schema_name
+        # Verify the tenant_id format
+        if not re.match(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$', tenant_id_str, re.IGNORECASE):
+            raise ValueError(f"Invalid tenant ID format: {tenant_id_str}")
         
-        # Ensure schema name is properly formatted for SQL identifiers
-        if schema_name != 'public':
-            schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
+        # Get a cursor for database operations
+        cursor = connection.cursor()
         
-        if schema_name == 'public':
-            # Set the schema directly on the cursor first
-            cursor.execute('SET search_path TO public')
-            
-            # Use optimized connection for public schema
-            TenantSchemaRouter.get_connection_for_schema('public')
-        else:
-            # First verify schema exists
-            with connections['default'].cursor() as default_cursor:
-                default_cursor.execute("""
-                    SELECT 1 FROM information_schema.schemata
-                    WHERE schema_name = %s
-                """, [schema_name])
-                if not default_cursor.fetchone():
-                    logger.error(f"Schema {schema_name} does not exist")
-                    raise Exception(f"Schema {schema_name} does not exist")
-            
-            # Set the schema directly on the cursor first
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
-            
-            # Then use the router to ensure all connections use this schema
-            TenantSchemaRouter.get_connection_for_schema(schema_name)
-            
-            # Verify search path was set
-            cursor.execute('SHOW search_path')
-            result = cursor.fetchone()
-            current_path = result[0] if result else ''
-            logger.debug(f"Current search_path: {current_path} (set in {time.time() - start_time:.4f}s)")
-            
-            if schema_name not in current_path:
-                logger.warning(f"Schema {schema_name} not in search path: {current_path}, attempting to fix")
-                cursor.execute(f'SET search_path TO "{schema_name}",public')
-                
-                # Check again
-                cursor.execute('SHOW search_path')
-                result = cursor.fetchone()
-                current_path = result[0] if result else ''
-                if schema_name not in current_path:
-                    raise Exception(f"Failed to set search_path to {schema_name}")
-                
-        # Update thread local storage
+        # Set the tenant ID for RLS
+        set_current_tenant_id(tenant_id_str)
+        
+        # Update thread local storage for routing
         from pyfactor.db_routers import local
-        setattr(local, 'tenant_schema', schema_name)
+        setattr(local, 'tenant_id', tenant_id_str)
+        
+        # Verify tenant context was set correctly
+        cursor.execute("SELECT current_setting('app.current_tenant')")
+        result = cursor.fetchone()
+        current_tenant = result[0] if result else ''
+        logger.debug(f"Current tenant context: {current_tenant} (set in {time.time() - start_time:.4f}s)")
+        
+        if current_tenant != tenant_id_str:
+            raise Exception(f"Failed to set tenant context to {tenant_id_str}")
+        
+        return True
     except Exception as e:
-        logger.error(f"Error setting schema {schema_name}: {str(e)}")
+        logger.error(f"Error setting tenant context {tenant_id}: {str(e)}")
         raise
 
-def reset_schema(cursor):
-    """Reset search_path to public"""
+def reset_tenant_context(cursor):
+    """Reset tenant context to None"""
     try:
-        cursor.execute('SET search_path TO public')
+        # Clear the tenant ID
+        cursor.execute("SET app.current_tenant = ''")
+        
+        # Update thread local storage
+        from pyfactor.db_routers import local
+        setattr(local, 'tenant_id', None)
+        
+        logger.debug("Reset tenant context to None")
+        return True
     except Exception as e:
-        logger.error(f"Error resetting schema: {str(e)}")
-        # Ensure we at least try to set public schema
-        cursor.execute('SET search_path TO public')
+        logger.error(f"Error resetting tenant context: {str(e)}")
+        return False
 
-def cleanup_schema(schema_name):
-    """Clean up schema if setup fails"""
+def cleanup_tenant_resources(tenant_id):
+    """Clean up resources if tenant setup fails"""
     try:
-        # Always convert hyphens to underscores in schema names
-        if '-' in schema_name:
-            fixed_schema_name = schema_name.replace('-', '_')
-            logger.debug(f"Fixed schema name from {schema_name} to {fixed_schema_name}")
-            schema_name = fixed_schema_name
-        
-        # Ensure schema name is properly formatted for SQL identifiers
-        schema_name = re.sub(r'[^a-zA-Z0-9_]', '_', schema_name)
-        
+        # Get a database connection
         conn = get_connection()
         if conn is not None:
             conn.autocommit = True
             with conn.cursor() as cursor:
-                # Save current search path
-                cursor.execute('SHOW search_path')
-                result = cursor.fetchone()
-                original_search_path = result[0] if result else 'public'
-                
                 try:
-                    # Switch to public schema for cleanup
-                    with tenant_schema_context(cursor, 'public'):
-                        cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
-                        logger.info(f"Successfully dropped schema: {schema_name}")
-                finally:
-                    # Restore original search path
-                    if original_search_path:
-                        cursor.execute(f'SET search_path TO {original_search_path}')
-                        logger.debug(f"Restored search path to: {original_search_path}")
+                    # Delete tenant data with the tenant ID
+                    cursor.execute("""
+                        DELETE FROM business_business WHERE tenant_id = %s;
+                        DELETE FROM users_userprofile WHERE tenant_id = %s;
+                        DELETE FROM onboarding_onboardingprogress WHERE tenant_id = %s;
+                        DELETE FROM inventory_product WHERE tenant_id = %s;
+                        DELETE FROM inventory_category WHERE tenant_id = %s;
+                        DELETE FROM inventory_product_category WHERE tenant_id = %s;
+                    """, [tenant_id, tenant_id, tenant_id, tenant_id, tenant_id, tenant_id])
+                    
+                    logger.info(f"Successfully cleaned up resources for tenant: {tenant_id}")
+                except Exception as e:
+                    logger.error(f"Error cleaning up tenant resources: {str(e)}")
     except Exception as e:
-        logger.error(f"Schema cleanup failed: {str(e)}", exc_info=True)
+        logger.error(f"Tenant cleanup failed: {str(e)}", exc_info=True)
 
-
-def save_to_schemas(request, business_data, tenant_schema=None):
-    """Save business info to both public and tenant schemas if available"""
+def save_to_tenant_data(request, business_data):
+    """Save business info to the tenant context
+    
+    Args:
+        request: HTTP request
+        business_data: Business data to save
+        
+    Returns:
+        The created business object
+    """
     # Import here to avoid circular imports
     from pyfactor.business.models import Business
-    from django.db import connection
     
-    # Save to public schema first
+    # Ensure tenant_id is in the business data
+    if 'tenant_id' not in business_data and 'id' in business_data:
+        business_data['tenant_id'] = business_data['id']
+    
+    # Save to database with proper tenant context
     business = Business.objects.create(**business_data)
-    
-    # If tenant schema exists, save there too
-    if tenant_schema:
-        try:
-            with connection.cursor() as cursor:
-                with tenant_schema_context(cursor, tenant_schema):
-                    # Check if business already exists in tenant schema
-                    cursor.execute("""
-                        SELECT COUNT(*) FROM users_business
-                        WHERE id = %s
-                    """, [str(business.id)])
-                    
-                    if cursor.fetchone()[0] == 0:
-                        # Insert business data directly to tenant schema
-                        fields = ', '.join([f'"{k}"' for k in business_data.keys()])
-                        placeholders = ', '.join(['%s' for _ in business_data.keys()])
-                        values = [business_data[k] for k in business_data.keys()]
-                        
-                        cursor.execute(f"""
-                            INSERT INTO users_business ({fields})
-                            VALUES ({placeholders})
-                        """, values)
-        except Exception as e:
-            logger.warning(f"Failed to save business to tenant schema: {str(e)}")
     
     return business
 
@@ -984,11 +778,15 @@ def verify_migration_dependencies():
     
     return True
 
-def create_table_from_model(cursor, schema_name, model_class):
+def create_table_for_model(tenant_id, model_class):
     """
-    Dynamically create a database table based on a Django model class
+    Dynamically create a database table based on a Django model class with RLS
+    
+    Args:
+        tenant_id (str): The tenant ID
+        model_class (Model): The Django model class to create a table for
     """
-    from django.db import models
+    from django.db import models, connection
     import logging
     import uuid
 
@@ -998,12 +796,18 @@ def create_table_from_model(cursor, schema_name, model_class):
     request_id = uuid.uuid4().hex[:8]
     
     table_name = model_class._meta.db_table
-    logger.info(f"[DYNAMIC-CREATE-{request_id}] Creating table {table_name} in schema {schema_name} for model {model_class.__name__}")
+    logger.info(f"[DYNAMIC-CREATE-{request_id}] Creating table {table_name} for model {model_class.__name__}")
     
     field_definitions = []
     
     # Log the fields that will be created
     logger.debug(f"[DYNAMIC-CREATE-{request_id}] Model {model_class.__name__} has {len(model_class._meta.fields)} fields to process")
+    
+    # Get a cursor for database operations
+    cursor = connection.cursor()
+    
+    # Set tenant context for RLS
+    set_current_tenant_id(tenant_id)
     
     # Process all fields
     for field in model_class._meta.fields:
@@ -1070,6 +874,10 @@ def create_table_from_model(cursor, schema_name, model_class):
         field_definitions.append(field_def)
         logger.debug(f"[DYNAMIC-CREATE-{request_id}] Field definition for {field_name}: {field_def}")
     
+    # Add tenant_id field if not already present
+    if not any(field.name == 'tenant_id' for field in model_class._meta.fields):
+        field_definitions.append("tenant_id UUID NOT NULL")
+        
     # Create the table
     create_sql = f"""
     CREATE TABLE IF NOT EXISTS {table_name} (
@@ -1081,9 +889,15 @@ def create_table_from_model(cursor, schema_name, model_class):
     
     try:
         cursor.execute(create_sql)
-        logger.info(f"[DYNAMIC-CREATE-{request_id}] Successfully created table {table_name} in schema {schema_name}")
+        logger.info(f"[DYNAMIC-CREATE-{request_id}] Successfully created table {table_name}")
         
-        # Add indexes
+        # Add indexes including tenant_id index
+        cursor.execute(f"""
+        CREATE INDEX IF NOT EXISTS "idx_{table_name}_tenant_id" 
+        ON {table_name} (tenant_id);
+        """)
+        
+        # Add any model-defined indexes
         for index in model_class._meta.indexes:
             index_name = f"idx_{table_name}_{'_'.join(index.fields)}"
             index_fields = ', '.join(index.fields)
@@ -1095,24 +909,43 @@ def create_table_from_model(cursor, schema_name, model_class):
             logger.debug(f"[DYNAMIC-CREATE-{request_id}] Creating index {index_name} on fields {index_fields}")
             cursor.execute(index_sql)
             
+        # Add RLS policy for table if it doesn't exist
+        cursor.execute(f"""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_policies 
+                WHERE tablename = '{table_name}' AND policyname = '{table_name}_tenant_isolation_policy'
+            ) THEN
+                EXECUTE 'ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY';
+                EXECUTE 'CREATE POLICY {table_name}_tenant_isolation_policy ON {table_name} 
+                         USING (tenant_id::text = current_setting(''app.current_tenant'')::text)';
+            END IF;
+        END;
+        $$;
+        """)
+        
         # Log success
-        logger.info(f"[DYNAMIC-CREATE-{request_id}] Table {table_name} and its indexes successfully created in schema {schema_name}")
+        logger.info(f"[DYNAMIC-CREATE-{request_id}] Table {table_name} with RLS policies successfully created")
+        
+        # Close cursor to prevent connection leaks
+        cursor.close()
         
         return True
     except Exception as e:
-        logger.error(f"[DYNAMIC-CREATE-{request_id}] Error creating table {table_name} in schema {schema_name}: {str(e)}")
+        logger.error(f"[DYNAMIC-CREATE-{request_id}] Error creating table {table_name}: {str(e)}")
         raise
 
-def get_schema_name_from_tenant_id(tenant_id):
+def get_legacy_schema_name(tenant_id):
     """
-    Generate a schema name from a tenant ID consistently.
-    This replaces the schema_name field that was removed from the Tenant model.
+    Generate a legacy schema name from a tenant ID consistently.
+    This is only used for backward compatibility.
     
     Args:
         tenant_id (str or UUID): The tenant ID
         
     Returns:
-        str: The schema name in the format 'tenant_XYZ' with dashes replaced by underscores
+        str: The legacy schema name in the format 'tenant_XYZ' with dashes replaced by underscores
     """
     if not tenant_id:
         return None
@@ -1152,6 +985,8 @@ def process_tenant_subscription_plan(tenant, plan_name=None, billing_cycle=None)
         'success': True,
         'plan': plan,
         'billing_cycle': cycle,
-        'tenant_id': str(tenant.id),
-        'schema_name': get_schema_name_from_tenant_id(tenant.id)
+        'tenant_id': str(tenant.id)
     }
+
+# Import RLS functions
+from custom_auth.rls import set_current_tenant_id, tenant_context

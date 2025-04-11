@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script to keep only one primary Juba Made It tenant and delete all others.
+Script to delete ALL tenants in the database.
 """
 
 import os
@@ -8,8 +8,9 @@ import sys
 import psycopg2
 from psycopg2.extras import DictCursor
 import argparse
+import datetime
 
-# Database connection parameters
+# Database connection parameters - update these with your actual DB credentials
 DB_PARAMS = {
     'dbname': 'dott_main',
     'user': 'dott_admin',
@@ -18,30 +19,23 @@ DB_PARAMS = {
     'port': '5432'
 }
 
-# Primary tenant ID to keep (the oldest Juba Made It tenant from the logs)
-PRIMARY_TENANT_ID = "7b09156a-c6e3-49e5-a9ff-f0aa0dea6007"
-
 def connect_to_db():
     """Connect to the PostgreSQL database"""
     try:
         # Connect to the PostgreSQL server
         print('Connecting to the PostgreSQL database...')
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = psycopg2.connect(
+            dbname=DB_PARAMS['dbname'],
+            user=DB_PARAMS['user'],
+            password=DB_PARAMS['password'],
+            host=DB_PARAMS['host'],
+            port=DB_PARAMS['port']
+        )
         conn.autocommit = False  # We want transactions
         return conn
     except Exception as e:
         print(f"Error connecting to the database: {e}")
         sys.exit(1)
-
-def get_tenant_info(conn, tenant_id):
-    """Get information about a specific tenant"""
-    with conn.cursor(cursor_factory=DictCursor) as cursor:
-        cursor.execute("""
-            SELECT id, name, schema_name, owner_id, created_at, is_active
-            FROM custom_auth_tenant 
-            WHERE id = %s
-        """, (tenant_id,))
-        return cursor.fetchone()
 
 def get_all_tenants(conn):
     """Get all tenants from the database"""
@@ -53,102 +47,164 @@ def get_all_tenants(conn):
         """)
         return cursor.fetchall()
 
-def update_user_tenant_ids(conn, old_tenant_id, new_tenant_id):
-    """Update users from old tenant to new tenant"""
-    with conn.cursor() as cursor:
-        cursor.execute("""
-            UPDATE custom_auth_user
-            SET tenant_id = %s
-            WHERE tenant_id = %s
-            RETURNING id
-        """, (new_tenant_id, old_tenant_id))
-        return cursor.rowcount
-
-def delete_tenant(conn, tenant_id):
-    """Delete a tenant by ID"""
+def delete_tenant_data(conn, tenant_id, schema_name):
+    """Delete a tenant's schema and all its data"""
     with conn.cursor() as cursor:
         try:
-            # First try to drop the schema if it exists
-            schema_name = f"tenant_{tenant_id.replace('-', '_')}"
+            # Drop the schema if it exists
             cursor.execute(f"""
                 DROP SCHEMA IF EXISTS {schema_name} CASCADE
             """)
+            print(f"  ✓ Dropped schema {schema_name}")
+            return True
+        except Exception as e:
+            print(f"  ✗ Error dropping schema {schema_name}: {e}")
+            return False
+
+def delete_tenant_record(conn, tenant_id):
+    """Delete a tenant record from the custom_auth_tenant table"""
+    success = True
+    with conn.cursor() as cursor:
+        try:
+            # First delete from tenant_users table to resolve foreign key constraint
+            cursor.execute("""
+                DELETE FROM tenant_users
+                WHERE tenant_id = %s
+                RETURNING tenant_id
+            """, (tenant_id,))
+            deleted_tenant_users = cursor.rowcount
+            print(f"  ✓ Deleted {deleted_tenant_users} records from tenant_users for tenant {tenant_id}")
             
-            # Then delete the tenant record
+            # Delete users associated with this tenant
+            cursor.execute("""
+                DELETE FROM custom_auth_user
+                WHERE tenant_id = %s
+                RETURNING id
+            """, (tenant_id,))
+            deleted_users = cursor.rowcount
+            print(f"  ✓ Deleted {deleted_users} users associated with tenant {tenant_id}")
+            
+            # Check if custom_auth_tenant_users table exists before trying to delete from it
+            cursor.execute("""
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'custom_auth_tenant_users'
+                );
+            """)
+            table_exists = cursor.fetchone()[0]
+            
+            if table_exists:
+                # Delete from custom_auth_tenant_users junction table
+                cursor.execute("""
+                    DELETE FROM custom_auth_tenant_users
+                    WHERE tenant_id = %s
+                    RETURNING tenant_id
+                """, (tenant_id,))
+                deleted_tenant_user_records = cursor.rowcount
+                print(f"  ✓ Deleted {deleted_tenant_user_records} records from custom_auth_tenant_users for tenant {tenant_id}")
+            else:
+                print(f"  ℹ Table custom_auth_tenant_users does not exist, skipping")
+            
+            # Delete the tenant record
             cursor.execute("""
                 DELETE FROM custom_auth_tenant
                 WHERE id = %s
+                RETURNING id
             """, (tenant_id,))
-            return cursor.rowcount
+            if cursor.rowcount > 0:
+                print(f"  ✓ Deleted tenant record {tenant_id}")
+                return True
+            else:
+                print(f"  ✗ No tenant record found with ID {tenant_id}")
+                return False
         except Exception as e:
-            print(f"Error deleting tenant {tenant_id}: {e}")
-            return 0
+            print(f"  ✗ Error deleting tenant record {tenant_id}: {e}")
+            success = False
+            
+            # Continue with deleting the tenant record even if there were errors with related tables
+            try:
+                cursor.execute("""
+                    DELETE FROM custom_auth_tenant
+                    WHERE id = %s
+                    RETURNING id
+                """, (tenant_id,))
+                if cursor.rowcount > 0:
+                    print(f"  ✓ Deleted tenant record {tenant_id} after error recovery")
+                    return True
+                else:
+                    print(f"  ✗ No tenant record found with ID {tenant_id} during error recovery")
+                    return False
+            except Exception as e2:
+                print(f"  ✗ Error during recovery attempt: {e2}")
+                return False
+        
+        return success
 
-def main(dry_run=True):
+def main(dry_run=True, backup=True):
     """Main function"""
-    print("\n=== FINAL TENANT CLEANUP ===")
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    print("\n=== COMPLETE TENANT CLEANUP ===")
     print(f"Mode: {'DRY RUN - No changes will be made' if dry_run else 'LIVE RUN - Changes will be applied'}")
-    print("==============================\n")
+    print(f"Backup: {'Will create a backup file' if backup and not dry_run else 'No backup will be created'}")
+    print("================================\n")
     
     conn = connect_to_db()
     try:
-        # Get primary tenant info
-        primary_tenant = get_tenant_info(conn, PRIMARY_TENANT_ID)
-        if not primary_tenant:
-            print(f"Error: Primary tenant {PRIMARY_TENANT_ID} not found!")
-            return
-        
-        print(f"Primary tenant to keep: {primary_tenant['name']} (ID: {primary_tenant['id']})")
-        print(f"  Owner ID: {primary_tenant['owner_id']}")
-        print(f"  Schema: {primary_tenant['schema_name']}")
-        print(f"  Created: {primary_tenant['created_at']}")
-        print(f"  Active: {primary_tenant['is_active']}")
-        
         # Get all tenants
         all_tenants = get_all_tenants(conn)
-        tenants_to_delete = [t for t in all_tenants if t['id'] != PRIMARY_TENANT_ID]
         
-        if not tenants_to_delete:
-            print("\nNo other tenants to delete.")
+        if not all_tenants:
+            print("No tenants found in the database.")
             return
         
-        print(f"\nFound {len(tenants_to_delete)} other tenants to delete:")
-        for i, tenant in enumerate(tenants_to_delete, 1):
+        print(f"Found {len(all_tenants)} tenants to delete:")
+        for i, tenant in enumerate(all_tenants, 1):
             print(f"  {i}. ID: {tenant['id']}")
             print(f"     Name: {tenant['name']}")
-            print(f"     Owner ID: {tenant['owner_id']}")
             print(f"     Schema: {tenant['schema_name']}")
             print(f"     Created: {tenant['created_at']}")
-            print(f"     Active: {tenant['is_active']}")
-            print()
+            
+        # Create backup if requested and not dry run
+        if backup and not dry_run:
+            backup_file = f"tenant_backup_{timestamp}.csv"
+            with open(backup_file, 'w') as f:
+                f.write("id,name,schema_name,owner_id,created_at,is_active\n")
+                for tenant in all_tenants:
+                    f.write(f"{tenant['id']},{tenant['name']},{tenant['schema_name']}," +
+                           f"{tenant['owner_id']},{tenant['created_at']},{tenant['is_active']}\n")
+            print(f"\nCreated backup file: {backup_file}")
         
         if dry_run:
             print("\nDRY RUN - No changes made.")
             return
         
-        # Process each tenant to delete
-        total_users_updated = 0
-        deleted_tenants = 0
+        # Confirm deletion
+        confirm = input("\nAre you sure you want to delete ALL tenants? This cannot be undone! (yes/no): ")
+        if confirm.lower() != 'yes':
+            print("Operation cancelled by user.")
+            return
         
-        for tenant in tenants_to_delete:
-            # First update any users associated with this tenant
-            users_updated = update_user_tenant_ids(conn, tenant['id'], PRIMARY_TENANT_ID)
-            if users_updated:
-                print(f"Updated {users_updated} users from tenant {tenant['id']} to primary tenant")
-                total_users_updated += users_updated
+        # Process each tenant to delete
+        deleted_count = 0
+        schema_deleted_count = 0
+        
+        for tenant in all_tenants:
+            print(f"\nProcessing tenant: {tenant['id']} ({tenant['name']})")
+            # First delete the schema and its data
+            if delete_tenant_data(conn, tenant['id'], tenant['schema_name']):
+                schema_deleted_count += 1
             
-            # Then delete the tenant
-            if delete_tenant(conn, tenant['id']):
-                print(f"Deleted tenant: {tenant['id']} ({tenant['name']})")
-                deleted_tenants += 1
+            # Then delete the tenant record
+            if delete_tenant_record(conn, tenant['id']):
+                deleted_count += 1
         
         # Commit all changes
         conn.commit()
         
         print(f"\nSUMMARY:")
-        print(f"  Updated {total_users_updated} users to use primary tenant")
-        print(f"  Deleted {deleted_tenants} tenants")
-        print(f"  Remaining tenant: {primary_tenant['name']} (ID: {primary_tenant['id']})")
+        print(f"  Deleted {schema_deleted_count} tenant schemas")
+        print(f"  Deleted {deleted_count} tenant records")
+        print(f"  Database is now clean!")
         
     except Exception as e:
         conn.rollback()
@@ -159,12 +215,13 @@ def main(dry_run=True):
         print("\nDatabase connection closed")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Keep one primary tenant and delete all others")
+    parser = argparse.ArgumentParser(description="Delete ALL tenants in the database")
     parser.add_argument("--live", action="store_true", help="Run in live mode (apply changes)")
+    parser.add_argument("--no-backup", action="store_true", help="Skip creating a backup file")
     args = parser.parse_args()
     
     try:
-        main(dry_run=not args.live)
+        main(dry_run=not args.live, backup=not args.no_backup)
     except KeyboardInterrupt:
         print("\nOperation cancelled by user")
         sys.exit(1)

@@ -36,13 +36,18 @@ export async function GET(request) {
           id UUID PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           owner_id VARCHAR(255),
-          schema_name VARCHAR(255) NOT NULL,
+          /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(255) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removedNULL,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           rls_enabled BOOLEAN DEFAULT TRUE,
-          rls_setup_date TIMESTAMP WITH TIME ZONE,
+          rls_setup_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           is_active BOOLEAN DEFAULT TRUE
         );
+        
+        -- Add comment to schema_name column to indicate it's deprecated
+        COMMENT ON COLUMN public.custom_auth_tenant.schema_name IS 'Deprecated: Only kept for backward compatibility. RLS is the preferred isolation method.';
       `;
       
       await pool.query(createTableQuery);
@@ -59,51 +64,66 @@ export async function GET(request) {
     
     const structureResult = await pool.query(tableStructureQuery);
     
-    // Ensure indices exist for performance
+    // Update indices to remove the schema_name index
     const createIndexQuery = `
       CREATE INDEX IF NOT EXISTS idx_tenant_owner_id ON public.custom_auth_tenant(owner_id);
-      CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON public.custom_auth_tenant(schema_name);
     `;
     
     await pool.query(createIndexQuery);
     logger.info('[InitDbEnv] Ensured indices exist on custom_auth_tenant table');
     
-    // Create init function to set up RLS for tenants
-    const createFunctionQuery = `
-      CREATE OR REPLACE FUNCTION setup_tenant_rls(tenant_id UUID, schema_name TEXT)
-      RETURNS VOID AS $$
-      DECLARE
-        table_name TEXT;
+    // Create tenant_id RLS helper function
+    const createRlsFunctionQuery = `
+      CREATE OR REPLACE FUNCTION get_current_tenant_id()
+      RETURNS UUID AS $$
       BEGIN
-        -- Loop through all tables in the schema
-        FOR table_name IN
-          SELECT table_name 
-          FROM information_schema.tables 
-          WHERE table_schema = schema_name
-        LOOP
-          -- Enable RLS for each table
-          EXECUTE format('ALTER TABLE IF EXISTS %I.%I ENABLE ROW LEVEL SECURITY', 
-                        schema_name, table_name);
-          
-          -- Create or replace RLS policy
-          EXECUTE format('DROP POLICY IF EXISTS tenant_isolation_policy ON %I.%I', 
-                        schema_name, table_name);
-          
-          EXECUTE format('CREATE POLICY tenant_isolation_policy ON %I.%I 
-                          USING (tenant_id = %L)
-                          WITH CHECK (tenant_id = %L)', 
-                          schema_name, table_name, tenant_id, tenant_id);
-        END LOOP;
+        -- If tenant ID is not set, return NULL
+        IF current_setting('app.current_tenant_id', TRUE) IS NULL THEN
+          RETURN NULL;
+        END IF;
+        
+        -- Try to convert the tenant ID string to UUID
+        BEGIN
+          RETURN current_setting('app.current_tenant_id', TRUE)::UUID;
+        EXCEPTION WHEN OTHERS THEN
+          RETURN NULL;
+        END;
+      END;
+      $$ LANGUAGE plpgsql;
+      
+      -- Create function to apply RLS to a table
+      CREATE OR REPLACE FUNCTION apply_rls_to_table(table_name TEXT)
+      RETURNS VOID AS $$
+      BEGIN
+        -- Enable RLS on the table
+        EXECUTE format('ALTER TABLE IF EXISTS %I ENABLE ROW LEVEL SECURITY', 
+                      table_name);
+        
+        -- Create policy if it doesn't exist
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies 
+          WHERE tablename = table_name 
+          AND policyname = 'tenant_isolation_policy'
+        ) THEN
+          -- Create RLS policy
+          EXECUTE format('CREATE POLICY tenant_isolation_policy ON %I 
+                          USING (tenant_id = get_current_tenant_id())
+                          WITH CHECK (tenant_id = get_current_tenant_id())', 
+                        table_name);
+        END IF;
+      EXCEPTION WHEN OTHERS THEN
+        -- Log error and continue
+        RAISE NOTICE 'Error applying RLS to table %: %', table_name, SQLERRM;
       END;
       $$ LANGUAGE plpgsql;
     `;
     
     // Try to create the function
     try {
-      await pool.query(createFunctionQuery);
-      logger.info('[InitDbEnv] Created RLS setup function');
+      await pool.query(createRlsFunctionQuery);
+      logger.info('[InitDbEnv] Created RLS helper functions');
     } catch (funcError) {
-      logger.warn('[InitDbEnv] Error creating RLS function (may already exist):', funcError.message);
+      logger.warn('[InitDbEnv] Error creating RLS functions (may already exist):', funcError.message);
     }
     
     return NextResponse.json({

@@ -154,11 +154,11 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
     // Server-side update using AWS SDK
     if (typeof window === 'undefined') {
       try {
-        // Import AWS SDK - must use require for server-side
-        const AWS = require('aws-sdk');
+        // Import AWS SDK v3 - must use dynamic import for server-side
+        const { CognitoIdentityProviderClient, UpdateUserAttributesCommand } = await import('@aws-sdk/client-cognito-identity-provider');
         
-        // Configure the Cognito Identity Provider
-        const cognitoIdentityServiceProvider = new AWS.CognitoIdentityServiceProvider({
+        // Configure the Cognito Identity Provider client
+        const client = new CognitoIdentityProviderClient({
           region: 'us-east-1'
         });
         
@@ -174,7 +174,8 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
           UserAttributes: userAttributes
         };
         
-        await cognitoIdentityServiceProvider.updateUserAttributes(updateParams).promise();
+        const command = new UpdateUserAttributesCommand(updateParams);
+        await client.send(command);
         logger.debug('[OnboardingUtils] Server-side attributes updated successfully');
       } catch (error) {
         logger.error('[OnboardingUtils] Server-side attribute update failed:', {
@@ -675,29 +676,29 @@ export async function validateBusinessInfo(data) {
     'custom:businessstate': businessState,
     'custom:legalstructure': legalStructure,
     'custom:datefounded': dateFounded,
-    'custom:onboarding': 'BUSINESS_INFO',
+    'custom:onboarding': 'business_info',
     'custom:updated_at': new Date().toISOString(),
-    'custom:acctstatus': 'ACTIVE',
+    'custom:acctstatus': 'active',
     'custom:attrversion': attrVersion // Using semantic versioning format
   };
 }
 
 export async function validateSubscription(data) {
-  const validPlans = ['FREE', 'PROFESSIONAL', 'ENTERPRISE'];
-  const validIntervals = ['MONTHLY', 'YEARLY'];
+  const validPlans = ['free', 'professional', 'enterprise'];
+  const validIntervals = ['monthly', 'yearly'];
 
   logger.debug('[Subscription] Values before validation:', {
     rawPlan: data.plan,
     rawInterval: data.interval,
-    convertedPlan: data.plan?.toUpperCase(),
-    convertedInterval: data.interval?.toUpperCase(),
-    validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
-    validIntervals: ['MONTHLY', 'YEARLY']
+    convertedPlan: data.plan?.toLowerCase(),
+    convertedInterval: data.interval?.toLowerCase(),
+    validPlans: ['free', 'professional', 'enterprise'],
+    validIntervals: ['monthly', 'yearly']
   });
 
   // Case-insensitive validation
-  const plan = data.plan?.toUpperCase();
-  const interval = data.interval?.toUpperCase();
+  const plan = data.plan?.toLowerCase();
+  const interval = data.interval?.toLowerCase();
 
   if (!validPlans.includes(plan)) {
     throw new Error(`Invalid subscription plan. Must be one of: ${validPlans.join(', ')}`);
@@ -709,8 +710,8 @@ export async function validateSubscription(data) {
 
   // Format subscription info for Cognito attributes
   const formattedAttributes = {
-    'custom:subplan': String(data.plan),
-    'custom:subscriptioninterval': String(data.interval)
+    'custom:subplan': String(data.plan).toLowerCase(),
+    'custom:subscriptioninterval': String(data.interval).toLowerCase()
   };
 
   return formattedAttributes;
@@ -728,7 +729,7 @@ export async function validatePayment(data) {
   // Format payment info for Cognito attributes
   const formattedAttributes = {
     'custom:paymentid': String(data.paymentId),
-    'custom:payverified': data.verified ? 'TRUE' : 'FALSE'
+    'custom:payverified': data.verified ? 'true' : 'false'
   };
 
   return formattedAttributes;

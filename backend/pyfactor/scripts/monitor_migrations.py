@@ -28,13 +28,13 @@ except ImportError:
         """Simple tabulate implementation for when the package is not installed"""
         result = []
         # Add headers
-        header_row = " | ".join(str(h) for h in headers)
+        header_row = /* RLS: Use tenant_id filtering */ join(str(h) for h in headers)
         result.append(header_row)
         result.append("-" * len(header_row))
         
         # Add data rows
         for row in data:
-            result.append(" | ".join(str(cell) for cell in row))
+            result.append(/* RLS: Use tenant_id filtering */ join(str(cell) for cell in row))
         
         return "\n".join(result)
 
@@ -47,6 +47,9 @@ django.setup()
 from django.db import connection
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 # Configure logging
 logging.basicConfig(

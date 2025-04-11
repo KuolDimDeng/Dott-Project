@@ -1,0 +1,485 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useTenantInitialization } from '@/hooks/useTenantInitialization';
+import { fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
+import { logger } from '@/utils/logger';
+import { usePathname, useRouter } from 'next/navigation';
+import { isPublicRoute } from '@/lib/authUtils';
+import { 
+  COGNITO_ATTRIBUTES,
+  COOKIE_NAMES, 
+  STORAGE_KEYS,
+  ONBOARDING_STATUS,
+  ONBOARDING_STEPS
+} from '@/constants/onboarding';
+
+/**
+ * Global dashboard app component that runs at the application level
+ * This component ensures critical app state like onboarding status
+ * is properly synchronized across all components
+ */
+const DashboardApp = ({ children }) => {
+  const { updateCognitoOnboardingStatus } = useTenantInitialization();
+  const pathname = usePathname();
+  const router = useRouter();
+  const [initialCheckComplete, setInitialCheckComplete] = useState(false);
+  
+  // Effect to immediately check if user should be redirected based on client-side data
+  useEffect(() => {
+    const checkClientOnboardingState = () => {
+      // Skip checks on public routes and onboarding routes
+      if (isPublicRoute(pathname) || pathname.startsWith('/onboarding') || pathname.startsWith('/auth')) {
+        return;
+      }
+      
+      // Helper to get cookie value
+      const getCookie = (name) => {
+        const value = document.cookie.split('; ')
+          .find(row => row.startsWith(`${name}=`))
+          ?.split('=')[1];
+        return value;
+      };
+      
+      // Check cookies for onboarding status
+      const onboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+      const onboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+      const setupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+      const freePlanSelected = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
+      
+      // Check localStorage as well
+      let localStorageOnboarding = null;
+      let localStorageSetupDone = null;
+      
+      try {
+        localStorageOnboarding = localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS);
+        localStorageSetupDone = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Consider user onboarded if ANY of these indicators are true
+      const isOnboarded = 
+        onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+        setupCompleted === 'true' || 
+        freePlanSelected === 'true' ||
+        localStorageOnboarding === ONBOARDING_STATUS.COMPLETE ||
+        localStorageSetupDone === true ||
+        onboardingStep === ONBOARDING_STEPS.COMPLETE;
+      
+      logger.debug('[DashboardApp] Client-side onboarding check:', { 
+        onboardingStatus, 
+        onboardingStep,
+        setupCompleted,
+        freePlanSelected,
+        localStorageOnboarding,
+        localStorageSetupDone,
+        isOnboarded,
+        pathname 
+      });
+
+      // **CRITICAL FIX**: If cookies indicate user is onboarded, allow dashboard access
+      // regardless of other indicators
+      if (pathname.includes('/dashboard') && 
+          (onboardingStatus === ONBOARDING_STATUS.COMPLETE || setupCompleted === 'true' || 
+           freePlanSelected === 'true' || onboardingStep === ONBOARDING_STEPS.COMPLETE)) {
+        logger.info('[DashboardApp] Cookies indicate user is onboarded, allowing dashboard access');
+        return; // Exit and allow access
+      }
+
+      // Check URL parameters for new accounts
+      const urlParams = new URLSearchParams(window.location.search);
+      const isNewAccount = urlParams.get('newAccount') === 'true';
+      const planSelected = urlParams.get('plan');
+      
+      // If coming from onboarding flow with plan selection, 
+      // consider this as completed onboarding
+      if (pathname.includes('/dashboard') && isNewAccount && planSelected) {
+        logger.info('[DashboardApp] New account with plan detected, setting onboarding completion');
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/`;
+        document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
+        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/`;
+        if (planSelected === 'free') {
+          document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/`;
+        }
+        
+        try {
+          localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
+          localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+        
+        return; // Allow dashboard access
+      }
+      
+      // If not onboarded and trying to access dashboard, redirect to onboarding
+      if (pathname.includes('/dashboard') && !isOnboarded) {
+        const redirectPath = onboardingStep && onboardingStep !== ONBOARDING_STEPS.DASHBOARD && onboardingStep !== ONBOARDING_STEPS.COMPLETE
+          ? `/onboarding/${onboardingStep}`
+          : '/onboarding/business-info';
+        
+        logger.info('[DashboardApp] Redirecting from client-side check:', { 
+          from: pathname, 
+          to: redirectPath,
+          reason: 'Incomplete onboarding' 
+        });
+        
+        router.push(redirectPath);
+      }
+    };
+    
+    // Run the client-side check immediately
+    checkClientOnboardingState();
+  }, [pathname, router]);
+  
+  // Effect to check and update Cognito attributes on app load
+  useEffect(() => {
+    const checkAndUpdateCognitoAttributes = async () => {
+      // Skip attribute updates on public routes
+      if (isPublicRoute(pathname) || pathname.startsWith('/auth')) {
+        logger.debug('[DashboardApp] Skipping Cognito attribute check on public route:', pathname);
+        return;
+      }
+      
+      try {
+        // **CRITICAL FIX**: First check if cookies indicate onboarding is complete
+        // If so, allow dashboard access immediately without waiting for Cognito
+        const getCookie = (name) => {
+          const value = document.cookie.split('; ')
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+          return value;
+        };
+        
+        const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+        const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+        
+        if (pathname.startsWith('/dashboard') && 
+            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || cookieSetupCompleted === 'true')) {
+          logger.info('[DashboardApp] Cookies indicate onboarding complete, proceeding with dashboard');
+          setInitialCheckComplete(true);
+          
+          // We'll still fetch and update attributes in the background, but don't redirect
+          fetchUserAttributes().catch(() => ({})).then(attrs => {
+            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'true')) {
+              logger.info('[DashboardApp] Updating Cognito attributes in background');
+              fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  attributes: {
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
+                  }
+                })
+              }).catch(e => logger.warn('Failed to update attributes:', e));
+            }
+          });
+          
+          return; // Exit early and allow dashboard access
+        }
+        
+        // Check current Cognito attributes
+        const userAttributes = await fetchUserAttributes().catch(error => {
+          logger.warn('[DashboardApp] Error fetching user attributes:', {
+            message: error.message,
+            name: error.name
+          });
+          return {}; // Return empty object to continue with defaults
+        });
+        
+        const onboardingStatus = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
+        const setupDone = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
+        const businessId = userAttributes[COGNITO_ATTRIBUTES.BUSINESS_ID] || '';
+        
+        logger.info('[DashboardApp] Checking Cognito attributes for onboarding status:', {
+          onboarding: onboardingStatus || 'not set',
+          setupDone: setupDone || 'not set',
+          businessId: businessId || 'not set'
+        });
+        
+        setInitialCheckComplete(true);
+        
+        // Also check cookies and localStorage to see if user is truly onboarded
+        // Helper to get cookie value
+        const getCookie = (name) => {
+          const value = document.cookie.split('; ')
+            .find(row => row.startsWith(`${name}=`))
+            ?.split('=')[1];
+          return value;
+        };
+        
+        // Check all possible indicators of completed onboarding
+        const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
+        const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+        const cookieFreePlan = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
+        const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+        
+        // Check localStorage too
+        let localStorageOnboarded = false;
+        try {
+          localStorageOnboarded = 
+            localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE || 
+            localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+        } catch (e) {
+          // Ignore localStorage errors
+        }
+        
+        // Consider onboarded if ANY indicator shows completion
+        const isFullyOnboardedByAnySource = 
+          onboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+          setupDone === 'TRUE' ||
+          cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE ||
+          cookieSetupCompleted === 'true' ||
+          cookieFreePlan === 'true' ||
+          cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
+          localStorageOnboarded;
+          
+        logger.debug('[DashboardApp] Combined onboarding indicators:', {
+          cognitoOnboarding: onboardingStatus,
+          cognitoSetupDone: setupDone,
+          cookieOnboardingStatus,
+          cookieSetupCompleted,
+          cookieFreePlan,
+          cookieOnboardingStep,
+          localStorageOnboarded,
+          isFullyOnboardedByAnySource,
+          currentPath: pathname
+        });
+        
+        // Critical change: If on dashboard and cookies indicate onboarding complete,
+        // skip redirection regardless of Cognito attributes
+        if (pathname.startsWith('/dashboard') && 
+            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+             cookieSetupCompleted === 'true' || 
+             cookieFreePlan === 'true' ||
+             cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
+             localStorageOnboarded)) {
+          logger.info('[DashboardApp] Onboarding complete in cookies/localStorage, allowing dashboard access');
+          
+          // CRITICAL FIX: Always update Cognito attributes to match cookie state
+          // This prevents race conditions where Cognito might not be updated yet
+          logger.info('[DashboardApp] Proactively updating Cognito to match cookies/localStorage state');
+          try {
+            const result = await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                attributes: {
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+                },
+                forceUpdate: true
+              })
+            });
+            
+            if (result.ok) {
+              logger.info('[DashboardApp] Successfully updated Cognito attributes to match cookies');
+            } else {
+              logger.warn('[DashboardApp] Failed to update Cognito attributes:', await result.text());
+            }
+          } catch (error) {
+            logger.error('[DashboardApp] Error updating attributes:', error);
+          }
+          
+          return; // Exit early, allow dashboard access
+        }
+        
+        // For new users or users with incomplete onboarding, redirect to onboarding
+        const isNewUser = !onboardingStatus || onboardingStatus === '';
+        const isOnboardingIncomplete = !isFullyOnboardedByAnySource;
+        
+        if ((isNewUser || isOnboardingIncomplete) && !pathname.startsWith('/onboarding')) {
+          logger.info(`[DashboardApp] ${isNewUser ? 'New user' : 'Incomplete onboarding'} detected, handling redirection`);
+          
+          // For new users, set status to INCOMPLETE first
+          if (isNewUser) {
+            try {
+              // Try server-side update first via regular API
+              await fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  attributes: {
+                    [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.IN_PROGRESS
+                  }
+                })
+              });
+              
+              logger.info('[DashboardApp] Set onboarding status to INCOMPLETE for new user');
+            } catch (error) {
+              logger.error('[DashboardApp] Error setting new user onboarding status', error);
+            }
+          }
+          
+          // Also update cookies to match Cognito state
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${isNewUser ? ONBOARDING_STATUS.IN_PROGRESS : onboardingStatus}; path=/`;
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.BUSINESS_INFO}; path=/`;
+          
+          // Redirect to onboarding
+          const redirectPath = '/onboarding/business-info';
+          logger.info('[DashboardApp] Redirecting to onboarding:', {
+            from: pathname,
+            to: redirectPath
+          });
+          
+          router.push(redirectPath);
+          return;
+        }
+        
+        // Only continue with attribute updates for fully onboarded users
+        if (pathname.startsWith('/onboarding')) {
+          logger.debug('[DashboardApp] On onboarding route, skipping attribute update');
+          return;
+        }
+        
+        // If attributes are not set to COMPLETE, attempt an update
+        if (onboardingStatus !== ONBOARDING_STATUS.COMPLETE || setupDone !== 'TRUE') {
+          logger.info('[DashboardApp] Onboarding attributes need update, attempting now');
+          
+          // Try server-side update first via regular API
+          let serverUpdateSuccess = false;
+          
+          try {
+            const response = await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                attributes: {
+                  [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                  [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'TRUE'
+                }
+              })
+            });
+            
+            // Check response and parse JSON
+            if (response.ok) {
+              const result = await response.json();
+              logger.info('[DashboardApp] Server-side attribute update successful:', result);
+              serverUpdateSuccess = true;
+            } else {
+              logger.warn('[DashboardApp] Server-side attribute update failed, status:', response.status);
+              
+              // Try to get error details if available
+              try {
+                const errorData = await response.json();
+                logger.warn('[DashboardApp] Server update error details:', errorData);
+              } catch (parseError) {
+                logger.debug('[DashboardApp] Could not parse error response');
+              }
+            }
+          } catch (serverError) {
+            logger.error('[DashboardApp] Error in server-side attribute update:', {
+              message: serverError.message,
+              name: serverError.name,
+              stack: serverError.stack?.split('\n')[0] // Just the first line of stack for brevity
+            });
+          }
+          
+          // Try client-side update if server-side failed
+          let clientUpdateSuccess = false;
+          
+          if (!serverUpdateSuccess) {
+            logger.warn('[DashboardApp] Server-side update failed, trying client-side update with retry');
+            
+            // Create retry function
+            const clientUpdateWithRetry = async (maxRetries = 3) => {
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  logger.info(`[DashboardApp] Client-side attribute update attempt ${attempt}/${maxRetries}`);
+                  const success = await updateCognitoOnboardingStatus();
+                  
+                  if (success) {
+                    logger.info('[DashboardApp] Client-side attribute update successful');
+                    return true;
+                  } else {
+                    logger.warn(`[DashboardApp] Client-side update attempt ${attempt} returned false`);
+                  }
+                } catch (clientError) {
+                  logger.error(`[DashboardApp] Client-side update attempt ${attempt} failed:`, {
+                    message: clientError.message,
+                    name: clientError.name
+                  });
+                }
+                
+                if (attempt < maxRetries) {
+                  // Wait with exponential backoff before retrying
+                  const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s...
+                  logger.info(`[DashboardApp] Waiting ${delay}ms before retry ${attempt + 1}`);
+                  await new Promise(resolve => setTimeout(resolve, delay));
+                }
+              }
+              
+              logger.error('[DashboardApp] All client-side update attempts failed');
+              return false;
+            };
+            
+            // Execute the retry logic
+            clientUpdateSuccess = await clientUpdateWithRetry();
+          }
+          
+          // If both server and client approaches failed, try our special fix endpoint
+          if (!serverUpdateSuccess && !clientUpdateSuccess) {
+            logger.warn('[DashboardApp] Both standard approaches failed, trying fix-attributes endpoint');
+            
+            try {
+              // Get the current session tokens
+              const { tokens } = await fetchAuthSession().catch(error => {
+                logger.error('[DashboardApp] Error fetching auth session:', error);
+                return { tokens: null };
+              });
+              
+              if (!tokens) {
+                logger.error('[DashboardApp] No tokens available for fix-attributes call');
+              } else {
+                // Call our special fix endpoint with the token
+                const fixResponse = await fetch('/api/onboarding/fix-attributes', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${tokens.idToken.toString()}`
+                  }
+                });
+                
+                if (fixResponse.ok) {
+                  const fixResult = await fixResponse.json();
+                  logger.info('[DashboardApp] fix-attributes call successful:', fixResult);
+                } else {
+                  logger.error('[DashboardApp] fix-attributes call failed:', {
+                    status: fixResponse.status,
+                    data: await fixResponse.json().catch(() => ({}))
+                  });
+                }
+              }
+            } catch (fixError) {
+              logger.error('[DashboardApp] Error calling fix-attributes endpoint:', {
+                message: fixError.message,
+                name: fixError.name
+              });
+            }
+          }
+        } else {
+          logger.info('[DashboardApp] Cognito attributes already set correctly');
+        }
+      } catch (error) {
+        logger.error('[DashboardApp] Error checking/updating Cognito attributes:', {
+          message: error.message,
+          name: error.name,
+          stack: error.stack?.split('\n').slice(0, 3).join('\n') // First 3 lines of stack
+        });
+      }
+    };
+    
+    // Run the check when the app loads
+    checkAndUpdateCognitoAttributes();
+  }, [updateCognitoOnboardingStatus, pathname, router]);
+  
+  return children;
+};
+
+export default DashboardApp; 

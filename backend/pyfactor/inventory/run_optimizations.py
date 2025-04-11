@@ -42,18 +42,18 @@ def main():
         
         # Apply optimizations to each tenant schema
         for tenant in tenants:
-            logger.info(f"Applying optimizations to tenant: {tenant.schema_name}")
+            logger.info(f"Applying optimizations to tenant: { tenant.id}")
             try:
-                success = apply_optimizations(tenant.schema_name)
+                success = apply_optimizations( tenant.id)
                 if success:
                     success_count += 1
-                    logger.info(f"Successfully optimized tenant: {tenant.schema_name}")
+                    logger.info(f"Successfully optimized tenant: { tenant.id}")
                 else:
                     failure_count += 1
-                    logger.error(f"Failed to optimize tenant: {tenant.schema_name}")
+                    logger.error(f"Failed to optimize tenant: { tenant.id}")
             except Exception as e:
                 failure_count += 1
-                logger.error(f"Error optimizing tenant {tenant.schema_name}: {str(e)}", exc_info=True)
+                logger.error(f"Error optimizing tenant { tenant.id}: {str(e)}", exc_info=True)
         
         # Apply optimizations to public schema
         logger.info("Applying optimizations to public schema")

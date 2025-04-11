@@ -28,6 +28,9 @@ django.setup()
 from django.conf import settings
 from django.db import connection
 
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -45,7 +48,7 @@ def get_db_connection():
     conn.autocommit = True
     return conn
 
-def schema_exists(schema_name):
+def schema_exists(tenant_id: uuid.UUID:
     """Check if the schema exists"""
     try:
         conn = get_db_connection()
@@ -62,7 +65,7 @@ def schema_exists(schema_name):
         if conn:
             conn.close()
 
-def table_exists(schema_name, table_name):
+def table_exists(tenant_id: uuid.UUID:
     """Check if a table exists in the schema"""
     try:
         conn = get_db_connection()
@@ -79,7 +82,7 @@ def table_exists(schema_name, table_name):
         if conn:
             conn.close()
 
-def create_userprofile_table(schema_name):
+def create_userprofile_table(tenant_id: uuid.UUID:
     """Create the users_userprofile table in the schema"""
     if not schema_exists(schema_name):
         logger.error(f"Schema {schema_name} does not exist")
@@ -93,7 +96,9 @@ def create_userprofile_table(schema_name):
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to the tenant schema
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
             logger.info(f"Set search path to {schema_name}")
             
             # Create the users_userprofile table

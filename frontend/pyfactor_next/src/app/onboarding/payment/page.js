@@ -30,10 +30,43 @@ const PaymentContent = () => {
   const [error, setError] = useState(null);
   const [subscriptionData, setSubscriptionData] = useState(null);
 
+  // Use a more direct approach with higher priority before API calls
+  useEffect(() => {
+    // Early check for free or basic plan
+    const checkPlanImmediate = () => {
+      if (!session?.user) return false;
+      
+      // Extract plan type from Cognito attributes
+      const subplan = session.user['custom:subplan']?.toLowerCase();
+      console.log('[Payment] Plan check - User plan:', subplan);
+      
+      if (subplan === 'free' || subplan === 'basic') {
+        console.log('[Payment] Free/Basic plan detected, immediately redirecting to dashboard');
+        // Use replace instead of window.location for a cleaner redirect
+        router.replace('/dashboard?freePlan=true&immediate=true');
+        return true;
+      }
+      return false;
+    };
+    
+    if (checkPlanImmediate()) {
+      // Prevent further initialization
+      return;
+    }
+  }, [session, router]);
+
   // Initialize on page load to verify state and set current step
   useEffect(() => {
     const initPage = async () => {
       try {
+        // Check for free or basic plan in Cognito attributes first
+        const subplan = session?.user?.['custom:subplan']?.toLowerCase();
+        if (subplan === 'free' || subplan === 'basic') {
+          logger.info('[Payment] Basic/Free plan detected in user attributes, redirecting to dashboard');
+          router.replace('/dashboard?freePlan=true');
+          return;
+        }
+        
         // Verify the current state with the enhanced hook
         const stateVerification = await verifyState('payment');
         
@@ -48,11 +81,17 @@ const PaymentContent = () => {
         logger.debug('[Payment] State verification successful and step updated');
       } catch (err) {
         logger.error('[Payment] Error during initialization:', err);
+        // On error, check if we should redirect
+        const subplan = session?.user?.['custom:subplan']?.toLowerCase();
+        if (subplan === 'free' || subplan === 'basic') {
+          // Redirect to dashboard as fallback
+          router.replace('/dashboard?freePlan=true&fallback=true');
+        }
       }
     };
     
     initPage();
-  }, [verifyState, updateState, router]);
+  }, [verifyState, updateState, router, session]);
 
   // Immediate redirect for free plan that shouldn't be on payment page
   useEffect(() => {
@@ -69,8 +108,15 @@ const PaymentContent = () => {
         return acc;
       }, {});
       
-      if (cookies.selectedPlan === 'free' || cookies.freePlanSelected === 'true') {
-        logger.warn('[Payment] Free plan detected - redirecting to dashboard');
+      // Check for custom:subplan in cognito user data
+      const subplan = session?.user?.['custom:subplan']?.toLowerCase();
+      
+      if (cookies.selectedPlan === 'free' || 
+          cookies.selectedPlan === 'basic' || 
+          cookies.freePlanSelected === 'true' ||
+          subplan === 'free' ||
+          subplan === 'basic') {
+        logger.warn('[Payment] Free/Basic plan detected - redirecting to dashboard');
         window.location.replace('/dashboard?freePlan=true');
         return true;
       }
@@ -80,7 +126,7 @@ const PaymentContent = () => {
     if (!checkFreePlan()) {
       // Continue loading the page
     }
-  }, []);
+  }, [session]);
 
   // Load and validate subscription data
   useEffect(() => {

@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
 import { v5 as uuidv5 } from 'uuid';
+import { createDbPool } from '@/app/api/tenant/db-config';
+import crypto from 'crypto';
 
 // Namespace for deterministic tenant ID generation
 const TENANT_NAMESPACE = '9a551c44-4ade-4f89-b078-0af8be794c23';
 
 /**
- * A minimal endpoint to ensure a tenant record exists in the database
+ * A robust endpoint to ensure a tenant record exists in the database
  * This is deliberately designed to work without authentication
  * for resilience during onboarding flows
  */
@@ -15,358 +17,308 @@ export async function POST(request) {
   
   try {
     // Parse request body
-    let body;
-    try {
-      body = await request.json();
-    } catch (parseError) {
-      logger.warn('[EnsureDBRecord] Failed to parse request body:', parseError);
-      body = {};
+    const body = await request.json();
+    const requestId = crypto.randomUUID().substring(0, 8);
+    
+    logger.info(`[EnsureDBRecord][${requestId}] Starting tenant record creation. Request received:`, body);
+    
+    // Extract tenant ID from request
+    const { tenantId, businessName, businessType, businessCountry } = body;
+    const email = body.email || null;
+    const userId = body.userId || null;
+    const legalStructure = body.legalStructure || 'Individual';
+    
+    // Validate tenant ID
+    if (!tenantId || tenantId.length !== 36) {
+      logger.error(`[EnsureDBRecord][${requestId}] Invalid tenant ID format:`, tenantId);
+      return NextResponse.json({ error: 'Invalid tenant ID format' }, { status: 400 });
     }
     
-    // Get tenant data from request body
-    const tenantId = body.tenantId || '';
-    const userId = body.userId || '';
-    const email = body.email || '';
-    const businessName = body.businessName || body.business_name || '';
-    const businessType = body.businessType || body.business_type || 'Other';
+    logger.info(`[EnsureDBRecord][${requestId}] Starting database operations for tenant: ${tenantId}`);
     
-    // If no userId is provided, generate a proper UUID for it
-    if (!userId) {
-      try {
-        // Generate a UUID using a timestamp-based namespace
-        const USER_NAMESPACE = '8a551c44-4ade-4f89-b078-0af8be794c10';
-        userId = uuidv5(`anonymous_${Date.now()}`, USER_NAMESPACE);
-        logger.info('[EnsureDBRecord] Generated UUID for anonymous user:', userId);
-      } catch (uuidError) {
-        logger.error('[EnsureDBRecord] Error generating UUID for user:', uuidError);
-        // Use a fallback ID that's a valid UUID
-        userId = '28609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    // Connect to database
+    pool = await createDbPool();
+    
+    // First, do a quick check to see if the tenant exists - outside any transaction
+    const existingCheck = await pool.query(`
+      SELECT id, tenant_id FROM custom_auth_tenant WHERE id = $1
+    `, [tenantId]);
+    
+    if (existingCheck.rows.length > 0) {
+      // If tenant exists but tenant_id is null, update it in a separate transaction
+      if (!existingCheck.rows[0].tenant_id) {
+        try {
+          logger.info(`[EnsureDBRecord][${requestId}] Tenant exists but tenant_id is null, updating...`);
+          
+          await pool.query(`
+            UPDATE custom_auth_tenant 
+            SET tenant_id = id, updated_at = NOW() 
+            WHERE id = $1
+          `, [tenantId]);
+          
+          logger.info(`[EnsureDBRecord][${requestId}] Successfully updated tenant_id to match id`);
+        } catch (updateError) {
+          logger.warn(`[EnsureDBRecord][${requestId}] Failed to update tenant_id:`, updateError.message);
+        }
       }
+      
+      logger.info(`[EnsureDBRecord][${requestId}] Tenant already exists, returning success`);
+      return NextResponse.json({
+        success: true,
+        exists: true,
+        tenantId: tenantId,
+        message: 'Tenant record already exists'
+      });
     }
     
-    // If no tenant ID, try to generate one from user ID
-    if (!tenantId && userId) {
-      try {
-        tenantId = uuidv5(userId, TENANT_NAMESPACE);
-        logger.info('[EnsureDBRecord] Generated deterministic tenant ID:', tenantId);
-      } catch (uuidError) {
-        logger.error('[EnsureDBRecord] Error generating UUID:', uuidError);
-        // Use a fallback ID
-        tenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-      }
-    }
-    
-    // Final fallback - use a default tenant ID
-    if (!tenantId) {
-      tenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-      logger.warn('[EnsureDBRecord] Using fallback tenant ID:', tenantId);
-    }
-    
-    // Generate schema name - convert hyphens to underscores for schema name (PostgreSQL limitation)
+    // Generate a schema name using the tenant ID
     const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
     
-    // Connect directly to the database
+    // Step 1: Create the basic tenant record first, without requiring RLS
+    let connection = null;
     try {
-      // First explicitly create the table to ensure it exists
-      try {
-        logger.info('[EnsureDBRecord] Ensuring table exists');
-        const createTableUrl = new URL('/api/tenant/create-table', request.url).toString();
-        logger.info('[EnsureDBRecord] Using create-table URL:', createTableUrl);
-        
-        const createTableResponse = await fetch(createTableUrl);
-        
-        if (createTableResponse.ok) {
-          logger.info('[EnsureDBRecord] Table creation check successful');
-        } else {
-          logger.warn('[EnsureDBRecord] Table creation check failed:', 
-            await createTableResponse.text().catch(() => createTableResponse.status.toString()));
+      connection = await pool.connect();
+      
+      // Start a transaction
+      await connection.query('BEGIN');
+      
+      logger.info(`[EnsureDBRecord][${requestId}] Creating tenant record with ID: ${tenantId}`);
+      
+      // Create tenant record
+      const tenantInsertQuery = `
+        INSERT INTO custom_auth_tenant (
+          id, tenant_id, name, owner_id, schema_name, created_at, updated_at,
+          rls_enabled, rls_setup_date, is_active
+        )
+        VALUES ($1, $1, $2, $3, $4, NOW(), NOW(), true, NOW(), true)
+        ON CONFLICT (id) DO UPDATE
+        SET tenant_id = $1, name = $2, updated_at = NOW(), rls_enabled = true
+        RETURNING id, tenant_id, name, schema_name;
+      `;
+      
+      const result = await connection.query(tenantInsertQuery, [
+        tenantId, 
+        businessName || 'Default Business',
+        userId || 'system',
+        schemaName
+      ]);
+      
+      // Commit this transaction
+      await connection.query('COMMIT');
+      
+      logger.info(`[EnsureDBRecord][${requestId}] Successfully created tenant record:`, result.rows[0]);
+      
+      // Release this connection
+      connection.release();
+      connection = null;
+      
+    } catch (tenantError) {
+      logger.error(`[EnsureDBRecord][${requestId}] Error creating tenant record:`, tenantError);
+      
+      if (connection) {
+        try {
+          await connection.query('ROLLBACK');
+        } catch (rollbackError) {
+          logger.error(`[EnsureDBRecord][${requestId}] Error rolling back:`, rollbackError);
         }
-      } catch (tableError) {
-        logger.warn('[EnsureDBRecord] Error checking/creating table:', tableError.message);
+        
+        connection.release();
+        connection = null;
       }
       
-      // Then ensure the database environment is initialized
+      return NextResponse.json({ 
+        success: false, 
+        error: tenantError.message,
+        requestId: requestId
+      }, { status: 500 });
+    }
+    
+    // Step 2: Now in a separate transaction, try to set up RLS and create associated records
+    try {
+      connection = await pool.connect();
+      
+      // Start a new transaction
+      await connection.query('BEGIN');
+      
+      // Set RLS context
       try {
-        logger.info('[EnsureDBRecord] Initializing database environment');
-        const initUrl = new URL('/api/tenant/init-db-env', request.url).toString();
-        logger.info('[EnsureDBRecord] Using init-db-env URL:', initUrl);
-        
-        const initResponse = await fetch(initUrl);
-        
-        if (initResponse.ok) {
-          const initData = await initResponse.json();
-          logger.info('[EnsureDBRecord] Database initialization successful:', 
-            initData.message, 'Table exists:', initData.tableExists);
-        } else {
-          logger.warn('[EnsureDBRecord] Database initialization failed:', 
-            await initResponse.text().catch(() => initResponse.status.toString()));
-          // Continue anyway, as the operation might still succeed
-        }
-      } catch (initError) {
-        logger.warn('[EnsureDBRecord] Error initializing database environment:', initError.message);
-        // Continue anyway, as the operation might still succeed
+        await connection.query(`SET app.current_tenant_id = '${tenantId}'`);
+        await connection.query(`SET app.is_admin = 'true'`);
+        logger.info(`[EnsureDBRecord][${requestId}] Successfully set RLS context`);
+      } catch (rlsError) {
+        logger.warn(`[EnsureDBRecord][${requestId}] Failed to set RLS context (non-fatal):`, rlsError.message);
+        // Continue anyway, this shouldn't abort the transaction
       }
       
-      // Import the database configuration helper
-      const { createDbPool } = require('../db-config');
-      
-      // Get a configured database pool
-      pool = await createDbPool();
-      
-      // Log connection attempt for debugging
-      logger.info('[EnsureDBRecord] Created database pool');
-      
-      // Ping database to verify connection
-      try {
-        await pool.query('SELECT 1');
-        logger.info('[EnsureDBRecord] Database connection successful');
-      } catch (pingError) {
-        logger.error('[EnsureDBRecord] Database ping failed:', pingError.message);
-        throw pingError;
-      }
-      
-      // Begin transaction for atomicity
-      await pool.query('BEGIN');
-      
-      try {
-        // First create the schema
-        await pool.query(`CREATE SCHEMA IF NOT EXISTS ${schemaName};`);
-        logger.info('[EnsureDBRecord] Created schema:', schemaName);
-        
-        // Verify schema creation and wait if needed
-        let schemaExists = false;
-        let retryCount = 0;
-        const maxRetries = 3;
-        
-        while (!schemaExists && retryCount < maxRetries) {
-          try {
-            // Check if schema exists
-            const checkSchemaQuery = `
-              SELECT EXISTS (
-                SELECT FROM information_schema.schemata 
-                WHERE schema_name = $1
-              );
-            `;
-            const schemaResult = await pool.query(checkSchemaQuery, [schemaName]);
-            schemaExists = schemaResult.rows[0].exists;
+      // Try to create a user record if userId is provided
+      if (userId) {
+        try {
+          const userEmail = email || `${userId}@example.com`;
+          
+          const userTableExists = await connection.query(`
+            SELECT EXISTS (
+              SELECT FROM information_schema.tables 
+              WHERE table_name = 'custom_auth_user'
+              AND table_schema = 'public'
+            );
+          `);
+          
+          if (userTableExists.rows[0].exists) {
+            const columnInfo = await connection.query(`
+              SELECT column_name, data_type
+              FROM information_schema.columns 
+              WHERE table_name = 'custom_auth_user'
+              AND column_name = 'id'
+            `);
             
-            if (schemaExists) {
-              logger.info(`[EnsureDBRecord] Schema ${schemaName} exists and is ready`);
+            const idIsNumeric = columnInfo.rows.length > 0 && 
+              columnInfo.rows[0].data_type === 'bigint';
+            
+            if (idIsNumeric) {
+              // Generate a numeric ID
+              const numericId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+              
+              await connection.query(`
+                INSERT INTO custom_auth_user (
+                  id, email, password, is_active, tenant_id
+                )
+                VALUES (
+                  $1, $2, 'pbkdf2_sha256$placeholder', true, $3
+                )
+                ON CONFLICT DO NOTHING
+              `, [numericId, userEmail, tenantId]);
+              
+              logger.info(`[EnsureDBRecord][${requestId}] Created user with numeric ID: ${numericId}`);
             } else {
-              // Wait a bit before retrying
-              logger.info(`[EnsureDBRecord] Schema ${schemaName} not ready yet, waiting... (attempt ${retryCount + 1}/${maxRetries})`);
-              await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
-              retryCount++;
+              await connection.query(`
+                INSERT INTO custom_auth_user (
+                  id, email, password, is_active, tenant_id
+                )
+                VALUES (
+                  $1, $2, 'pbkdf2_sha256$placeholder', true, $3
+                )
+                ON CONFLICT DO NOTHING
+              `, [userId, userEmail, tenantId]);
+              
+              logger.info(`[EnsureDBRecord][${requestId}] Created user with UUID: ${userId}`);
             }
-          } catch (checkError) {
-            logger.warn(`[EnsureDBRecord] Error checking schema existence: ${checkError.message}`);
-            retryCount++;
-            await new Promise(resolve => setTimeout(resolve, 500)); // 500ms delay
           }
-        }
-        
-        if (!schemaExists) {
-          logger.warn(`[EnsureDBRecord] Schema ${schemaName} may not be fully created yet, but continuing...`);
-        }
-        
-        // Add owner to users table if not exists
-        // This is critical for proper tenant setup with RLS
-        try {
-          // First insert a user record into custom_auth_user
-          const userEmail = body.email || `${userId}@example.com`;
-          const userInsertQuery = `
-            INSERT INTO custom_auth_user (
-              id, email, password, is_active, is_staff, is_superuser, date_joined,
-              first_name, last_name, email_confirmed, confirmation_token,
-              is_onboarded, role, occupation, tenant_id
-            )
-            VALUES (
-              $1, $2, 'pbkdf2_sha256$placeholder', true, false, false, NOW(),
-              'User', 'User', false, gen_random_uuid(),
-              false, 'OWNER', 'OWNER', $3
-            )
-            ON CONFLICT (id) DO NOTHING;
-          `;
-          
-          await pool.query(userInsertQuery, [userId, userEmail, tenantId]);
-          logger.info('[EnsureDBRecord] Ensured user record exists for:', userId);
-          
-          // Now insert the user profile
-          const profileInsertQuery = `
-            INSERT INTO users_userprofile (id, user_id, tenant_id, created_at, updated_at)
-            VALUES ($1, $1, $2, NOW(), NOW())
-            ON CONFLICT (id) DO NOTHING;
-          `;
-          
-          await pool.query(profileInsertQuery, [userId, tenantId]);
-          logger.info('[EnsureDBRecord] Ensured user profile record exists for:', userId);
         } catch (userError) {
-          logger.warn('[EnsureDBRecord] Error ensuring user exists (non-fatal):', userError.message);
-          // Continue even if user creation fails
+          logger.warn(`[EnsureDBRecord][${requestId}] Failed to create user (non-fatal):`, userError.message);
+          // Continue with transaction
         }
-        
-        // Add business record if not exists
-        try {
-          const businessInsertQuery = `
-            INSERT INTO users_business (id, name, tenant_id, created_at, updated_at)
-            VALUES ($1, $2, $1, NOW(), NOW())
-            ON CONFLICT (id) DO UPDATE
-            SET name = $2, updated_at = NOW()
-            RETURNING id, name;
-          `;
-          
-          const businessId = tenantId; // Use same ID for simplicity
-          const businessResult = await pool.query(businessInsertQuery, [businessId, businessName]);
-          
-          if (businessResult.rows && businessResult.rows.length > 0) {
-            logger.info('[EnsureDBRecord] Business record inserted/updated:', businessResult.rows[0]);
-          }
-        } catch (businessError) {
-          logger.warn('[EnsureDBRecord] Error ensuring business exists (non-fatal):', businessError.message);
-          // Continue even if business creation fails
-        }
-        
-        // Create tenant record
-        const tenantInsertQuery = `
-          INSERT INTO custom_auth_tenant (
-            id, name, owner_id, schema_name, created_at, updated_at,
-            rls_enabled, rls_setup_date
-          )
-          VALUES ($1, $2, $3, $4, NOW(), NOW(), true, NOW())
-          ON CONFLICT (id) DO UPDATE
-          SET name = $2, updated_at = NOW()
-          RETURNING id, name, schema_name, owner_id, rls_enabled;
-        `;
-        
-        const tenantResult = await pool.query(tenantInsertQuery, [
-          tenantId, 
-          businessName,
-          userId, 
-          schemaName
-        ]);
-        
-        if (tenantResult.rows && tenantResult.rows.length > 0) {
-          logger.info('[EnsureDBRecord] Tenant record inserted/updated:', tenantResult.rows[0]);
-          
-          // Set up RLS policy right away
-          try {
-            // Grant permissions
-            await pool.query(`GRANT USAGE ON SCHEMA ${schemaName} TO dott_admin;`);
-            await pool.query(`GRANT ALL PRIVILEGES ON SCHEMA ${schemaName} TO dott_admin;`);
-            
-            // Check if product table exists in the schema, create if not
-            const checkTableQuery = `
-              SELECT EXISTS (
-                SELECT FROM information_schema.tables 
-                WHERE table_schema = '${schemaName}' 
-                AND table_name = 'product'
-              );
-            `;
-            const tableExists = await pool.query(checkTableQuery);
-            
-            // If product table doesn't exist, create it
-            if (!tableExists.rows[0].exists) {
-              logger.info(`[EnsureDBRecord] Product table doesn't exist in schema ${schemaName}, creating it`);
-              const createTableQuery = `
-                CREATE TABLE IF NOT EXISTS ${schemaName}.product (
-                  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                  name VARCHAR(255) NOT NULL,
-                  description TEXT,
-                  price DECIMAL(10, 2),
-                  tenant_id UUID NOT NULL,
-                  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                );
-              `;
-              await pool.query(createTableQuery);
-              logger.info(`[EnsureDBRecord] Created product table in schema ${schemaName}`);
-            }
-            
-            // Create a basic RLS policy (this will be expanded through migrations)
-            const rlsQuery = `
-              ALTER TABLE IF EXISTS ${schemaName}.product ENABLE ROW LEVEL SECURITY;
-              DROP POLICY IF EXISTS tenant_isolation_policy ON ${schemaName}.product;
-              CREATE POLICY tenant_isolation_policy ON ${schemaName}.product 
-              USING (tenant_id = '${tenantId}')
-              WITH CHECK (tenant_id = '${tenantId}');
-            `;
-            
-            await pool.query(rlsQuery);
-            logger.info('[EnsureDBRecord] Set up RLS policy for schema');
-          } catch (rlsError) {
-            logger.warn('[EnsureDBRecord] Error setting up RLS policy (non-fatal):', rlsError.message);
-            // Continue even if RLS setup fails
-          }
-          
-          // Update user profile with business ID
-          try {
-            const userProfileQuery = `
-              UPDATE users_userprofile 
-              SET business_id = $1
-              WHERE id = $2;
-            `;
-            
-            await pool.query(userProfileQuery, [tenantId, userId]);
-            logger.info('[EnsureDBRecord] Updated user profile with business ID');
-          } catch (profileError) {
-            logger.warn('[EnsureDBRecord] Error updating user profile (non-fatal):', profileError.message);
-            // Continue even if profile update fails
-          }
-          
-          // Commit the transaction
-          await pool.query('COMMIT');
-          logger.info('[EnsureDBRecord] Transaction committed successfully');
-          
-          return NextResponse.json({
-            success: true,
-            tenantId: tenantResult.rows[0].id,
-            name: tenantResult.rows[0].name,
-            schemaName: tenantResult.rows[0].schema_name,
-            ownerId: tenantResult.rows[0].owner_id,
-            rlsEnabled: tenantResult.rows[0].rls_enabled,
-            created: true,
-            message: 'Successfully created tenant record and schema'
-          });
-        } else {
-          throw new Error("Tenant record creation didn't return expected data");
-        }
-      } catch (transactionError) {
-        // Rollback on any error
-        await pool.query('ROLLBACK');
-        logger.error('[EnsureDBRecord] Transaction failed:', transactionError.message);
-        throw transactionError;
       }
-    } catch (dbError) {
-      // Reraise for outer catch block
-      throw dbError;
-    } finally {
-      // Close connection
-      if (pool) {
-        try {
-          await pool.end();
-          logger.info('[EnsureDBRecord] Database connection closed');
-        } catch (closeError) {
-          logger.error('[EnsureDBRecord] Error closing connection:', closeError.message);
+      
+      // Try to create a business record
+      try {
+        const businessTableExists = await connection.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_name = 'users_business'
+            AND table_schema = 'public'
+          );
+        `);
+        
+        if (businessTableExists.rows[0].exists) {
+          const columnInfo = await connection.query(`
+            SELECT column_name, data_type
+            FROM information_schema.columns 
+            WHERE table_name = 'users_business'
+            AND column_name = 'id'
+          `);
+          
+          const idIsNumeric = columnInfo.rows.length > 0 && 
+            columnInfo.rows[0].data_type === 'bigint';
+          
+          if (idIsNumeric) {
+            // Generate a numeric ID
+            const numericId = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+            
+            await connection.query(`
+              INSERT INTO users_business (
+                id, name, tenant_id, created_at, updated_at, type, country
+              )
+              VALUES (
+                $1, $2, $3, NOW(), NOW(), $4, $5
+              )
+              ON CONFLICT DO NOTHING
+            `, [
+              numericId,
+              businessName || 'Default Business',
+              tenantId,
+              businessType || 'Other',
+              businessCountry || 'US'
+            ]);
+            
+            logger.info(`[EnsureDBRecord][${requestId}] Created business with numeric ID: ${numericId}`);
+          } else {
+            await connection.query(`
+              INSERT INTO users_business (
+                id, name, tenant_id, created_at, updated_at, type, country
+              )
+              VALUES (
+                $1, $2, $1, NOW(), NOW(), $3, $4
+              )
+              ON CONFLICT DO NOTHING
+            `, [
+              tenantId,
+              businessName || 'Default Business',
+              businessType || 'Other',
+              businessCountry || 'US'
+            ]);
+            
+            logger.info(`[EnsureDBRecord][${requestId}] Created business with UUID: ${tenantId}`);
+          }
         }
+      } catch (businessError) {
+        logger.warn(`[EnsureDBRecord][${requestId}] Failed to create business (non-fatal):`, businessError.message);
+        // Continue with transaction
+      }
+      
+      // Commit this transaction
+      await connection.query('COMMIT');
+      logger.info(`[EnsureDBRecord][${requestId}] Successfully set up additional records for tenant`);
+      
+    } catch (secondaryError) {
+      logger.warn(`[EnsureDBRecord][${requestId}] Error in secondary setup (non-fatal):`, secondaryError.message);
+      
+      if (connection) {
+        try {
+          await connection.query('ROLLBACK');
+        } catch (rollbackError) {
+          logger.warn(`[EnsureDBRecord][${requestId}] Error rolling back secondary transaction:`, rollbackError);
+        }
+      }
+      
+      // Continue even if secondary setup fails
+    } finally {
+      if (connection) {
+        connection.release();
       }
     }
-  } catch (error) {
-    logger.error('[EnsureDBRecord] Error creating tenant record:', error.message);
     
-    // Always return a valid JSON response, even on errors
-    // Add proper Content-Type header to ensure browser treats it as JSON
-    return new NextResponse(JSON.stringify({
+    // Return success regardless of secondary operations
+    return NextResponse.json({
       success: true,
-      tenantId,
-      schemaName,
-      clientSideOnly: true,
-      message: 'Failed to create tenant record in database, but client can use tenant ID',
-      error: error.message
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      tenantId: tenantId,
+      message: 'Tenant record created successfully'
     });
+    
+  } catch (error) {
+    logger.error('[EnsureDBRecord] Unexpected error:', error);
+    
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message
+    }, { status: 500 });
+    
+  } finally {
+    if (pool) {
+      try {
+        await pool.end();
+      } catch (poolError) {
+        logger.error('[EnsureDBRecord] Error ending pool:', poolError);
+      }
+    }
   }
 }

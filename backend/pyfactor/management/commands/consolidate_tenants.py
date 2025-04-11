@@ -81,7 +81,7 @@ class Command(BaseCommand):
         tenant_records = TenantSchema.objects.all()
         
         for tenant in tenant_records:
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             tenant_id = str(tenant.tenant_id)
             owner_id = self.find_schema_owner(tenant_id)
             
@@ -110,7 +110,7 @@ class Command(BaseCommand):
         
         return None
         
-    def get_schema_creation_time(self, schema_name):
+    def get_schema_creation_time(tenant_id: uuid.UUID:
         """Get the creation time of a schema from postgres metadata"""
         try:
             with connection.cursor() as cursor:

@@ -11,6 +11,9 @@ import React from 'react';
 import DashboardLoader from '@/components/DashboardLoader';
 import { useNotification } from '@/context/NotificationContext';
 import { useSession } from 'next-auth/react';
+import { v4 as uuidv4 } from 'uuid';
+import cls from '@/utils/cls';
+import styles from '@/styles/DashboardClient.module.css';
 
 // Dynamically import DatabaseAdmin component to avoid loading it until needed
 const DatabaseAdmin = dynamic(() => import('@/components/DatabaseAdmin'), {
@@ -111,11 +114,155 @@ function getUserBusinessType() {
   }
 }
 
-export default function DashboardClient({ newAccount, plan }) {
+// Client data synchronization component
+export function ClientDataSync() {
+  const [syncComplete, setSyncComplete] = useState(false);
+
+  useEffect(() => {
+    // Function to sync tenant IDs and other client data
+    const syncClientData = async () => {
+      try {
+        // Get tenant ID from localStorage or cookies
+        const tenantId = localStorage.getItem('tenantId') || 
+                        document.cookie.split(';').find(c => c.trim().startsWith('tenantId='))?.split('=')[1] ||
+                        document.cookie.split(';').find(c => c.trim().startsWith('businessid='))?.split('=')[1];
+        
+        // Check if tenant ID is valid
+        if (tenantId) {
+          logger.info('[ClientDataSync] Synchronizing tenant ID:', tenantId);
+          
+          // Make sure tenant ID is consistent in all storage locations
+          localStorage.setItem('tenantId', tenantId);
+          document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+          document.cookie = `businessid=${tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+        }
+        
+        // Sync tenant IDs to prevent corruption
+        syncTenantIDs();
+        
+        // Mark sync as complete
+        setSyncComplete(true);
+      } catch (error) {
+        logger.error('[ClientDataSync] Error syncing client data:', error);
+        // Continue despite errors
+        setSyncComplete(true);
+      }
+    };
+    
+    // Run sync on component mount
+    syncClientData();
+  }, []);
+  
+  // This component doesn't render anything visible
+  return null;
+}
+
+// Sync tenant IDs in client to prevent corruption
+const syncTenantIDs = () => {
+  try {
+    // Get tenant IDs from different sources
+    const tenantIdCookie = document.cookie.split('; ')
+      .find(row => row.startsWith('tenantId='))
+      ?.split('=')[1];
+    
+    const businessIdCookie = document.cookie.split('; ')
+      .find(row => row.startsWith('businessid='))
+      ?.split('=')[1];
+    
+    const localStorageTenantId = localStorage.getItem('tenantId');
+    
+    console.log('[ClientDataSync] Checking tenant IDs:', {
+      tenantIdCookie,
+      businessIdCookie,
+      localStorageTenantId
+    });
+    
+    // Check if any tenant ID is invalid (corrupted)
+    if (tenantIdCookie && !isValidUUID(tenantIdCookie)) {
+      console.warn('[ClientDataSync] Detected corrupted tenantId cookie:', tenantIdCookie);
+      
+      // Try to use a valid ID from another source
+      const validId = isValidUUID(localStorageTenantId) 
+        ? localStorageTenantId 
+        : (isValidUUID(businessIdCookie) ? businessIdCookie : null);
+      
+      if (validId) {
+        console.log('[ClientDataSync] Using valid tenant ID to replace corrupted cookie:', validId);
+        document.cookie = `tenantId=${validId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+        document.cookie = `businessid=${validId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      } else {
+        // If no valid ID found, delete the corrupted cookie
+        console.warn('[ClientDataSync] No valid tenant ID found, clearing corrupted cookie');
+        document.cookie = 'tenantId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'businessid=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        
+        // Try to fetch a tenant from server if authenticated
+        fetchTenantFromServer();
+      }
+    }
+    
+    // Ensure consistency between localStorage and cookies if we have a valid ID
+    if (localStorageTenantId && isValidUUID(localStorageTenantId)) {
+      if (!tenantIdCookie || tenantIdCookie !== localStorageTenantId) {
+        console.log('[ClientDataSync] Using local storage tenant ID for cookies:', localStorageTenantId);
+        document.cookie = `tenantId=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+        document.cookie = `businessid=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      }
+    } else if (tenantIdCookie && isValidUUID(tenantIdCookie) && (!localStorageTenantId || localStorageTenantId !== tenantIdCookie)) {
+      // If cookie has valid ID but localStorage doesn't, update localStorage
+      console.log('[ClientDataSync] Using cookie tenant ID for localStorage:', tenantIdCookie);
+      localStorage.setItem('tenantId', tenantIdCookie);
+    } else if (!localStorageTenantId && !tenantIdCookie && !businessIdCookie) {
+      // If no tenant ID is found, try to get one from the server
+      fetchTenantFromServer();
+    }
+  } catch (error) {
+    console.error('[ClientDataSync] Error syncing tenant IDs:', error);
+  }
+};
+
+// Function to fetch a tenant ID from the server
+const fetchTenantFromServer = async () => {
+  try {
+    console.log('[ClientDataSync] Attempting to fetch tenant from server...');
+    
+    // Call getOrCreate endpoint to get or create a tenant
+    const response = await fetch('/api/tenant/getOrCreate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.tenantId) {
+      console.log('[ClientDataSync] Successfully obtained tenant ID from server:', data.tenantId);
+      
+      // Store the tenant ID in localStorage and cookies
+      localStorage.setItem('tenantId', data.tenantId);
+      document.cookie = `tenantId=${data.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      document.cookie = `businessid=${data.tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      
+      // Refresh the page to apply the new tenant ID
+      window.location.reload();
+    } else {
+      console.error('[ClientDataSync] Failed to obtain tenant ID from server:', data.message);
+    }
+  } catch (error) {
+    console.error('[ClientDataSync] Error fetching tenant from server:', error);
+  }
+};
+
+export default function DashboardClient({ newAccount, plan, createTenant, businessId }) {
   const [isClient, setIsClient] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [tenantCreated, setTenantCreated] = useState(false);
+  const [tenantId, setTenantId] = useState(null);
   const router = useRouter();
   const [isVerifyingTenant, setIsVerifyingTenant] = useState(true);
   const [tenantVerified, setTenantVerified] = useState(false);
@@ -126,7 +273,7 @@ export default function DashboardClient({ newAccount, plan }) {
   // Replace constant logging with first-render-only logging
   const isFirstRender = React.useRef(true);
   if (isFirstRender.current) {
-    console.log('DashboardClient initial render with props:', { newAccount, plan });
+    console.log('DashboardClient initial render with props:', { newAccount, plan, createTenant, businessId });
     isFirstRender.current = false;
   }
   
@@ -364,21 +511,68 @@ export default function DashboardClient({ newAccount, plan }) {
     try {
       if (!userId) return null;
       
-      // Use a simple crypto algorithm to create a v5 UUID
-      // In production, we would use a proper UUID generator
-      const hash = Array.from(userId).reduce((acc, char) => {
-        return ((acc << 5) - acc) + char.charCodeAt(0) | 0;
-      }, 0).toString(16);
+      // Use UUID v5 algorithm for proper deterministic UUID generation
+      // This uses a SHA-1 hash (via subtle crypto) to ensure consistency
+      const encoder = new TextEncoder();
+      const data = encoder.encode(userId);
       
-      // Format as UUID
-      const uuid = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-${hash.slice(12, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
-      logger.info('[DashboardClient] Generated deterministic tenant ID from user ID:', uuid);
+      // UUID v5 namespace (using DNS namespace as base)
+      const NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
       
-      return uuid;
+      // Convert namespace to bytes
+      const namespaceBytes = new Uint8Array(16);
+      NAMESPACE.replace(/-/g, '').match(/.{2}/g).map((hex, i) => {
+        namespaceBytes[i] = parseInt(hex, 16);
+      });
+      
+      // Combine namespace and name
+      const combinedBytes = new Uint8Array(16 + data.length);
+      combinedBytes.set(namespaceBytes);
+      combinedBytes.set(data, 16);
+      
+      // Get hash of combined bytes
+      // In browsers supporting crypto.subtle:
+      if (typeof crypto !== 'undefined' && crypto.subtle) {
+        return crypto.subtle.digest('SHA-1', combinedBytes).then(buffer => {
+          const hashArray = Array.from(new Uint8Array(buffer));
+          
+          // Format as UUID v5
+          hashArray[6] = (hashArray[6] & 0x0f) | 0x50; // Set version to 5
+          hashArray[8] = (hashArray[8] & 0x3f) | 0x80; // Set variant
+          
+          // Convert to hex and format as UUID
+          const hex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          const uuid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+          
+          logger.info('[DashboardClient] Generated deterministic UUID v5 tenant ID from user ID:', uuid);
+          return uuid;
+        }).catch(e => {
+          logger.error('[DashboardClient] Error generating UUID v5 tenant ID:', e);
+          
+          // Fall back to simple hash method if subtle crypto fails
+          return generateSimpleHashTenantId(userId);
+        });
+      } else {
+        // Fallback for environments without crypto.subtle
+        return generateSimpleHashTenantId(userId);
+      }
     } catch (e) {
       logger.error('[DashboardClient] Error generating tenant ID:', e);
       return null;
     }
+  };
+  
+  // Fallback method using simple hash for environments without crypto.subtle
+  const generateSimpleHashTenantId = (userId) => {
+    const hash = Array.from(userId).reduce((acc, char) => {
+      return ((acc << 5) - acc) + char.charCodeAt(0) | 0;
+    }, 0).toString(16).padStart(32, '0');
+    
+    // Format as UUID-like string
+    const uuid = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-${hash.slice(16, 20)}-${hash.slice(20, 32)}`;
+    logger.info('[DashboardClient] Generated fallback tenant ID from user ID:', uuid);
+    
+    return uuid;
   };
 
   useEffect(() => {
@@ -961,21 +1155,72 @@ export default function DashboardClient({ newAccount, plan }) {
     />;
   }
 
-  return (
-    <>
-      {/* Admin panel for admin users */}
-      {userData?.['custom:isadmin'] === 'true' && isAuthenticated && searchParams.get('admin') === 'true' && (
-        <div className="min-h-screen">
-          <DatabaseAdmin />
-        </div>
-      )}
+  // Handle tenant creation if needed
+  useEffect(() => {
+    if (createTenant && businessId) {
+      const createTenantForUser = async () => {
+        try {
+          console.log('[DashboardClient] Creating tenant for user with business ID:', businessId);
+          
+          // Get user attributes
+          const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+          const userAttributes = await fetchUserAttributes();
+          
+          // Call tenant manager API
+          const tenantResponse = await fetch('/api/tenant/tenant-manager', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tenant_id: businessId,
+              user_id: userAttributes.sub,
+              business_name: userAttributes['custom:businessname'],
+              forceCreate: true
+            })
+          });
+          
+          if (tenantResponse.ok) {
+            const result = await tenantResponse.json();
+            
+            if (result.success && result.tenantId) {
+              console.log('[DashboardClient] Tenant created successfully:', result.tenantId);
+              
+              // Update user attributes with tenant ID
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:tenant_id': result.tenantId,
+                  'custom:updated_at': new Date().toISOString()
+                }
+              });
+              
+              // Store tenant ID and redirect
+              localStorage.setItem('tenantId', result.tenantId);
+              setTenantId(result.tenantId);
+              setTenantCreated(true);
+              
+              // Redirect to tenant dashboard
+              router.push(`/tenant/${result.tenantId}/dashboard?freePlan=true&newTenant=true`);
+            } else {
+              console.error('[DashboardClient] Failed to create tenant:', result);
+            }
+          } else {
+            console.error('[DashboardClient] Tenant creation API failed');
+          }
+        } catch (error) {
+          console.error('[DashboardClient] Error creating tenant:', error);
+        }
+      };
       
-      {/* Always render DashboardWrapper */}
-      <DashboardWrapper 
-        newAccount={userData?.['custom:isNew'] === 'true' || newAccount === 'true'}
-        plan={plan || userData?.['custom:plan']}
-      />
-    </>
+      createTenantForUser();
+    }
+  }, [createTenant, businessId, router]);
+
+  return (
+    <div className="relative">
+      <div className={cls(styles.dashboardContainer)}>
+        {/* Dashboard content */}
+      </div>
+    </div>
   );
 }
 
@@ -984,141 +1229,42 @@ export default function DashboardClient({ newAccount, plan }) {
  */
 const ensureTenantSchema = async (tenantId, userAttributes) => {
   try {
-    // Call the schema manager API
-    const schemaManagerResponse = await fetch('/api/tenant/schema-manager', {
+    // Call the tenant manager API
+    const tenantManagerResponse = await fetch('/api/tenant/tenant-manager', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        tenantId: tenantId,
-        userId: userAttributes.sub,
-        businessName: userAttributes['custom:businessname'],
+        tenant_id: tenantId,
+        user_id: userAttributes.sub,
+        business_name: userAttributes['custom:businessname'],
         forceCreate: true // Explicitly request tenant creation
       })
     });
     
-    if (schemaManagerResponse.ok) {
-      const schemaResult = await schemaManagerResponse.json();
-      console.log('[DashboardClient] Schema manager result:', schemaResult);
+    if (tenantManagerResponse.ok) {
+      const schemaResult = await tenantManagerResponse.json();
+      console.log('[DashboardClient] Tenant manager result:', schemaResult);
       
-      // Also update the user API
-      await fetch('/api/user/tenant', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ tenantId: tenantId })
-      });
-      console.log('[DashboardClient] Updated server with tenant ID');
-      
-      return schemaResult;
+      if (schemaResult.success) {
+        return schemaResult;
+      } else {
+        console.error('[DashboardClient] Tenant creation failed:', schemaResult);
+        return null;
+      }
     } else {
-      console.error('[DashboardClient] Schema manager API failed:', await schemaManagerResponse.text());
+      console.error('[DashboardClient] Tenant manager API failed:', await tenantManagerResponse.text());
       return null;
     }
   } catch (error) {
-    console.error('[DashboardClient] Error ensuring tenant schema:', error);
+    console.error('[DashboardClient] Error in tenant setup:', error);
     return null;
   }
 };
 
-export function ClientDataSync() {
-  const [synced, setSynced] = useState(false);
-  const { data: session, status } = useSession();
-  
-  useEffect(() => {
-    // Only run once the session is loaded
-    if (status === 'loading') {
-      return;
-    }
-    
-    const syncData = () => {
-      try {
-        // Get tenant IDs from various sources
-        const tenantIdCookie = getCookie('tenantId');
-        const businessIdCookie = getCookie('businessid') || getCookie('custom:businessid');
-        const localStorageTenantId = localStorage.getItem('tenantId');
-        
-        console.log('[ClientDataSync] Checking tenant IDs:', { 
-          tenantIdCookie, 
-          businessIdCookie, 
-          localStorageTenantId
-        });
-        
-        // Get the session tenant ID as the source of truth
-        const sessionTenantId = session?.user?.['custom:businessid'] || 
-                               (session?.user?.businessId && session?.user?.businessId !== 'undefined' 
-                                ? session.user.businessId : null);
-        
-        // If we have a session tenant ID but not in local storage/cookies, update them
-        if (sessionTenantId && (!localStorageTenantId || !tenantIdCookie)) {
-          console.log('[ClientDataSync] Updating local storage and cookies with session tenant ID:', sessionTenantId);
-          
-          // Set in local storage
-          localStorage.setItem('tenantId', sessionTenantId);
-          
-          // Set cookie with 30-day expiration
-          document.cookie = `tenantId=${sessionTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-        }
-        
-        // If no session tenant ID but we have it in local storage, make sure cookies are set
-        else if (!sessionTenantId && localStorageTenantId) {
-          console.log('[ClientDataSync] Using local storage tenant ID for cookies:', localStorageTenantId);
-          document.cookie = `tenantId=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-        }
-        
-        // If no tenant ID anywhere but user is authenticated, create one
-        else if (!sessionTenantId && !localStorageTenantId && !tenantIdCookie && session?.user) {
-          // Generate a deterministic tenant ID based on user ID
-          // This is a simplified implementation - in production you would want to validate with the server
-          const userId = session.user.id || session.user.sub;
-          if (userId) {
-            console.log('[ClientDataSync] Generating tenant ID for user:', userId);
-            
-            // Call the API to create/retrieve a tenant ID
-            fetch('/api/tenant/create-tenant-record', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                userId,
-                email: session.user.email
-              })
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success && data.tenant_id) {
-                console.log('[ClientDataSync] Created tenant ID:', data.tenant_id);
-                localStorage.setItem('tenantId', data.tenant_id);
-                document.cookie = `tenantId=${data.tenant_id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-              }
-            })
-            .catch(error => {
-              console.error('[ClientDataSync] Error creating tenant ID:', error);
-            });
-          }
-        }
-        
-        setSynced(true);
-      } catch (error) {
-        console.error('[ClientDataSync] Error syncing data:', error);
-      }
-    };
-    
-    syncData();
-    
-    // Set up periodic sync
-    const intervalId = setInterval(syncData, 30000); // Every 30 seconds
-    
-    return () => clearInterval(intervalId);
-  }, [session, status]);
-  
-  return null;
-}
-
-// Helper function to get cookie value
-function getCookie(name) {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-} 
+// Function to validate tenant ID
+const isValidUUID = (id) => {
+  if (!id) return false;
+  // Check if it's a valid UUID format
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+}; 

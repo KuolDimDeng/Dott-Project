@@ -5,6 +5,7 @@ Middleware for handling row-level security tenant context.
 import logging
 import time
 import jwt
+import uuid
 from django.utils.deprecation import MiddlewareMixin
 from django.db import connection
 from .rls import set_current_tenant_id, clear_current_tenant_id
@@ -89,7 +90,7 @@ class RowLevelSecurityMiddleware(MiddlewareMixin):
         clear_current_tenant_id()
         return None
 
-def verify_auth_tables_in_schema(schema_name):
+def verify_auth_tables_in_schema(tenant_id: uuid.UUID):
     """
     Verify that the auth tables exist in the specified schema.
     This is no longer needed with RLS, but kept for backward compatibility.
@@ -128,7 +129,7 @@ class SchemaNameMiddleware:
     a consistent way to get the schema name from a tenant ID.
     
     This adds a method to the Tenant model instance dynamically to provide
-    backward compatibility with code that expects tenant.schema_name.
+    backward compatibility with code that expects  tenant.id.
     """
     
     def __init__(self, get_response):
@@ -177,7 +178,7 @@ class TenantMiddleware(MiddlewareMixin):
             
             # Store tenant ID in request for future middleware/views
             request.tenant_id = tenant_id
-            request.schema_name = get_schema_name_from_tenant_id(tenant_id)
+            request.id = get_schema_name_from_tenant_id(tenant_id)
             
         return None
         

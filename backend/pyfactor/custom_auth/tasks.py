@@ -9,6 +9,7 @@ from django.db import connections, connection
 from django.core.management import call_command
 from django.conf import settings
 from custom_auth.models import Tenant
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ def check_and_migrate_tenant_schemas():
         
         for tenant in tenants:
             tenant_start_time = time.time()
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"[MIGRATION-{task_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
             
             # Check if schema exists
@@ -182,7 +183,9 @@ def check_and_migrate_tenant_schemas():
                     # Set search path to tenant schema
                     with connection.cursor() as cursor:
                         logger.debug(f"[MIGRATION-{task_id}] Setting search path to {schema_name},public")
-                        cursor.execute(f'SET search_path TO "{schema_name}",public')
+                        # RLS: Use tenant context instead of schema
+                        # cursor.execute(f'SET search_path TO {schema_name}')
+                        set_current_tenant_id(tenant.id)
                         
                         # Verify search path was set correctly
                         cursor.execute('SHOW search_path')
@@ -297,9 +300,14 @@ def check_and_migrate_tenant_schemas():
                 
                 finally:
                     # Reset search path to public
-                    with connection.cursor() as cursor:
-                        logger.debug(f"[MIGRATION-{task_id}] Resetting search path to public")
-                        cursor.execute('SET search_path TO public')
+                    try:
+                        with connection.cursor() as cursor:
+                            logger.debug(f"[MIGRATION-{task_id}] Resetting search path to public")
+                            # RLS: No need to set search_path with tenant-aware context
+                            # cursor.execute('SET search_path TO public')
+                            set_current_tenant_id(None)
+                    except Exception as reset_error:
+                        logger.error(f"[MIGRATION-{task_id}] Error resetting search path: {str(reset_error)}")
             else:
                 logger.info(f"[MIGRATION-{task_id}] Schema {schema_name} already has {table_count} tables. No migration needed.")
             
@@ -342,7 +350,7 @@ def migrate_tenant_schema(tenant_id):
     try:
         # Get tenant
         tenant = Tenant.objects.get(id=tenant_id)
-        schema_name = tenant.schema_name
+        schema_name =  tenant.id
         logger.info(f"[TENANT-MIGRATION-{task_id}] Found tenant: {tenant.name} (Schema: {schema_name})")
         
         # Check if schema exists
@@ -402,7 +410,9 @@ def migrate_tenant_schema(tenant_id):
         # Set search path to tenant schema
         with connection.cursor() as cursor:
             logger.debug(f"[TENANT-MIGRATION-{task_id}] Setting search path to {schema_name},public")
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+            # cursor.execute(f'SET search_path TO {schema_name}')
+            set_current_tenant_id(tenant.id)
             
             # Verify search path was set correctly
             cursor.execute('SHOW search_path')
@@ -558,7 +568,9 @@ def migrate_tenant_schema(tenant_id):
         try:
             with connection.cursor() as cursor:
                 logger.debug(f"[TENANT-MIGRATION-{task_id}] Resetting search path to public")
-                cursor.execute('SET search_path TO public')
+                # RLS: No need to set search_path with tenant-aware context
+                # cursor.execute('SET search_path TO public')
+                set_current_tenant_id(None)
         except Exception as reset_error:
             logger.error(f"[TENANT-MIGRATION-{task_id}] Error resetting search path: {str(reset_error)}")
 
@@ -596,7 +608,7 @@ def monitor_tenant_schemas_task(fix=True):
         # Check each tenant's schema
         for tenant in tenants:
             tenant_start_time = time.time()
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"[MONITOR-{task_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
             
             # Check if schema exists
@@ -738,6 +750,9 @@ def monitor_tenant_schemas():
     """
     Scheduled task to monitor tenant schemas and detect issues
     """
+    # RLS: Importing tenant context functions
+    from custom_auth.rls import set_current_tenant_id, tenant_context
+    
     try:
         from scripts.monitor_tenant_schemas import run_monitoring
         

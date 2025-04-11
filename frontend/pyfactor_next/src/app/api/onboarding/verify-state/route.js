@@ -2,6 +2,38 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { getServerUser } from '@/utils/getServerUser';
 
+// Create a safe logger that falls back to console methods if logger methods aren't available
+const safeLogger = {
+  debug: (...args) => {
+    if (typeof logger.debug === 'function') {
+      logger.debug(...args);
+    } else {
+      console.debug(...args);
+    }
+  },
+  info: (...args) => {
+    if (typeof logger.info === 'function') {
+      logger.info(...args);
+    } else {
+      console.info(...args);
+    }
+  },
+  warn: (...args) => {
+    if (typeof logger.warn === 'function') {
+      logger.warn(...args);
+    } else {
+      console.warn(...args);
+    }
+  },
+  error: (...args) => {
+    if (typeof logger.error === 'function') {
+      logger.error(...args);
+    } else {
+      console.error(...args);
+    }
+  }
+};
+
 /**
  * Get user from various token sources with fallbacks using server-side auth
  */
@@ -11,7 +43,7 @@ async function getAuthenticatedUser(request) {
     const user = await getServerUser(request);
     
     if (user) {
-      logger.debug('[API] Retrieved user through serverAuth');
+      safeLogger.debug('[API] Retrieved user through serverAuth');
       return user;
     }
     
@@ -20,7 +52,7 @@ async function getAuthenticatedUser(request) {
     const requestedStep = searchParams.get('step');
     
     if (requestedStep === 'business-info') {
-      logger.debug('[API] Special handling for business-info page without auth');
+      safeLogger.debug('[API] Special handling for business-info page without auth');
       return {
         email: '',
         'custom:onboarding': 'NOT_STARTED',
@@ -30,7 +62,7 @@ async function getAuthenticatedUser(request) {
     
     return null;
   } catch (error) {
-    logger.error('[API] Error authenticating user:', error);
+    safeLogger.error('[API] Error authenticating user:', error);
     return null;
   }
 }
@@ -55,13 +87,13 @@ export async function GET(request) {
       );
     }
     
-    logger.debug('[API] Verifying onboarding state', { requestedStep });
+    safeLogger.debug('[API] Verifying onboarding state', { requestedStep });
     
     // Get current user with enhanced handling
     const user = await getAuthenticatedUser(request);
     
     if (!user) {
-      logger.warn('[API] No authenticated user for state verification');
+      safeLogger.warn('[API] No authenticated user for state verification');
       return NextResponse.json(
         { 
           isValid: false, 
@@ -74,7 +106,7 @@ export async function GET(request) {
     
     // Special handling for partial responses on business-info page
     if (user.partial === true && requestedStep === 'business-info') {
-      logger.debug('[API] Allowing partial access to business-info page');
+      safeLogger.debug('[API] Allowing partial access to business-info page');
       return NextResponse.json({
         isValid: true,
         userData: {
@@ -90,7 +122,7 @@ export async function GET(request) {
     // Get onboarding status from user attributes
     // Normalize to lowercase for consistency
     const onboardingStatus = (user['custom:onboarding'] || 'NOT_STARTED').toLowerCase();
-    logger.debug('[API] User onboarding status', { 
+    safeLogger.debug('[API] User onboarding status', { 
       onboardingStatus,
       originalStatus: user['custom:onboarding'] || 'NOT_STARTED'
     });
@@ -110,7 +142,7 @@ export async function GET(request) {
     
     // For dashboard access, onboarding must be complete
     if (requestedStep === 'dashboard' && !isComplete) {
-      logger.debug('[API] Dashboard access denied - onboarding incomplete', {
+      safeLogger.debug('[API] Dashboard access denied - onboarding incomplete', {
         onboardingStatus
       });
       return NextResponse.json({
@@ -121,12 +153,32 @@ export async function GET(request) {
     }
     
     // Check if requested step is allowed
-    const isAllowed = stepAccess[requestedStep]?.includes(onboardingStatus);
+    let isAllowed = stepAccess[requestedStep]?.includes(onboardingStatus);
+    
+    // Special case for payment page - check for plan type
+    if (requestedStep === 'payment') {
+      // If user has a free or basic plan, payment page is not allowed
+      const planType = user?.['custom:subplan']?.toLowerCase();
+      if (planType === 'free' || planType === 'basic') {
+        safeLogger.info('[API] Payment page access denied for free/basic plan', { planType });
+        isAllowed = false;
+        
+        // Redirect to setup
+        return NextResponse.json(
+          { 
+            isValid: false, 
+            redirectUrl: '/dashboard?freePlan=true',
+            message: 'Free/basic plans do not require payment' 
+          },
+          { status: 200 }
+        );
+      }
+    }
     
     if (!isAllowed) {
       // Find the appropriate step for this status
-      const nextStep = getNextStep(onboardingStatus);
-      logger.warn('[API] Invalid step for current status', { 
+      const nextStep = getNextStep(onboardingStatus, user);
+      safeLogger.warn('[API] Invalid step for current status', { 
         requestedStep, 
         onboardingStatus, 
         nextStep 
@@ -155,7 +207,7 @@ export async function GET(request) {
     });
     
   } catch (error) {
-    logger.error('[API] Error verifying onboarding state:', error);
+    safeLogger.error('[API] Error verifying onboarding state:', error);
     return NextResponse.json(
       { error: 'Failed to verify onboarding state' },
       { status: 500 }
@@ -166,15 +218,30 @@ export async function GET(request) {
 /**
  * Get the next appropriate step based on onboarding status
  */
-function getNextStep(status) {
+function getNextStep(status, user) {
   const stepMap = {
-    'NOT_STARTED': 'business-info',
-    'BUSINESS_INFO': 'subscription',
-    'SUBSCRIPTION': 'payment',
-    'PAYMENT': 'setup',
-    'SETUP': 'dashboard',
-    'COMPLETE': 'dashboard'
+    'not_started': 'business-info',
+    'business_info': 'subscription',
+    'business-info': 'subscription', 
+    'subscription': 'payment',
+    'payment': 'setup',
+    'setup': 'dashboard',
+    'complete': 'dashboard',
+    'completed': 'dashboard'
   };
+
+  // Normalize status to lowercase for consistent mapping
+  const normalizedStatus = status?.toLowerCase() || 'not_started';
   
-  return stepMap[status] || 'business-info';
+  // Special case for subscription stage: check plan type
+  if (normalizedStatus === 'subscription') {
+    // Check if user has a free or basic plan
+    const planType = user?.['custom:subplan']?.toLowerCase();
+    if (planType === 'free' || planType === 'basic') {
+      // Skip payment for free/basic plans
+      return 'setup';
+    }
+  }
+  
+  return stepMap[normalizedStatus] || 'business-info';
 } 

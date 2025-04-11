@@ -79,13 +79,10 @@ from ..locks import acquire_lock, release_lock, task_lock
 from ..models import OnboardingProgress
 from ..serializers import OnboardingProgressSerializer
 from ..state import OnboardingStateManager
-from ..tasks import setup_user_schema_task
+from ..tasks import setup_user_tenant_task
 from ..utils import (
-    generate_unique_schema_name,
-    validate_schema_creation,
-    tenant_schema_context,
-    process_tenant_subscription_plan,
-    get_schema_name_from_tenant_id,
+    generate_unique_tenant_id,
+    tenant_context_manager
 )
 
 from ..serializers import BusinessInfoSerializer
@@ -99,11 +96,8 @@ from pyfactor.userDatabaseRouter import UserDatabaseRouter
 from users.models import UserProfile, User
 from users.utils import (
     check_schema_health,
-    cleanup_schema,
-    setup_user_schema,
     get_business_for_user
 )
-from ..utils import validate_schema_creation
 
 # Configure stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -1338,7 +1332,7 @@ class StartOnboardingView(BaseOnboardingView):
             # Queue task if not deferred
             if not is_deferred:
                 try:
-                    task = setup_user_schema_task.apply_async(
+                    task = setup_user_tenant_task.apply_async(
                         args=[str(request.user.id), business_id],
                         queue='setup',
                         retry=True,
@@ -1805,162 +1799,165 @@ class SaveStep1View(APIView):
                                 logger.info(f"Schema {schema_name} already exists, using it")
                                 
                             # Set search path to the schema
-                            cursor.execute(f'SET search_path TO "{schema_name}",public')
+                            # RLS: Use tenant context instead of schema
+                            # cursor.execute(f'SET search_path TO {schema_name}')
+                            set_current_tenant_id(tenant_id)
+                            cursor.execute('SET search_path TO public')
+                            
+                            # Defer all constraints to avoid transaction issues
+                            logger.debug("Deferring all constraints")
+                            cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                            
+                            # Create django_migrations table in the schema if it doesn't exist
+                            cursor.execute(f"""
+                                CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "django_migrations" (
+                                    "id" serial NOT NULL PRIMARY KEY,
+                                    "app" varchar(255) NOT NULL,
+                                    "name" varchar(255) NOT NULL,
+                                    "applied" timestamp with time zone NOT NULL
+                                );
+                            """)
+                            
+                            # Create essential tables for business info - WITHOUT FOREIGN KEY CONSTRAINTS
+                            # First, check if users_business exists
+                            cursor.execute("""
+                                SELECT 1 FROM information_schema.tables
+                                WHERE table_schema = %s AND table_name = 'users_business'
+                            """, [schema_name])
+                            
+                            if not cursor.fetchone():
+                                # Create users_business table without foreign keys
+                                cursor.execute(f"""
+                                    CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "users_business" (
+                                        "id" uuid NOT NULL PRIMARY KEY,
+                                        "business_num" varchar(6) NOT NULL,
+                                        "name" varchar(200) NOT NULL,
+                                        "business_type" varchar(50) NOT NULL,
+                                        "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                                        "street" varchar(200) NULL,
+                                        "city" varchar(200) NULL,
+                                        "state" varchar(200) NULL,
+                                        "postcode" varchar(20) NULL,
+                                        "country" varchar(2) NOT NULL DEFAULT 'US',
+                                        "address" text NULL,
+                                        "email" varchar(254) NULL,
+                                        "phone_number" varchar(20) NULL,
+                                        "database_name" varchar(255) NULL,
+                                        "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                                        "date_founded" date NULL,
+                                        "owner_id" uuid NOT NULL
+                                    );
+                                """)
+                                
+                                # Create an index for business_num
+                                cursor.execute(f"""
+                                    CREATE INDEX IF NOT EXISTS "users_business_business_num_idx"
+                                    ON /* RLS: Use tenant_id filtering */ "users_business" ("business_num");
+                                """)
+                            
+                            # Check if users_business_details exists
+                            cursor.execute("""
+                                SELECT 1 FROM information_schema.tables
+                                WHERE table_schema = %s AND table_name = 'users_business_details'
+                            """, [schema_name])
+                            
+                            if not cursor.fetchone():
+                                # Create users_business_details table without foreign key constraint
+                                cursor.execute(f"""
+                                    CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "users_business_details" (
+                                        "business_id" uuid NOT NULL PRIMARY KEY,
+                                        "business_type" varchar(50) NOT NULL,
+                                        "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
+                                        "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
+                                        "country" varchar(2) NOT NULL DEFAULT 'US',
+                                        "date_founded" date NULL,
+                                        "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "updated_at" timestamp with time zone NOT NULL DEFAULT now()
+                                    );
+                                """)
+                            
+                            # Check if users_userprofile exists
+                            cursor.execute("""
+                                SELECT 1 FROM information_schema.tables
+                                WHERE table_schema = %s AND table_name = 'users_userprofile'
+                            """, [schema_name])
+                            
+                            if not cursor.fetchone():
+                                # Create users_userprofile table - without foreign key constraints
+                                cursor.execute(f"""
+                                    CREATE TABLE IF NOT EXISTS /* RLS: Use tenant_id filtering */ "users_userprofile" (
+                                        "id" bigserial NOT NULL PRIMARY KEY,
+                                        "occupation" varchar(200) NULL,
+                                        "street" varchar(200) NULL,
+                                        "city" varchar(200) NULL,
+                                        "state" varchar(200) NULL,
+                                        "postcode" varchar(200) NULL,
+                                        "country" varchar(2) NOT NULL DEFAULT 'US',
+                                        "phone_number" varchar(200) NULL,
+                                        "created_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "modified_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "is_business_owner" boolean NOT NULL DEFAULT false,
+                                        "shopify_access_token" varchar(255) NULL,
+                                        "schema_name" varchar(63) NULL,
+                                        "metadata" jsonb NULL DEFAULT '{{}}'::jsonb,
+                                        "business_id" uuid NULL,
+                                        "tenant_id" uuid NULL,
+                                        "user_id" uuid NOT NULL,
+                                        "updated_at" timestamp with time zone DEFAULT NOW()
+                                    );
+                                """)
+                                
+                                # Create index on tenant_id
+                                cursor.execute(f"""
+                                    CREATE INDEX IF NOT EXISTS "users_userprofile_tenant_id_idx"
+                                    ON /* RLS: Use tenant_id filtering */ "users_userprofile" ("tenant_id");
+                                """)
+                                
+                                # Create unique index on user_id
+                                cursor.execute(f"""
+                                    CREATE UNIQUE INDEX IF NOT EXISTS "users_userprofile_user_id_key"
+                                    ON /* RLS: Use tenant_id filtering */ "users_userprofile" ("user_id");
+                                """)
+                            
+                            # Record deferred migrations marker in django_migrations
+                            cursor.execute(f"""
+                                INSERT INTO /* RLS: Use tenant_id filtering */ "django_migrations" (app, name, applied)
+                                VALUES ('onboarding', 'deferred_migrations', NOW())
+                                ON CONFLICT DO NOTHING;
+                            """)
+                            
+                            # Update tenant status if it exists
+                            cursor.execute("""
+                                UPDATE auth_tenant
+                                SET schema_name = %s,
+                                    setup_status = 'minimal',
+                                    last_setup_attempt = NOW()
+                                WHERE owner_id = %s;
+                            """, [schema_name, str(request.user.id)])
+                            
+                            # If rows affected is 0, tenant doesn't exist yet
+                            if cursor.rowcount == 0:
+                                # Create tenant record
+                                tenant_uuid = uuid.UUID(tenant_id)
+                                cursor.execute("""
+                                    INSERT INTO auth_tenant (id, schema_name, name, owner_id, created_on, is_active, setup_status)
+                                    VALUES (%s, %s, %s, %s, NOW(), TRUE, 'minimal');
+                                """, [tenant_id, schema_name, f"Tenant for {request.user.email}", str(request.user.id)])
+                                logger.info(f"Created tenant record for user {request.user.id}")
                 finally:
-                    # Close the dedicated connection
+                    # Close the dedicated connection if it exists
                     if schema_conn:
-                        # Make sure to rollback any pending transactions before closing
-                        if schema_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
-                                                psycopg2.extensions.STATUS_BEGIN):
-                            schema_conn.rollback()
-                        schema_conn.close()
-                
-                # Now use Django's connection with the new search path
-                with connection.cursor() as cursor:
-                    # Set search path in the main connection too
-                    cursor.execute(f'SET search_path TO "{schema_name}",public')
-                    
-                    # IMPORTANT: Defer all constraints to allow creating tables without dependencies
-                    cursor.execute("SET CONSTRAINTS ALL DEFERRED")
-                        
-                    # Create django_migrations table in the schema if it doesn't exist
-                    cursor.execute(f"""
-                        CREATE TABLE IF NOT EXISTS "{schema_name}"."django_migrations" (
-                            "id" serial NOT NULL PRIMARY KEY,
-                            "app" varchar(255) NOT NULL,
-                            "name" varchar(255) NOT NULL,
-                            "applied" timestamp with time zone NOT NULL
-                        );
-                    """)
-                        
-                    # Create essential tables for business info - WITHOUT FOREIGN KEY CONSTRAINTS
-                    # First, check if users_business exists
-                    cursor.execute("""
-                        SELECT 1 FROM information_schema.tables
-                        WHERE table_schema = %s AND table_name = 'users_business'
-                    """, [schema_name])
-                        
-                    if not cursor.fetchone():
-                        # Create users_business table without foreign keys
-                        cursor.execute(f"""
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_business" (
-                                "id" uuid NOT NULL PRIMARY KEY,
-                                "business_num" varchar(6) NOT NULL,
-                                "name" varchar(200) NOT NULL,
-                                "business_type" varchar(50) NOT NULL,
-                                "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
-                                "street" varchar(200) NULL,
-                                "city" varchar(200) NULL,
-                                "state" varchar(200) NULL,
-                                "postcode" varchar(20) NULL,
-                                "country" varchar(2) NOT NULL DEFAULT 'US',
-                                "address" text NULL,
-                                "email" varchar(254) NULL,
-                                "phone_number" varchar(20) NULL,
-                                "database_name" varchar(255) NULL,
-                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
-                                "date_founded" date NULL,
-                                "owner_id" uuid NOT NULL
-                            );
-                        """)
-                        
-                        # Create an index for business_num
-                        cursor.execute(f"""
-                            CREATE INDEX IF NOT EXISTS "users_business_business_num_idx"
-                            ON "{schema_name}"."users_business" ("business_num");
-                        """)
-                    
-                    # Check if users_business_details exists
-                    cursor.execute("""
-                        SELECT 1 FROM information_schema.tables
-                        WHERE table_schema = %s AND table_name = 'users_business_details'
-                    """, [schema_name])
-                    
-                    if not cursor.fetchone():
-                        # Create users_business_details table without foreign key constraint
-                        cursor.execute(f"""
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_business_details" (
-                                "business_id" uuid NOT NULL PRIMARY KEY,
-                                "business_type" varchar(50) NOT NULL,
-                                "business_subtype_selections" jsonb NOT NULL DEFAULT '{{}}'::jsonb,
-                                "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
-                                "country" varchar(2) NOT NULL DEFAULT 'US',
-                                "date_founded" date NULL,
-                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                "updated_at" timestamp with time zone NOT NULL DEFAULT now()
-                            );
-                        """)
-                    
-                    # Check if users_userprofile exists
-                    cursor.execute("""
-                        SELECT 1 FROM information_schema.tables
-                        WHERE table_schema = %s AND table_name = 'users_userprofile'
-                    """, [schema_name])
-                    
-                    if not cursor.fetchone():
-                        # Create users_userprofile table - without foreign key constraints
-                        cursor.execute(f"""
-                            CREATE TABLE IF NOT EXISTS "{schema_name}"."users_userprofile" (
-                                "id" bigserial NOT NULL PRIMARY KEY,
-                                "occupation" varchar(200) NULL,
-                                "street" varchar(200) NULL,
-                                "city" varchar(200) NULL,
-                                "state" varchar(200) NULL,
-                                "postcode" varchar(200) NULL,
-                                "country" varchar(2) NOT NULL DEFAULT 'US',
-                                "phone_number" varchar(200) NULL,
-                                "created_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                "modified_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                "is_business_owner" boolean NOT NULL DEFAULT false,
-                                "shopify_access_token" varchar(255) NULL,
-                                "schema_name" varchar(63) NULL,
-                                "metadata" jsonb NULL DEFAULT '{{}}'::jsonb,
-                                "business_id" uuid NULL,
-                                "tenant_id" uuid NULL,
-                                "user_id" uuid NOT NULL,
-                                "updated_at" timestamp with time zone DEFAULT NOW()
-                            );
-                        """)
-                        
-                        # Create index on tenant_id
-                        cursor.execute(f"""
-                            CREATE INDEX IF NOT EXISTS "users_userprofile_tenant_id_idx"
-                            ON "{schema_name}"."users_userprofile" ("tenant_id");
-                        """)
-                        
-                        # Create unique index on user_id
-                        cursor.execute(f"""
-                            CREATE UNIQUE INDEX IF NOT EXISTS "users_userprofile_user_id_key"
-                            ON "{schema_name}"."users_userprofile" ("user_id");
-                        """)
-                    
-                    # Record deferred migrations marker in django_migrations
-                    cursor.execute(f"""
-                        INSERT INTO "{schema_name}"."django_migrations" (app, name, applied)
-                        VALUES ('onboarding', 'deferred_migrations', NOW())
-                        ON CONFLICT DO NOTHING;
-                    """)
-                    
-                    # Update tenant status if it exists
-                    cursor.execute("""
-                        UPDATE auth_tenant
-                        SET schema_name = %s,
-                            setup_status = 'minimal',
-                            last_setup_attempt = NOW()
-                        WHERE owner_id = %s;
-                    """, [schema_name, str(request.user.id)])
-                    
-                    # If rows affected is 0, tenant doesn't exist yet
-                    if cursor.rowcount == 0:
-                        # Create tenant record
-                        tenant_uuid = uuid.UUID(tenant_id)
-                        cursor.execute("""
-                            INSERT INTO auth_tenant (id, schema_name, name, owner_id, created_on, is_active, setup_status)
-                            VALUES (%s, %s, %s, %s, NOW(), TRUE, 'minimal');
-                        """, [tenant_id, schema_name, f"Tenant for {request.user.email}", str(request.user.id)])
-                        logger.info(f"Created tenant record for user {request.user.id}")
+                        try:
+                            # Make sure to rollback any pending transactions before closing
+                            if schema_conn.status in (psycopg2.extensions.STATUS_IN_TRANSACTION,
+                                                    psycopg2.extensions.STATUS_BEGIN):
+                                schema_conn.rollback()
+                            schema_conn.close()
+                            logger.debug("Closed dedicated schema connection")
+                        except Exception as close_error:
+                            logger.error(f"Error closing schema connection: {str(close_error)}")
             except Exception as schema_error:
                 logger.error(f"Error setting up schema: {str(schema_error)}", exc_info=True)
                 # Continue even if schema setup fails - we'll try again at dashboard
@@ -2003,7 +2000,7 @@ class SaveStep1View(APIView):
                         with tenant_conn.cursor() as tenant_cursor:
                             # Set search path to the tenant schema
                             logger.debug(f"Setting search path to schema {schema_name}")
-                            tenant_cursor.execute(f'SET search_path TO "{schema_name}", public')
+                            tenant_cursor.execute(f"SET search_path TO {schema_name}")
                             
                             # Defer all constraints to avoid transaction issues
                             logger.debug("Deferring all constraints")
@@ -2163,7 +2160,7 @@ class SaveStep1View(APIView):
                                 
                                 # Add FK constraint for business_details to business
                                 tenant_cursor.execute(f"""
-                                    ALTER TABLE "{schema_name}"."users_business_details"
+                                    ALTER TABLE /* RLS: Use tenant_id filtering */ "users_business_details"
                                     ADD CONSTRAINT IF NOT EXISTS users_business_details_business_id_fk
                                     FOREIGN KEY (business_id) REFERENCES "{schema_name}"."users_business" (id)
                                     DEFERRABLE INITIALLY DEFERRED;
@@ -2175,7 +2172,7 @@ class SaveStep1View(APIView):
                                 
                                 # Add FK constraint for userprofile to business in a separate transaction
                                 tenant_cursor.execute(f"""
-                                    ALTER TABLE "{schema_name}"."users_userprofile"
+                                    ALTER TABLE /* RLS: Use tenant_id filtering */ "users_userprofile"
                                     ADD CONSTRAINT IF NOT EXISTS users_userprofile_business_id_fk
                                     FOREIGN KEY (business_id) REFERENCES "{schema_name}"."users_business" (id)
                                     DEFERRABLE INITIALLY DEFERRED;
@@ -2326,6 +2323,7 @@ class SaveStep1View(APIView):
                 # First check if profile exists in public schema
                 with connection.cursor() as cursor:
                     # Reset search path to public
+                    cursor.execute('-- RLS: No need to set search_path with tenant-aware context')
                     cursor.execute('SET search_path TO public')
                     
                     # Check if profile exists
@@ -2541,7 +2539,7 @@ class SaveStep2View(APIView):
         try:
             with connection.cursor() as cursor:
                 # Drop schema and all objects within it
-                cursor.execute(f'DROP SCHEMA IF EXISTS "{tenant.schema_name}" CASCADE')
+                cursor.execute(f'DROP SCHEMA IF EXISTS "{tenant.id}" CASCADE')
                 
                 # Update tenant status
                 tenant.is_active = False
@@ -2739,10 +2737,10 @@ async def get_schema_status(request):
                 'message': 'Schema setup in progress'
             })
 
-        is_healthy = await check_schema_health(request.user.tenant.schema_name)
+        is_healthy = await check_schema_health(request.user.tenant.id)
         return Response({
             'status': 'ready' if is_healthy else 'initializing',
-            'schema_name': request.user.tenant.schema_name,
+            'schema_name': request.user.tenant.id,
             'setup_complete': is_healthy
         })
     except Exception as e:
@@ -2771,7 +2769,7 @@ async def get_schema_status(request):
             }
         })
 
-def check_schema_setup(schema_name):
+def check_schema_setup(tenant_id: uuid.UUID):
     required_tables = [
         # Authentication and Users
         'users_user',
@@ -2821,19 +2819,24 @@ def check_schema_setup(schema_name):
     ]
     
     try:
+        # Set tenant context for RLS
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(tenant_id)
+        
+        # Check tables in current context (public schema with RLS)
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT tablename
                 FROM pg_tables
-                WHERE schemaname = %s
-            """, [schema_name])
+                WHERE schemaname = 'public'
+            """)
             existing_tables = {row[0] for row in cursor.fetchall()}
             
             # Check if all required tables exist
             missing_tables = [table for table in required_tables if table not in existing_tables]
             
             if missing_tables:
-                logger.warning(f"Missing tables in schema {schema_name}: {missing_tables}")
+                logger.warning(f"Missing tables for tenant {tenant_id}: {missing_tables}")
                 return False
                 
             return True
@@ -3568,7 +3571,7 @@ class DatabaseHealthCheckView(BaseOnboardingView):
             logger.error(f"Error getting tenant for user {user.email}: {str(e)}")
             return None
 
-    def check_table_requirements(self, schema_name):
+    def check_table_requirements(tenant_id: uuid.UUID):
         """Verify required tables exist in schema"""
         try:
             return validate_schema_creation(schema_name)
@@ -3604,8 +3607,8 @@ class DatabaseHealthCheckView(BaseOnboardingView):
             business = get_business_for_user(request.user)
             
             # Check health and update statuses
-            is_healthy = check_schema_health(tenant.schema_name)
-            tables_valid = self.check_table_requirements(tenant.schema_name) if is_healthy else False
+            is_healthy = check_schema_health(tenant.id)
+            tables_valid = self.check_table_requirements(tenant.id) if is_healthy else False
 
             # Manual transaction handling instead of atomic
             from django.db import connection
@@ -3652,7 +3655,7 @@ class DatabaseHealthCheckView(BaseOnboardingView):
                 
                 response_data = {
                     "status": "healthy" if (is_healthy and tables_valid) else "unhealthy",
-                    "schema_name": tenant.schema_name,
+                    "schema_name": tenant.id,
                     "tenant_status": {
                         "database_status": tenant_status[0] if tenant_status else 'error',
                         "setup_status": tenant_status[1] if tenant_status else 'failed',
@@ -3782,7 +3785,7 @@ class ResetOnboardingView(BaseOnboardingView):
         try:
             with connection.cursor() as cursor:
                 # Drop schema and all objects within it
-                cursor.execute(f'DROP SCHEMA IF EXISTS "{tenant.schema_name}" CASCADE')
+                cursor.execute(f'DROP SCHEMA IF EXISTS "{tenant.id}" CASCADE')
                 
                 # Update tenant status
                 tenant.is_active = False
@@ -3954,11 +3957,11 @@ def get_schema_status(user_id):
             }
             
         tenant = user.tenant
-        is_healthy = check_schema_health(tenant.schema_name)
+        is_healthy = check_schema_health(tenant.id)
         
         return {
             'status': 'healthy' if is_healthy else 'unhealthy',
-            'schema_name': tenant.schema_name,
+            'schema_name': tenant.id,
             'database_status': tenant.database_status,
             'setup_status': tenant.setup_status,
             'last_health_check': tenant.last_health_check.isoformat() if tenant.last_health_check else None
@@ -4498,8 +4501,10 @@ class SaveStep4View(BaseOnboardingView):
                 )
 
             # Queue setup task
-            from onboarding.tasks import setup_user_schema_task
-            task = setup_user_schema_task.delay(
+            from onboarding.tasks import setup_user_tenant_task
+            from custom_auth.rls import set_current_tenant_id, tenant_context
+            
+            task = setup_user_tenant_task.delay(
                 str(request.user.id),
                 str(business.id)
             )

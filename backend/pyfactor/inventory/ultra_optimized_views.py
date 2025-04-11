@@ -53,7 +53,7 @@ def ultra_fast_product_list(request):
     try:
         # Get tenant information
         tenant = getattr(request, 'tenant', None)
-        tenant_schema = tenant.schema_name if tenant else None
+        tenant_schema =  tenant.id if tenant else None
         
         # Build cache key based on query parameters and tenant
         cache_params = {k: v for k, v in request.query_params.items()}
@@ -160,7 +160,7 @@ def product_list_with_department(request):
     try:
         # Get tenant information
         tenant = getattr(request, 'tenant', None)
-        tenant_schema = tenant.schema_name if tenant else None
+        tenant_schema =  tenant.id if tenant else None
         
         # Build cache key based on query parameters and tenant
         cache_params = {k: v for k, v in request.query_params.items()}
@@ -260,7 +260,7 @@ def product_stats(request):
     try:
         # Get tenant information
         tenant = getattr(request, 'tenant', None)
-        tenant_schema = tenant.schema_name if tenant else None
+        tenant_schema =  tenant.id if tenant else None
         
         # Build cache key
         cache_key = f"{CACHE_KEY_PREFIX}stats_{tenant_schema}"
@@ -347,7 +347,7 @@ def product_by_code(request, product_code):
     try:
         # Get tenant information
         tenant = getattr(request, 'tenant', None)
-        tenant_schema = tenant.schema_name if tenant else None
+        tenant_schema =  tenant.id if tenant else None
         
         # Build cache key
         cache_key = f"{CACHE_KEY_PREFIX}product_code_{tenant_schema}_{product_code}"

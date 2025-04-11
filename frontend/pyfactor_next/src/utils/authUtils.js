@@ -4,7 +4,6 @@ import { fetchAuthSession, signIn, signOut, getCurrentUser } from 'aws-amplify/a
 import { Amplify } from 'aws-amplify';
 import { logger } from './logger';
 import { jwtDecode } from 'jwt-decode';
-import { cookies } from 'next/headers';
 
 /**
  * Checks if a route is public (doesn't require authentication)
@@ -212,14 +211,22 @@ export const getAuth = async (request) => {
   try {
     // Get the token from either the Authorization header or cookies
     let token = null;
-    const authHeader = request.headers.get('Authorization');
+    const authHeader = request?.headers?.get('Authorization') || 
+                       request?.headers?.Authorization || 
+                       '';
     
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.substring(7);
     } else {
-      // Check in cookies
-      const cookieStore = cookies();
-      token = cookieStore.get('accessToken')?.value;
+      // Check in cookies using document.cookie for client components
+      if (typeof document !== 'undefined') {
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          acc[key] = value;
+          return acc;
+        }, {});
+        token = cookies['accessToken'];
+      }
     }
     
     if (!token) {
@@ -271,14 +278,21 @@ export const getAuth = async (request) => {
     }
     
     // 2. Check request headers
-    if (!tenantId) {
-      tenantId = request.headers.get('x-tenant-id') || request.headers.get('x-business-id');
+    if (!tenantId && request?.headers) {
+      tenantId = request.headers.get?.('x-tenant-id') || 
+                request.headers.get?.('x-business-id') ||
+                request.headers['x-tenant-id'] ||
+                request.headers['x-business-id'];
     }
     
     // 3. Check cookies as fallback
-    if (!tenantId) {
-      const cookieStore = cookies();
-      tenantId = cookieStore.get('tenantId')?.value || cookieStore.get('businessid')?.value;
+    if (!tenantId && typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      }, {});
+      tenantId = cookies['tenantId'] || cookies['businessid'];
     }
     
     logger.info(`[authUtils] Authenticated user: ${userId}, tenant: ${tenantId || 'none'}`);
@@ -446,6 +460,160 @@ export async function logoutUser() {
     throw error;
   }
 }
+
+/**
+ * Completely clear all authentication data from all storage locations
+ * @returns {Promise<boolean>} Success status
+ */
+export async function clearAllAuthData() {
+  try {
+    logger.debug('[authUtils] Clearing all authentication data');
+    
+    // 1. Call Amplify signOut with global option
+    try {
+      const { signOut } = await import('aws-amplify/auth');
+      await signOut({ global: true });
+      logger.debug('[authUtils] Successfully called Amplify signOut');
+    } catch (signOutError) {
+      logger.error('[authUtils] Error during Amplify signOut:', signOutError);
+      // Continue with other cleanup despite error
+    }
+    
+    // 2. Clear all cookies
+    const cookiesToClear = [
+      'userEmail', 
+      'onboardedStatus', 
+      'setupCompleted', 
+      'onboardingStep', 
+      'onboardingInProgress',
+      'authState',
+      'idToken',
+      'accessToken',
+      'refreshToken',
+      'tenantId',
+      'userInfo',
+      'sessionId',
+      'pyfactor_session',
+      'amplify-signin-with-hostedUI',
+      'amplify-authenticator-authState'
+    ];
+    
+    cookiesToClear.forEach(cookieName => {
+      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}; samesite=lax`;
+      // Also try without domain for local cookies
+      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
+    });
+    
+    // 3. Clear localStorage items
+    try {
+      // Clear all Cognito-related items
+      const cognitoKeys = Object.keys(localStorage).filter(key => 
+        key.includes('CognitoIdentityServiceProvider') || 
+        key.includes('amplify') ||
+        key.includes('aws') ||
+        key.includes('token') ||
+        key.includes('auth')
+      );
+      
+      // Log found keys for debugging
+      logger.debug('[authUtils] Clearing Cognito-related localStorage keys:', cognitoKeys);
+      
+      // Clear each key
+      cognitoKeys.forEach(key => localStorage.removeItem(key));
+      
+      // Also clear known app-specific keys
+      const appKeys = [
+        'unconfirmedEmail',
+        'pendingVerificationEmail',
+        'verificationEmail',
+        'pyfactor_email',
+        'needs_verification',
+        'returnToOnboarding',
+        'onboardingStep',
+        'userEmail',
+        'tempPassword',
+        'businessInfo',
+        'businessName',
+        'businessType', 
+        'country',
+        'legalStructure',
+        'onboardingInProgress',
+        'onboardedStatus',
+        'tokenExpired'
+      ];
+      
+      appKeys.forEach(key => localStorage.removeItem(key));
+      
+      logger.debug('[authUtils] Successfully cleared localStorage items');
+    } catch (storageError) {
+      logger.error('[authUtils] Error clearing localStorage:', storageError);
+    }
+    
+    // 4. Clear sessionStorage
+    try {
+      sessionStorage.clear();
+      logger.debug('[authUtils] Successfully cleared sessionStorage');
+    } catch (sessionError) {
+      logger.error('[authUtils] Error clearing sessionStorage:', sessionError);
+    }
+    
+    // 5. Try to clear IndexedDB if browser supports it
+    if (window.indexedDB) {
+      try {
+        // Get list of all databases
+        const databases = await window.indexedDB.databases();
+        
+        // Delete each database
+        for (const db of databases) {
+          if (db.name) {
+            await window.indexedDB.deleteDatabase(db.name);
+          }
+        }
+        
+        logger.debug('[authUtils] Successfully cleared IndexedDB databases');
+      } catch (indexedDBError) {
+        logger.error('[authUtils] Error clearing IndexedDB:', indexedDBError);
+      }
+    }
+    
+    logger.debug('[authUtils] Successfully cleared all authentication data');
+    return true;
+  } catch (error) {
+    logger.error('[authUtils] Error clearing authentication data:', error);
+    return false;
+  }
+}
+
+/**
+ * Ensures the custom:created_at attribute is set for the current user
+ * This is called during authentication to ensure we track when users first signed up
+ * @returns {Promise<boolean>} - Whether the attribute was updated or already existed
+ */
+export const ensureUserCreatedAt = async () => {
+  try {
+    const { fetchUserAttributes, updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Check if the user has the attribute already
+    const attributes = await fetchUserAttributes();
+    
+    // If the attribute already exists, no need to set it
+    if (attributes['custom:created_at']) {
+      return true;
+    }
+    
+    // Set the attribute to current timestamp if it doesn't exist
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:created_at': new Date().toISOString()
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error ensuring user created_at attribute:', error);
+    return false;
+  }
+};
 
 // Initialize Amplify right away
 ensureAmplifyConfigured();

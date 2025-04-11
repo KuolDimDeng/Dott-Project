@@ -246,17 +246,17 @@ export function useAuth() {
         email: userData.email,
         given_name: userData.firstName,
         family_name: userData.lastName,
-        'custom:onboarding': 'NOT_STARTED',
-        'custom:setupdone': 'FALSE',
-        'custom:userrole': 'OWNER',
+        'custom:onboarding': 'not_started',
+        'custom:setupdone': 'false',
+        'custom:userrole': 'owner',
         'custom:created_at': timestamp,
         'custom:updated_at': timestamp,
         'custom:lastlogin': timestamp,
         'custom:firstname': userData.firstName,
         'custom:lastname': userData.lastName,
-        'custom:acctstatus': 'PENDING',
+        'custom:acctstatus': 'pending',
         'custom:attrversion': '1.0.0',
-        'custom:businesscountry': userData.country || 'US',
+        'custom:businesscountry': userData.country || 'us',
         'custom:businessid': '', // Will be set after confirmation
         'custom:businessname': userData.businessName || 'Default Business',
         'custom:businesstype': userData.businessType || 'Other',
@@ -264,12 +264,12 @@ export function useAuth() {
         'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
         'custom:paymentid': '',
         'custom:paymentmethod': '',
-        'custom:payverified': 'FALSE',
+        'custom:payverified': 'false',
         'custom:preferences': JSON.stringify({}),
-        'custom:requirespayment': 'FALSE',
-        'custom:subplan': 'FREE',
-        'custom:subscriptioninterval': 'MONTHLY',
-        'custom:subscriptionstatus': 'ACTIVE'
+        'custom:requirespayment': 'false',
+        'custom:subplan': 'free',
+        'custom:subscriptioninterval': 'monthly',
+        'custom:subscriptionstatus': 'active'
       };
       
       logger.debug('[Auth] Prepared user attributes:', {

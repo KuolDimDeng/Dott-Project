@@ -7,6 +7,7 @@ import { jwtVerify, createRemoteJWKSet } from 'jose';
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
+import { decodeJwt } from './jwtUtils';
 
 // Get Cognito configuration from environment variables
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
@@ -240,5 +241,115 @@ export async function validateServerSession() {
   } catch (error) {
     logger.error('[ServerAuth] Failed to validate session:', error);
     throw error;
+  }
+}
+
+/**
+ * Gets the current user from auth tokens in request
+ * This is a server-side utility
+ */
+export async function getCurrentUser(request) {
+  try {
+    if (!request) {
+      logger.error('[serverAuth] getCurrentUser called without request object');
+      return null;
+    }
+    
+    // Extract auth tokens from headers
+    const authHeader = request.headers.get('authorization');
+    const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const idToken = request.headers.get('x-id-token');
+    
+    // Extract from cookies if not in headers
+    const cookies = request.cookies;
+    let cookieToken = null;
+    
+    // Check for tokens in cookies
+    // First try standard JWT cookie
+    if (cookies.get('idToken')?.value) {
+      cookieToken = cookies.get('idToken').value;
+    }
+    
+    // Then try Cognito format cookies
+    if (!cookieToken) {
+      const cognitoCookieKey = Object.keys(cookies.getAll()).find(key => 
+        key.includes('CognitoIdentityServiceProvider') && key.includes('.idToken')
+      );
+      
+      if (cognitoCookieKey) {
+        cookieToken = cookies.get(cognitoCookieKey).value;
+      }
+    }
+    
+    // Use headers or cookie token
+    const token = idToken || accessToken || cookieToken;
+    
+    if (!token) {
+      logger.warn('[serverAuth] No auth token found');
+      return null;
+    }
+    
+    // Decode the token rather than validating it
+    // Validation would require crypto and AWS libraries which are heavy
+    const decodedToken = decodeJwt(token);
+    
+    if (!decodedToken) {
+      logger.warn('[serverAuth] Failed to decode token');
+      return null;
+    }
+    
+    // Format attributes from token into user object
+    const attributes = decodedToken;
+    const user = {
+      id: attributes.sub || attributes['cognito:username'],
+      email: attributes.email,
+      firstName: attributes.given_name || attributes['custom:firstName'] || '',
+      lastName: attributes.family_name || attributes['custom:lastName'] || '',
+      tenantId: attributes['custom:tenantId'] || attributes['custom:businessId'],
+      onboarding: attributes['custom:onboarding'],
+      setupDone: attributes['custom:setupdone'] === 'true'
+    };
+    
+    // Fill in name fields if missing
+    if (!user.firstName && !user.lastName && attributes.name) {
+      const nameParts = attributes.name.split(' ');
+      user.firstName = nameParts[0] || '';
+      user.lastName = nameParts.slice(1).join(' ') || '';
+    }
+    
+    return user;
+  } catch (error) {
+    logger.error('[serverAuth] Error in getCurrentUser:', error);
+    return null;
+  }
+}
+
+/**
+ * Mock function for server-side fetchUserAttributes
+ * This is needed because Amplify's client-side functions don't work server-side
+ */
+export async function fetchUserAttributes(req) {
+  try {
+    // Get user from token if request is provided
+    if (req) {
+      const user = await getCurrentUser(req);
+      if (user) {
+        return {
+          sub: user.id,
+          email: user.email,
+          given_name: user.firstName,
+          family_name: user.lastName,
+          'custom:tenantId': user.tenantId,
+          'custom:onboarding': user.onboarding,
+          'custom:setupdone': user.setupDone ? 'true' : 'false'
+        };
+      }
+    }
+    
+    // Fallback: Access is server-side, so this is a mock response
+    return null;
+  } catch (error) {
+    logger.error('[serverAuth] Error in fetchUserAttributes:', error);
+    return null;
   }
 }

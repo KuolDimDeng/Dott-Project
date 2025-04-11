@@ -64,7 +64,7 @@ def fix_logger_configuration():
     
     logger.info("Logger configuration fixed.")
 
-def create_schema(schema_name):
+def create_schema(tenant_id: uuid.UUID:
     """Create a new schema in the database."""
     logger.info(f"Creating schema: {schema_name}")
     
@@ -95,13 +95,15 @@ def create_schema(schema_name):
     
     return True
 
-def apply_migrations(schema_name):
+def apply_migrations(tenant_id: uuid.UUID:
     """Apply migrations to the schema."""
     logger.info(f"Applying migrations to schema: {schema_name}")
     
     # Set the search path to the tenant schema
     with connection.cursor() as cursor:
-        cursor.execute(f'SET search_path TO "{schema_name}",public;')
+        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public;')
         logger.info(f"Set search path to {schema_name}")
         
         # Get the current search path
@@ -125,7 +127,7 @@ def apply_migrations(schema_name):
     
     return True
 
-def verify_tables(schema_name):
+def verify_tables(tenant_id: uuid.UUID:
     """Verify that tables are created in the schema."""
     logger.info(f"Verifying tables in schema: {schema_name}")
     
@@ -167,6 +169,9 @@ def main():
     fix_logger_configuration()
     
     # Get the schema name from command line arguments
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     if len(sys.argv) < 2:
         logger.error("Please provide a schema name")
         logger.info("Usage: python create_tenant_schema.py <schema_name>")

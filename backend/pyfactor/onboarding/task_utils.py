@@ -11,32 +11,31 @@ from contextlib import contextmanager
 from pyfactor.logging_config import get_logger
 from typing import Optional, Dict, Any, Tuple, Generator, Iterator
 from django.core.cache import cache
+import re
+import time
+import logging
+import uuid
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-logger = get_logger()
+# Import tenant context functions properly
+from custom_auth.rls import set_current_tenant_id
+
+logger = logging.getLogger(__name__)
 
 
 class SchemaSetupState:
     """
-    Manages persistent state tracking for schema setup operations.
-    
-    This class provides a way to maintain setup progress across task restarts
-    or failures, ensuring we can recover and track the setup process reliably.
+    Manages schema setup state across multiple steps using Redis cache.
+    This provides resumability of setup tasks and progress tracking.
     """
     def __init__(self, user_id: str):
-        self.cache_key = f"setup_state_{user_id}"
         self.user_id = user_id
+        self.cache_key = f'schema_setup:{user_id}'
         
     async def save_state(self, state: dict) -> None:
         """
-        Saves the current setup state with expiration.
-        
-        The state includes:
-        - current_phase: The setup phase being executed
-        - progress: Numerical progress percentage
-        - schema_name: Name of schema being created
-        - last_updated: Timestamp of last update
+        Saves the current setup state to the cache with expiry.
         """
-        state['last_updated'] = timezone.now().isoformat()
         await asyncio.to_thread(cache.set, self.cache_key, state, timeout=3600)
         logger.debug(f"Saved setup state for user {self.user_id}: {state}")
         
@@ -54,8 +53,11 @@ class SchemaSetupState:
         await asyncio.to_thread(cache.delete, self.cache_key)
         logger.debug(f"Cleared setup state for user {self.user_id}")
 
-def get_schema_settings(schema_name: str) -> dict:
+def get_schema_settings(tenant_id: uuid.UUID) -> dict:
     """Creates a comprehensive schema configuration."""
+    # Generate schema name from tenant ID for backward compatibility
+    schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
+    
     # Start with a safe copy of essential settings
     base_settings = {
         'ENGINE': settings.DATABASES['default'].get('ENGINE', 'django.db.backends.postgresql'),
@@ -64,7 +66,8 @@ def get_schema_settings(schema_name: str) -> dict:
         'HOST': settings.DATABASES['default'].get('HOST', 'localhost'),
         'PORT': settings.DATABASES['default'].get('PORT', '5432'),
         'NAME': settings.DATABASES['default'].get('NAME', ''),
-        'SCHEMA': schema_name,
+        'TENANT_ID': tenant_id,
+        'SCHEMA': schema_name,  # Keep for backward compatibility
         
         # Django-specific settings with safe defaults
         'ATOMIC_REQUESTS': True,
@@ -78,34 +81,34 @@ def get_schema_settings(schema_name: str) -> dict:
     base_settings['OPTIONS'] = {
         'connect_timeout': 10,
         'client_encoding': 'UTF8',
-        'application_name': f'pyfactor_{schema_name}',
+        'application_name': f'pyfactor_{tenant_id}',
         'keepalives': 1,
         'keepalives_idle': 30,
         'keepalives_interval': 10,
         'keepalives_count': 5,
-        'options': f'-c search_path={schema_name},public'
+        'options': f'-c search_path=public'
     }
     
     return base_settings
     
-def setup_schema_parameters(schema_name: str, conn) -> None:
+def setup_schema_parameters(tenant_id: uuid.UUID) -> None:
     """
-    Configures PostgreSQL runtime parameters for a newly created schema. These settings
-    ensure proper schema operation and isolation.
+    Configures PostgreSQL runtime parameters for a tenant.
+    These settings ensure proper operation and isolation.
     """
+    schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
     try:
-        with conn.cursor() as cursor:
-            # Set search path for the schema
-            cursor.execute(f'SET search_path TO "{schema_name}"')
-            
-            # Grant necessary privileges
-            cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
-            cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
-            cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
-            
-            # Set schema-specific parameters
-            cursor.execute(f'ALTER ROLE {settings.DATABASES["default"]["USER"]} SET search_path TO "{schema_name}"')
-            
+        # Create a connection for this operation
+        with get_db_connection(tenant_id=tenant_id, autocommit=True) as conn:
+            with conn.cursor() as cursor:
+                # Set tenant context instead of search path
+                set_current_tenant_id(tenant_id)
+                
+                # Grant necessary privileges if still using schemas
+                cursor.execute(f'GRANT USAGE ON SCHEMA "public" TO {settings.DATABASES["default"]["USER"]}')
+                cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "public" TO {settings.DATABASES["default"]["USER"]}')
+                cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "public" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
+                
     except Exception as e:
         logger.error(f"Schema parameter setup failed: {str(e)}")
         raise
@@ -161,15 +164,16 @@ def timeout(seconds: int) -> Generator[None, None, None]:
                 logger.warning(f"Operation exceeded timeout of {seconds}s (took {elapsed:.2f}s)")
 
 @contextmanager
-def get_db_connection(schema_name: Optional[str] = None,
-                     autocommit: Optional[bool] = None,
-                     for_migrations: bool = False) -> Generator[psycopg2.extensions.connection, None, None]:
+def get_db_connection(tenant_id=None,
+                     schema_name=None,  # Keep for backward compatibility
+                     autocommit=None,
+                     for_migrations=False) -> Generator[psycopg2.extensions.connection, None, None]:
     """
-    Manages database connections with schema support and comprehensive error handling.
-    Ensures connections are properly configured for schema access and cleanup.
+    Manages database connections with tenant context support and comprehensive error handling.
     
     Args:
-        schema_name: Optional schema name to set in search_path
+        tenant_id: Optional tenant ID to set for RLS
+        schema_name: Optional schema name (kept for backward compatibility)
         autocommit: Whether to set autocommit mode
         for_migrations: Set to True when connection will be used for migrations,
                        which increases the statement timeout to 3 minutes
@@ -182,6 +186,8 @@ def get_db_connection(schema_name: Optional[str] = None,
         connections.close_all()
         logger.debug("Closed all Django connections before creating a new psycopg2 connection")
 
+        # Generate connection name based on tenant ID or schema name
+        conn_name = tenant_id or schema_name or "default"
         conn_params = {
             'dbname': settings.DATABASES['default']['NAME'],
             'user': settings.DATABASES['default']['USER'],
@@ -189,7 +195,7 @@ def get_db_connection(schema_name: Optional[str] = None,
             'host': settings.DATABASES['default']['HOST'],
             'port': settings.DATABASES['default']['PORT'],
             'connect_timeout': 10,
-            'application_name': f'pyfactor_connection_{schema_name or "default"}'
+            'application_name': f'pyfactor_connection_{conn_name}'
         }
         
         conn = psycopg2.connect(**conn_params)
@@ -212,8 +218,13 @@ def get_db_connection(schema_name: Optional[str] = None,
                 cursor.execute("SET statement_timeout = '30s'")   # 30 seconds for regular operations
                 
             cursor.execute("SET lock_timeout = '5s'")
-            if schema_name:
-                cursor.execute(f'SET search_path TO "{schema_name}"')
+            
+            # Set tenant context if tenant_id is provided
+            if tenant_id:
+                set_current_tenant_id(tenant_id)
+            
+            # Set default search path to public
+            cursor.execute('SET search_path TO public')
         
         yield conn
         
@@ -230,64 +241,93 @@ def get_db_connection(schema_name: Optional[str] = None,
                 logger.debug("Closed all Django connections after psycopg2 connection operation")
             except Exception as e:
                 logger.error(f"Error closing Django connections: {str(e)}")
-
+            
+            # Close the psycopg2 connection
             try:
                 conn.close()
+                logger.debug("Closed psycopg2 connection")
             except Exception as e:
-                logger.error(f"Error closing connection: {str(e)}", exc_info=True)
+                logger.error(f"Error closing psycopg2 connection: {str(e)}")
 
-def check_schema_health(schema_name: str) -> Tuple[bool, str]:
+def check_schema_health(tenant_id: uuid.UUID) -> Tuple[bool, str]:
     """
-    Performs a comprehensive health check on the specified schema, testing multiple
-    aspects of schema functionality to ensure it's properly set up and accessible.
+    Checks the health of a schema and ensures all essential tables exist.
     
-    Returns a tuple of (is_healthy, message) where message explains any failures.
+    Args:
+        tenant_id: The UUID of the tenant to check
+        
+    Returns:
+        Tuple of (is_healthy, message)
     """
+    schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
     try:
-        with transaction.atomic():
-            with connections['default'].cursor() as cursor:
-                # Set schema context
-                cursor.execute(f'SET search_path TO "{schema_name}"')
+        # Create a connection for this check
+        with get_db_connection(tenant_id=tenant_id, autocommit=True) as conn:
+            with conn.cursor() as cursor:
+                # Check if essential tables exist
+                cursor.execute("""
+                    SELECT table_name FROM information_schema.tables
+                    WHERE table_schema = 'public'
+                    AND table_name IN ('users_userprofile', 'users_business', 'onboarding_onboardingprogress')
+                """)
                 
-                # Test basic schema access
-                cursor.execute('SELECT 1')
+                rows = cursor.fetchall()
+                tables = [row[0] for row in rows]
+                
+                if len(tables) < 3:
+                    missing = set(['users_userprofile', 'users_business', 'onboarding_onboardingprogress']) - set(tables)
+                    return False, f"Missing essential tables: {', '.join(missing)}"
+                
+                # Check if schema_health table exists and has recent healthy record
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT 1 FROM information_schema.tables
+                        WHERE table_schema = 'public' AND table_name = 'schema_health'
+                    )
+                """)
+                
                 result = cursor.fetchone()
-                if not result or result[0] != 1:
-                    return False, "Basic schema access test failed"
+                has_health_table = result[0] if result is not None else False
                 
-                # Test table creation
-                try:
-                    cursor.execute('''
-                        CREATE TEMP TABLE health_check (
-                            id serial PRIMARY KEY,
-                            test_value text
+                if has_health_table:
+                    cursor.execute("""
+                        SELECT status, message, checked_at 
+                        FROM schema_health
+                        ORDER BY checked_at DESC
+                        LIMIT 1
+                    """)
+                    
+                    health_record = cursor.fetchone()
+                    if health_record:
+                        status, message, checked_at = health_record
+                        if status == 'healthy':
+                            return True, f"Schema is healthy: {message}"
+                        else:
+                            return False, f"Schema health status: {status} - {message}"
+                    else:
+                        return False, "No health records found in schema_health table"
+                else:
+                    # Create health table if it doesn't exist
+                    cursor.execute("""
+                        CREATE TABLE IF NOT EXISTS schema_health (
+                            id SERIAL PRIMARY KEY,
+                            checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                            status VARCHAR(50) NOT NULL,
+                            message TEXT
                         )
-                    ''')
-                    cursor.execute('INSERT INTO health_check (test_value) VALUES (%s)', ('test',))
-                    cursor.execute('SELECT test_value FROM health_check')
-                    result = cursor.fetchone()
-                    if not result or result[0] != 'test':
-                        return False, "Table creation and data insertion test failed"
-                    cursor.execute('DROP TABLE health_check')
-                except Exception as e:
-                    return False, f"Schema write test failed: {str(e)}"
-                
-                # Test transaction isolation
-                try:
-                    cursor.execute('BEGIN')
-                    cursor.execute('CREATE TEMP TABLE isolation_test (id int)')
-                    cursor.execute('ROLLBACK')
-                    cursor.execute('SELECT EXISTS (SELECT FROM pg_tables WHERE tablename = %s)', ('isolation_test',))
-                    result = cursor.fetchone()
-                    if result and result[0]:
-                        return False, "Transaction isolation test failed"
-                except Exception as e:
-                    return False, f"Transaction test failed: {str(e)}"
-                
-                return True, "Schema health check passed"
-                
+                    """)
+                    
+                    # Add initial health record
+                    cursor.execute("""
+                        INSERT INTO schema_health (status, message)
+                        VALUES (%s, %s)
+                    """, ('checking', 'Initial health check'))
+                    
+                    return True, "Created schema_health table and initialized health tracking"
+    
     except Exception as e:
-        return False, f"Schema health check failed: {str(e)}"
+        logger.error(f"Schema health check failed: {str(e)}", exc_info=True)
+        return False, f"Health check error: {str(e)}"
 
 async def send_async_notification(user_id: str, event_type: str, data: Dict[str, Any]) -> bool:
     """

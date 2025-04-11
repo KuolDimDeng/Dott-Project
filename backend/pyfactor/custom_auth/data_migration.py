@@ -35,7 +35,7 @@ def get_tenant_schemas() -> List[Dict[str, Any]]:
             })
     return schemas
 
-def list_schema_tables(schema_name: str) -> List[str]:
+def list_schema_tables(tenant_id: uuid.UUID -> List[str]:
     """
     List all tables in a schema.
     
@@ -56,7 +56,7 @@ def list_schema_tables(schema_name: str) -> List[str]:
         tables = [row[0] for row in cursor.fetchall()]
     return tables
 
-def copy_table_data(schema_name: str, table_name: str, tenant_id: uuid.UUID) -> int:
+def copy_table_data(tenant_id: uuid.UUID -> int:
     """
     Copy data from a schema table to the corresponding public table with tenant_id.
     

@@ -28,13 +28,17 @@ const handleSubmit = async (e) => {
       logger.debug('[SignIn] Sign in successful, redirecting...');
       setSuccess('Sign in successful! Redirecting...');
       
+      // Import the redirect utility
+      const { redirectToDashboard } = await import('@/utils/redirectUtils');
+      
       // If we have user info from the sign in result, use it to determine where to redirect
       if (result.userInfo) {
-        const { onboardingStatus, setupDone } = result.userInfo;
+        const { onboardingStatus, setupDone, tenantId } = result.userInfo;
         
         logger.debug('[SignIn] User info available:', { 
           onboardingStatus, 
-          setupDone 
+          setupDone,
+          tenantId 
         });
         
         setTimeout(() => {
@@ -42,15 +46,24 @@ const handleSubmit = async (e) => {
           if (onboardingStatus === 'NOT_STARTED') {
             router.push('/onboarding/business-info');
           } else if (onboardingStatus === 'COMPLETED' && setupDone === 'TRUE') {
-            router.push('/dashboard');
+            // Use the tenant-specific redirect with any tenant ID from user info
+            redirectToDashboard(router, { 
+              tenantId: tenantId,
+              source: 'signin-completion'
+            });
           } else {
-            router.push('/dashboard');
+            // Use the tenant-specific redirect
+            redirectToDashboard(router, { 
+              source: 'signin-fallback'
+            });
           }
         }, REDIRECT_DELAY);
       } else {
         // Default redirect if no user info
         setTimeout(() => {
-          router.push('/dashboard');
+          redirectToDashboard(router, { 
+            source: 'signin-default'
+          });
         }, REDIRECT_DELAY);
       }
     } else if (result.nextStep === 'CONFIRM_SIGN_UP') {

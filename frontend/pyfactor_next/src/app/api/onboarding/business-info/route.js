@@ -84,7 +84,7 @@ export async function POST(request) {
       // Mark business info step as completed
       await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
       await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-      await cookieStore.set('onboardedStatus', 'BUSINESS_INFO', COOKIE_OPTIONS);
+      await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
       
       // Set timestamp for token verification
       await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
@@ -187,7 +187,7 @@ export async function POST(request) {
       // Mark business info step as completed
       await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
       await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-      await cookieStore.set('onboardedStatus', 'BUSINESS_INFO', COOKIE_OPTIONS);
+      await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
       
       return createSafeResponse({
         success: false,

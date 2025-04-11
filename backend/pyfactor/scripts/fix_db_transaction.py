@@ -76,7 +76,7 @@ def modify_tenant_middleware():
         
         # New method to add
         new_method = '''
-    def set_schema_with_transaction_handling(self, schema_name):
+    def set_schema_with_transaction_handling(tenant_id: uuid.UUID:
         """Set the schema with proper transaction handling"""
         from django.db import connection
         
@@ -88,7 +88,9 @@ def modify_tenant_middleware():
         
         # Now set the schema
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}"')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
 '''
         
         # Insert the new method after __init__
@@ -96,6 +98,9 @@ def modify_tenant_middleware():
         
         # Find and replace set_current_schema calls with the new method
         import re
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         pattern = r'set_current_schema\(([^)]+)\)'
         replacement = r'self.set_schema_with_transaction_handling(\1)'
         new_content = re.sub(pattern, replacement, new_content)

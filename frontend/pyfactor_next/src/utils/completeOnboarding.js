@@ -1,168 +1,205 @@
-import { updateUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
-import { logger } from '@/utils/logger';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { logger } from './logger';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
 
 /**
- * Optimized utility function to mark onboarding as complete
- * Memory optimizations:
- * - Reduced logging verbosity
- * - Minimized object creation
- * - Simplified error handling
- * - Reused objects where possible
- * - Added memory tracking to identify potential memory leaks
+ * Robust function to mark onboarding as complete in Cognito
+ * Uses multiple approaches to ensure the attribute is set correctly:
+ * 1. Direct Amplify updateUserAttributes call
+ * 2. Server-side API call as backup
+ * 3. Admin API call as last resort
+ * 
+ * @returns {Promise<boolean>} True if successful
  */
 export async function completeOnboarding() {
-  // Track memory at the start of the function
-  trackMemory('completeOnboarding', 'start');
-  logMemoryUsage('completeOnboarding', 'start');
+  // Generate a request ID for tracking this operation
+  const requestId = Math.random().toString(36).substring(2, 15);
+  let success = false;
   
+  logger.info(`[completeOnboarding:${requestId}] Starting onboarding completion process`);
+  
+  // Define the user attributes we want to set - IMPORTANT: Use lowercase 'complete' consistently
+  const userAttributes = {
+    'custom:onboarding': 'complete', // Lowercase for consistency
+    'custom:setupdone': 'true',      // Lowercase 'true' for consistency
+    'custom:updated_at': new Date().toISOString(),
+    'custom:onboardingCompletedAt': new Date().toISOString()
+  };
+  
+  // Also store in localStorage as a last-resort fallback
   try {
-    // Minimal logging
-    logger.debug('[Onboarding] Updating to complete');
+    localStorage.setItem('custom:onboarding', 'complete');
+    localStorage.setItem('custom:setupdone', 'true');
+    localStorage.setItem('custom:onboardingCompletedAt', new Date().toISOString());
     
-    // Update user attributes with minimal object creation
-    const userAttributes = {
-      'custom:onboarding': 'complete',
-      'custom:setupdone': 'true',
-      'custom:updated_at': new Date().toISOString()
-    };
+    // Set cookies for server-side access
+    document.cookie = `onboardingStatus=complete; path=/; max-age=${60*60*24*7}`;
+    document.cookie = `setupDone=true; path=/; max-age=${60*60*24*7}`;
+  } catch (storageError) {
+    logger.warn(`[completeOnboarding:${requestId}] Failed to set localStorage:`, storageError.message);
+  }
+
+  // Attempt 1: Direct Amplify call
+  try {
+    logger.debug(`[completeOnboarding:${requestId}] Attempting direct Amplify update`);
     
-    // Track memory before updating user attributes
-    trackMemory('completeOnboarding', 'before-updateUserAttributes');
+    // Dynamically import to avoid SSR issues
+    const { updateUserAttributes } = await import('aws-amplify/auth');
     
-    let attributeUpdateSuccess = false;
+    // Make the API call
+    await updateUserAttributes({ userAttributes });
     
+    logger.info(`[completeOnboarding:${requestId}] Successfully updated via Amplify direct call`);
+    success = true;
+    
+    // Verify the update worked
     try {
-      // First attempt: Use Amplify updateUserAttributes
-      await updateUserAttributes({ userAttributes });
-      attributeUpdateSuccess = true;
-      logger.debug('[Onboarding] Attributes updated via Amplify');
-    } catch (updateError) {
-      logger.error(`[Onboarding] Amplify update failed: ${updateError.message}`);
+      const session = await fetchAuthSession();
+      const userInfo = session?.tokens?.idToken?.payload;
+      const onboardingStatus = userInfo?.['custom:onboarding']?.toLowerCase();
       
-      // If Amplify update fails, try the direct API call as a backup
+      if (onboardingStatus === 'complete') {
+        logger.info(`[completeOnboarding:${requestId}] Verified onboarding is now complete`);
+      } else {
+        logger.warn(`[completeOnboarding:${requestId}] Attribute update succeeded but verification shows onboarding status is still: ${onboardingStatus}`);
+        // Continue to fallback methods
+        success = false;
+      }
+    } catch (verifyError) {
+      logger.warn(`[completeOnboarding:${requestId}] Could not verify attribute update:`, verifyError.message);
+    }
+  } catch (error) {
+    logger.warn(`[completeOnboarding:${requestId}] Direct Amplify update failed:`, error.message);
+  }
+
+  // Attempt 2: API call with explicit token
+  if (!success) {
+    try {
+      logger.debug(`[completeOnboarding:${requestId}] Attempting API update with token`);
+      
+      // Get the current session for tokens
+      const session = await fetchAuthSession();
+      const accessToken = session?.tokens?.accessToken?.toString();
+      
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+      
+      // Make API call with our token
+      const response = await fetch('/api/user/update-attributes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-Request-ID': requestId
+        },
+        body: JSON.stringify({
+          attributes: userAttributes,
+          forceUpdate: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API call failed with status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      logger.info(`[completeOnboarding:${requestId}] API update successful:`, result);
+      success = true;
+      
+      // Double-check with a fresh session
       try {
-        // Get current session for authentication
-        const { tokens } = await fetchAuthSession();
+        // Clear any cached sessions first
+        await fetchAuthSession({ forceRefresh: true });
+        const freshSession = await fetchAuthSession();
+        const freshUserInfo = freshSession?.tokens?.idToken?.payload;
+        const freshOnboardingStatus = freshUserInfo?.['custom:onboarding']?.toLowerCase();
         
-        // Make direct API call to update attributes
-        const response = await fetch('/api/user/update-attributes', {
+        if (freshOnboardingStatus === 'complete') {
+          logger.info(`[completeOnboarding:${requestId}] Verified onboarding is complete with fresh session`);
+        } else {
+          logger.warn(`[completeOnboarding:${requestId}] Attribute still not updated after API call. Status: ${freshOnboardingStatus}`);
+          success = false;
+        }
+      } catch (freshVerifyError) {
+        logger.warn(`[completeOnboarding:${requestId}] Could not verify with fresh session:`, freshVerifyError.message);
+      }
+    } catch (apiError) {
+      logger.warn(`[completeOnboarding:${requestId}] API update failed:`, apiError.message);
+    }
+  }
+
+  // Attempt 3: Admin API endpoint
+  if (!success) {
+    try {
+      logger.debug(`[completeOnboarding:${requestId}] Attempting admin API endpoint`);
+      
+      // Call our special onboarding complete endpoint
+      const response = await fetch('/api/onboarding/setup/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Force-Update': 'true',
+          'X-Request-ID': requestId
+        },
+        body: JSON.stringify({
+          forceComplete: true,
+          attributes: userAttributes
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Admin API failed with status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      logger.info(`[completeOnboarding:${requestId}] Admin API successful:`, result);
+      success = true;
+    } catch (adminError) {
+      logger.error(`[completeOnboarding:${requestId}] Admin API failed:`, adminError.message);
+      
+      // Try the backup API endpoint
+      try {
+        const backupResponse = await fetch('/api/onboarding/complete', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokens.accessToken}`
+            'X-Request-ID': requestId
           },
           body: JSON.stringify({
-            attributes: {
-              'custom:onboarding': 'complete',
-              'custom:setupdone': 'true',
-              'custom:updated_at': new Date().toISOString()
-            },
-            forceUpdate: true
+            attributes: userAttributes
           })
         });
         
-        if (response.ok) {
-          const result = await response.json();
-          attributeUpdateSuccess = true;
-          logger.debug('[Onboarding] Attributes updated via direct API call:', result);
-        } else {
-          throw new Error(`API returned status ${response.status}`);
+        if (!backupResponse.ok) {
+          throw new Error(`Backup API failed with status: ${backupResponse.status}`);
         }
-      } catch (apiError) {
-        logger.error(`[Onboarding] Direct API update failed: ${apiError.message}`);
-        // Third fallback: Try server-side update
-        try {
-          const response = await fetch('/api/onboarding/complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            attributeUpdateSuccess = true;
-            logger.debug('[Onboarding] Attributes updated via server endpoint');
-          }
-        } catch (serverError) {
-          logger.error(`[Onboarding] Server-side update failed: ${serverError.message}`);
-        }
+        
+        const backupResult = await backupResponse.json();
+        logger.info(`[completeOnboarding:${requestId}] Backup API successful:`, backupResult);
+        success = true;
+      } catch (backupError) {
+        logger.error(`[completeOnboarding:${requestId}] All onboarding update methods failed:`, backupError.message);
       }
     }
-    
-    // Track memory after updating user attributes
-    trackMemory('completeOnboarding', 'after-updateUserAttributes');
-    
-    // Check for memory spikes after user attribute update
-    const attributeSpike = detectMemorySpike(15);
-    if (attributeSpike) {
-      console.warn('[Memory Spike after User Attribute Update]', attributeSpike);
-    }
-    
-    // Update cookies in a separate try block to continue even if it fails
-    try {
-      // Track memory before fetching auth session
-      trackMemory('completeOnboarding', 'before-fetchAuthSession');
-      
-      const { tokens } = await fetchAuthSession();
-      
-      // Track memory after fetching auth session
-      trackMemory('completeOnboarding', 'after-fetchAuthSession');
-      
-      if (tokens?.idToken) {
-        // Create cookie payload with minimal properties
-        const cookiePayload = {
-          idToken: tokens.idToken.toString(),
-          accessToken: tokens.accessToken.toString(),
-          onboardingStep: 'complete',
-          onboardedStatus: 'complete',
-          setupCompleted: true
-        };
-        
-        // Add refreshToken only if it exists
-        if (tokens.refreshToken) {
-          cookiePayload.refreshToken = tokens.refreshToken.toString();
-        }
-        
-        // Track memory before cookie API call
-        trackMemory('completeOnboarding', 'before-cookieAPI');
-        
-        // Make the request with minimal headers
-        await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cookiePayload)
-        });
-        
-        // Track memory after cookie API call
-        trackMemory('completeOnboarding', 'after-cookieAPI');
-        
-        // Check for memory spikes after cookie API call
-        const cookieSpike = detectMemorySpike(15);
-        if (cookieSpike) {
-          console.warn('[Memory Spike after Cookie API Call]', cookieSpike);
-        }
-      }
-    } catch (cookieError) {
-      // Track memory on cookie error
-      trackMemory('completeOnboarding', 'cookie-error');
-      
-      // Simplified error logging
-      logger.error(`[Onboarding] Cookie update failed: ${cookieError.message}`);
-    }
-    
-    // Track memory at the end of successful execution
-    trackMemory('completeOnboarding', 'end-success');
-    logMemoryUsage('completeOnboarding', 'end-success');
-    
-    return attributeUpdateSuccess;
-  } catch (error) {
-    // Track memory on exception
-    trackMemory('completeOnboarding', 'exception');
-    logMemoryUsage('completeOnboarding', 'error');
-    
-    // Simplified error logging
-    logger.error(`[Onboarding] Update failed: ${error.message}`);
-    return false;
   }
+
+  // Attempt 4 (last resort): Check if we're already complete
+  if (!success) {
+    try {
+      const session = await fetchAuthSession();
+      const userInfo = session?.tokens?.idToken?.payload;
+      const onboardingStatus = userInfo?.['custom:onboarding']?.toLowerCase();
+      
+      if (onboardingStatus === 'complete') {
+        logger.info(`[completeOnboarding:${requestId}] Found onboarding already complete despite update failures`);
+        success = true;
+      }
+    } catch (checkError) {
+      logger.error(`[completeOnboarding:${requestId}] Final verification check failed:`, checkError.message);
+    }
+  }
+
+  logger.info(`[completeOnboarding:${requestId}] Process completed with success=${success}`);
+  return success;
 }

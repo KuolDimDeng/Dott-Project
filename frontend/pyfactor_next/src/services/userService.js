@@ -14,11 +14,71 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export const getCurrentUser = async () => {
   try {
-    // Simplified implementation
-    return { username: "user", email: "user@example.com" };
+    // Check if we have a valid cached user and it's not expired
+    const now = Date.now();
+    if (currentUserCache && (now - lastFetchTime < CACHE_TTL)) {
+      logger.debug('[UserService] Returning cached user data');
+      return currentUserCache;
+    }
+
+    // Fetch user data from API
+    const response = await fetch('/api/user/me', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // Important for sending cookies
+    });
+
+    if (!response.ok) {
+      // Try to get user data from local storage as fallback
+      if (typeof window !== 'undefined') {
+        const email = localStorage.getItem('userEmail');
+        const firstName = localStorage.getItem('firstName');
+        const lastName = localStorage.getItem('lastName');
+        
+        if (email) {
+          const fallbackUser = {
+            email,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            name: email,
+            fullName: firstName && lastName ? `${firstName} ${lastName}` : email,
+            fallback: true,
+          };
+          
+          logger.warn('[UserService] API call failed, using fallback user data');
+          return fallbackUser;
+        }
+      }
+      
+      logger.error('[UserService] Failed to fetch user data:', response.status);
+      return null;
+    }
+
+    const userData = await response.json();
+    
+    // Save to cache
+    currentUserCache = userData;
+    lastFetchTime = now;
+    
+    // Also save basic info to localStorage for fallback
+    if (typeof window !== 'undefined' && userData.email) {
+      localStorage.setItem('userEmail', userData.email);
+      if (userData.firstName) localStorage.setItem('firstName', userData.firstName);
+      if (userData.lastName) localStorage.setItem('lastName', userData.lastName);
+    }
+    
+    return userData;
   } catch (error) {
     logger.error('[UserService] Error in getCurrentUser:', error);
-    return null;
+    
+    // Return fallback user data
+    return { 
+      username: localStorage.getItem('userEmail') || "user@example.com",
+      email: localStorage.getItem('userEmail') || "user@example.com",
+      fallback: true
+    };
   }
 };
 

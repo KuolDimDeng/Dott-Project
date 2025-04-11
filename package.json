@@ -9,11 +9,18 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
+    "@aws-sdk/client-cognito-identity-provider": "^3.782.0",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
+    "@hookform/resolvers": "^5.0.1",
     "@mui/icons-material": "^6.4.7",
-    "dotenv": "^16.3.1",
-    "react-hot-toast": "^2.5.2"
+    "country-state-city": "^3.2.1",
+    "dotenv": "^16.4.7",
+    "lodash": "^4.17.21",
+    "pg": "^8.14.1",
+    "react-hot-toast": "^2.5.2",
+    "react-select": "^5.10.1",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "husky": "^9.1.7",

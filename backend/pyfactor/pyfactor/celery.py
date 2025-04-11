@@ -2,11 +2,18 @@
 
 from celery import Celery
 import os
-from celery.schedules import crontab
+import logging
 
+# Configure logging
+logger = logging.getLogger(__name__)
+
+# Set the Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
 
+# Create the Celery app
 app = Celery('pyfactor')
+
+# Load settings from Django settings object
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Configure Celery for reliable database operations
@@ -36,24 +43,11 @@ app.conf.update(
         'users.tasks.check_expired_subscriptions': {'queue': 'default'}
     },
     
-    # Scheduled tasks
-    beat_schedule={
-        'check-expired-subscriptions': {
-            'task': 'users.tasks.check_expired_subscriptions',
-            'schedule': 86400.0,  # Run daily (86400 seconds)
-            'options': {'queue': 'default'}
-        },
-        'cleanup-stale-schemas': {
-            'task': 'users.utils.cleanup_stale_schemas',
-            'schedule': 604800.0,  # Run weekly (604800 seconds)
-            'options': {'queue': 'default'}
-        },
-        'monitor-tenant-schemas': {
-            'task': 'custom_auth.tasks.monitor_tenant_schemas',
-            'schedule': crontab(hour='2', minute='0'),  # Run daily at 2:00 AM
-            'options': {'queue': 'maintenance'}
-        }
-    }
+    # Start with an empty beat schedule
+    # The schedule will be populated in the Django AppConfig's ready() method
+    beat_schedule={}
 )
 
+# Auto-discover tasks
+logger.info("Auto-discovering Celery tasks...")
 app.autodiscover_tasks()

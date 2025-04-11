@@ -4,13 +4,37 @@ import React, { useEffect, useState, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { useForm } from 'react-hook-form';
-import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
 import { validateSession } from '@/utils/onboardingUtils';
 import { LoadingStateWithProgress } from '@/components/LoadingState';
 import { useOnboarding } from './hooks/useOnboarding';
 import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
 import LoadingSpinner from '@/components/LoadingSpinner';
+
+// Simple redirect component - directs all users to business-info
+function OnboardingRedirect() {
+  const router = useRouter();
+  
+  useEffect(() => {
+    logger.info('[Onboarding] Redirecting directly to business-info');
+    router.replace('/onboarding/business-info');
+  }, [router]);
+  
+  return (
+    <div className="flex flex-col justify-center items-center min-h-screen p-6 gap-4">
+      <h2 className="text-xl font-semibold text-center mb-4">
+        Redirecting to business information...
+      </h2>
+      <LoadingSpinner size="large" />
+    </div>
+  );
+}
+
+// Main page component with error boundary - now just redirects to business-info
+export default function OnboardingPage() {
+  return <OnboardingRedirect />;
+}
 
 // Onboarding-specific error fallback
 const OnboardingErrorFallback = memo(function OnboardingErrorFallback({
@@ -96,6 +120,7 @@ const OnboardingContent = memo(function OnboardingContent() {
   const { data: session, status } = useSession();
   const [isInitializing, setIsInitializing] = useState(false);
   const [initializationAttempts, setInitializationAttempts] = useState(0);
+  const [fallbackTriggered, setFallbackTriggered] = useState(false);
   const requestIdRef = React.useRef(crypto.randomUUID());
 
   const methods = useForm({
@@ -115,6 +140,28 @@ const OnboardingContent = memo(function OnboardingContent() {
     progress,
     selected_plan,
   } = useOnboarding(methods);
+
+  // Fallback function to directly navigate to business-info for new users
+  // This ensures they can start onboarding even if store initialization fails
+  const navigateToBusinessInfo = () => {
+    if (fallbackTriggered) return;
+    
+    logger.info('[Onboarding] Using fallback navigation for new user');
+    setFallbackTriggered(true);
+    
+    // Store onboarding state in localStorage as a fallback
+    try {
+      localStorage.setItem('onboardingInProgress', 'true');
+      localStorage.setItem('onboardingStep', 'business-info');
+      document.cookie = `onboardingInProgress=true;path=/;max-age=${60*60*24}`;
+      document.cookie = `onboardingStep=business-info;path=/;max-age=${60*60*24}`;
+    } catch (e) {
+      logger.error('[Onboarding] Failed to set fallback storage', e);
+    }
+    
+    // Navigate directly to the first step
+    router.push('/onboarding/business-info');
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -156,6 +203,9 @@ const OnboardingContent = memo(function OnboardingContent() {
                 setInitializationAttempts((prev) => prev + 1);
               }
             }, delay);
+          } else {
+            // If we've failed initialization 3 times, use the fallback
+            navigateToBusinessInfo();
           }
         } finally {
           if (mounted) {
@@ -167,11 +217,20 @@ const OnboardingContent = memo(function OnboardingContent() {
 
     initStore();
 
+    // Set a safety timeout - if initialization takes too long, use fallback
+    const safetyTimeout = setTimeout(() => {
+      if (status === 'authenticated' && !initialized && !fallbackTriggered) {
+        logger.warn('[Onboarding] Safety timeout triggered, using fallback navigation');
+        navigateToBusinessInfo();
+      }
+    }, 8000); // 8 second safety timeout
+
     return () => {
       mounted = false;
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
+      clearTimeout(safetyTimeout);
     };
   }, [
     initialize,
@@ -181,6 +240,8 @@ const OnboardingContent = memo(function OnboardingContent() {
     current_step,
     initializationAttempts,
     selected_plan,
+    router,
+    fallbackTriggered,
   ]);
 
   if (!initialized || storeLoading || isInitializing) {
@@ -203,6 +264,25 @@ const OnboardingContent = memo(function OnboardingContent() {
   }
 
   if (storeError) {
+    logger.error('[Onboarding] Store error detected, attempting fallback', {
+      error: storeError.message,
+      fallbackTriggered
+    });
+    
+    // If we have a store error but haven't triggered fallback yet, do so now
+    if (!fallbackTriggered) {
+      navigateToBusinessInfo();
+      return (
+        <div className="flex flex-col justify-center items-center min-h-screen p-6 gap-4">
+          <h2 className="text-xl font-semibold text-center mb-4">
+            Redirecting to business information...
+          </h2>
+          <LoadingSpinner size="large" />
+        </div>
+      );
+    }
+    
+    // Otherwise, show the error
     throw new Error(storeError.message || 'Failed to initialize onboarding', {
       cause: storeError,
     });
@@ -225,8 +305,12 @@ const OnboardingContent = memo(function OnboardingContent() {
       } else {
         logger.debug(`[Onboarding] No redirect needed: current=${currentPath}, target=${targetPath}`);
       }
+    } else if (status === 'authenticated' && !currentStepLower && !fallbackTriggered) {
+      // No current step but user is authenticated - likely a new user
+      logger.info('[Onboarding] No current step detected for authenticated user, using fallback');
+      navigateToBusinessInfo();
     }
-  }, [currentStepLower, router]);
+  }, [currentStepLower, router, status, fallbackTriggered]);
   
   // Show loading while redirecting
   return (
@@ -238,62 +322,6 @@ const OnboardingContent = memo(function OnboardingContent() {
     </div>
   );
 });
-
-// Main page component with error boundary
-export default function OnboardingPage() {
-  const handleRecovery = async () => {
-    const recoveryId = crypto.randomUUID();
-
-    logger.info('Starting onboarding recovery', {
-      recoveryId,
-      tier: selected_plan,
-    });
-
-    try {
-      // Get auth tokens
-      const { tokens } = await validateSession();
-      if (!tokens?.accessToken || !tokens?.idToken) {
-        throw new Error('No valid session tokens');
-      }
-
-      const accessToken = tokens.accessToken.toString();
-      const idToken = tokens.idToken.toString();
-
-      await fetch('/api/onboarding/reset', {
-        method: 'POST',
-        headers: {
-          'x-recovery-id': recoveryId,
-          'x-subscription-tier': selected_plan,
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Id-Token': idToken
-        },
-      });
-
-      logger.info('Onboarding recovery successful', {
-        recoveryId,
-        tier: selected_plan,
-      });
-      return true;
-    } catch (error) {
-      logger.error('Onboarding recovery failed', {
-        recoveryId,
-        error: error.message,
-        tier: selected_plan,
-      });
-      return false;
-    }
-  };
-
-  return (
-    <ErrorBoundary
-      componentName="Onboarding"
-      onReset={handleRecovery}
-      FallbackComponent={OnboardingErrorFallback}
-    >
-      <OnboardingContent />
-    </ErrorBoundary>
-  );
-}
 
 // PropTypes definitions
 OnboardingErrorFallback.propTypes = {

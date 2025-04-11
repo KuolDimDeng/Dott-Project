@@ -58,14 +58,14 @@ def list_all_tenants():
         logger.info(f"Found {len(tenants)} tenants in the database")
         
         for tenant in tenants:
-            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: {tenant.schema_name})")
+            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: { tenant.id})")
         
         return tenants
     except Exception as e:
         logger.error(f"Error listing tenants: {str(e)}")
         return []
 
-def check_column_type(schema_name, table_name, column_name):
+def check_column_type(tenant_id: uuid.UUID:
     """Check the data type of a column in a schema"""
     try:
         conn = get_db_connection()
@@ -85,13 +85,15 @@ def check_column_type(schema_name, table_name, column_name):
         if conn:
             conn.close()
 
-def fix_column_type(schema_name, table_name, column_name, target_type):
+def fix_column_type(tenant_id: uuid.UUID:
     """Fix the data type of a column in a schema"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to the tenant schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Get current data type
             cursor.execute("""
@@ -136,13 +138,15 @@ def fix_column_type(schema_name, table_name, column_name, target_type):
         if conn:
             conn.close()
 
-def ensure_correct_column_types(schema_name):
+def ensure_correct_column_types(tenant_id: uuid.UUID:
     """Ensure that business_id is UUID type in tenant schema"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set the search path to the tenant schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Check if business_id column is uuid
             cursor.execute("""
@@ -179,13 +183,13 @@ def ensure_correct_column_types(schema_name):
         if conn:
             conn.close()
 
-def fix_tenant_schema(tenant_id=None, schema_name=None, all_tenants=False, force=False):
+def fix_tenant_schema(tenant_id: uuid.UUID:
     """Fix the schema mismatch in tenant schemas"""
     if tenant_id:
         try:
             tenant = Tenant.objects.get(id=tenant_id)
             tenants = [tenant]
-            logger.info(f"Found tenant: {tenant.name} (ID: {tenant.id}, Schema: {tenant.schema_name})")
+            logger.info(f"Found tenant: {tenant.name} (ID: {tenant.id}, Schema: { tenant.id})")
         except Tenant.DoesNotExist:
             logger.error(f"Tenant with ID {tenant_id} not found")
             return False
@@ -206,7 +210,7 @@ def fix_tenant_schema(tenant_id=None, schema_name=None, all_tenants=False, force
                 logger.info(f"Found schema: {schema_name}")
                 # Create a dummy tenant object with just the schema_name
                 class DummyTenant:
-                    def __init__(self, schema_name):
+                    def __init__(tenant_id: uuid.UUID:
                         self.schema_name = schema_name
                         self.name = f"Schema {schema_name}"
                 
@@ -237,16 +241,19 @@ def fix_tenant_schema(tenant_id=None, schema_name=None, all_tenants=False, force
     public_type = check_column_type('public', 'users_userprofile', 'business_id')
     if not public_type:
         logger.error("Could not determine the correct column type from public schema")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         return False
     
     logger.info(f"Reference column type in public schema: {public_type}")
     
     for tenant in tenants:
-        logger.info(f"Processing tenant: {tenant.name} (Schema: {tenant.schema_name})")
+        logger.info(f"Processing tenant: {tenant.name} (Schema: { tenant.id})")
         
         try:
             # Fix the column type
-            if ensure_correct_column_types(tenant.schema_name):
+            if ensure_correct_column_types( tenant.id):
                 success_count += 1
                 logger.info(f"Successfully fixed schema for tenant: {tenant.name}")
             else:

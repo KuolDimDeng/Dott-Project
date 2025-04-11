@@ -50,8 +50,8 @@ class DashboardMigrationMiddleware:
         schema_name = None
         setup_needed = False
         
-        if tenant and tenant.schema_name:
-            schema_name = tenant.schema_name
+        if tenant and  tenant.id:
+            schema_name =  tenant.id
             
             # Check tenant setup status
             if hasattr(tenant, 'setup_status') and tenant.setup_status in ['minimal', 'pending', 'not_started']:

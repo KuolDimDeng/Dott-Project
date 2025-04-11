@@ -115,7 +115,7 @@ def patch_save_business_info(file_path, dry_run=False):
 {indent}if tenant_id:
 {indent}    try:
 {indent}        tenant = Tenant.objects.get(id=tenant_id)
-{indent}        schema_name = tenant.schema_name
+{indent}        schema_name =  tenant.id
 {indent}        logger.info(f"Using tenant schema {{schema_name}} for business creation")
 {indent}    except Tenant.DoesNotExist:
 {indent}        logger.warning(f"Tenant {{tenant_id}} not found, using public schema")

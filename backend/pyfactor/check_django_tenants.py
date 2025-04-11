@@ -47,7 +47,7 @@ def main():
         tenants = Tenant.objects.all()
         print("\nTenant Records:")
         for tenant in tenants:
-            print(f"- {tenant.id} | {tenant.name} | Owner: {tenant.owner_id} | Schema: {tenant.schema_name}")
+            print(f"- {tenant.id} | {tenant.name} | Owner: {tenant.owner_id} | Schema: { tenant.id}")
         
         print("\n✅ Django can successfully read tenant records from the shared table")
     except Exception as e:

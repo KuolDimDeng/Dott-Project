@@ -13,11 +13,11 @@ from django.db import connection
 from pyfactor.logging_config import get_logger
 from functools import wraps
 import logging
-from onboarding.utils import get_schema_name_from_tenant_id
 from django.utils.deprecation import MiddlewareMixin
 from .services.redis_session import onboarding_session_service
 from .models import OnboardingProgress
 from django.utils import timezone
+from custom_auth.tenant_context import get_current_tenant, set_current_tenant
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -176,7 +176,7 @@ class SchemaNameMiddleware:
     a consistent way to get the schema name from a tenant ID.
     
     This adds a method to the Tenant model instance dynamically to provide
-    backward compatibility with code that expects tenant.schema_name.
+    backward compatibility with code that expects  tenant.id.
     """
     
     def __init__(self, get_response):
@@ -189,7 +189,11 @@ class SchemaNameMiddleware:
         # Only add if it doesn't already exist
         if not hasattr(Tenant, 'schema_name'):
             # Add a property that generates the schema name from the ID
-            Tenant.schema_name = property(lambda self: get_schema_name_from_tenant_id(self.id))
+            # Use our locally defined function to generate the schema name
+            def schema_name_getter(tenant_instance):
+                return get_schema_name_from_tenant_id(tenant_instance.id)
+                
+            Tenant.schema_name = property(schema_name_getter)
             logger.info("Added schema_name property to Tenant model")
             
         # Call the next middleware
@@ -214,16 +218,15 @@ class AsyncSchemaTenantMiddleware:
     @sync_to_async
     def set_tenant_context(self, tenant_id):
         """Set the tenant context in the database session."""
-        with connection.cursor() as cursor:
-            cursor.execute("SET app.current_tenant = %s", [str(tenant_id)])
+        if tenant_id:
+            set_current_tenant(tenant_id)
             logger.debug(f"Set tenant context to {tenant_id}")
             
     @sync_to_async
     def clear_tenant_context(self):
         """Clear the tenant context from the database session."""
-        with connection.cursor() as cursor:
-            cursor.execute("SET app.current_tenant = NULL")
-            logger.debug("Cleared tenant context")
+        set_current_tenant(None)
+        logger.debug("Cleared tenant context")
 
 class OnboardingSessionMiddleware(MiddlewareMixin):
     """

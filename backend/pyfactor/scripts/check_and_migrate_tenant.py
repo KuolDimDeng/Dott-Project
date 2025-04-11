@@ -34,6 +34,9 @@ from django.db import connections, connection
 from django.conf import settings
 from custom_auth.models import Tenant
 
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ def get_db_connection():
     conn.autocommit = True
     return conn
 
-def schema_exists(schema_name):
+def schema_exists(tenant_id: uuid.UUID:
     """Check if the schema exists"""
     try:
         conn = get_db_connection()
@@ -68,7 +71,7 @@ def schema_exists(schema_name):
         if conn:
             conn.close()
 
-def list_tables_in_schema(schema_name):
+def list_tables_in_schema(tenant_id: uuid.UUID:
     """List all tables in the schema"""
     try:
         conn = get_db_connection()
@@ -92,7 +95,7 @@ def list_tables_in_schema(schema_name):
         if conn:
             conn.close()
 
-def create_schema(schema_name):
+def create_schema(tenant_id: uuid.UUID:
     """Create the schema if it doesn't exist"""
     try:
         conn = get_db_connection()
@@ -115,12 +118,14 @@ def create_schema(schema_name):
         if conn:
             conn.close()
 
-def run_migrations_for_schema(schema_name):
+def run_migrations_for_schema(tenant_id: uuid.UUID:
     """Run migrations for the schema"""
     try:
         # Set search path to tenant schema
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
         
         # Run migrations for all tenant apps
         tenant_apps = settings.TENANT_APPS
@@ -150,7 +155,8 @@ def run_migrations_for_schema(schema_name):
     finally:
         # Reset search path to public
         with connection.cursor() as cursor:
-            cursor.execute('SET search_path TO public')
+            cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
 
 def check_and_migrate_tenant(tenant_id):
     """Check and migrate a specific tenant schema"""
@@ -158,12 +164,12 @@ def check_and_migrate_tenant(tenant_id):
         # Get tenant
         try:
             tenant = Tenant.objects.get(id=tenant_id)
-            logger.info(f"Found tenant: {tenant.name} (Schema: {tenant.schema_name})")
+            logger.info(f"Found tenant: {tenant.name} (Schema: { tenant.id})")
         except Tenant.DoesNotExist:
             logger.error(f"Tenant with ID {tenant_id} does not exist")
             return False
         
-        schema_name = tenant.schema_name
+        schema_name =  tenant.id
         
         # Check if schema exists
         if not schema_exists(schema_name):

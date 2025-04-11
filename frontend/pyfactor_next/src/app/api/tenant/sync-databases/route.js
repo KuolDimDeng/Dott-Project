@@ -31,7 +31,9 @@ export async function GET(request) {
           id UUID PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           owner_id VARCHAR(255),
-          schema_name VARCHAR(255) NOT NULL UNIQUE,
+          /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(255) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removed,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
           rls_enabled BOOLEAN DEFAULT TRUE,

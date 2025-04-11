@@ -51,4 +51,9 @@ def clear_current_tenant() -> None:
     """
     if hasattr(_thread_local, 'tenant_id'):
         delattr(_thread_local, 'tenant_id')
-    logger.debug("Cleared tenant context in thread-local storage") 
+    logger.debug("Cleared tenant context in thread-local storage")
+
+# Aliases for compatibility with RLS module naming
+set_current_tenant_id = set_current_tenant
+get_current_tenant_id = get_current_tenant
+clear_current_tenant_id = clear_current_tenant 

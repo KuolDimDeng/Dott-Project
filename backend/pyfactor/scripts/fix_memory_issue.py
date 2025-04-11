@@ -67,13 +67,15 @@ def list_tenant_schemas():
         if conn:
             conn.close()
 
-def check_schema_health(schema_name):
+def check_schema_health(tenant_id: uuid.UUID:
     """Check if a schema is healthy (has required tables)"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to the schema
-            cursor.execute(f'SET search_path TO "{schema_name}"')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
             
             # Check if essential tables exist
             cursor.execute("""
@@ -92,7 +94,7 @@ def check_schema_health(schema_name):
         if conn:
             conn.close()
 
-def drop_schema(schema_name):
+def drop_schema(tenant_id: uuid.UUID:
     """Drop a schema from the database"""
     try:
         conn = get_db_connection()
@@ -277,14 +279,17 @@ def fix_tenant_model():
         if count > 0:
             tenants.update(setup_status='pending', setup_error_message='Reset by fix_memory_issue.py')
             logger.info(f"Reset {count} tenants from 'error' to 'pending' status")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
         
         # Update all tenants with database_status='not_created' to ensure they have a schema_name
         tenants = Tenant.objects.filter(database_status='not_created', schema_name='')
         for tenant in tenants:
-            if not tenant.schema_name:
-                tenant.schema_name = f"tenant_{str(tenant.id).replace('-', '_')}"
+            if not  tenant.id:
+                 tenant.id = f"tenant_{str(tenant.id).replace('-', '_')}"
                 tenant.save(update_fields=['schema_name'])
-                logger.info(f"Set schema_name for tenant {tenant.id} to {tenant.schema_name}")
+                logger.info(f"Set schema_name for tenant {tenant.id} to { tenant.id}")
         
         return True
     except Exception as e:

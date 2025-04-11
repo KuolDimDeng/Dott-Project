@@ -86,7 +86,7 @@ def check_users_without_schemas():
                         SELECT 1 FROM information_schema.schemata 
                         WHERE schema_name = %s
                     )
-                """, [tenant.schema_name])
+                """, [ tenant.id])
                 
                 schema_exists = cursor.fetchone()[0]
                 
@@ -95,7 +95,7 @@ def check_users_without_schemas():
                         'user_id': str(user.id),
                         'email': user.email,
                         'tenant_id': str(tenant.id),
-                        'schema_name': tenant.schema_name,
+                        'schema_name':  tenant.id,
                         'issue': 'Schema does not exist',
                     })
                 else:
@@ -105,7 +105,7 @@ def check_users_without_schemas():
                             SELECT 1 FROM information_schema.tables 
                             WHERE table_schema = %s AND table_name = 'custom_auth_user'
                         )
-                    """, [tenant.schema_name])
+                    """, [ tenant.id])
                     
                     tables_exist = cursor.fetchone()[0]
                     
@@ -114,7 +114,7 @@ def check_users_without_schemas():
                             'user_id': str(user.id),
                             'email': user.email,
                             'tenant_id': str(tenant.id),
-                            'schema_name': tenant.schema_name,
+                            'schema_name':  tenant.id,
                             'issue': 'Auth tables missing from schema',
                         })
         except Exception as e:

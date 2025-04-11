@@ -14,6 +14,7 @@ import random
 from typing import Optional, Union
 from django.db import connection
 from django.conf import settings
+from functools import wraps
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +29,8 @@ def set_current_tenant_id(tenant_id: Optional[Union[uuid.UUID, str]]) -> None:
         # Clear the tenant context
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SET app.current_tenant_id TO 'unset';")
-            logger.debug("Cleared tenant context in database")
+                cursor.execute("SET app.current_tenant = NULL")
+            logger.debug("Cleared tenant context")
         except Exception as e:
             logger.error(f"Error clearing tenant context in database: {str(e)}")
         return
@@ -45,8 +46,8 @@ def set_current_tenant_id(tenant_id: Optional[Union[uuid.UUID, str]]) -> None:
     # Set the tenant ID in the database session
     try:
         with connection.cursor() as cursor:
-            cursor.execute(f"SET app.current_tenant_id TO '{str(tenant_id)}';")
-        logger.debug(f"Set tenant context to {tenant_id} in database")
+            cursor.execute("SET app.current_tenant = %s", [str(tenant_id)])
+        logger.debug(f"Set tenant context to {tenant_id}")
     except Exception as e:
         logger.error(f"Error setting tenant context in database: {str(e)}")
         
@@ -59,7 +60,7 @@ def get_current_tenant_id() -> Optional[uuid.UUID]:
     """
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT current_setting('app.current_tenant_id', true);")
+            cursor.execute("SELECT current_setting('app.current_tenant', true);")
             result = cursor.fetchone()[0]
             
             if result and result != 'unset':
@@ -196,8 +197,8 @@ def _do_verify_rls_setup() -> bool:
                 CREATE POLICY tenant_isolation_policy ON rls_test
                 AS RESTRICTIVE
                 USING (
-                    tenant_id::TEXT = current_setting('app.current_tenant_id', TRUE)
-                    OR current_setting('app.current_tenant_id', TRUE) = 'unset'
+                    tenant_id::TEXT = current_setting('app.current_tenant', TRUE)
+                    OR current_setting('app.current_tenant', TRUE) = 'unset'
                 );
                 """)
                 logger.debug("Created RLS policy on rls_test")
@@ -217,17 +218,17 @@ def _do_verify_rls_setup() -> bool:
             """)
             
             # Test with tenant 1
-            cursor.execute("SET app.current_tenant_id TO '11111111-1111-1111-1111-111111111111';")
+            cursor.execute("SET app.current_tenant = '11111111-1111-1111-1111-111111111111';")
             cursor.execute("SELECT COUNT(*) FROM rls_test;")
             tenant1_count = cursor.fetchone()[0]
             
             # Test with tenant 2
-            cursor.execute("SET app.current_tenant_id TO '22222222-2222-2222-2222-222222222222';")
+            cursor.execute("SET app.current_tenant = '22222222-2222-2222-2222-222222222222';")
             cursor.execute("SELECT COUNT(*) FROM rls_test;")
             tenant2_count = cursor.fetchone()[0]
             
             # Test with unset
-            cursor.execute("SET app.current_tenant_id TO 'unset';")
+            cursor.execute("SET app.current_tenant = 'unset';")
             cursor.execute("SELECT COUNT(*) FROM rls_test;")
             unset_count = cursor.fetchone()[0]
             
@@ -246,7 +247,7 @@ def _do_verify_rls_setup() -> bool:
                 logger.error(f"RLS verification failed: tenant1={tenant1_count} (expected 1), tenant2={tenant2_count} (expected 1), unset={unset_count} (expected 2)")
                 
             # Always clear tenant context at the end
-            cursor.execute("SET app.current_tenant_id TO 'unset';")
+            cursor.execute("SET app.current_tenant = 'unset';")
             
             return rls_working
     
@@ -256,7 +257,7 @@ def _do_verify_rls_setup() -> bool:
         # Make sure we reset the tenant context even if verification fails
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SET app.current_tenant_id TO 'unset';")
+                cursor.execute("SET app.current_tenant = 'unset';")
         except:
             pass
             
@@ -319,8 +320,8 @@ def create_rls_policy_for_table(table_name):
                 DROP POLICY IF EXISTS tenant_isolation_policy ON {table_name};
                 CREATE POLICY tenant_isolation_policy ON {table_name}
                     USING (
-                        tenant_id = NULLIF(current_setting('app.current_tenant_id', TRUE), 'unset')::uuid
-                        AND current_setting('app.current_tenant_id', TRUE) != 'unset'
+                        tenant_id = NULLIF(current_setting('app.current_tenant', TRUE), 'unset')::uuid
+                        AND current_setting('app.current_tenant', TRUE) != 'unset'
                     );
             """)
         logger.info(f"Successfully applied RLS policy to table: {table_name}")

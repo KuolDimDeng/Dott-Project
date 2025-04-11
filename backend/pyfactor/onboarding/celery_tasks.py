@@ -25,6 +25,9 @@ def get_models():
     """
     from django.contrib.auth import get_user_model
     from users.models import UserProfile
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     return get_user_model(), UserProfile
 
 @shared_task(
@@ -166,7 +169,9 @@ def setup_tenant_schema_task(self, user_id, business_id):
 
                         # Phase 3: Schema Configuration
                         send_progress(40, 'Configuring Schema')
-                        cursor.execute(f'SET search_path TO "{schema_name}"')
+                        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
 
                         # Phase 4: Schema Migration
                         with timeout(180):  # 3-minute timeout for migrations
@@ -201,7 +206,7 @@ def setup_tenant_schema_task(self, user_id, business_id):
                     is_active=True
                 )
             else:
-                tenant.schema_name = schema_name
+                 tenant.id = schema_name
                 tenant.is_active = True
                 tenant.save()
 

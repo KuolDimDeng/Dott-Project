@@ -52,10 +52,12 @@ export async function GET(req) {
       logger.info('[API] Retrieved authenticated user from server:', {
         email: serverUser.email,
         userId: serverUser.sub,
+        firstName: serverUser.given_name || serverUser.first_name,
+        lastName: serverUser.family_name || serverUser.last_name,
         tenantId: effectiveTenantId || serverUser.sub // Use user ID as tenant ID if none provided
       });
       
-      // Return authenticated user information
+      // Return authenticated user information with enhanced attribute mapping
       return NextResponse.json({
         profile: {
           id: serverUser.sub || serverUser.username,
@@ -63,6 +65,8 @@ export async function GET(req) {
           name: serverUser.name || `${serverUser.given_name || ''} ${serverUser.family_name || ''}`.trim(),
           firstName: serverUser.given_name || serverUser.first_name,
           lastName: serverUser.family_name || serverUser.last_name,
+          first_name: serverUser.given_name || serverUser.first_name, // Add both formats for compatibility
+          last_name: serverUser.family_name || serverUser.last_name,  // Add both formats for compatibility
           fullName: serverUser.name || `${serverUser.given_name || ''} ${serverUser.family_name || ''}`.trim(),
           tenantId: effectiveTenantId || serverUser.sub,
           role: serverUser['custom:role'] || 'user',
@@ -70,7 +74,8 @@ export async function GET(req) {
           setupComplete: serverUser['custom:setupdone'] === 'true',
           businessName: serverUser['custom:businessname'],
           businessType: serverUser['custom:businesstype'],
-          subscription_type: serverUser['custom:subplan'] || 'free',
+          subscriptionType: serverUser['custom:subplan'] || 'free',
+          subscription_type: serverUser['custom:subplan'] || 'free', // Both formats for compatibility
           preferences: {
             theme: 'light',
             notificationsEnabled: true
@@ -125,13 +130,16 @@ export async function GET(req) {
             role: 'user',
             firstName: firstName || '',
             lastName: lastName || '',
+            first_name: firstName || '', // Add both formats for compatibility
+            last_name: lastName || '',   // Add both formats for compatibility
             name: firstName && lastName ? `${firstName} ${lastName}` : (firstName || fallbackEmail),
             fullName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || ''),
             businessName: businessName || getCookieValue(cookieHeader, 'businessid') || '',
             businessType: businessType || '',
             onboardingStatus: getCookieValue(cookieHeader, 'onboardingStatus') || 'complete',
             setupComplete: getCookieValue(cookieHeader, 'setupCompleted') === 'true',
-            subscription_type: getCookieValue(cookieHeader, 'selectedPlan') || 'free',
+            subscriptionType: getCookieValue(cookieHeader, 'selectedPlan') || 'free',
+            subscription_type: getCookieValue(cookieHeader, 'selectedPlan') || 'free', // Both formats
             preferences: {
               theme: 'light',
               notificationsEnabled: true

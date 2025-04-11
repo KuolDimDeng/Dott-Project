@@ -16,9 +16,9 @@ const signUp = async (userData) => {
           email: userData.email,
           given_name: userData.firstName || '',
           family_name: userData.lastName || '',
-          'custom:onboarding': 'NOT_STARTED',
-          'custom:setupdone': 'FALSE',
-          'custom:userrole': 'OWNER',
+          'custom:onboarding': 'not_started',
+          'custom:setupdone': 'false',
+          'custom:userrole': 'owner',
           'custom:created_at': new Date().toISOString()
         },
         autoSignIn: {

@@ -122,7 +122,7 @@ def apply_additional_fixes():
             
             # Add improved transaction handling
             improved_context_manager = """
-def tenant_schema_context(cursor, schema_name, preserve_context=True):
+def tenant_schema_context(tenant_id: uuid.UUID:
     """
     Context manager for executing SQL in a specific schema context.
     
@@ -143,7 +143,9 @@ def tenant_schema_context(cursor, schema_name, preserve_context=True):
             original_search_path = cursor.fetchone()[0]
         
         # Set search path to the tenant schema
-        cursor.execute(f'SET search_path TO "{schema_name}", public')
+        # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id), public')
         
         # Ensure we're not in a transaction block
         if cursor.connection.in_atomic_block:
@@ -163,6 +165,9 @@ def tenant_schema_context(cursor, schema_name, preserve_context=True):
             
             # Replace the function
             import re
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
             pattern = r"def tenant_schema_context.*?yield cursor.*?\n\s*finally:.*?}\)"
             new_utils_content = re.sub(pattern, improved_context_manager, utils_content, flags=re.DOTALL)
             

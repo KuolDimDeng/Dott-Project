@@ -8,9 +8,16 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: false, // Disable strict mode to reduce memory pressure
   
+  // Enable experimental pageExtensions to support custom file extensions
+  experimental: {
+    pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  },
+  
   // Add API rewrites to handle CORS issues
   async rewrites() {
     return [
+      // NOTE: Tenant-specific rewrites have been removed in favor of using Next.js App Router's
+      // built-in dynamic route functionality with the [tenantId] directory
       // Proxy requests to localhost:8000
       {
         source: '/backend/:path*',
@@ -101,4 +108,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

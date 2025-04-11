@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
   const [invoice, setInvoice] = useState(null);

@@ -63,7 +63,8 @@ function ErrorFallback({ error, resetErrorBoundary, isLoading = false }) {
   );
 }
 
-export default function ErrorBoundary({ children, fallback, onReset, onError }) {
+// Export as both default and named export
+function ErrorBoundaryComponent({ children, fallback, onReset, onError }) {
   const [isLoading, setIsLoading] = useState(false);
   
   const handleReset = async (...args) => {
@@ -94,20 +95,24 @@ export default function ErrorBoundary({ children, fallback, onReset, onError }) 
   );
 }
 
-ErrorBoundary.propTypes = {
+ErrorBoundaryComponent.propTypes = {
   children: PropTypes.node.isRequired,
   fallback: PropTypes.func,
   onReset: PropTypes.func,
   onError: PropTypes.func
 };
 
+// Export as both default and named export
+export { ErrorBoundaryComponent as ErrorBoundary };
+export default ErrorBoundaryComponent;
+
 // Export a HOC for easier usage
 export const withErrorBoundary = (WrappedComponent, options = {}) => {
   function WithErrorBoundary(props) {
     return (
-      <ErrorBoundary {...options}>
+      <ErrorBoundaryComponent {...options}>
         <WrappedComponent {...props} />
-      </ErrorBoundary>
+      </ErrorBoundaryComponent>
     );
   }
 
@@ -123,12 +128,12 @@ export const withErrorBoundary = (WrappedComponent, options = {}) => {
 
 // Create pre-configured app error boundary
 export const AppErrorBoundary = ({ children, ...props }) => (
-  <ErrorBoundary
+  <ErrorBoundaryComponent
     componentName="App"
     {...props}
   >
     {children}
-  </ErrorBoundary>
+  </ErrorBoundaryComponent>
 );
 
 AppErrorBoundary.propTypes = {

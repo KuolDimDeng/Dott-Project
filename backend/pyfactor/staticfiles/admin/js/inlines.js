@@ -135,13 +135,7 @@
             if (options.removed) {
                 options.removed(row);
             }
-            document.dispatchEvent(new CustomEvent("formset:removed", {
-                detail: {
-                    formsetName: options.prefix
-                }
-            }));
-            // Update the TOTAL_FORMS form count.
-            const forms = $("." + options.formCssClass);
+            document.dispatchEvent(new CustomEvent("formset:removed/* RLS: Use tenant_id filtering */ " + options.formCssClass);
             $("#id_" + options.prefix + "-TOTAL_FORMS").val(forms.length);
             // Show add button again once below maximum number.
             if ((maxForms.val() === '') || (maxForms.val() - forms.length) > 0) {
@@ -157,20 +151,7 @@
             };
             for (i = 0, formCount = forms.length; i < formCount; i++) {
                 updateElementIndex($(forms).get(i), options.prefix, i);
-                $(forms.get(i)).find("*").each(updateElementCallback);
-            }
-        };
-
-        const toggleDeleteButtonVisibility = function(inlineGroup) {
-            if ((minForms.val() !== '') && (minForms.val() - totalForms.val()) >= 0) {
-                inlineGroup.find('.inline-deletelink').hide();
-            } else {
-                inlineGroup.find('.inline-deletelink').show();
-            }
-        };
-
-        $this.each(function(i) {
-            $(this).not("." + options.emptyCssClass).addClass(options.formCssClass);
+                $(forms.get(i)).find("*/* RLS: Use tenant_id filtering */ " + options.emptyCssClass).addClass(options.formCssClass);
         });
 
         // Create the delete buttons for all unsaved inlines:
@@ -216,8 +197,7 @@
 
         const reinitDateTimeShortCuts = function() {
             // Reinitialize the calendar and clock widgets by force
-            if (typeof DateTimeShortcuts !== "undefined") {
-                $(".datetimeshortcuts").remove();
+            if (typeof DateTimeShortcuts !== "undefined/* RLS: Use tenant_id filtering */ datetimeshortcuts").remove();
                 DateTimeShortcuts.init();
             }
         };
@@ -256,23 +236,7 @@
             formCssClass: "dynamic-" + options.prefix,
             deleteCssClass: "inline-deletelink",
             deleteText: options.deleteText,
-            emptyCssClass: "empty-form",
-            added: function(row) {
-                initPrepopulatedFields(row);
-                reinitDateTimeShortCuts();
-                updateSelectFilter();
-            },
-            addButton: options.addButton
-        });
-
-        return $rows;
-    };
-
-    // Stacked inlines ---------------------------------------------------------
-    $.fn.stackedFormset = function(selector, options) {
-        const $rows = $(this);
-        const updateInlineLabel = function(row) {
-            $(selector).find(".inline_label").each(function(i) {
+            emptyCssClass: "empty-form/* RLS: Use tenant_id filtering */ inline_label").each(function(i) {
                 const count = i + 1;
                 $(this).html($(this).html().replace(/(#\d+)/g, "#" + count));
             });
@@ -280,16 +244,14 @@
 
         const reinitDateTimeShortCuts = function() {
             // Reinitialize the calendar and clock widgets by force, yuck.
-            if (typeof DateTimeShortcuts !== "undefined") {
-                $(".datetimeshortcuts").remove();
+            if (typeof DateTimeShortcuts !== "undefined/* RLS: Use tenant_id filtering */ datetimeshortcuts").remove();
                 DateTimeShortcuts.init();
             }
         };
 
         const updateSelectFilter = function() {
             // If any SelectFilter widgets were added, instantiate a new instance.
-            if (typeof SelectFilter !== "undefined") {
-                $(".selectfilter").each(function(index, value) {
+            if (typeof SelectFilter !== "undefined/* RLS: Use tenant_id filtering */ selectfilter").each(function(index, value) {
                     SelectFilter.init(value.id, this.dataset.fieldName, false);
                 });
                 $(".selectfilterstacked").each(function(index, value) {
@@ -325,22 +287,7 @@
             formCssClass: "dynamic-" + options.prefix,
             deleteCssClass: "inline-deletelink",
             deleteText: options.deleteText,
-            emptyCssClass: "empty-form",
-            removed: updateInlineLabel,
-            added: function(row) {
-                initPrepopulatedFields(row);
-                reinitDateTimeShortCuts();
-                updateSelectFilter();
-                updateInlineLabel(row);
-            },
-            addButton: options.addButton
-        });
-
-        return $rows;
-    };
-
-    $(document).ready(function() {
-        $(".js-inline-admin-formset").each(function() {
+            emptyCssClass: "empty-form/* RLS: Use tenant_id filtering */ js-inline-admin-formset").each(function() {
             const data = $(this).data(),
                 inlineOptions = data.inlineFormset;
             let selector;

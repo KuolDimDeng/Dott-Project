@@ -19,11 +19,14 @@ const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
 // Create main axios instance for API calls
 const axiosInstance = axios.create({
   baseURL: '/api',
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
+// Export axiosInstance as the default export
+export default axiosInstance;
 
 // Token refresh function
 const refreshTokenAndRetry = async (config) => {
@@ -62,7 +65,84 @@ const refreshTokenAndRetry = async (config) => {
   }
 };
 
-// Add request interceptor to include authorization and tenant info
+// Circuit breaker implementation
+const circuitBreakers = {};
+
+class CircuitBreaker {
+  constructor(name, options = {}) {
+    this.name = name;
+    this.failureThreshold = options.failureThreshold || 3;
+    this.resetTimeout = options.resetTimeout || 30000; // 30 seconds
+    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+    this.failureCount = 0;
+    this.lastFailureTime = null;
+    this.pendingRequests = 0;
+    this.maxPendingRequests = options.maxPendingRequests || 5;
+  }
+  
+  canRequest() {
+    const now = Date.now();
+    
+    // Check if too many requests are already pending for this endpoint
+    if (this.pendingRequests >= this.maxPendingRequests) {
+      logger.warn(`[CircuitBreaker] Too many pending requests (${this.pendingRequests}) for ${this.name}`);
+      return false;
+    }
+    
+    if (this.state === 'OPEN') {
+      // Check if the circuit has been open long enough to try again
+      if (now - this.lastFailureTime > this.resetTimeout) {
+        this.state = 'HALF_OPEN';
+        logger.info(`[CircuitBreaker] ${this.name} state changed from OPEN to HALF_OPEN`);
+        return true;
+      }
+      return false;
+    }
+    
+    return true;
+  }
+  
+  recordRequest() {
+    this.pendingRequests++;
+  }
+  
+  recordSuccess() {
+    this.pendingRequests = Math.max(0, this.pendingRequests - 1);
+    
+    if (this.state === 'HALF_OPEN') {
+      this.failureCount = 0;
+      this.state = 'CLOSED';
+      logger.info(`[CircuitBreaker] ${this.name} state changed from HALF_OPEN to CLOSED`);
+    }
+  }
+  
+  recordFailure() {
+    this.pendingRequests = Math.max(0, this.pendingRequests - 1);
+    this.failureCount++;
+    this.lastFailureTime = Date.now();
+    
+    if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
+      this.state = 'OPEN';
+      logger.warn(`[CircuitBreaker] ${this.name} state changed from CLOSED to OPEN after ${this.failureCount} failures`);
+    } else if (this.state === 'HALF_OPEN') {
+      this.state = 'OPEN';
+      logger.warn(`[CircuitBreaker] ${this.name} state changed from HALF_OPEN to OPEN after test request failed`);
+    }
+  }
+}
+
+// Get or create a circuit breaker for an endpoint
+const getCircuitBreaker = (endpoint) => {
+  const key = endpoint.split('?')[0]; // Ignore query params for circuit breaking
+  
+  if (!circuitBreakers[key]) {
+    circuitBreakers[key] = new CircuitBreaker(key);
+  }
+  
+  return circuitBreakers[key];
+};
+
+// Add circuit breaker to request interceptor
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
@@ -81,6 +161,19 @@ axiosInstance.interceptors.request.use(
         config.headers.Authorization = `Bearer ${session.tokens.idToken.toString()}`;
       }
       
+      // Circuit breaker pattern
+      const url = config.url?.split('?')[0] || '';
+      const cb = getCircuitBreaker(url);
+      
+      if (!cb.canRequest()) {
+        logger.warn(`[axiosConfig] Circuit breaker open for ${url}, rejecting request`);
+        return Promise.reject(new Error(`Circuit breaker open for ${url}`));
+      }
+      
+      // Track this request
+      cb.recordRequest();
+      config._circuitBreakerHandled = true;
+      
       return config;
     } catch (error) {
       logger.error('[axiosConfig] Error in request interceptor:', error);
@@ -90,11 +183,38 @@ axiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Add response interceptor to handle token expiration
+// Add circuit breaker to response interceptor
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    try {
+      // Record success in circuit breaker if available
+      const url = response.config.url?.split('?')[0] || '';
+      const cb = getCircuitBreaker(url);
+      
+      if (response.config._circuitBreakerHandled) {
+        cb.recordSuccess();
+      }
+    } catch (e) {
+      // Don't let circuit breaker errors affect response
+      logger.error('[axiosConfig] Error in circuit breaker success handling:', e);
+    }
+    
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+    
+    try {
+      // Record failure in circuit breaker if available
+      if (originalRequest?._circuitBreakerHandled) {
+        const url = originalRequest.url?.split('?')[0] || '';
+        const cb = getCircuitBreaker(url);
+        cb.recordFailure();
+      }
+    } catch (e) {
+      // Don't let circuit breaker errors affect error response
+      logger.error('[axiosConfig] Error in circuit breaker failure handling:', e);
+    }
     
     // If error is 401 Unauthorized and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -112,6 +232,24 @@ axiosInstance.interceptors.response.use(
         
         return Promise.reject(refreshError);
       }
+    }
+    
+    // Handle ECONNABORTED errors (request timeouts and aborts)
+    if (error.code === 'ECONNABORTED' && !originalRequest._abortRetry) {
+      logger.warn('[axiosConfig] Request aborted or timed out, retrying...');
+      
+      // Mark as retry attempt to prevent infinite loops
+      originalRequest._abortRetry = true;
+      
+      // Increase timeout for retry
+      originalRequest.timeout = originalRequest.timeout ? originalRequest.timeout * 1.5 : 45000;
+      
+      // Add a delay before retrying
+      return new Promise(resolve => {
+        setTimeout(() => {
+          resolve(axiosInstance(originalRequest));
+        }, 1000);
+      });
     }
     
     // Handle tenant errors
@@ -192,15 +330,32 @@ enhancedAxiosInstance.interceptors.request.use(
 );
 
 // Simple retry mechanism
-const retryRequest = async (config) => {
-  const retryConfig = { ...config };
-  retryConfig.retryCount = (retryConfig.retryCount || 0) + 1;
+const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
+  let lastError;
   
-  if (retryConfig.retryCount > (retryConfig.maxRetries || 3)) {
-    throw new Error('Max retries exceeded');
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+      
+      // Don't retry 4xx client errors except timeout/abort
+      if (error.response && error.response.status >= 400 && error.response.status < 500 && 
+          error.code !== 'ECONNABORTED') {
+        throw error;
+      }
+      
+      // If this was the last attempt, throw the error
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Wait before trying again with exponential backoff
+      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+    }
   }
   
-  return axiosInstance(retryConfig);
+  throw lastError;
 };
 
 // Test functions

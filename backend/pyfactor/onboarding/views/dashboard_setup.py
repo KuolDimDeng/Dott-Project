@@ -23,7 +23,7 @@ from custom_auth.models import Tenant
 from custom_auth.utils import consolidate_user_tenants
 from users.models import UserProfile, Business
 from ..models import OnboardingProgress
-from ..tasks import setup_user_schema_task
+from ..tasks import setup_user_tenant_task
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -354,7 +354,7 @@ class DashboardSchemaSetupView(APIView):
             # Wrap the remaining database operations in a transaction
             with transaction.atomic():
                 # When creating the task, include the tenant ID and schema name
-                setup_task = setup_user_schema_task.apply_async(
+                setup_task = setup_user_tenant_task.apply_async(
                     args=[str(request.user.id), pending_setup.get('business_id')],
                     kwargs={
                         'force_setup': force_setup, 

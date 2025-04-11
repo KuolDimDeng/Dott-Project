@@ -1,28 +1,6 @@
 import { $$, ajaxForm, replaceToolbarState } from "./utils.js";
 
-const djDebug = document.getElementById("djDebug");
-
-function difference(setA, setB) {
-    const _difference = new Set(setA);
-    for (const elem of setB) {
-        _difference.delete(elem);
-    }
-    return _difference;
-}
-
-/**
- * Create an array of dataset properties from a NodeList.
- */
-function pluckData(nodes, key) {
-    const data = [];
-    nodes.forEach(function (obj) {
-        data.push(obj.dataset[key]);
-    });
-    return data;
-}
-
-function refreshHistory() {
-    const formTarget = djDebug.querySelector(".refreshHistory");
+const djDebug = document.getElementById("djDebug/* RLS: Use tenant_id filtering */ refreshHistory");
     const container = document.getElementById("djdtHistoryRequests");
     const oldIds = new Set(
         pluckData(container.querySelectorAll("tr[data-store-id]"), "storeId")
@@ -66,19 +44,9 @@ function refreshHistory() {
                 container
                     .querySelectorAll("tr[data-store-id]")
                     .forEach((row) => {
-                        row.classList.remove("flash-new");
-                    });
-            }, 2000);
-        });
-}
-
-function switchHistory(newStoreId) {
-    const formTarget = djDebug.querySelector(
-        ".switchHistory[data-store-id='" + newStoreId + "']"
+                        row.classList.remove("flash-new/* RLS: Use tenant_id filtering */ switchHistory[data-store-id='" + newStoreId + "']"
     );
-    const tbody = formTarget.closest("tbody");
-
-    const highlighted = tbody.querySelector(".djdt-highlighted");
+    const tbody = formTarget.closest("tbody/* RLS: Use tenant_id filtering */ djdt-highlighted");
     if (highlighted) {
         highlighted.classList.remove("djdt-highlighted");
     }
@@ -95,12 +63,12 @@ function switchHistory(newStoreId) {
     });
 }
 
-$$.on(djDebug, "click", ".switchHistory", function (event) {
+$$.on(djDebug, "click/* RLS: Use tenant_id filtering */ switchHistory", function (event) {
     event.preventDefault();
     switchHistory(this.dataset.storeId);
 });
 
-$$.on(djDebug, "click", ".refreshHistory", function (event) {
+$$.on(djDebug, "click/* RLS: Use tenant_id filtering */ refreshHistory", function (event) {
     event.preventDefault();
     refreshHistory();
 });

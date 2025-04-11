@@ -29,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 def get_all_tenant_schemas():
     """Get all tenant schemas from the database."""
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     with connection.cursor() as cursor:
         cursor.execute("""
             SELECT schema_name FROM information_schema.schemata
@@ -36,7 +39,7 @@ def get_all_tenant_schemas():
         """)
         return [row[0] for row in cursor.fetchall()]
 
-def check_column_exists(cursor, schema_name, table_name, column_name):
+def check_column_exists(tenant_id: uuid.UUID:
     """Check if a column exists in a table."""
     cursor.execute(f"""
         SELECT EXISTS (
@@ -48,7 +51,7 @@ def check_column_exists(cursor, schema_name, table_name, column_name):
     """, [schema_name, table_name, column_name])
     return cursor.fetchone()[0]
 
-def add_updated_at_column(cursor, schema_name):
+def add_updated_at_column(tenant_id: uuid.UUID:
     """Add updated_at column to users_userprofile table in the specified schema."""
     # Check if the column already exists
     if check_column_exists(cursor, schema_name, 'users_userprofile', 'updated_at'):

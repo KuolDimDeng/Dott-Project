@@ -26,13 +26,17 @@ def fix_public_userprofile_business_id():
     """
     Fix the business_id column type in users_userprofile table in the public schema.
     Changes the column type from bigint to uuid.
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     """
     logger.info("Starting business_id column type fix in public.users_userprofile table...")
     
     try:
         with connection.cursor() as cursor:
             # Set the search path to public
-            cursor.execute("SET search_path TO public")
+            cursor.execute("-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public")
             
             # Check if the users_userprofile table exists
             cursor.execute("""

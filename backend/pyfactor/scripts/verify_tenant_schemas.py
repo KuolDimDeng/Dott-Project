@@ -56,7 +56,7 @@ def list_all_tenants():
         logger.info(f"Found {len(tenants)} tenants in the database")
         
         for tenant in tenants:
-            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: {tenant.schema_name})")
+            logger.info(f"Tenant: {tenant.name} (ID: {tenant.id}, Schema: { tenant.id})")
         
         return tenants
     except Exception as e:
@@ -85,7 +85,7 @@ def get_public_schema_columns(table_name):
         if conn:
             conn.close()
 
-def get_tenant_schema_columns(schema_name, table_name):
+def get_tenant_schema_columns(tenant_id: uuid.UUID:
     """Get column definitions from a tenant schema for a specific table"""
     try:
         conn = get_db_connection()
@@ -107,13 +107,15 @@ def get_tenant_schema_columns(schema_name, table_name):
         if conn:
             conn.close()
 
-def fix_column_type(schema_name, table_name, column_name, target_type):
+def fix_column_type(tenant_id: uuid.UUID:
     """Fix the data type of a column in a schema"""
     try:
         conn = get_db_connection()
         with conn.cursor() as cursor:
             # Set search path to the tenant schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Alter the column type
             logger.info(f"Fixing column type in {schema_name}.{table_name}.{column_name} to {target_type}")
@@ -152,6 +154,9 @@ def verify_tenant_schemas(fix=False, force=False):
     tables_to_check = ['users_userprofile']
     
     # Get column definitions from public schema
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     public_columns = {}
     for table in tables_to_check:
         public_columns[table] = get_public_schema_columns(table)
@@ -161,16 +166,16 @@ def verify_tenant_schemas(fix=False, force=False):
     issues_fixed = 0
     
     for tenant in tenants:
-        logger.info(f"Verifying tenant: {tenant.name} (Schema: {tenant.schema_name})")
+        logger.info(f"Verifying tenant: {tenant.name} (Schema: { tenant.id})")
         
         for table in tables_to_check:
-            tenant_columns = get_tenant_schema_columns(tenant.schema_name, table)
+            tenant_columns = get_tenant_schema_columns( tenant.id, table)
             
             if not tenant_columns:
-                logger.warning(f"Table {table} not found in tenant schema {tenant.schema_name}")
+                logger.warning(f"Table {table} not found in tenant schema { tenant.id}")
                 continue
             
-            logger.info(f"Found {len(tenant_columns)} columns in {tenant.schema_name}.{table}")
+            logger.info(f"Found {len(tenant_columns)} columns in { tenant.id}.{table}")
             
             # Create dictionaries for easier comparison
             public_col_dict = {col[0]: col for col in public_columns[table]}
@@ -180,7 +185,7 @@ def verify_tenant_schemas(fix=False, force=False):
             for col_name in public_col_dict:
                 if col_name not in tenant_col_dict:
                     issues_found += 1
-                    logger.warning(f"Column {col_name} exists in public.{table} but not in {tenant.schema_name}.{table}")
+                    logger.warning(f"Column {col_name} exists in public.{table} but not in { tenant.id}.{table}")
             
             # Check for type mismatches
             for col_name, tenant_col in tenant_col_dict.items():
@@ -190,13 +195,13 @@ def verify_tenant_schemas(fix=False, force=False):
                     # Compare data types
                     if tenant_col[1] != public_col[1]:  # data_type is at index 1
                         issues_found += 1
-                        logger.warning(f"Column type mismatch in {tenant.schema_name}.{table}.{col_name}: {tenant_col[1]} vs public.{table}.{col_name}: {public_col[1]}")
+                        logger.warning(f"Column type mismatch in { tenant.id}.{table}.{col_name}: {tenant_col[1]} vs public.{table}.{col_name}: {public_col[1]}")
                         
                         if fix:
-                            if fix_column_type(tenant.schema_name, table, col_name, public_col[1]):
+                            if fix_column_type( tenant.id, table, col_name, public_col[1]):
                                 issues_fixed += 1
                             else:
-                                logger.error(f"Failed to fix column type for {tenant.schema_name}.{table}.{col_name}")
+                                logger.error(f"Failed to fix column type for { tenant.id}.{table}.{col_name}")
     
     if issues_found == 0:
         logger.info("No schema issues found in any tenant")

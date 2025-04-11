@@ -23,7 +23,9 @@ export async function GET(request) {
         id UUID PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         owner_id VARCHAR(255),
-        schema_name VARCHAR(255) NOT NULL,
+        /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(255) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removed,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         rls_enabled BOOLEAN DEFAULT TRUE,
@@ -32,7 +34,8 @@ export async function GET(request) {
       );
       
       CREATE INDEX IF NOT EXISTS idx_tenant_owner_id ON public.custom_auth_tenant(owner_id);
-      CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON public.custom_auth_tenant(schema_name);
+      /* RLS: No need for schema_name index */
+      -- CREATE INDEX IF NOT EXISTS idx_tenant_schema_name ON public.custom_auth_tenant(schema_name);
     `;
     
     await pool.query(createTableQuery);

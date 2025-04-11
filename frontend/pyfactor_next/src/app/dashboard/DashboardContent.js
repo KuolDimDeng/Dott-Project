@@ -1,7 +1,7 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/DashboardContent.js
 'use client';
 
-import React, { useState, useCallback, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo } from 'react';
 import useClientEffect from '@/hooks/useClientEffect';
 import { useStore } from '@/store/authStore';
 import { Box, Container, Typography, Alert, Button } from '@/components/ui/TailwindComponents';
@@ -675,10 +675,21 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   // Handler for user profile click
   const handleUserProfileClick = useCallback(() => {
+    console.log('handleUserProfileClick called');
+    console.log('Before state change - showMyAccount:', showMyAccount, 'showHelpCenter:', showHelpCenter);
+    
+    // Reset other states to ensure clean slate
+    resetAllStates();
+    
+    // Set My Account to show
     setShowMyAccount(true);
     setShowHelpCenter(false);
+    
+    console.log('After state change - should show My Account');
+    
     handleClose();
-  }, [setShowMyAccount, setShowHelpCenter, handleClose]);
+    
+  }, [resetAllStates, setShowMyAccount, setShowHelpCenter, handleClose, showMyAccount, showHelpCenter]);
 
   // Handler for Settings click
   const handleSettingsClick = useCallback(() => {
@@ -1063,6 +1074,11 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     );
   };
 
+  // Memoize userData to prevent new object references on each render
+  const memoizedUserData = useMemo(() => {
+    return userData || initialUserData;
+  }, [userData, initialUserData]);
+
   return (
     <ErrorBoundary>
       <NotificationProvider>
@@ -1078,13 +1094,21 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
               setShowMyAccount={setShowMyAccount}
               setShowHelpCenter={setShowHelpCenter}
               userData={userData}
+              setUserData={setUserData}
               drawerOpen={drawerOpen}
               handleDrawerToggle={handleDrawerToggle}
               resetAllStates={resetAllStates}
               setShowHome={setShowHome}
               setShowCreateMenu={setShowCreateMenu}
               showCreateMenu={showCreateMenu}
-              handleClose={handleCloseCreateMenu}
+              handleClick={handleClick}
+              handleClose={handleClose}
+              handleUserProfileClick={handleUserProfileClick}
+              handleSettingsClick={handleSettingsClick}
+              handleHelpClick={handleHelpClick}
+              handlePrivacyClick={handlePrivacyClick}
+              handleTermsClick={handleTermsClick}
+              handleLogout={handleSignOut}
               handleCloseCreateMenu={handleCloseCreateMenu}
               handleMenuItemClick={handleMenuItemClick}
               setShowForm={setShowForm}
@@ -1108,17 +1132,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
               
               <div 
                 ref={mainContentRef}
-                className="flex-grow bg-[#F8FAFC] min-h-[calc(100vh-64px)] p-6" 
-                style={{
-                  transition: 'margin-left 0.3s ease, width 0.3s ease',
-                  marginLeft: drawerOpen ? `${drawerWidth}px` : '0px',
-                  width: drawerOpen ? `calc(100% - ${drawerWidth}px)` : '100%',
-                }}
+                className={`flex-grow bg-[#F8FAFC] min-h-[calc(100vh-64px)] p-6 transition-all duration-300 ease-in-out ${
+                  drawerOpen 
+                    ? `ml-[${drawerWidth}px] w-[calc(100%-${drawerWidth}px)]` 
+                    : 'ml-0 w-full'
+                }`}
               >
                 <Suspense fallback={<LoadingComponent />}>
                   <RenderMainContent 
                     view={view}
-                    userData={userData || initialUserData}
+                    userData={memoizedUserData}
                     showKPIDashboard={showKPIDashboard}
                     showMainDashboard={showMainDashboard}
                     showHome={showHome}
@@ -1145,6 +1168,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
                     showVendorManagement={view === 'vendors'}
                     showTransactionForm={view === 'transactions'}
                     handleCreateCustomer={() => console.log('Create customer flow')}
+                    showMyAccount={showMyAccount}
+                    showHelpCenter={showHelpCenter}
                   />
                 </Suspense>
               </div>

@@ -62,6 +62,7 @@ const DashAppBar = ({
   showCreateMenu,
   handleMenuItemClick,
   handleCloseCreateMenu,
+  setUserData, // Add setUserData to the component props
 }) => {
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
@@ -437,16 +438,17 @@ const DashAppBar = ({
         profileButtonRef.current &&
         !profileButtonRef.current.contains(event.target)
       ) {
+        console.log('Clicking outside user menu, closing menu');
         handleClose();
       }
     }
 
     // Add click event listener to the document
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside, true);
 
     // Cleanup the event listener on component unmount
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [openMenu, handleClose]);
 
@@ -1678,6 +1680,60 @@ const DashAppBar = ({
     return 'Dashboard';
   }, [businessName, profileData]);
 
+  // Function to get the user's email from localStorage, cookies, and Cognito tokens
+  const getUserEmail = () => {
+    // Check localStorage first
+    const authUser = localStorage.getItem('authUser');
+    const userEmail = localStorage.getItem('userEmail');
+    
+    if (authUser && authUser !== 'user@example.com') {
+      return authUser;
+    }
+    
+    if (userEmail && userEmail !== 'user@example.com') {
+      return userEmail;
+    }
+    
+    // Try to get from cookies
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if ((name === 'email' || name === 'userEmail') && value && value !== 'user@example.com') {
+        return decodeURIComponent(value);
+      }
+    }
+    
+    // Try to decode from idToken if available
+    const idToken = localStorage.getItem('idToken');
+    if (idToken) {
+      try {
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        if (payload.email && payload.email !== 'user@example.com') {
+          return payload.email;
+        }
+      } catch (error) {
+        console.error('Error parsing ID token:', error);
+      }
+    }
+    
+    return null;
+  };
+
+  // Update email in userData when component mounts
+  useEffect(() => {
+    const realEmail = getUserEmail();
+    if (realEmail && setUserData) { // Check if setUserData is available
+      logger.info('[AppBar] Found real email from auth sources:', realEmail);
+      setUserData(prevData => ({
+        ...prevData,
+        email: realEmail
+      }));
+    } else if (realEmail) {
+      // Log that we found an email but can't update userData
+      logger.info('[AppBar] Found real email but setUserData not provided:', realEmail);
+    }
+  }, []);
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
@@ -1694,8 +1750,8 @@ const DashAppBar = ({
             <Image 
               src="/static/images/PyfactorDashboard.png"
               alt="Pyfactor Dashboard Logo"
-              width={140}
-              height={40}
+              width={100}
+              height={90}
               className="object-contain"
               priority
             />
@@ -1828,11 +1884,15 @@ const DashAppBar = ({
               {/* User profile button */}
               <button
                 ref={profileButtonRef}
-                onClick={handleClick}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent event bubbling
+                  console.log('User profile button clicked');
+                  handleClick(e);
+                }}
                 aria-controls={openMenu ? 'user-menu' : undefined}
                 aria-haspopup="true"
                 aria-expanded={openMenu ? 'true' : undefined}
-                className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
+                className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full relative"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
                   {displayInitials ||
@@ -1875,13 +1935,151 @@ const DashAppBar = ({
               
               {/* User menu */}
               {openMenu && (
-                <div
-                  ref={userMenuRef}
-                  id="user-menu"
-                  className="absolute right-4 mt-2 top-14 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                >
-                  {/* ... keep the existing menu content ... */}
-                </div>
+                <>
+                  {/* Add an overlay to catch clicks outside but ensure menu visibility */}
+                  <div 
+                    className="fixed inset-0 z-[999]" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClose();
+                    }}
+                  />
+                  
+                  <div
+                    ref={userMenuRef}
+                    id="user-menu"
+                    className="absolute right-4 mt-2 top-14 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-[1000]"
+                    style={{
+                      position: 'absolute',
+                      zIndex: 9999
+                    }}
+                    onClick={(e) => e.stopPropagation()} // Prevent clicks from closing the menu
+                  >
+                    {/* User info header */}
+                    <div className="p-4 border-b border-gray-100">
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium">
+                          {userInitials || (userData?.email?.charAt(0).toUpperCase() || 'U')}
+                        </div>
+                        <div className="ml-3">
+                          <p className="text-sm font-medium text-gray-900">
+                            {userData?.name || userData?.email || 'User'}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {userData?.email || localStorage.getItem('authUser') || localStorage.getItem('userEmail') || getUserEmail() || 'user@example.com'}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Business name if available */}
+                      {businessName && (
+                        <div className="mt-2 text-xs text-gray-700">
+                          Business: {businessName}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Menu items */}
+                    <div className="py-1">
+                      {/* My Account */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => {
+                          console.log('My Account button clicked');
+                          console.log('handleUserProfileClick:', typeof handleUserProfileClick);
+                          console.log('Current userData:', userData);
+                          handleClose();
+                          if (typeof handleUserProfileClick === 'function') {
+                            handleUserProfileClick();
+                            console.log('handleUserProfileClick function called');
+                          } else {
+                            console.error('handleUserProfileClick is not a function');
+                          }
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        My Account
+                      </button>
+                      
+                      {/* Settings */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => {
+                          handleClose();
+                          handleSettingsClick();
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Settings
+                      </button>
+                      
+                      {/* Help Center */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => {
+                          handleClose();
+                          handleHelpClick();
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Help
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1"></div>
+                      
+                      {/* Privacy Policy */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => {
+                          handleClose();
+                          handlePrivacyClick();
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                        Privacy Policy
+                      </button>
+                      
+                      {/* Terms of Service */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        onClick={() => {
+                          handleClose();
+                          handleTermsClick();
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Terms of Service
+                      </button>
+                      
+                      <div className="border-t border-gray-100 my-1"></div>
+                      
+                      {/* Sign Out */}
+                      <button
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
+                        onClick={() => {
+                          handleClose();
+                          handleLogout();
+                        }}
+                      >
+                        <svg className="w-5 h-5 mr-3 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>

@@ -129,7 +129,7 @@ def fix_middleware():
                                 'pending_schema_setup' in profile.metadata and
                                 profile.metadata['pending_schema_setup'].get('deferred', False) is True):
                                 should_defer = True
-                                logger.debug(f"Found deferred schema setup in profile metadata for tenant: {tenant.schema_name}")
+                                logger.debug(f"Found deferred schema setup in profile metadata for tenant: { tenant.id}")
                         except Exception as e:
                             logger.warning(f"Error checking profile metadata for deferred flag: {str(e)}")
                             # Continue with execution even if there's an error checking metadata"""
@@ -142,7 +142,7 @@ def fix_middleware():
                                 'pending_schema_setup' in profile.metadata and
                                 profile.metadata['pending_schema_setup'].get('deferred', False) is True):
                                 should_defer = True
-                                logger.debug(f"Found deferred schema setup in profile metadata for tenant: {tenant.schema_name}")
+                                logger.debug(f"Found deferred schema setup in profile metadata for tenant: { tenant.id}")
                         except Exception as e:
                             # Check if the error is about the updated_at column
                             if "column users_userprofile.updated_at does not exist" in str(e):

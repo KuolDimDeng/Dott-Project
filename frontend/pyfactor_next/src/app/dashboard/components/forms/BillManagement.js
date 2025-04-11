@@ -32,13 +32,14 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
   const fetchBills = async () => {
     try {
       const response = await axiosInstance.get('/api/bills/');
-      setBills(response.data);
+      setBills(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching bills:', error);
       if (error.response) {
         console.error('Error response:', error.response.data);
       }
       toast.error('Failed to fetch bills');
+      setBills([]);
     }
   };
 
@@ -455,7 +456,7 @@ const BillManagement = ({ newBill: isNewBill = false }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {bills.length > 0 ? (
+              {Array.isArray(bills) && bills.length > 0 ? (
                 bills.map((bill) => (
                   <tr key={bill.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{bill.bill_number}</td>

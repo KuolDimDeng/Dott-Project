@@ -36,6 +36,9 @@ from django.db import connections, connection
 from django.conf import settings
 from django.apps import apps
 
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -53,7 +56,7 @@ def get_db_connection():
     conn.autocommit = True
     return conn
 
-def schema_exists(schema_name):
+def schema_exists(tenant_id: uuid.UUID:
     """Check if the schema exists"""
     try:
         conn = get_db_connection()
@@ -70,7 +73,7 @@ def schema_exists(schema_name):
         if conn:
             conn.close()
 
-def list_tables_in_schema(schema_name):
+def list_tables_in_schema(tenant_id: uuid.UUID:
     """List all tables in the schema"""
     try:
         conn = get_db_connection()
@@ -94,7 +97,7 @@ def list_tables_in_schema(schema_name):
         if conn:
             conn.close()
 
-def run_migrations_for_tenant_apps(schema_name, force=False):
+def run_migrations_for_tenant_apps(tenant_id: uuid.UUID:
     """Run migrations for all TENANT_APPS on the specified schema"""
     if not schema_exists(schema_name):
         logger.error(f"Schema {schema_name} does not exist")
@@ -116,7 +119,9 @@ def run_migrations_for_tenant_apps(schema_name, force=False):
         
         # Set search path to the tenant schema
         with conn.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}",public')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
             logger.info(f"Set search path to {schema_name}")
             
             # Get the current search path to verify
@@ -139,7 +144,9 @@ def run_migrations_for_tenant_apps(schema_name, force=False):
                 
                 # Set the search path for the default connection
                 with connection.cursor() as django_cursor:
-                    django_cursor.execute(f'SET search_path TO "{schema_name}",public')
+                    django_# RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id),public')
                 
                 # First run migrations for the users app specifically
                 logger.info("Running migrations for users app first")

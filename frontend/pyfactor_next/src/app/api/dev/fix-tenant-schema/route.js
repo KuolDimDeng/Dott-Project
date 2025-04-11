@@ -79,7 +79,8 @@ export async function GET(request) {
     return NextResponse.json({
       success: true,
       tenant_id: tenantId,
-      schema_name: schemaName,
+      /* RLS: tenant_id instead of schema_name */
+    tenant_id: tenant.id,
       tables_created: tablesCreated,
       message: `Successfully fixed schema for tenant: ${tenantId}`
     });
@@ -136,7 +137,9 @@ async function createPublicTenantTable(pool) {
       id UUID PRIMARY KEY,
       name VARCHAR(255) NOT NULL,
       owner_id VARCHAR(255),
-      schema_name VARCHAR(255) NOT NULL UNIQUE,
+      /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(255) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removed,
       created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
       rls_enabled BOOLEAN DEFAULT TRUE,
@@ -216,7 +219,9 @@ async function createTenantTables(pool, schemaName) {
     -- Tenant table
     CREATE TABLE IF NOT EXISTS "${schemaName}"."custom_auth_tenant" (
       id UUID PRIMARY KEY,
-      schema_name VARCHAR(63) NOT NULL UNIQUE,
+      /* RLS: schema_name deprecated */
+    /* RLS: schema_name deprecated, will be removed */
+      schema_name VARCHAR(63) NULL /* deprecated */NULL -- Kept for backward compatibility, will be removed,
       name VARCHAR(100) NOT NULL,
       created_on TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
       is_active BOOLEAN NOT NULL DEFAULT TRUE,

@@ -76,6 +76,96 @@ function validateAndRepairUuid(uuid) {
 }
 
 /**
+ * Ensure the custom_auth_user table exists in the public schema
+ * @param {object} pool - Database connection pool
+ * @returns {Promise<boolean>} Whether the table exists or was created successfully
+ */
+async function ensureCustomAuthUserTable(pool) {
+  try {
+    // Check if table exists
+    const tableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'custom_auth_user'
+      );
+    `);
+    
+    if (tableExists.rows[0].exists) {
+      logger.info('custom_auth_user table already exists');
+      return true;
+    }
+    
+    // Create the table if it doesn't exist
+    logger.warn('custom_auth_user table does not exist, creating it');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.custom_auth_user (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        email VARCHAR(255) NOT NULL UNIQUE,
+        first_name VARCHAR(255),
+        last_name VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        tenant_id UUID,
+        is_active BOOLEAN DEFAULT TRUE
+      );
+    `);
+    
+    logger.info('Successfully created custom_auth_user table');
+    return true;
+  } catch (error) {
+    logger.error('Error ensuring custom_auth_user table exists:', error);
+    return false;
+  }
+}
+
+/**
+ * Ensure the custom_auth_tenant table exists in the public schema
+ * @param {object} pool - Database connection pool
+ * @returns {Promise<boolean>} Whether the table exists or was created successfully
+ */
+async function ensureCustomAuthTenantTable(pool) {
+  try {
+    // Check if table exists
+    const tableExists = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'custom_auth_tenant'
+      );
+    `);
+    
+    if (tableExists.rows[0].exists) {
+      logger.info('custom_auth_tenant table already exists');
+      return true;
+    }
+    
+    // Create the table if it doesn't exist
+    logger.warn('custom_auth_tenant table does not exist, creating it');
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS public.custom_auth_tenant (
+        id UUID PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        owner_id VARCHAR(255),
+        schema_name VARCHAR(255),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        rls_enabled BOOLEAN DEFAULT TRUE,
+        rls_setup_date TIMESTAMP WITH TIME ZONE NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        tenant_id UUID
+      );
+    `);
+    
+    logger.info('Successfully created custom_auth_tenant table');
+    return true;
+  } catch (error) {
+    logger.error('Error ensuring custom_auth_tenant table exists:', error);
+    return false;
+  }
+}
+
+/**
  * Find user by email in the database
  * @param {object} pool - Database connection pool
  * @param {string} email - User email to search for
@@ -85,18 +175,32 @@ async function findUserByEmail(pool, email) {
   if (!email) return null;
   
   try {
-    const query = `
-      SELECT id, email, tenant_id
-      FROM custom_auth_user
-      WHERE email = $1
-      LIMIT 1;
-    `;
+    // First ensure the custom_auth_user table exists
+    const tableReady = await ensureCustomAuthUserTable(pool);
     
-    const result = await pool.query(query, [email]);
+    if (!tableReady) {
+      logger.warn('Could not ensure custom_auth_user table, skipping user lookup');
+      return null;
+    }
     
-    if (result.rows && result.rows.length > 0) {
-      logger.info('Found existing user by email:', result.rows[0]);
-      return result.rows[0];
+    try {
+      const query = `
+        SELECT id, email, tenant_id
+        FROM custom_auth_user
+        WHERE email = $1
+        LIMIT 1;
+      `;
+      
+      const result = await pool.query(query, [email]);
+      
+      if (result.rows && result.rows.length > 0) {
+        logger.info('Found existing user by email:', result.rows[0]);
+        return result.rows[0];
+      }
+    } catch (queryError) {
+      logger.error('Error executing query on custom_auth_user:', queryError);
+      // Return null instead of letting the error propagate
+      return null;
     }
     
     return null;
@@ -116,18 +220,32 @@ async function findTenantById(pool, tenantId) {
   if (!tenantId) return null;
   
   try {
-    const query = `
-      SELECT id, name, schema_name, is_active
-      FROM custom_auth_tenant
-      WHERE id = $1
-      LIMIT 1;
-    `;
+    // First ensure the custom_auth_tenant table exists
+    const tableReady = await ensureCustomAuthTenantTable(pool);
     
-    const result = await pool.query(query, [tenantId]);
+    if (!tableReady) {
+      logger.warn('Could not ensure custom_auth_tenant table, skipping tenant lookup');
+      return null;
+    }
     
-    if (result.rows && result.rows.length > 0) {
-      logger.info('Found existing tenant by ID:', result.rows[0]);
-      return result.rows[0];
+    try {
+      const query = `
+        SELECT id, name, is_active /* RLS: Removed schema_name */
+        FROM custom_auth_tenant
+        WHERE id = $1
+        LIMIT 1;
+      `;
+      
+      const result = await pool.query(query, [tenantId]);
+      
+      if (result.rows && result.rows.length > 0) {
+        logger.info('Found existing tenant by ID:', result.rows[0]);
+        return result.rows[0];
+      }
+    } catch (queryError) {
+      logger.error('Error executing query on custom_auth_tenant:', queryError);
+      // Return null instead of letting the error propagate
+      return null;
     }
     
     return null;
@@ -274,7 +392,6 @@ export async function POST(request) {
                 success: true,
                 tenant_id: existingTenant.id,
                 name: existingTenant.name,
-                schema_name: existingTenant.schema_name,
                 direct_db: true,
                 existing: true,
                 message: 'Using existing tenant for authenticated user'
@@ -349,7 +466,6 @@ export async function POST(request) {
               success: true,
               tenant_id: existingTenant.id,
               name: existingTenant.name,
-              schema_name: existingTenant.schema_name,
               direct_db: true,
               existing: true,
               message: 'Using existing tenant'
@@ -391,7 +507,6 @@ export async function POST(request) {
               success: true,
               tenant_id: existingTenant.id,
               name: existingTenant.name,
-              schema_name: existingTenant.schema_name,
               direct_db: true,
               existing: true,
               message: 'Found existing tenant for user email'
@@ -412,8 +527,8 @@ export async function POST(request) {
         
         // Tenant doesn't exist, we need to use the schema manager to create it
         // Call the schema manager API to create the schema
-        const schemaManagerUrl = new URL('/api/tenant/schema-manager', request.url).toString();
-        logger.info('Calling schema manager API:', schemaManagerUrl);
+        const tenantManagerUrl = new URL('/api/tenant/tenant-manager', request.url).toString();
+        logger.info('Calling tenant manager API:', tenantManagerUrl);
         
         // Check if explicit creation was requested
         const forceCreate = body.forceCreate === true;
@@ -424,21 +539,22 @@ export async function POST(request) {
         // Log the tenant creation decision
         logger.info(`${shouldCreateTenant ? 'Creating' : 'Validating'} tenant with ID: ${repairedTenantId}`);
         
-        const schemaResponse = await fetch(schemaManagerUrl, {
+        const tenantResponse = await fetch(tenantManagerUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tenantId: repairedTenantId,
-            businessName,
+            businessName: businessName || cognitoUser?.['custom:businessname'] || 
+              (typeof window !== 'undefined' && localStorage.getItem('businessName')), 
             forceCreate: shouldCreateTenant // Only create if explicitly requested
           })
         });
         
-        if (schemaResponse.ok) {
-          const schemaResult = await schemaResponse.json();
+        if (tenantResponse.ok) {
+          const tenantResult = await tenantResponse.json();
           
-          if (schemaResult.success) {
-            logger.info('Schema manager created schema successfully:', schemaResult);
+          if (tenantResult.success) {
+            logger.info('Tenant manager created schema successfully:', tenantResult);
             
             // Now update the user's tenant_id if the user exists
             if (userEmail) {
@@ -490,22 +606,30 @@ export async function POST(request) {
               maxAge: 60 * 60 * 24 * 365, // 1 year
             });
             
+            // Store business name in cookies for future requests
+            if (businessName) {
+              await cookieStore.set('businessName', businessName, {
+                path: '/',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 365, // 1 year
+              });
+            }
+            
             return NextResponse.json({
               success: true,
-              tenant_id: schemaResult.tenantId,
-              name: schemaResult.tenantInfo?.name || businessName,
-              schema_name: schemaResult.schemaName,
+              tenant_id: tenantResult.tenantId,
+              name: tenantResult.tenantInfo?.name || businessName || cognitoUser?.['custom:businessname'] || '',
               direct_db: true,
-              message: 'Tenant initialized successfully via schema manager'
+              message: 'Tenant initialized successfully via tenant manager'
             });
           } else {
-            logger.error('Schema manager failed to create schema:', schemaResult);
+            logger.error('Tenant manager failed to create schema:', tenantResult);
             // Continue with fallback approaches
           }
         } else {
-          // Schema manager API call failed
-          const errorText = await schemaResponse.text();
-          logger.error('Schema manager API error:', errorText);
+          // Tenant manager API call failed
+          const errorText = await tenantResponse.text();
+          logger.error('Tenant manager API error:', errorText);
           // Continue with fallback approaches
         }
       } catch (dbQueryError) {
@@ -544,17 +668,15 @@ export async function POST(request) {
       maxAge: 60 * 60 * 24 * 365, // 1 year
     });
     
-    return NextResponse.json(
-      {
-        success: true,
-        tenant_id: repairedTenantId,
-        name: businessName,
-        status: 'active',
-        fallback: true,
-        message: 'Tenant initialized successfully via fallback method'
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      success: true,
+      tenant_id: repairedTenantId,
+      name: businessName || cognitoUser?.['custom:businessname'] || 
+        (typeof window !== 'undefined' && localStorage.getItem('businessName')) || '',
+      status: 'active',
+      fallback: true,
+      message: 'Tenant initialized successfully via fallback method'
+    });
   } catch (error) {
     logger.error('Error initializing tenant:', error);
     

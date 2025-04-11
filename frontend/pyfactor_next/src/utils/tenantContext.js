@@ -1,12 +1,16 @@
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
 import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
+import { useCallback, useState, useEffect } from 'react';
 
 /**
  * TenantContext - Single source of truth for tenant information
  * This module centralizes all tenant-related functionality and provides
  * a consistent interface for accessing tenant information across the application.
  */
+
+// Define isBrowser constant for SSR detection
+const isBrowser = typeof window !== 'undefined';
 
 /**
  * Get the current tenant context (ID and schema name)
@@ -179,4 +183,205 @@ export const initializeTenantContext = async () => {
     setTenantContext(fallbackTenantId);
     return fallbackTenantId;
   }
+};
+
+/**
+ * Fetch tenant information from the server
+ * @param {string} tenantId - The tenant ID to fetch info for
+ * @returns {Promise<Object|null>} Tenant information or null if failed
+ */
+export const fetchTenantInfo = async (tenantId) => {
+  if (!tenantId) return null;
+  
+  try {
+    logger.debug(`[TenantContext] Fetching tenant info for: ${tenantId}`);
+    
+    // Call the tenant info API endpoint
+    const response = await fetch(`/api/tenant/info?tenantId=${tenantId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant-ID': tenantId
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Store tenant info in localStorage for easier access
+      if (isBrowser && data.tenant) {
+        localStorage.setItem('tenantData', JSON.stringify(data.tenant));
+        localStorage.setItem('tenantName', data.tenant.name || '');
+      }
+      
+      logger.debug(`[TenantContext] Tenant info fetched:`, data.tenant);
+      return data.tenant;
+    } else {
+      logger.warn(`[TenantContext] Failed to fetch tenant info: ${response.status}`);
+      return null;
+    }
+  } catch (error) {
+    logger.error(`[TenantContext] Error fetching tenant info:`, error);
+    return null;
+  }
+};
+
+/**
+ * Gets the tenant ID from the access token JWT
+ * 
+ * @param {string} token - The JWT access token
+ * @returns {string|null} - The tenant ID or null if not found
+ */
+export function getTenantFromToken(token) {
+  try {
+    if (!token) {
+      logger.warn('[getTenantFromToken] No token provided');
+      return null;
+    }
+    
+    // JWT tokens are in format: header.payload.signature
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      logger.warn('[getTenantFromToken] Invalid token format');
+      return null;
+    }
+    
+    // Decode the payload (second part)
+    const payload = JSON.parse(atob(parts[1]));
+    
+    // Look for the tenant ID in common JWT claim locations
+    const tenantId = payload['custom:tenantId'] || 
+                     payload.tenantId || 
+                     (payload['https://pyfactor.com/'] && payload['https://pyfactor.com/'].tenantId) ||
+                     null;
+    
+    if (tenantId) {
+      logger.debug(`[getTenantFromToken] Found tenant ID in token: ${tenantId}`);
+    } else {
+      logger.warn('[getTenantFromToken] No tenant ID found in token');
+    }
+    
+    return tenantId;
+  } catch (error) {
+    logger.error('[getTenantFromToken] Error extracting tenant from token:', error);
+    return null;
+  }
+}
+
+/**
+ * TenantContext hook for React components
+ * Provides tenant context and initialization capabilities
+ */
+export const useTenantContext = () => {
+  const [tenantId, setTenantId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [tenantInfo, setTenantInfo] = useState(null);
+
+  // Initialize tenant context function that can be called from middleware or components
+  const initializeTenant = useCallback(async () => {
+    try {
+      if (!isBrowser) {
+        return;
+      }
+      
+      setLoading(true);
+      
+      // First check if we already have a tenant ID
+      let currentTenantId = getTenantId();
+      if (currentTenantId) {
+        logger.info(`[TenantContext] Using existing tenant ID: ${currentTenantId}`);
+        setTenantId(currentTenantId);
+        
+        // Ensure database tables exist for subscription data by calling the create-tables endpoint
+        try {
+          logger.debug('[TenantContext] Ensuring database tables exist');
+          const tableResponse = await fetch('/api/tenant/create-tables', {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Tenant-ID': currentTenantId
+            }
+          });
+          
+          if (tableResponse.ok) {
+            const tableData = await tableResponse.json();
+            logger.debug('[TenantContext] Table check result:', tableData);
+          } else {
+            logger.warn('[TenantContext] Failed to verify database tables:', await tableResponse.text());
+          }
+        } catch (tableError) {
+          logger.warn('[TenantContext] Error checking database tables:', tableError);
+          // Continue anyway as this is non-critical
+        }
+        
+        // Initialize tenant database structures by calling the initialize-tenant endpoint
+        try {
+          logger.debug('[TenantContext] Initializing tenant database structures');
+          const initResponse = await fetch('/api/tenant/initialize-tenant', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Tenant-ID': currentTenantId
+            },
+            body: JSON.stringify({ tenantId: currentTenantId })
+          });
+          
+          if (initResponse.ok) {
+            const initData = await initResponse.json();
+            logger.debug('[TenantContext] Tenant initialization result:', initData);
+          } else {
+            logger.warn('[TenantContext] Failed to initialize tenant database:', await initResponse.text());
+          }
+        } catch (initError) {
+          logger.warn('[TenantContext] Error initializing tenant database:', initError);
+          // Continue anyway as this is non-critical
+        }
+        
+        const info = await fetchTenantInfo(currentTenantId);
+        if (info) {
+          setTenantInfo(info);
+        }
+        setLoading(false);
+        return currentTenantId;
+      }
+      
+      // Try to get tenant from auth session
+      currentTenantId = await getTenantFromToken();
+      
+      if (currentTenantId) {
+        setTenantId(currentTenantId);
+        const info = await fetchTenantInfo(currentTenantId);
+        if (info) {
+          setTenantInfo(info);
+        }
+        setLoading(false);
+        return currentTenantId;
+      } else {
+        // No fallback tenant ID - just report that no tenant ID was found
+        logger.warn('[TenantContext] No tenant ID found in any source');
+        setLoading(false);
+        return null;
+      }
+    } catch (err) {
+      logger.error('[TenantContext] Error initializing tenant:', err);
+      setLoading(false);
+      setError(err);
+      return null;
+    }
+  }, []);
+
+  // Initialize tenant on component mount
+  useEffect(() => {
+    initializeTenant();
+  }, [initializeTenant]);
+
+  return {
+    tenantId,
+    setTenantId,
+    loading,
+    error,
+    tenantInfo,
+    initializeTenant
+  };
 };

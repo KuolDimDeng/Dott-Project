@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Processing Tenant ID...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 20px;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #09f;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .message {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .tenant-id {
+      color: #09f;
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    .error {
+      color: #e53e3e;
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #fff5f5;
+      border-radius: 5px;
+      max-width: 500px;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner"></div>
+  <div class="message">Processing tenant information...</div>
+  <div class="tenant-id" id="tenant-info">Please wait...</div>
+  <div id="error-container" style="display: none;" class="error"></div>
+  
+  <script>
+    // Extract tenant ID from URL path
+    function extractTenantID() {
+      const path = window.location.pathname;
+      
+      // Try to match /{uuid}/dashboard pattern first
+      const dashboardMatch = path.match(/^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/dashboard/i);
+      if (dashboardMatch && dashboardMatch[1]) {
+        return dashboardMatch[1];
+      }
+      
+      // Otherwise extract any UUID from the path
+      const uuidMatch = path.match(/\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+      if (uuidMatch && uuidMatch[1]) {
+        return uuidMatch[1];
+      }
+      
+      // Check query parameters as a fallback
+      const urlParams = new URLSearchParams(window.location.search);
+      const tenantId = urlParams.get('tenantId');
+      if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+        return tenantId;
+      }
+      
+      return null;
+    }
+    
+    // Store tenant ID in localStorage and cookies
+    function storeTenantID(tenantId) {
+      try {
+        // Store in localStorage
+        localStorage.setItem('tenantId', tenantId);
+        
+        // Store in cookies with 30-day expiration
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        
+        document.cookie = `tenantId=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
+        document.cookie = `businessid=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
+        
+        // Update UI
+        document.getElementById('tenant-info').textContent = `Tenant ID: ${tenantId}`;
+        
+        console.log(`Tenant ID stored: ${tenantId}`);
+        return true;
+      } catch (error) {
+        console.error('Error storing tenant ID:', error);
+        showError(`Failed to store tenant ID: ${error.message}`);
+        return false;
+      }
+    }
+    
+    // Show error in UI
+    function showError(message) {
+      const errorContainer = document.getElementById('error-container');
+      errorContainer.textContent = message;
+      errorContainer.style.display = 'block';
+    }
+    
+    // Redirect to dashboard with tenant ID as parameter
+    function redirectToDashboard(tenantId) {
+      // Get current query parameters
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      // Create new query parameters for redirect
+      const newParams = new URLSearchParams();
+      
+      // Copy all existing parameters
+      for (const [key, value] of currentParams.entries()) {
+        newParams.append(key, value);
+      }
+      
+      // Add tenant ID and direct flag to prevent redirect loops
+      newParams.set('tenantId', tenantId);
+      newParams.set('direct', 'true');
+      newParams.set('from', 'tenant_handler');
+      
+      // Create redirect URL
+      const dashboardUrl = `/dashboard?${newParams.toString()}`;
+      
+      // Log before redirecting
+      console.log(`Redirecting to: ${dashboardUrl}`);
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        window.location.href = dashboardUrl;
+      }, 500);
+    }
+    
+    // Main function to process tenant ID
+    function processTenantID() {
+      try {
+        // Extract tenant ID from URL
+        const tenantId = extractTenantID();
+        
+        if (!tenantId) {
+          showError('No valid tenant ID found in URL');
+          
+          // Redirect to dashboard without tenant ID after a delay
+          setTimeout(() => {
+            window.location.href = '/dashboard';
+          }, 2000);
+          
+          return;
+        }
+        
+        // Store tenant ID
+        const stored = storeTenantID(tenantId);
+        
+        if (stored) {
+          // Redirect to dashboard with tenant ID
+          redirectToDashboard(tenantId);
+        }
+      } catch (error) {
+        console.error('Error processing tenant ID:', error);
+        showError(`An error occurred: ${error.message}`);
+      }
+    }
+    
+    // Run when page loads
+    window.onload = processTenantID;
+  </script>
+</body>
+</html>

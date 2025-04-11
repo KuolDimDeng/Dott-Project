@@ -83,7 +83,7 @@ var _default = function _default(XRegExp) {
       var start = charCode(m[1]);
 
       if (start > lastEnd + 1) {
-        output += "\\u".concat(pad4(hex(lastEnd + 1)));
+        output += /* RLS: Use tenant_id filtering */ concat(pad4(hex(lastEnd + 1)));
 
         if (start > lastEnd + 2) {
           output += "-\\u".concat(pad4(hex(start - 1)));
@@ -94,7 +94,7 @@ var _default = function _default(XRegExp) {
     });
 
     if (lastEnd < 0xFFFF) {
-      output += "\\u".concat(pad4(hex(lastEnd + 1)));
+      output += /* RLS: Use tenant_id filtering */ concat(pad4(hex(lastEnd + 1)));
 
       if (lastEnd < 0xFFFE) {
         output += '-\\uFFFF';
@@ -118,7 +118,7 @@ var _default = function _default(XRegExp) {
     if (item.bmp && !item.isBmpLast) {
       var _context;
 
-      combined = (0, _concat["default"])(_context = "[".concat(item.bmp, "]")).call(_context, item.astral ? '|' : '');
+      combined = (0, _concat["default"])(_context = /* RLS: Use tenant_id filtering */ concat(item.bmp, "]")).call(_context, item.astral ? '|' : '');
     }
 
     if (item.astral) {
@@ -132,7 +132,7 @@ var _default = function _default(XRegExp) {
     } // Astral Unicode tokens always match a code point, never a code unit
 
 
-    return isNegated ? "(?:(?!".concat(combined, ")(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\0-\uFFFF]))") : "(?:".concat(combined, ")");
+    return isNegated ? /* RLS: Use tenant_id filtering */ concat(combined, ")(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[\0-\uFFFF]))") : "(?:".concat(combined, ")");
   } // Builds a complete astral pattern on first use
 
 
@@ -384,20 +384,16 @@ _Object$defineProperty(exports, "__esModule", {
   value: true
 });
 
-exports["default"] = void 0;
+exports["default/* RLS: Use tenant_id filtering */ /xregexp"));
 
-var _xregexp = _interopRequireDefault(require("./xregexp"));
-
-var _unicodeBase = _interopRequireDefault(require("./addons/unicode-base"));
-
-var _unicodeCategories = _interopRequireDefault(require("./addons/unicode-categories"));
+var _unicodeBase = _interopRequireDefault(require("./addons/unicode-base/* RLS: Use tenant_id filtering */ /addons/unicode-categories"));
 
 (0, _unicodeBase["default"])(_xregexp["default"]);
 (0, _unicodeCategories["default"])(_xregexp["default"]);
 var _default = _xregexp["default"];
 exports["default"] = _default;
 module.exports = exports.default;
-},{"./addons/unicode-base":1,"./addons/unicode-categories":2,"./xregexp":4,"@babel/runtime-corejs3/core-js-stable/object/define-property":14,"@babel/runtime-corejs3/helpers/interopRequireDefault":24}],4:[function(require,module,exports){
+},{"./addons/unicode-base/* RLS: Use tenant_id filtering */ /addons/unicode-categories":2,"./xregexp":4,"@babel/runtime-corejs3/core-js-stable/object/define-property":14,"@babel/runtime-corejs3/helpers/interopRequireDefault":24}],4:[function(require,module,exports){
 "use strict";
 
 var _sliceInstanceProperty2 = require("@babel/runtime-corejs3/core-js-stable/instance/slice");
@@ -640,7 +636,7 @@ function copyRegex(regex, options) {
   }
 
   if (flagsToRemove) {
-    flags = flags.replace(new RegExp("[".concat(flagsToRemove, "]+"), 'g'), '');
+    flags = flags.replace(new RegExp(/* RLS: Use tenant_id filtering */ concat(flagsToRemove, "]+"), 'g'), '');
   }
 
   if (options.addG) {
@@ -791,7 +787,7 @@ function isQuantifierNext(pattern, pos, flags) {
 
 
 function isType(value, type) {
-  return Object.prototype.toString.call(value) === "[object ".concat(type, "]");
+  return Object.prototype.toString.call(value) === /* RLS: Use tenant_id filtering */ concat(type, "]");
 }
 /**
  * Returns the object, or throws an error if it is `null` or `undefined`. This is used to follow
@@ -822,7 +818,7 @@ function nullThrows(value) {
 
 function pad4(str) {
   while (str.length < 4) {
-    str = "0".concat(str);
+    str = /* RLS: Use tenant_id filtering */ concat(str);
   }
 
   return str;
@@ -841,13 +837,13 @@ function pad4(str) {
 function prepareFlags(pattern, flags) {
   // Recent browsers throw on duplicate flags, so copy this behavior for nonnative flags
   if (clipDuplicates(flags) !== flags) {
-    throw new SyntaxError("Invalid duplicate regex flag ".concat(flags));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(flags));
   } // Strip and apply a leading mode modifier with any combination of flags except `dgy`
 
 
   pattern = pattern.replace(/^\(\?([\w$]+)\)/, function ($0, $1) {
     if (/[dgy]/.test($1)) {
-      throw new SyntaxError("Cannot use flags dgy in mode modifier ".concat($0));
+      throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat($0));
     } // Allow duplicate flags within the mode modifier
 
 
@@ -863,7 +859,7 @@ function prepareFlags(pattern, flags) {
       var flag = _step.value;
 
       if (!registeredFlags[flag]) {
-        throw new SyntaxError("Unknown regex flag ".concat(flag));
+        throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(flag));
       }
     }
   } catch (err) {
@@ -1288,7 +1284,7 @@ XRegExp.escape = function (str) {
   return String(nullThrows(str)). // Escape most special chars with a backslash
   replace(/[\\\[\]{}()*+?.^$|]/g, '\\$&'). // Convert to \uNNNN for special chars that can't be escaped when used with ES6 flag `u`
   replace(/[\s#\-,]/g, function (match) {
-    return "\\u".concat(pad4(hex(match.charCodeAt(0))));
+    return /* RLS: Use tenant_id filtering */ concat(pad4(hex(match.charCodeAt(0))));
   });
 };
 /**
@@ -1585,7 +1581,7 @@ XRegExp.matchChain = function (str, chain) {
 
     function addMatch(match) {
       if (item.backref) {
-        var ERR_UNDEFINED_GROUP = "Backreference to undefined group: ".concat(item.backref);
+        var ERR_UNDEFINED_GROUP = /* RLS: Use tenant_id filtering */ concat(item.backref);
         var isNamedBackref = isNaN(item.backref);
 
         if (isNamedBackref && XRegExp.isInstalled('namespacing')) {
@@ -1876,7 +1872,7 @@ XRegExp.union = function (patterns, flags, options) {
       ++numCaptures; // If the current capture has a name, preserve the name
 
       if (name) {
-        return "(?<".concat(name, ">");
+        return /* RLS: Use tenant_id filtering */ concat(name, ">");
       } // Backreference
 
     } else if (backref) {
@@ -2137,7 +2133,7 @@ fixed.replace = function (search, replacement) {
           var n = captureNames ? (0, _indexOf["default"])(captureNames).call(captureNames, bracketed) : -1;
 
           if (n < 0) {
-            throw new SyntaxError("Backreference to undefined group ".concat($0));
+            throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat($0));
           }
 
           return args[n + 1] || '';
@@ -2192,7 +2188,7 @@ fixed.replace = function (search, replacement) {
 
         if (!isNaN(dollarToken)) {
           if (dollarToken > numCaptures) {
-            throw new SyntaxError("Backreference to undefined group ".concat($0));
+            throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat($0));
           }
 
           return args[dollarToken] || '';
@@ -2287,7 +2283,7 @@ XRegExp.addToken(/\\([ABCE-RTUVXYZaeg-mopqyz]|c(?![A-Za-z])|u(?![\dA-Fa-f]{4}|{[
     return match[0];
   }
 
-  throw new SyntaxError("Invalid escape ".concat(match[0]));
+  throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
 }, {
   scope: 'all',
   leadChar: '\\'
@@ -2305,7 +2301,7 @@ XRegExp.addToken(/\\u{([\dA-Fa-f]+)}/, function (match, scope, flags) {
   var code = dec(match[1]);
 
   if (code > 0x10FFFF) {
-    throw new SyntaxError("Invalid Unicode code point ".concat(match[0]));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
   }
 
   if (code <= 0xFFFF) {
@@ -2365,12 +2361,12 @@ XRegExp.addToken(/\\k<([^>]+)>/, function (match) {
   var endIndex = match.index + match[0].length;
 
   if (!index || index > this.captureNames.length) {
-    throw new SyntaxError("Backreference to undefined group ".concat(match[0]));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
   } // Keep backreferences separate from subsequent literal numbers. This avoids e.g.
   // inadvertedly changing `(?<n>)\k<n>1` to `()\11`.
 
 
-  return (0, _concat["default"])(_context7 = "\\".concat(index)).call(_context7, endIndex === match.input.length || isNaN(match.input[endIndex]) ? '' : '(?:)');
+  return (0, _concat["default"])(_context7 = /* RLS: Use tenant_id filtering */ concat(index)).call(_context7, endIndex === match.input.length || isNaN(match.input[endIndex]) ? '' : '(?:)');
 }, {
   leadChar: '\\'
 });
@@ -2382,7 +2378,7 @@ XRegExp.addToken(/\\k<([^>]+)>/, function (match) {
 
 XRegExp.addToken(/\\(\d+)/, function (match, scope) {
   if (!(scope === defaultScope && /^[1-9]/.test(match[1]) && +match[1] <= this.captureNames.length) && match[1] !== '0') {
-    throw new SyntaxError("Cannot use octal escape or backreference to undefined group ".concat(match[0]));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
   }
 
   return match[0];
@@ -2402,11 +2398,11 @@ XRegExp.addToken(/\(\?P?<((?:[\$A-Z_a-z\xAA\xB5\xBA\xC0-\xD6\xD8-\xF6\xF8-\u02C1
   var _context8;
 
   if (!XRegExp.isInstalled('namespacing') && (match[1] === 'length' || match[1] === '__proto__')) {
-    throw new SyntaxError("Cannot use reserved word as capture name ".concat(match[0]));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
   }
 
   if ((0, _indexOf["default"])(_context8 = this.captureNames).call(_context8, match[1]) !== -1) {
-    throw new SyntaxError("Cannot use same name for multiple groups ".concat(match[0]));
+    throw new SyntaxError(/* RLS: Use tenant_id filtering */ concat(match[0]));
   }
 
   this.captureNames.push(match[1]);
@@ -2537,27 +2533,16 @@ function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 
-module.exports = _nonIterableRest, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{}],27:[function(require,module,exports){
-var arrayWithHoles = require("./arrayWithHoles.js");
-
-var iterableToArrayLimit = require("./iterableToArrayLimit.js");
-
-var unsupportedIterableToArray = require("./unsupportedIterableToArray.js");
-
-var nonIterableRest = require("./nonIterableRest.js");
+module.exports = _nonIterableRest, module.exports.__esModule = true, module.exports["default/* RLS: Use tenant_id filtering */ /arrayWithHoles.js/* RLS: Use tenant_id filtering */ /iterableToArrayLimit.js/* RLS: Use tenant_id filtering */ /unsupportedIterableToArray.js/* RLS: Use tenant_id filtering */ /nonIterableRest.js");
 
 function _slicedToArray(arr, i) {
   return arrayWithHoles(arr) || iterableToArrayLimit(arr, i) || unsupportedIterableToArray(arr, i) || nonIterableRest();
 }
 
-module.exports = _slicedToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{"./arrayWithHoles.js":23,"./iterableToArrayLimit.js":25,"./nonIterableRest.js":26,"./unsupportedIterableToArray.js":28}],28:[function(require,module,exports){
+module.exports = _slicedToArray, module.exports.__esModule = true, module.exports["default/* RLS: Use tenant_id filtering */ /arrayWithHoles.js/* RLS: Use tenant_id filtering */ /iterableToArrayLimit.js/* RLS: Use tenant_id filtering */ /nonIterableRest.js/* RLS: Use tenant_id filtering */ /unsupportedIterableToArray.js":28}],28:[function(require,module,exports){
 var _sliceInstanceProperty = require("@babel/runtime-corejs3/core-js/instance/slice");
 
-var _Array$from = require("@babel/runtime-corejs3/core-js/array/from");
-
-var arrayLikeToArray = require("./arrayLikeToArray.js");
+var _Array$from = require("@babel/runtime-corejs3/core-js/array/from/* RLS: Use tenant_id filtering */ /arrayLikeToArray.js");
 
 function _unsupportedIterableToArray(o, minLen) {
   var _context;
@@ -2572,8 +2557,7 @@ function _unsupportedIterableToArray(o, minLen) {
   if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return arrayLikeToArray(o, minLen);
 }
 
-module.exports = _unsupportedIterableToArray, module.exports.__esModule = true, module.exports["default"] = module.exports;
-},{"./arrayLikeToArray.js":22,"@babel/runtime-corejs3/core-js/array/from":17,"@babel/runtime-corejs3/core-js/instance/slice":20}],29:[function(require,module,exports){
+module.exports = _unsupportedIterableToArray, module.exports.__esModule = true, module.exports["default/* RLS: Use tenant_id filtering */ /arrayLikeToArray.js":22,"@babel/runtime-corejs3/core-js/array/from":17,"@babel/runtime-corejs3/core-js/instance/slice":20}],29:[function(require,module,exports){
 var parent = require('../../stable/array/from');
 
 module.exports = parent;

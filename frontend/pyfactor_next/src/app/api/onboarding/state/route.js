@@ -2,6 +2,38 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { getServerUser } from '@/utils/getServerUser';
 
+// Create a safe logger that falls back to console methods if logger methods aren't available
+const safeLogger = {
+  debug: (...args) => {
+    if (typeof logger.debug === 'function') {
+      logger.debug(...args);
+    } else {
+      console.debug(...args);
+    }
+  },
+  info: (...args) => {
+    if (typeof logger.info === 'function') {
+      logger.info(...args);
+    } else {
+      console.info(...args);
+    }
+  },
+  warn: (...args) => {
+    if (typeof logger.warn === 'function') {
+      logger.warn(...args);
+    } else {
+      console.warn(...args);
+    }
+  },
+  error: (...args) => {
+    if (typeof logger.error === 'function') {
+      logger.error(...args);
+    } else {
+      console.error(...args);
+    }
+  }
+};
+
 /**
  * Get user from various token sources with fallbacks using server-side auth
  */
@@ -15,7 +47,7 @@ async function getAuthenticatedUser(request) {
     
     // Always provide minimum data for business-info step
     if (isBusinessInfoStep) {
-      logger.debug('[API] Business-info step detected, providing minimal data');
+      safeLogger.debug('[API] Business-info step detected, providing minimal data');
       return {
         email: '',
         'custom:onboarding': 'NOT_STARTED',
@@ -28,7 +60,7 @@ async function getAuthenticatedUser(request) {
     const user = await getServerUser(request);
     
     if (user) {
-      logger.debug('[API] Retrieved user through serverAuth');
+      safeLogger.debug('[API] Retrieved user through serverAuth');
       return user;
     }
     
@@ -36,10 +68,10 @@ async function getAuthenticatedUser(request) {
     const isOnboardingRoute = request.headers.get('X-Onboarding-Route') === 'true';
     
     if (isOnboardingRoute || allowPartial) {
-      logger.debug('[API] Onboarding route detected, trying alternative auth methods');
+      safeLogger.debug('[API] Onboarding route detected, trying alternative auth methods');
       
       // For business-info, we'll still return some minimal data
-      logger.debug('[API] Returning partial data for onboarding page');
+      safeLogger.debug('[API] Returning partial data for onboarding page');
       return {
         email: '',
         'custom:onboarding': 'NOT_STARTED',
@@ -50,7 +82,7 @@ async function getAuthenticatedUser(request) {
     
     return null;
   } catch (error) {
-    logger.error('[API] Error authenticating user:', error);
+    safeLogger.error('[API] Error authenticating user:', error);
     return null;
   }
 }
@@ -65,13 +97,13 @@ async function getAuthenticatedUser(request) {
 // GET handler - retrieve current onboarding state
 export async function GET(request) {
   try {
-    logger.debug('[API] Fetching onboarding state');
+    safeLogger.debug('[API] Fetching onboarding state');
     
     // Get current user with enhanced handling
     const user = await getAuthenticatedUser(request);
     
     if (!user) {
-      logger.warn('[API] No authenticated user for state retrieval');
+      safeLogger.warn('[API] No authenticated user for state retrieval');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -82,7 +114,7 @@ export async function GET(request) {
     const isPartial = user.partial === true;
     
     if (isPartial) {
-      logger.debug('[API] Returning partial state for unauthenticated business-info access');
+      safeLogger.debug('[API] Returning partial state for unauthenticated business-info access');
       return NextResponse.json({
         status: 'NOT_STARTED',
         currentStep: 'business-info',
@@ -101,7 +133,7 @@ export async function GET(request) {
     const businessName = user['custom:businessName'] || '';
     const businessType = user['custom:businessType'] || '';
     
-    logger.debug('[API] Onboarding state retrieved', { 
+    safeLogger.debug('[API] Onboarding state retrieved', { 
       onboardingStatus,
       hasBusinessInfo: !!businessName
     });
@@ -132,7 +164,7 @@ export async function GET(request) {
     });
     
   } catch (error) {
-    logger.error('[API] Error fetching onboarding state:', error);
+    safeLogger.error('[API] Error fetching onboarding state:', error);
     return NextResponse.json(
       { error: 'Failed to fetch onboarding state' },
       { status: 500 }
@@ -153,12 +185,12 @@ export async function POST(request) {
       );
     }
     
-    logger.debug('[API] Updating onboarding state', { step, data });
+    safeLogger.debug('[API] Updating onboarding state', { step, data });
     
     // Get current user with server-side auth
     const user = await getAuthenticatedUser(request);
     if (!user) {
-      logger.warn('[API] No authenticated user for state update');
+      safeLogger.warn('[API] No authenticated user for state update');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -207,7 +239,7 @@ export async function POST(request) {
       }
     }
     
-    logger.debug('[API] Onboarding state updated in cookies', { 
+    safeLogger.debug('[API] Onboarding state updated in cookies', { 
       step, 
       status
     });
@@ -215,7 +247,7 @@ export async function POST(request) {
     return response;
     
   } catch (error) {
-    logger.error('[API] Error updating onboarding state:', error);
+    safeLogger.error('[API] Error updating onboarding state:', error);
     return NextResponse.json(
       { error: 'Failed to update onboarding state' },
       { status: 500 }

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { usePathname, useRouter } from 'next/navigation';
 import { isPublicRoute } from '@/lib/authUtils';
+import { useNotification } from '@/context/NotificationContext';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -24,6 +25,27 @@ const DashboardApp = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
   const [initialCheckComplete, setInitialCheckComplete] = useState(false);
+  const { notifyWarning } = useNotification();
+  
+  // Check for reauthentication requirement
+  useEffect(() => {
+    const needsReauth = localStorage.getItem('needsReauthentication') === 'true';
+    
+    if (needsReauth && pathname.includes('/dashboard')) {
+      logger.info('[DashboardApp] User needs to reauthenticate for full tenant access');
+      
+      // Show notification to the user
+      notifyWarning(
+        'Some features may be limited until you sign out and sign in again. This is due to security requirements.',
+        { autoHideDuration: 10000 }
+      );
+      
+      // Clear the flag after showing the notification
+      setTimeout(() => {
+        localStorage.removeItem('needsReauthentication');
+      }, 30000); // Remove after 30 seconds to avoid showing it too often
+    }
+  }, [pathname, notifyWarning]);
   
   // Effect to immediately check if user should be redirected based on client-side data
   useEffect(() => {
@@ -154,26 +176,125 @@ const DashboardApp = ({ children }) => {
         
         const cookieOnboardingStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS);
         const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
+        const freePlanSelected = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
+        const isNewAccount = new URLSearchParams(window.location.search).get('newAccount') === 'true';
+        
+        // ENHANCED: Check for new account with free plan in URL parameters
+        if (isNewAccount && 
+            (pathname.startsWith('/dashboard') || pathname.includes('/dashboard')) && 
+            (new URLSearchParams(window.location.search).get('plan') === 'free' || 
+             new URLSearchParams(window.location.search).get('freePlan') === 'true')) {
+          
+          logger.info('[DashboardApp] Detected new account with free plan, ensuring onboarding status is complete');
+          
+          // Force cookies to indicate completion
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; max-age=${60*60*24*7}`;
+          document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; max-age=${60*60*24*7}`;
+          document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; max-age=${60*60*24*7}`;
+          document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; max-age=${60*60*24*7}`;
+          
+          // Also update localStorage for redundancy
+          try {
+            localStorage.setItem('onboardingStatus', ONBOARDING_STATUS.COMPLETE);
+            localStorage.setItem('setupCompleted', 'true');
+            localStorage.setItem('freePlanSelected', 'true');
+          } catch (e) {
+            // Ignore localStorage errors
+          }
+          
+          // Force update Cognito attributes with multiple approaches
+          try {
+            // First try client-side update
+            logger.info('[DashboardApp] Updating Cognito attributes for new free plan account');
+            const { updateUserAttributes } = await import('aws-amplify/auth');
+            try {
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:onboarding': 'complete',
+                  'custom:setupdone': 'true',
+                  'custom:updated_at': new Date().toISOString()
+                }
+              });
+              logger.info('[DashboardApp] Successfully updated client-side Cognito attributes for new account');
+            } catch (clientError) {
+              logger.warn('[DashboardApp] Failed client-side attribute update:', clientError);
+              
+              // Then try server API
+              try {
+                // Force refresh the auth session first
+                await fetchAuthSession({ forceRefresh: true });
+                
+                const apiResponse = await fetch('/api/user/update-attributes', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    attributes: {
+                      'custom:onboarding': 'complete',
+                      'custom:setupdone': 'true',
+                      'custom:updated_at': new Date().toISOString()
+                    },
+                    forceUpdate: true
+                  })
+                });
+                
+                if (apiResponse.ok) {
+                  logger.info('[DashboardApp] Successfully updated attributes via API for new account');
+                } else {
+                  logger.warn('[DashboardApp] API attribute update failed:', await apiResponse.text());
+                }
+              } catch (apiError) {
+                logger.error('[DashboardApp] Failed API attribute update:', apiError);
+              }
+            }
+          } catch (e) {
+            logger.error('[DashboardApp] Error updating attributes for new account:', e);
+          }
+          
+          setInitialCheckComplete(true);
+          return; // Continue with dashboard access
+        }
         
         if (pathname.startsWith('/dashboard') && 
-            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || cookieSetupCompleted === 'true')) {
+            (cookieOnboardingStatus === ONBOARDING_STATUS.COMPLETE || 
+             cookieSetupCompleted === 'true' ||
+             freePlanSelected === 'true')) {
           logger.info('[DashboardApp] Cookies indicate onboarding complete, proceeding with dashboard');
           setInitialCheckComplete(true);
           
           // We'll still fetch and update attributes in the background, but don't redirect
           fetchUserAttributes().catch(() => ({})).then(attrs => {
-            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'true')) {
+            if (attrs && (attrs[COGNITO_ATTRIBUTES.ONBOARDING_STATUS] !== ONBOARDING_STATUS.COMPLETE || 
+                          attrs[COGNITO_ATTRIBUTES.SETUP_COMPLETED] !== 'true')) {
               logger.info('[DashboardApp] Updating Cognito attributes in background');
-              fetch('/api/user/update-attributes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  attributes: {
+              
+              // First try client-side update
+              try {
+                const { updateUserAttributes } = await import('aws-amplify/auth');
+                await updateUserAttributes({
+                  userAttributes: {
                     [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
-                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true'
+                    [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true',
+                    'custom:updated_at': new Date().toISOString()
                   }
-                })
-              }).catch(e => logger.warn('Failed to update attributes:', e));
+                });
+                logger.info('[DashboardApp] Successfully updated client-side attributes');
+              } catch (clientError) {
+                logger.warn('[DashboardApp] Client-side attribute update failed:', clientError);
+                
+                // Fall back to server API
+                fetch('/api/user/update-attributes', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    attributes: {
+                      [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: ONBOARDING_STATUS.COMPLETE,
+                      [COGNITO_ATTRIBUTES.SETUP_COMPLETED]: 'true',
+                      'custom:updated_at': new Date().toISOString()
+                    },
+                    forceUpdate: true
+                  })
+                }).catch(e => logger.warn('Failed to update attributes via API:', e));
+              }
             }
           });
           

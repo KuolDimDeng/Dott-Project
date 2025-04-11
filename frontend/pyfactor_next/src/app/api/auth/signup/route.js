@@ -68,10 +68,46 @@ export async function POST(request) {
     // Parse request body if not already parsed
     const data = lambdaData || await request.json();
     
-    // Generate a unique tenant/business ID if not provided
-    if (!data.businessId && !data.business_id) {
-      data.businessId = crypto.randomUUID();
+    // Get tenant ID from Cognito user attributes or generate a new one
+    let tenantId = null;
+    
+    // If this request includes auth tokens, try to get custom:tenantId from them
+    if (idToken) {
+      try {
+        // Decode the ID token to extract custom attributes
+        const base64Url = idToken.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const payload = JSON.parse(Buffer.from(base64, 'base64').toString());
+        
+        // Get tenant ID from custom attribute
+        if (payload['custom:tenantId']) {
+          tenantId = payload['custom:tenantId'];
+          logger.info('[Signup] Found tenant ID in Cognito attributes:', tenantId);
+        }
+      } catch (tokenDecodeError) {
+        logger.warn('[Signup] Failed to decode ID token:', tokenDecodeError);
+      }
     }
+    
+    // If tenant ID is in the request data, use that
+    if (!tenantId && (data.tenantId || data.tenant_id)) {
+      tenantId = data.tenantId || data.tenant_id;
+      logger.info('[Signup] Using tenant ID from request data:', tenantId);
+    }
+    
+    // Generate a unique tenant/business ID if not provided
+    if (!tenantId && !data.businessId && !data.business_id) {
+      tenantId = crypto.randomUUID();
+      logger.info('[Signup] Generated new tenant ID:', tenantId);
+    } else if (!tenantId) {
+      // Use businessId if tenantId not found but businessId exists
+      tenantId = data.businessId || data.business_id;
+      logger.info('[Signup] Using business ID as tenant ID:', tenantId);
+    }
+    
+    // Ensure business_id and businessId are set to tenant ID
+    data.businessId = tenantId;
+    data.business_id = tenantId;
     
     // Ensure we have all required fields with defaults
     const timestamp = new Date().toISOString();
@@ -131,6 +167,7 @@ export async function POST(request) {
             body: JSON.stringify({
               attributes: {
                 'custom:businessid': userData.business_id,
+                'custom:tenantId': userData.business_id,
                 'custom:businessname': userData.business_name,
                 'custom:businesstype': userData.business_type,
                 'custom:businesscountry': userData.business_country,
@@ -216,6 +253,7 @@ export async function POST(request) {
             body: JSON.stringify({
               attributes: {
                 'custom:businessid': userData.business_id,
+                'custom:tenantId': userData.business_id,
                 'custom:businessname': userData.business_name,
                 'custom:businesstype': userData.business_type,
                 'custom:businesscountry': userData.business_country,

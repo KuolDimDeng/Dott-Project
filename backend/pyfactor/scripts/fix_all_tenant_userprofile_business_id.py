@@ -43,17 +43,22 @@ def get_all_schemas():
         logger.error(f"Error getting schemas: {str(e)}")
         return []
 
-def fix_userprofile_business_id_in_schema(schema_name):
+def fix_userprofile_business_id_in_schema(tenant_id: uuid.UUID:
     """
     Fix the business_id column type in users_userprofile table for a specific schema.
     Changes the column type from bigint to uuid.
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     """
     logger.info(f"Starting business_id column type fix in {schema_name}.users_userprofile table...")
     
     try:
         with connection.cursor() as cursor:
             # Set the search path to the schema
-            cursor.execute(f"SET search_path TO {schema_name}")
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id))
             
             # Check if the users_userprofile table exists in this schema
             cursor.execute("""
@@ -168,7 +173,8 @@ def fix_userprofile_business_id_in_schema(schema_name):
     finally:
         # Reset search path to public
         with connection.cursor() as cursor:
-            cursor.execute("SET search_path TO public")
+            cursor.execute("-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public")
 
 def fix_all_schemas():
     """Fix the business_id column type in all schemas."""

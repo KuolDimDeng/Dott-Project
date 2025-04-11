@@ -21,10 +21,12 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from rest_framework.routers import DefaultRouter
 
 # Import views from subdirectories
 from custom_auth.views.signup import SignupView as APISignupView
-from custom_auth.views.tenant import TenantVerifyView, TenantCreateView
+from custom_auth.views.tenant import TenantVerifyView as OldTenantVerifyView, TenantCreateView
+from custom_auth.views.tenant_verify import TenantVerifyView as NewTenantVerifyView
 from custom_auth.api.views.tenant_views import TenantDetailView
 from custom_auth.views.token_views import TokenRefreshView
 
@@ -118,7 +120,10 @@ urlpatterns = [
     # User Signup API
     path('api/auth/signup/', APISignupView.as_view(), name='signup_api'),
 
-    # Tenant endpoints
-    path('tenant/verify/', TenantVerifyView.as_view(), name='tenant-verify'),
+    # Tenant endpoints (legacy)
+    path('tenant/verify/', OldTenantVerifyView.as_view(), name='tenant-verify-old'),
     path('tenant/create/', TenantCreateView.as_view(), name='tenant-create'),
+    
+    # Enhanced tenant management endpoints
+    path('api/tenant/verify/', NewTenantVerifyView.as_view(), name='tenant-verify'),
 ]

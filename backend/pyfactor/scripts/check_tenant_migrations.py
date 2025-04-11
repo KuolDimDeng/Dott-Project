@@ -73,7 +73,7 @@ def get_tenant_schemas():
     conn.close()
     return schemas
 
-def get_schema_tables(schema_name):
+def get_schema_tables(tenant_id: uuid.UUID:
     """Get all tables in a schema."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -89,13 +89,16 @@ def get_schema_tables(schema_name):
     conn.close()
     return tables
 
-def check_migrations_table(schema_name):
+def check_migrations_table(tenant_id: uuid.UUID:
     """Check if the django_migrations table exists in the schema."""
     tables = get_schema_tables(schema_name)
     return 'django_migrations' in tables
 
-def get_migration_records(schema_name):
+def get_migration_records(tenant_id: uuid.UUID:
     """Get all migration records from the django_migrations table in the schema."""
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
     if not check_migrations_table(schema_name):
         return []
     
@@ -103,7 +106,9 @@ def get_migration_records(schema_name):
     cursor = conn.cursor()
     
     # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
+    # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
     
     # Get all migration records
     cursor.execute("""
@@ -119,7 +124,7 @@ def get_migration_records(schema_name):
     
     return migrations
 
-def check_expected_tables(schema_name):
+def check_expected_tables(tenant_id: uuid.UUID:
     """Check if all expected tables for tenant apps exist in the schema."""
     tables = get_schema_tables(schema_name)
     tenant_apps = settings.TENANT_APPS
@@ -142,7 +147,7 @@ def check_expected_tables(schema_name):
     
     return missing_app_tables
 
-def check_migration_order(schema_name):
+def check_migration_order(tenant_id: uuid.UUID:
     """
     Check if custom_auth migrations are applied before users migrations.
     
@@ -156,7 +161,9 @@ def check_migration_order(schema_name):
     cursor = conn.cursor()
     
     # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
+    # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
     
     # Get timestamps for custom_auth and users initial migrations
     cursor.execute("""
@@ -187,7 +194,7 @@ def check_migration_order(schema_name):
         'users_time': result[1]
     }
 
-def fix_migration_order(schema_name):
+def fix_migration_order(tenant_id: uuid.UUID:
     """
     Fix the order of custom_auth and users migrations by updating timestamps.
     
@@ -201,7 +208,9 @@ def fix_migration_order(schema_name):
     cursor = conn.cursor()
     
     # Set search path to the tenant schema
-    cursor.execute(f'SET search_path TO "{schema_name}"')
+    # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
     
     try:
         # Update timestamps to ensure correct order
@@ -248,7 +257,7 @@ def check_tenant_schema(tenant_id=None, fix_issues=False):
             tenant = Tenant.objects.get(id=tenant_id)
             total_tenants = 1
             
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"[CHECK-{process_id}] Found tenant: {tenant.name} (Schema: {schema_name})")
             
             # Check if schema exists
@@ -342,7 +351,7 @@ def check_tenant_schema(tenant_id=None, fix_issues=False):
         
         # Check each tenant's schema
         for tenant in tenants:
-            schema_name = tenant.schema_name
+            schema_name =  tenant.id
             logger.info(f"[CHECK-{process_id}] Checking tenant {tenant.id} ({tenant.name}) with schema {schema_name}")
             
             # Check if schema exists

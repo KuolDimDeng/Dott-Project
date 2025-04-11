@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect } from 'react';
+import ErrorBoundary from './ErrorBoundary';
 // Remove the direct imports and replace with lazy loading
 // import { TransportDashboard, VehicleManagement } from './transport';
 
@@ -25,13 +26,103 @@ const AnalysisPage = lazy(() => import('./forms/AnalysisPage.js'));
 const InvoiceDetails = lazy(() => import('./forms/InvoiceDetails.js'));
 const CustomerDetails = lazy(() => import('./forms/CustomerDetails.js'));
 const RenderForm = lazy(() => import('./RenderForm.js').then(m => ({ default: m.default || m })));
-const ProductManagement = lazy(() => import('./forms/ProductManagement.js'));
-const ServiceManagement = lazy(() => import('./forms/ServiceManagement.js'));
-const EstimateManagement = lazy(() => import('./forms/EstimateManagement.js'));
+const ProductManagement = lazy(() => 
+  import('./forms/ProductManagement.js').catch(err => {
+    console.error('Error loading ProductManagement component:', err);
+    return { 
+      default: ({ mode, salesContext, isNewProduct }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Product Management</h1>
+          <p className="mb-4">Manage your product inventory</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Product management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
+const ServiceManagement = lazy(() => 
+  import('./forms/ServiceManagement.js').catch(err => {
+    console.error('Error loading ServiceManagement component:', err);
+    return { 
+      default: ({ mode, salesContext, newService }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Service Management</h1>
+          <p className="mb-4">Manage your services and offerings</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Service management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
+const EstimateManagement = lazy(() => 
+  import('./forms/EstimateManagement.js').catch(err => {
+    console.error('Error loading EstimateManagement component:', err);
+    return { 
+      default: ({ mode }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Estimate Management</h1>
+          <p className="mb-4">Create and manage your estimates</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Estimate management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
 const SalesOrderManagement = lazy(() => import('./forms/SalesOrderManagement.js'));
-const InvoiceManagement = lazy(() => import('./forms/InvoiceManagement.js'));
-const VendorManagement = lazy(() => import('./forms/VendorManagement.js'));
-const BillManagement = lazy(() => import('./forms/BillManagement.js'));
+const InvoiceManagement = lazy(() => 
+  import('./forms/InvoiceManagement.js').catch(err => {
+    console.error('Error loading InvoiceManagement component:', err);
+    return { 
+      default: ({ mode }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Invoice Management</h1>
+          <p className="mb-4">Create and manage your invoices</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Invoice management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
+const VendorManagement = lazy(() => 
+  import('./forms/VendorManagement.js').catch(err => {
+    console.error('Error loading VendorManagement component:', err);
+    return { 
+      default: ({ mode }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Vendor Management</h1>
+          <p className="mb-4">Manage your vendors and suppliers</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Vendor management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
+const BillManagement = lazy(() => 
+  import('./forms/BillManagement.js').catch(err => {
+    console.error('Error loading BillManagement component:', err);
+    return { 
+      default: ({ mode }) => (
+        <div className="p-4">
+          <h1 className="text-xl font-semibold mb-2">Bill Management</h1>
+          <p className="mb-4">Manage your bills and payments</p>
+          <div className="bg-blue-100 p-3 rounded">
+            <p>Bill management component is currently unavailable. Please refresh the page to try again.</p>
+          </div>
+        </div>
+      ) 
+    };
+  })
+);
 const PurchaseOrderManagement = lazy(() => import('./forms/PurchaseOrderManagement.js'));
 const ExpensesManagement = lazy(() => import('./forms/ExpensesManagement.js'));
 const PurchaseReturnsManagement = lazy(() => import('./forms/PurchaseReturnsManagement.js'));
@@ -219,14 +310,47 @@ function RenderMainContent({
   tenantError,
   tenantId,
 }) {
-  const [selectedTab, setSelectedTab] = React.useState(0);
+  // Add render counter and previous props reference
+  const renderCountRef = useRef(0);
+  const prevPropsRef = useRef(null);
+  
+  // Log only when key props change and throttle the logging
+  useEffect(() => {
+    renderCountRef.current += 1;
+    
+    // Only log every 5th render or when props actually change
+    const keyProps = { showMyAccount, showHelpCenter, tenantId, view };
+    const prevKeyProps = prevPropsRef.current;
+    
+    const propsChanged = !prevKeyProps || 
+      prevKeyProps.showMyAccount !== showMyAccount || 
+      prevKeyProps.showHelpCenter !== showHelpCenter ||
+      prevKeyProps.tenantId !== tenantId ||
+      prevKeyProps.view !== view;
+    
+    // Update previous props reference
+    prevPropsRef.current = keyProps;
+    
+    if (propsChanged || renderCountRef.current % 5 === 0) {
+      console.log(`RenderMainContent props (render #${renderCountRef.current}):`, {
+        showMyAccount,
+        showHelpCenter,
+        userData: userData ? { ...userData } : {}
+      });
+    }
+  }, [showMyAccount, showHelpCenter, userData, tenantId, view]);
+
+  const [selectedTab, setSelectedTab] = useState(0);
 
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
   };
 
   const renderSettingsTabs = () => {
-    console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
+    // Update the log statement to be conditional
+    if (process.env.NODE_ENV === 'development') {
+      console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
+    }
 
     let tabs = [];
     let content = null;
@@ -307,7 +431,7 @@ function RenderMainContent({
           {selectedSettingsOption === 'accounting' && <AccountingSettings />}
           {selectedSettingsOption === 'payroll' && <PayrollSettings />}
           {showDeviceSettings && <DeviceSettings />}
-          {showMyAccount && <MyAccount />}
+          {showMyAccount && <MyAccount userData={userData} />}
           {showHelpCenter && <HelpCenter />}
           {showTermsAndConditions && <TermsAndConditions />}
           {showPrivacyPolicy && <PrivacyPolicy />}
@@ -501,7 +625,25 @@ function RenderMainContent({
           </ContentWrapper>
         )}
         {showUserProfileSettings && <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />}
-        {showMyAccount && <MyAccount userData={userData} />}
+        {showMyAccount && (
+          <ErrorBoundary fallback={<div>Error loading account settings</div>}>
+            <Suspense fallback={<div className="py-8 px-4">Loading account settings...</div>}>
+              <MyAccount 
+                userData={{
+                  ...userData,
+                  // Force these fields to be included even if undefined
+                  // This ensures the MyAccount component can see they need to be populated
+                  firstName: userData?.firstName,
+                  lastName: userData?.lastName,
+                  first_name: userData?.first_name,
+                  last_name: userData?.last_name,
+                  email: userData?.email,
+                  tenantId: userData?.tenantId || tenantId,
+                }} 
+              />
+            </Suspense>
+          </ErrorBoundary>
+        )}
         {showIntegrationSettings && <IntegrationSettings />}
         {showMainDashboard && <MainDashboard userData={userData} />}
         {showKPIDashboard && <KPIDashboard />}
@@ -576,4 +718,17 @@ function RenderMainContent({
   );
 }
 
-export default RenderMainContent;
+export default React.memo(RenderMainContent, (prevProps, nextProps) => {
+  // Only re-render if these key properties change
+  // This prevents re-renders when only userData reference changes but content is the same
+  return (
+    prevProps.showMyAccount === nextProps.showMyAccount &&
+    prevProps.showHelpCenter === nextProps.showHelpCenter &&
+    prevProps.tenantId === nextProps.tenantId &&
+    prevProps.view === nextProps.view &&
+    // Compare userData essential properties instead of reference equality
+    prevProps.userData?.email === nextProps.userData?.email &&
+    prevProps.userData?.sub === nextProps.userData?.sub &&
+    prevProps.userData?.['custom:tenantId'] === nextProps.userData?.['custom:tenantId']
+  );
+});

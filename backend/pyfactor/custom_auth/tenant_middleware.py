@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Global lock for schema creation to prevent race conditions
 schema_creation_lock = threading.RLock()
 
-def verify_essential_tables(cursor, schema_name):
+def verify_essential_tables(tenant_id: uuid.UUID:
     """
     Verify that all essential tables exist in the schema.
     Returns a tuple of (all_tables_exist, missing_tables)
@@ -70,7 +70,7 @@ class EnhancedTenantMiddleware:
             '/api/onboarding/setup/'
             # Removed '/api/onboarding/business-info/' from no_tenant_paths to ensure it uses tenant schema
         ]
-    def set_schema_with_transaction_handling(self, schema_name):
+    def set_schema_with_transaction_handling(tenant_id: uuid.UUID:
         """Set the schema with proper transaction handling"""
         from django.db import connection
         
@@ -82,7 +82,9 @@ class EnhancedTenantMiddleware:
         
         # Now set the schema
         with connection.cursor() as cursor:
-            cursor.execute(f'SET search_path TO "{schema_name}"')
+            # RLS: Use tenant context instead of schema
+        # cursor.execute(f'SET search_path TO {schema_name}')
+        set_current_tenant_id(tenant_id)')
 
     def __call__(self, request):
         # Skip for public paths and onboarding paths
@@ -161,7 +163,7 @@ class EnhancedTenantMiddleware:
         
         # Store tenant information in the request for other components
         request.tenant_id = tenant_id
-        request.schema_name = schema_name
+        reques t.id = schema_name
         
         # If we have a schema name, attempt to use it
         if schema_name:
@@ -201,7 +203,7 @@ class EnhancedTenantMiddleware:
                             try:
                                 user_tenants = list(Tenant.objects.filter(owner=request.user))
                                 if len(user_tenants) > 1:
-                                    logger.warning(f"[TENANT-{request_id}] User {request.user.email} has {len(user_tenants)} tenants: {', '.join([t.schema_name for t in user_tenants])}")
+                                    logger.warning(f"[TENANT-{request_id}] User {request.user.email} has {len(user_tenants)} tenants: {', '.join([ t.id for t in user_tenants])}")
                             except Exception as e:
                                 logger.error(f"[TENANT-{request_id}] Error checking user tenants: {str(e)}")
                 else:
@@ -244,6 +246,9 @@ class EnhancedTenantMiddleware:
             # Add timing information for performance monitoring
             elapsed_time = time.time() - start_time
             logger.info(f"[TENANT-{request_id}] Request processed in {elapsed_time:.4f}s (Schema: {schema_name}, Source: {schema_from})")
+
+# RLS: Importing tenant context functions
+from custom_auth.rls import set_current_tenant_id, tenant_context
             
             return response
         finally:
@@ -251,6 +256,7 @@ class EnhancedTenantMiddleware:
             try:
                 # Reset search path to public
                 with connection.cursor() as cursor:
-                    cursor.execute('SET search_path TO public')
+                    cursor.execute('-- RLS: No need to set search_path with tenant-aware context
+    -- Original: SET search_path TO public')
             except Exception as e:
                 logger.error(f"[TENANT-{request_id}] Error resetting search path: {str(e)}")

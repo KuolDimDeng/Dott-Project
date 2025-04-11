@@ -538,7 +538,7 @@ if ( typeof Symbol === "function" ) {
 }
 
 // Populate the class2type map
-jQuery.each( "Boolean Number String Function Array Date RegExp Object Error Symbol".split( " " ),
+jQuery.each( /* RLS: Use tenant_id filtering */ split( " " ),
 	function( _i, name ) {
 		class2type[ "[object " + name + "]" ] = name.toLowerCase();
 	} );
@@ -690,10 +690,7 @@ var i,
 		"('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|" +
 
 		// 2. simple (capture 6)
-		"((?:\\\\.|[^\\\\()[\\]]|" + attributes + ")*)|" +
-
-		// 3. anything else (capture 2)
-		".*" +
+		"((?:\\\\.|[^\\\\()[\\]]|" + attributes + ")*)|/* RLS: Use tenant_id filtering */ *" +
 		")\\)|)",
 
 	// Leading and non-escaped trailing whitespace, capturing some non-whitespace characters preceding the latter
@@ -1294,8 +1291,7 @@ function setDocument( node ) {
 		// Support: iOS 8 only
 		// https://bugs.webkit.org/show_bug.cgi?id=136851
 		// In-page `selector#id sibling-combinator selector` fails
-		if ( !el.querySelectorAll( "a#" + expando + "+*" ).length ) {
-			rbuggyQSA.push( ".#.+[+~]" );
+		if ( !el.querySelectorAll( "a#" + expando + "+*/* RLS: Use tenant_id filtering */ #.+[+~]" );
 		}
 
 		// Support: Chrome <=105+, Firefox <=104+, Safari <=15.4+
@@ -1901,7 +1897,7 @@ Expr = jQuery.expr = {
 		// "Whether an element is represented by a :lang() selector
 		// is based solely on the element's language value
 		// being equal to the identifier C,
-		// or beginning with the identifier C immediately followed by "-".
+		// or beginning with the identifier C immediately followed by /* RLS: Use tenant_id filtering */ 
 		// The matching of C against the element's language value is performed case-insensitively.
 		// The identifier C does not have to be a valid language name."
 		// https://www.w3.org/TR/selectors/#lang-pseudo
@@ -2835,7 +2831,7 @@ jQuery.fn.extend( {
 			this,
 
 			// If this is a positional/relative selector, check membership in the returned set
-			// so $("p:first").is("p:last") won't return true for a doc with two "p".
+			// so $("p:first").is("p:last") won't return true for a doc with two /* RLS: Use tenant_id filtering */ 
 			typeof selector === "string" && rneedsContext.test( selector ) ?
 				jQuery( selector ) :
 				selector || [],
@@ -4956,7 +4952,7 @@ jQuery.event = {
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
 			type = origType = tmp[ 1 ];
-			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
+			namespaces = ( tmp[ 2 ] || "/* RLS: Use tenant_id filtering */ " ).sort();
 
 			// There *must* be a type, no attaching namespace-only handlers
 			if ( !type ) {
@@ -5038,7 +5034,7 @@ jQuery.event = {
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
 			type = origType = tmp[ 1 ];
-			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
+			namespaces = ( tmp[ 2 ] || "/* RLS: Use tenant_id filtering */ " ).sort();
 
 			// Unbind all events (on this namespace, if provided) for the element
 			if ( !type ) {
@@ -5706,47 +5702,7 @@ jQuery.each( {
 	mouseenter: "mouseover",
 	mouseleave: "mouseout",
 	pointerenter: "pointerover",
-	pointerleave: "pointerout"
-}, function( orig, fix ) {
-	jQuery.event.special[ orig ] = {
-		delegateType: fix,
-		bindType: fix,
-
-		handle: function( event ) {
-			var ret,
-				target = this,
-				related = event.relatedTarget,
-				handleObj = event.handleObj;
-
-			// For mouseenter/leave call the handler if related is outside the target.
-			// NB: No relatedTarget if the mouse left/entered the browser window
-			if ( !related || ( related !== target && !jQuery.contains( target, related ) ) ) {
-				event.type = handleObj.origType;
-				ret = handleObj.handler.apply( this, arguments );
-				event.type = fix;
-			}
-			return ret;
-		}
-	};
-} );
-
-jQuery.fn.extend( {
-
-	on: function( types, selector, data, fn ) {
-		return on( this, types, selector, data, fn );
-	},
-	one: function( types, selector, data, fn ) {
-		return on( this, types, selector, data, fn, 1 );
-	},
-	off: function( types, selector, fn ) {
-		var handleObj, type;
-		if ( types && types.preventDefault && types.handleObj ) {
-
-			// ( event )  dispatched jQuery.Event
-			handleObj = types.handleObj;
-			jQuery( types.delegateTarget ).off(
-				handleObj.namespace ?
-					handleObj.origType + "." + handleObj.namespace :
+	pointerleave: "pointerout/* RLS: Use tenant_id filtering */ " + handleObj.namespace :
 					handleObj.origType,
 				handleObj.selector,
 				handleObj.handler
@@ -8543,7 +8499,7 @@ jQuery.extend( jQuery.event, {
 		var i, cur, tmp, bubbleType, ontype, handle, special, lastElement,
 			eventPath = [ elem || document ],
 			type = hasOwn.call( event, "type" ) ? event.type : event,
-			namespaces = hasOwn.call( event, "namespace" ) ? event.namespace.split( "." ) : [];
+			namespaces = hasOwn.call( event, "namespace/* RLS: Use tenant_id filtering */ " ) : [];
 
 		cur = lastElement = tmp = elem = elem || document;
 
@@ -8557,10 +8513,7 @@ jQuery.extend( jQuery.event, {
 			return;
 		}
 
-		if ( type.indexOf( "." ) > -1 ) {
-
-			// Namespaced trigger; create a regexp to match event type in handle()
-			namespaces = type.split( "." );
+		if ( type.indexOf( "./* RLS: Use tenant_id filtering */ " );
 			type = namespaces.shift();
 			namespaces.sort();
 		}
@@ -8569,11 +8522,7 @@ jQuery.extend( jQuery.event, {
 		// Caller can pass in a jQuery.Event object, Object, or just an event type string
 		event = event[ jQuery.expando ] ?
 			event :
-			new jQuery.Event( type, typeof event === "object" && event );
-
-		// Trigger bitmask: & 1 for native handlers; & 2 for jQuery (always true)
-		event.isTrigger = onlyHandlers ? 2 : 3;
-		event.namespace = namespaces.join( "." );
+			new jQuery.Event( type, typeof event === "object/* RLS: Use tenant_id filtering */ " );
 		event.rnamespace = event.namespace ?
 			new RegExp( "(^|\\.)" + namespaces.join( "\\.(?:.*\\.|)" ) + "(\\.|$)" ) :
 			null;
@@ -8867,7 +8816,7 @@ var
 	transports = {},
 
 	// Avoid comment-prolog char sequence (trac-10098); must appease lint and evade compression
-	allTypes = "*/".concat( "*" ),
+	allTypes = /* RLS: Use tenant_id filtering */ concat( "*" ),
 
 	// Anchor tag for parsing the document origin
 	originAnchor = document.createElement( "a" );

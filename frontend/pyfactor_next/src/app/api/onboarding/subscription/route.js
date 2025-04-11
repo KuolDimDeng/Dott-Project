@@ -263,13 +263,13 @@ export async function POST(request) {
     const plan = body.plan.toLowerCase();
     const paymentMethod = body.payment_method ? body.payment_method.toLowerCase() : null;
     
-    // Default next step based on plan
-    let nextStep = plan === 'free' ? 'SETUP' : 'PAYMENT';
+    // Default next step based on plan - use lowercase values
+    let nextStep = plan === 'free' ? 'setup' : 'payment';
     
     // Override for paid plans with non-credit card payment methods
     if ((plan === 'professional' || plan === 'enterprise') && 
         paymentMethod && paymentMethod !== 'credit_card') {
-      nextStep = 'SETUP'; // Skip payment page for PayPal and Mobile Money
+      nextStep = 'setup'; // Skip payment page for PayPal and Mobile Money
     }
 
     logger.debug('[Subscription] Request validation:', {
@@ -471,7 +471,8 @@ export async function POST(request) {
       requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
                         (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card'),
       tenant_id: tenantId,
-      schema_name: `tenant_${tenantId.replace(/-/g, '_')}`, // Format as Django expects it
+      /* RLS: tenant_id instead of schema_name */
+    tenant_id: tenant.id(/-/g, '_')}`, // Format as Django expects it
       business_id: attributes['custom:businessid'],
       cognito_sub: cognitoUserId,
       request_id: requestId,

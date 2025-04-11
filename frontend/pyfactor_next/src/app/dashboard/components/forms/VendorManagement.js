@@ -22,9 +22,10 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
   const fetchVendors = async () => {
     try {
       const response = await axiosInstance.get('/api/vendors/');
-      setVendors(response.data);
+      setVendors(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching vendors:', error);
+      setVendors([]);
     }
   };
 
@@ -248,30 +249,38 @@ const VendorManagement = ({ newVendor: isNewVendor = false }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {vendors.map((vendor) => (
-                <tr key={vendor.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {vendor.vendor_number}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {vendor.vendor_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {vendor.city}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {vendor.phone}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button
-                      onClick={() => handleVendorSelect(vendor)}
-                      className="text-primary-main hover:text-primary-dark"
-                    >
-                      View Details
-                    </button>
+              {Array.isArray(vendors) && vendors.length > 0 ? (
+                vendors.map((vendor) => (
+                  <tr key={vendor.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {vendor.vendor_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {vendor.vendor_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {vendor.city}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {vendor.phone}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => handleVendorSelect(vendor)}
+                        className="text-primary-main hover:text-primary-dark"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    No vendors found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -6,7 +6,7 @@ import asyncpg
 import asyncio
 import atexit
 import threading
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, Tuple
 from contextlib import asynccontextmanager
 from django.conf import settings
 from django.db import connections, OperationalError
@@ -22,7 +22,7 @@ from .models import Business
 from .exceptions import DatabaseError, ValidationError, ServiceUnavailableError
 from onboarding.models import OnboardingProgress
 from .models import UserProfile
-from onboarding.utils import generate_unique_schema_name
+from onboarding.utils import generate_unique_tenant_id
 
 logger = get_logger()
 
@@ -95,18 +95,22 @@ class SchemaPool:
     def cleanup(self):
         """Clean up pool on shutdown"""
         if self.pool:
-            self.pool.close()
+            asyncio.run(self.close_pool())
             self.pool = None
 
-    async def get_pool(self, schema_name: Optional[str] = None) -> asyncpg.Pool:
+    async def close_pool(self):
+        if self.pool:
+            await self.pool.close()
+
+    async def get_pool(self, tenant_id: Optional[uuid.UUID] = None) -> asyncpg.Pool:
         """Get or create connection pool for default database"""
         async with self._lock:
             if not self.pool:
                 self.pool = await self.create_pool()
             
-            if schema_name:
-                # Create a proxy pool that sets the search path
-                return SchemaPoolProxy(self.pool, schema_name)
+            if tenant_id:
+                # Create a proxy pool that sets the tenant context
+                return SchemaPoolProxy(self.pool, tenant_id)
             return self.pool
 
     async def create_pool(self) -> asyncpg.Pool:
@@ -135,17 +139,21 @@ class SchemaPool:
 
 class SchemaPoolProxy:
     """Proxy class that automatically sets schema context for connections"""
-    def __init__(self, pool: asyncpg.Pool, schema_name: str):
+    def __init__(self, pool: asyncpg.Pool, tenant_id: uuid.UUID):
         self.pool = pool
-        self.schema_name = schema_name
+        self.tenant_id = tenant_id
 
     @asynccontextmanager
     async def acquire(self, *args, **kwargs):
+        from custom_auth.rls import set_current_tenant_id
+        
         async with self.pool.acquire(*args, **kwargs) as conn:
-            await conn.execute(f'SET search_path TO "{self.schema_name}"')
+            # Set tenant context instead of schema
+            await conn.execute(f"SET app.current_tenant = '{self.tenant_id}'")
             try:
                 yield conn
             finally:
+                await conn.execute('-- RLS: No need to set search_path with tenant-aware context')
                 await conn.execute('SET search_path TO public')
 
 
@@ -160,35 +168,28 @@ def cleanup_connections(database_name=None):
 @sync_to_async
 def create_user_schema(user_id: str, business_id: str) -> str:
     logger.debug(f"Starting schema creation for user {user_id}")
-    schema_name = None
+    tenant_id = None
     max_retries = 3
     
     try:
         user = get_user_model().objects.get(id=user_id)
         user_profile = user.profile
 
-        # Return existing schema if already set up
-        if user_profile.schema_name and user_profile.database_status == 'active':
-            return user_profile.schema_name
+        # Return existing tenant_id if already set up
+        if user_profile.tenant_id and user_profile.database_status == 'active':
+            return str(user_profile.tenant_id)
 
-        schema_name = generate_unique_schema_name(user)
+        tenant_id = generate_unique_tenant_id(user)
 
         with get_connection() as conn:
             conn.autocommit = True
             with conn.cursor() as cursor:
-                # Create schema with retries
+                # Set up permissions
                 for attempt in range(max_retries):
                     try:
-                        # Create schema
-                        cursor.execute(f'CREATE SCHEMA IF NOT EXISTS "{schema_name}"')
-                        
-                        # Set up permissions
-                        cursor.execute(f'GRANT USAGE ON SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
-                        cursor.execute(f'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA "{schema_name}" TO {settings.DATABASES["default"]["USER"]}')
-                        cursor.execute(f'ALTER DEFAULT PRIVILEGES IN SCHEMA "{schema_name}" GRANT ALL ON TABLES TO {settings.DATABASES["default"]["USER"]}')
-                        
-                        # Set search path for this connection
-                        cursor.execute(f'SET search_path TO "{schema_name}"')
+                        # Set tenant context for this connection
+                        from custom_auth.rls import set_current_tenant_id
+                        set_current_tenant_id(tenant_id)
                         break
                     except OperationalError as e:
                         if attempt == max_retries - 1:
@@ -197,18 +198,18 @@ def create_user_schema(user_id: str, business_id: str) -> str:
 
                 # Update user profile
                 with transaction.atomic():
-                    user_profile.schema_name = schema_name
+                    user_profile.tenant_id = tenant_id
                     user_profile.database_status = 'active'
                     user_profile.setup_status = 'pending'
-                    user_profile.save(update_fields=['schema_name', 'database_status', 'setup_status'])
+                    user_profile.save(update_fields=['tenant_id', 'database_status', 'setup_status'])
 
-                logger.info(f"Schema {schema_name} created successfully")
-                return schema_name
+                logger.info(f"Tenant {tenant_id} created successfully")
+                return str(tenant_id)
 
     except Exception as e:
-        logger.error(f"Error creating schema: {str(e)}")
-        if schema_name:
-            sync_cleanup_schema(schema_name)
+        logger.error(f"Error creating tenant: {str(e)}")
+        if tenant_id:
+            sync_cleanup_schema(tenant_id)
         raise
 
 def get_database_config(database_name: str) -> dict:
@@ -257,14 +258,11 @@ def get_database_config(database_name: str) -> dict:
     return base_settings
 
 
-async def populate_initial_data(schema_name: str):
+async def populate_initial_data(tenant_id: uuid.UUID) -> None:
     """Populate initial data in new schema"""
     try:
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        pool = await SchemaPool.get_instance().get_pool(tenant_id)
         async with pool.acquire() as conn:
-            # Set search path to the schema
-            await conn.execute(f'SET search_path TO "{schema_name}"')
-            
             # Add your initial data population logic here
             await conn.execute("""
                 -- Add your initial data SQL here
@@ -274,78 +272,53 @@ async def populate_initial_data(schema_name: str):
     except Exception as e:
         logger.error(f"Error populating initial data: {str(e)}")
         raise
-    finally:
-        # Reset search path
-        if pool:
-            async with pool.acquire() as conn:
-                await conn.execute('SET search_path TO public')
 
 async def get_user_schema(user):
-    """Get user's schema information with proper error handling"""
+    """Get user's tenant information with proper error handling"""
     try:
         profile = await sync_to_async(
             UserProfile.objects.select_related('user').get
         )(user=user)
         
-        if not profile.schema_name:
-            logger.error(f"No schema configured for user {user.email}")
+        if not profile.tenant_id:
+            logger.error(f"No tenant configured for user {user.email}")
             profile.setup_status = 'step1'
             await sync_to_async(profile.save)(update_fields=['setup_status'])
-            raise DatabaseError("Schema not configured, reset to step1")
+            raise DatabaseError("Tenant not configured, reset to step1")
             
-        # Check if schema exists
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
-        async with pool.acquire() as conn:
-            result = await conn.fetchrow(
-                "SELECT 1 FROM information_schema.schemata WHERE schema_name = $1",
-                profile.schema_name
-            )
-            if not result:
-                logger.error(f"Schema {profile.schema_name} does not exist")
-                profile.setup_status = 'step1'
-                profile.schema_name = None
-                profile.database_status = 'inactive'
-                await sync_to_async(profile.save)(
-                    update_fields=['setup_status', 'schema_name', 'database_status']
-                )
-                raise DatabaseError("Schema does not exist, profile reset to step1")
+        # Set tenant context
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(profile.tenant_id)
             
-        return profile.schema_name
+        return profile.tenant_id
         
     except UserProfile.DoesNotExist:
         logger.error(f"Profile not found for user {user.email}")
         raise ValidationError("User profile not found")
     except Exception as e:
-        logger.error(f"Error retrieving user database: {str(e)}")
+        logger.error(f"Error retrieving user tenant: {str(e)}")
         raise DatabaseError(str(e))
 
-async def setup_user_schema(schema_name: str, user: Any, business: Any) -> bool:
+async def setup_user_schema(tenant_id: uuid.UUID) -> bool:
     """Setup user schema with migrations and initial data"""
     try:
-        # Update setup status
+        # Update setup status for user if available
+        user = None  # This should be passed in or retrieved
         if user and hasattr(user, 'profile'):
             user.profile.setup_status = 'in_progress'
             await sync_to_async(user.profile.save)(update_fields=['setup_status'])
 
-        # Get default database connection
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
-        async with pool.acquire() as conn:
-            # Set search path to the schema
-            await conn.execute(f'SET search_path TO "{schema_name}"')
-            
-            # Verify schema is accessible
-            await conn.execute('SELECT 1')
+        # Initialize tenant environment with RLS
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(tenant_id)
 
-        logger.info(f"Running migrations for schema: {schema_name}")
-        await sync_to_async(call_command)('migrate', schema=schema_name)
+        # Populate initial data
+        await populate_initial_data(tenant_id)
 
-        logger.info(f"Running initial data population for: {schema_name}")
-        await populate_initial_data(schema_name)
-
-        # Verify schema setup
-        tables_valid = await check_schema_setup(schema_name)
+        # Verify tenant setup
+        tables_valid = await check_schema_setup(tenant_id)
         if not tables_valid:
-            raise DatabaseError(f"Schema {schema_name} setup validation failed")
+            raise DatabaseError(f"Tenant {tenant_id} setup validation failed")
 
         # Update setup status on success
         if user and hasattr(user, 'profile'):
@@ -355,77 +328,68 @@ async def setup_user_schema(schema_name: str, user: Any, business: Any) -> bool:
                 update_fields=['setup_status', 'database_status']
             )
 
-        logger.info(f"Schema setup completed successfully for: {schema_name}")
+        logger.info(f"Tenant setup completed successfully for: {tenant_id}")
         return True
 
     except Exception as e:
-        logger.error(f"Error setting up schema {schema_name}: {str(e)}")
+        logger.error(f"Error setting up tenant {tenant_id}: {str(e)}")
         if user and hasattr(user, 'profile'):
             user.profile.setup_status = 'error'
             await sync_to_async(user.profile.save)(update_fields=['setup_status'])
-        await cleanup_schema(schema_name, user.profile if user else None)
+        await cleanup_schema(tenant_id)
         raise
-    finally:
-        # Reset search path
+
+async def check_schema_setup(tenant_id: uuid.UUID) -> bool:
+    """Check if required tables exist for tenant"""
+    try:
+        # Set tenant context
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(tenant_id)
+        
         pool = await SchemaPool.get_instance().get_pool()
         async with pool.acquire() as conn:
-            await conn.execute('SET search_path TO public')
-
-async def check_schema_setup(schema_name: str) -> bool:
-    """Check if required tables exist in schema"""
-    try:
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
-        async with pool.acquire() as conn:
-            # Set search path to the schema
-            await conn.execute(f'SET search_path TO "{schema_name}"')
-            
-            # Check for crucial tables
+            # Check for crucial tables in public schema with RLS
             tables = await conn.fetch("""
                 SELECT tablename FROM pg_tables
-                WHERE schemaname = $1
-            """, schema_name)
+                WHERE schemaname = 'public'
+            """)
             required_tables = {'django_migrations', 'auth_user', 'django_content_type'}
             existing_tables = {table['tablename'] for table in tables}
             return required_tables.issubset(existing_tables)
     except Exception as e:
-        logger.error(f"Error checking schema setup: {str(e)}")
+        logger.error(f"Error checking tenant setup: {str(e)}")
         return False
-    finally:
-        # Reset search path
-        if pool:
-            async with pool.acquire() as conn:
-                await conn.execute('SET search_path TO public')
 
-async def check_schema_health(schema_name: str) -> tuple[bool, dict]:
+async def check_schema_health(tenant_id: uuid.UUID) -> Tuple[bool, dict]:
     """
-    Check schema health status with comprehensive checks
+    Check tenant health status with comprehensive checks
     Returns tuple of (is_healthy, details)
     """
     try:
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        # Set tenant context
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(tenant_id)
+        
+        pool = await SchemaPool.get_instance().get_pool()
         async with pool.acquire(timeout=5.0) as conn:
-            # Set search path to the schema
-            await conn.execute(f'SET search_path TO "{schema_name}"')
-            
             # Basic connectivity check
             await conn.execute('SELECT 1')
             
             # Check required tables exist
-            tables_valid = await check_schema_setup(schema_name)
+            tables_valid = await check_schema_setup(tenant_id)
             
             # Check schema size and object count
             size_query = """
-                SELECT pg_total_relation_size(quote_ident($1) || '.' || quote_ident(tablename)) as schema_size,
+                SELECT SUM(pg_total_relation_size(quote_ident(tablename))) as schema_size,
                        count(*) as table_count
                 FROM pg_tables
-                WHERE schemaname = $1
-                GROUP BY schemaname
+                WHERE schemaname = 'public'
             """
-            result = await conn.fetchrow(size_query, schema_name)
+            result = await conn.fetchrow(size_query)
             
             health_status = {
                 "status": "healthy" if tables_valid else "unhealthy",
-                "schema": schema_name,
+                "tenant_id": str(tenant_id),
                 "size_bytes": result['schema_size'] if result else 0,
                 "table_count": result['table_count'] if result else 0,
                 "tables_valid": tables_valid,
@@ -435,68 +399,67 @@ async def check_schema_health(schema_name: str) -> tuple[bool, dict]:
             return tables_valid, health_status
 
     except asyncpg.exceptions.CannotConnectNowError:
-        logger.error(f"Cannot connect to schema {schema_name}")
+        logger.error(f"Cannot connect to tenant {tenant_id}")
         return False, {
             "status": "unavailable",
-            "schema": schema_name,
-            "error": "Schema temporarily unavailable",
+            "tenant_id": str(tenant_id),
+            "error": "Tenant temporarily unavailable",
             "last_checked": timezone.now().isoformat()
         }
     except Exception as e:
-        logger.error(f"Health check failed for schema {schema_name}: {str(e)}")
+        logger.error(f"Health check failed for tenant {tenant_id}: {str(e)}")
         return False, {
             "status": "error",
-            "schema": schema_name,
+            "tenant_id": str(tenant_id),
             "error": str(e),
             "last_checked": timezone.now().isoformat()
         }
-    finally:
-        # Reset search path
-        if pool:
-            async with pool.acquire() as conn:
-                await conn.execute('SET search_path TO public')
 
-async def monitor_schema_metrics(schema_name: str):
-    """Collect and store schema metrics"""
+async def monitor_schema_metrics(tenant_id: uuid.UUID) -> Optional[Dict]:
+    """Collect and store tenant metrics"""
     try:
-        pool = await SchemaPool.get_instance().get_pool(schema_name)
+        # Set tenant context
+        from custom_auth.rls import set_current_tenant_id
+        set_current_tenant_id(tenant_id)
+        
+        pool = await SchemaPool.get_instance().get_pool()
         async with pool.acquire() as conn:
             metrics = await conn.fetch("""
-                SELECT schemaname, n_tables, n_live_tup, n_dead_tup,
-                       last_vacuum, last_autovacuum, last_analyze, last_autoanalyze
+                SELECT 'public' as schemaname, 
+                       count(*) as n_tables, 
+                       sum(n_live_tup) as n_live_tup, 
+                       sum(n_dead_tup) as n_dead_tup,
+                       min(last_vacuum) as last_vacuum, 
+                       min(last_autovacuum) as last_autovacuum, 
+                       min(last_analyze) as last_analyze, 
+                       min(last_autoanalyze) as last_autoanalyze
                 FROM pg_stat_user_tables
-                WHERE schemaname = $1
-            """, schema_name)
+                WHERE schemaname = 'public'
+            """)
             
             # Store metrics in memory (you might want to store these in a more permanent storage)
             return {
                 'timestamp': timezone.now().isoformat(),
-                'schema': schema_name,
+                'tenant_id': str(tenant_id),
                 'metrics': [dict(m) for m in metrics]
             }
             
     except Exception as e:
-        logger.error(f"Schema monitoring failed for {schema_name}: {str(e)}")
+        logger.error(f"Tenant monitoring failed for {tenant_id}: {str(e)}")
         return None
 
-async def cleanup_schema(schema_name: str, user_profile=None, max_retries: int = 3):
-    """Clean up schema and reset search path"""
+async def cleanup_schema(tenant_id: uuid.UUID, user_profile=None) -> None:
+    """Clean up tenant-specific data"""
+    max_retries = 3
     for attempt in range(max_retries):
         try:
-            pool = await SchemaPool.get_instance().get_pool()
-            async with pool.acquire() as conn:
-                # Reset search path to public
-                await conn.execute('SET search_path TO public')
-                
-                # Drop the schema and all objects within it
-                await conn.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
-
+            # Update user profile if provided
             if user_profile:
                 user_profile.database_status = 'inactive'
-                user_profile.schema_name = None
-                await sync_to_async(user_profile.save)(update_fields=['database_status', 'schema_name'])
+                user_profile.tenant_id = None
+                await sync_to_async(user_profile.save)(update_fields=['database_status', 'tenant_id'])
             
-            logger.info(f"Schema {schema_name} cleaned up successfully")
+            logger.info(f"Tenant {tenant_id} cleaned up successfully")
             return
         except Exception as e:
             if attempt == max_retries - 1:
@@ -506,17 +469,14 @@ async def cleanup_schema(schema_name: str, user_profile=None, max_retries: int =
             await asyncio.sleep(1 * (2 ** attempt))  # Exponential backoff
 
 
-def sync_cleanup_schema(schema_name):
-    """Synchronous cleanup that can drop schema"""
+def sync_cleanup_schema(tenant_id: uuid.UUID) -> None:
+    """Synchronous cleanup for tenant data"""
     try:
-        with get_connection() as conn:
-            conn.autocommit = True
-            with conn.cursor() as cursor:
-                # Reset search path to public
-                cursor.execute('SET search_path TO public')
-                
-                # Drop the schema and all objects within it
-                cursor.execute(f'DROP SCHEMA IF EXISTS "{schema_name}" CASCADE')
+        # Clear tenant from user profile
+        UserProfile.objects.filter(tenant_id=tenant_id).update(
+            tenant_id=None,
+            database_status='inactive'
+        )
                 
     except Exception as e:
         logger.error(f"Error in sync cleanup: {str(e)}")
@@ -524,32 +484,28 @@ def sync_cleanup_schema(schema_name):
 
 @shared_task
 def cleanup_stale_schemas():
-    """Periodic task to clean up stale schemas"""
+    """Periodic task to clean up stale tenants"""
     try:
-        # Get all schemas with tenant_ prefix
-        with get_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT schema_name, schema_owner
-                    FROM information_schema.schemata
-                    WHERE schema_name LIKE 'tenant_%'
-                """)
-                schemas = cursor.fetchall()
-
-                for schema_name, schema_owner in schemas:
-                    # Check if schema is still in use
-                    try:
-                        profile = UserProfile.objects.filter(schema_name=schema_name).first()
-                        if not profile:
-                            # No profile using this schema, clean it up
-                            logger.info(f"Cleaning up unused schema: {schema_name}")
-                            asyncio.run(cleanup_schema(schema_name))
-                    except Exception as e:
-                        logger.error(f"Error checking schema {schema_name}: {str(e)}")
-                        continue
+        # Find orphaned tenant IDs
+        from custom_auth.models import Tenant
+        
+        # Get tenants without associated profiles
+        orphaned_tenants = Tenant.objects.filter(owner_id__isnull=True)
+        
+        for tenant in orphaned_tenants:
+            try:
+                logger.info(f"Cleaning up orphaned tenant: {tenant.id}")
+                # Use synchronous cleanup for each tenant
+                sync_cleanup_schema(tenant.id)
+                
+                # Delete the tenant record
+                tenant.delete()
+            except Exception as e:
+                logger.error(f"Error cleaning up tenant {tenant.id}: {str(e)}")
+                continue
 
     except Exception as e:
-        logger.error(f"Stale schema cleanup failed: {str(e)}")
+        logger.error(f"Stale tenant cleanup failed: {str(e)}")
 
 @transaction.atomic
 def initial_user_registration(validated_data):
@@ -588,20 +544,20 @@ def validate_user_state(user):
         profile = UserProfile.objects.select_related('user', 'business').get(user=user)
         progress = OnboardingProgress.objects.get(user=user)
         
-        if not profile.schema_name or profile.database_status != 'active':
+        if not profile.tenant_id or profile.database_status != 'active':
             return {
                 'isValid': False,
                 'redirectTo': '/onboarding/step1',
-                'reason': 'no_schema'
+                'reason': 'no_tenant'
             }
             
         # Check health synchronously
-        is_healthy, health_details = check_schema_health(profile.schema_name)
+        is_healthy, health_details = check_schema_health(profile.tenant_id)
         if not is_healthy:
             return {
                 'isValid': False,
                 'redirectTo': '/onboarding/step4/setup',
-                'reason': 'unhealthy_schema',
+                'reason': 'unhealthy_tenant',
                 'details': health_details
             }
             
@@ -616,8 +572,8 @@ def validate_user_state(user):
             'isValid': True,
             'redirectTo': '/dashboard',
             'reason': 'all_valid',
-            'schema': {
-                'name': profile.schema_name,
+            'tenant': {
+                'id': str(profile.tenant_id),
                 'status': profile.database_status,
                 'health': health_details
             }
@@ -709,8 +665,8 @@ def check_subscription_status(user):
 
 def get_tenant_database(user):
     """
-    Synchronous helper function to get the correct tenant/schema name
-    for a user, considering all possible storage locations.
+    Synchronous helper function to get the correct tenant ID
+    for a user.
     """
     try:
         if not user:
@@ -721,35 +677,12 @@ def get_tenant_database(user):
         # Get the user profile
         user_profile = UserProfile.objects.using('default').get(user=user)
         
-        # Get the database name from the tenant
-        database_name = None
-        
-        # First try tenant relationship - new approach
-        if user_profile.tenant and user_profile.tenant.schema_name:
-            database_name = user_profile.tenant.schema_name
+        # Get the tenant ID
+        if user_profile.tenant_id:
+            return str(user_profile.tenant_id)
             
-        # Then try schema_name directly on profile - new approach
-        elif user_profile.schema_name:
-            database_name = user_profile.schema_name
-            
-        # Next try database_name - legacy approach
-        elif hasattr(user_profile, 'database_name') and user_profile.database_name:
-            database_name = user_profile.database_name
-            
-        # Fallback to a deterministic name based on user ID
-        else:
-            database_name = f"tenant_{user.id}".replace('-', '_')
-            
-        # Initialize the database connection
-        from django.db import connections
-        if database_name and database_name not in connections:
-            # Initialize the database connection if not already done
-            from django.db.utils import ConnectionRouter
-            router = ConnectionRouter()
-            db_config = get_database_config(database_name)
-            connections.databases[database_name] = db_config
-            
-        return database_name
+        # Fallback to a deterministic ID based on user ID
+        return None
             
     except UserProfile.DoesNotExist:
         logger.error(f"UserProfile does not exist for user: {user}")

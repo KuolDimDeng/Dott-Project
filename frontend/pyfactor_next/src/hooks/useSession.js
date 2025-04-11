@@ -12,8 +12,12 @@ const MAX_REFRESH_FAILURES = 5;
 const REFRESH_COOLDOWN = 60000; // 1 minute
 // Log throttling for session messages
 const LOG_THROTTLE_INTERVAL = 10000; // 10 seconds
+// Minimum time between refresh attempts (milliseconds)
+const MIN_REFRESH_INTERVAL = 30000; // 30 seconds
 // Global session log cache to prevent duplicate logs
 const sessionLogCache = new Map();
+// Track last successful refresh globally (unix timestamp)
+let lastSuccessfulRefresh = 0;
 
 /**
  * Throttle session-related logs
@@ -87,9 +91,37 @@ export function useSession() {
   const refreshFailuresRef = useRef(0);
   const lastRefreshAttemptRef = useRef(0);
   const refreshDebugCountRef = useRef(0);
+  // Track component's refresh timestamp
+  const lastRefreshTimestampRef = useRef(Date.now());
   
   // Function to refresh the session
   const refreshSession = useCallback(async () => {
+    // Check if we should throttle the refresh based on time since last attempt
+    const now = Date.now();
+    const timeSinceLastRefresh = now - lastRefreshTimestampRef.current;
+    
+    // Enforce minimum time between refreshes across the app
+    if (timeSinceLastRefresh < MIN_REFRESH_INTERVAL) {
+      if (shouldLogSessionMessage(`[useSession] Throttling refresh - only ${timeSinceLastRefresh}ms since last refresh`)) {
+        logger.debug(`[useSession] Throttling refresh - only ${Math.round(timeSinceLastRefresh/1000)}s since last refresh, minimum is ${MIN_REFRESH_INTERVAL/1000}s`);
+      }
+      return session;
+    }
+    
+    // Also check global refresh timestamp
+    if (lastSuccessfulRefresh > 0) {
+      const timeSinceGlobalRefresh = now - lastSuccessfulRefresh;
+      if (timeSinceGlobalRefresh < MIN_REFRESH_INTERVAL) {
+        if (shouldLogSessionMessage('[useSession] Recent global refresh detected')) {
+          logger.debug(`[useSession] Recent global refresh detected ${Math.round(timeSinceGlobalRefresh/1000)}s ago, skipping`);
+        }
+        return session;
+      }
+    }
+    
+    // Update timestamp even if we don't complete the refresh
+    lastRefreshTimestampRef.current = now;
+    
     // Clear any existing loading timeout
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
@@ -115,7 +147,6 @@ export function useSession() {
     }, LOADING_TIMEOUT);
     
     // Check if we're in cooldown period due to too many failures
-    const now = Date.now();
     if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES) {
       const timeSinceLastAttempt = now - lastRefreshAttemptRef.current;
       if (timeSinceLastAttempt < REFRESH_COOLDOWN) {
@@ -330,6 +361,9 @@ export function useSession() {
             // Don't fail the session refresh if attributes fetch fails
           }
           
+          // Update global timestamp of last successful refresh
+          lastSuccessfulRefresh = Date.now();
+          
           // Reset failure counter on success
           refreshFailuresRef.current = 0;
           
@@ -428,7 +462,7 @@ export function useSession() {
   useEffect(() => {
     refreshSession();
     
-    // Set up a refresh interval
+    // Set up a refresh interval - use longer interval to reduce CPU and network usage
     const refreshInterval = setInterval(() => {
       refreshSession();
     }, TOKEN_REFRESH_INTERVAL);
