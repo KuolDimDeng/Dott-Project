@@ -4,7 +4,19 @@ import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { extractTenantId } from '@/utils/auth/tenant';
 import * as db from '@/utils/db/rls-database';
-import { logger } from '@/utils/logger';
+
+// Fix logger import and add fallback
+const logger = {
+  info: function(message, ...args) {
+    console.log(message, ...args);
+  },
+  error: function(message, ...args) {
+    console.error(message, ...args);
+  },
+  warn: function(message, ...args) {
+    console.warn(message, ...args);
+  }
+};
 
 /**
  * GET handler for product listing with tenant-aware RLS
@@ -144,41 +156,36 @@ export async function GET(request) {
  */
 export async function POST(request) {
   const requestId = crypto.randomUUID();
-  let pool = null;
-  let client = null;
 
   try {
     // Parse request body
     const requestData = await request.json();
     
-    // Extract tenant info
-    const url = new URL(request.url);
-    const tenantId = url.searchParams.get('tenantId') || 
+    // Extract tenant info from various sources
+    const tenantId = requestData.tenant_id || 
                     requestData.tenantId || 
-                    request.headers.get('x-tenant-id');
+                    request.headers.get('x-tenant-id') ||
+                    request.headers.get('tenant-id') ||
+                    request.headers.get('x-business-id');
     
-    let schemaName = url.searchParams.get('schema') || requestData.schema || 'public';
-    
-    // If schema name looks like a UUID or doesn't include tenant_ prefix, transform it
-    if (schemaName === 'default_schema' || (tenantId && !schemaName.startsWith('tenant_'))) {
-      // Use tenant ID to create schema name
-      schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+    if (!tenantId) {
+      logger.error(`[${requestId}] No tenant ID found in request headers or body`);
+      return NextResponse.json({
+        success: false,
+        message: 'Tenant ID is required'
+      }, { status: 400 });
     }
     
-    console.log(`[${requestId}] Creating product in schema: ${schemaName}`);
-
-    // Connect to database
-    pool = await createDbPool();
-    client = await pool.connect();
+    logger.info(`[${requestId}] Creating product for tenant: ${tenantId}`);
     
-    // Check if products table exists, if not create it
-    const tableExists = await checkTableExists(client, schemaName, 'products');
-    if (!tableExists) {
-      await createProductsTable(client, schemaName);
-    }
-
-    // Validate product data
-    const { name, description, price, stockQuantity, reorderLevel, forSale } = requestData;
+    // Ensure inventory_product table exists with RLS
+    await db.ensureInventoryProductTable({
+      debug: true,
+      requestId
+    });
+    
+    // Validate required product data
+    const { name } = requestData;
     
     if (!name) {
       return NextResponse.json({
@@ -187,110 +194,68 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Insert the new product
-    const result = await client.query(
-      `INSERT INTO "${schemaName}".products
-       (name, description, price, stock_quantity, reorder_level, for_sale, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
-       RETURNING *`,
-      [
-        name,
-        description || '',
-        parseFloat(price) || 0,
-        parseInt(stockQuantity) || 0,
-        parseInt(reorderLevel) || 0,
-        forSale === 'on' || forSale === true
-      ]
-    );
+    // Generate a UUID for the product
+    const productId = uuidv4();
+    
+    // Insert the new product using RLS-aware query
+    const query = `
+      INSERT INTO public.inventory_product (
+        id, 
+        tenant_id, 
+        name, 
+        description, 
+        sku,
+        price, 
+        cost,
+        stock_quantity, 
+        reorder_level, 
+        for_sale, 
+        for_rent,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `;
+    
+    const params = [
+      productId,
+      tenantId,
+      name,
+      requestData.description || '',
+      requestData.sku || `SKU-${Date.now()}`,
+      parseFloat(requestData.price) || 0,
+      parseFloat(requestData.cost) || 0,
+      parseInt(requestData.stock_quantity || requestData.stockQuantity) || 0,
+      parseInt(requestData.reorder_level || requestData.reorderLevel) || 0,
+      requestData.for_sale === true || requestData.forSale === true,
+      requestData.for_rent === true || requestData.forRent === true
+    ];
+    
+    logger.info(`[${requestId}] Executing product insert with tenant context: ${tenantId}`);
+    
+    const result = await db.query(query, params, {
+      requestId,
+      tenantId, // Pass tenant ID for RLS context
+      debug: true
+    });
     
     const newProduct = result.rows[0];
     
-    console.log(`[${requestId}] Product created successfully: ${newProduct.id}`);
+    logger.info(`[${requestId}] Product created successfully: ${newProduct.id}`);
     
     return NextResponse.json({
       success: true,
-      product: formatProduct(newProduct),
+      product: newProduct,
       message: 'Product created successfully'
     });
   } catch (error) {
-    console.error(`[${requestId}] Error creating product: ${error.message}`, error);
+    logger.error(`[${requestId}] Error creating product: ${error.message}`, error);
     
     return NextResponse.json({
       success: false,
       message: 'Error creating product',
       error: error.message
     }, { status: 500 });
-  } finally {
-    if (client) {
-      try {
-        client.release();
-      } catch (err) {
-        console.error(`[${requestId}] Error releasing client: ${err.message}`);
-      }
-    }
-    
-    if (pool) {
-      try {
-        await pool.end();
-      } catch (err) {
-        console.error(`[${requestId}] Error closing pool: ${err.message}`);
-      }
-    }
   }
-}
-
-// Helper to check if a table exists
-async function checkTableExists(client, schemaName, tableName) {
-  const result = await client.query(`
-    SELECT EXISTS (
-      SELECT FROM information_schema.tables 
-      WHERE table_schema = $1 AND table_name = $2
-    );
-  `, [schemaName, tableName]);
-  
-  return result.rows[0].exists;
-}
-
-// Helper to create products table
-async function createProductsTable(client, schemaName) {
-  await client.query(`
-    CREATE SCHEMA IF NOT EXISTS "${schemaName}";
-    
-    CREATE TABLE IF NOT EXISTS "${schemaName}".products (
-      id SERIAL PRIMARY KEY,
-      name VARCHAR(255) NOT NULL,
-      description TEXT,
-      price DECIMAL(10, 2) DEFAULT 0,
-      stock_quantity INTEGER DEFAULT 0,
-      reorder_level INTEGER DEFAULT 0,
-      for_sale BOOLEAN DEFAULT TRUE,
-      created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-      updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-    );
-  `);
-  
-  // Create sample products
-  await client.query(`
-    INSERT INTO "${schemaName}".products
-    (name, description, price, stock_quantity, reorder_level, for_sale, created_at, updated_at)
-    VALUES
-    ('Sample Product 1', 'This is a sample product', 19.99, 100, 10, true, NOW(), NOW()),
-    ('Sample Product 2', 'Another sample product', 29.99, 50, 5, true, NOW(), NOW())
-    ON CONFLICT DO NOTHING;
-  `);
-}
-
-// Helper to format product data
-function formatProduct(product) {
-  return {
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    price: parseFloat(product.price),
-    stockQuantity: product.stock_quantity,
-    reorderLevel: product.reorder_level,
-    forSale: product.for_sale,
-    createdAt: product.created_at,
-    updatedAt: product.updated_at
-  };
 }

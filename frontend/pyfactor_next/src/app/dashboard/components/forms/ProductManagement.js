@@ -298,7 +298,12 @@ const QrCodeIcon = () => (
 // Modern Form Layout component using Tailwind classes
 const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, submitLabel }) => {
   return (
-    <form onSubmit={onSubmit} className="shadow-lg rounded-lg bg-white p-6 w-full">
+    <form onSubmit={(e) => {
+      e.preventDefault();
+      if (typeof onSubmit === 'function') {
+        onSubmit(e);
+      }
+    }} className="shadow-lg rounded-lg bg-white p-6 w-full">
       {title && (
         <div className="mb-6 border-b pb-3">
           <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
@@ -823,8 +828,13 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   );
 
   // Handle product creation with proper API client usage
-  const handleCreateProduct = async (formData) => {
-    setIsLoading(true);
+  const handleCreateProduct = async (e) => {
+    // Prevent default form submission if called from form onSubmit
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+    
+    setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
     
@@ -840,17 +850,20 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       
       // Try to initialize RLS tables first (this helps with first-time creation)
       try {
-        const initResponse = await axios.post('/api/tenant/verify-schema', {
-          tenantId
-        }, {
+        const initResponse = await fetch('/api/tenant/verify-schema', {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-tenant-id': tenantId,
             'x-business-id': tenantId
-          }
+          },
+          body: JSON.stringify({ tenantId })
         });
         
-        console.log(`[ProductManagement] RLS initialization response:`, initResponse.data);
+        if (initResponse.ok) {
+          const data = await initResponse.json();
+          console.log(`[ProductManagement] RLS initialization response:`, data);
+        }
       } catch (initError) {
         console.warn(`[ProductManagement] RLS initialization warning (continuing):`, initError);
         // Continue anyway - the product API will try to initialize tables too
@@ -858,17 +871,17 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       
       // Construct the product data with all required fields
       const productData = {
-        name: formData.name,
-        description: formData.description || '',
-        price: parseFloat(formData.price) || 0,
-        sku: formData.sku || `SKU-${Date.now()}`,
-        stock_quantity: parseInt(formData.stock_quantity, 10) || 0,
-        reorder_level: parseInt(formData.reorder_level, 10) || 0,
-        for_sale: formData.for_sale === true || formData.for_sale === 'true',
-        for_rent: formData.for_rent === true || formData.for_rent === 'true',
-        cost: parseFloat(formData.cost) || 0, // Add cost for inventory_product
+        name: formState.name,
+        description: formState.description || '',
+        price: parseFloat(formState.price) || 0,
+        sku: formState.sku || `SKU-${Date.now()}`,
+        stock_quantity: parseInt(formState.stockQuantity, 10) || 0,
+        reorder_level: parseInt(formState.reorderLevel, 10) || 0,
+        for_sale: formState.forSale === true,
+        for_rent: formState.forRent === true,
+        cost: parseFloat(formState.cost) || 0, // Add cost for inventory_product
         tenant_id: tenantId,
-        unit: formData.unit || 'each'
+        unit: formState.unit || 'each'
       };
 
       console.log(`[ProductManagement] Sending product data with tenantId: ${tenantId}`, productData);
@@ -906,7 +919,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       // Show success toast
       toast({
         title: "Product Created",
-        description: `${formData.name} has been added to your inventory.`,
+        description: `${formState.name} has been added to your inventory.`,
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -929,8 +942,21 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         isClosable: true,
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
+  };
+  
+  // Reset form after successful submission
+  const resetForm = () => {
+    setFormState({
+      name: '',
+      description: '',
+      price: '',
+      forSale: true,
+      forRent: false,
+      stockQuantity: '',
+      reorderLevel: ''
+    });
   };
 
   // Success Dialog component
@@ -1513,6 +1539,57 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     );
   };
 
+  // Simple QR Code component that doesn't require external dependencies
+  const SimpleQRCode = ({ value, size = 200, foreground = '#000', background = '#fff' }) => {
+    const [qrCodeSvg, setQrCodeSvg] = useState('');
+    
+    useEffect(() => {
+      if (!value) return;
+      
+      const generateQRCode = async () => {
+        try {
+          // Generate QR code on the fly using a data URL
+          const encodedValue = encodeURIComponent(value);
+          const qrCodeURL = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodedValue}`;
+          
+          setQrCodeSvg(qrCodeURL);
+        } catch (error) {
+          console.error('Error generating QR code:', error);
+        }
+      };
+      
+      generateQRCode();
+    }, [value, size, foreground, background]);
+    
+    return (
+      <div className="simple-qr-code" style={{ width: size, height: size, margin: '0 auto' }}>
+        {qrCodeSvg ? (
+          <img 
+            src={qrCodeSvg} 
+            alt="QR Code" 
+            style={{ width: '100%', height: '100%' }}
+            onError={(e) => {
+              console.error('Error loading QR code image');
+              e.target.style.display = 'none';
+            }}
+          />
+        ) : (
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            width: '100%', 
+            height: '100%', 
+            border: '1px solid #ddd',
+            borderRadius: '8px'
+          }}>
+            Loading QR Code...
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Barcode Dialog with Headless UI
   const renderBarcodeDialog = () => {
     return (
@@ -1561,7 +1638,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                             {currentBarcodeProduct.name}
                           </h3>
                           <p className="text-sm text-gray-500 mb-2">
-                            Code: {currentBarcodeProduct.product_code}
+                            Code: {currentBarcodeProduct.product_code || currentBarcodeProduct.id}
                           </p>
                           
                           {currentBarcodeProduct.description && (
@@ -1573,14 +1650,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
                         
                         <div className="flex justify-center my-6">
                           <div className="qr-code-container p-4 border border-gray-200 rounded-lg bg-white shadow-sm">
-                            <BarcodeGenerator 
-                              value={currentBarcodeProduct.product_code || currentBarcodeProduct.id.toString()}
+                            <SimpleQRCode 
+                              value={currentBarcodeProduct.id.toString()}
                               size={250}
-                              productInfo={{
-                                name: currentBarcodeProduct.name,
-                                price: `$${currentBarcodeProduct.price}`,
-                                id: currentBarcodeProduct.id
-                              }}
                             />
                           </div>
                         </div>
