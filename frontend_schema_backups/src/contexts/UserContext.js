@@ -21,8 +21,27 @@ export const UserProvider = ({ children }) => {
     error,
     refreshUser: async () => {
       try {
+        // Get email from localStorage or cookie
+        const email = typeof window !== 'undefined' ? 
+          localStorage.getItem('authUser') || 
+          localStorage.getItem('userEmail') || 
+          document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1] || '' : '';
+        
+        // Get name details
+        const firstName = typeof window !== 'undefined' ? 
+          localStorage.getItem('firstName') || 
+          document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1] || '' : '';
+        const lastName = typeof window !== 'undefined' ? 
+          localStorage.getItem('lastName') || 
+          document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1] || '' : '';
+        
+        // Create a username from first name and last name, or email if not available
+        const username = firstName && lastName 
+          ? `${firstName} ${lastName}` 
+          : firstName || email.split('@')[0] || '';
+        
         // Simplified implementation
-        setUser({ username: "user", email: "user@example.com" });
+        setUser({ username, email });
         return user;
       } catch (err) {
         logger.error('[UserContext] Error refreshing user:', err);

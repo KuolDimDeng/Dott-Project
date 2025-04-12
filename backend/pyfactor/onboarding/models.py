@@ -69,7 +69,7 @@ class OnboardingProgress(models.Model):
     onboarding_status = models.CharField(
         max_length=50,
         choices=ONBOARDING_STATUS_CHOICES,
-        default='business-info'
+        default='business_info'
     )
     account_status = models.CharField(
         max_length=20,
@@ -94,7 +94,7 @@ class OnboardingProgress(models.Model):
     current_step = models.CharField(
         max_length=50,
         choices=ONBOARDING_STATUS_CHOICES,
-        default='business-info'
+        default='business_info'
     )
     next_step = models.CharField(
         max_length=50,
@@ -204,7 +204,8 @@ class OnboardingProgress(models.Model):
             
             # Determine next step
             step_transitions = {
-                'business-info': 'subscription',
+                'business_info': 'subscription',
+                'business-info': 'subscription',  # Keep for backward compatibility
                 'subscription': 'payment',
                 'payment': 'setup',
                 'setup': 'complete',

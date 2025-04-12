@@ -14,8 +14,26 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export const getCurrentUser = async () => {
   try {
-    // Simplified implementation
-    return { username: "user", email: "user@example.com" };
+    // Get user details from localStorage or cookies
+    const email = typeof window !== 'undefined' ? 
+      localStorage.getItem('authUser') || 
+      localStorage.getItem('userEmail') || 
+      document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1] || '' : '';
+    
+    // Get name details
+    const firstName = typeof window !== 'undefined' ? 
+      localStorage.getItem('firstName') || 
+      document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1] || '' : '';
+    const lastName = typeof window !== 'undefined' ? 
+      localStorage.getItem('lastName') || 
+      document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1] || '' : '';
+    
+    // Create a username from first name and last name, or email if not available
+    const username = firstName && lastName 
+      ? `${firstName} ${lastName}` 
+      : firstName || (email ? email.split('@')[0] : '') || '';
+    
+    return { username, email };
   } catch (error) {
     logger.error('[UserService] Error in getCurrentUser:', error);
     return null;

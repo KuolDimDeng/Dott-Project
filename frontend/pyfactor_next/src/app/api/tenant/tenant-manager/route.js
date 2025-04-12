@@ -138,10 +138,11 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
             tenantCheck.rows?.length > 0 && 
             (
               currentName === 'Default Business' || 
+              currentName === 'My Business' ||
               currentName === '' || 
               !currentName || 
               // Only override with a more specific name (avoid replacing a real name with a generic one)
-              (businessName !== 'Default Business' && businessName.length > currentName.length)
+              (businessName && businessName !== 'Default Business' && businessName !== 'My Business' && businessName.length > 0)
             )
           ) {
             // Update tenant name with real business name
@@ -151,7 +152,7 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
               WHERE id = $2
             `, [businessName, tenantId]);
             
-            logger.info(`Updated tenant name from "${currentName}" to "${businessName}"`);
+            logger.info(`Updated tenant name from "${currentName || 'empty'}" to "${businessName}"`);
             
             // Return updated tenant info
             return {
@@ -200,7 +201,7 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
     // Begin a transaction for atomicity
     await pool.query('BEGIN');
     
-    // Create tenant record with the best available business name
+    // Create or update tenant record with the best available business name
     const finalBusinessName = businessName || '';
     
     const tenantResult = await pool.query(`
@@ -211,11 +212,16 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
       VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1)
       ON CONFLICT (id) DO UPDATE 
       SET name = CASE
-            WHEN custom_auth_tenant.name = 'Default Business' THEN EXCLUDED.name
-            WHEN custom_auth_tenant.name = '' THEN EXCLUDED.name
+            WHEN custom_auth_tenant.name IS NULL THEN $2
+            WHEN custom_auth_tenant.name = '' THEN $2
+            WHEN custom_auth_tenant.name = 'Default Business' THEN $2
+            WHEN custom_auth_tenant.name = 'My Business' THEN $2
+            WHEN $2 != '' AND $2 != 'Default Business' AND $2 != 'My Business' THEN $2
             ELSE custom_auth_tenant.name
           END, 
-          updated_at = NOW()
+          updated_at = NOW(),
+          owner_id = COALESCE($3, custom_auth_tenant.owner_id),
+          rls_enabled = true
       RETURNING id, name, owner_id, rls_enabled;
     `, [tenantId, finalBusinessName, userId]);
     

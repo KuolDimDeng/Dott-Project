@@ -176,13 +176,44 @@ export async function POST(request) {
           maxAge: 60 * 60 * 24 * 365, // 1 year
         });
         
+        // Get the business name from Cognito or request body
+        const businessName = cognitoUser?.['custom:businessname'] || body.businessName || '';
+        
+        // Generate a meaningful business name if none provided
+        let finalBusinessName = businessName;
+        if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+          // Try to generate a business name from user's information
+          const firstName = cognitoUser?.['given_name'] || cognitoUser?.['name'] || '';
+          const lastName = cognitoUser?.['family_name'] || '';
+          const email = cognitoUser?.['email'] || body.email || '';
+          
+          if (firstName && lastName) {
+            finalBusinessName = `${firstName} ${lastName}'s Business`;
+          } else if (firstName) {
+            finalBusinessName = `${firstName}'s Business`;
+          } else if (lastName) {
+            finalBusinessName = `${lastName}'s Business`;
+          } else if (email) {
+            // Extract name from email (e.g., john.doe@example.com -> John's Business)
+            const emailName = email.split('@')[0].split('.')[0];
+            if (emailName && emailName.length > 1) {
+              finalBusinessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+            }
+          }
+          
+          // If still no valid business name, leave it blank for user to update later
+          if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+            finalBusinessName = '';
+          }
+        }
+        
         return NextResponse.json({
           success: true,
           tenant_id: formattedTenantId,
-          name: body.businessName || cognitoUser?.['custom:businessname'] || 'Default Business',
+          name: finalBusinessName,
           status: 'active',
           fallback: true,
-          message: 'Tenant initialized with limited data due to authentication failure'
+          message: 'Using tenant ID from request body without authentication.'
         });
       }
       

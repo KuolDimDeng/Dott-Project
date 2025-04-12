@@ -183,7 +183,7 @@ export async function GET(request) {
       
       jsonResponse.cookies.set('setupProgress', '100', cookieOptions);
       jsonResponse.cookies.set('setupComplete', 'true', cookieOptions);
-      jsonResponse.cookies.set('onboardingStatus', 'COMPLETE', cookieOptions);
+      jsonResponse.cookies.set('onboardingStatus', 'complete', cookieOptions);
       
       return jsonResponse;
     }
@@ -286,7 +286,7 @@ export async function GET(request) {
               });
               
               try {
-                const updated = await updateOnboardingStep('COMPLETE', {
+                const updated = await updateOnboardingStep('complete', {
                   'setupdone': 'TRUE',
                   'completed_at': new Date().toISOString()
                 });
@@ -332,7 +332,7 @@ export async function GET(request) {
           
           jsonResponse.cookies.set('setupProgress', '100', cookieOptions);
           jsonResponse.cookies.set('setupComplete', 'true', cookieOptions);
-          jsonResponse.cookies.set('onboardingStatus', 'COMPLETE', cookieOptions);
+          jsonResponse.cookies.set('onboardingStatus', 'complete', cookieOptions);
           
           return jsonResponse;
         }

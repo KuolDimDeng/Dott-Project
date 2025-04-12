@@ -9,6 +9,27 @@ export function Complete() {
   const router = useRouter();
   const { data: session } = useSession();
 
+  // Function to get a personalized greeting
+  const getDisplayName = () => {
+    // Check for first name in Cognito attributes
+    if (session?.user?.attributes?.['custom:firstname']) {
+      return session.user.attributes['custom:firstname'];
+    }
+    
+    // Check for given name in Cognito attributes
+    if (session?.user?.attributes?.given_name) {
+      return session.user.attributes.given_name;
+    }
+    
+    // Check for email and extract username
+    if (session?.user?.email) {
+      const username = session.user.email.split('@')[0];
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    }
+    
+    return 'there'; // More friendly than 'User'
+  };
+
   useEffect(() => {
     logger.debug('Complete step mounted');
 
@@ -48,7 +69,7 @@ export function Complete() {
         </h2>
 
         <p className="text-gray-600">
-          Welcome, {session?.user?.attributes?.['custom:firstname'] || 'User'}!
+          Welcome, {getDisplayName()}!
           Your account has been fully configured and you can now access all
           features.
         </p>

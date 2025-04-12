@@ -55,7 +55,7 @@ async function getAuthenticatedUser(request) {
       safeLogger.debug('[API] Special handling for business-info page without auth');
       return {
         email: '',
-        'custom:onboarding': 'NOT_STARTED',
+        'custom:onboarding': 'not_started',
         partial: true
       };
     }
@@ -111,7 +111,7 @@ export async function GET(request) {
         isValid: true,
         userData: {
           email: '',
-          onboardingStatus: 'NOT_STARTED',
+          onboardingStatus: 'not_started',
           businessName: '',
           businessType: '',
         },
@@ -121,20 +121,19 @@ export async function GET(request) {
     
     // Get onboarding status from user attributes
     // Normalize to lowercase for consistency
-    const onboardingStatus = (user['custom:onboarding'] || 'NOT_STARTED').toLowerCase();
+    const onboardingStatus = (user['custom:onboarding'] || 'not_started').toLowerCase();
     safeLogger.debug('[API] User onboarding status', { 
       onboardingStatus,
-      originalStatus: user['custom:onboarding'] || 'NOT_STARTED'
+      originalStatus: user['custom:onboarding'] || 'not_started'
     });
     
     // Map onboarding steps to allowed status values (all lowercase for consistency)
-    const stepAccess = {
+    const valid_step_transitions = {
       'business-info': ['not_started', 'business_info', 'business-info', 'business-info-completed'],
       'subscription': ['business_info', 'business-info', 'business-info-completed', 'subscription'],
       'payment': ['subscription', 'payment'],
-      'setup': ['payment', 'setup', 'database-setup', 'database_setup'],
-      'database-setup': ['setup', 'database-setup', 'database_setup'],
-      'complete': ['setup', 'database-setup', 'database_setup', 'review', 'complete']
+      'setup': ['payment', 'setup', 'subscription'],
+      'dashboard': ['setup', 'complete', 'payment', 'subscription']
     };
     
     // Check if onboarding is complete
@@ -153,7 +152,7 @@ export async function GET(request) {
     }
     
     // Check if requested step is allowed
-    let isAllowed = stepAccess[requestedStep]?.includes(onboardingStatus);
+    let isAllowed = valid_step_transitions[requestedStep]?.includes(onboardingStatus);
     
     // Special case for payment page - check for plan type
     if (requestedStep === 'payment') {

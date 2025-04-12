@@ -4,12 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import dynamic from 'next/dynamic';
-import LoadingSpinner from '@/components/LoadingSpinner';
+import DashboardLoader from '@/components/DashboardLoader';
 
 // Dynamically import DashboardContent to avoid SSR issues
 const DashboardContent = dynamic(
   () => import('@/app/dashboard/DashboardContent'),
-  { ssr: false, loading: () => <LoadingSpinner fullscreen message="Loading dashboard..." /> }
+  { ssr: false, loading: () => <DashboardLoader message="Loading dashboard..." /> }
 );
 
 /**
@@ -58,7 +58,7 @@ export default function DashboardHome({ tenantId }) {
   }, [tenantId, router, searchParams]);
   
   if (isLoading) {
-    return <LoadingSpinner fullscreen message="Initializing dashboard..." />;
+    return <DashboardLoader message="Initializing dashboard..." />;
   }
   
   if (error) {

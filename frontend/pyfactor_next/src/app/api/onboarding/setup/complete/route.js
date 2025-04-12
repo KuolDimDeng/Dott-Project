@@ -108,18 +108,52 @@ async function checkBackendHealth(requestId) {
 // Update cognito attributes directly
 async function updateCognitoAttributes(requestId, token) {
   try {
-    // Update Cognito attributes directly with lowercase strings
+    // Get user info to check plan and tenant ID
+    let plan = 'free';
+    let tenantId = '';
+    
+    try {
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const userAttributes = await fetchUserAttributes();
+      
+      // Extract values from existing attributes
+      plan = userAttributes['custom:subplan'] || 'free';
+      tenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'] || '';
+    } catch (attributeError) {
+      logger.warn('[SetupAPI] Could not fetch current attributes:', {
+        requestId,
+        error: attributeError.message
+      });
+    }
+    
+    // Current timestamp for consistency
+    const timestamp = new Date().toISOString();
+    
+    // Update Cognito attributes directly with lowercase strings and all required fields
     await updateUserAttributes({
       userAttributes: {
         'custom:onboarding': 'complete',
         'custom:setupdone': 'true',
-        'custom:updated_at': new Date().toISOString()
+        'custom:acctstatus': 'active',
+        'custom:subplan': plan,
+        'custom:subscriptioninterval': 'monthly',
+        'custom:updated_at': timestamp,
+        'custom:setupcompletedtime': timestamp,
+        'custom:onboardingCompletedAt': timestamp,
+        'custom:payverified': plan === 'free' ? 'false' : 'true'
       }
     });
     
     logger.info('[SetupAPI] Updated Cognito attributes successfully', {
       requestId,
-      attributes: ['custom:onboarding', 'custom:setupdone', 'custom:updated_at']
+      plan,
+      attributes: [
+        'custom:onboarding', 
+        'custom:setupdone', 
+        'custom:updated_at',
+        'custom:subplan',
+        'custom:acctstatus'
+      ]
     });
     
     return true;
@@ -131,6 +165,9 @@ async function updateCognitoAttributes(requestId, token) {
     
     // Fallback to API call
     try {
+      // Current timestamp for consistency
+      const timestamp = new Date().toISOString();
+      
       const response = await fetch('/api/user/update-attributes', {
         method: 'POST',
         headers: {
@@ -141,7 +178,13 @@ async function updateCognitoAttributes(requestId, token) {
           attributes: {
             'custom:onboarding': 'complete',
             'custom:setupdone': 'true',
-            'custom:updated_at': new Date().toISOString()
+            'custom:acctstatus': 'active',
+            'custom:subplan': 'free', // Default to free for fallback
+            'custom:subscriptioninterval': 'monthly',
+            'custom:updated_at': timestamp,
+            'custom:setupcompletedtime': timestamp,
+            'custom:onboardingCompletedAt': timestamp,
+            'custom:payverified': 'false'
           },
           forceUpdate: true
         })

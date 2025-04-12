@@ -2,13 +2,13 @@ import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
 const ONBOARDING_STEPS = {
-  NOT_STARTED: {
-    next: 'BUSINESS_INFO',
+  not_started: {
+    next: 'business_info',
     route: '/onboarding/business-info',
     required: ['email']
   },
-  BUSINESS_INFO: {
-    next: 'SUBSCRIPTION',
+  business_info: {
+    next: 'subscription',
     route: '/onboarding/subscription',
     required: [
       'custom:businessname',
@@ -19,28 +19,28 @@ const ONBOARDING_STEPS = {
       'custom:datefounded'
     ]
   },
-  SUBSCRIPTION: {
-    next: 'PAYMENT',
+  subscription: {
+    next: 'payment',
     route: '/onboarding/payment',
     required: [
       'custom:subplan',
       'custom:subscriptioninterval'
     ]
   },
-  PAYMENT: {
-    next: 'SETUP',
+  payment: {
+    next: 'setup',
     route: '/onboarding/setup',
     required: [
       'custom:paymentid',
       'custom:payverified'
     ]
   },
-  SETUP: {
-    next: 'COMPLETE',
+  setup: {
+    next: 'complete',
     route: '/onboarding/complete',
     required: []
   },
-  COMPLETE: {
+  complete: {
     next: null,
     route: '/dashboard',
     required: ['custom:setupdone']
@@ -62,11 +62,11 @@ export async function validateOnboardingStep(step) {
     }
 
     const attributes = user.attributes || {};
-    const currentStep = attributes['custom:onboarding'] || 'NOT_STARTED';
+    const currentStep = attributes['custom:onboarding'] || 'not_started';
     const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true';
 
     // If setup is done, only allow dashboard access
-    if (setupDone && step !== 'COMPLETE') {
+    if (setupDone && step !== 'complete') {
       return {
         isValid: false,
         redirectTo: '/dashboard',
@@ -130,13 +130,13 @@ export async function validateOnboardingStep(step) {
 
 export function getOnboardingProgress(attributes) {
   try {
-    const currentStep = attributes['custom:onboarding'] || 'NOT_STARTED';
+    const currentStep = attributes['custom:onboarding'] || 'not_started';
     const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true';
 
     if (setupDone) {
       return {
         progress: 100,
-        currentStep: 'COMPLETE',
+        currentStep: 'complete',
         nextStep: null,
         nextRoute: '/dashboard'
       };
@@ -157,8 +157,8 @@ export function getOnboardingProgress(attributes) {
     logger.error('[OnboardingValidation] Progress calculation failed:', error);
     return {
       progress: 0,
-      currentStep: 'NOT_STARTED',
-      nextStep: 'BUSINESS_INFO',
+      currentStep: 'not_started',
+      nextStep: 'business_info',
       nextRoute: '/onboarding/business-info'
     };
   }

@@ -75,8 +75,8 @@ export const getCurrentUser = async () => {
     
     // Return fallback user data
     return { 
-      username: localStorage.getItem('userEmail') || "user@example.com",
-      email: localStorage.getItem('userEmail') || "user@example.com",
+      username: getUserDisplayName() || "",
+      email: localStorage.getItem('userEmail') || "",
       fallback: true
     };
   }
@@ -233,6 +233,29 @@ export const getUserTenantContext = async () => {
     logger.error('[userService] Error getting user tenant context:', error);
     throw error;
   }
+};
+
+// Function to get user's display name from available sources
+const getUserDisplayName = () => {
+  if (typeof window === 'undefined') return "";
+  
+  // Get name details
+  const firstName = localStorage.getItem('firstName') || 
+    document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1];
+  const lastName = localStorage.getItem('lastName') || 
+    document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1];
+  const email = localStorage.getItem('userEmail') || localStorage.getItem('authUser') || 
+    document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1];
+  
+  // Create a username from first name and last name, or email if not available
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  } else if (firstName) {
+    return firstName;
+  } else if (email) {
+    return email.split('@')[0];
+  }
+  return "";
 };
 
 // Create a default export with all service methods

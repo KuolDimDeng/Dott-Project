@@ -163,29 +163,93 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
     
     // Create tenant record only if we have a real business name
     let tenantResult = null;
-    if (businessName) {
-      tenantResult = await pool.query(`
-        INSERT INTO custom_auth_tenant (
-          id, name, owner_id, created_at, updated_at,
-          rls_enabled, rls_setup_date, tenant_id
-        )
-        VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1)
-        ON CONFLICT (id) DO UPDATE 
-        SET name = EXCLUDED.name, 
-            updated_at = NOW()
-        RETURNING id, name, owner_id, rls_enabled;
-      `, [tenantId, businessName, userId]);
-    } else {
-      // Without a business name, create with default name
-      tenantResult = await pool.query(`
-        INSERT INTO custom_auth_tenant (
-          id, name, owner_id, created_at, updated_at,
-          rls_enabled, rls_setup_date, tenant_id
-        )
-        VALUES ($1, 'Default Business', $2, NOW(), NOW(), true, NOW(), $1)
-        RETURNING id, name, owner_id, rls_enabled;
-      `, [tenantId, userId]);
+    
+    // Generate a meaningful business name if not provided
+    let finalBusinessName = businessName || '';
+    if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+      // Try to generate a business name from user data if we have a userId
+      if (userId) {
+        try {
+          // Import AWS SDK
+          const { CognitoIdentityProviderClient, AdminGetUserCommand } = require("@aws-sdk/client-cognito-identity-provider");
+          
+          // Get Cognito credentials from environment variables
+          const client = new CognitoIdentityProviderClient({
+            region: process.env.AWS_REGION || 'us-east-1',
+            credentials: {
+              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+            }
+          });
+          
+          // Try to get user attributes from Cognito
+          const command = new AdminGetUserCommand({
+            UserPoolId: process.env.COGNITO_USER_POOL_ID,
+            Username: userId
+          });
+          
+          const cognitoUser = await client.send(command);
+          
+          // Extract user information for generating business name
+          if (cognitoUser.UserAttributes) {
+            let firstName = '';
+            let lastName = '';
+            let email = '';
+            
+            for (const attr of cognitoUser.UserAttributes) {
+              if (attr.Name === 'given_name' || attr.Name === 'name') {
+                firstName = attr.Value;
+              } else if (attr.Name === 'family_name') {
+                lastName = attr.Value;
+              } else if (attr.Name === 'email') {
+                email = attr.Value;
+              } else if (attr.Name === 'custom:businessname' && attr.Value && 
+                         attr.Value !== 'Default Business' && attr.Value !== 'My Business') {
+                finalBusinessName = attr.Value;
+                break;
+              }
+            }
+            
+            if (!finalBusinessName && (firstName || lastName || email)) {
+              if (firstName && lastName) {
+                finalBusinessName = `${firstName} ${lastName}'s Business`;
+              } else if (firstName) {
+                finalBusinessName = `${firstName}'s Business`;
+              } else if (lastName) {
+                finalBusinessName = `${lastName}'s Business`;
+              } else if (email) {
+                // Extract name from email
+                const emailName = email.split('@')[0].split('.')[0];
+                if (emailName && emailName.length > 1) {
+                  finalBusinessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+                }
+              }
+            }
+          }
+        } catch (error) {
+          logger.warn(`Failed to get user data from Cognito: ${error.message}`);
+        }
+      }
     }
+    
+    // Create the tenant with the best name we could generate, or an empty string
+    tenantResult = await pool.query(`
+      INSERT INTO custom_auth_tenant (
+        id, name, owner_id, created_at, updated_at,
+        rls_enabled, rls_setup_date, tenant_id
+      )
+      VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1)
+      ON CONFLICT (id) DO UPDATE 
+      SET name = CASE
+                WHEN custom_auth_tenant.name IS NULL THEN $2
+                WHEN custom_auth_tenant.name = '' THEN $2
+                WHEN custom_auth_tenant.name = 'Default Business' THEN $2
+                WHEN custom_auth_tenant.name = 'My Business' THEN $2
+                ELSE custom_auth_tenant.name
+              END,
+          updated_at = NOW()
+      RETURNING id, name, owner_id, rls_enabled;
+    `, [tenantId, finalBusinessName, userId]);
     
     // Set up RLS policy if needed
     try {

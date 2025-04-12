@@ -134,24 +134,52 @@ class CognitoClient:
     def validate_onboarding_state(self, current_state, new_state):
         """Validate onboarding state transition"""
         valid_transitions = {
-            'NOT_STARTED': ['BUSINESS_INFO'],
-            'BUSINESS_INFO': ['SUBSCRIPTION'],
-            'SUBSCRIPTION': ['PAYMENT', 'SETUP'],
-            'PAYMENT': ['SETUP'],
-            'SETUP': ['COMPLETE'],
-            'COMPLETE': []
+            'not_started': ['business_info'],
+            'NOT_STARTED': ['BUSINESS_INFO', 'business_info'],  # Support both cases for backward compatibility
+            'business_info': ['subscription'],
+            'BUSINESS_INFO': ['SUBSCRIPTION', 'subscription'],  # Support both cases
+            'subscription': ['payment', 'setup', 'complete'],  # Lowercase for frontend compatibility
+            'SUBSCRIPTION': ['PAYMENT', 'SETUP', 'COMPLETE'],  # Keep for backward compatibility
+            'payment': ['setup', 'complete'],  # Lowercase for frontend compatibility
+            'PAYMENT': ['SETUP', 'COMPLETE'],  # Keep for backward compatibility
+            'setup': ['complete'],  # Lowercase for frontend compatibility
+            'SETUP': ['COMPLETE'],  # Keep for backward compatibility
+            'complete': [],  # Lowercase for frontend compatibility
+            'COMPLETE': []  # Keep for backward compatibility
         }
 
-        current_state = current_state.upper()
-        new_state = new_state.upper()
+        # Normalize case for comparison
+        # For current state, preserve original case for error messages
+        normalized_current = current_state.upper() if current_state else 'NOT_STARTED'
+        # For new state, handle special lowercase cases
+        if new_state and new_state.lower() in ['complete', 'subscription']:
+            normalized_new = new_state.lower()
+        else:
+            normalized_new = new_state.upper() if new_state else 'NOT_STARTED'
 
-        if current_state not in valid_transitions:
+        # Check if current state exists in transitions
+        if normalized_current not in valid_transitions and normalized_current.lower() not in valid_transitions:
             raise ValueError(f"Invalid current state: {current_state}")
 
-        if new_state not in valid_transitions[current_state]:
+        # Get valid transitions for the current state
+        if normalized_current in valid_transitions:
+            valid_next_states = valid_transitions[normalized_current]
+        else:
+            # Try lowercase version
+            valid_next_states = valid_transitions[normalized_current.lower()]
+
+        # Check if new state is valid for the current state
+        if normalized_new not in valid_next_states:
+            # Special handling for case sensitivity - check if the uppercase or lowercase version exists
+            lowercase_check = normalized_new.lower() in [state.lower() for state in valid_next_states]
+            uppercase_check = normalized_new.upper() in [state.upper() for state in valid_next_states]
+            
+            if lowercase_check or uppercase_check:
+                return True
+            
             raise ValueError(
                 f"Invalid state transition from {current_state} to {new_state}. "
-                f"Valid transitions are: {valid_transitions[current_state]}"
+                f"Valid transitions are: {valid_next_states}"
             )
 
         return True
@@ -168,9 +196,17 @@ class CognitoClient:
 
             # Prepare attributes to update
             update_attrs = {
-                'custom:onboarding': new_status.upper(),
+                # Always use lowercase for onboarding status values
+                'custom:onboarding': (
+                    new_status.lower() if new_status.upper() in ['COMPLETE', 'SUBSCRIPTION', 'PAYMENT', 'SETUP'] 
+                    else new_status.upper()
+                ),
                 'custom:updated_at': timezone.now().isoformat()
             }
+
+            # For complete status, also set setupdone to true
+            if new_status.upper() == 'COMPLETE' or new_status.lower() == 'complete':
+                update_attrs['custom:setupdone'] = 'true'
 
             # Add any additional attributes
             if additional_attrs:
@@ -193,7 +229,7 @@ class CognitoClient:
                 'custom:onboarding': 'NOT_STARTED',
                 'custom:userrole': 'OWNER',
                 'custom:acctstatus': 'PENDING',
-                'custom:subplan': 'FREE',
+                'custom:subplan': 'free',
                 'custom:subscriptioninterval': 'MONTHLY',
                 'custom:lastlogin': timezone.now().isoformat(),
                 'custom:preferences': '{"notifications":true,"theme":"light","language":"en"}',
@@ -220,7 +256,7 @@ class CognitoClient:
         ]
         valid_roles = ['OWNER', 'ADMIN']
         valid_statuses = ['PENDING', 'ACTIVE']
-        valid_plans = ['FREE', 'PROFESSIONAL']
+        valid_plans = ['free', 'PROFESSIONAL']
         valid_intervals = ['MONTHLY', 'YEARLY']
         valid_boolean = ['TRUE', 'FALSE']
 
@@ -286,7 +322,7 @@ class CognitoClient:
                 'custom:onboarding': 'NOT_STARTED',
                 'custom:userrole': 'OWNER',
                 'custom:acctstatus': 'PENDING',
-                'custom:subplan': 'FREE',
+                'custom:subplan': 'free',
                 'custom:subscriptioninterval': 'MONTHLY',
                 'custom:preferences': '{"notifications":true,"theme":"light","language":"en"}',
                 'custom:attrversion': '1.0.0',

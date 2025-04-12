@@ -242,39 +242,26 @@ export function useAuth() {
       
       // Prepare user attributes with all required Cognito attributes
       const timestamp = new Date().toISOString();
-      const userAttributes = {
-        email: userData.email,
-        given_name: userData.firstName,
-        family_name: userData.lastName,
-        'custom:onboarding': 'NOT_STARTED',
-        'custom:setupdone': 'FALSE',
-        'custom:userrole': 'OWNER',
-        'custom:created_at': timestamp,
-        'custom:updated_at': timestamp,
-        'custom:lastlogin': timestamp,
-        'custom:firstname': userData.firstName,
-        'custom:lastname': userData.lastName,
-        'custom:acctstatus': 'PENDING',
-        'custom:attrversion': '1.0.0',
-        'custom:businesscountry': userData.country || 'US',
+      const updatedAttributes = {
+        'custom:businesscountry': userData.country || 'us',
         'custom:businessid': '', // Will be set after confirmation
-        'custom:businessname': userData.businessName || 'Default Business',
+        'custom:businessname': userData.businessName || 
+          (userData.firstName ? `${userData.firstName}'s Business` : 
+           userData.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
         'custom:businesstype': userData.businessType || 'Other',
         'custom:datefounded': timestamp.split('T')[0], // Just the date part
-        'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
-        'custom:paymentid': '',
-        'custom:paymentmethod': '',
-        'custom:payverified': 'FALSE',
-        'custom:preferences': JSON.stringify({}),
-        'custom:requirespayment': 'FALSE',
-        'custom:subplan': 'FREE',
-        'custom:subscriptioninterval': 'MONTHLY',
-        'custom:subscriptionstatus': 'ACTIVE'
+        'custom:legalstructure': userData.legalStructure || 'Individual',
+        'custom:onboardingstatus': 'new',
+        'custom:setupdone': 'false',
+        'custom:subinterval': 'monthly',
+        'custom:subplan': 'free',
+        'custom:subscriptioninterval': 'monthly',
+        'custom:subscriptionstatus': 'active'
       };
       
       logger.debug('[Auth] Prepared user attributes:', {
-        attributeCount: Object.keys(userAttributes).length,
-        attributes: Object.keys(userAttributes)
+        attributeCount: Object.keys(updatedAttributes).length,
+        attributes: Object.keys(updatedAttributes)
       });
       
       const signUpResponse = await retryOperation(async () => {
@@ -282,14 +269,14 @@ export function useAuth() {
           logger.debug('[Auth] Calling authSignUp with:', {
             username: userData.email,
             hasPassword: !!userData.password,
-            attributeCount: Object.keys(userAttributes).length
+            attributeCount: Object.keys(updatedAttributes).length
           });
           
           const response = await authSignUp({
             username: userData.email,
             password: userData.password,
             options: {
-              userAttributes,
+              userAttributes: updatedAttributes,
               autoSignIn: {
                 enabled: true,
                 authFlowType: 'USER_PASSWORD_AUTH'

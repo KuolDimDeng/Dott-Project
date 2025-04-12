@@ -175,7 +175,7 @@ export default function SignUpForm() {
       }
       
       // Normal sign-up process
-      const { isSignUpComplete, userId, userSub } = await signUp({
+      const { isSignUpComplete, userId, userSub, nextStep } = await signUp({
         username: formData.username,
         password: formData.password,
         options: {

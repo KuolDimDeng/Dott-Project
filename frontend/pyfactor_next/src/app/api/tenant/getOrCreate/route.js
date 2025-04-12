@@ -27,7 +27,16 @@ export async function POST(request) {
     
     const userId = jwt.sub;
     const userEmail = jwt.email || '';
-    const userName = jwt.name || jwt.given_name || jwt.email?.split('@')[0] || 'User';
+    
+    // Generate username with capitalized first letter if from email
+    let userName = jwt.name || jwt.given_name;
+    if (!userName && userEmail) {
+      const emailName = userEmail.split('@')[0];
+      userName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+    }
+    if (!userName) {
+      userName = 'Guest';
+    }
     
     console.log(`[${requestId}] Getting or creating tenant for user: ${userId}, ${userEmail}`);
     

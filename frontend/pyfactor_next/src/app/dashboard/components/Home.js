@@ -116,6 +116,20 @@ function Home({ userData }) {
     return getSubscriptionPlanColor(planId);
   };
 
+  // Function to get personalized greeting
+  const getGreeting = () => {
+    if (userData?.first_name) {
+      return userData.first_name;
+    } else if (userData?.email) {
+      // Extract username from email and capitalize first letter
+      const username = userData.email.split('@')[0];
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    } else if (userData?.name) {
+      return userData.name;
+    }
+    return 'there'; // More friendly than 'User'
+  };
+
   return (
     <>
       <div className="pt-1.5 pb-2">
@@ -124,7 +138,7 @@ function Home({ userData }) {
         </h1>
         
         <p className="mb-4">
-          Welcome to your Dott dashboard, {userData?.first_name || 'User'}!
+          Welcome to your Dott dashboard, {getGreeting()}!
         </p>
         
         {/* Subscription Expired Banner */}

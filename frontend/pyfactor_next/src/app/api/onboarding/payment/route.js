@@ -13,7 +13,7 @@ export async function POST(request) {
 
     // Get user attributes
     const attributes = user.attributes || {};
-    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
+    const onboardingStatus = attributes['custom:onboarding'] || 'not_started';
 
     // Get the request body
     const paymentData = await request.json();
@@ -108,7 +108,7 @@ export async function GET(request) {
 
     // Get user attributes
     const attributes = user.attributes || {};
-    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
+    const onboardingStatus = attributes['custom:onboarding'] || 'not_started';
 
     // Get payment status through backend API
     const response = await fetch(
@@ -161,7 +161,7 @@ export async function PUT(request) {
 
     // Get user attributes
     const attributes = user.attributes || {};
-    const onboardingStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
+    const onboardingStatus = attributes['custom:onboarding'] || 'not_started';
 
     // Get the request body
     const updates = await request.json();

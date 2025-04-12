@@ -399,12 +399,14 @@ const MyAccount = ({ userData }) => {
             </div>
             <div>
               <h2 className="text-xl font-medium">
-                {(userDisplayData?.firstName && userDisplayData?.lastName) 
-                  ? `${userDisplayData.firstName} ${userDisplayData.lastName}`
-                  : userDisplayData?.name || userDisplayData?.email || 'User'}
+                {userDisplayData?.full_name || 
+                 (userDisplayData?.firstName && userDisplayData?.lastName ? 
+                  `${userDisplayData.firstName} ${userDisplayData.lastName}` : 
+                  userDisplayData?.firstName || 
+                  (userDisplayData?.email ? userDisplayData.email.split('@')[0] : 'Guest'))}
               </h2>
               <p className="text-gray-600 text-sm">
-                {userDisplayData?.email || 'user@example.com'}
+                {userDisplayData?.email || ''}
               </p>
             </div>
           </div>

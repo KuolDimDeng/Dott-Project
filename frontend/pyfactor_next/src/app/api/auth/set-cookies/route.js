@@ -69,53 +69,66 @@ export async function POST(request) {
     // Extract onboarding status from token for verification
     let cognitoOnboardingStatus = null;
     let cognitoSetupDone = false;
+    let cognitoSubPlan = null;
     
     try {
       const decodedToken = parseJwt(idToken);
       cognitoOnboardingStatus = decodedToken['custom:onboarding'];
       cognitoSetupDone = (decodedToken['custom:setupdone'] || '').toLowerCase() === 'true';
+      cognitoSubPlan = (decodedToken['custom:subplan'] || decodedToken['custom:subscription_plan'] || '').toLowerCase();
       
       logger.debug('[API] Extracted onboarding status from token:', { 
         cognitoOnboardingStatus,
-        cognitoSetupDone
+        cognitoSetupDone,
+        cognitoSubPlan
       });
+      
+      // Fix free plan users who are stuck in subscription status
+      const isFreePlan = cognitoSubPlan === 'free' || cognitoSubPlan === 'basic';
+      const isStuckInSubscription = cognitoOnboardingStatus?.toLowerCase() === 'subscription' && isFreePlan;
+      
+      if (isStuckInSubscription) {
+        logger.info('[API] Detected free plan user stuck in subscription status, fixing to complete');
+        cognitoOnboardingStatus = 'complete';
+        cognitoSetupDone = true;
+      }
     } catch (parseError) {
       logger.warn('[API] Failed to parse JWT for onboarding status:', parseError);
     }
     
     // Determine the correct onboarding state based on all available information
     // Priority: 1. Explicit parameters, 2. Cognito attributes, 3. Default for new users
-    let finalOnboardingStatus = onboardedStatus || cognitoOnboardingStatus || 'NOT_STARTED';
+    let finalOnboardingStatus = onboardedStatus || cognitoOnboardingStatus || 'not_started';
     let finalOnboardingStep = null;
     
     // Ensure onboardingStatus and onboardingStep are consistent with each other
-    if (finalOnboardingStatus === 'COMPLETE') {
+    if (finalOnboardingStatus === 'complete') {
       finalOnboardingStep = onboardingStep || 'complete';
       
-      // Double-check: If step is not 'complete' but status is 'COMPLETE', we have inconsistent state
+      // Double-check: If step is not 'complete' but status is 'complete', we have inconsistent state
       if (finalOnboardingStep !== 'complete' && finalOnboardingStep !== 'dashboard') {
-        logger.warn('[API] Inconsistent onboarding state detected: status is COMPLETE but step is not complete', {
+        logger.warn('[API] Inconsistent onboarding state detected: status is complete but step is not complete', {
           status: finalOnboardingStatus,
           step: finalOnboardingStep
         });
         
         // For safety, override to a consistent state based on Cognito
-        if (cognitoOnboardingStatus === 'COMPLETE') {
+        if (cognitoOnboardingStatus === 'complete') {
           finalOnboardingStep = 'complete';
         } else {
           // If Cognito says not complete, trust that over the inconsistent cookies
-          finalOnboardingStatus = cognitoOnboardingStatus || 'NOT_STARTED';
+          finalOnboardingStatus = cognitoOnboardingStatus || 'not_started';
           finalOnboardingStep = onboardingStep || 'business-info';
         }
       }
     } else {
       // For non-complete states, make sure step matches status
       finalOnboardingStep = onboardingStep || (
-        finalOnboardingStatus === 'NOT_STARTED' ? 'business-info' :
-        finalOnboardingStatus === 'BUSINESS_INFO' ? 'subscription' :
-        finalOnboardingStatus === 'SUBSCRIPTION' ? 'payment' :
-        finalOnboardingStatus === 'PAYMENT' ? 'setup' : 
-        finalOnboardingStatus === 'INCOMPLETE' ? 'business-info' : 'business-info'
+        finalOnboardingStatus === 'not_started' ? 'business-info' :
+        finalOnboardingStatus === 'business_info' ? 'subscription' :
+        finalOnboardingStatus === 'subscription' ? 'payment' :
+        finalOnboardingStatus === 'payment' ? 'setup' : 
+        finalOnboardingStatus === 'incomplete' ? 'business-info' : 'business-info'
       );
     }
     
@@ -131,7 +144,7 @@ export async function POST(request) {
     // Set setupCompleted cookie based on determined state
     const isSetupComplete = setupCompleted !== undefined ? 
       !!setupCompleted : 
-      (cognitoSetupDone || finalOnboardingStatus === 'COMPLETE');
+      (cognitoSetupDone || finalOnboardingStatus === 'complete');
     
     response.cookies.set('setupCompleted', isSetupComplete ? 'true' : 'false', {
       ...cookieOptions,

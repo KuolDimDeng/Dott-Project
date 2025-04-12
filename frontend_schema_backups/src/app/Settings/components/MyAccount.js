@@ -57,12 +57,18 @@ const MyAccount = ({ userData }) => {
         <div className="bg-white p-6 rounded-lg shadow mb-6">
           <div className="flex items-center mb-4">
             <div className="w-16 h-16 rounded-full bg-blue-900 text-white flex items-center justify-center text-2xl mr-4">
-              {userData?.first_name?.charAt(0)}{userData?.last_name?.charAt(0)}
+              {userData?.first_name?.charAt(0) || ''}{userData?.last_name?.charAt(0) || ''}
             </div>
             <div>
-              <h2 className="text-xl font-medium">{userData?.full_name || 'User'}</h2>
+              <h2 className="text-xl font-medium">
+                {userData?.full_name || 
+                 (userData?.first_name && userData?.last_name ? 
+                  `${userData.first_name} ${userData.last_name}` : 
+                  userData?.first_name || 
+                  (userData?.email ? userData.email.split('@')[0] : 'Guest'))}
+              </h2>
               <p className="text-gray-600 text-sm">
-                {userData?.email || 'user@example.com'}
+                {userData?.email || ''}
               </p>
             </div>
           </div>

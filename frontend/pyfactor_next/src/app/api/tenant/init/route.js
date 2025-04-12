@@ -272,6 +272,42 @@ export async function POST(request) {
     if (!cognitoUser) {
       logger.error('No Cognito user available');
       
+      // Get the business name from Cognito or request body
+      const businessName = cognitoUser?.['custom:businessname'] || body.businessName || '';
+      
+      // Generate business name if none provided
+      let finalBusinessName = businessName;
+      if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+        // Try to generate a business name from user's information
+        const firstName = cognitoUser?.['given_name'] || cognitoUser?.['name'] || '';
+        const lastName = cognitoUser?.['family_name'] || '';
+        const email = cognitoUser?.['email'] || body.email || '';
+        
+        if (firstName && lastName) {
+          finalBusinessName = `${firstName} ${lastName}'s Business`;
+          logger.info(`Generated business name from user's full name: ${finalBusinessName}`);
+        } else if (firstName) {
+          finalBusinessName = `${firstName}'s Business`;
+          logger.info(`Generated business name from user's first name: ${finalBusinessName}`);
+        } else if (lastName) {
+          finalBusinessName = `${lastName}'s Business`;
+          logger.info(`Generated business name from user's last name: ${finalBusinessName}`);
+        } else if (email) {
+          // Extract name from email (e.g., john.doe@example.com -> John's Business)
+          const emailName = email.split('@')[0].split('.')[0];
+          if (emailName && emailName.length > 1) {
+            finalBusinessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+            logger.info(`Generated business name from email: ${finalBusinessName}`);
+          }
+        }
+        
+        // If still no business name, leave it blank for the user to update later
+        if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+          finalBusinessName = '';
+          logger.info('No business name available, leaving blank for user to update later');
+        }
+      }
+      
       // If we have a tenant ID in the body, use it even without authentication
       // This allows the application to function when authentication fails
       if (body.tenantId) {
@@ -297,7 +333,7 @@ export async function POST(request) {
         return NextResponse.json({
           success: true,
           tenant_id: formattedTenantId,
-          name: body.businessName || cognitoUser?.['custom:businessname'] || 'Default Business',
+          name: finalBusinessName,
           status: 'active',
           fallback: true,
           message: 'Tenant initialized with limited data due to authentication failure'
@@ -313,35 +349,53 @@ export async function POST(request) {
       );
     }
     
-    // Get tenant ID from multiple sources
-    const originalTenantId = body.tenantId || 
-                           (cognitoUser && cognitoUser['custom:businessid']);
-
-    // Check for tenant ID in cookies if not found in body or user
-    let tenantId = originalTenantId;
-    try {
-      const cookieStore = await cookies();
-      const businessIdCookie = cookieStore.get('businessid');
-      const tenantIdCookie = cookieStore.get('tenantId');
+    // Get tenant ID from multiple sources with proper precedence 
+    // 1. Check Cognito custom:tenant_ID (uppercase ID) first
+    // 2. Check other Cognito attributes
+    // 3. Check body/request params
+    // 4. Check cookies
+    
+    // First priority: Cognito custom:tenant_ID (uppercase ID)
+    let tenantId = cognitoUser && cognitoUser['custom:tenant_ID'];
+    
+    if (tenantId) {
+      logger.info('Using tenant ID from Cognito custom:tenant_ID attribute:', tenantId);
+    } else {
+      // Second priority: body params or other Cognito attributes
+      tenantId = body.tenantId || 
+                (cognitoUser && cognitoUser['custom:tenant_id']) ||
+                (cognitoUser && cognitoUser['custom:businessid']);
       
-      if (!tenantId) {
-        tenantId = businessIdCookie?.value || tenantIdCookie?.value;
+      if (tenantId) {
+        logger.info('Using tenant ID from request body or other Cognito attributes:', tenantId);
+      } else {
+        // Third priority: Check cookies
+        try {
+          const cookieStore = await cookies();
+          const businessIdCookie = cookieStore.get('businessid');
+          const tenantIdCookie = cookieStore.get('tenantId');
+          
+          if (!tenantId) {
+            tenantId = businessIdCookie?.value || tenantIdCookie?.value;
+            
+            if (tenantId) {
+              logger.info('Using tenant ID from cookies:', tenantId);
+            }
+          }
+          
+          logger.debug('Checked cookies for tenant ID:', { 
+            businessIdCookie: businessIdCookie?.value ? 'found' : 'missing',
+            tenantIdCookie: tenantIdCookie?.value ? 'found' : 'missing',
+            tenantId
+          });
+        } catch (cookieError) {
+          logger.warn('Error accessing cookies:', cookieError.message);
+        }
       }
-      
-      logger.info('Checked cookies for tenant ID:', { 
-        businessIdCookie: businessIdCookie?.value ? 'found' : 'missing',
-        tenantIdCookie: tenantIdCookie?.value ? 'found' : 'missing',
-        tenantId
-      });
-    } catch (cookieError) {
-      logger.warn('Error accessing cookies:', cookieError.message);
     }
     
     // Get the user's email address from Cognito
     const userEmail = cognitoUser?.email || body.email;
-    
-    // Get the business name from Cognito or request body
-    const businessName = cognitoUser?.['custom:businessname'] || body.businessName || '';
     
     // Create a connection to the database (details provided by environment variables)
     try {
@@ -544,8 +598,7 @@ export async function POST(request) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tenantId: repairedTenantId,
-            businessName: businessName || cognitoUser?.['custom:businessname'] || 
-              (typeof window !== 'undefined' && localStorage.getItem('businessName')), 
+            businessName: finalBusinessName,
             forceCreate: shouldCreateTenant // Only create if explicitly requested
           })
         });
@@ -607,8 +660,8 @@ export async function POST(request) {
             });
             
             // Store business name in cookies for future requests
-            if (businessName) {
-              await cookieStore.set('businessName', businessName, {
+            if (finalBusinessName) {
+              await cookieStore.set('businessName', finalBusinessName, {
                 path: '/',
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 365, // 1 year
@@ -618,7 +671,7 @@ export async function POST(request) {
             return NextResponse.json({
               success: true,
               tenant_id: tenantResult.tenantId,
-              name: tenantResult.tenantInfo?.name || businessName || cognitoUser?.['custom:businessname'] || '',
+              name: tenantResult.tenantInfo?.name || finalBusinessName,
               direct_db: true,
               message: 'Tenant initialized successfully via tenant manager'
             });
@@ -671,8 +724,7 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       tenant_id: repairedTenantId,
-      name: businessName || cognitoUser?.['custom:businessname'] || 
-        (typeof window !== 'undefined' && localStorage.getItem('businessName')) || '',
+      name: finalBusinessName,
       status: 'active',
       fallback: true,
       message: 'Tenant initialized successfully via fallback method'

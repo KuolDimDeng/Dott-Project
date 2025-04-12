@@ -680,7 +680,7 @@ const DashAppBar = ({
                   data.profile.businessName ||
                   data.profile.business_name ||
                   locallyStoredName ||
-                  'Default Business',
+                  (userData?.firstName ? `${userData.firstName}'s Business` : 'My Business'),
                 subscription_type:
                   data.profile.subscription_type ||
                   data.profile.subscriptionType ||
@@ -743,7 +743,9 @@ const DashAppBar = ({
           if (locallyStoredName || firstName || lastName || email) {
             setProfileData((prevData) => ({
               ...(prevData || {}),
-              business_name: locallyStoredName || 'Default Business',
+              business_name: locallyStoredName || 
+                (userData?.firstName ? `${userData.firstName}'s Business` : 
+                 email ? `${email.split('@')[0]}'s Business` : 'My Business'),
               subscription_type: userData?.subscription_type || 'free',
               userData: {
                 ...(prevData?.userData || {}),
@@ -778,7 +780,9 @@ const DashAppBar = ({
           locallyStoredName ||
           profile.businessName ||
           profile.businessname ||
-          'Default Business';
+          (profile.firstName || profile.firstname || profile.given_name ? 
+            `${profile.firstName || profile.firstname || profile.given_name}'s Business` : 
+           profile.email ? `${profile.email.split('@')[0]}'s Business` : 'My Business');
         const subscriptionType =
           profile.subscriptionPlan || profile.subplan || 'free';
         const accountStatus =
@@ -1331,17 +1335,19 @@ const DashAppBar = ({
       const profileFirstName =
         profileData.userData.first_name ||
         profileData.userData.firstName ||
-        profileData.userData.given_name;
+        profileData.userData.given_name ||
+        '';
       const profileLastName =
         profileData.userData.last_name ||
         profileData.userData.lastName ||
-        profileData.userData.family_name;
+        profileData.userData.family_name ||
+        '';
+      const profileEmail = profileData.userData.email || '';
 
       if (profileFirstName && profileLastName) {
         return `${profileFirstName.charAt(0).toUpperCase()}${profileLastName.charAt(0).toUpperCase()}`;
       } else if (profileFirstName) {
         // Try to get last initial from email if available
-        const profileEmail = profileData.userData.email;
         if (profileEmail && profileEmail.includes('@')) {
           const namePart = profileEmail.split('@')[0];
           if (namePart.includes('.')) {
@@ -1357,7 +1363,6 @@ const DashAppBar = ({
       }
 
       // Try email from profileData
-      const profileEmail = profileData.userData.email;
       if (profileEmail && profileEmail.includes('@')) {
         const namePart = profileEmail.split('@')[0];
         if (namePart.includes('.')) {
@@ -1373,15 +1378,21 @@ const DashAppBar = ({
     // Fall back to userData
     if (userData) {
       const firstName =
-        userData.first_name || userData.firstName || userData.given_name;
+        userData.first_name ||
+        userData.firstName ||
+        userData.given_name ||
+        '';
       const lastName =
-        userData.last_name || userData.lastName || userData.family_name;
+        userData.last_name ||
+        userData.lastName ||
+        userData.family_name ||
+        '';
+      const email = userData.email || '';
 
       if (firstName && lastName) {
         return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
       } else if (firstName) {
         // Try to get last initial from email if available
-        const email = userData.email;
         if (email && email.includes('@')) {
           const namePart = email.split('@')[0];
           if (namePart.includes('.')) {
@@ -1397,7 +1408,6 @@ const DashAppBar = ({
       }
 
       // Try email from userData
-      const email = userData.email;
       if (email && email.includes('@')) {
         const namePart = email.split('@')[0];
         if (namePart.includes('.')) {
@@ -1411,7 +1421,7 @@ const DashAppBar = ({
     }
 
     // Ultimate fallback
-    return 'D';
+    return 'U';
   }, [userInitials, profileData, userData]);
 
   // Combine profile data with user data for display
@@ -1573,6 +1583,34 @@ const DashAppBar = ({
 
   // Create a unified effective user data object to avoid multiple recalculations
   const businessData = useMemo(() => {
+    // Generate business name from user attributes if not explicitly set
+    const generateBusinessName = () => {
+      // Try to build from user attributes
+      if (userData) {
+        // If userData has email, first name, or last name, use them to build a business name
+        const firstName = userData?.['custom:firstname'] || userData?.given_name || '';
+        const lastName = userData?.['custom:lastname'] || userData?.family_name || '';
+        const email = userData?.email || '';
+        
+        if (firstName && lastName) {
+          return `${firstName} ${lastName}'s Business`;
+        } else if (firstName) {
+          return `${firstName}'s Business`;
+        } else if (lastName) {
+          return `${lastName}'s Business`;
+        } else if (email) {
+          // Extract username from email
+          const username = email.split('@')[0];
+          if (username && username !== 'undefined') {
+            return `${username}'s Business`;
+          }
+        }
+      }
+      
+      // Final fallback
+      return 'My Business';
+    };
+
     return {
       business_name:
         isValidProfileData && profileData?.business_name
@@ -1581,7 +1619,7 @@ const DashAppBar = ({
             userData?.['custom:businessname'] ||
             (typeof window !== 'undefined' &&
               localStorage.getItem('businessName')) ||
-            'Default Business',
+            generateBusinessName(),
 
       subscription_type:
         isValidProfileData && profileData?.subscription_type
@@ -1686,11 +1724,11 @@ const DashAppBar = ({
     const authUser = localStorage.getItem('authUser');
     const userEmail = localStorage.getItem('userEmail');
     
-    if (authUser && authUser !== 'user@example.com') {
+    if (authUser) {
       return authUser;
     }
     
-    if (userEmail && userEmail !== 'user@example.com') {
+    if (userEmail) {
       return userEmail;
     }
     
@@ -1698,7 +1736,7 @@ const DashAppBar = ({
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if ((name === 'email' || name === 'userEmail') && value && value !== 'user@example.com') {
+      if ((name === 'email' || name === 'userEmail') && value) {
         return decodeURIComponent(value);
       }
     }
@@ -1708,7 +1746,7 @@ const DashAppBar = ({
     if (idToken) {
       try {
         const payload = JSON.parse(atob(idToken.split('.')[1]));
-        if (payload.email && payload.email !== 'user@example.com') {
+        if (payload.email) {
           return payload.email;
         }
       } catch (error) {
@@ -1734,9 +1772,251 @@ const DashAppBar = ({
     }
   }, []);
 
+  // Effect to fetch Cognito user attributes when authenticated
+  useEffect(() => {
+    const fetchCognitoUserData = async () => {
+      try {
+        logger.debug('[AppBar] Starting Cognito user attributes fetch');
+        
+        // Helper function to get cookies
+        const getCookie = (name) => {
+          const value = `; ${document.cookie}`;
+          const parts = value.split(`; ${name}=`);
+          if (parts.length === 2) {
+            const cookieValue = parts.pop().split(';').shift();
+            // Try to decode the cookie value
+            try {
+              return decodeURIComponent(cookieValue);
+            } catch (e) {
+              return cookieValue;
+            }
+          }
+          return '';
+        };
+        
+        // Try to extract data from JWT token
+        try {
+          const idTokenString = localStorage.getItem('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
+          if (idTokenString) {
+            const idToken = localStorage.getItem(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${idTokenString}.idToken`);
+            if (idToken) {
+              const payload = JSON.parse(atob(idToken.split('.')[1]));
+              logger.debug('[AppBar] JWT token payload:', payload);
+              
+              // If we have Cognito data in the JWT token but user is not authenticated,
+              // we can use this data
+              if (!isAuthenticated || !user) {
+                const jwtProfile = {
+                  firstName: payload['custom:firstname'] || payload['given_name'] || '',
+                  lastName: payload['custom:lastname'] || payload['family_name'] || '',
+                  email: payload['email'] || '',
+                  businessName: payload['custom:businessName'] || payload['custom:tenant_name'] || '',
+                  subscriptionType: payload['custom:subplan'] || payload['custom:subscription_plan'] || 'free',
+                  tenantId: payload['custom:tenant_ID'] || payload['custom:businessid'] || tenantId
+                };
+                
+                logger.info('[AppBar] Profile data from JWT token:', jwtProfile);
+                
+                // Update profile data state if we have useful information
+                if (jwtProfile.email || jwtProfile.firstName || jwtProfile.lastName || jwtProfile.businessName) {
+                  setProfileData(jwtProfile);
+                  
+                  // Generate and set user initials
+                  const initials = generateInitialsFromNames(jwtProfile.firstName, jwtProfile.lastName, jwtProfile.email);
+                  setUserInitials(initials || 'U');
+                  
+                  // Set business name if available
+                  if (jwtProfile.businessName) {
+                    setBusinessName(jwtProfile.businessName);
+                  }
+                  
+                  // Update userdata if callback available
+                  if (typeof setUserData === 'function') {
+                    setUserData(prev => ({
+                      ...prev,
+                      ...jwtProfile
+                    }));
+                  }
+                  
+                  return;
+                }
+              }
+            }
+          }
+        } catch (jwtError) {
+          logger.error('[AppBar] Error extracting data from JWT token:', jwtError);
+        }
+        
+        // Try to get Cognito data first if authenticated
+        if (isAuthenticated && user) {
+          try {
+            logger.debug('[AppBar] User is authenticated, fetching from Cognito directly');
+            
+            // Import Amplify auth functions
+            const { fetchUserAttributes } = await import('aws-amplify/auth');
+            
+            // Get user attributes directly from Cognito
+            const attributes = await fetchUserAttributes();
+            logger.debug('[AppBar] Successfully fetched Cognito attributes:', attributes);
+            
+            // Extract important profile data
+            const firstName = attributes['custom:firstname'] || attributes['given_name'] || '';
+            const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
+            const email = attributes['email'] || '';
+            const businessName = attributes['custom:businessName'] || attributes['custom:tenant_name'] || '';
+            const subscriptionType = attributes['custom:subplan'] || attributes['custom:subscription_plan'] || 'free';
+            
+            // Create profile object
+            const profile = {
+              firstName,
+              lastName,
+              email,
+              businessName,
+              subscriptionType,
+              tenantId: tenantId || attributes['custom:tenant_ID'] || attributes['custom:businessid']
+            };
+            
+            logger.info('[AppBar] Cognito user profile attributes:', profile);
+            
+            // Update profile data state
+            setProfileData(profile);
+            
+            // Generate and set user initials
+            const initials = generateInitialsFromNames(firstName, lastName, email);
+            setUserInitials(initials || 'U');
+            
+            // Set business name if available
+            if (businessName) {
+              setBusinessName(businessName);
+            }
+            
+            // Update userdata if callback available
+            if (typeof setUserData === 'function') {
+              setUserData(prev => ({
+                ...prev,
+                ...profile
+              }));
+            }
+            
+            return;
+          } catch (error) {
+            logger.error('[AppBar] Error fetching authenticated Cognito user attributes:', error);
+            // Continue to fallback methods
+          }
+        }
+        
+        // If we get here, either not authenticated or failed to get Cognito data
+        logger.debug('[AppBar] Using fallback method for user data');
+        
+        // Try to get data from cookies
+        const cookieFirstName = getCookie('firstName') || '';
+        const cookieLastName = getCookie('lastName') || '';
+        const cookieEmail = getCookie('email') || localStorage.getItem('userEmail') || '';
+        const cookieBusinessName = getCookie('businessName') || localStorage.getItem('businessName') || '';
+        
+        // Check if we got any useful data from cookies
+        if (cookieFirstName || cookieLastName || cookieEmail || cookieBusinessName) {
+          logger.debug('[AppBar] Retrieved user data from cookies/localStorage');
+          
+          const fallbackProfile = {
+            firstName: cookieFirstName,
+            lastName: cookieLastName,
+            email: cookieEmail,
+            businessName: cookieBusinessName,
+            subscriptionType: localStorage.getItem('subscription-plan') || 'free',
+            tenantId
+          };
+          
+          logger.info('[AppBar] Fallback profile data:', fallbackProfile);
+          
+          // Update profile data state
+          setProfileData(fallbackProfile);
+          
+          // Generate and set user initials
+          const initials = generateInitialsFromNames(cookieFirstName, cookieLastName, cookieEmail);
+          setUserInitials(initials || 'U');
+          
+          // Set business name if available
+          if (cookieBusinessName) {
+            setBusinessName(cookieBusinessName);
+          }
+          
+          // Update userdata if callback available
+          if (typeof setUserData === 'function') {
+            setUserData(prev => ({
+              ...prev,
+              ...fallbackProfile
+            }));
+          }
+        } else {
+          logger.debug('[AppBar] No user data available in cookies/localStorage');
+        }
+        
+      } catch (error) {
+        logger.error('[AppBar] Unexpected error in fetchCognitoUserData:', error);
+      }
+    };
+    
+    fetchCognitoUserData();
+  }, [isAuthenticated, user, tenantId, generateInitialsFromNames, setUserData]);
+
+  // Function to get user initials from JWT token
+  const getInitialsFromJwtToken = () => {
+    try {
+      const idTokenString = localStorage.getItem('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
+      if (idTokenString) {
+        const idToken = localStorage.getItem(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${idTokenString}.idToken`);
+        if (idToken) {
+          const payload = JSON.parse(atob(idToken.split('.')[1]));
+          logger.debug('[AppBar] Found JWT token payload for initials:', payload);
+          
+          // First try to use firstname/lastname from token
+          const firstName = payload['custom:firstname'] || payload.given_name || '';
+          const lastName = payload['custom:lastname'] || payload.family_name || '';
+          
+          if (firstName && lastName) {
+            return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+          } else if (firstName) {
+            return firstName.charAt(0).toUpperCase();
+          } else if (lastName) {
+            return lastName.charAt(0).toUpperCase();
+          }
+          
+          // Fall back to email if names not available
+          if (payload.email) {
+            const email = payload.email;
+            if (email.includes('@')) {
+              const namePart = email.split('@')[0];
+              if (namePart.includes('.')) {
+                const parts = namePart.split('.');
+                if (parts.length >= 2) {
+                  return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+                }
+              }
+              return email.charAt(0).toUpperCase();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      logger.error('[AppBar] Error getting initials from JWT token:', e);
+    }
+    return null;
+  };
+  
+  // Get initials from JWT at component initialization
+  useEffect(() => {
+    if (!userInitials) {
+      const jwtInitials = getInitialsFromJwtToken();
+      if (jwtInitials) {
+        logger.info('[AppBar] Setting initials from JWT token:', jwtInitials);
+        setUserInitials(jwtInitials);
+      }
+    }
+  }, [userInitials]);
+
   return (
     <>
-      <style dangerouslySetInnerHTML={{ __html: animationStyles }} />
       <header 
         className="fixed top-0 left-0 right-0 w-full bg-primary-main text-white shadow-md z-20 transition-all duration-200 ease-in-out"
         style={mainBackground}
@@ -1750,8 +2030,8 @@ const DashAppBar = ({
             <Image 
               src="/static/images/PyfactorDashboard.png"
               alt="Pyfactor Dashboard Logo"
-              width={100}
-              height={90}
+              width={140}
+              height={40}
               className="object-contain"
               priority
             />
@@ -1766,28 +2046,28 @@ const DashAppBar = ({
                 <div className="flex items-center">
                   {/* Business name */}
                   <div className="text-white hidden md:flex items-center mr-3">
-                    <span className="font-semibold">{effectiveBusinessName}</span>
+                    <span className="font-semibold">{businessName || 'Dashboard'}</span>
                     <span className="mx-2 h-4 w-px bg-white/30"></span>
                   </div>
                   
                   <div
                     onClick={handleSubscriptionClick}
                     className={`flex items-center px-3 py-1.5 cursor-pointer text-white rounded hover:shadow-md transition-shadow ${
-                      businessData.subscription_type === 'professional'
+                      userData.subscription_type === 'professional'
                         ? 'bg-purple-600'
-                        : businessData.subscription_type === 'enterprise'
+                        : userData.subscription_type === 'enterprise'
                           ? 'bg-indigo-600'
                           : 'bg-blue-600'
                     }`}
                   >
                     {/* Display business name on mobile inside the subscription button */}
                     <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                      {effectiveBusinessName}:
+                      {businessName || 'Dashboard'}:
                     </span>
                     <span className="whitespace-nowrap text-xs inline-block">
-                      {displayLabel}
+                      {userData.subscription_type ? getSubscriptionLabel(userData.subscription_type) : 'Free Plan'}
                     </span>
-                    {businessData.subscription_type === 'free' && (
+                    {(!userData.subscription_type || userData.subscription_type === 'free') && (
                       <button
                         className="ml-2 text-xs py-0.5 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
                         onClick={(e) => {
@@ -1892,205 +2172,106 @@ const DashAppBar = ({
                 aria-controls={openMenu ? 'user-menu' : undefined}
                 aria-haspopup="true"
                 aria-expanded={openMenu ? 'true' : undefined}
-                className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full relative"
+                className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
-                  {displayInitials ||
-                    (() => {
-                      // Final fallback - calculate initials directly at render time
-                      const firstName =
-                        effectiveUserData?.first_name ||
-                        effectiveUserData?.firstName ||
-                        '';
-                      const lastName =
-                        effectiveUserData?.last_name ||
-                        effectiveUserData?.lastName ||
-                        '';
-                      const email = effectiveUserData?.email || '';
-
-                      if (firstName && lastName) {
-                        return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
-                      } else if (firstName && email) {
-                        // Try to extract last initial from email
-                        if (email.includes('@')) {
-                          const namePart = email.split('@')[0];
-                          if (namePart.includes('.')) {
-                            const parts = namePart.split('.');
-                            if (parts.length >= 2 && parts[1].length > 0) {
-                              return `${firstName.charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
-                            }
-                          }
-                        }
-                        return firstName.charAt(0).toUpperCase();
-                      } else if (lastName) {
-                        return lastName.charAt(0).toUpperCase();
-                      } else if (email) {
-                        return email.charAt(0).toUpperCase();
-                      }
-                      
-                      return 'U';
-                    })()}
+                  {userInitials || 'U'}
                 </div>
               </button>
-              
-              {/* User menu */}
-              {openMenu && (
-                <>
-                  {/* Add an overlay to catch clicks outside but ensure menu visibility */}
-                  <div 
-                    className="fixed inset-0 z-[999]" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClose();
-                    }}
-                  />
-                  
-                  <div
-                    ref={userMenuRef}
-                    id="user-menu"
-                    className="absolute right-4 mt-2 top-14 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-[1000]"
-                    style={{
-                      position: 'absolute',
-                      zIndex: 9999
-                    }}
-                    onClick={(e) => e.stopPropagation()} // Prevent clicks from closing the menu
-                  >
-                    {/* User info header */}
-                    <div className="p-4 border-b border-gray-100">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium">
-                          {userInitials || (userData?.email?.charAt(0).toUpperCase() || 'U')}
-                        </div>
-                        <div className="ml-3">
-                          <p className="text-sm font-medium text-gray-900">
-                            {userData?.name || userData?.email || 'User'}
-                          </p>
-                          <p className="text-xs text-gray-500 truncate">
-                            {userData?.email || localStorage.getItem('authUser') || localStorage.getItem('userEmail') || getUserEmail() || 'user@example.com'}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {/* Business name if available */}
-                      {businessName && (
-                        <div className="mt-2 text-xs text-gray-700">
-                          Business: {businessName}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Menu items */}
-                    <div className="py-1">
-                      {/* My Account */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                        onClick={() => {
-                          console.log('My Account button clicked');
-                          console.log('handleUserProfileClick:', typeof handleUserProfileClick);
-                          console.log('Current userData:', userData);
-                          handleClose();
-                          if (typeof handleUserProfileClick === 'function') {
-                            handleUserProfileClick();
-                            console.log('handleUserProfileClick function called');
-                          } else {
-                            console.error('handleUserProfileClick is not a function');
-                          }
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        My Account
-                      </button>
-                      
-                      {/* Settings */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                        onClick={() => {
-                          handleClose();
-                          handleSettingsClick();
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Settings
-                      </button>
-                      
-                      {/* Help Center */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                        onClick={() => {
-                          handleClose();
-                          handleHelpClick();
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Help
-                      </button>
-                      
-                      <div className="border-t border-gray-100 my-1"></div>
-                      
-                      {/* Privacy Policy */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                        onClick={() => {
-                          handleClose();
-                          handlePrivacyClick();
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        Privacy Policy
-                      </button>
-                      
-                      {/* Terms of Service */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                        onClick={() => {
-                          handleClose();
-                          handleTermsClick();
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                        Terms of Service
-                      </button>
-                      
-                      <div className="border-t border-gray-100 my-1"></div>
-                      
-                      {/* Sign Out */}
-                      <button
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center"
-                        onClick={() => {
-                          handleClose();
-                          handleLogout();
-                        }}
-                      >
-                        <svg className="w-5 h-5 mr-3 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
         </div>
       </header>
 
+      {/* User dropdown menu - POSITIONED OUTSIDE HEADER */}
+      {openMenu && (
+        <div
+          ref={userMenuRef}
+          className="fixed top-16 right-4 w-64 bg-white rounded-lg shadow-lg border border-gray-200 mt-1 z-50"
+          style={{
+            maxWidth: 'calc(100vw - 2rem)',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+            zIndex: 10000000,
+          }}
+        >
+          {userData && (
+            <div>
+              {/* Header with user info */}
+              <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                <div className="flex items-center mb-2">
+                  <div className="w-10 h-10 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-base font-medium mr-3">
+                    {userInitials || 'U'}
+                  </div>
+                  <div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">
+                        {userData?.name || 
+                         (userData?.first_name && userData?.last_name) ? 
+                           `${userData.first_name} ${userData.last_name}` : 
+                         userData?.first_name || 
+                         userData?.email?.split('@')[0] || 
+                         'Guest'}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {userData?.email}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Menu items */}
+              <div
+                className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
+                onClick={handleUserProfileClick}
+              >
+                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                </svg>
+                <span>My Account</span>
+              </div>
+              <div
+                className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
+                onClick={handleSettingsClick}
+              >
+                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span>Settings</span>
+              </div>
+              <div
+                className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
+                onClick={handleHelpClick}
+              >
+                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Help Center</span>
+              </div>
+              <div
+                className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center border-t"
+                onClick={handleLogout}
+              >
+                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                <span>Sign Out</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Add the subscription popup */}
-      <SubscriptionPopup
-        open={showSubscriptionPopup}
-        onClose={() => setShowSubscriptionPopup(false)}
-      />
+      {showSubscriptionPopup && (
+        <SubscriptionPopup
+          isOpen={showSubscriptionPopup}
+          onClose={() => setShowSubscriptionPopup(false)}
+          onSubscriptionClick={handleSubscriptionClick}
+          onShowNotification={handleShowNotification}
+        />
+      )}
 
       {/* Render create menu popup when showCreateMenu is true */}
       {showCreateMenu && (

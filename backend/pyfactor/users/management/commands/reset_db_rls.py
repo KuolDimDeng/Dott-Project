@@ -12,6 +12,7 @@ from django.apps import apps
 import django
 import logging
 from django.utils import timezone
+import boto3
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -422,18 +423,62 @@ class Command(BaseCommand):
             try:
                 from users.models import Business
                 
+                # Try to get the user's business name from Cognito attributes
+                business_name = None
+                try:
+                    # Get Cognito client
+                    cognito_client = boto3.client('cognito-idp',
+                        region_name=settings.AWS_REGION,
+                        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+                        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
+                    )
+                    
+                    # Try to get user attributes from Cognito
+                    if hasattr(admin_user, 'username'):
+                        response = cognito_client.admin_get_user(
+                            UserPoolId=settings.COGNITO_USER_POOL_ID,
+                            Username=admin_user.username
+                        )
+                        
+                        # Extract business name from user attributes
+                        if 'UserAttributes' in response:
+                            for attr in response['UserAttributes']:
+                                if attr['Name'] in ['custom:businessname', 'businessName', 'business_name']:
+                                    if attr['Value'] and attr['Value'].strip():
+                                        business_name = attr['Value']
+                                        break
+                except Exception as e:
+                    logger.warning(f"Failed to get business name from Cognito: {e}")
+                
+                # If we couldn't get from Cognito, try to generate a name based on user info
+                if not business_name:
+                    if hasattr(admin_user, 'first_name') and admin_user.first_name:
+                        if hasattr(admin_user, 'last_name') and admin_user.last_name:
+                            business_name = f"{admin_user.first_name} {admin_user.last_name}'s Business"
+                        else:
+                            business_name = f"{admin_user.first_name}'s Business"
+                    elif hasattr(admin_user, 'last_name') and admin_user.last_name:
+                        business_name = f"{admin_user.last_name}'s Business"
+                    elif hasattr(admin_user, 'email') and admin_user.email:
+                        # Extract name from email
+                        email_name = admin_user.email.split('@')[0]
+                        business_name = f"{email_name.capitalize()}'s Business"
+                    else:
+                        # Fall back to a temporary name that indicates it needs to be updated
+                        business_name = f"Business ({admin_user.id})"
+                
                 business, created = Business.objects.get_or_create(
                     owner_id=admin_user.id,
                     defaults={
                         'id': uuid.uuid4(),
-                        'name': 'Default Business',
+                        'name': business_name,
                         'created_at': timezone.now(),
                         'updated_at': timezone.now()
                     }
                 )
                 
                 if created:
-                    logger.info(f"Created default business for admin user")
+                    logger.info(f"Created business '{business_name}' for admin user")
                     
                     # Try to associate business with onboarding record
                     if 'onboarding' in locals() and hasattr(onboarding, 'business_id'):

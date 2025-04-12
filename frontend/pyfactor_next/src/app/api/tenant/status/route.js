@@ -207,7 +207,7 @@ export async function POST(request) {
               data: {
                 attributes: {
                   'custom:businessid': finalTenantId,
-                  'custom:onboarding': 'COMPLETE',
+                  'custom:onboarding': 'complete',
                   'custom:setupdone': 'true'
                 }
               }
@@ -233,7 +233,7 @@ export async function POST(request) {
             maxAge: 60 * 60 * 24 * 30 // 30 days
           });
           
-          response.cookies.set('onboardedStatus', 'COMPLETE', {
+          response.cookies.set('onboardedStatus', 'complete', {
             path: '/',
             maxAge: 60 * 60 * 24 * 30 // 30 days
           });

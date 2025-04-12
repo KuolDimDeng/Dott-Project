@@ -11,6 +11,21 @@ export async function GET(request) {
     const headers = new Headers(request.headers);
     const authHeader = headers.get('Authorization');
     const idToken = headers.get('X-Id-Token');
+    const cookies = request.headers.get('cookie');
+
+    // Helper to extract cookie values
+    const getCookieValue = (name) => {
+      if (!cookies) return null;
+      const match = cookies.match(new RegExp(`${name}=([^;]+)`));
+      return match ? decodeURIComponent(match[1]) : null;
+    };
+
+    // Extract user information from cookies
+    const userEmail = getCookieValue('email') || getCookieValue('userEmail');
+    const firstName = getCookieValue('firstName') || getCookieValue('given_name') || '';
+    const lastName = getCookieValue('lastName') || getCookieValue('family_name') || '';
+    const tenantId = getCookieValue('tenantId') || getCookieValue('businessid');
+    const businessName = getCookieValue('businessName');
 
     if (!authHeader || !idToken) {
       logger.error('Missing auth tokens', { requestId });
@@ -32,7 +47,7 @@ export async function GET(request) {
       const profile = {
         userId: user.userId,
         username: user.username,
-        email: decoded.email || '',
+        email: userEmail || '',
         given_name: decoded['custom:given_name'] || '',
         family_name: decoded['custom:family_name'] || '',
         phone_number: decoded['phone_number'] || '',
@@ -75,13 +90,13 @@ export async function GET(request) {
       // Return a mock profile to avoid errors
       const mockProfile = {
         userId: 'mock-user-id',
-        username: 'mock-user',
-        email: 'user@example.com',
-        given_name: 'Demo',
-        family_name: 'User',
+        username: firstName && lastName ? `${firstName} ${lastName}` : (firstName || (userEmail ? userEmail.split('@')[0] : '')),
+        email: userEmail || '',
+        given_name: firstName,
+        family_name: lastName,
         is_onboarded: true,
         onboarding_status: 'COMPLETE',
-        business_name: 'Demo Business',
+        business_name: businessName || 'Demo Business',
         role: 'OWNER',
         subscription_plan: 'FREE',
         /* RLS: tenant_id instead of schema_name */
@@ -110,9 +125,9 @@ export async function GET(request) {
       // Return a fallback profile with indication it's for demo/development
       return NextResponse.json({
         id: 'anonymous-user',
-        email: 'anonymous@example.com',
-        first_name: 'Anonymous',
-        last_name: 'User',
+        email: userEmail || '',
+        first_name: firstName,
+        last_name: lastName,
         business_id: tenantId || 'default-business',
         /* RLS: tenant_id instead of schema_name */
     tenant_id: tenant.id ? `tenant_${tenantId.replace(/-/g, '_')}` : 'default_schema',
@@ -132,13 +147,13 @@ export async function GET(request) {
     // Return a mock profile even in case of unexpected errors
     const fallbackProfile = {
       userId: 'fallback-user-id',
-      username: 'fallback-user',
-      email: 'fallback@example.com',
-      given_name: 'Fallback',
-      family_name: 'User',
+      username: firstName && lastName ? `${firstName} ${lastName}` : (firstName || (userEmail ? userEmail.split('@')[0] : '')),
+      email: userEmail || '',
+      given_name: firstName,
+      family_name: lastName,
       is_onboarded: true,
       onboarding_status: 'COMPLETE',
-      business_name: 'Fallback Business',
+      business_name: businessName || 'Fallback Business',
       role: 'OWNER',
       subscription_plan: 'FREE',
       /* RLS: tenant_id instead of schema_name */

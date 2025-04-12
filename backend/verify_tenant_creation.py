@@ -3,7 +3,7 @@
 Tenant Creation Verification Script
 
 This script monitors the database for tenant creation events and checks whether
-any tenants with the name 'My Business' are still being created.
+any tenants with missing or empty business names are still being created.
 """
 
 import psycopg2
@@ -47,18 +47,10 @@ def get_tenant_count(conn):
     cursor.close()
     return count
 
-def get_my_business_count(conn):
-    """Get the count of tenants with name 'My Business'."""
+def get_empty_business_name_count(conn):
+    """Get the count of tenants with empty or null name."""
     cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM custom_auth_tenant WHERE name = 'My Business';")
-    count = cursor.fetchone()[0]
-    cursor.close()
-    return count
-
-def get_default_business_count(conn):
-    """Get the count of tenants with name 'Default Business'."""
-    cursor = conn.cursor()
-    cursor.execute("SELECT COUNT(*) FROM custom_auth_tenant WHERE name = 'Default Business';")
+    cursor.execute("SELECT COUNT(*) FROM custom_auth_tenant WHERE name IS NULL OR name = '';")
     count = cursor.fetchone()[0]
     cursor.close()
     return count
@@ -85,6 +77,22 @@ def get_tenant_users(conn, tenant_id):
     cursor.close()
     return users
 
+def get_user_attributes(conn, user_id):
+    """Get user attributes from database if available."""
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT key, value FROM user_attributes WHERE user_id = %s AND key IN ('businessname', 'company', 'custom:businessname');",
+            [user_id]
+        )
+        attributes = cursor.fetchall()
+        return {key: value for key, value in attributes}
+    except Exception as e:
+        print(f"Error getting user attributes: {e}")
+        return {}
+    finally:
+        cursor.close()
+
 def monitor_tenants(interval=5, duration=60):
     """
     Monitor tenant creation for the specified duration.
@@ -97,13 +105,11 @@ def monitor_tenants(interval=5, duration=60):
     
     # Get initial counts
     initial_tenant_count = get_tenant_count(conn)
-    initial_my_business_count = get_my_business_count(conn)
-    initial_default_business_count = get_default_business_count(conn)
+    initial_empty_name_count = get_empty_business_name_count(conn)
     
     print(f"\n=== Tenant Monitoring Started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
     print(f"Initial tenant count: {initial_tenant_count}")
-    print(f"Initial 'My Business' count: {initial_my_business_count}")
-    print(f"Initial 'Default Business' count: {initial_default_business_count}")
+    print(f"Initial empty business name count: {initial_empty_name_count}")
     print(f"Monitoring for new tenants every {interval} seconds for {duration} seconds...\n")
     
     start_time = time.time()
@@ -115,8 +121,7 @@ def monitor_tenants(interval=5, duration=60):
             
             # Check for new tenants
             current_count = get_tenant_count(conn)
-            current_my_business = get_my_business_count(conn)
-            current_default_business = get_default_business_count(conn)
+            current_empty_name = get_empty_business_name_count(conn)
             
             # Calculate time since last check
             current_time = time.time()
@@ -128,15 +133,10 @@ def monitor_tenants(interval=5, duration=60):
                 new_count = current_count - initial_tenant_count
                 print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ {new_count} new tenant(s) detected!")
                 
-                # Check if any new 'My Business' tenants
-                my_business_diff = current_my_business - initial_my_business_count
-                if my_business_diff > 0:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ {my_business_diff} new 'My Business' tenant(s) created!")
-                
-                # Check if any new 'Default Business' tenants
-                default_business_diff = current_default_business - initial_default_business_count
-                if default_business_diff > 0:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ℹ️ {default_business_diff} new 'Default Business' tenant(s) created")
+                # Check if any new tenants with empty names
+                empty_name_diff = current_empty_name - initial_empty_name_count
+                if empty_name_diff > 0:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ {empty_name_diff} new tenant(s) created with empty business name!")
                 
                 # List recently created tenants
                 recent_tenants = get_recent_tenants(conn, minutes=int(time_diff/60) + 1)
@@ -145,16 +145,31 @@ def monitor_tenants(interval=5, duration=60):
                     for tenant_id, name, created_at in recent_tenants:
                         users = get_tenant_users(conn, tenant_id)
                         user_emails = [email for _, email in users]
+                        
+                        # For empty names, check if user attributes contain a business name
+                        suggested_name = None
+                        if not name or name == '':
+                            for user_id, _ in users:
+                                attributes = get_user_attributes(conn, user_id)
+                                if attributes:
+                                    for key in ['businessname', 'custom:businessname', 'company']:
+                                        if key in attributes and attributes[key].strip():
+                                            suggested_name = attributes[key]
+                                            break
+                                    if suggested_name:
+                                        break
+                        
                         print(f"  - ID: {tenant_id}")
-                        print(f"    Name: {name}")
+                        print(f"    Name: {name or 'Empty'}")
+                        if suggested_name:
+                            print(f"    Suggested name from user attributes: {suggested_name}")
                         print(f"    Created: {created_at}")
                         print(f"    Users: {', '.join(user_emails) if user_emails else 'None'}")
                     print()
                 
                 # Update our baseline
                 initial_tenant_count = current_count
-                initial_my_business_count = current_my_business
-                initial_default_business_count = current_default_business
+                initial_empty_name_count = current_empty_name
             else:
                 sys.stdout.write(".")
                 sys.stdout.flush()
@@ -165,8 +180,7 @@ def monitor_tenants(interval=5, duration=60):
         print(f"\n=== Tenant Monitoring Completed ===")
         print(f"Duration: {elapsed:.1f} seconds")
         print(f"Final tenant count: {get_tenant_count(conn)}")
-        print(f"Final 'My Business' count: {get_my_business_count(conn)}")
-        print(f"Final 'Default Business' count: {get_default_business_count(conn)}")
+        print(f"Final empty business name count: {get_empty_business_name_count(conn)}")
         
         conn.close()
 

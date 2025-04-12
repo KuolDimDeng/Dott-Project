@@ -35,18 +35,32 @@ export async function GET(request) {
       cookies.get('tenantId')?.value || 
       cookies.get('businessid')?.value;
     
-    // Get email from cookies if not in auth session
-    const email = 
-      user?.email || 
-      cookies.get('email')?.value || 
-      cookies.get('userEmail')?.value;
+    // Get the user's email from cookies
+    const email = cookies.get('email')?.value || cookies.get('userEmail')?.value || '';
+    
+    // Determine user role based on available data
+    const determineUserRole = () => {
+      // Check if user has a custom role attribute
+      if (user?.['custom:role']) {
+        return user['custom:role'];
+      }
+      
+      // Check cookies for role information
+      const roleCookie = cookies.get('userRole')?.value || cookies.get('role')?.value;
+      if (roleCookie) {
+        return roleCookie;
+      }
+      
+      // Default role is 'client' instead of generic 'user'
+      return 'client';
+    };
     
     // Collect all sources of user data
     let userData = {
       id: user?.sub || user?.id,
       email: email,
       tenantId: tenantId,
-      role: 'user', // Default role
+      role: determineUserRole(),
       firstName: user?.firstName || user?.given_name || '',
       lastName: user?.lastName || user?.family_name || '',
       name: user?.name || email,
@@ -138,17 +152,21 @@ export async function GET(request) {
     
     // Return minimal user data from cookies as fallback
     const cookies = request.cookies;
-    const email = cookies.get('email')?.value || cookies.get('userEmail')?.value || 'user@example.com';
+    const email = cookies.get('email')?.value || cookies.get('userEmail')?.value || '';
     const tenantId = cookies.get('tenantId')?.value || cookies.get('businessid')?.value;
+    
+    // Extract username from email for better display
+    const username = email ? email.split('@')[0] : '';
+    const displayName = username ? username.charAt(0).toUpperCase() + username.slice(1) : '';
     
     return NextResponse.json({
       email,
       tenantId,
-      role: 'user',
-      firstName: '',
+      role: 'client',
+      firstName: displayName,
       lastName: '',
-      name: email,
-      fullName: '',
+      name: displayName || email,
+      fullName: displayName,
       businessName: '',
       fallback: true,
       onboardingStatus: 'complete',

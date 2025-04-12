@@ -258,7 +258,9 @@ export function useAuth() {
         'custom:attrversion': '1.0.0',
         'custom:businesscountry': userData.country || 'us',
         'custom:businessid': '', // Will be set after confirmation
-        'custom:businessname': userData.businessName || 'Default Business',
+        'custom:businessname': userData.businessName || 
+          (userData.firstName ? `${userData.firstName}'s Business` : 
+           userData.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
         'custom:businesstype': userData.businessType || 'Other',
         'custom:datefounded': timestamp.split('T')[0], // Just the date part
         'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
@@ -269,7 +271,11 @@ export function useAuth() {
         'custom:requirespayment': 'false',
         'custom:subplan': 'free',
         'custom:subscriptioninterval': 'monthly',
-        'custom:subscriptionstatus': 'active'
+        'custom:subscriptionstatus': 'active',
+        'custom:verified': 'true',
+        'custom:tenant_id': userData.tenantId,
+        'custom:setup': 'true',
+        'custom:account_status': 'ACTIVE',
       };
       
       logger.debug('[Auth] Prepared user attributes:', {

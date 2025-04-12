@@ -535,7 +535,9 @@ export async function createTenantForUser(businessId, userAttributes) {
         tenantId: businessId,
         userId: userAttributes?.sub,
         email: userAttributes?.email,
-        businessName: userAttributes?.['custom:businessname'] || 'Default Business',
+        businessName: userAttributes?.['custom:businessname'] || 
+          (userAttributes?.given_name ? `${userAttributes.given_name}'s Business` : 
+           userAttributes?.email ? `${userAttributes.email.split('@')[0]}'s Business` : 'My Business'),
         businessType: userAttributes?.['custom:businesstype'] || 'Other',
         businessCountry: userAttributes?.['custom:businesscountry'] || 'US',
         forceCreate: true

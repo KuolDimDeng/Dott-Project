@@ -97,7 +97,7 @@ export async function getServerUser(request) {
       sub: payload.sub,
       email: payload.email,
       email_verified: payload.email_verified,
-      'custom:onboarding': payload['custom:onboarding'] || 'NOT_STARTED',
+      'custom:onboarding': payload['custom:onboarding'] || 'not_started',
       'custom:businessName': payload['custom:businessName'] || '',
       'custom:businessType': payload['custom:businessType'] || '',
       'custom:tenant_id': payload['custom:tenant_id'] || '',

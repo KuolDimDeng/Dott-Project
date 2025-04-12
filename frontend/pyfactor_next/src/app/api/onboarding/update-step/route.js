@@ -72,7 +72,14 @@ export async function POST(request) {
     // Simplified approach - Map to appropriate Cognito custom:onboarding value
     // based on the current step
     let onboardingValue;
-    if (normalizedStep === 'business_info' || normalizedStep === 'business-info') {
+    
+    // Check if this is for a free plan specifically
+    const isFreeOrBasicPlan = body.plan === 'free' || body.plan === 'basic';
+    
+    if (isFreeOrBasicPlan) {
+      // Always set to complete for free plans
+      onboardingValue = 'complete';
+    } else if (normalizedStep === 'business_info' || normalizedStep === 'business-info') {
       onboardingValue = 'subscription';
     } else if (normalizedStep === 'subscription') {
       onboardingValue = 'complete';

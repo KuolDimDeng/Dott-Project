@@ -38,12 +38,12 @@ def connect_to_db():
         sys.exit(1)
 
 def get_default_name_tenants(conn):
-    """Get tenants with default or generic business names."""
+    """Get tenants with generic business names or empty names that need to be updated."""
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, name, schema_name, created_at, owner_id
         FROM custom_auth_tenant
-        WHERE name IN ('My Business', 'Default Business', '')
+        WHERE name = '' OR name IS NULL
         ORDER BY created_at DESC;
     """)
     tenants = cursor.fetchall()
@@ -73,6 +73,50 @@ def get_user_attributes(conn, user_id):
     attributes = cursor.fetchall()
     cursor.close()
     return attributes
+
+def get_user_attributes_from_cognito(user_id):
+    """Get user attributes from Cognito using boto3."""
+    try:
+        import boto3
+        from botocore.exceptions import ClientError
+        import os
+        
+        # Get Cognito configuration from environment
+        user_pool_id = os.environ.get('COGNITO_USER_POOL_ID')
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        
+        if not user_pool_id:
+            print("COGNITO_USER_POOL_ID environment variable not set")
+            return None
+            
+        # Initialize Cognito client
+        client = boto3.client('cognito-idp', 
+                             region_name=region,
+                             aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+                             aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'))
+        
+        # Get user attributes from Cognito
+        response = client.admin_get_user(
+            UserPoolId=user_pool_id,
+            Username=user_id
+        )
+        
+        # Convert to dictionary
+        attributes = {}
+        if 'UserAttributes' in response:
+            for attr in response['UserAttributes']:
+                attributes[attr['Name']] = attr['Value']
+                
+        return attributes
+    except ImportError:
+        print("boto3 not installed. Cannot fetch Cognito attributes.")
+        return None
+    except ClientError as e:
+        print(f"Error fetching Cognito attributes: {e}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error fetching Cognito attributes: {e}")
+        return None
 
 def mark_tenant_for_review(conn, tenant_id, reason):
     """Mark tenant for review by setting a flag in the database."""
@@ -130,10 +174,10 @@ def clean_tenant_names(conn, dry_run=True, mark_only=False):
     tenants = get_default_name_tenants(conn)
     
     if not tenants:
-        print("No tenants with default business names found.")
+        print("No tenants with empty or missing business names found.")
         return
     
-    print(f"\n=== Found {len(tenants)} tenants with default business names ===")
+    print(f"\n=== Found {len(tenants)} tenants with missing business names ===")
     
     fixed_count = 0
     marked_count = 0
@@ -142,7 +186,7 @@ def clean_tenant_names(conn, dry_run=True, mark_only=False):
         tenant_id, name, schema_name, created_at, owner_id = tenant
         
         print(f"\nTenant: {tenant_id}")
-        print(f"  Name: {name}")
+        print(f"  Name: {name or 'Empty'}")
         print(f"  Schema: {schema_name}")
         print(f"  Created: {created_at}")
         
@@ -155,58 +199,84 @@ def clean_tenant_names(conn, dry_run=True, mark_only=False):
                 user_id, email, first_name, last_name = user
                 print(f"    - {email} ({first_name} {last_name})")
                 
-                # Check if user has a businessname attribute
+                # First check local database for user attributes
                 attributes = get_user_attributes(conn, user_id)
+                business_name = None
                 
                 if attributes:
                     for attr_id, key, value in attributes:
-                        if key == 'businessname' and value and value not in ('My Business', 'Default Business', ''):
-                            print(f"      Found business name in attributes: {value}")
-                            
-                            if not dry_run and not mark_only:
-                                try:
-                                    cursor = conn.cursor()
-                                    cursor.execute("""
-                                        UPDATE custom_auth_tenant
-                                        SET name = %s, updated_at = NOW()
-                                        WHERE id = %s
-                                    """, [value, tenant_id])
-                                    
-                                    if cursor.rowcount > 0:
-                                        print(f"      ✅ Updated tenant name to: {value}")
-                                        fixed_count += 1
-                                    else:
-                                        print(f"      ❌ Failed to update tenant name")
-                                    
-                                    cursor.close()
-                                except Exception as e:
-                                    print(f"      ❌ Error updating tenant name: {e}")
-                            elif not dry_run and mark_only:
-                                reason = f"Default business name, but found '{value}' in user attributes"
-                                affected = mark_tenant_for_review(conn, tenant_id, reason)
-                                if affected > 0:
-                                    print(f"      ✅ Marked tenant for review with reason: {reason}")
-                                    marked_count += 1
-                                else:
-                                    print(f"      ❌ Failed to mark tenant for review")
-                            else:
-                                print(f"      [DRY RUN] Would update tenant name to: {value}")
+                        if key == 'businessname' and value and value.strip():
+                            business_name = value
+                            print(f"      Found business name in local attributes: {business_name}")
                             break
                 
-                # If no businessname attribute was found
-                if not attributes and not dry_run and mark_only:
-                    reason = f"Default business name '{name}', no alternative found in user attributes"
-                    affected = mark_tenant_for_review(conn, tenant_id, reason)
-                    if affected > 0:
-                        print(f"      ✅ Marked tenant for review with reason: {reason}")
-                        marked_count += 1
+                # If no business name in local DB, try Cognito
+                if not business_name and owner_id:
+                    cognito_attrs = get_user_attributes_from_cognito(owner_id)
+                    if cognito_attrs:
+                        # Check for business name in various attribute keys
+                        for attr_key in ['custom:businessname', 'businessname', 'business_name', 'company']:
+                            if attr_key in cognito_attrs and cognito_attrs[attr_key].strip():
+                                business_name = cognito_attrs[attr_key]
+                                print(f"      Found business name in Cognito: {business_name}")
+                                break
+                
+                # Create a business name from user's name if still not found
+                if not business_name and (first_name or last_name):
+                    if first_name and last_name:
+                        business_name = f"{first_name} {last_name}'s Business"
+                    elif first_name:
+                        business_name = f"{first_name}'s Business"
+                    elif last_name:
+                        business_name = f"{last_name}'s Business"
+                    print(f"      Created business name from user's name: {business_name}")
+                
+                # Update tenant name if we found a business name
+                if business_name:
+                    if not dry_run and not mark_only:
+                        try:
+                            cursor = conn.cursor()
+                            cursor.execute("""
+                                UPDATE custom_auth_tenant
+                                SET name = %s, updated_at = NOW()
+                                WHERE id = %s
+                            """, [business_name, tenant_id])
+                            
+                            if cursor.rowcount > 0:
+                                print(f"      ✅ Updated tenant name to: {business_name}")
+                                fixed_count += 1
+                            else:
+                                print(f"      ❌ Failed to update tenant name")
+                            
+                            cursor.close()
+                        except Exception as e:
+                            print(f"      ❌ Error updating tenant name: {e}")
+                    elif not dry_run and mark_only:
+                        reason = f"Empty business name, but found '{business_name}' in attributes"
+                        affected = mark_tenant_for_review(conn, tenant_id, reason)
+                        if affected > 0:
+                            print(f"      ✅ Marked tenant for review with reason: {reason}")
+                            marked_count += 1
+                        else:
+                            print(f"      ❌ Failed to mark tenant for review")
                     else:
-                        print(f"      ❌ Failed to mark tenant for review")
+                        print(f"      [DRY RUN] Would update tenant name to: {business_name}")
+                    break
+                else:
+                    # If no businessname attribute was found
+                    if not dry_run and mark_only:
+                        reason = f"Empty business name, no alternative found in user attributes"
+                        affected = mark_tenant_for_review(conn, tenant_id, reason)
+                        if affected > 0:
+                            print(f"      ✅ Marked tenant for review with reason: {reason}")
+                            marked_count += 1
+                        else:
+                            print(f"      ❌ Failed to mark tenant for review")
         else:
             print("  No users found for this tenant")
             
             if not dry_run and mark_only:
-                reason = f"Default business name '{name}', no users found"
+                reason = f"Empty business name, no users found"
                 affected = mark_tenant_for_review(conn, tenant_id, reason)
                 if affected > 0:
                     print(f"  ✅ Marked tenant for review with reason: {reason}")
@@ -215,7 +285,7 @@ def clean_tenant_names(conn, dry_run=True, mark_only=False):
                     print(f"  ❌ Failed to mark tenant for review")
     
     print("\n=== Summary ===")
-    print(f"Total tenants with default names: {len(tenants)}")
+    print(f"Total tenants with missing names: {len(tenants)}")
     
     if not dry_run and not mark_only:
         print(f"Tenants fixed: {fixed_count}")

@@ -287,16 +287,21 @@ export default function SubscriptionForm() {
           // Store in localStorage as fallback
           localStorage.setItem('custom:subplan', plan.id);
           localStorage.setItem('custom:subscriptioninterval', billingCycle);
-          localStorage.setItem('custom:onboarding', 'subscription');
+          localStorage.setItem('custom:onboarding', plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription');
           localStorage.setItem('custom:updated_at', new Date().toISOString());
         } else {
           // Safe attributes that won't cause permission issues
           const safeAttributes = {
-            'custom:onboarding': 'subscription',
+            'custom:onboarding': plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription',
             'custom:subplan': plan.id,
             'custom:subscriptioninterval': billingCycle,
             'custom:updated_at': new Date().toISOString()
           };
+          
+          // For free plans, also set setup as done
+          if (plan.id === 'free' || plan.id === 'basic') {
+            safeAttributes['custom:setupdone'] = 'true';
+          }
           
           // Make sure we're not trying to update any restricted attributes
           const restrictedPrefixes = ['custom:tenant', 'custom:business'];
@@ -320,11 +325,13 @@ export default function SubscriptionForm() {
       
       // Use the onboarding service to update progress
       try {
-        await updateOnboardingStep(STEPS.SUBSCRIPTION, {
+        // For free plans, mark as complete immediately
+        const stepStatus = plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription';
+        await updateOnboardingStep(stepStatus, {
           'custom:subplan': plan.id,
           'custom:subscriptioninterval': billingCycle
         });
-        logger.info('[SubscriptionForm] Updated onboarding progress via API');
+        logger.info(`[SubscriptionForm] Updated onboarding progress to ${stepStatus} via API`);
       } catch (progressError) {
         logger.warn('[SubscriptionForm] API progress update error:', progressError);
         // Continue despite error - we have fallbacks
@@ -367,8 +374,13 @@ export default function SubscriptionForm() {
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         
-        // Redirect to dashboard with free plan
-        window.location.href = `/onboarding/subscription?plan=free&cycle=${billingCycle}&requestId=${requestId}`;
+        // Redirect directly to dashboard for free plans - avoid intermediate subscription page
+        const tenantId = localStorage.getItem('tenantId') || '';
+        if (tenantId) {
+          window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
+        } else {
+          window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
+        }
       } else {
         // For paid plans
         setProcessingStatus('Preparing payment options...');
@@ -416,33 +428,54 @@ export default function SubscriptionForm() {
     // Set all required cookies for free plan selection - handle completion immediately
     const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
     
-    // Critical cookies for onboarding completion
+    // Critical cookies for onboarding completion - use consistent lowercase values
     document.cookie = `freePlanSelected=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
     document.cookie = `onboardingStep=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
     document.cookie = `onboardedStatus=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
     document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
     
-    // Store essential values in localStorage too
+    // Store essential values in localStorage too - use consistent lowercase values
     localStorage.setItem('freePlanSelected', 'true');
     localStorage.setItem('onboardingStep', 'complete');
     localStorage.setItem('onboardedStatus', 'complete');
     localStorage.setItem('setupCompleted', 'true');
-    localStorage.setItem('custom:onboarding', 'complete');
-    localStorage.setItem('custom:setupdone', 'true');
-    localStorage.setItem('custom:subscription_plan', 'free');
+    localStorage.setItem('custom:onboarding', 'complete'); // Ensure lowercase
+    localStorage.setItem('custom:setupdone', 'true');      // Ensure lowercase
+    localStorage.setItem('custom:subscription_plan', 'free'); // Ensure lowercase
     
-    // Check for existing tenant or business ID
-    let tenantId = localStorage.getItem('tenantId') || 
-                   getCookie('tenantId') || 
-                   localStorage.getItem('businessid') || 
-                   getCookie('businessid');
+    // First check for Cognito tenant ID by fetching user attributes
+    let tenantId = null;
+    try {
+      // Try to get user attributes from Cognito first
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const userAttributes = await fetchUserAttributes();
+      
+      // Check for tenant ID in Cognito attributes - highest priority
+      if (userAttributes['custom:tenant_ID'] && isValidUUID(userAttributes['custom:tenant_ID'])) {
+        tenantId = userAttributes['custom:tenant_ID'];
+        logger.debug('[SubscriptionForm] Using tenant ID from Cognito attributes:', tenantId);
+      }
+    } catch (attributeError) {
+      logger.warn('[SubscriptionForm] Failed to fetch Cognito attributes:', attributeError);
+      // Continue with fallback methods
+    }
+    
+    // If we couldn't get tenant ID from Cognito, try local storage and cookies
+    if (!tenantId || !isValidUUID(tenantId)) {
+      tenantId = localStorage.getItem('tenantId') || 
+                getCookie('tenantId') || 
+                localStorage.getItem('businessid') || 
+                getCookie('businessid');
+                
+      if (tenantId && isValidUUID(tenantId)) {
+        logger.debug('[SubscriptionForm] Using tenant ID from local storage/cookies:', tenantId);
+      }
+    }
     
     // Only generate a new tenant ID if one doesn't already exist
     if (!tenantId || !isValidUUID(tenantId)) {
-      logger.debug('[SubscriptionForm] No existing tenant ID found, generating a new one');
       tenantId = crypto.randomUUID();
-    } else {
-      logger.debug('[SubscriptionForm] Using existing tenant ID:', tenantId);
+      logger.debug('[SubscriptionForm] Generated new tenant ID:', tenantId);
     }
     
     // Store the tenant ID consistently in client storage
@@ -460,34 +493,139 @@ export default function SubscriptionForm() {
       { autoHideDuration: 8000 }
     );
     
-    // Try to update attributes in the background, but don't wait for the result
+    // First try direct Cognito update for immediate effect
     try {
-      setTimeout(async () => {
-        try {
-          // Try to refresh session first
-          const { fetchAuthSession } = await import('aws-amplify/auth');
-          await fetchAuthSession({ forceRefresh: true });
-          
-          // Try to update attributes
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          await updateUserAttributes({
-            userAttributes: {
-              'custom:onboarding': 'complete',
-              'custom:setupdone': 'true',
-              'custom:subscription_plan': 'free'
-            }
+      const { updateUserAttributes } = await import('aws-amplify/auth');
+      const timestamp = new Date().toISOString();
+      
+      // Create the attributes object to update - ensure consistent lowercase values
+      const attributesToUpdate = {
+        'custom:onboarding': 'complete',        // Ensure lowercase
+        'custom:setupdone': 'true',             // Ensure lowercase
+        'custom:subplan': 'free',               // Ensure lowercase
+        'custom:subscriptioninterval': 'monthly', // Ensure lowercase
+        'custom:tenant_ID': tenantId,
+        'custom:acctstatus': 'active',
+        'custom:payverified': 'false',
+        'custom:updated_at': timestamp
+      };
+      
+      // Log the update attempt with detailed information
+      console.log(`[DEBUG][${new Date().toISOString()}] ATTEMPTING COGNITO UPDATE - Direct Method`, {
+        attributes: attributesToUpdate,
+        tenantId,
+        timestamp
+      });
+      logger.debug('[SubscriptionForm] Attempting direct Cognito attribute update', {
+        attributeKeys: Object.keys(attributesToUpdate),
+        tenantId,
+        timestamp,
+        callLocation: 'handleFreePlanSelection',
+        method: 'direct'
+      });
+      
+      // Using await to ensure this completes before redirect
+      await updateUserAttributes({
+        userAttributes: attributesToUpdate
+      });
+      
+      console.log(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE SUCCESSFUL - Direct Method`);
+      logger.info('[SubscriptionForm] Successfully updated Cognito attributes directly');
+    } catch (directUpdateError) {
+      console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Direct Method`, directUpdateError);
+      logger.warn('[SubscriptionForm] Direct Cognito update failed:', directUpdateError);
+    }
+    
+    // Also use the server-side API as a backup approach
+    try {
+      // Generate a unique request ID for tracking
+      const requestId = generateRequestId();
+      
+      // Current timestamp for all date fields
+      const timestamp = new Date().toISOString();
+      
+      // Create the attributes object for server-side update
+      const serverAttributes = {
+        'custom:onboarding': 'complete',          // Ensure lowercase
+        'custom:setupdone': 'true',               // Ensure lowercase
+        'custom:subplan': 'free',                 // Ensure lowercase
+        'custom:subscriptioninterval': 'monthly', // Ensure lowercase
+        'custom:tenant_ID': tenantId,
+        'custom:businessid': tenantId,
+        'custom:userrole': 'OWNER',
+        'custom:acctstatus': 'active',
+        'custom:payverified': 'false',
+        'custom:created_at': timestamp,
+        'custom:updated_at': timestamp,
+        'custom:setupcompletedtime': timestamp,
+        'custom:onboardingCompletedAt': timestamp
+      };
+      
+      // Log the server-side update attempt with clearer success/failure tracking
+      console.log(`[DEBUG][${new Date().toISOString()}] ATTEMPTING COGNITO UPDATE - Server API Method`, {
+        requestId,
+        attributes: serverAttributes,
+        tenantId
+      });
+      logger.debug('[SubscriptionForm] Attempting server-side Cognito attribute update', {
+        requestId,
+        attributeKeys: Object.keys(serverAttributes),
+        tenantId,
+        method: 'serverApi'
+      });
+      
+      // Make server-side API call to update attributes
+      fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Request-ID': requestId
+        },
+        body: JSON.stringify({
+          plan: 'free',
+          billingCycle: 'monthly',
+          tenantId: tenantId, // Send tenant ID to ensure consistency
+          attributes: serverAttributes
+        })
+      })
+      .then(response => {
+        if (response.ok) {
+          console.log(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE SUCCESSFUL - Server API Method`, {
+            requestId,
+            status: response.status
           });
-          logger.debug('[SubscriptionForm] Background attribute update succeeded');
-        } catch (e) {
-          logger.warn('[SubscriptionForm] Background attribute update failed:', e);
+          logger.debug('[SubscriptionForm] Server-side attribute update succeeded');
+          
+          // Parse and log the response data
+          response.json().then(data => {
+            console.log(`[DEBUG][${new Date().toISOString()}] Server API response:`, data);
+            logger.debug('[SubscriptionForm] Server-side update response', data);
+          }).catch(err => {
+            console.log(`[DEBUG][${new Date().toISOString()}] Could not parse response:`, err);
+          });
+        } else {
+          console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Server API Method`, {
+            requestId,
+            status: response.status
+          });
+          logger.warn('[SubscriptionForm] Server-side attribute update failed with status:', response.status);
         }
-      }, 100);
+      })
+      .catch(error => {
+        console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Server API Method`, {
+          requestId,
+          error: error.message
+        });
+        logger.warn('[SubscriptionForm] Server-side attribute update failed:', error);
+      });
     } catch (e) {
-      // Ignore errors in the background process
+      // Log but don't block the flow - we still want to redirect
+      console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE PREPARATION FAILED`, e);
+      logger.warn('[SubscriptionForm] Error triggering server-side attribute update:', e);
     }
     
     // Immediately redirect to dashboard with the tenant ID
-    logger.info('[SubscriptionForm] Redirecting to dashboard with free plan');
+    logger.info('[SubscriptionForm] Redirecting to dashboard with free plan and tenant ID:', tenantId);
     window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
   };
   

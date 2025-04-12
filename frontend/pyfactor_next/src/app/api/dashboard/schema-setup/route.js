@@ -237,7 +237,7 @@ async function updateCognitoAttributes(accessToken, tenantId) {
       data: {
         attributes: {
           'custom:businessid': tenantId,
-          'custom:onboarding': 'COMPLETE',
+          'custom:onboarding': 'complete',
           'custom:setupdone': 'true',
           'custom:updated_at': new Date().toISOString()
         }
@@ -267,7 +267,7 @@ function setCookiesOnResponse(response, tenantId) {
   });
   
   // Also set onboarding status cookies
-  response.cookies.set('onboardedStatus', 'COMPLETE', {
+  response.cookies.set('onboardedStatus', 'complete', {
     path: '/',
     maxAge: cookieMaxAge
   });

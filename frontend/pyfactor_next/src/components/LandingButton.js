@@ -135,13 +135,13 @@ export default function LandingButton() {
       }
 
       // If going to dashboard and onboarding is complete, update cookies first
-      if (config.route === '/dashboard' && onboardingStatus === 'COMPLETE') {
+      if (config.route === '/dashboard' && onboardingStatus === 'complete') {
         logger.debug('[LandingButton] Going to dashboard with COMPLETE status, updating cookies');
-        await updateCookies('complete', 'COMPLETE', true);
+        await updateCookies('complete', 'complete', true);
       } else if (config.route === '/dashboard') {
         // For any other case going to dashboard, ensure we have the right cookies
         logger.debug('[LandingButton] Going to dashboard, ensuring cookies are set');
-        await updateCookies('complete', onboardingStatus || 'COMPLETE', true);
+        await updateCookies('complete', onboardingStatus || 'complete', true);
       } else if (config.route.startsWith('/onboarding/')) {
         // Update cookies for onboarding routes
         const step = config.route.replace('/onboarding/', '');

@@ -1,4 +1,13 @@
 // src/app/onboarding/validation/constants.js
+export const ONBOARDING_STATES = {
+  NOT_STARTED: 'not_started',
+  BUSINESS_INFO: 'business_info',
+  SUBSCRIPTION: 'subscription', 
+  PAYMENT: 'payment',
+  SETUP: 'setup',
+  COMPLETE: 'complete'
+};
+
 export const STEPS = {
     BUSINESS_INFO: 'business-info',
     SUBSCRIPTION: 'subscription',

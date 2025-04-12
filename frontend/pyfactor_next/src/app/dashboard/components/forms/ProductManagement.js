@@ -825,27 +825,24 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   // Handle product creation with proper API client usage
   const handleCreateProduct = async (formData) => {
     setIsLoading(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
-    
-    // Extract the tenant ID from cookies or localStorage
-    const tenantId = extractTenantId();
-                    
-    logger.info(`[ProductManagement] Creating product with tenant ID: ${tenantId}`);
-    logger.debug(`[ProductManagement] Product data:`, formData);
-    
-    if (!tenantId) {
-      setErrorMessage('Unable to determine tenant ID. Please refresh and try again.');
-      setIsLoading(false);
-      return;
-    }
+    setErrorMessage('');
+    setSuccessMessage('');
     
     try {
-      // First initialize RLS tables and policies
-      logger.info(`[ProductManagement] Initializing RLS tables for tenant: ${tenantId}`);
+      const tenantId = localStorage.getItem('tenantId') || 
+                        document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1];
       
+      if (!tenantId) {
+        throw new Error('No tenant ID found. Please refresh the page and try again.');
+      }
+      
+      console.log(`[ProductManagement] Creating product with tenant ID: ${tenantId}`);
+      
+      // Try to initialize RLS tables first (this helps with first-time creation)
       try {
-        const initResponse = await axios.post('/api/inventory/initialize', { tenantId }, {
+        const initResponse = await axios.post('/api/tenant/verify-schema', {
+          tenantId
+        }, {
           headers: {
             'Content-Type': 'application/json',
             'x-tenant-id': tenantId,
@@ -853,9 +850,9 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
           }
         });
         
-        logger.info(`[ProductManagement] RLS initialization response:`, initResponse.data);
+        console.log(`[ProductManagement] RLS initialization response:`, initResponse.data);
       } catch (initError) {
-        logger.warn(`[ProductManagement] RLS initialization warning (continuing):`, initError);
+        console.warn(`[ProductManagement] RLS initialization warning (continuing):`, initError);
         // Continue anyway - the product API will try to initialize tables too
       }
       
@@ -874,22 +871,39 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         unit: formData.unit || 'each'
       };
 
-      // Create the product with RLS headers
-      const response = await axios.post('/api/inventory/products', productData, {
+      console.log(`[ProductManagement] Sending product data with tenantId: ${tenantId}`, productData);
+
+      // Create the product with comprehensive RLS headers
+      const response = await fetch('/api/inventory/products', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': tenantId,
-          'x-business-id': tenantId,
-          'Authorization': localStorage.getItem('idToken') ? `Bearer ${localStorage.getItem('idToken')}` : undefined
-        }
+          'tenant-id': tenantId,
+          'x-business-id': tenantId
+        },
+        body: JSON.stringify(productData)
       });
 
-      logger.info(`[ProductManagement] Product created successfully:`, response.data);
+      if (!response.ok) {
+        // Try to get error details
+        let errorData = null;
+        try {
+          errorData = await response.json();
+        } catch (e) {
+          // Could not parse JSON error response
+        }
+        
+        throw new Error(`Server returned ${response.status}: ${errorData?.message || response.statusText}`);
+      }
+      
+      const responseData = await response.json();
+      console.log(`[ProductManagement] Product created successfully:`, responseData);
+      
       setSuccessMessage('Product created successfully!');
       resetForm();
-      fetchProducts(); // Refresh the product list
       
-      // Show a more detailed success message
+      // Show success toast
       toast({
         title: "Product Created",
         description: `${formData.name} has been added to your inventory.`,
@@ -897,45 +911,23 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
         duration: 5000,
         isClosable: true,
       });
-    } catch (error) {
-      logger.error(`[ProductManagement] Error creating product:`, error);
       
-      // Handle specific error types
-      if (error.response) {
-        // The request was made and the server responded with an error status
-        setErrorMessage(`Server error: ${error.response.data.message || error.response.statusText}`);
-        
-        // Show more details in toast
-        toast({
-          title: "Product Creation Failed",
-          description: error.response.data.message || "The server rejected the product creation.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } else if (error.request) {
-        // The request was made but no response was received (network issue)
-        setErrorMessage("Network error. Please check your connection and try again.");
-        
-        toast({
-          title: "Network Error",
-          description: "Couldn't reach the server. Check your internet connection.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } else {
-        // Something else happened while setting up the request
-        setErrorMessage(`Error: ${error.message}`);
-        
-        toast({
-          title: "Error",
-          description: error.message,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      }
+      // Fetch the updated product list
+      fetchProducts();
+      
+    } catch (error) {
+      console.error(`[ProductManagement] Error creating product:`, error);
+      
+      setErrorMessage(`Error creating product: ${error.message}`);
+      
+      // Show error toast
+      toast({
+        title: "Product Creation Failed",
+        description: error.message,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     } finally {
       setIsLoading(false);
     }

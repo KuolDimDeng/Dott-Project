@@ -88,16 +88,29 @@ export const TenantProvider = ({ children }) => {
       const decoded = jwtDecode(session.tokens.idToken.toString());
       logger.debug('[TenantContext] JWT token decoded', { decoded });
       
-      // Look for tenant ID in token claims
+      // Look for tenant ID in token claims - prioritize custom:tenant_ID as source of truth
       let tokenTenantId = null;
+      
+      // First check for custom:tenant_ID (uppercase ID) which is our source of truth
+      if (decoded['custom:tenant_ID']) {
+        tokenTenantId = decoded['custom:tenant_ID'];
+        logger.info('[TenantContext] Found tenant ID in custom:tenant_ID attribute (source of truth)');
+        return tokenTenantId;
+      }
+      
+      // Check alternative attribute names as fallbacks only
       if (decoded['custom:tenant_id']) {
         tokenTenantId = decoded['custom:tenant_id'];
+        logger.debug('[TenantContext] Found tenant ID in custom:tenant_id attribute (fallback)');
       } else if (decoded['custom:tenantId']) {
         tokenTenantId = decoded['custom:tenantId'];
+        logger.debug('[TenantContext] Found tenant ID in custom:tenantId attribute (fallback)');
       } else if (decoded['custom:businessid']) {
         tokenTenantId = decoded['custom:businessid'];
+        logger.debug('[TenantContext] Found tenant ID in custom:businessid attribute (fallback)');
       } else if (decoded.tenantId) {
         tokenTenantId = decoded.tenantId;
+        logger.debug('[TenantContext] Found tenant ID in tenantId claim (fallback)');
       }
       
       if (tokenTenantId) {
@@ -289,6 +302,9 @@ export const TenantProvider = ({ children }) => {
         const authorizedTenants = [];
         
         // Look for tenant ID in various attributes
+        if (decoded['custom:tenant_ID']) {
+          authorizedTenants.push(decoded['custom:tenant_ID']);
+        }
         if (decoded['custom:tenant_id']) {
           authorizedTenants.push(decoded['custom:tenant_id']);
         }

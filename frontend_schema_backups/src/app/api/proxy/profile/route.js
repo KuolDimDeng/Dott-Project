@@ -18,12 +18,24 @@ export async function GET(request) {
     // Get cookies for tenant ID if parameter not provided
     const cookies = request.headers.get('cookie');
     let tenantIdCookie = null;
+    let email = null;
+    let firstName = null;
+    let lastName = null;
     
     if (cookies) {
       cookies.split(';').forEach(cookie => {
         const [name, value] = cookie.trim().split('=');
         if (name === 'tenantId') {
           tenantIdCookie = value;
+        }
+        if (name === 'email' || name === 'userEmail') {
+          email = decodeURIComponent(value);
+        }
+        if (name === 'firstName' || name === 'given_name') {
+          firstName = decodeURIComponent(value);
+        }
+        if (name === 'lastName' || name === 'family_name') {
+          lastName = decodeURIComponent(value);
         }
       });
     }
@@ -34,10 +46,10 @@ export async function GET(request) {
     // Construct the profile data with the tenant ID
     const profile = {
       userId: tenantId,
-      username: 'user',
-      email: 'user@example.com',
-      given_name: 'Demo',
-      family_name: 'User',
+      username: firstName && lastName ? `${firstName} ${lastName}` : (firstName || (email ? email.split('@')[0] : '')),
+      email: email || '',
+      given_name: firstName || '',
+      family_name: lastName || '',
       is_onboarded: true,
       onboarding_status: 'COMPLETE',
       business_name: 'Demo Business',
@@ -65,10 +77,10 @@ export async function GET(request) {
     // Return a mock profile to avoid breaking the frontend
     const mockProfile = {
       userId: '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
-      username: 'mock-user',
-      email: 'user@example.com',
-      given_name: 'Mock',
-      family_name: 'User',
+      username: firstName && lastName ? `${firstName} ${lastName}` : (firstName || (email ? email.split('@')[0] : '')),
+      email: email || '',
+      given_name: firstName || '',
+      family_name: lastName || '',
       is_onboarded: true,
       onboarding_status: 'COMPLETE',
       business_name: 'Mock Business',

@@ -73,6 +73,29 @@ export async function POST(request) {
       data.businessId = crypto.randomUUID();
     }
     
+    // Generate a business name from user data if not provided
+    let businessName = data.business_name || data.businessName;
+    if (!businessName || businessName === 'Default Business' || businessName === 'My Business') {
+      // Try to generate a business name from user's name
+      if ((data.firstName || data.first_name) && (data.lastName || data.last_name)) {
+        businessName = `${data.firstName || data.first_name} ${data.lastName || data.last_name}'s Business`;
+      } else if (data.firstName || data.first_name) {
+        businessName = `${data.firstName || data.first_name}'s Business`;
+      } else if (data.lastName || data.last_name) {
+        businessName = `${data.lastName || data.last_name}'s Business`;
+      } else if (data.email) {
+        // Try to extract a name from email (e.g., john.doe@example.com -> John's Business)
+        const emailName = data.email.split('@')[0].split('.')[0];
+        if (emailName && emailName.length > 1) {
+          businessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+        }
+      }
+      // If all else fails, leave it blank for the user to update later
+      if (!businessName) {
+        businessName = '';
+      }
+    }
+    
     // Ensure we have all required fields with defaults
     const timestamp = new Date().toISOString();
     const userData = {
@@ -82,7 +105,7 @@ export async function POST(request) {
       cognito_id: data.cognitoId,
       user_role: data.userRole || 'OWNER',
       business_id: data.business_id || data.businessId,
-      business_name: data.business_name || data.businessName || 'Default Business',
+      business_name: businessName,
       business_type: data.business_type || data.businessType || 'Other',
       business_country: data.business_country || data.country || 'US',
       legal_structure: data.legal_structure || data.legalStructure || 'Sole Proprietorship',

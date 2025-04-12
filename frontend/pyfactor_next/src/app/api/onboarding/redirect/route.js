@@ -40,7 +40,7 @@ export async function POST(request) {
       sameSite: 'strict'
     });
     
-    response.cookies.set('onboardedStatus', 'BUSINESS_INFO', {
+    response.cookies.set('onboardedStatus', 'business_info', {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       sameSite: 'strict'

@@ -90,11 +90,11 @@ export async function POST(request) {
       }
 
       // Validate plan and interval values
-      const validPlans = ['FREE', 'PROFESSIONAL', 'ENTERPRISE'];
+      const validPlans = ['free', 'PROFESSIONAL', 'ENTERPRISE'];
       const validIntervals = ['MONTHLY', 'YEARLY'];
       const validPaymentMethods = ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'];
       
-      const plan = body.plan.toUpperCase();
+      const plan = body.plan.toLowerCase();
       const interval = body.interval.toUpperCase();
       const paymentMethod = body.payment_method ? body.payment_method.toUpperCase() : null;
       
@@ -152,7 +152,7 @@ export async function POST(request) {
         error: error.message,
         data: body,
         validationRules: {
-          validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
+          validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
           validIntervals: ['MONTHLY', 'YEARLY'],
           validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
         }
@@ -162,7 +162,7 @@ export async function POST(request) {
         code: 'subscription_validation_error',
         details: error.message,
         validationRules: {
-          validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
+          validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
           validIntervals: ['MONTHLY', 'YEARLY'],
           validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
         }
@@ -172,12 +172,12 @@ export async function POST(request) {
     // Get current onboarding status
     const attributes = user.attributes || {};
     const isReset = request.headers.get('X-Reset-Onboarding') === 'true';
-    let currentStatus = attributes['custom:onboarding'] || 'NOT_STARTED';
+    let currentStatus = attributes['custom:onboarding'] || 'not_started';
 
     // Allow reset if explicitly requested
     if (isReset) {
       // Update onboarding status in Cognito with tokens
-      await updateOnboardingStep('BUSINESS_INFO', {
+      await updateOnboardingStep('business_info', {
         'custom:setupdone': 'FALSE'
       }, {
         accessToken: accessToken,
@@ -185,10 +185,10 @@ export async function POST(request) {
       });
 
       // Update current status after reset
-      currentStatus = 'BUSINESS_INFO';
+      currentStatus = 'business_info';
     } else {
       // Normal validation for non-reset flow
-      if (currentStatus === 'COMPLETE') {
+      if (currentStatus === 'complete') {
         return NextResponse.json(
           { error: 'Cannot update subscription after onboarding is complete. Use reset flag to start over.' },
           { status: 400 }
@@ -200,13 +200,13 @@ export async function POST(request) {
       
       // Allow NOT_STARTED if business ID exists, or BUSINESS_INFO or SUBSCRIPTION as valid states
       // This handles the case where the cookie might be updated but Cognito attributes aren't in sync
-      if ((currentStatus !== 'BUSINESS_INFO' &&
-           currentStatus !== 'SUBSCRIPTION' &&
-           !(currentStatus === 'NOT_STARTED' && hasBusinessId))) {
+      if ((currentStatus !== 'business_info' &&
+           currentStatus !== 'subscription' &&
+           !(currentStatus === 'not_started' && hasBusinessId))) {
         
         logger.warn('[Subscription] Invalid onboarding status:', {
           currentStatus,
-          expectedStatus: ['BUSINESS_INFO', 'SUBSCRIPTION', 'NOT_STARTED (with businessId)'],
+          expectedStatus: ['business_info', 'subscription', 'not_started (with businessId)'],
           userId,
           hasBusinessId
         });
@@ -218,9 +218,9 @@ export async function POST(request) {
       }
       
       // If we're here with NOT_STARTED but have a business ID, update the status to BUSINESS_INFO
-      if (currentStatus === 'NOT_STARTED' && hasBusinessId) {
-        logger.info('[Subscription] Updating status from NOT_STARTED to BUSINESS_INFO due to business ID presence');
-        currentStatus = 'BUSINESS_INFO';
+      if (currentStatus === 'not_started' && hasBusinessId) {
+        logger.info('[Subscription] Updating status from not_started to BUSINESS_INFO due to business ID presence');
+        currentStatus = 'business_info';
       }
     }
 
@@ -280,10 +280,10 @@ export async function POST(request) {
       currentStatus,
       nextStep,
       validationRules: {
-        validPlans: ['FREE', 'PROFESSIONAL', 'ENTERPRISE'],
+        validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
         validIntervals: ['MONTHLY', 'YEARLY'],
         validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'],
-        allowedStatus: ['BUSINESS_INFO', 'NOT_STARTED']
+        allowedStatus: ['business_info', 'not_started']
       }
     });
 
@@ -383,10 +383,10 @@ export async function POST(request) {
       });
       
       // If cookies indicate business info is completed, proceed despite missing data
-      if (onboardedStatus === 'BUSINESS_INFO' ||
+      if (onboardedStatus === 'business_info' ||
           onboardingStep === 'subscription' ||
-          currentStatus === 'BUSINESS_INFO' ||
-          currentStatus === 'SUBSCRIPTION') {
+          currentStatus === 'business_info' ||
+          currentStatus === 'subscription') {
         
         logger.info('[Subscription] Proceeding despite missing data - onboarding status indicates business info is completed');
         businessInfoCompleted = true;
@@ -674,15 +674,17 @@ export async function POST(request) {
 
     // Update onboarding status in Cognito with tokens
     try {
-      // Normalize the plan value to uppercase for consistency in Cognito
-      const normalizedPlan = body.plan.toUpperCase();
+      // Normalize the plan value to lowercase for consistency in Cognito
+      const normalizedPlan = body.plan.toLowerCase();
+      const isFreeOrBasicPlan = body.plan.toLowerCase() === 'free' || body.plan.toLowerCase() === 'basic';
       
       const attributesToUpdate = {
         'custom:subplan': normalizedPlan,
         'custom:subscriptioninterval': body.interval,
         'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
                                  (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card') ? 'TRUE' : 'FALSE',
-        'custom:setupdone': 'FALSE' // Indicate setup is pending
+        'custom:setupdone': isFreeOrBasicPlan ? 'true' : 'FALSE', // Set setupdone to true for free plans
+        'custom:onboarding': isFreeOrBasicPlan ? 'complete' : nextStep // Set onboarding to complete for free plans
       };
       
       // Log the attributes being updated
@@ -826,7 +828,7 @@ export async function POST(request) {
       // Set essential cookies even in error case
       const targetRoute = defaultBody.plan.toLowerCase() === 'free' ? 'SETUP' : 'payment';
       await cookieStore.set('onboardingStep', targetRoute, { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('onboardedStatus', 'SUBSCRIPTION', { path: '/', expires: expiration, sameSite: 'lax' });
+      await cookieStore.set('onboardedStatus', 'subscription', { path: '/', expires: expiration, sameSite: 'lax' });
       await cookieStore.set('selectedPlan', defaultBody.plan.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
       await cookieStore.set('billingCycle', defaultBody.interval.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
       // Add post subscription access flag

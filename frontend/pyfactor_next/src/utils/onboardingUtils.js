@@ -136,9 +136,11 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
     // Validate session with provided tokens
     const { tokens: validTokens } = await validateSession(tokens);
 
-    // Format attributes
+    // Format attributes - ensure step is lowercase for consistency
+    const stepValue = step || 'business_info';
+    
     const formattedAttributes = {
-      'custom:onboarding': String(step),
+      'custom:onboarding': String(stepValue),
       'custom:updated_at': new Date().toISOString(),
       ...Object.entries(additionalAttributes).reduce((acc, [key, value]) => ({
         ...acc,
@@ -147,7 +149,7 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
     };
 
     logger.debug('[OnboardingUtils] Updating step:', {
-      step,
+      step: stepValue,
       attributes: Object.keys(formattedAttributes)
     });
 
@@ -216,7 +218,7 @@ export async function completeOnboarding() {
       timestamp: new Date().toISOString()
     });
     
-    // Define attributes to update
+    // Define attributes to update - using lowercase values
     const userAttributes = {
       'custom:onboarding': 'complete',
       'custom:setupdone': 'true',
@@ -485,7 +487,7 @@ export async function getOnboardingStatus() {
     
     // Set default values if nothing was found
     if (!statusData.status) {
-      statusData.status = 'NOT_STARTED';
+      statusData.status = 'not_started';
       statusData.step = 'business-info';
     }
     
@@ -494,7 +496,7 @@ export async function getOnboardingStatus() {
     console.error('[getOnboardingStatus] Error retrieving onboarding status:', error);
     // Return a default status in case of error
     return {
-      status: 'NOT_STARTED',
+      status: 'not_started',
       step: 'business-info',
       setupDone: false,
       error: error.message

@@ -414,7 +414,7 @@ class UserFlowAutomation:
                     {'Name': 'custom:businesscountry', 'Value': self.business_country},
                     {'Name': 'custom:legalstructure', 'Value': self.legal_structure},
                     {'Name': 'custom:datefounded', 'Value': self.date_founded},
-                    {'Name': 'custom:onboarding', 'Value': 'BUSINESS_INFO'}
+                    {'Name': 'custom:onboarding', 'Value': 'business_info'}  # Match model: business_info
                 ]
             )
             
@@ -433,18 +433,18 @@ class UserFlowAutomation:
         
         # Show subscription options and auto-select FREE plan
         print(colored("Available subscription plans:", "cyan"))
-        print("1. FREE - Basic features")
+        print("1. free - Basic features")
         print("2. PROFESSIONAL - Advanced features")
         print("3. ENTERPRISE - All features + premium support")
         
-        subscription_plan = "FREE"  # Default to FREE plan
+        subscription_plan = "free"  # Default to free plan
         interval = "MONTHLY"        # Default to MONTHLY
         
         # Allow option to change from defaults
-        change_defaults = input(colored("Use default plan (FREE/MONTHLY)? (y/n): ", "yellow")).strip().lower() == 'n'
+        change_defaults = input(colored("Use default plan (free/MONTHLY)? (y/n): ", "yellow")).strip().lower() == 'n'
         
         if change_defaults:
-            plan_choice = input(colored("Select plan (1=FREE, 2=PROFESSIONAL, 3=ENTERPRISE): ", "green")).strip()
+            plan_choice = input(colored("Select plan (1=free, 2=PROFESSIONAL, 3=ENTERPRISE): ", "green")).strip()
             if plan_choice == "2":
                 subscription_plan = "PROFESSIONAL"
             elif plan_choice == "3":
@@ -457,23 +457,33 @@ class UserFlowAutomation:
         print(colored(f"Selected plan: {subscription_plan}/{interval}", "green"))
         
         try:
-            # Update subscription info through Cognito attributes
-            self.cognito_client.admin_update_user_attributes(
-                UserPoolId=COGNITO_USER_POOL_ID,
-                Username=self.user_email,
-                UserAttributes=[
-                    {'Name': 'custom:subplan', 'Value': subscription_plan},
-                    {'Name': 'custom:subscriptioninterval', 'Value': interval},
-                    {'Name': 'custom:onboarding', 'Value': 'SUBSCRIPTION'}
-                ]
-            )
-            
-            logger.info(f"Updated Cognito attributes for subscription: {subscription_plan}/{interval}")
-            
-            # Since we're using AWS RDS directly, use AWS SDK to update database
-            # For now, we'll just log the intended operation
-            logger.info(f"Would update RDS database with subscription info: {subscription_plan}/{interval}")
-            print(colored("Subscription info updated successfully in Cognito", "green"))
+            # For FREE plan, directly complete the onboarding process
+            if subscription_plan == "free":
+                self.cognito_client.admin_update_user_attributes(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=self.user_email,
+                    UserAttributes=[
+                        {'Name': 'custom:subplan', 'Value': subscription_plan},
+                        {'Name': 'custom:subscriptioninterval', 'Value': interval},
+                        {'Name': 'custom:onboarding', 'Value': 'complete'},  # Always lowercase
+                        {'Name': 'custom:setupdone', 'Value': 'true'}
+                    ]
+                )
+                logger.info(f"Updated Cognito attributes for free plan, setting onboarding to complete")
+                print(colored("free plan selected. Onboarding marked as complete.", "green"))
+            else:
+                # For paid plans, follow regular flow
+                self.cognito_client.admin_update_user_attributes(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=self.user_email,
+                    UserAttributes=[
+                        {'Name': 'custom:subplan', 'Value': subscription_plan},
+                        {'Name': 'custom:subscriptioninterval', 'Value': interval},
+                        {'Name': 'custom:onboarding', 'Value': 'subscription'}  # Always lowercase
+                    ]
+                )
+                logger.info(f"Updated Cognito attributes for subscription: {subscription_plan}/{interval}")
+                print(colored("Subscription info updated successfully in Cognito", "green"))
             
             # Return subscription details
             return {
@@ -502,7 +512,7 @@ class UserFlowAutomation:
                 UserAttributes=[
                     {'Name': 'custom:paymentid', 'Value': payment_id},
                     {'Name': 'custom:payverified', 'Value': 'true'},
-                    {'Name': 'custom:onboarding', 'Value': 'PAYMENT'}
+                    {'Name': 'custom:onboarding', 'Value': 'payment'}  # Always lowercase
                 ]
             )
             
@@ -525,7 +535,7 @@ class UserFlowAutomation:
                 UserPoolId=COGNITO_USER_POOL_ID,
                 Username=self.user_email,
                 UserAttributes=[
-                    {'Name': 'custom:onboarding', 'Value': 'SETUP'}
+                    {'Name': 'custom:onboarding', 'Value': 'setup'}  # Always lowercase
                 ]
             )
             
@@ -549,7 +559,7 @@ class UserFlowAutomation:
                 Username=self.user_email,
                 UserAttributes=[
                     {'Name': 'custom:setupdone', 'Value': 'true'},
-                    {'Name': 'custom:onboarding', 'Value': 'COMPLETE'}
+                    {'Name': 'custom:onboarding', 'Value': 'complete'}
                 ]
             )
             
@@ -693,7 +703,7 @@ class UserFlowAutomation:
             print(colored("✓ Subscription step completed", "green"))
             
             # Store the selected plan for later use
-            self.selected_plan = subscription_result.get('plan', 'FREE')
+            self.selected_plan = subscription_result.get('plan', 'free')
             self.selected_interval = subscription_result.get('interval', 'MONTHLY')
             
             print(colored(f"Selected plan: {self.selected_plan}/{self.selected_interval}", "cyan"))
@@ -702,45 +712,67 @@ class UserFlowAutomation:
             if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
                 sys.exit(1)
         
-        # Payment (for paid plans only)
-        if hasattr(self, 'selected_plan') and self.selected_plan in ['PROFESSIONAL', 'ENTERPRISE']:
-            print(colored(f"Payment required for {self.selected_plan} plan", "cyan"))
-            if self.complete_payment_step():
-                print(colored("✓ Payment step completed", "green"))
+        # For FREE plans, onboarding is already complete, so we can skip the remaining steps
+        if hasattr(self, 'selected_plan') and self.selected_plan == 'free':
+            print(colored("Remaining onboarding steps skipped for free plan - already marked as complete", "cyan"))
+            
+            # Verify onboarding status is set to complete
+            try:
+                user_response = self.cognito_client.admin_get_user(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    Username=self.user_email
+                )
+                
+                onboarding_status = None
+                for attr in user_response.get('UserAttributes', []):
+                    if attr['Name'] == 'custom:onboarding':
+                        onboarding_status = attr['Value']
+                        break
+                
+                if onboarding_status != 'complete':
+                    print(colored(f"Warning: Onboarding status is '{onboarding_status}' instead of 'complete'. Fixing...", "yellow"))
+                    # Ensure it's set to complete for FREE plans
+                    self.cognito_client.admin_update_user_attributes(
+                        UserPoolId=COGNITO_USER_POOL_ID,
+                        Username=self.user_email,
+                        UserAttributes=[
+                            {'Name': 'custom:setupdone', 'Value': 'true'},
+                            {'Name': 'custom:onboarding', 'Value': 'complete'}
+                        ]
+                    )
+                    print(colored("✓ Onboarding status corrected to 'complete'", "green"))
+            except Exception as e:
+                logger.warning(f"Error verifying onboarding status: {str(e)}")
+                
+        else:
+            # Payment (for paid plans only)
+            if hasattr(self, 'selected_plan') and self.selected_plan in ['PROFESSIONAL', 'ENTERPRISE']:
+                print(colored(f"Payment required for {self.selected_plan} plan", "cyan"))
+                if self.complete_payment_step():
+                    print(colored("✓ Payment step completed", "green"))
+                else:
+                    print(colored("✗ Failed to complete payment step", "red"))
+                    if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
+                        sys.exit(1)
             else:
-                print(colored("✗ Failed to complete payment step", "red"))
+                # This section should never execute for FREE plans, since we handle them above
+                print(colored("Payment step skipped", "cyan"))
+            
+            # Setup
+            if self.complete_setup_step():
+                print(colored("✓ Setup step completed", "green"))
+            else:
+                print(colored("✗ Failed to complete setup step", "red"))
                 if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
                     sys.exit(1)
-        else:
-            print(colored("Payment step skipped for FREE plan", "cyan"))
-            # For free plan, set onboarding status to PAYMENT completed
-            try:
-                self.cognito_client.admin_update_user_attributes(
-                    UserPoolId=COGNITO_USER_POOL_ID,
-                    Username=self.user_email,
-                    UserAttributes=[
-                        {'Name': 'custom:onboarding', 'Value': 'PAYMENT'}
-                    ]
-                )
-                logger.info("Updated Cognito attributes to skip payment for FREE plan")
-            except Exception as e:
-                logger.warning(f"Error updating onboarding status for FREE plan: {str(e)}")
-        
-        # Setup
-        if self.complete_setup_step():
-            print(colored("✓ Setup step completed", "green"))
-        else:
-            print(colored("✗ Failed to complete setup step", "red"))
-            if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
-                sys.exit(1)
-        
-        # Complete onboarding
-        if self.complete_onboarding():
-            print(colored("✓ Onboarding completed successfully", "green"))
-        else:
-            print(colored("✗ Failed to complete onboarding", "red"))
-            if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
-                sys.exit(1)
+            
+            # Complete onboarding
+            if self.complete_onboarding():
+                print(colored("✓ Onboarding completed successfully", "green"))
+            else:
+                print(colored("✗ Failed to complete onboarding", "red"))
+                if not input(colored("Continue anyway? (y/n): ", "yellow")).strip().lower() == 'y':
+                    sys.exit(1)
         
         # Get tenant info for the user
         tenant_info = self.get_tenant_info()
@@ -753,7 +785,7 @@ class UserFlowAutomation:
         print(colored("\nUser flow automation completed successfully!", "green", attrs=["bold"]))
         print(f"Email: {self.user_email}")
         print(f"Password: {self.user_password}")
-        print(f"Plan: {getattr(self, 'selected_plan', 'FREE')}")
+        print(f"Plan: {getattr(self, 'selected_plan', 'free')}")
         print(f"Tenant ID: {self.tenant_id}")
         print(f"Tenant Schema: {self.tenant_schema}")
 

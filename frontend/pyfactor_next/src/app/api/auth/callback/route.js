@@ -50,7 +50,7 @@ export async function POST(request) {
       const onboardingStep = determineOnboardingStep(userAttributes);
       
       // Set onboarding cookies
-      const onboardingStatus = userAttributes['custom:onboarding'] || 'NOT_STARTED';
+      const onboardingStatus = userAttributes['custom:onboarding'] || 'not_started';
       response.cookies.set('onboardedStatus', onboardingStatus, cookieOptions);
       response.cookies.set('onboardingStep', onboardingStep, cookieOptions);
       
@@ -77,7 +77,7 @@ export async function POST(request) {
     } catch (error) {
       logger.warn('[API Auth Callback] Could not fetch user attributes for onboarding status:', error);
       // Set default onboarding cookies in case of error
-      response.cookies.set('onboardedStatus', 'NOT_STARTED', cookieOptions);
+      response.cookies.set('onboardedStatus', 'not_started', cookieOptions);
       response.cookies.set('onboardingStep', 'business-info', cookieOptions);
     }
     

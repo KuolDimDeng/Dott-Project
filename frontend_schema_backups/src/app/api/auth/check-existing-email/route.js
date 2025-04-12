@@ -42,7 +42,6 @@ async function checkEmailInCognito(email) {
     // Mock list of existing emails for development
     const mockExistingEmails = [
       'test@example.com', 
-      'user@example.com', 
       'admin@example.com'
     ];
     

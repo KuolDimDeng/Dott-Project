@@ -211,7 +211,7 @@ export function AuthProvider({ children }) {
 
           // Handle onboarding redirect if needed
           const currentPath = window.location.pathname;
-          if (onboardingStatus === 'NOT_STARTED' && !currentPath.includes('/onboarding/business-info')) {
+          if (onboardingStatus === 'not_started' && !currentPath.includes('/onboarding/business-info')) {
             router.push(appendLanguageParam('/onboarding/business-info'));
           }
         } catch (attributesError) {

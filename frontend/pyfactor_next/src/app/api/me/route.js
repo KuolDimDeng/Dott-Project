@@ -23,7 +23,7 @@ export async function GET(request) {
     
     // Check cookies for onboarding status
     const cookieStore = await cookies();
-    const onboardedStatus = cookieStore.get('onboardedStatus')?.value || 'NOT_STARTED';
+    const onboardedStatus = cookieStore.get('onboardedStatus')?.value || 'not_started';
     const setupCompleted = cookieStore.get('setupCompleted')?.value === 'true';
     
     // Return user information

@@ -47,6 +47,34 @@ export function AuthLoadingState() {
       return null;
     }
     
+    // Fix for free plan users stuck in subscription status
+    const userPlan = (session.user['custom:subplan'] || session.user['custom:subscription_plan'] || '').toLowerCase();
+    const isFreePlan = userPlan === 'free' || userPlan === 'basic';
+    
+    if (onboardingStatus === 'subscription' && isFreePlan) {
+      logger.info('Detected free plan user stuck in subscription status, fixing to complete and redirecting to dashboard');
+      
+      // Update Cognito attributes in the background
+      try {
+        setTimeout(async () => {
+          const { updateUserAttributes } = await import('aws-amplify/auth');
+          await updateUserAttributes({
+            userAttributes: {
+              'custom:onboarding': 'complete',
+              'custom:setupdone': 'true'
+            }
+          });
+          logger.debug('Fixed free plan user status to complete');
+        }, 100);
+      } catch (e) {
+        logger.error('Error fixing free plan user status:', e);
+      }
+      
+      // Redirect to dashboard immediately
+      router.push('/dashboard');
+      return null;
+    }
+    
     // If onboarding is not complete or setup is not done, redirect to appropriate step
     logger.debug('Onboarding incomplete, redirecting to appropriate step', {
       status: onboardingStatus,

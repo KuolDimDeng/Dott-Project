@@ -49,7 +49,7 @@ export function useOnboardingStatus() {
         status: validatedStatus,
         lastStep: validatedStatus,
         completedAt:
-          validatedStatus === 'COMPLETE' ? new Date().toISOString() : null,
+          validatedStatus === 'complete' ? new Date().toISOString() : null,
       });
       setError(null);
       setRetryCount(0);
@@ -92,7 +92,7 @@ export function useOnboardingStatus() {
             ? validateOnboardingState(lastStep)
             : validatedStatus,
           completedAt:
-            validatedStatus === 'COMPLETE' ? new Date().toISOString() : null,
+            validatedStatus === 'complete' ? new Date().toISOString() : null,
         };
 
         setStatus(updatedStatus);
@@ -111,7 +111,7 @@ export function useOnboardingStatus() {
     fetchStatus();
 
     // Only poll if we have a session and haven't completed onboarding
-    if (session && status?.status !== 'COMPLETE') {
+    if (session && status?.status !== 'complete') {
       const pollInterval = setInterval(fetchStatus, POLL_INTERVAL);
       return () => clearInterval(pollInterval);
     }

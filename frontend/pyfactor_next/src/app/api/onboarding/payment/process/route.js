@@ -32,14 +32,14 @@ export async function POST(request) {
     const normalizedPlan = (data.plan || 'professional').toUpperCase();
     
     // Set cookies to update the onboarding step to COMPLETE
-    response.cookies.set('onboardingStep', 'COMPLETE', {
+    response.cookies.set('onboardingStep', 'complete', {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       httpOnly: false,
       sameSite: 'lax'
     });
     
-    response.cookies.set('onboardedStatus', 'COMPLETE', {
+    response.cookies.set('onboardedStatus', 'complete', {
       path: '/',
       maxAge: 60 * 60 * 24 * 7, // 1 week
       httpOnly: false,
@@ -55,8 +55,8 @@ export async function POST(request) {
     });
 
     logger.debug('[API] Payment processing complete, cookies set:', {
-      onboardingStep: 'COMPLETE',
-      onboardedStatus: 'COMPLETE',
+      onboardingStep: 'complete',
+      onboardedStatus: 'complete',
       subscriptionPlan: normalizedPlan
     });
 

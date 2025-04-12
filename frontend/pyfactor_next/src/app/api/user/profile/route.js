@@ -69,7 +69,7 @@ export async function GET(req) {
           last_name: serverUser.family_name || serverUser.last_name,  // Add both formats for compatibility
           fullName: serverUser.name || `${serverUser.given_name || ''} ${serverUser.family_name || ''}`.trim(),
           tenantId: effectiveTenantId || serverUser.sub,
-          role: serverUser['custom:role'] || 'user',
+          role: serverUser['custom:role'] || 'client',
           onboardingStatus: serverUser['custom:onboarding'] || 'incomplete',
           setupComplete: serverUser['custom:setupdone'] === 'true',
           businessName: serverUser['custom:businessname'],
@@ -103,8 +103,9 @@ export async function GET(req) {
                getCookieValue(cookieHeader, 'last_name');
     }
     
-    // Use the email from the query params or cookies
-    const userEmail = email || authUser;
+    // Prepare profile data from Cognito authenticated user and other available data
+    const userEmail = serverUser?.email || authUser || getCookieValue('email') || getCookieValue('userEmail');
+    const fallbackEmail = userEmail || "";
     
     if (!userEmail || !effectiveTenantId) {
       // Check if this is a dashboard request
@@ -118,7 +119,10 @@ export async function GET(req) {
       if (isDashboardRequest) {
         // For dashboard, use available data and create fallback profile
         const fallbackTenantId = effectiveTenantId || cognitoUserId || getDefaultTenantId();
-        const fallbackEmail = userEmail || "user@example.com";
+        
+        // Generate username from email if available
+        const username = fallbackEmail ? fallbackEmail.split('@')[0] : '';
+        const generatedFirstName = username ? username.charAt(0).toUpperCase() + username.slice(1) : '';
         
         logger.info(`[API] Creating fallback profile for dashboard: ${fallbackTenantId}`);
         
@@ -127,13 +131,15 @@ export async function GET(req) {
             id: fallbackTenantId,
             email: fallbackEmail,
             tenantId: fallbackTenantId,
-            role: 'user',
-            firstName: firstName || '',
+            role: 'client',
+            firstName: firstName || generatedFirstName,
             lastName: lastName || '',
-            first_name: firstName || '', // Add both formats for compatibility
+            first_name: firstName || generatedFirstName, // Add both formats for compatibility
             last_name: lastName || '',   // Add both formats for compatibility
-            name: firstName && lastName ? `${firstName} ${lastName}` : (firstName || fallbackEmail),
-            fullName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || ''),
+            name: firstName && lastName ? `${firstName} ${lastName}` : 
+                 (firstName || generatedFirstName || fallbackEmail),
+            fullName: firstName && lastName ? `${firstName} ${lastName}` : 
+                     (firstName || generatedFirstName || ''),
             businessName: businessName || getCookieValue(cookieHeader, 'businessid') || '',
             businessType: businessType || '',
             onboardingStatus: getCookieValue(cookieHeader, 'onboardingStatus') || 'complete',
@@ -158,17 +164,23 @@ export async function GET(req) {
     
     logger.info(`[API] Creating profile with email: ${userEmail} and tenant ID: ${effectiveTenantId}`);
     
+    // Extract username from email for better defaults
+    const username = userEmail ? userEmail.split('@')[0] : '';
+    const generatedFirstName = username ? username.charAt(0).toUpperCase() + username.slice(1) : '';
+    
     // Return profile data with the tenant ID
     return NextResponse.json({
       profile: {
         id: effectiveTenantId,
         email: userEmail,
         tenantId: effectiveTenantId,
-        role: 'user',
-        firstName: firstName || '',
+        role: 'client',
+        firstName: firstName || generatedFirstName,
         lastName: lastName || '',
-        name: firstName && lastName ? `${firstName} ${lastName}` : (firstName || userEmail),
-        fullName: firstName && lastName ? `${firstName} ${lastName}` : (firstName || ''),
+        name: firstName && lastName ? `${firstName} ${lastName}` : 
+             (firstName || generatedFirstName || userEmail),
+        fullName: firstName && lastName ? `${firstName} ${lastName}` : 
+                 (firstName || generatedFirstName || ''),
         businessName: businessName || '',
         businessType: businessType || '',
         onboardingStatus: 'incomplete', // Default status

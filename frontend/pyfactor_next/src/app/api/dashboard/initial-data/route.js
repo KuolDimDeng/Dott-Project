@@ -42,7 +42,7 @@ export async function GET(request) {
     const response = {
       success: true,
       userData: {
-        userName: user?.name || user?.email?.split('@')[0] || 'User',
+        userName: user?.name || (user?.email ? (user.email.split('@')[0].charAt(0).toUpperCase() + user.email.split('@')[0].slice(1)) : 'Guest'),
         email: user?.email || '',
         businessName: user?.['custom:businessname'] || '',
         businessType: user?.['custom:businesstype'] || '',

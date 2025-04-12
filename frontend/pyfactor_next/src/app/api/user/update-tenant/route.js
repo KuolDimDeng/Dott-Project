@@ -83,7 +83,7 @@ export async function POST(request) {
     
     // Set onboarding cookies if requested
     if (updateOnboarding) {
-      response.cookies.set('onboardedStatus', 'COMPLETE', {
+      response.cookies.set('onboardedStatus', 'complete', {
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30 days
         sameSite: 'lax',
@@ -107,7 +107,7 @@ export async function POST(request) {
     
     // Add onboarding attributes if requested
     if (updateOnboarding) {
-      attributesToUpdate['custom:onboarding'] = 'COMPLETE';
+      attributesToUpdate['custom:onboarding'] = 'complete';
       attributesToUpdate['custom:setupdone'] = 'true';
     }
     
@@ -118,7 +118,7 @@ export async function POST(request) {
     
     const needsCognitoUpdate = 
       (cognitoBusinessId !== newTenantId) || 
-      (updateOnboarding && (cognitoOnboarding !== 'COMPLETE' || cognitoSetupDone !== 'TRUE'));
+      (updateOnboarding && (cognitoOnboarding !== 'complete' || cognitoSetupDone !== 'TRUE'));
     
     if (needsCognitoUpdate) {
       try {

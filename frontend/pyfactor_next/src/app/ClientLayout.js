@@ -70,7 +70,7 @@ const checkCookieBasedAccess = (pathname) => {
     // Special case for free plan - direct them to setup after subscription
     if (pathname.includes('/onboarding/setup') && 
         cookies.selectedPlan === 'free' && 
-        cookies.onboardedStatus === 'SUBSCRIPTION') {
+        cookies.onboardedStatus === 'subscription') {
       logger.debug('[ClientLayout] Free plan detected in cookie check, allowing setup access');
       return true;
     }
@@ -78,7 +78,7 @@ const checkCookieBasedAccess = (pathname) => {
     // Special case for dashboard access after free plan
     if (pathname === '/dashboard' && 
         cookies.selectedPlan === 'free' && 
-        (cookies.onboardedStatus === 'SUBSCRIPTION' || cookies.onboardedStatus === 'SETUP')) {
+        (cookies.onboardedStatus === 'subscription' || cookies.onboardedStatus === 'setup')) {
       logger.debug('[ClientLayout] Free plan detected for dashboard, allowing access');
       return true;
     }

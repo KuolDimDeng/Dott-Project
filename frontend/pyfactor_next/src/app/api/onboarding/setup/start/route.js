@@ -97,7 +97,7 @@ export async function POST(request) {
     // If setup completed successfully
     if (data.setup_complete) {
       // Update onboarding status to COMPLETE
-      await updateOnboardingStep('COMPLETE', {
+      await updateOnboardingStep('complete', {
         'custom:setupdone': 'true',
         'custom:setupcompletetime': new Date().toISOString()
       }, {
@@ -108,7 +108,7 @@ export async function POST(request) {
       return NextResponse.json({
         success: true,
         message: 'Setup completed successfully',
-        status: 'COMPLETE'
+        status: 'complete'
       });
     }
 

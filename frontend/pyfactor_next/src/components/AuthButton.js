@@ -139,19 +139,19 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
     }
     
     // Case 2: User is authenticated BUT onboarding not completed
-    if (user && ['BUSINESS_INFO', 'SUBSCRIPTION', 'PAYMENT', 'SETUP'].includes(user.attributes?.['custom:onboarding'])) {
+    if (user && ['business_info', 'subscription', 'PAYMENT', 'SETUP'].includes(user.attributes?.['custom:onboarding'])) {
       return {
         text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
         action: async () => {
           // Redirect to the appropriate step based on onboarding status
           const onboardingStatus = user.attributes?.['custom:onboarding'];
           switch(onboardingStatus) {
-            case 'BUSINESS_INFO':
-              await updateCookies('business-info', 'BUSINESS_INFO');
+            case 'business_info':
+              await updateCookies('business-info', 'business_info');
               router.push('/onboarding/business-info');
               break;
-            case 'SUBSCRIPTION':
-              await updateCookies('subscription', 'SUBSCRIPTION');
+            case 'subscription':
+              await updateCookies('subscription', 'subscription');
               router.push('/onboarding/subscription');
               break;
             case 'PAYMENT':

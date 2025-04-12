@@ -368,8 +368,8 @@ export function Subscription({ metadata }) {
           await updateUserAttributes({
             userAttributes: {
               'custom:subplan': normalizedPlanId,
-              'custom:onboarding': 'subscription',
-              'custom:setupdone': 'false',
+              'custom:onboarding': normalizedPlanId === 'free' ? 'complete' : 'subscription',
+              'custom:setupdone': normalizedPlanId === 'free' ? 'true' : 'false',
               'custom:updated_at': new Date().toISOString(),
               'custom:businessName': businessData.businessName,
               'custom:businessType': businessData.businessType
@@ -429,8 +429,8 @@ export function Subscription({ metadata }) {
           if (typeof document !== 'undefined') {
             const expiration = new Date();
             expiration.setDate(expiration.getDate() + 7);
-            document.cookie = `setupCompleted=true; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=COMPLETE; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `setupCompleted=${normalizedPlanId === 'free' ? 'true' : 'false'}; path=/; expires=${expiration.toUTCString()}`;
+            document.cookie = `onboardedStatus=${normalizedPlanId === 'free' ? 'complete' : 'subscription'}; path=/; expires=${expiration.toUTCString()}`;
             document.cookie = `tenantId=${tenantData.tenantId}; path=/; expires=${expiration.toUTCString()}`;
           }
           

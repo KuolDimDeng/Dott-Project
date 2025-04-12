@@ -33,15 +33,15 @@ export async function GET(request) {
         userId: user.userId,
         username: user.username,
         email: decoded.email || '',
-        given_name: decoded['custom:given_name'] || '',
-        family_name: decoded['custom:family_name'] || '',
+        given_name: decoded['custom:given_name'] || decoded.given_name || '',
+        family_name: decoded['custom:family_name'] || decoded.family_name || '',
         phone_number: decoded['phone_number'] || '',
         is_onboarded: (decoded['custom:setupdone'] || '').toLowerCase() === 'true',
-        onboarding_status: decoded['custom:onboarding'] || 'NOT_STARTED',
+        onboarding_status: decoded['custom:onboarding'] || 'not_started',
         business_name: decoded['custom:businessname'] || '',
         business_id: decoded['custom:businessid'] || '',
         tenant_id: decoded['custom:businessid'] || '',
-        role: decoded['custom:userrole'] || 'USER',
+        role: decoded['custom:userrole'] || 'client',
         subscription_plan: decoded['custom:subplan'] || 'FREE'
       };
       
@@ -72,20 +72,35 @@ export async function GET(request) {
         stack: error.stack
       });
       
+      // Extract email from error context if available
+      let userEmail = '';
+      try {
+        const cookie = request.headers.get('cookie') || '';
+        const emailCookie = cookie.split(';').find(c => c.trim().startsWith('email=') || c.trim().startsWith('userEmail='));
+        if (emailCookie) {
+          userEmail = decodeURIComponent(emailCookie.split('=')[1]);
+        }
+      } catch (e) {
+        logger.error('Error extracting email from cookie', { error: e });
+      }
+      
+      // Generate a username from email or default
+      const username = userEmail ? userEmail.split('@')[0] : 'demo-user';
+      const firstName = username.charAt(0).toUpperCase() + username.slice(1);
+      
       // Return a mock profile to avoid errors
       const mockProfile = {
         userId: 'mock-user-id',
-        username: 'mock-user',
-        email: 'user@example.com',
-        given_name: 'Demo',
-        family_name: 'User',
+        username: username,
+        email: userEmail || '',
+        given_name: firstName,
+        family_name: 'Account',
         is_onboarded: true,
-        onboarding_status: 'COMPLETE',
+        onboarding_status: 'complete',
         business_name: 'Demo Business',
         role: 'OWNER',
         subscription_plan: 'FREE',
-        /* RLS: tenant_id instead of schema_name */
-    tenant_id: tenant.id // Using schema_name instead of database_name
+        tenant_id: tenant?.id || 'mock-tenant-id'
       };
       
       logger.debug('Returning mock profile due to error', {
@@ -103,6 +118,28 @@ export async function GET(request) {
       type: error.constructor.name
     });
     
+    // Extract email from request context if available
+    let userEmail = '';
+    let tenantId = '';
+    try {
+      const cookie = request.headers.get('cookie') || '';
+      const emailCookie = cookie.split(';').find(c => c.trim().startsWith('email=') || c.trim().startsWith('userEmail='));
+      const tenantCookie = cookie.split(';').find(c => c.trim().startsWith('tenantId=') || c.trim().startsWith('businessId='));
+      
+      if (emailCookie) {
+        userEmail = decodeURIComponent(emailCookie.split('=')[1]);
+      }
+      if (tenantCookie) {
+        tenantId = decodeURIComponent(tenantCookie.split('=')[1]);
+      }
+    } catch (e) {
+      logger.error('Error extracting data from cookie', { error: e });
+    }
+    
+    // Generate a username from email or default
+    const username = userEmail ? userEmail.split('@')[0] : 'anonymous';
+    const firstName = username.charAt(0).toUpperCase() + username.slice(1);
+    
     // Handle 401 errors by returning fallback data
     if (error.response?.status === 401) {
       logger.info('[API] Missing auth tokens', { requestId });
@@ -110,12 +147,11 @@ export async function GET(request) {
       // Return a fallback profile with indication it's for demo/development
       return NextResponse.json({
         id: 'anonymous-user',
-        email: 'anonymous@example.com',
-        first_name: 'Anonymous',
-        last_name: 'User',
+        email: userEmail || '',
+        first_name: firstName,
+        last_name: 'Account',
         business_id: tenantId || 'default-business',
-        /* RLS: tenant_id instead of schema_name */
-    tenant_id: tenant.id ? `tenant_${tenantId.replace(/-/g, '_')}` : 'default_schema',
+        tenant_id: tenantId ? `tenant_${tenantId.replace(/-/g, '_')}` : 'default_schema',
         _anonymous: true,
         _development: process.env.NODE_ENV !== 'production',
         _error: 'Authentication required',
@@ -132,17 +168,16 @@ export async function GET(request) {
     // Return a mock profile even in case of unexpected errors
     const fallbackProfile = {
       userId: 'fallback-user-id',
-      username: 'fallback-user',
-      email: 'fallback@example.com',
-      given_name: 'Fallback',
-      family_name: 'User',
+      username: username,
+      email: userEmail || '',
+      given_name: firstName,
+      family_name: 'Account',
       is_onboarded: true,
-      onboarding_status: 'COMPLETE',
+      onboarding_status: 'complete',
       business_name: 'Fallback Business',
       role: 'OWNER',
       subscription_plan: 'FREE',
-      /* RLS: tenant_id instead of schema_name */
-    tenant_id: tenant.id,
+      tenant_id: tenantId || 'fallback-tenant-id',
       _error: 'Generated from fallback due to server error'
     };
     

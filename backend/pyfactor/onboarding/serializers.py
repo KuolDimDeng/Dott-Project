@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 class CognitoAttributeSerializer(serializers.Serializer):
     """Serializer for Cognito custom attributes"""
-    onboarding = serializers.ChoiceField(choices=OnboardingProgress.ONBOARDING_STATUS_CHOICES)
+    onboarding = serializers.CharField()  # Change to CharField to accept any case
     userrole = serializers.ChoiceField(choices=OnboardingProgress.USER_ROLE_CHOICES)
     acctstatus = serializers.ChoiceField(choices=OnboardingProgress.ACCOUNT_STATUS_CHOICES)
     subplan = serializers.ChoiceField(choices=OnboardingProgress.PLAN_CHOICES)
@@ -21,7 +21,27 @@ class CognitoAttributeSerializer(serializers.Serializer):
 
     def validate(self, data):
         """Validate attribute combinations based on onboarding state"""
-        onboarding_status = data.get('onboarding')
+        onboarding_status = data.get('onboarding', '').upper()
+        
+        # Handle lowercase values for onboarding states
+        lowercase_status_mapping = {
+            'complete': 'COMPLETE',
+            'subscription': 'SUBSCRIPTION',
+            'payment': 'PAYMENT',
+            'setup': 'SETUP'
+        }
+        
+        # Preserve the original lowercase values for frontend compatibility
+        original_value = data.get('onboarding', '')
+        if original_value.lower() in lowercase_status_mapping:
+            onboarding_status = lowercase_status_mapping[original_value.lower()]
+            # Preserve the original lowercase value in the data
+            data['onboarding'] = original_value.lower()
+        
+        # Validate onboarding status is a valid choice
+        valid_statuses = [choice[0] for choice in OnboardingProgress.ONBOARDING_STATUS_CHOICES]
+        if onboarding_status not in valid_statuses:
+            raise serializers.ValidationError(f"Invalid onboarding status: {onboarding_status}")
         
         if onboarding_status == 'BUSINESS_INFO' and not data.get('businessid'):
             raise serializers.ValidationError("Business ID required for BUSINESS_INFO state")
@@ -115,14 +135,20 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
             user.tenant = tenant
             user.save(update_fields=['tenant'])
 
+            # Determine onboarding status based on plan
+            plan = cognito_data.get('subplan', 'free')
+            # Always use lowercase for onboarding statuses
+            onboarding_status = 'complete' if plan.upper() == 'FREE' else 'subscription'
+            setupdone = 'true' if plan.upper() == 'FREE' else 'FALSE'
+
             # Update onboarding progress
             progress, _ = OnboardingProgress.objects.update_or_create(
                 user=user,
                 defaults={
                     'business': business,
-                    'onboarding_status': 'SUBSCRIPTION',
+                    'onboarding_status': onboarding_status,
                     'current_step': 'BUSINESS_INFO',
-                    'next_step': 'SUBSCRIPTION',
+                    'next_step': 'DASHBOARD' if plan.upper() == 'FREE' else 'subscription',
                     'user_role': cognito_data.get('userrole', 'OWNER'),
                     'account_status': cognito_data.get('acctstatus', 'PENDING'),
                     'attribute_version': cognito_data.get('attr_version', '1.0.0')
@@ -192,9 +218,19 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
 
             # Update progress with Cognito attributes if provided
             if cognito_data:
-                instance.onboarding_status = 'SUBSCRIPTION'
-                instance.current_step = 'BUSINESS_INFO'
-                instance.next_step = 'SUBSCRIPTION'
+                # Determine status based on plan
+                plan = cognito_data.get('subplan', '')
+                if plan.upper() == 'FREE':
+                    # For free plans, set to complete immediately
+                    instance.onboarding_status = 'complete'
+                    instance.current_step = 'BUSINESS_INFO'
+                    instance.next_step = 'DASHBOARD'
+                else:
+                    # For paid plans, follow normal flow (always use lowercase)
+                    instance.onboarding_status = 'subscription'
+                    instance.current_step = 'BUSINESS_INFO'
+                    instance.next_step = 'subscription'
+                    
                 instance.user_role = cognito_data.get('userrole', instance.user_role)
                 instance.account_status = cognito_data.get('acctstatus', instance.account_status)
                 instance.attribute_version = cognito_data.get('attr_version', instance.attribute_version)

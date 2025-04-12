@@ -42,7 +42,6 @@ async function checkEmailInCognito(email) {
     // Mock list of existing emails for development
     const mockExistingEmails = [
       'test@example.com', 
-      'user@example.com', 
       'admin@example.com'
     ];
     
@@ -83,4 +82,12 @@ async function checkEmailInCognito(email) {
     // This is safer than blocking sign-ups
     return false;
   }
-} 
+}
+
+// Don't check for specific emails like admin accounts or test accounts
+const exemptEmails = [
+  'admin@pyfactor.com',
+  'admin@admin.com',
+  'test@test.com',
+  // Remove the hardcoded example email
+]; 

@@ -101,3 +101,78 @@ After applying these changes, the avatar should:
 - Show no initials (blank circle) until user data is loaded
 - Show proper initials once user data is retrieved
 - Never display the default "U" for anonymous users
+
+## Avatar Display Fix
+
+This update includes several improvements to the avatar display and business name handling:
+
+1. Avatar display fixes:
+   - Fixed initials generation to use proper user names
+   - Added fallback to email extraction when name not available
+   - Improved handling of user data from cookies and API responses
+
+2. Business name improvements:
+   - Removed all hardcoded business name fallbacks in the codebase
+   - Added dynamic business name generation from user data
+   - Modified the tenant record creation process to use real user information
+   - Added more user-friendly fallbacks based on user first name or email
+
+3. Code changes:
+   - Updated all SQL queries to better handle empty business names
+   - Fixed tenant manager to prioritize meaningful business names
+   - Added logic to extract business names from Cognito attributes
+
+### Example code for dynamic business name generation:
+
+```javascript
+// Generate business name from user data
+const generateBusinessName = (userData) => {
+  if (userData?.businessName && 
+      userData.businessName !== 'Default Business' && 
+      userData.businessName !== 'My Business') {
+    return userData.businessName;
+  }
+  
+  if (userData?.firstName && userData?.lastName) {
+    return `${userData.firstName} ${userData.lastName}'s Business`;
+  } else if (userData?.firstName) {
+    return `${userData.firstName}'s Business`;
+  } else if (userData?.lastName) {
+    return `${userData.lastName}'s Business`;
+  } else if (userData?.email) {
+    const emailName = userData.email.split('@')[0].split('.')[0];
+    if (emailName && emailName.length > 1) {
+      return `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+    }
+  }
+  
+  return 'My Business'; // Friendly fallback
+};
+```
+
+## About 'Default Business' References
+
+You may notice that there are still many references to 'Default Business' in the codebase. These fall into three categories:
+
+1. **Condition checks**: Code like `if (businessName === 'Default Business')` is used to identify when a business name needs to be replaced with a dynamically generated one. These conditions should remain.
+
+2. **SQL queries**: Queries containing `WHERE name = 'Default Business'` are used to find database records with default names that need updating. These should remain.
+
+3. **Fallback code**: Any code that actually falls back to 'Default Business' as a displayed value has been replaced with dynamic business name generation logic.
+
+### The proper approach:
+
+```javascript
+// BEFORE: Hardcoded fallback
+const businessName = userData?.businessName || 'Default Business';
+
+// AFTER: Dynamic fallback based on user data
+const businessName = userData?.businessName || 
+  (userData?.firstName ? `${userData.firstName}'s Business` : 
+   userData?.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business');
+```
+
+This way, we identify instances of 'Default Business' to replace them, while never using it as a fallback display value. The user will always see either:
+- Their actual business name
+- A personalized business name derived from their data
+- 'My Business' as the final non-personalized fallback

@@ -189,11 +189,11 @@ export function useOnboardingProgress() {
 
   // Complete onboarding
   const completeOnboarding = useCallback(async () => {
-    return updateOnboardingStep(STEPS.COMPLETE, {
+    return updateOnboardingStep('complete', {
       'custom:setupdone': 'true',
       'custom:updated_at': new Date().toISOString()
     });
-  }, [updateOnboardingStep, STEPS]);
+  }, [updateOnboardingStep]);
 
   // Helper function to update cookies with onboarding step
   const updateOnboardingCookies = (step) => {

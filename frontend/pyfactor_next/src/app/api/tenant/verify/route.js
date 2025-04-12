@@ -65,9 +65,30 @@ export async function GET(request) {
       );
     }
     
+    // Check if the user has a tenant ID in their Cognito attributes
+    // Prioritize custom:tenant_ID as the source of truth
+    const cognitoTenantId = auth.user['custom:tenant_ID'] || 
+                           auth.user['custom:tenant_id'] || 
+                           auth.user['custom:tenantId'] || 
+                           auth.user['custom:businessid'];
+    
+    // If there's a mismatch between requested tenant ID and Cognito tenant ID, return it
+    if (cognitoTenantId && cognitoTenantId !== tenantId) {
+      serverLogger.warn(`[tenant/verify] Tenant ID mismatch: Request=${tenantId}, Cognito=${cognitoTenantId}`);
+      return NextResponse.json({
+        mismatch: true,
+        correctTenantId: cognitoTenantId,
+        message: 'Tenant ID in request does not match user\'s tenant ID in Cognito',
+        cognitoTenantId,
+        requestId
+      });
+    }
+    
     // For authenticated requests, call backend to verify tenant access
     const userId = auth.user.id || auth.user.sub;
-    serverLogger.info(`[tenant/verify] Verifying tenant ${tenantId} for user ${userId}`);
+    serverLogger.info(`[tenant/verify] Verifying tenant ${tenantId} for user ${userId}`, {
+      cognitoTenantId: cognitoTenantId || 'not set'
+    });
     
     // Make request to Django backend for full verification
     const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';

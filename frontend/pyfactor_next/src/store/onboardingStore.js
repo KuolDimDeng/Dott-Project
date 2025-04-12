@@ -40,7 +40,7 @@ const useOnboardingStore = create(
           const formattedAttributes = await validateBusinessInfo(info);
 
           // Update onboarding step with business info
-          await updateOnboardingStep('BUSINESS_INFO', formattedAttributes);
+          await updateOnboardingStep('business_info', formattedAttributes);
 
           set({
             businessInfo: info,

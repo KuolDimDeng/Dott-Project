@@ -313,6 +313,67 @@ const DashboardApp = ({ children }) => {
         const onboardingStatus = userAttributes[COGNITO_ATTRIBUTES.ONBOARDING_STATUS];
         const setupDone = userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED];
         const businessId = userAttributes[COGNITO_ATTRIBUTES.BUSINESS_ID] || '';
+        const subscriptionPlan = userAttributes[COGNITO_ATTRIBUTES.SUBSCRIPTION_PLAN] || '';
+        
+        // IMPORTANT ENHANCEMENT: If user has FREE plan but onboarding is still 'subscription',
+        // update it to 'complete' automatically
+        const isFreePlan = subscriptionPlan.toUpperCase() === 'FREE';
+        if (isFreePlan && onboardingStatus === 'subscription' && pathname.includes('/dashboard')) {
+          logger.info('[DashboardApp] Detected FREE plan with incomplete onboarding status, fixing now');
+          
+          // Update onboarding status for free plan
+          try {
+            const { updateUserAttributes } = await import('aws-amplify/auth');
+            await updateUserAttributes({
+              userAttributes: {
+                'custom:onboarding': 'complete',
+                'custom:setupdone': 'true',
+                'custom:updated_at': new Date().toISOString()
+              }
+            });
+            logger.info('[DashboardApp] Successfully updated Cognito attributes for FREE plan');
+            
+            // Set cookies to match
+            document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; max-age=${60*60*24*7}`;
+            document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; max-age=${60*60*24*7}`;
+            document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; max-age=${60*60*24*7}`;
+            
+            setInitialCheckComplete(true);
+            return; // Continue with dashboard access
+          } catch (error) {
+            logger.warn('[DashboardApp] Failed to update attributes for FREE plan, trying API', error);
+            
+            // Try server-side update as fallback
+            try {
+              const apiResponse = await fetch('/api/user/update-attributes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  attributes: {
+                    'custom:onboarding': 'complete',
+                    'custom:setupdone': 'true',
+                    'custom:updated_at': new Date().toISOString()
+                  },
+                  forceUpdate: true
+                })
+              });
+              
+              if (apiResponse.ok) {
+                logger.info('[DashboardApp] Successfully updated attributes via API for FREE plan');
+                
+                // Set cookies to match
+                document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; max-age=${60*60*24*7}`;
+                document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; max-age=${60*60*24*7}`;
+                document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; max-age=${60*60*24*7}`;
+                
+                setInitialCheckComplete(true);
+                return; // Continue with dashboard access
+              }
+            } catch (apiError) {
+              logger.error('[DashboardApp] Failed API attribute update for FREE plan:', apiError);
+            }
+          }
+        }
         
         logger.info('[DashboardApp] Checking Cognito attributes for onboarding status:', {
           onboarding: onboardingStatus || 'not set',

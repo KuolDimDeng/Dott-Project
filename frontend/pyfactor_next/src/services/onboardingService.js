@@ -464,7 +464,7 @@ export const onboardingService = {
             },
             body: JSON.stringify({
               ...data,
-              _onboardingStatus: 'BUSINESS_INFO',
+              _onboardingStatus: 'business_info',
               _onboardingStep: 'subscription'
             })
           });
@@ -646,13 +646,14 @@ export const onboardingService = {
    */
   stepToStatus(step) {
     const map = {
-      'business-info': 'NOT_STARTED',
-      'subscription': 'BUSINESS_INFO',
-      'payment': 'SUBSCRIPTION',
-      'setup': 'PAYMENT',
-      'complete': 'COMPLETE'
+      'business-info': 'not_started',
+      'subscription': 'business_info',
+      'payment': 'subscription',
+      'setup': 'payment',
+      'dashboard': 'complete',
+      'complete': 'complete'
     };
-    return map[step] || 'NOT_STARTED';
+    return map[step] || 'not_started';
   },
 
   /**
@@ -660,11 +661,12 @@ export const onboardingService = {
    */
   statusToStep(status) {
     const map = {
-      'NOT_STARTED': 'business-info',
-      'BUSINESS_INFO': 'subscription',
-      'SUBSCRIPTION': 'payment',
-      'PAYMENT': 'setup',
-      'COMPLETE': 'dashboard'
+      'not_started': 'business-info',
+      'business_info': 'subscription',
+      'subscription': 'payment',
+      'payment': 'setup',
+      'setup': 'dashboard',
+      'complete': 'dashboard'
     };
     return map[status] || 'business-info';
   },

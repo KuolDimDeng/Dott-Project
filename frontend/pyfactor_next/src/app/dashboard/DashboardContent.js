@@ -31,8 +31,8 @@ const RenderMainContent = lazy(() =>
   }))
 );
 
-// Create an empty loading component (removed spinner)
-const LoadingComponent = () => null;
+// Use DashboardLoader for loading component
+const LoadingComponent = () => <DashboardLoader message="Loading dashboard components..." />;
 
 function DashboardContent({ setupStatus = 'pending', customContent, mockData, userAttributes, tenantId: propTenantId }) {
   const { user, isAuthenticated, logout } = useAuth();
@@ -558,71 +558,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const handleShowCreateOptions = useCallback((formType) => {
     console.log(`Showing create options for: ${formType}`);
     
-    // Common state reset
-    updateState({
-      showCreateMenu: false,
-      showForm: true,
-      formOption: formType,
-      showCreateOptions: true,
-      selectedOption: formType
+    // Only update the view state - nothing else
+    // This prevents re-rendering the entire dashboard
+    updateState({ 
+      view: `create-${formType.toLowerCase()}`,
+      showCreateMenu: false
     });
     
-    // Switch specific view setting based on formType
-    switch(formType) {
-      case 'Product':
-        // Product needs special handling for create mode
-        updateState({ 
-          showProductManagement: true,
-          showCreateOptions: true,
-          view: 'create-product' // Custom view for create product
-        });
-        break;
-      case 'Service':
-        updateState({ 
-          showServiceManagement: true,
-          view: 'create-service'
-        });
-        break;
-      case 'Invoice':
-        updateState({ 
-          showInvoiceManagement: true,
-          view: 'create-invoice'
-        });
-        break;
-      case 'Bill':
-        updateState({ 
-          showBillManagement: true,
-          view: 'create-bill'
-        });
-        break;
-      case 'Estimate':
-        updateState({ 
-          showEstimateManagement: true,
-          view: 'create-estimate'
-        });
-        break;
-      case 'Customer':
-        updateState({ 
-          showCustomerList: true,
-          view: 'create-customer'
-        });
-        break;
-      case 'Vendor':
-        updateState({ 
-          showVendorManagement: true,
-          view: 'create-vendor'
-        });
-        break;
-      case 'Transaction':
-        updateState({ 
-          showTransactionForm: true,
-          view: 'create-transaction'
-        });
-        break;
-      default:
-        // Default behavior - no specific view change
-        break;
-    }
   }, [updateState]);
 
   // Now define handleMenuItemClick which depends on the above functions
@@ -1185,29 +1127,25 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 const MemoizedDashboardContent = React.memo(DashboardContent);
 
 export default function Dashboard({ newAccount, plan, mockData, setupStatus, userAttributes, tenantId }) {
-  // Use a ref to track if this is the first render to limit logging to just the initial render
-  const isFirstRender = React.useRef(true);
+  // Skip tenant verification for tenants provided via props
+  const shouldSkipTenantCheck = !!tenantId;
   
-  // Only log on first render, then disable the logging
-  if (isFirstRender.current) {
-    console.log('Dashboard initial render with props:', { newAccount, plan, mockData, setupStatus });
-    isFirstRender.current = false;
-  }
-  
-  // Always use production behavior regardless of environment
   return (
     <NotificationProvider>
-      <ErrorBoundary>
-        <ToastProvider>
-          <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
-            <MemoizedDashboardContent 
-              setupStatus={setupStatus} 
+      <ToastProvider>
+        <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+          <ErrorBoundary>
+            <DashboardContent 
+              setupStatus={setupStatus}
+              mockData={mockData}
               userAttributes={userAttributes}
               tenantId={tenantId}
+              newAccount={newAccount}
+              plan={plan}
             />
-          </Suspense>
-        </ToastProvider>
-      </ErrorBoundary>
+          </ErrorBoundary>
+        </Suspense>
+      </ToastProvider>
     </NotificationProvider>
   );
 }

@@ -7,12 +7,12 @@ import { logger } from '@/utils/logger';
  * Retrieves the current onboarding status from Cognito user attributes
  */
 const VALID_ONBOARDING_STATES = [
-  'NOT_STARTED',
-  'BUSINESS_INFO',
-  'SUBSCRIPTION',
-  'PAYMENT',
-  'SETUP',
-  'COMPLETE',
+  'not_started',
+  'business_info',
+  'subscription',
+  'payment',
+  'setup',
+  'complete',
 ];
 
 /**
@@ -82,7 +82,7 @@ export async function GET(request) {
 
     const onboardingStatus =
       userData.UserAttributes.find((attr) => attr.Name === 'custom:onboarding')
-        ?.Value || 'NOT_STARTED';
+        ?.Value || 'not_started';
 
     const lastStep =
       userData.UserAttributes.find((attr) => attr.Name === 'custom:lastStep')
@@ -123,10 +123,10 @@ export async function GET(request) {
     // 3. setupDone is TRUE
     // 4. businessId exists (indicating business info was completed)
     const setup_completed =
-      onboardingStatus === 'COMPLETE' ||
+      onboardingStatus === 'complete' ||
       completedAt !== null ||
       setupDone ||
-      (businessId && onboardingStatus !== 'NOT_STARTED');
+      (businessId && onboardingStatus !== 'not_started');
     
     return NextResponse.json({
       status: onboardingStatus,
@@ -197,7 +197,7 @@ export async function POST(request) {
     const currentStatus =
       currentUserData.UserAttributes.find(
         (attr) => attr.Name === 'custom:onboarding'
-      )?.Value || 'NOT_STARTED';
+      )?.Value || 'not_started';
 
     // Validate state transition
     if (!isValidStateTransition(currentStatus, status)) {
@@ -226,7 +226,7 @@ export async function POST(request) {
       });
     }
 
-    if (status === 'COMPLETE') {
+    if (status === 'complete') {
       userAttributes.push({
         Name: 'custom:onboardingCompletedAt',
         Value: new Date().toISOString(),
@@ -268,7 +268,7 @@ export async function POST(request) {
         return NextResponse.json({
           status,
           lastStep: lastStep || status,
-          completedAt: status === 'COMPLETE' ? new Date().toISOString() : null,
+          completedAt: status === 'complete' ? new Date().toISOString() : null,
           previousStatus: currentStatus,
         });
       } catch (error) {

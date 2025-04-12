@@ -113,7 +113,7 @@ export async function GET(req) {
       if (isDashboardRequest) {
         // For dashboard, use available data and create fallback profile
         const fallbackTenantId = effectiveTenantId || cognitoUserId || getDefaultTenantId();
-        const fallbackEmail = userEmail || "user@example.com";
+        const fallbackEmail = userEmail || "";
         
         logger.info(`[API] Creating fallback profile for dashboard: ${fallbackTenantId}`);
         

@@ -50,7 +50,7 @@ async function getAuthenticatedUser(request) {
       safeLogger.debug('[API] Business-info step detected, providing minimal data');
       return {
         email: '',
-        'custom:onboarding': 'NOT_STARTED',
+        'custom:onboarding': 'not_started',
         partial: true,
         businessInfo: false
       };
@@ -74,7 +74,7 @@ async function getAuthenticatedUser(request) {
       safeLogger.debug('[API] Returning partial data for onboarding page');
       return {
         email: '',
-        'custom:onboarding': 'NOT_STARTED',
+        'custom:onboarding': 'not_started',
         partial: true,
         businessInfo: false
       };
@@ -116,7 +116,7 @@ export async function GET(request) {
     if (isPartial) {
       safeLogger.debug('[API] Returning partial state for unauthenticated business-info access');
       return NextResponse.json({
-        status: 'NOT_STARTED',
+        status: 'not_started',
         currentStep: 'business-info',
         userData: {
           email: '',
@@ -129,7 +129,7 @@ export async function GET(request) {
     }
     
     // Extract onboarding information from user attributes
-    const onboardingStatus = user['custom:onboarding'] || 'NOT_STARTED';
+    const onboardingStatus = user['custom:onboarding'] || 'not_started';
     const businessName = user['custom:businessName'] || '';
     const businessType = user['custom:businessType'] || '';
     
@@ -140,12 +140,12 @@ export async function GET(request) {
     
     // Map status to step
     const stepMap = {
-      'NOT_STARTED': 'business-info',
-      'BUSINESS_INFO': 'subscription',
-      'SUBSCRIPTION': 'payment',
-      'PAYMENT': 'setup',
-      'SETUP': 'dashboard',
-      'COMPLETE': 'dashboard'
+      'not_started': 'business-info',
+      'business_info': 'subscription',
+      'subscription': 'payment',
+      'payment': 'setup',
+      'setup': 'dashboard',
+      'complete': 'dashboard'
     };
     
     const currentStep = stepMap[onboardingStatus] || 'business-info';
@@ -199,14 +199,14 @@ export async function POST(request) {
     
     // Map step to status
     const statusMap = {
-      'business-info': 'NOT_STARTED',
-      'subscription': 'BUSINESS_INFO',
-      'payment': 'SUBSCRIPTION',
-      'setup': 'PAYMENT',
-      'complete': 'COMPLETE'
+      'business-info': 'not_started',
+      'subscription': 'business_info',
+      'payment': 'subscription',
+      'setup': 'payment',
+      'complete': 'complete'
     };
     
-    const status = statusMap[step] || 'NOT_STARTED';
+    const status = statusMap[step] || 'not_started';
     
     // For the server-side API, we'll just store the state without directly updating Cognito
     // The client side will handle the Cognito attribute updates

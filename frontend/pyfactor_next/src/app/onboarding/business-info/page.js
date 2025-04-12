@@ -241,6 +241,7 @@ function BusinessInfoForm() {
     
     try {
       logger.debug('[BusinessInfo] Form submitted, sending data:', formData);
+      console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Form submitted:`, formData);
       
       // Save to localStorage as a backup before submitting
       try {
@@ -287,6 +288,41 @@ function BusinessInfoForm() {
           // Wait before retry
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
+      }
+      
+      // Update Cognito attributes regardless of API success
+      try {
+        // Import the Amplify function to update attributes
+        const { updateUserAttributes } = await import('aws-amplify/auth');
+        
+        // Prepare the attributes to update
+        const cognitoAttributes = {
+          'custom:businessname': formData.businessName,
+          'custom:businesstype': formData.businessType,
+          'custom:businesscountry': formData.country,
+          'custom:legalstructure': formData.legalStructure,
+          'custom:datefounded': formData.dateFounded || new Date().toISOString().split('T')[0],
+          'custom:onboarding': 'business_info',
+          'custom:updated_at': new Date().toISOString()
+        };
+        
+        // Log the update attempt
+        console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Updating Cognito attributes:`, cognitoAttributes);
+        logger.info('[BusinessInfo] Updating Cognito attributes:', {
+          attributes: Object.keys(cognitoAttributes)
+        });
+        
+        // Make the update
+        await updateUserAttributes({
+          userAttributes: cognitoAttributes
+        });
+        
+        console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Cognito update successful`);
+        logger.info('[BusinessInfo] Successfully updated Cognito attributes');
+      } catch (cognitoError) {
+        console.error(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Cognito update failed:`, cognitoError);
+        logger.error('[BusinessInfo] Failed to update Cognito attributes:', cognitoError);
+        // Continue with the flow even if attribute update fails
       }
       
       // Whether API call succeeded or not, continue to next step

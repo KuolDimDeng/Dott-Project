@@ -217,7 +217,7 @@ const AIQueryPage = lazy(() => import('./forms/AIQueryPage.js'));
  * Renders the main content of the dashboard based on the current view
  * This component uses lazy loading to reduce memory usage
  */
-function RenderMainContent({
+const RenderMainContent = React.memo(function RenderMainContent({
   showTransactionForm,
   showInvoiceBuilder,
   showCreateOptions,
@@ -335,7 +335,8 @@ function RenderMainContent({
       console.log(`RenderMainContent props (render #${renderCountRef.current}):`, {
         showMyAccount,
         showHelpCenter,
-        userData: userData ? { ...userData } : {}
+        userData: userData ? { ...userData } : {},
+        view
       });
     }
   }, [showMyAccount, showHelpCenter, userData, tenantId, view]);
@@ -716,19 +717,6 @@ function RenderMainContent({
       {renderContent()}
     </ContentWrapper>
   );
-}
-
-export default React.memo(RenderMainContent, (prevProps, nextProps) => {
-  // Only re-render if these key properties change
-  // This prevents re-renders when only userData reference changes but content is the same
-  return (
-    prevProps.showMyAccount === nextProps.showMyAccount &&
-    prevProps.showHelpCenter === nextProps.showHelpCenter &&
-    prevProps.tenantId === nextProps.tenantId &&
-    prevProps.view === nextProps.view &&
-    // Compare userData essential properties instead of reference equality
-    prevProps.userData?.email === nextProps.userData?.email &&
-    prevProps.userData?.sub === nextProps.userData?.sub &&
-    prevProps.userData?.['custom:tenantId'] === nextProps.userData?.['custom:tenantId']
-  );
 });
+
+export default RenderMainContent;

@@ -84,6 +84,55 @@ export async function POST(request) {
       
       logger.info(`[EnsureDBRecord][${requestId}] Creating tenant record with ID: ${tenantId}`);
       
+      // Generate a business name if not provided or if it's a default one
+      let finalBusinessName = businessName;
+      
+      if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+        // Try to get user info from Cognito if we have a userId
+        if (userId) {
+          try {
+            // Try to fetch email, first name, and last name from the database
+            const userQuery = `
+              SELECT email, first_name, last_name
+              FROM custom_auth_user
+              WHERE id = $1
+            `;
+            
+            const userResult = await pool.query(userQuery, [userId]);
+            
+            if (userResult.rows.length > 0) {
+              const userInfo = userResult.rows[0];
+              
+              if (userInfo.first_name && userInfo.last_name) {
+                finalBusinessName = `${userInfo.first_name} ${userInfo.last_name}'s Business`;
+                logger.info(`[EnsureDBRecord][${requestId}] Generated business name from user data: ${finalBusinessName}`);
+              } else if (userInfo.first_name) {
+                finalBusinessName = `${userInfo.first_name}'s Business`;
+                logger.info(`[EnsureDBRecord][${requestId}] Generated business name from first name: ${finalBusinessName}`);
+              } else if (userInfo.last_name) {
+                finalBusinessName = `${userInfo.last_name}'s Business`;
+                logger.info(`[EnsureDBRecord][${requestId}] Generated business name from last name: ${finalBusinessName}`);
+              } else if (userInfo.email) {
+                // Extract name from email
+                const emailName = userInfo.email.split('@')[0].split('.')[0];
+                if (emailName && emailName.length > 1) {
+                  finalBusinessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+                  logger.info(`[EnsureDBRecord][${requestId}] Generated business name from email: ${finalBusinessName}`);
+                }
+              }
+            }
+          } catch (error) {
+            logger.warn(`[EnsureDBRecord][${requestId}] Failed to get user data from database: ${error.message}`);
+          }
+        }
+        
+        // If still no valid business name, leave it blank for user to update later
+        if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+          finalBusinessName = '';
+          logger.info(`[EnsureDBRecord][${requestId}] No business name available, leaving blank for user to update later`);
+        }
+      }
+      
       // Create tenant record
       const tenantInsertQuery = `
         INSERT INTO custom_auth_tenant (
@@ -92,13 +141,21 @@ export async function POST(request) {
         )
         VALUES ($1, $1, $2, $3, $4, NOW(), NOW(), true, NOW(), true)
         ON CONFLICT (id) DO UPDATE
-        SET tenant_id = $1, name = $2, updated_at = NOW(), rls_enabled = true
+        SET tenant_id = $1, 
+            name = CASE
+                WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = '' OR 
+                     custom_auth_tenant.name = 'Default Business' OR custom_auth_tenant.name = 'My Business'
+                THEN $2
+                ELSE custom_auth_tenant.name
+            END, 
+            updated_at = NOW(), 
+            rls_enabled = true
         RETURNING id, tenant_id, name, schema_name;
       `;
       
       const result = await connection.query(tenantInsertQuery, [
         tenantId, 
-        businessName || 'Default Business',
+        finalBusinessName,
         userId || 'system',
         schemaName
       ]);
@@ -244,7 +301,7 @@ export async function POST(request) {
               ON CONFLICT DO NOTHING
             `, [
               numericId,
-              businessName || 'Default Business',
+              finalBusinessName,
               tenantId,
               businessType || 'Other',
               businessCountry || 'US'
@@ -262,7 +319,7 @@ export async function POST(request) {
               ON CONFLICT DO NOTHING
             `, [
               tenantId,
-              businessName || 'Default Business',
+              finalBusinessName,
               businessType || 'Other',
               businessCountry || 'US'
             ]);

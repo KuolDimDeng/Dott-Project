@@ -258,6 +258,34 @@ const [state, dispatch] = useReducer(reducer, initialState);
       return '/dashboard';
     }
     
+    // CRITICAL FIX: Check for free plan users stuck in subscription status
+    const userPlan = (userAttributes['custom:subplan'] || userAttributes['custom:subscription_plan'] || '').toLowerCase();
+    const isFreePlan = userPlan === 'free' || userPlan === 'basic';
+    
+    if (onboardingStatus === 'subscription' && isFreePlan) {
+      logger.info('[SignInForm] Detected free plan user stuck in subscription status, fixing to complete');
+      
+      // Update Cognito attributes to fix the status
+      try {
+        setTimeout(async () => {
+          const { updateUserAttributes } = await import('aws-amplify/auth');
+          await updateUserAttributes({
+            userAttributes: {
+              'custom:onboarding': 'complete',
+              'custom:setupdone': 'true'
+            }
+          });
+          logger.debug('[SignInForm] Fixed free plan user status to complete');
+        }, 100);
+      } catch (e) {
+        logger.error('[SignInForm] Error fixing free plan user status:', e);
+      }
+      
+      // Set cookies for immediate effect
+      setOnboardingCookies('complete', true);
+      return '/dashboard';
+    }
+    
     // For developers: Immediately fix any known onboarded users
     const knownOnboardedEmails = ['kuoldimdeng@outlook.com', 'dev@pyfactor.com'];
     if (userAttributes.email && knownOnboardedEmails.includes(userAttributes.email.toLowerCase())) {

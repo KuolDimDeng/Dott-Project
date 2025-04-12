@@ -85,7 +85,7 @@ export async function POST(request) {
           '/api/user/update-attributes',
           {
             attributes: {
-              'custom:onboarding': 'COMPLETE',
+              'custom:onboarding': 'complete',
               'custom:setupdone': 'true'
             }
           },
@@ -109,7 +109,7 @@ export async function POST(request) {
       });
       
       // Set onboarding cookies
-      jsonResponse.cookies.set('onboardedStatus', 'COMPLETE', {
+      jsonResponse.cookies.set('onboardedStatus', 'complete', {
         path: '/',
         maxAge: 60 * 60 * 24 * 30, // 30 days
         sameSite: 'lax'
@@ -148,7 +148,7 @@ export async function POST(request) {
             '/api/user/update-attributes',
             {
               attributes: {
-                'custom:onboarding': 'COMPLETE',
+                'custom:onboarding': 'complete',
                 'custom:setupdone': 'true'
               }
             },
@@ -167,7 +167,7 @@ export async function POST(request) {
           });
           
           // Set cookies
-          jsonResponse.cookies.set('onboardedStatus', 'COMPLETE', {
+          jsonResponse.cookies.set('onboardedStatus', 'complete', {
             path: '/',
             maxAge: 60 * 60 * 24 * 30,
             sameSite: 'lax'

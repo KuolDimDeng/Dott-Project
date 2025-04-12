@@ -35,7 +35,7 @@ export async function POST(request) {
     }
     
     // Get onboarding status from user attributes
-    const onboardingStatus = user['custom:onboarding'] || 'NOT_STARTED';
+    const onboardingStatus = user['custom:onboarding'] || 'not_started';
     logger.debug('[API] User onboarding status for navigation', { onboardingStatus });
     
     // Map steps to their next step

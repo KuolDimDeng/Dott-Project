@@ -180,7 +180,7 @@ export function useSession() {
               idToken: {
                 toString: () => 'mock-id-token',
                 payload: {
-                  email: localStorage.getItem('authUser') || 'user@example.com',
+                  email: localStorage.getItem('authUser') || '',
                   email_verified: true,
                   'custom:onboarding': 'complete',
                   'custom:setupdone': 'true',
@@ -199,7 +199,7 @@ export function useSession() {
           
           // User attributes
           const mockAttributes = {
-            email: localStorage.getItem('authUser') || 'user@example.com',
+            email: localStorage.getItem('authUser') || '',
             email_verified: true,
             'custom:onboarding': 'complete',
             'custom:setupdone': 'true',

@@ -7,6 +7,20 @@ import React from 'react';
  * A simplified dashboard component that doesn't make heavy API calls
  */
 function MainDashboard({ userData }) {
+  // Generate a proper greeting with the user's name
+  const displayName = () => {
+    if (userData?.first_name) {
+      return userData.first_name;
+    } else if (userData?.email) {
+      const username = userData.email.split('@')[0];
+      // Capitalize first letter of username
+      return username.charAt(0).toUpperCase() + username.slice(1);
+    } else if (userData?.name) {
+      return userData.name;
+    }
+    return 'there'; // More friendly than 'User'
+  };
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
@@ -14,7 +28,7 @@ function MainDashboard({ userData }) {
       </h1>
       
       <p className="text-gray-700 dark:text-gray-300 mb-6">
-        Welcome to your main dashboard, {userData?.first_name || 'User'}!
+        Welcome to your main dashboard, {displayName()}!
       </p>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">

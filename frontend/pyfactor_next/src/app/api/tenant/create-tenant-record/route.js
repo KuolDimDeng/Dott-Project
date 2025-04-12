@@ -217,16 +217,105 @@ export async function POST(request) {
     }
     
     // Create or update tenant record - now we don't include schema_name
+    
+    // Generate a business name if not provided
+    let finalBusinessName = businessName;
+    
+    if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+      // Try to get user info from Cognito if we have a userId
+      if (userId) {
+        try {
+          // Import AWS SDK
+          const { CognitoIdentityProviderClient, AdminGetUserCommand } = require("@aws-sdk/client-cognito-identity-provider");
+          
+          // Get Cognito credentials from environment variables
+          const client = new CognitoIdentityProviderClient({
+            region: process.env.AWS_REGION || 'us-east-1',
+            credentials: {
+              accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+              secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+            }
+          });
+          
+          // Try to get user attributes from Cognito
+          const command = new AdminGetUserCommand({
+            UserPoolId: process.env.COGNITO_USER_POOL_ID,
+            Username: userId
+          });
+          
+          const cognitoUser = await client.send(command);
+          
+          // Extract business name from user attributes
+          if (cognitoUser.UserAttributes) {
+            for (const attr of cognitoUser.UserAttributes) {
+              if (attr.Name === 'custom:businessname' && attr.Value && attr.Value !== 'Default Business' && attr.Value !== 'My Business') {
+                finalBusinessName = attr.Value;
+                serverLogger.info(`Using business name from Cognito: ${finalBusinessName}`);
+                break;
+              }
+            }
+            
+            // If still no business name, try to create one from user attributes
+            if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+              let firstName = '';
+              let lastName = '';
+              let email = '';
+              
+              for (const attr of cognitoUser.UserAttributes) {
+                if (attr.Name === 'given_name' || attr.Name === 'name') {
+                  firstName = attr.Value;
+                } else if (attr.Name === 'family_name') {
+                  lastName = attr.Value;
+                } else if (attr.Name === 'email') {
+                  email = attr.Value;
+                }
+              }
+              
+              if (firstName && lastName) {
+                finalBusinessName = `${firstName} ${lastName}'s Business`;
+              } else if (firstName) {
+                finalBusinessName = `${firstName}'s Business`;
+              } else if (lastName) {
+                finalBusinessName = `${lastName}'s Business`;
+              } else if (email) {
+                // Extract name from email
+                const emailName = email.split('@')[0].split('.')[0];
+                if (emailName && emailName.length > 1) {
+                  finalBusinessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+                }
+              }
+              
+              if (finalBusinessName && finalBusinessName !== 'Default Business' && finalBusinessName !== 'My Business') {
+                serverLogger.info(`Generated business name from user attributes: ${finalBusinessName}`);
+              }
+            }
+          }
+        } catch (error) {
+          serverLogger.warn(`Failed to get user data from Cognito: ${error.message}`);
+        }
+      }
+      
+      // If still no business name, leave blank for user to complete later
+      if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+        finalBusinessName = '';
+        serverLogger.info('No business name available, leaving blank for user to update later');
+      }
+    }
+    
     const result = await pool.query(
       `INSERT INTO custom_auth_tenant (id, name, owner_id, created_at, updated_at, rls_enabled, rls_setup_date, is_active)
        VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), true)
        ON CONFLICT (id) DO UPDATE 
-       SET name = $2, 
+       SET name = CASE
+                  WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = '' OR custom_auth_tenant.name = 'Default Business' OR custom_auth_tenant.name = 'My Business' 
+                  THEN COALESCE($2, custom_auth_tenant.name)
+                  ELSE custom_auth_tenant.name
+                END, 
            updated_at = NOW(),
            owner_id = COALESCE($3, custom_auth_tenant.owner_id),
            rls_enabled = true
        RETURNING id, name, owner_id`,
-      [tenantId, businessName || 'Default Business', userId || null]
+      [tenantId, finalBusinessName, userId || null]
     );
     
     // No need to create schema - we're using RLS only now

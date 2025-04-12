@@ -11,7 +11,7 @@ const handleSelectPlan = (plan) => {
     setCookie('skipSchemaCreation', 'true');
     setCookie('freePlanSelected', 'true');
     setCookie('onboardingStep', 'complete'); // Mark as complete immediately
-    setCookie('onboardedStatus', 'COMPLETE');
+    setCookie('onboardedStatus', 'complete');
     setCookie('setupCompleted', 'true');
     
     // Store in localStorage for redundancy

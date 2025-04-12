@@ -23,14 +23,14 @@ export const STEP_STATUS = {
   SKIPPED: 'skipped',
 };
 
-// Onboarding states used consistently across the application
+// Onboarding states used consistently across the application - lowercase values
 export const ONBOARDING_STATES = {
-  NOT_STARTED: 'NOT_STARTED',
-  BUSINESS_INFO: 'BUSINESS_INFO',
-  SUBSCRIPTION: 'SUBSCRIPTION',
-  PAYMENT: 'PAYMENT',
-  SETUP: 'SETUP',        // When setup is in progress
-  COMPLETE: 'COMPLETE'   // When onboarding is fully complete
+  NOT_STARTED: 'not_started',
+  BUSINESS_INFO: 'business_info',
+  SUBSCRIPTION: 'subscription',
+  PAYMENT: 'payment',
+  SETUP: 'setup',        // When setup is in progress
+  COMPLETE: 'complete'   // When onboarding is fully complete
 };
 
 export class OnboardingStateManager extends FormStateManager {
@@ -444,21 +444,41 @@ export class OnboardingStateManager extends FormStateManager {
         'onboarding_update'
       );
 
-      // Update Cognito attributes with standardized state
+      // Update Cognito attributes with standardized state - ensure lowercase
       const cognitoAttributes = {
-        'custom:onboarding': this.state.onboarding.onboarding || ONBOARDING_STATES.NOT_STARTED,
-        'custom:subplan': this.state.onboarding.selected_plan,
-        'custom:acctstatus': 'PENDING',
+        'custom:onboarding': (this.state.onboarding.onboarding || ONBOARDING_STATES.NOT_STARTED).toLowerCase(),
+        'custom:subplan': this.state.onboarding.selected_plan || 'free',
+        'custom:acctstatus': 'pending',
         'custom:updated_at': new Date().toISOString()
       };
 
       if (updates.onboarding === ONBOARDING_STATES.COMPLETE) {
         cognitoAttributes['custom:setupdone'] = 'true';
-        cognitoAttributes['custom:acctstatus'] = 'ACTIVE';
+        cognitoAttributes['custom:acctstatus'] = 'active';
+        
+        // For free plan, ensure all proper attributes are set
+        if (this.state.onboarding.selected_plan === 'free') {
+          cognitoAttributes['custom:subscriptioninterval'] = 'monthly';
+          cognitoAttributes['custom:payverified'] = 'false';
+          
+          // For timestamp consistency
+          const timestamp = new Date().toISOString();
+          cognitoAttributes['custom:updated_at'] = timestamp;
+          cognitoAttributes['custom:setupcompletedtime'] = timestamp;
+          cognitoAttributes['custom:onboardingCompletedAt'] = timestamp;
+          
+          // For cases where tenant ID might be set elsewhere 
+          const tenantId = this.state.onboarding.tenant_id || localStorage.getItem('tenantId');
+          if (tenantId) {
+            cognitoAttributes['custom:tenant_ID'] = tenantId;
+            cognitoAttributes['custom:businessid'] = tenantId;
+          }
+        }
       }
 
       logger.debug('Updating Cognito attributes:', {
         onboardingState: this.state.onboarding.onboarding,
+        plan: this.state.onboarding.selected_plan,
         operationId
       });
 
@@ -495,15 +515,20 @@ export class OnboardingStateManager extends FormStateManager {
     const operationId = generateRequestId();
 
     try {
-      // Stay in subscription state regardless of plan type
-      // Let the subscription component handle the next state transition
+      // For free plans, set onboarding state to COMPLETE
+      // For paid plans, stay in SUBSCRIPTION state
+      const onboardingState = (plan === 'free' || plan === 'basic') 
+        ? ONBOARDING_STATES.COMPLETE 
+        : ONBOARDING_STATES.SUBSCRIPTION;
+      
       await this.updateOnboardingState({
         selected_plan: plan,
-        onboarding: ONBOARDING_STATES.SUBSCRIPTION
+        onboarding: onboardingState
       });
       
       logger.info('[OnboardingStateManager] Plan selected:', {
         plan,
+        onboardingState,
         operationId
       });
 

@@ -111,6 +111,33 @@ export async function POST(request) {
     
     // Ensure we have all required fields with defaults
     const timestamp = new Date().toISOString();
+    
+    // Generate a business name from user data if not provided
+    let businessName = data.business_name || data.businessName;
+    if (!businessName || businessName === 'Default Business' || businessName === 'My Business') {
+      // Try to generate a business name from user's name
+      if ((data.firstName || data.first_name) && (data.lastName || data.last_name)) {
+        businessName = `${data.firstName || data.first_name} ${data.lastName || data.last_name}'s Business`;
+      } else if (data.firstName || data.first_name) {
+        businessName = `${data.firstName || data.first_name}'s Business`;
+      } else if (data.lastName || data.last_name) {
+        businessName = `${data.lastName || data.last_name}'s Business`;
+      } else if (data.email) {
+        // Try to extract a name from email (e.g., john.doe@example.com -> John's Business)
+        const emailName = data.email.split('@')[0].split('.')[0];
+        if (emailName && emailName.length > 1) {
+          businessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
+        }
+      }
+      // If all else fails, leave it blank for the user to update later
+      if (!businessName) {
+        businessName = '';
+        logger.info('[Signup] No business name available, leaving blank for user to update later');
+      } else {
+        logger.info(`[Signup] Generated business name from user data: ${businessName}`);
+      }
+    }
+    
     const userData = {
       email: data.email,
       first_name: data.firstName || '',
@@ -118,15 +145,15 @@ export async function POST(request) {
       cognito_id: data.cognitoId,
       user_role: data.userRole || 'OWNER',
       business_id: data.business_id || data.businessId,
-      business_name: data.business_name || data.businessName || 'Default Business',
+      business_name: businessName,
       business_type: data.business_type || data.businessType || 'Other',
       business_country: data.business_country || data.country || 'US',
       legal_structure: data.legal_structure || data.legalStructure || 'Sole Proprietorship',
-      subscription_plan: data.subscription_plan || data.subscriptionPlan || 'FREE',
+      subscription_plan: data.subscription_plan || data.subscriptionPlan || 'free',
       subscription_interval: data.subscription_interval || data.subscriptionInterval || 'MONTHLY',
       subscription_status: data.subscription_status || data.subscriptionStatus || 'ACTIVE',
       account_status: data.account_status || data.accountStatus || 'PENDING',
-      onboarding_status: data.onboarding_status || data.onboardingStatus || 'NOT_STARTED',
+      onboarding_status: data.onboarding_status || data.onboardingStatus || 'not_started',
       setup_done: data.setup_done || data.setupDone || false,
       payment_verified: data.payment_verified || data.paymentVerified || false,
       requires_payment: data.requires_payment || data.requiresPayment || false,

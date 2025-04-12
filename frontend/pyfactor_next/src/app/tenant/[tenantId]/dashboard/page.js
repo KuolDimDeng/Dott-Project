@@ -10,6 +10,7 @@ import { storeRedirectDebugInfo } from '@/utils/redirectUtils';
 import { DashboardProvider } from '@/context/DashboardContext';
 import DashboardContent from '@/app/dashboard/DashboardContent';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import DashboardLoader from '@/components/DashboardLoader';
 
 /**
  * TenantDashboard - A tenant-specific dashboard route
@@ -77,12 +78,7 @@ export default function TenantDashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <CircularProgress color="primary" />
-        <p className="mt-4 text-gray-600">
-          {isDirect ? 'Loading your dashboard...' : 'Redirecting to your dashboard...'}
-        </p>
-      </div>
+      <DashboardLoader message={isDirect ? 'Loading your dashboard...' : 'Redirecting to your dashboard...'} />
     );
   }
 
@@ -96,7 +92,7 @@ export default function TenantDashboard() {
 
   // When loading completes and we're in direct mode, render the actual dashboard
   return (
-    <Suspense fallback={<LoadingSpinner fullscreen message="Loading dashboard..." />}>
+    <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
       <DashboardProvider>
         <DashboardContent
           newAccount={dashboardParams.newAccount === 'true'}

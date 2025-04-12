@@ -418,7 +418,7 @@ export default function SubscriptionPage() {
       
       // Make a final update via the onboarding service for backup
       try {
-        await updateOnboardingStep(STEPS.COMPLETE, {
+        await updateOnboardingStep('complete', {
           'custom:subplan': 'free',
           'custom:subscriptioninterval': billingCycle
         });

@@ -135,7 +135,9 @@ export default function SignInForm() {
                       tenantId: businessId, // Use businessId as tenantId for consistency
                       userId: userAttributes.sub,
                       email: userAttributes.email || formData.username,
-                      businessName: userAttributes['custom:businessname'] || 'Default Business',
+                      businessName: userAttributes['custom:businessname'] || 
+                        (userAttributes['given_name'] ? `${userAttributes['given_name']}'s Business` : 
+                         userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : 'My Business'),
                       businessType: userAttributes['custom:businesstype'] || 'Other',
                       businessCountry: userAttributes['custom:businesscountry'] || 'US'
                     })

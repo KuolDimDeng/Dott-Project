@@ -506,7 +506,7 @@ export default function SignUp() {
                               password: 'Test1234!',
                               confirmPassword: 'Test1234!',
                               firstName: 'Test',
-                              lastName: 'User',
+                              lastName: 'Account',
                               businessName: 'Test Company',
                               businessType: 'Other',
                               country: 'US',

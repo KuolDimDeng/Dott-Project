@@ -43,7 +43,7 @@ const handleSubmit = async (e) => {
         
         setTimeout(() => {
           // Redirect based on onboarding status
-          if (onboardingStatus === 'NOT_STARTED') {
+          if (onboardingStatus === 'not_started') {
             router.push('/onboarding/business-info');
           } else if (onboardingStatus === 'COMPLETED' && setupDone === 'TRUE') {
             // Use the tenant-specific redirect with any tenant ID from user info
