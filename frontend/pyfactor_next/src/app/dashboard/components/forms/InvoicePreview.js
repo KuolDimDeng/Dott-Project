@@ -1,123 +1,260 @@
 import React from 'react';
 
-const InvoicePreview = ({
-  logo,
-  accentColor,
-  template,
-  userData,
-  invoiceItems,
-  products,
-  services,
-}) => {
+const InvoicePreview = ({ data, style = 'modern' }) => {
+  // Support both new data format and old prop format for backwards compatibility
+  const {
+    customer,
+    items = [],
+    logo,
+    accentColor = '#000080',
+    template,
+    subtotal: providedSubtotal,
+    tax: providedTax,
+    total: providedTotal,
+    invoiceNumber = 'INV-001',
+    issueDate = new Date().toISOString().split('T')[0],
+    dueDate,
+  } = data || {};
+
+  // Fallback to old props structure if not using data prop
+  const userData = customer || data?.userData || {};
+  const invoiceItems = items || data?.invoiceItems || [];
+  const products = data?.products || [];
+  const services = data?.services || [];
+
   const { first_name, last_name, business_name, address, city, state, zip_code, phone, email } =
     userData || {};
-  const subtotal = invoiceItems.reduce((total, item) => total + item.quantity * item.unitPrice, 0);
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
+
+  // Calculate financials if not provided
+  const calculateSubtotal = () => invoiceItems.reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
+  const subtotal = providedSubtotal !== undefined ? providedSubtotal : calculateSubtotal();
+  const tax = providedTax !== undefined ? providedTax : subtotal * 0.1;
+  const total = providedTotal !== undefined ? providedTotal : subtotal + tax;
 
   const getItemName = (item) => {
     if (item.type === 'product') {
       const product = products.find((product) => product.id === item.productId);
-      return product ? product.name : '';
+      return product ? product.name : item.description || '';
     } else if (item.type === 'service') {
       const service = services.find((service) => service.id === item.serviceId);
-      return service ? service.name : '';
+      return service ? service.name : item.description || '';
     }
-    return '';
+    return item.description || '';
   };
 
-  return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <div className="flex flex-col items-center gap-2 mb-4">
-        <h1 className="text-2xl font-bold" style={{ color: accentColor }}>
-          INVOICE
-        </h1>
-        <p className="text-base">Invoice # for your recent order</p>
-      </div>
-      
-      <div className="grid gap-1 text-center mb-4">
-        <p className="text-sm">{business_name}</p>
-        <p className="text-sm">{email}</p>
-        <p className="text-sm">{business_name}.com</p>
-      </div>
-      
-      <div className="border-t border-b py-4 px-6 grid gap-2 text-left mb-4">
-        <div className="flex justify-between">
-          <p className="text-sm font-semibold">Invoice number</p>
-          <p className="text-sm text-gray-600">#123456</p>
+  // Format a date string or use current date
+  const formatDate = (dateString) => {
+    try {
+      return new Date(dateString || Date.now()).toLocaleDateString();
+    } catch (e) {
+      return new Date().toLocaleDateString();
+    }
+  };
+
+  // Render the Modern style invoice
+  const renderModernInvoice = () => (
+    <div className="bg-white rounded-lg overflow-hidden">
+      <div className="p-8">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-12">
+          <div>
+            {logo && (
+              <img src={logo} alt="Company Logo" className="h-16 mb-4 object-contain" />
+            )}
+            <h1 className="text-3xl font-bold" style={{ color: accentColor }}>
+              INVOICE
+            </h1>
+          </div>
+          <div className="text-right">
+            <p className="text-xl font-semibold">#{invoiceNumber}</p>
+            <p className="text-gray-500">Issue Date: {formatDate(issueDate)}</p>
+            <p className="text-gray-500">Due Date: {formatDate(dueDate)}</p>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <p className="text-sm font-semibold">Issue date</p>
-          <p className="text-sm">{new Date().toLocaleDateString()}</p>
+        
+        {/* Billing Info */}
+        <div className="grid grid-cols-2 gap-12 mb-12">
+          <div>
+            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">From</h2>
+            <p className="font-semibold">{business_name || 'Your Company Name'}</p>
+            <p>{address}</p>
+            <p>{city}, {state} {zip_code}</p>
+            <p>{phone}</p>
+            <p>{email}</p>
+          </div>
+          <div>
+            <h2 className="text-sm font-semibold uppercase text-gray-500 mb-2">Bill To</h2>
+            <p className="font-semibold">{`${first_name} ${last_name}`}</p>
+            <p>{customer?.address || userData?.address}</p>
+            <p>{customer?.city || userData?.city}, {customer?.state || userData?.state} {customer?.zip_code || userData?.zip_code}</p>
+            <p>{customer?.phone || userData?.phone}</p>
+            <p>{customer?.email || userData?.email}</p>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <p className="text-sm font-semibold">Due date</p>
-          <p className="text-sm">
-            {new Date(new Date().setDate(new Date().getDate() + 7)).toLocaleDateString()}
-          </p>
-        </div>
-      </div>
-      
-      <div className="border-t py-4 px-6 grid gap-2 text-left mb-4">
-        <p className="text-sm font-semibold">Bill to</p>
-        <div className="grid gap-1">
-          <p className="text-sm">{`${first_name} ${last_name}`}</p>
-          <p className="text-sm">{business_name}</p>
-          <p className="text-sm">{`${address}, ${city}, ${state} ${zip_code}`}</p>
-          <p className="text-sm">{`Phone: ${phone}`}</p>
-        </div>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {invoiceItems.map((item, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getItemName(item)}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.unitPrice?.toFixed(2) || '0.00'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(item.quantity * item.unitPrice || 0).toFixed(2)}</td>
+        
+        {/* Items Table */}
+        <div className="mb-8">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b" style={{ borderColor: accentColor }}>
+                <th className="text-left py-3 px-4">Description</th>
+                <th className="text-right py-3 px-4">Quantity</th>
+                <th className="text-right py-3 px-4">Unit Price</th>
+                <th className="text-right py-3 px-4">Total</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="border-t border-b py-4 px-6 grid gap-2 text-right mt-4">
-        <div className="flex justify-between">
-          <p className="text-sm">Subtotal</p>
-          <p className="text-sm">${subtotal.toFixed(2)}</p>
+            </thead>
+            <tbody>
+              {invoiceItems.map((item, index) => (
+                <tr key={index} className="border-b border-gray-200">
+                  <td className="py-4 px-4">
+                    <p className="font-medium">{getItemName(item)}</p>
+                    <p className="text-gray-500">{item.description}</p>
+                  </td>
+                  <td className="text-right py-4 px-4">{item.quantity}</td>
+                  <td className="text-right py-4 px-4">${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                  <td className="text-right py-4 px-4">${parseFloat(item.quantity * item.unitPrice || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className="flex justify-between">
-          <p className="text-sm">Tax (10%)</p>
-          <p className="text-sm">${tax.toFixed(2)}</p>
+        
+        {/* Summary */}
+        <div className="flex justify-end">
+          <div className="w-72">
+            <div className="flex justify-between py-2">
+              <p>Subtotal</p>
+              <p>${parseFloat(subtotal).toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between py-2 border-b border-gray-200">
+              <p>Tax</p>
+              <p>${parseFloat(tax).toFixed(2)}</p>
+            </div>
+            <div className="flex justify-between py-4 font-bold" style={{ color: accentColor }}>
+              <p>Total</p>
+              <p>${parseFloat(total).toFixed(2)}</p>
+            </div>
+          </div>
         </div>
-        <div className="flex justify-between">
-          <p className="text-sm font-semibold">Total</p>
-          <p className="text-sm font-semibold">${total.toFixed(2)}</p>
+        
+        {/* Footer */}
+        <div className="mt-12 text-center text-gray-500 text-sm">
+          <p>Thank you for your business!</p>
         </div>
-      </div>
-      
-      <div className="flex justify-end mt-4">
-        <button className="mr-2 px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-          Edit
-        </button>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-          Download
-        </button>
       </div>
     </div>
   );
+  
+  // Render the Classic style invoice
+  const renderClassicInvoice = () => (
+    <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
+      <div className="p-8">
+        {/* Header */}
+        <div className="text-center mb-6 border-b pb-6">
+          {logo && (
+            <img src={logo} alt="Company Logo" className="h-16 mx-auto mb-2" />
+          )}
+          <h1 className="text-2xl font-bold uppercase mb-1">INVOICE</h1>
+          <p className="text-sm text-gray-500">Invoice # {invoiceNumber}</p>
+        </div>
+        
+        {/* Dates */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="border rounded-md p-4">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Date of Issue</h3>
+            <p className="text-sm">{formatDate(issueDate)}</p>
+          </div>
+          <div className="border rounded-md p-4">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Due Date</h3>
+            <p className="text-sm">{formatDate(dueDate)}</p>
+          </div>
+        </div>
+        
+        {/* From/To */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="border rounded-md p-4">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">From</h3>
+            <p className="text-sm font-semibold">{business_name || 'Your Company Name'}</p>
+            <p className="text-sm">{address}</p>
+            <p className="text-sm">{city}, {state} {zip_code}</p>
+            <p className="text-sm">{phone}</p>
+            <p className="text-sm">{email}</p>
+          </div>
+          <div className="border rounded-md p-4">
+            <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Bill To</h3>
+            <p className="text-sm font-semibold">{`${first_name} ${last_name}`}</p>
+            <p className="text-sm">{customer?.address || userData?.address}</p>
+            <p className="text-sm">{customer?.city || userData?.city}, {customer?.state || userData?.state} {customer?.zip_code || userData?.zip_code}</p>
+            <p className="text-sm">{customer?.phone || userData?.phone}</p>
+            <p className="text-sm">{customer?.email || userData?.email}</p>
+          </div>
+        </div>
+        
+        {/* Items Table */}
+        <div className="mb-8 border rounded-md overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left text-xs font-semibold uppercase py-3 px-4 text-gray-500">Description</th>
+                <th className="text-center text-xs font-semibold uppercase py-3 px-4 text-gray-500">Quantity</th>
+                <th className="text-right text-xs font-semibold uppercase py-3 px-4 text-gray-500">Unit Price</th>
+                <th className="text-right text-xs font-semibold uppercase py-3 px-4 text-gray-500">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoiceItems.map((item, index) => (
+                <tr key={index} className="border-t border-gray-200">
+                  <td className="py-4 px-4">
+                    <p className="text-sm font-medium">{getItemName(item)}</p>
+                    <p className="text-xs text-gray-500">{item.description}</p>
+                  </td>
+                  <td className="text-center py-4 px-4 text-sm">{item.quantity}</td>
+                  <td className="text-right py-4 px-4 text-sm">${parseFloat(item.unitPrice || 0).toFixed(2)}</td>
+                  <td className="text-right py-4 px-4 text-sm">${parseFloat(item.quantity * item.unitPrice || 0).toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Summary */}
+        <div className="flex justify-end mb-8">
+          <div className="w-64 border rounded-md overflow-hidden">
+            <div className="px-4 py-3 bg-gray-50 border-b">
+              <p className="text-sm font-semibold">Invoice Summary</p>
+            </div>
+            <div className="p-4">
+              <div className="flex justify-between py-2 text-sm">
+                <p>Subtotal:</p>
+                <p>${parseFloat(subtotal).toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between py-2 text-sm">
+                <p>Tax:</p>
+                <p>${parseFloat(tax).toFixed(2)}</p>
+              </div>
+              <div className="flex justify-between py-2 text-sm font-bold border-t mt-2 pt-3">
+                <p>Total:</p>
+                <p>${parseFloat(total).toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Payment Terms */}
+        <div className="border rounded-md p-4 mb-8">
+          <h3 className="text-xs font-semibold uppercase text-gray-500 mb-2">Payment Terms</h3>
+          <p className="text-sm">Payment is due within 30 days.</p>
+        </div>
+        
+        {/* Footer */}
+        <div className="text-center text-gray-500 text-xs mt-8">
+          <p>Thank you for your business!</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return style === 'modern' ? renderModernInvoice() : renderClassicInvoice();
 };
 
 export default InvoicePreview;

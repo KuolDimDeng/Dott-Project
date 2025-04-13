@@ -1,6 +1,6 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/ChartContainer.js
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/component/ChartContainer.js
+'use client';
 import React, { useState, useEffect } from 'react';
-import { ChromePicker } from 'react-color';
 import ChartComponent from './ChartComponents';
 
 const ChartContainer = () => {
@@ -9,9 +9,8 @@ const ChartContainer = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [chartType, setChartType] = useState('line');
-  const [lineColor, setLineColor] = useState('#4BC0C0');
-  const [barColor, setBarColor] = useState('#4BC0C0');
-  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [lineColor, setLineColor] = useState('#3B82F6'); // Tailwind blue-500
+  const [barColor, setBarColor] = useState('#3B82F6'); // Tailwind blue-500
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -24,11 +23,12 @@ const ChartContainer = () => {
     setEndDate(end.toISOString().split('T')[0]);
   }, []);
 
-  const handleColorChange = (color) => {
+  const handleColorChange = (e) => {
+    const color = e.target.value;
     if (chartType === 'line') {
-      setLineColor(color.hex);
+      setLineColor(color);
     } else {
-      setBarColor(color.hex);
+      setBarColor(color);
     }
   };
 
@@ -47,116 +47,122 @@ const ChartContainer = () => {
   };
 
   return (
-    <div className="flex flex-col space-y-4 p-4">
-      <h2 className="text-2xl font-semibold mb-2">
+    <div className="bg-gray-50 rounded-xl p-6 shadow-sm">
+      <h2 className="text-2xl font-semibold mb-4 text-gray-800">
         Sales Analysis
       </h2>
 
-      <div className="w-full">
-        <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
-          Account
-        </label>
-        <select
-          id="account"
-          value={account}
-          onChange={(e) => setAccount(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Accounts</option>
-          <option value="Sales">Sales</option>
-          <option value="Expenses">Expenses</option>
-        </select>
-      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="w-full">
+          <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-1">
+            Account
+          </label>
+          <select
+            id="account"
+            value={account}
+            onChange={(e) => setAccount(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="">All Accounts</option>
+            <option value="Sales">Sales</option>
+            <option value="Expenses">Expenses</option>
+          </select>
+        </div>
 
-      <div className="w-full">
-        <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 mb-1">
-          Date Range
-        </label>
-        <select
-          id="dateRange"
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="day">Daily</option>
-          <option value="month">Monthly</option>
-          <option value="year">Yearly</option>
-        </select>
-      </div>
+        <div className="w-full">
+          <label htmlFor="dateRange" className="block text-sm font-medium text-gray-700 mb-1">
+            Date Range
+          </label>
+          <select
+            id="dateRange"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="day">Daily</option>
+            <option value="month">Monthly</option>
+            <option value="year">Yearly</option>
+          </select>
+        </div>
 
-      <div className="w-full">
-        <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
-          Start Date
-        </label>
-        <input
-          id="startDate"
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+        <div className="w-full">
+          <label htmlFor="chartType" className="block text-sm font-medium text-gray-700 mb-1">
+            Chart Type
+          </label>
+          <select
+            id="chartType"
+            value={chartType}
+            onChange={(e) => setChartType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="line">Line Chart</option>
+            <option value="bar">Bar Chart</option>
+            <option value="pie">Pie Chart</option>
+          </select>
+        </div>
 
-      <div className="w-full">
-        <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
-          End Date
-        </label>
-        <input
-          id="endDate"
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
-      <div className="w-full">
-        <label htmlFor="chartType" className="block text-sm font-medium text-gray-700 mb-1">
-          Chart Type
-        </label>
-        <select
-          id="chartType"
-          value={chartType}
-          onChange={(e) => setChartType(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="line">Line Chart</option>
-          <option value="bar">Bar Chart</option>
-          <option value="pie">Pie Chart</option>
-        </select>
-      </div>
-
-      <button 
-        onClick={() => setShowColorPicker(!showColorPicker)}
-        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      >
-        {showColorPicker ? 'Hide' : 'Show'} Color Picker
-      </button>
-
-      {showColorPicker && (
-        <div className="my-2">
-          <ChromePicker
-            color={chartType === 'line' ? lineColor : barColor}
-            onChange={handleColorChange}
+        <div className="w-full">
+          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+            Start Date
+          </label>
+          <input
+            id="startDate"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           />
         </div>
-      )}
+
+        <div className="w-full">
+          <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
+            End Date
+          </label>
+          <input
+            id="endDate"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
+        </div>
+
+        <div className="w-full">
+          <label htmlFor="chartColor" className="block text-sm font-medium text-gray-700 mb-1">
+            Chart Color
+          </label>
+          <div className="flex items-center">
+            <input
+              type="color"
+              id="chartColor"
+              value={chartType === 'line' ? lineColor : barColor}
+              onChange={handleColorChange}
+              className="w-12 h-8 border-0 p-0 mr-2 rounded cursor-pointer"
+            />
+            <span className="text-sm text-gray-600">{chartType === 'line' ? lineColor : barColor}</span>
+          </div>
+        </div>
+      </div>
 
       <button 
         onClick={handleSubmit} 
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-200 shadow-sm"
       >
         Apply Changes
       </button>
 
       {isLoading ? (
-        <div className="flex justify-center my-4">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+        <div className="flex justify-center items-center my-8 h-72 bg-gray-100 rounded-lg">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading chart...</span>
         </div>
       ) : error ? (
-        <div className="text-red-600 my-4">{error}</div>
+        <div className="my-8 p-4 border-l-4 border-red-500 bg-red-50 text-red-700 rounded">
+          <p className="font-medium">Error</p>
+          <p>{error}</p>
+        </div>
       ) : (
-        <div className="h-96 my-4">
+        <div className="h-72 my-8">
           <ChartComponent
             account={account}
             dateRange={dateRange}

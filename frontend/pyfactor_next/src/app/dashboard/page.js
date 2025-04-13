@@ -1,105 +1,80 @@
 // Dashboard page (Server Component)
 // Do NOT add 'use client' directive here since we're exporting metadata
 
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { serverLogger } from '@/utils/serverLogger';
-import { cookies } from 'next/headers';
+import DashboardLoader from '@/components/DashboardLoader';
+import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
 
 /**
  * Dashboard Page Component
  *
- * This is a redirect component to ensure all dashboard access happens through
- * the tenant-specific route pattern /{tenantId}/dashboard
+ * This is a redirect component that uses client-side navigation
+ * instead of server-side redirects to avoid NEXT_REDIRECT errors
  */
 
 // Dashboard metadata
 export const metadata = {
-  title: 'Redirecting to dashboard | Dott Business Management',
-  description: 'Redirecting to your tenant-specific dashboard.'
+  title: 'Dashboard | Dott Business Management',
+  description: 'Loading your dashboard...'
 };
 
-// Server component that redirects to tenant-specific dashboard
-export default async function DashboardPage({ searchParams }) {
-  // Get tenant ID from cookies or search params - need to await cookies in Next.js 15+
-  const cookieStore = await cookies();
-  const tenantIdCookie = await cookieStore.get('tenantId');
-  const businessIdCookie = await cookieStore.get('businessid');
+// Server component that renders client-side navigation
+export default function DashboardPage(props) {
+  // Get search params safely
+  const searchParams = props.searchParams || {};
   
-  // Ensure searchParams is properly handled as it might be a Promise
-  const resolvedParams = searchParams ? 
-    (searchParams instanceof Promise ? await searchParams : searchParams) : 
-    {};
+  // Parse tenant ID from URL parameters
+  const tenantId = searchParams.tenantId || null;
+  const fromSignIn = searchParams.fromSignIn === 'true';
+  const fromAuth = searchParams.fromAuth === 'true';
+  const reset = searchParams.reset === 'true';
   
-  // Existing search params to preserve - use the resolved params
-  const params = { ...resolvedParams };
-  const {
-    newAccount,
-    plan,
-    mockData,
-    setupStatus,
-    tenantId: urlTenantId,
-    from,
-    direct
-  } = params;
+  // Log initialization information
+  serverLogger.info(`Dashboard: tenantId=${tenantId}, fromSignIn=${fromSignIn}`);
   
-  // Use tenant ID from URL if available, otherwise from cookies
-  const effectiveTenantId = urlTenantId || tenantIdCookie?.value || businessIdCookie?.value;
+  // Determine the redirect path based on tenant ID
+  let redirectPath = '';
+  let message = 'Loading your dashboard...';
   
-  // Get all cookies for debugging
-  const allCookies = await cookieStore.getAll();
-  const cookieDetails = allCookies.map(cookie => `${cookie.name}: ${cookie.value}`);
-  
-  // Log redirection
-  serverLogger.info('Redirecting from /dashboard to tenant-specific route', {
-    tenantId: effectiveTenantId,
-    searchParams: params,
-    hasTenantIdCookie: !!tenantIdCookie,
-    hasBusinessIdCookie: !!businessIdCookie,
-    cookies: cookieDetails.slice(0, 10) // Limit to first 10 cookies
-  });
-
-  if (!effectiveTenantId) {
-    // If no tenant ID available, show an error page or redirect to onboarding
-    serverLogger.error('No tenant ID available for dashboard redirect');
-    
-    // Check for newAccount flag - this means we're coming from onboarding
-    if (newAccount === 'true' || plan === 'free') {
-      serverLogger.warn('New account detected but no tenant ID - redirecting to subscription selection');
-      return redirect('/onboarding/subscription?error=missing_tenant');
-    }
-    
-    // Redirect to onboarding or login page as fallback
-    return redirect('/auth/signin?error=no_tenant_id');
+  if (reset) {
+    return (
+      <div>
+        <MiddlewareHeaderHandler />
+        <DashboardLoader message="Resetting navigation..." />
+        <meta httpEquiv="x-reset-navigation" content="true" />
+        <meta httpEquiv="x-tenant-id" content={tenantId || ''} />
+      </div>
+    );
   }
   
-  // Preserve all search parameters
-  const queryString = new URLSearchParams(params).toString();
-  const destination = `/${effectiveTenantId}/dashboard${queryString ? `?${queryString}` : ''}`;
-  
-  serverLogger.info(`Redirecting to tenant-specific dashboard: ${destination}`);
-  
-  // Ensure tenant ID in URL for authenticated users
-  if (searchParams.requestTenantCreation === 'true' && searchParams.businessId) {
-    try {
-      // Include the tenant creation logic directly in server component
-      // to avoid client component rendering delays
-      console.log('Dashboard is handling tenant creation request with business ID:', searchParams.businessId);
-      
-      return {
-        // Render the dashboard with tenant creation in progress
-        props: {
-          newAccount: true,
-          plan: searchParams.freePlan ? 'free' : undefined,
-          createTenant: true,
-          businessId: searchParams.businessId,
-        },
-      };
-    } catch (error) {
-      console.error('Error handling tenant creation:', error);
-    }
+  if (tenantId) {
+    // Build query string for tenant-specific URL
+    const queryString = new URLSearchParams({
+      fromSignIn: 'true',
+      direct: 'true'
+    }).toString();
+    
+    // Redirect to tenant-specific dashboard
+    redirectPath = `/${tenantId}/dashboard?${queryString}`;
+    message = 'Loading your dashboard...';
+  } else if (!fromSignIn && !fromAuth) {
+    // No tenant ID found, redirect to sign-in
+    redirectPath = '/auth/signin?error=no_tenant_id';
+    message = 'Redirecting to sign in...';
+  } else {
+    // From sign-in flow with no tenant ID yet
+    redirectPath = `/dashboard?fromSignIn=true`;
+    message = 'Setting up your dashboard...';
   }
   
-  // Redirect to tenant-specific dashboard
-  return redirect(destination);
+  return (
+    <div>
+      <MiddlewareHeaderHandler />
+      <DashboardLoader message={message} />
+      <meta httpEquiv="x-should-redirect" content="true" />
+      <meta httpEquiv="x-redirect-path" content={redirectPath} />
+      {tenantId && <meta httpEquiv="x-tenant-id" content={tenantId} />}
+    </div>
+  );
 }

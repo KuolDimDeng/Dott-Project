@@ -13,7 +13,7 @@ import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { apiClient } from '@/utils/apiClient';
 import axios from 'axios';
 import { logger } from '@/utils/logger';
-import { extractTenantId } from '@/utils/tenantUtils';
+import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 
 // Import UI components needed for the Tailwind version
 const Typography = ({ variant, component, className, color, children, gutterBottom, ...props }) => {
@@ -359,69 +359,30 @@ const TailwindCheckbox = ({ checked, onChange, name, label }) => {
 };
 
 // Component for tabbed product management
-const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product, onUpdate, onCancel, mode, salesContext }) => {
-  // Initialize toast notification helpers
+const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null, onUpdate, onCancel, salesContext }) => {
   const notifySuccess = (message) => toast.success(message);
   const notifyError = (message) => toast.error(message);
   const notifyInfo = (message) => toast.loading(message);
   const notifyWarning = (message) => toast.error(message, { icon: '⚠️' });
-
-  // Support both isNewProduct and newProduct props for backward compatibility
-  const isCreatingNewProduct = isNewProduct || isNewProductProp || mode === "create" || false;
-
-  // Add print styles for QR code
+  
+  // Add isMounted ref to track component mounting status
+  const isMounted = useRef(true);
+  // Add refs for tracking network requests and timeouts
+  const fetchRequestRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+  
+  // Effect to track component mount status
   useEffect(() => {
-    // Create a style element for print styles
-    const style = document.createElement('style');
-    style.textContent = `
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        body.printing-qr-code .MuiDialog-root * {
-          visibility: hidden;
-        }
-        body.printing-qr-code .print-container,
-        body.printing-qr-code .print-container * {
-          visibility: visible;
-        }
-        body.printing-qr-code .hidden-print {
-          display: none !important;
-        }
-        body.printing-qr-code .print-container {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          padding: 15mm;
-        }
-        body.printing-qr-code .qr-code-container {
-          page-break-inside: avoid;
-          margin: 0 auto;
-          width: fit-content;
-        }
-        body.printing-qr-code .print-details {
-          margin-top: 15mm;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    
+    // Set to true on mount (though it's already initialized as true)
+    isMounted.current = true;
+    // Cleanup function sets to false when component unmounts
     return () => {
-      // Clean up
-      if (style.parentNode) {
-        style.parentNode.removeChild(style);
-      }
+      isMounted.current = false;
     };
   }, []);
-
-  // Get notification functions
-  const { notifySuccess: useNotificationSuccess, notifyError: useNotificationError, notifyInfo: useNotificationInfo, notifyWarning: useNotificationWarning } = useNotification();
-
-  // Determine initial tab based on mode
-  const initialTab = isCreatingNewProduct ? 0 : 2;
   
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // State for managing component behavior
+  const [activeTab, setActiveTab] = useState(0);
   const [products, setProducts] = useState(() => []);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -435,6 +396,24 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   const [apiHealthStatus, setApiHealthStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [fetchError, setFetchError] = useState(null);
+  const [dbInitializing, setDbInitializing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [showForm, setShowForm] = useState(true);
+  const [displayMessage, setDisplayMessage] = useState('');
+  const [productData, setProductData] = useState({
+    name: '',
+    description: '',
+    sku: '',
+    price: '',
+    cost: '',
+    stockQuantity: '',
+    reorderLevel: '',
+    forSale: true,
+    forRent: false
+  });
+
   // Initialize tenantId from localStorage
   const [tenantId, setTenantId] = useState(() => {
     try {
@@ -447,33 +426,6 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     }
   });
   
-  // We don't need schema name anymore - using RLS only
-  
-  // Update tenantId if it changes in localStorage
-  useEffect(() => {
-    const updateTenantId = () => {
-      try {
-        const storedTenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
-        if (storedTenantId && storedTenantId !== tenantId) {
-          setTenantId(storedTenantId);
-          console.log('Updated tenantId from localStorage:', storedTenantId);
-        }
-      } catch (e) {
-        console.error('Error accessing localStorage for tenantId update:', e);
-      }
-    };
-    
-    // Initial check
-    updateTenantId();
-    
-    // Set up listener for storage changes
-    window.addEventListener('storage', updateTenantId);
-    
-    return () => {
-      window.removeEventListener('storage', updateTenantId);
-    };
-  }, [tenantId]);
-
   // State for form fields - use a single object for better state preservation during hot reloading
   const [formState, setFormState] = useState(() => ({
     name: '',
@@ -496,68 +448,132 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     reorderLevel: ''
   }));
 
-  // Fetch products function with RLS support
-  const fetchProducts = useCallback(async () => {
-    setIsLoading(true);
-    setErrorMessage(null);
-    
+  // Modify the fetchProducts function to use getSecureTenantId
+  const fetchProducts = useCallback(async (page = 0, shouldRetry = true, retryCount = 0) => {
     try {
-      // Extract the tenant ID for RLS context
-      const tenantId = extractTenantId();
-                  
-      logger.info(`[ProductManagement] Fetching products for tenant ID: ${tenantId}`);
-      
-      // Use the RLS-enabled API endpoint
-      const response = await axios.get('/api/inventory/products', {
-        headers: {
-          'x-tenant-id': tenantId
-        }
-      });
-      
-      // Check if we have data in the expected format
-      if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        logger.info(`[ProductManagement] Fetched ${response.data.data.length} products`);
-        setProducts(response.data.data);
-      } else if (Array.isArray(response.data)) {
-        // Handle legacy format
-        logger.info(`[ProductManagement] Fetched ${response.data.length} products (legacy format)`);
-        setProducts(response.data);
-      } else {
-        logger.warn(`[ProductManagement] Unexpected API response format:`, response.data);
-        console.log('Response data:', response.data);
-        // If we can't determine the format, try to handle it gracefully
-        const productData = response.data?.data || response.data || [];
-        const finalProducts = Array.isArray(productData) ? productData : [productData].filter(Boolean);
-        logger.info(`[ProductManagement] Processed ${finalProducts.length} products from response`);
-        setProducts(finalProducts);
+      // Clear any existing timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
-    } catch (error) {
-      logger.error(`[ProductManagement] Error fetching products:`, error);
-      setErrorMessage('Failed to fetch products');
       
-      // Use fallback products for UI not to break
-      setProducts([
-        {
-          id: 'fallback-1',
-          name: 'Sample Product (Fallback)',
-          description: 'This is a fallback product shown when the API is unavailable',
-          price: 19.99,
-          stock_quantity: 100,
-          is_fallback: true
-        },
-        {
-          id: 'fallback-2',
-          name: 'Another Sample Product (Fallback)',
-          description: 'Another fallback product shown when the API is unavailable',
-          price: 29.99,
-          stock_quantity: 50,
-          is_fallback: true
+      // Cancel any in-flight request
+      if (fetchRequestRef.current) {
+        fetchRequestRef.current.abort();
+      }
+      
+      // Create a new AbortController
+      const controller = new AbortController();
+      fetchRequestRef.current = controller;
+      
+      // Debounce the fetch call
+      fetchTimeoutRef.current = setTimeout(async () => {
+        if (isMounted.current) {
+          setIsLoading(true);
+          setFetchError(null);
+          
+          try {
+            // Get tenant ID securely from Cognito only
+            const tenantId = await getSecureTenantId();
+            console.log('[ProductManagement] Fetching products with secure Cognito tenant ID:', tenantId);
+            
+            if (!tenantId) {
+              console.error('[ProductManagement] No secure tenant ID found in Cognito, cannot fetch products');
+              setFetchError('Authentication error: Unable to verify your organization. Please log out and sign in again.');
+              setIsLoading(false);
+              return;
+            }
+            
+            const response = await axios.get('/api/inventory/products', {
+              params: { page },
+              headers: { 'x-tenant-id': tenantId },
+              signal: controller.signal
+            });
+            
+            if (isMounted.current) {
+              // Check for newer API response format (data property)
+              if (response.data && response.data.data && Array.isArray(response.data.data)) {
+                console.log('[ProductManagement] Found products in data property:', response.data.data.length);
+                setProducts(response.data.data);
+              } 
+              // Handle legacy format - direct array
+              else if (response.data && Array.isArray(response.data)) {
+                console.log('[ProductManagement] Found products in direct array:', response.data.length);
+                setProducts(response.data);
+              } 
+              // Handle object with products array
+              else if (response.data && response.data.products && Array.isArray(response.data.products)) {
+                console.log('[ProductManagement] Found products in products property:', response.data.products.length);
+                setProducts(response.data.products);
+              } 
+              else {
+                // Set an empty array if the response doesn't contain valid data
+                console.warn('API response does not contain a valid products array:', response.data);
+                setProducts([]);
+              }
+              setIsLoading(false);
+            }
+          } catch (error) {
+            // Handle only if component is still mounted and request wasn't canceled
+            if (isMounted.current && !axios.isCancel(error)) {
+              console.error('Error fetching products:', error);
+              
+              // Check for database initialization error
+              if (error.response && error.response.status === 500 && 
+                  error.response.data && 
+                  (typeof error.response.data === 'string' ? 
+                    error.response.data.includes('still initializing') : 
+                    error.response.data.message && typeof error.response.data.message === 'string' && 
+                    error.response.data.message.includes('still initializing'))) {
+                setFetchError('Database is initializing. Please wait a moment...');
+                
+                // Retry with exponential backoff if needed
+                if (shouldRetry && retryCount < 3) {
+                  const backoffTime = Math.pow(2, retryCount) * 1000;
+                  setTimeout(() => {
+                    if (isMounted.current) {
+                      fetchProducts(page, true, retryCount + 1);
+                    }
+                  }, backoffTime);
+                }
+              } else {
+                // Get the most accurate error message available
+                const errorMessage = 
+                  (error.response && error.response.data && error.response.data.message) ? 
+                    error.response.data.message : 
+                  (error.response && error.response.data && typeof error.response.data === 'string') ?
+                    error.response.data :
+                  (error.message) ? 
+                    error.message : 
+                    'Failed to load products. Please try again.';
+                    
+                setFetchError(errorMessage);
+              }
+              
+              setIsLoading(false);
+            }
+          }
         }
-      ]);
-    } finally {
-      setIsLoading(false);
+      }, 300); // Debounce for 300ms
+    } catch (error) {
+      console.error('Error in fetchProducts:', error);
     }
-  }, []);
+  }, [isMounted]);
+
+  // Update useEffect cleanup to cancel pending requests
+  useEffect(() => {
+    fetchProducts();
+    
+    return () => {
+      // Clean up any pending requests or timeouts
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      
+      if (fetchRequestRef.current) {
+        fetchRequestRef.current.abort();
+      }
+    };
+  }, [fetchProducts]);
 
   // Ensure we always return the same number of hooks by keeping all hook calls unconditional
   const [mounted, setMounted] = useState(false);
@@ -589,16 +605,17 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     }
   }, [successMessage, fetchProducts]);
 
-  // Get the tenant ID from state or localStorage
+  // Update the getUserTenantId function
   const getUserTenantId = useCallback(async () => {
-    // First try to get a reliable tenant ID from our helper
-    const extractedTenantId = extractTenantId();
-    if (extractedTenantId) {
-      logger.info(`[ProductManagement] Using extracted tenant ID for RLS: ${extractedTenantId}`);
-      return extractedTenantId;
+    // Get tenant ID securely from Cognito only
+    const secureTenantId = await getSecureTenantId();
+    
+    if (secureTenantId) {
+      logger.info(`[ProductManagement] Using secure Cognito tenant ID for RLS: ${secureTenantId}`);
+      return secureTenantId;
     }
     
-    logger.warn('[ProductManagement] No tenant ID found');
+    logger.error('[ProductManagement] No secure tenant ID found in Cognito');
     return null;
   }, []);
 
@@ -763,7 +780,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
       setIsLoading(true);
       console.log(`[ProductManagement] Attempting to delete product with ID: ${productId}`);
       
-      const tenantId = extractTenantId();
+      const tenantId = await getUserTenantId();
       
       // Use RLS for deletion with tenant ID in headers
       await axios.delete(`/api/inventory/products/${productId}`, {
@@ -827,122 +844,56 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
     </div>
   );
 
-  // Handle product creation with proper API client usage
-  const handleCreateProduct = async (e) => {
-    // Prevent default form submission if called from form onSubmit
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
-    
-    setIsSubmitting(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-    
+  // Update the handleCreateProduct function
+  const handleCreateProduct = async () => {
     try {
-      const tenantId = localStorage.getItem('tenantId') || 
-                        document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1];
+      setIsCreating(true);
+      setCreateError(null);
+      
+      // Get tenant ID securely from Cognito only
+      const tenantId = await getSecureTenantId();
       
       if (!tenantId) {
-        throw new Error('No tenant ID found. Please refresh the page and try again.');
+        setCreateError(new Error('Authentication error: Unable to verify your organization. Please log out and sign in again.'));
+        setErrorMessage('Authentication error: Unable to verify your organization. Please log out and sign in again.');
+        return;
       }
       
-      console.log(`[ProductManagement] Creating product with tenant ID: ${tenantId}`);
+      console.log('[ProductManagement] Creating product with secure Cognito tenant ID:', tenantId);
       
-      // Try to initialize RLS tables first (this helps with first-time creation)
-      try {
-        const initResponse = await fetch('/api/tenant/verify-schema', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-tenant-id': tenantId,
-            'x-business-id': tenantId
-          },
-          body: JSON.stringify({ tenantId })
-        });
-        
-        if (initResponse.ok) {
-          const data = await initResponse.json();
-          console.log(`[ProductManagement] RLS initialization response:`, data);
-        }
-      } catch (initError) {
-        console.warn(`[ProductManagement] RLS initialization warning (continuing):`, initError);
-        // Continue anyway - the product API will try to initialize tables too
-      }
-      
-      // Construct the product data with all required fields
-      const productData = {
+      // Create product object with tenant ID
+      const newProduct = {
         name: formState.name,
-        description: formState.description || '',
-        price: parseFloat(formState.price) || 0,
+        description: formState.description,
         sku: formState.sku || `SKU-${Date.now()}`,
-        stock_quantity: parseInt(formState.stockQuantity, 10) || 0,
-        reorder_level: parseInt(formState.reorderLevel, 10) || 0,
-        for_sale: formState.forSale === true,
-        for_rent: formState.forRent === true,
-        cost: parseFloat(formState.cost) || 0, // Add cost for inventory_product
-        tenant_id: tenantId,
-        unit: formState.unit || 'each'
+        price: parseFloat(formState.price) || 0,
+        cost: parseFloat(formState.cost) || 0,
+        stock_quantity: parseInt(formState.stockQuantity) || 0,
+        reorder_level: parseInt(formState.reorderLevel) || 0,
+        for_sale: formState.forSale || false,
+        for_rent: formState.forRent || false,
+        tenant_id: tenantId  // Include tenant ID in the request body
       };
-
-      console.log(`[ProductManagement] Sending product data with tenantId: ${tenantId}`, productData);
-
-      // Create the product with comprehensive RLS headers
-      const response = await fetch('/api/inventory/products', {
-        method: 'POST',
+      
+      // Send request with tenant ID in headers
+      const response = await axios.post('/api/inventory/products', newProduct, {
         headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantId,
-          'tenant-id': tenantId,
-          'x-business-id': tenantId
-        },
-        body: JSON.stringify(productData)
-      });
-
-      if (!response.ok) {
-        // Try to get error details
-        let errorData = null;
-        try {
-          errorData = await response.json();
-        } catch (e) {
-          // Could not parse JSON error response
+          'X-Tenant-ID': tenantId,
+          'Content-Type': 'application/json'
         }
-        
-        throw new Error(`Server returned ${response.status}: ${errorData?.message || response.statusText}`);
-      }
+      });
       
-      const responseData = await response.json();
-      console.log(`[ProductManagement] Product created successfully:`, responseData);
-      
-      setSuccessMessage('Product created successfully!');
+      setProducts(prevProducts => [...prevProducts, response.data.product]);
       resetForm();
-      
-      // Show success toast
-      toast({
-        title: "Product Created",
-        description: `${formState.name} has been added to your inventory.`,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-      });
-      
-      // Fetch the updated product list
-      fetchProducts();
-      
+      setShowForm(false);
+      setDisplayMessage('Product created successfully!');
+      setSuccessMessage('Product created successfully!');
     } catch (error) {
-      console.error(`[ProductManagement] Error creating product:`, error);
-      
-      setErrorMessage(`Error creating product: ${error.message}`);
-      
-      // Show error toast
-      toast({
-        title: "Product Creation Failed",
-        description: error.message,
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
+      console.error('[ProductManagement] Error creating product:', error);
+      setCreateError(error);
+      setErrorMessage(`Failed to create product: ${error.message || 'Unknown error'}`);
     } finally {
-      setIsSubmitting(false);
+      setIsCreating(false);
     }
   };
   
@@ -1282,7 +1233,13 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
   );
 
   // Memoize products data to avoid recreating on each render
-  const tableData = React.useMemo(() => products || [], [products]);
+  const tableData = React.useMemo(() => {
+    // Ensure products is always an array, even if it's null or undefined
+    if (!products || !Array.isArray(products)) {
+      return [];
+    }
+    return products;
+  }, [products]);
 
   // Table hooks need to be at component level, not inside render functions
   // But we need to handle the case when there are no products
@@ -1607,7 +1564,7 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
             <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
           </Transition.Child>
 
-          <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+          <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-16"> {/* Added pt-16 to push content below the appbar */}
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <Transition.Child
                 as={Fragment}
@@ -1841,11 +1798,10 @@ const ProductManagement = ({ isNewProduct, newProduct: isNewProductProp, product
 
 ProductManagement.propTypes = {
   isNewProduct: PropTypes.bool,
-  newProduct: PropTypes.bool, // For backward compatibility
+  mode: PropTypes.string,
   product: PropTypes.object,
   onUpdate: PropTypes.func,
   onCancel: PropTypes.func,
-  mode: PropTypes.string,
   salesContext: PropTypes.bool
 };
 

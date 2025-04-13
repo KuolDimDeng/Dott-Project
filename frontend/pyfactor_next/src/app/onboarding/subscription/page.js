@@ -11,13 +11,25 @@ import { CheckIcon } from '@heroicons/react/24/solid';
 // Import standardized constants
 import { 
   COGNITO_ATTRIBUTES,
-  COOKIE_NAMES, 
-  STORAGE_KEYS,
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
 import SubscriptionForm from '@/components/Onboarding/SubscriptionForm';
-import { storeTenantId } from '@/utils/tenantUtils';
+import { 
+  getTenantIdFromCognito, 
+  updateTenantIdInCognito,
+  getOrCreateTenantId 
+} from '@/utils/tenantUtils';
+import { 
+  getBusinessInfo, 
+  updateSubscriptionInfo, 
+  completeOnboarding 
+} from '@/utils/onboardingUtils';
+import { 
+  getBusinessName, 
+  getBusinessType,
+  updateUserAttributes
+} from '@/utils/authCookieReplacer';
 // Import the new redirect utility functions
 import { getRedirectParams, storeRedirectDebugInfo } from '@/utils/redirectUtils';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
@@ -90,23 +102,6 @@ const PLANS = [
   },
 ];
 
-// Simple helper to get cookies
-const getCookies = () => {
-  if (typeof document === 'undefined') return {};
-  
-  return document.cookie.split(';').reduce((acc, cookie) => {
-    const parts = cookie.trim().split('=');
-    if (parts.length > 1) {
-      try {
-        acc[parts[0]] = decodeURIComponent(parts[1]);
-      } catch (e) {
-        acc[parts[0]] = parts[1];
-      }
-    }
-    return acc;
-  }, {});
-};
-
 // Helper function to generate a request ID
 const generateRequestId = () => {
   try {
@@ -121,54 +116,31 @@ const generateRequestId = () => {
   }
 };
 
-// Helper to get business info from multiple sources
-const getBusinessInfoFromSources = () => {
-  const sources = {};
-  
-  // Try cookies first
-  const cookies = getCookies();
-  if (cookies.businessName) {
-    sources.cookies = {
-      businessName: cookies.businessName,
-      businessType: cookies.businessType || 'Other'
+// Helper to get business info from Cognito
+const getBusinessInfoFromCognito = async () => {
+  try {
+    // Get business info from Cognito attributes
+    const businessInfo = await getBusinessInfo();
+    
+    return {
+      businessInfo: {
+        businessName: businessInfo.businessName || 'Your Business',
+        businessType: businessInfo.businessType || 'Other'
+      },
+      source: 'cognito'
+    };
+  } catch (e) {
+    logger.error('[SubscriptionPage] Error getting business info from Cognito:', e);
+    
+    // Return default business info
+    return {
+      businessInfo: { 
+        businessName: 'Your Business', 
+        businessType: 'Other' 
+      },
+      source: 'default'
     };
   }
-  
-  // Try localStorage as fallback
-  try {
-    const storedInfo = localStorage.getItem('businessInfo');
-    if (storedInfo) {
-      try {
-        sources.localStorage = JSON.parse(storedInfo);
-      } catch (e) {
-        // Invalid JSON, ignore
-      }
-    }
-    
-    // Try individual keys
-    const businessName = localStorage.getItem('businessName') || localStorage.getItem('custom:businessname');
-    const businessType = localStorage.getItem('businessType') || localStorage.getItem('custom:businesstype');
-    
-    if (businessName) {
-      sources.localStorageKeys = {
-        businessName,
-        businessType: businessType || 'Other'
-      };
-    }
-  } catch (e) {
-    // localStorage access error, ignore
-  }
-  
-  // Combine sources, prioritizing cookies over localStorage
-  return {
-    // Return the business info from the first available source
-    businessInfo: sources.cookies || sources.localStorage || sources.localStorageKeys || { 
-      businessName: 'Your Business', 
-      businessType: 'Other' 
-    },
-    // Return all sources for debugging
-    sources
-  };
 };
 
 export default function SubscriptionPage() {
@@ -191,358 +163,247 @@ export default function SubscriptionPage() {
   
   // Add an effect to prevent double rendering
   useEffect(() => {
-    // Check if we've started the free plan flow
-    if (localStorage.getItem('freePlanSelected') === 'true' && 
-        localStorage.getItem('onboardingStep') === 'complete') {
-      // If we're in the middle of processing a free plan, redirect directly
-      const tenantId = localStorage.getItem('tenantId') || 
-                       getCookie('tenantId') || 
-                       localStorage.getItem('businessid') || 
-                       getCookie('businessid');
-      
-      if (tenantId) {
-        // Redirect immediately
-        logger.debug('[SubscriptionPage] Detected free plan in progress, redirecting to dashboard');
-        window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
-        return;
-      }
-    }
-    
-    // Set hasRendered to true to prevent double initialization
-    setHasRendered(true);
-  }, []);
-  
-  // Initialize on page load
-  useEffect(() => {
-    // Skip if already initialized, already loaded, or in loading state
-    if (initialized || !hasRendered || !loading || submitting) {
-      return;
-    }
-
-    const initializeSubscription = async () => {
+    // Check if we've already marked free plan as complete in Cognito
+    const checkFreePlanStatus = async () => {
       try {
-        // Mark as initialized to prevent double initialization
-        setInitialized(true);
+        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        const attributes = await fetchUserAttributes();
         
-        // Check for URL parameters first
-        const params = new URLSearchParams(window.location.search);
-        const fromTenant = params.get('from')?.includes('tenant');
-        const tenantIdFromUrl = params.get('tid');
-        
-        if (fromTenant && tenantIdFromUrl) {
-          logger.info('[SubscriptionPage] Detected redirect from tenant page', {
-            tenantId: tenantIdFromUrl,
-            from: params.get('from')
-          });
+        // Check if user has already completed onboarding with free plan
+        if (attributes['custom:onboarding'] === 'complete' && 
+            attributes['custom:subplan'] === 'free') {
           
-          // Store the tenant ID from redirect
-          try {
-            localStorage.setItem('tenantId', tenantIdFromUrl);
-            localStorage.setItem('businessid', tenantIdFromUrl);
-            document.cookie = `tenantId=${tenantIdFromUrl}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-            document.cookie = `businessid=${tenantIdFromUrl}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-          } catch (e) {
-            // Ignore storage errors
-            logger.warn('[SubscriptionPage] Failed to store tenant ID from URL', e);
+          // Get tenant ID from Cognito
+          const tenantId = await getTenantIdFromCognito();
+          
+          if (tenantId) {
+            logger.info('[SubscriptionPage] User already completed with free plan, redirecting to dashboard');
+            router.push(`/${tenantId}/dashboard`);
+            return true;
           }
         }
         
-        // Check for development mode bypass
-        const devMode = process.env.NODE_ENV === 'development';
-        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
-        
-        if (devMode && bypassAuth) {
-          logger.debug('[SubscriptionPage] Development mode: bypassing auth checks');
-          
-          // Get business name from localStorage in dev mode
-          const businessName = localStorage.getItem('custom:businessname') || 
-                               localStorage.getItem('businessName') || 
-                               'Development Business';
-          
-          const businessType = localStorage.getItem('custom:businesstype') || 
-                               localStorage.getItem('businessType') || 
-                               'Other';
-          
-          setBusinessData({
-            businessName,
-            businessType
-          });
-          
-          setLoading(false);
-          return;
-        }
-        
-        // Get business info from all possible sources
-        const { businessInfo, sources } = getBusinessInfoFromSources();
-        logger.debug('[SubscriptionPage] Found business info from sources:', sources);
-        
-        // Only update state if we have a business name
-        if (businessInfo && businessInfo.businessName) {
-          setBusinessData(businessInfo);
-        }
-        
-        // Debug cookie state
-        const cookieData = {
-          businessName: getCookies().businessName || '',
-          businessType: getCookies().businessType || '',
-          onboardingStep: getCookies().onboardingStep || '',
-          onboardedStatus: getCookies().onboardedStatus || '',
-          tenantId: getCookies().tenantId || '',
-          businessid: getCookies().businessid || '',
-          hasIdToken: !!localStorage.getItem('idToken'),
-          hasAccessToken: !!localStorage.getItem('accessToken')
-        };
-        
-        logger.debug('[SubscriptionPage] Initializing with cookies:', cookieData);
-        
-        // Try to get authentication session
-        let session = null;
-        try {
-          session = await fetchAuthSession();
-          // If this succeeds, we have valid tokens
-        } catch (authError) {
-          logger.warn('[SubscriptionPage] Auth session error:', authError);
-          // Continue despite auth error - we'll use cookies
-        }
-        
-        setLoading(false);
+        return false;
       } catch (error) {
-        logger.error('[SubscriptionPage] Initialization error:', error);
-        setMessage('Failed to initialize subscription page. Please try again.');
-        setLoading(false);
+        logger.error('[SubscriptionPage] Error checking free plan status:', error);
+        return false;
       }
     };
-
-    // Start initialization
-    initializeSubscription();
-  }, [searchParams, updateOnboardingStep, STEPS, loading, submitting, initialized, hasRendered]);
+    
+    // Run the check
+    checkFreePlanStatus();
+    
+    // Set has rendered to prevent duplicate initialization
+    if (!hasRendered) {
+      setHasRendered(true);
+    }
+  }, [router, hasRendered]);
   
-  // Define the handleFreePlanSelection function
-  const handleFreePlanSelection = async () => {
-    // For RLS implementation, set all required flags/cookies for direct to dashboard
-    setSelectedPlan('free');
-    
-    // Set loading state while we prepare
-    setSubmitting(true);
-    
-    // Set cookies for RLS configuration - mark everything as complete
-    const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-    document.cookie = `setupSkipDatabaseCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `setupUseRLS=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `skipSchemaCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    
-    // Store in localStorage as well
-    try {
-      localStorage.setItem('setupSkipDatabaseCreation', 'true');
-      localStorage.setItem('setupUseRLS', 'true');
-      localStorage.setItem('skipSchemaCreation', 'true');
-      localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
-      localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
-      localStorage.setItem('setupTimestamp', Date.now().toString());
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-    
-    // Trigger background setup via a fire-and-forget API call
-    try {
-      // Generate a unique request ID
-      const requestId = generateRequestId();
+  useEffect(() => {
+    const initializeSubscription = async () => {
+      if (initialized) return;
       
-      // Create URL with parameters for tracking
-      const url = `/api/onboarding/background-setup?plan=free&timestamp=${Date.now()}&requestId=${requestId}&background=true`;
-      
-      // Use fetch with no-cors to avoid waiting for response
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Background-Setup': 'true',
-          'X-Request-ID': requestId
-        },
-        // Don't wait for response with keepalive
-        keepalive: true,
-        // Add basic body data
-        body: JSON.stringify({
-          plan: 'free',
-          timestamp: Date.now(),
-          requestId
-        })
-      }).catch(() => {
-        // Ignore errors - this is background processing
-      });
-    } catch (error) {
-      // Ignore errors in background setup
-      console.log('Background setup triggered');
-    }
-    
-    // Check for development mode
-    const devMode = process.env.NODE_ENV === 'development';
-    const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
-    
-    // Handle development mode bypass
-    if (devMode && bypassAuth) {
-      logger.debug('[SubscriptionPage] Development mode: bypassing Cognito attributes update');
-      
-      // Store in localStorage for development
-      localStorage.setItem('custom:subscription_plan', 'free');
-      localStorage.setItem('custom:billingCycle', billingCycle);
-      localStorage.setItem('custom:onboarding', 'complete');
-      localStorage.setItem('custom:setup_completed', 'true');
-      
-      // Go directly to dashboard
-      window.location.href = '/dashboard?newAccount=true&plan=free&dev=true&noLoading=true';
-      return;
-    }
-    
-    // Update Cognito attributes BEFORE redirecting - synchronous update
-    try {
-      const importModule = await import('@/config/amplifyUnified');
-      const { updateUserAttributes } = importModule;
-      
-      const userAttributes = {
-        'custom:onboarding': 'complete', // Direct string for reliability
-        'custom:setupdone': 'true',
-        'custom:subscription_plan': 'free',
-        'custom:billingCycle': billingCycle,
-        'custom:updated_at': new Date().toISOString(),
-        'custom:onboardingCompletedAt': new Date().toISOString()
-      };
-      
-      // Wait for the update to complete
-      await updateUserAttributes(userAttributes);
-      logger.info('[SubscriptionPage] Successfully updated Cognito attributes to complete');
-      
-      // Make a final update via the onboarding service for backup
       try {
-        await updateOnboardingStep('complete', {
-          'custom:subplan': 'free',
-          'custom:subscriptioninterval': billingCycle
-        });
-        logger.info('[SubscriptionPage] Successfully completed onboarding via API');
-      } catch (progressError) {
-        logger.warn('[SubscriptionPage] API update failed, but Cognito update succeeded:', progressError);
-        // Continue since direct Cognito update worked
+        // Get business info from Cognito
+        const { businessInfo } = await getBusinessInfoFromCognito();
+        setBusinessData(businessInfo);
+        
+        // Check for tenant ID in URL
+        const tenantIdFromUrl = searchParams.get('tenantId');
+        if (tenantIdFromUrl) {
+          // Store in Cognito
+          await updateTenantIdInCognito(tenantIdFromUrl);
+          logger.info('[SubscriptionPage] Stored tenant ID from URL in Cognito:', tenantIdFromUrl);
+        }
+        
+        // Set loading to false once initialization is complete
+        setLoading(false);
+        setInitialized(true);
+        
+        // Update onboarding step in Cognito
+        await updateOnboardingStep(STEPS.SUBSCRIPTION);
+        
+      } catch (error) {
+        logger.error('[SubscriptionPage] Error initializing subscription page:', error);
+        setLoading(false);
+        setInitialized(true);
+      }
+    };
+    
+    initializeSubscription();
+  }, [initialized, searchParams, updateOnboardingStep, STEPS.SUBSCRIPTION]);
+  
+  const handleFreePlanSelection = async () => {
+    const requestId = generateRequestId();
+    
+    try {
+      setSubmitting(true);
+      setMessage('Setting up your account with the free plan...');
+      
+      // First, ensure the user has a tenant ID
+      const tenantId = await getOrCreateTenantId();
+      if (!tenantId) {
+        throw new Error('Failed to get or create tenant ID');
       }
       
-      // Redirect only after updates are complete
-      logger.info('[SubscriptionPage] All updates completed, redirecting to dashboard');
-      window.location.href = '/dashboard?newAccount=true&plan=free&noLoading=true&freePlan=true';
-      return;
+      // Update subscription in Cognito
+      await updateSubscriptionInfo({
+        plan: 'free',
+        interval: billingCycle,
+        price: '0'
+      });
+      
+      // Mark onboarding as complete since free plan doesn't need payment
+      await completeOnboarding();
+      
+      logger.info(`[SubscriptionPage:${requestId}] Free plan setup completed, redirecting to dashboard`);
+      
+      // Redirect to the dashboard
+      router.push(`/${tenantId}/dashboard`);
     } catch (error) {
-      // Log error but still redirect
-      logger.error('[SubscriptionPage] Failed to update Cognito attributes:', error);
-      logger.info('[SubscriptionPage] Continuing to dashboard despite update failure');
-      window.location.href = '/dashboard?newAccount=true&plan=free&noLoading=true&freePlan=true';
-      return;
+      logger.error(`[SubscriptionPage:${requestId}] Error setting up free plan:`, error);
+      setMessage('There was an error setting up your account. Please try again.');
+      setSubmitting(false);
     }
   };
   
-  // Check for free plan selection in URL as a separate effect
-  useEffect(() => {
-    // Skip if we haven't rendered yet, if we're still loading, if we're submitting,
-    // or if there's no free plan parameter
-    if (!hasRendered || loading || submitting || searchParams.get('plan') !== 'free') {
-      return;
-    }
-
-    // Set a flag to prevent double processing
-    const processingKey = 'freePlanProcessing';
-    if (localStorage.getItem(processingKey) === 'true') {
-      logger.debug('[SubscriptionPage] Free plan already being processed, skipping');
-      return;
-    }
-
+  const handlePaidPlanSelection = async (planId) => {
+    const requestId = generateRequestId();
+    
     try {
-      // Mark as processing
-      localStorage.setItem(processingKey, 'true');
+      setSubmitting(true);
+      setMessage(`Preparing ${planId} plan subscription...`);
       
-      // Handle free plan selection
-      logger.debug('[SubscriptionPage] Free plan detected in URL, handling selection');
-      handleFreePlanSelection();
-      
-      // Clear the processing flag after a timeout
-      setTimeout(() => {
-        localStorage.removeItem(processingKey);
-      }, 5000);
-    } catch (e) {
-      // Clear the processing flag in case of error
-      localStorage.removeItem(processingKey);
-      logger.error('[SubscriptionPage] Error processing free plan:', e);
-    }
-  }, [loading, submitting, searchParams, hasRendered]);
-  
-  // Process URL parameters when redirected from tenant page
-  useEffect(() => {
-    // Skip if we've already run this effect
-    if (loadedParams) {
-      return;
-    }
-    
-    // Use the new utility functions to get redirect parameters
-    const { tenantId, bypass, source } = getRedirectParams();
-    
-    console.log('[SUBSCRIPTION PAGE] Loaded with parameters:', {
-      bypass,
-      tid: tenantId,
-      source
-    });
-    
-    // Process tenant ID if present
-    if (tenantId) {
-      try {
-        // Store tenant ID 
-        storeTenantId(tenantId);
-        
-        // Use the new utility function to store debug info
-        storeRedirectDebugInfo({
-          source: bypass ? 'bypass' : source || 'direct',
-          tenantId,
-          timestamp: new Date().toISOString(),
-          page: 'subscription'
-        });
-        
-        console.log('[SUBSCRIPTION PAGE] Stored tenant ID:', tenantId);
-      } catch (e) {
-        console.error('[SUBSCRIPTION PAGE] Error storing tenant data:', e);
+      // Make sure we have a tenant ID
+      const tenantId = await getOrCreateTenantId();
+      if (!tenantId) {
+        throw new Error('Failed to get or create tenant ID');
       }
+      
+      // Update subscription info in Cognito but don't mark as complete yet
+      await updateSubscriptionInfo({
+        plan: planId,
+        interval: billingCycle,
+        price: PLANS.find(p => p.id === planId)?.price[billingCycle] || '0'
+      });
+      
+      // For paid plans, redirect to payment page
+      logger.info(`[SubscriptionPage:${requestId}] Redirecting to payment page for ${planId} plan`);
+      router.push(`/onboarding/payment?plan=${planId}&cycle=${billingCycle}`);
+    } catch (error) {
+      logger.error(`[SubscriptionPage:${requestId}] Error setting up ${planId} plan:`, error);
+      setMessage('There was an error preparing your subscription. Please try again.');
+      setSubmitting(false);
     }
+  };
+  
+  const handlePlanSelection = async (planId) => {
+    setSelectedPlan(planId);
     
-    // Mark as loaded so we don't run this effect again
-    setLoadedParams(true);
-    
-    // Short delay before showing content
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 300);
-  }, [searchParams, loadedParams]);
+    if (planId === 'free') {
+      await handleFreePlanSelection();
+    } else {
+      await handlePaidPlanSelection(planId);
+    }
+  };
 
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600">Loading subscription options...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="large" message="Loading subscription options..." />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Choose Your Subscription</h1>
-      {loading ? (
-        <div className="flex justify-center">
-          <LoadingSpinner size="lg" />
+    <NotificationProvider>
+      <div className="py-8 px-4 mx-auto max-w-screen-xl lg:py-16 lg:px-6">
+        <div className="mx-auto max-w-screen-md text-center mb-8 lg:mb-12">
+          <h1 className="mb-4 text-4xl tracking-tight font-extrabold text-gray-900 dark:text-white">Choose Your Plan</h1>
+          <p className="mb-5 font-light text-gray-500 sm:text-xl dark:text-gray-400">
+            Select the plan that best fits your business needs
+          </p>
+          
+          {/* Billing toggle */}
+          <div className="flex items-center justify-center mt-6 mb-8">
+            <span className={`mr-3 text-sm font-medium ${billingCycle === 'monthly' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
+              Monthly
+            </span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                value=""
+                className="sr-only peer"
+                checked={billingCycle === 'annual'}
+                onChange={() => setBillingCycle(billingCycle === 'monthly' ? 'annual' : 'monthly')}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            </label>
+            <span className={`ml-3 text-sm font-medium ${billingCycle === 'annual' ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500'}`}>
+              Annual
+              <span className="ml-1 text-xs text-green-500">
+                (Save 16%)
+              </span>
+            </span>
+          </div>
         </div>
-      ) : (
-        <NotificationProvider>
-          <SubscriptionForm />
-        </NotificationProvider>
-      )}
-    </div>
+
+        {submitting ? (
+          <div className="flex flex-col items-center justify-center p-10 rounded-lg bg-white dark:bg-gray-800 shadow">
+            <CircularProgress size={60} />
+            <p className="mt-4 text-lg text-center">{message}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`flex flex-col p-6 mx-auto max-w-lg text-center rounded-lg border shadow ${
+                  plan.popular
+                    ? 'border-blue-600 dark:border-blue-500 relative'
+                    : 'border-gray-200 dark:border-gray-700'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 right-0 px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded-tr-lg rounded-bl-lg">
+                    Most Popular
+                  </div>
+                )}
+                <h3 className="mb-4 text-2xl font-semibold">{plan.name}</h3>
+                <p className="font-light text-gray-500 sm:text-lg dark:text-gray-400">
+                  {plan.description}
+                </p>
+                <div className="flex justify-center items-baseline my-8">
+                  <span className="mr-2 text-5xl font-extrabold">
+                    ${billingCycle === 'monthly' ? plan.price.monthly : plan.price.annual}
+                  </span>
+                  <span className="text-gray-500 dark:text-gray-400">
+                    /{billingCycle === 'monthly' ? 'month' : 'year'}
+                  </span>
+                </div>
+                <ul role="list" className="mb-8 space-y-4 text-left">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center space-x-3">
+                      <CheckIcon className="h-5 w-5 text-green-500" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => handlePlanSelection(plan.id)}
+                  className={`${
+                    plan.popular
+                      ? 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white'
+                      : 'bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white'
+                  } py-3 px-5 rounded-lg font-medium text-center mt-auto`}
+                >
+                  {plan.buttonText}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </NotificationProvider>
   );
 }

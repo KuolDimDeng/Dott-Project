@@ -20,13 +20,18 @@ export default function FreePlanTransition() {
       document.cookie = `skipSchemaCreation=true; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
     }
     
-    // Store in localStorage as well for redundancy
+    // Store in app cache instead of localStorage for redundancy
     try {
-      localStorage.setItem('setupSkipDatabaseCreation', 'true');
-      localStorage.setItem('setupUseRLS', 'true');
-      localStorage.setItem('skipSchemaCreation', 'true');
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+        
+        window.__APP_CACHE.setup.skipDatabaseCreation = true;
+        window.__APP_CACHE.setup.useRLS = true;
+        window.__APP_CACHE.setup.skipSchemaCreation = true;
+      }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore storage errors
     }
     
     // Use immediate navigation without timeout for RLS

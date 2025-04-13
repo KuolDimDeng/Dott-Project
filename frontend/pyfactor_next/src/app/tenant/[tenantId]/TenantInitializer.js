@@ -1,75 +1,99 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTenant } from '@/context/TenantContext';
+import { useEffect } from 'react';
+import { useTenantContext } from '@/context/TenantContext';
+import { storeTenantInfo } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { storeTenantId } from '@/utils/tenantUtils';
+import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
 
-// Client component to initialize tenant context
+/**
+ * Client component that initializes tenant context 
+ * @param {Object} props Component props
+ * @param {string} props.tenantId The tenant ID from URL params
+ */
 export default function TenantInitializer({ tenantId }) {
-  const router = useRouter();
-  const { setTenantId, verifyTenantAccess } = useTenant();
-  const [initializationStatus, setInitializationStatus] = useState('pending');
+  const { setTenantId } = useTenantContext();
   
+  // Initialize tenant context when component mounts
   useEffect(() => {
-    async function initializeTenant() {
-      try {
-        logger.info(`Initializing tenant from URL parameter: ${tenantId}`);
-        setInitializationStatus('verifying');
-        
-        // Store tenant ID immediately to ensure it's available
-        storeTenantId(tenantId);
-        
-        // Check if verifyTenantAccess function exists
-        let accessVerified = true;
-        if (typeof verifyTenantAccess === 'function') {
-          // Try to verify access with a timeout to avoid getting stuck
-          accessVerified = await Promise.race([
-            verifyTenantAccess(tenantId),
-            new Promise(resolve => setTimeout(() => resolve(true), 3000)) // Default to true after 3 seconds
-          ]);
-        } else {
-          // Function doesn't exist, log this and continue
-          logger.warn('verifyTenantAccess function not available, skipping verification');
-        }
-        
-        if (!accessVerified) {
-          logger.warn(`User might not have access to tenant: ${tenantId}, but continuing anyway`);
-          // We'll continue with the tenant ID anyway - it's better than getting stuck
-        }
-        
-        // Store tenant ID in multiple locations
-        storeTenantId(tenantId);
-        
-        // Set the tenant context
-        setTenantId(tenantId);
-        setInitializationStatus('success');
-        
-        // Log success
-        logger.info(`Tenant context initialized: ${tenantId}`);
-      } catch (error) {
-        logger.error('Failed to initialize tenant from URL parameter', error);
-        setInitializationStatus('error');
-        
-        // Don't redirect to error page - we'll set the tenant ID anyway
-        // to avoid blocking the user
-        storeTenantId(tenantId);
-        setTenantId(tenantId);
-        
-        // Log the error but don't block the user
-        logger.warn(`Proceeding with tenant ${tenantId} despite initialization error`);
+    const initTenant = async () => {
+      if (!tenantId) {
+        logger.warn('[TenantInitializer] No tenant ID provided');
+        return;
       }
-    }
-    
-    if (tenantId) {
-      initializeTenant();
-    } else {
-      logger.error('No tenant ID provided to initializer');
-      setInitializationStatus('no-tenant');
-    }
-  }, [tenantId, setTenantId, verifyTenantAccess]);
   
-  // This component doesn't render anything
-  return null;
+      logger.info('[TenantInitializer] Initializing tenant:', tenantId);
+      
+      try {
+        // Set tenant ID in context immediately
+        setTenantId(tenantId);
+        
+        // Store tenant info in local storage
+        storeTenantInfo(tenantId);
+        
+        // Update Cognito custom attributes directly
+        try {
+          const userAttributes = await fetchUserAttributes();
+          const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'];
+          
+          // If tenant ID in Cognito doesn't match, update it directly
+          if (cognitoTenantId !== tenantId) {
+            logger.info('[TenantInitializer] Updating Cognito tenant ID:', { 
+              from: cognitoTenantId || 'none', 
+              to: tenantId 
+            });
+            
+            // Update Cognito directly without API call
+            await updateUserAttributes({
+              userAttributes: {
+                'custom:tenant_ID': tenantId,
+                'custom:updated_at': new Date().toISOString()
+              }
+            });
+            
+            // Also update database record via API
+            await fetch('/api/tenant/ensure-db-record', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                tenantId: tenantId,
+                email: userAttributes.email,
+                forceUpdate: true
+              })
+            });
+            
+            logger.info('[TenantInitializer] Cognito and database updated with tenant ID:', tenantId);
+          }
+        } catch (attributeError) {
+          logger.error('[TenantInitializer] Error updating Cognito attributes:', attributeError);
+          
+          // Fallback to API for updating tenant ID if direct update fails
+          try {
+            await fetch('/api/user/update-attributes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                attributes: {
+                  'custom:tenant_ID': tenantId
+                }
+              })
+            });
+            logger.info('[TenantInitializer] Tenant ID updated via API fallback');
+          } catch (apiFallbackError) {
+            logger.error('[TenantInitializer] API fallback also failed:', apiFallbackError);
+          }
+        }
+        
+        logger.info('[TenantInitializer] Tenant initialized successfully:', tenantId);
+      } catch (error) {
+        logger.error('[TenantInitializer] Error initializing tenant:', error);
+      }
+    };
+  
+    initTenant();
+  }, [tenantId, setTenantId]);
+  
+  return null; // This component doesn't render anything
 } 

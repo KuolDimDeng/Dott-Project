@@ -90,6 +90,45 @@ export async function getServerUser(request) {
       const session = await fetchAuthSession();
       const attributes = session?.tokens?.idToken?.payload || {};
       
+      // DEBUGGING: Add explicit token details to understand attributes
+      console.log('[getServerUser] Token payload keys:', Object.keys(attributes));
+      console.log('[getServerUser] Custom attributes:', Object.keys(attributes).filter(k => k.startsWith('custom:')));
+
+      // Check key casing - Cognito sometimes uses different case patterns
+      const keysLower = Object.keys(attributes).map(k => k.toLowerCase());
+      const hasLowercaseFirstname = keysLower.includes('custom:firstname');
+      const hasUppercaseFirstname = keysLower.includes('custom:firstname'.toUpperCase());
+      const hasCapitalizedFirstname = keysLower.includes('Custom:Firstname'.toLowerCase());
+
+      // Check both standard lowercase and other case formats
+      console.log('[getServerUser] Key case patterns:', {
+        hasLowercaseFirstname,
+        hasUppercaseFirstname,
+        hasCapitalizedFirstname,
+        rawLowercaseValue: attributes['custom:firstname'],
+        rawUppercaseValue: attributes['CUSTOM:FIRSTNAME'],
+        rawCapitalizedValue: attributes['Custom:Firstname']
+      });
+
+      // Attempt to find a match in any case format
+      const findAttributeIgnoreCase = (baseKey) => {
+        const baseLower = baseKey.toLowerCase();
+        const matchingKey = Object.keys(attributes).find(k => k.toLowerCase() === baseLower);
+        return matchingKey ? attributes[matchingKey] : null;
+      };
+
+      const firstnameValue = findAttributeIgnoreCase('custom:firstname');
+      const lastnameValue = findAttributeIgnoreCase('custom:lastname');
+      const businessnameValue = findAttributeIgnoreCase('custom:businessname');
+      const tenantIdValue = findAttributeIgnoreCase('custom:tenant_ID');
+
+      console.log('[getServerUser] Case-insensitive attribute values:', {
+        firstnameValue,
+        lastnameValue,
+        businessnameValue,
+        tenantIdValue
+      });
+      
       // Verify token is valid
       if (!session?.tokens?.idToken) {
         console.warn('[getServerUser] Session tokens missing or invalid');
@@ -103,17 +142,20 @@ export async function getServerUser(request) {
         attributes,
         token: session.tokens.idToken.toString(),
         // Explicitly map name fields - order matters for fallbacks
-        first_name: attributes.given_name || attributes.first_name || '',
-        last_name: attributes.family_name || attributes.last_name || '',
-        given_name: attributes.given_name || attributes.first_name || '',
-        family_name: attributes.family_name || attributes.last_name || '',
+        first_name: firstnameValue || attributes.given_name || attributes.first_name || '',
+        last_name: lastnameValue || attributes.family_name || attributes.last_name || '',
+        given_name: firstnameValue || attributes.given_name || attributes.first_name || '',
+        family_name: lastnameValue || attributes.family_name || attributes.last_name || '',
         email: attributes.email || user.username,
-        name: attributes.name || `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim(),
+        name: attributes.name || `${firstnameValue || attributes.given_name || ''} ${lastnameValue || attributes.family_name || ''}`.trim(),
         // Map custom attributes
-        'custom:tenantId': attributes['custom:tenantId'] || attributes['custom:businessid'] || '',
-        'custom:businessname': attributes['custom:businessname'] || '',
+        'custom:firstname': firstnameValue || '',
+        'custom:lastname': lastnameValue || '',
+        'custom:tenant_ID': tenantIdValue || '',
+        'custom:businessname': businessnameValue || '',
         'custom:businesstype': attributes['custom:businesstype'] || '',
-        'custom:subplan': attributes['custom:subplan'] || 'free'
+        'custom:subplan': attributes['custom:subplan'] || 'free',
+        'custom:userrole': attributes['custom:userrole'] || 'client'
       };
       
       console.log('[getServerUser] Enhanced user attributes:', {
@@ -121,7 +163,10 @@ export async function getServerUser(request) {
         first_name: enhancedUser.first_name,
         last_name: enhancedUser.last_name,
         given_name: enhancedUser.given_name,
-        family_name: enhancedUser.family_name
+        family_name: enhancedUser.family_name,
+        custom_firstname: firstnameValue,
+        custom_lastname: lastnameValue,
+        custom_businessname: businessnameValue
       });
       
       // Return enhanced user

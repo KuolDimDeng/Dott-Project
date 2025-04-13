@@ -31,29 +31,33 @@ export async function GET(request) {
   try {
     logger.info(`[${requestId}] GET /api/inventory/products - Start processing request`);
     
-    // Extract tenant info from various sources
-    const tenantInfo = await extractTenantId(request);
-    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    // Extract tenant ID from request headers with strict validation
+    const tenantId = extractTenantId(request);
     
-    if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request, headers:`, {
-        'x-tenant-id': request.headers.get('x-tenant-id'),
-        'x-business-id': request.headers.get('x-business-id'),
-        referer: request.headers.get('referer'),
-        cookie: request.headers.get('cookie')?.substring(0, 50) + '...' // Log partial cookie for debugging
-      });
-      
+    if (!tenantId) {
+      logger.error(`[${requestId}] SECURITY ERROR: No valid tenant ID found in request headers`);
       return NextResponse.json(
         { 
-          error: 'Tenant ID is required',
-          message: 'No tenant ID found in request headers, cookies, or JWT',
-          sources: tenantInfo
+          error: 'Authentication required',
+          message: 'Valid tenant ID is required for data access'
         },
-        { status: 400 }
+        { status: 401 }
       );
     }
     
-    logger.info(`[${requestId}] Fetching products for tenant ${finalTenantId}`);
+    // Validate tenant ID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+      logger.error(`[${requestId}] SECURITY ERROR: Invalid tenant ID format: ${tenantId}`);
+      return NextResponse.json(
+        { 
+          error: 'Invalid tenant ID',
+          message: 'Tenant ID format is incorrect'
+        },
+        { status: 403 }
+      );
+    }
+    
+    logger.info(`[${requestId}] Fetching products for tenant ${tenantId}`);
     
     // Get search and filter parameters from URL
     const { searchParams } = new URL(request.url);
@@ -81,15 +85,17 @@ export async function GET(request) {
     }
     
     // Query products with RLS
-    // Note: No need to filter by tenant_id in the query - RLS will handle that
+    // Add explicit tenant_id check in the query as a secondary security measure
     const query = `
       SELECT * FROM public.inventory_product
-      WHERE ($1 = '' OR name ILIKE $2 OR description ILIKE $2)
+      WHERE tenant_id = $1
+      AND ($2 = '' OR name ILIKE $3 OR description ILIKE $3)
       ORDER BY ${sortBy} ${sortDir === 'asc' ? 'ASC' : 'DESC'}
-      LIMIT $3 OFFSET $4
+      LIMIT $4 OFFSET $5
     `;
     
     const params = [
+      tenantId,
       search,
       `%${search}%`,
       limit,
@@ -102,22 +108,29 @@ export async function GET(request) {
       result = await db.query(query, params, {
         signal: controller.signal,
         requestId,
-        tenantId: finalTenantId,
+        tenantId: tenantId,
         debug: true
       });
     } catch (dbError) {
       logger.error(`[${requestId}] Database error fetching products: ${dbError.message}`);
+      
+      // Check if this is a tenant context verification error
+      const isTenantContextError = dbError.message.includes('Tenant context verification failed') ||
+                                  dbError.message.includes('tenant context');
+      
       return NextResponse.json(
         { 
-          error: 'Database error', 
-          message: dbError.message,
+          error: isTenantContextError ? 'Database initialization error' : 'Database error', 
+          message: isTenantContextError ? 
+            'Database is still initializing tenant context. Please try again in a moment.' : 
+            dbError.message,
           details: process.env.NODE_ENV === 'development' ? dbError.stack : undefined
         },
         { status: 500 }
       );
     }
     
-    logger.info(`[${requestId}] Found ${result.rows.length} products for tenant ${finalTenantId}`);
+    logger.info(`[${requestId}] Found ${result.rows.length} products for tenant ${tenantId}`);
     
     return NextResponse.json({
       data: result.rows,
@@ -125,7 +138,7 @@ export async function GET(request) {
         total: result.rows.length,
         limit,
         offset,
-        tenant: finalTenantId.substring(0, 8) + '...' // Include partial tenant ID for debugging
+        tenant: tenantId.substring(0, 8) + '...' // Include partial tenant ID for debugging
       }
     });
     
@@ -161,19 +174,24 @@ export async function POST(request) {
     // Parse request body
     const requestData = await request.json();
     
-    // Extract tenant info from various sources
-    const tenantId = requestData.tenant_id || 
-                    requestData.tenantId || 
-                    request.headers.get('x-tenant-id') ||
-                    request.headers.get('tenant-id') ||
-                    request.headers.get('x-business-id');
+    // Extract tenant ID using the utility function with strict validation
+    const tenantId = extractTenantId(request);
     
     if (!tenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request headers or body`);
+      logger.error(`[${requestId}] SECURITY ERROR: No valid tenant ID found in request headers for product creation`);
       return NextResponse.json({
         success: false,
-        message: 'Tenant ID is required'
-      }, { status: 400 });
+        message: 'Authentication required. Valid tenant ID is required for product creation.'
+      }, { status: 401 });
+    }
+    
+    // Validate tenant ID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+      logger.error(`[${requestId}] SECURITY ERROR: Invalid tenant ID format during product creation: ${tenantId}`);
+      return NextResponse.json({ 
+        success: false,
+        message: 'Invalid tenant ID format'
+      }, { status: 403 });
     }
     
     logger.info(`[${requestId}] Creating product for tenant: ${tenantId}`);
@@ -197,50 +215,63 @@ export async function POST(request) {
     // Generate a UUID for the product
     const productId = uuidv4();
     
-    // Insert the new product using RLS-aware query
-    const query = `
-      INSERT INTO public.inventory_product (
-        id, 
-        tenant_id, 
-        name, 
-        description, 
-        sku,
-        price, 
-        cost,
-        stock_quantity, 
-        reorder_level, 
-        for_sale, 
-        for_rent,
-        created_at,
-        updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-      RETURNING *
-    `;
-    
-    const params = [
-      productId,
-      tenantId,
-      name,
-      requestData.description || '',
-      requestData.sku || `SKU-${Date.now()}`,
-      parseFloat(requestData.price) || 0,
-      parseFloat(requestData.cost) || 0,
-      parseInt(requestData.stock_quantity || requestData.stockQuantity) || 0,
-      parseInt(requestData.reorder_level || requestData.reorderLevel) || 0,
-      requestData.for_sale === true || requestData.forSale === true,
-      requestData.for_rent === true || requestData.forRent === true
-    ];
-    
-    logger.info(`[${requestId}] Executing product insert with tenant context: ${tenantId}`);
-    
-    const result = await db.query(query, params, {
+    // Create product with transaction to ensure consistency
+    const newProduct = await db.transaction(async (client, options) => {
+      // Insert the new product using RLS-aware query
+      const query = `
+        INSERT INTO public.inventory_product (
+          id, 
+          tenant_id, 
+          name, 
+          description, 
+          sku,
+          price, 
+          cost,
+          stock_quantity, 
+          reorder_level, 
+          for_sale, 
+          for_rent,
+          created_at,
+          updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        RETURNING *
+      `;
+      
+      const params = [
+        productId,
+        tenantId,
+        name,
+        requestData.description || '',
+        requestData.sku || `SKU-${Date.now()}`,
+        parseFloat(requestData.price) || 0,
+        parseFloat(requestData.cost) || 0,
+        parseInt(requestData.stock_quantity || requestData.stockQuantity) || 0,
+        parseInt(requestData.reorder_level || requestData.reorderLevel) || 0,
+        requestData.for_sale === true || requestData.forSale === true,
+        requestData.for_rent === true || requestData.forRent === true
+      ];
+      
+      logger.info(`[${requestId}] Executing product insert with tenant context: ${tenantId}`);
+      
+      // Verify tenant ID one more time before executing the query
+      if (options.tenantId !== tenantId) {
+        throw new Error(`Tenant ID mismatch during insert. Expected ${tenantId}, got ${options.tenantId || 'undefined'}`);
+      }
+      
+      const result = await db.query(query, params, {
+        ...options,
+        client,
+        requestId,
+        tenantId // Pass tenant ID for RLS context
+      });
+      
+      return result.rows[0];
+    }, {
       requestId,
-      tenantId, // Pass tenant ID for RLS context
+      tenantId,
       debug: true
     });
-    
-    const newProduct = result.rows[0];
     
     logger.info(`[${requestId}] Product created successfully: ${newProduct.id}`);
     

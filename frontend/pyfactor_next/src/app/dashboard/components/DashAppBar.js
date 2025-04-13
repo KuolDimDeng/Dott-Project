@@ -32,6 +32,12 @@ import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
+import { useUserProfile } from '@/contexts/UserProfileContext';
+
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined' && !window.__APP_CACHE) {
+  window.__APP_CACHE = { auth: {}, user: {}, tenant: {} };
+}
 
 const DashAppBar = ({
   drawerOpen,
@@ -66,6 +72,15 @@ const DashAppBar = ({
 }) => {
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
+    
+  // Get user profile data from context
+  const { 
+    profileData: cachedProfileData, 
+    loading: profileLoading, 
+    error: profileError,
+    fetchProfile,
+    isCacheValid
+  } = useUserProfile();
 
   // Initialize profile data with prop if available or null
   const [profileData, setProfileData] = useState(propProfileData || null);
@@ -73,26 +88,148 @@ const DashAppBar = ({
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
+  
+  // Add a flag to track if we've attempted to fetch profile data
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   // Create a ref for the dropdown menu and button
   const userMenuRef = useRef(null);
   const profileButtonRef = useRef(null);
-
-  // Check if we're on desktop/mobile for menu positioning
+  
+  // Track mounted state to prevent state updates after unmount
+  const isMounted = useRef(true);
   useEffect(() => {
-    const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= 768);
+    return () => {
+      isMounted.current = false;
     };
-
-    // Set initial value
-    checkScreenSize();
-
-    // Add event listener
-    window.addEventListener('resize', checkScreenSize);
-
-    // Clean up
-    return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
+
+  // Use the cached profile data if available
+  useEffect(() => {
+    if (cachedProfileData && !profileData) {
+      logger.debug('[DashAppBar] Using cached profile data');
+      setProfileData(cachedProfileData);
+      
+      // Update user data if callback is available
+      if (typeof setUserData === 'function') {
+        setUserData(cachedProfileData);
+      }
+    }
+  }, [cachedProfileData, profileData, setUserData]);
+
+  // Add useEffect to handle business name updates whenever relevant data changes
+  useEffect(() => {
+    // Update business name from all potential sources
+    const cognitoName = userAttributes?.['custom:businessname'] || user?.['custom:businessname'];
+    const userDataName = userData?.businessName || userData?.['custom:businessname'];
+    const profileDataName = profileData?.businessName;
+    const cachedName = cachedProfileData?.businessName;
+    
+    // Check if we have a valid business name from any source
+    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName;
+    
+    if (newBusinessName && newBusinessName !== 'My Business') {
+      logger.info('[DashAppBar] Setting business name from data source:', {
+        name: newBusinessName,
+        source: cognitoName ? 'cognito' : 
+                userDataName ? 'userData' : 
+                profileDataName ? 'profileData' : 
+                'cachedData'
+      });
+      
+      setBusinessName(newBusinessName);
+    }
+  }, [userData, profileData, cachedProfileData, user, userAttributes]);
+
+  // Replace the existing fetchUserProfile function with this simplified version
+  const fetchUserProfile = useCallback(async () => {
+    // Skip if we already have profile data or have already attempted to fetch
+    if (profileData || hasAttemptedFetch) {
+      return;
+    }
+    
+    setHasAttemptedFetch(true);
+    
+    // Check if we have a valid cached profile first
+    if (isCacheValid(tenantId)) {
+      logger.debug('[DashAppBar] Using valid cached profile data');
+      return;
+    }
+    
+    // Fetch the profile data using our context
+    logger.debug('[DashAppBar] Fetching user profile data for tenant:', tenantId);
+    const result = await fetchProfile(tenantId);
+    
+    // Log what attributes we actually received in the profile
+    if (result) {
+      logger.info('[DashAppBar] Received profile data with attributes:', {
+        firstName: result?.profile?.firstName,
+        lastName: result?.profile?.lastName,
+        first_name: result?.profile?.first_name,
+        last_name: result?.profile?.last_name,
+        email: result?.profile?.email,
+        businessName: result?.profile?.businessName,
+        tenantId: result?.profile?.tenantId,
+        rawProfileKeys: result?.profile ? Object.keys(result.profile) : 'no profile'
+      });
+      
+      // Set business name from profile data if available
+      if (result.profile?.businessName) {
+        setBusinessName(result.profile.businessName);
+      }
+    } else {
+      logger.warn('[DashAppBar] No profile data received from fetchProfile');
+    }
+    
+  }, [profileData, hasAttemptedFetch, isCacheValid, tenantId, fetchProfile]);
+
+  // Replace existing fetchCorrectUserDetails with a simpler version
+  const fetchCorrectUserDetails = useCallback(async () => {
+    if (!tenantId || !isAuthenticated) {
+      return;
+    }
+    
+    // Skip if we already have valid profile data
+    if (isCacheValid(tenantId)) {
+      logger.debug('[DashAppBar] Using valid cached tenant profile data');
+      
+      // Even with valid cache, still update business name if we have it from context
+      if (cachedProfileData?.businessName) {
+        setBusinessName(cachedProfileData.businessName);
+      }
+      
+      return;
+    }
+    
+    // Fetch the profile data using our context
+    logger.debug('[DashAppBar] Fetching tenant-specific profile data');
+    const result = await fetchProfile(tenantId);
+    
+    // If we got results back, update the business name
+    if (result?.profile?.businessName) {
+      logger.info('[DashAppBar] Setting business name from tenant profile:', result.profile.businessName);
+      setBusinessName(result.profile.businessName);
+      
+      // Store in app cache instead of localStorage
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE.tenant.businessName = result.profile.businessName;
+      }
+    }
+    
+  }, [tenantId, isAuthenticated, isCacheValid, fetchProfile, cachedProfileData]);
+
+  // Simplify dependencies for useEffect calls
+  useEffect(() => {
+    if (isAuthenticated && !profileData && !profileLoading && !profileError) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated, profileData, profileLoading, profileError, fetchUserProfile]);
+
+  useEffect(() => {
+    if (tenantId && isAuthenticated) {
+      fetchCorrectUserDetails();
+    }
+  }, [tenantId, isAuthenticated, fetchCorrectUserDetails]);
 
   // Helper function to consistently generate initials from user data
   const generateInitialsFromNames = useCallback(
@@ -165,11 +302,57 @@ const DashAppBar = ({
   // Update initials whenever user data changes
   useEffect(() => {
     if (userData) {
+      // Helper function to find attribute regardless of case
+      const findAttr = (obj, baseKey) => {
+        if (!obj) return null;
+        
+        // Direct access attempt first
+        if (obj[baseKey]) return obj[baseKey];
+        
+        // Try case insensitive lookup
+        const baseLower = baseKey.toLowerCase();
+        const key = Object.keys(obj).find(k => k.toLowerCase() === baseLower);
+        return key ? obj[key] : null;
+      };
+      
+      // Get name components using case-insensitive lookups
       const firstName =
-        userData.first_name || userData.firstName || userData.given_name;
+        findAttr(userData, 'first_name') || 
+        findAttr(userData, 'firstName') || 
+        findAttr(userData, 'given_name') || 
+        findAttr(userData, 'custom:firstname');
+        
       const lastName =
-        userData.last_name || userData.lastName || userData.family_name;
+        findAttr(userData, 'last_name') || 
+        findAttr(userData, 'lastName') || 
+        findAttr(userData, 'family_name') || 
+        findAttr(userData, 'custom:lastname');
+        
       const email = userData.email;
+      
+      // Get business name using case-insensitive lookup
+      const businessNameValue = 
+        findAttr(userData, 'businessName') || 
+        findAttr(userData, 'custom:businessname');
+        
+      if (businessNameValue && businessNameValue !== 'My Business') {
+        logger.debug('[DashAppBar] Setting business name from userData:', businessNameValue);
+        setBusinessName(businessNameValue);
+      }
+
+      // Log the raw user data to help debug attribute mapping issues
+      logger.debug('[DashAppBar] Raw user data attributes:', {
+        userData,
+        first_name: findAttr(userData, 'first_name'),
+        firstName: findAttr(userData, 'firstName'),
+        given_name: findAttr(userData, 'given_name'),
+        custom_firstname: findAttr(userData, 'custom:firstname'),
+        last_name: findAttr(userData, 'last_name'),
+        lastName: findAttr(userData, 'lastName'),
+        family_name: findAttr(userData, 'family_name'),
+        custom_lastname: findAttr(userData, 'custom:lastname'),
+        businessNameValue
+      });
 
       // Always try to get both initials when possible
       if (firstName && lastName) {
@@ -452,878 +635,85 @@ const DashAppBar = ({
     };
   }, [openMenu, handleClose]);
 
-  // Get business name from cookies first - most reliable source
-  const getBusinessNameFromCookies = () => {
+  // Create a function to get the user's display name from Cognito
+  const getUserInfoFromCognito = async () => {
     try {
-      // Get cookies directly
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const userAttributes = await fetchUserAttributes();
+      
+      return {
+        email: userAttributes.email || '',
+        tenantId: userAttributes['custom:tenant_id'] || userAttributes['custom:businessid'] || null,
+        firstName: userAttributes.given_name || '',
+        lastName: userAttributes.family_name || '',
+        businessName: userAttributes['custom:businessname'] || 'My Business'
       };
-
-      // Log all cookies for debugging
-      console.log('All cookies:', document.cookie);
-
-      // Check multiple possible cookie names
-      const businessName = getCookie('businessName') || 
-                         getCookie('business_name') || 
-                         getCookie('custom:businessname');
-      
-      console.log('Raw businessName cookie value:', businessName);
-
-      if (businessName) {
-        // Check if the value is already decoded or needs decoding
-        const needsDecoding = businessName.includes('%');
-
-        // Decode URL-encoded values (like %20 for spaces)
-        const decodedName = needsDecoding
-          ? decodeURIComponent(businessName)
-          : businessName;
-
-        // Check if we have a double-encoded value (contains %25 which is % encoded)
-        const isDoubleEncoded = businessName.includes('%25');
-
-        console.log('[AppBar] Cookie analysis:', {
-          original: businessName,
-          decoded: decodedName,
-          needsDecoding,
-          isDoubleEncoded,
-        });
-
-        // If double-encoded, we need to decode twice
-        const finalName = isDoubleEncoded
-          ? decodeURIComponent(decodeURIComponent(businessName))
-          : decodedName;
-
-        logger.debug(
-          '[AppBar] Found business name in cookies. Final value:',
-          finalName
-        );
-        return finalName;
-      }
-    } catch (e) {
-      logger.error('[AppBar] Error reading cookies:', e);
+    } catch (error) {
+      logger.error('[AppBar] Error retrieving user info from Cognito:', error);
+      return {
+        email: '',
+        tenantId: null,
+        firstName: '',
+        lastName: '',
+        businessName: 'My Business'
+      };
     }
-    return null;
   };
 
-  // Get business name from localStorage as fallback
-  const getBusinessNameFromStorage = () => {
+  // Replace localStorage references with Cognito-based function calls
+  const getDisplayName = async () => {
     try {
-      // First try the tenantName which is set by DashboardWrapper
-      const tenantName = localStorage.getItem('tenantName');
-      if (tenantName && tenantName !== 'undefined' && tenantName !== 'null') {
-        logger.debug('[AppBar] Found business name in tenantName:', tenantName);
-        return tenantName;
+      const cognitoInfo = await getUserInfoFromCognito();
+      
+      // Use email if available
+      if (cognitoInfo.email) {
+        return cognitoInfo.email;
       }
       
-      // Check for business info in localStorage
-      const storedInfo = localStorage.getItem('businessInfo');
-      if (storedInfo) {
-        try {
-          const parsedInfo = JSON.parse(storedInfo);
-          if (parsedInfo.businessName) {
-            // Decode URL-encoded values if present
-            const decodedName = parsedInfo.businessName.includes('%')
-              ? decodeURIComponent(parsedInfo.businessName)
-              : parsedInfo.businessName;
-            logger.debug(
-              '[AppBar] Found business name in localStorage businessInfo:',
-              decodedName
-            );
-            return decodedName;
-          }
-        } catch (parseError) {
-          logger.error('[AppBar] Error parsing businessInfo JSON:', parseError);
-        }
+      // Try user data from props if available
+      if (userData?.email) {
+        return userData.email;
       }
-
-      // Try alternative storage keys
-      const alternateName = localStorage.getItem('businessName');
-      if (alternateName && alternateName !== 'undefined' && alternateName !== 'null') {
-        // Decode URL-encoded values if present
-        const decodedName = alternateName.includes('%')
-          ? decodeURIComponent(alternateName)
-          : alternateName;
-        logger.debug(
-          '[AppBar] Found business name in alternate storage:',
-          decodedName
-        );
-        return decodedName;
-      }
-    } catch (e) {
-      logger.error('[AppBar] Error reading localStorage:', e);
+      
+      return 'User';
+    } catch (error) {
+      logger.error('[AppBar] Error getting display name:', error);
+      return 'User';
     }
-    return null;
   };
 
-  // Fetch user data for AppBar display
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        // Check for business name in localStorage first (prioritizes tenantName set by DashboardWrapper)
-        const storageBusinessName = getBusinessNameFromStorage();
-        const cookieBusinessName = getBusinessNameFromCookies();
-        const locallyStoredName = storageBusinessName || cookieBusinessName;
-        
-        // If we found a business name, update the state
-        if (locallyStoredName) {
-          logger.info('[AppBar] Setting business name from local sources:', locallyStoredName);
-          setBusinessName(locallyStoredName);
-        }
-
-        // Check for cookie-based user information
-        const getCookie = (name) => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop().split(';').shift();
-          return null;
-        };
-
-        // Get user details from cookies
-        const firstName =
-          getCookie('first_name') ||
-          getCookie('firstName') ||
-          getCookie('given_name');
-        const lastName =
-          getCookie('last_name') ||
-          getCookie('lastName') ||
-          getCookie('family_name');
-        const email = getCookie('email') || getCookie('userEmail');
-
-        // Generate initials from cookie data if available
-        let initials = '';
-        if (firstName && lastName) {
-          const first = firstName.charAt(0).toUpperCase();
-          const last = lastName.charAt(0).toUpperCase();
-          initials = first + last;
-          logger.info('[AppBar] Generated initials from cookies:', {
-            firstName,
-            lastName,
-            initials,
-          });
-        } else if (firstName) {
-          // Try to extract last initial from email or username
-          const lastInitial =
-            email && email.includes('@') && email.split('@')[0].includes('.')
-              ? email.split('@')[0].split('.')[1].charAt(0).toUpperCase()
-              : '';
-
-          if (lastInitial) {
-            initials = `${firstName.charAt(0).toUpperCase()}${lastInitial}`;
-            logger.info(
-              '[AppBar] Generated initials from first name and email:',
-              { firstName, email, initials }
-            );
-          } else {
-            initials = firstName.charAt(0).toUpperCase();
-            logger.info('[AppBar] Only first initial available from cookies:', {
-              firstName,
-              initials,
-            });
-          }
-        } else if (lastName) {
-          initials = lastName.charAt(0).toUpperCase();
-        } else if (email) {
-          initials = email.charAt(0).toUpperCase();
-        }
-
-        if (initials) {
-          logger.debug('Setting initials from cookies:', initials);
-          setUserInitials(initials);
-        }
-
-        // Fetch user profile from API
-        let profileApiData = null;
-        try {
-          // Make API request with tenant ID to get correct profile
-          const tenantId =
-            localStorage.getItem('tenantId') ||
-            getCookie('tenantId') ||
-            getCookie('custom:businessid');
-
-          const url = tenantId
-            ? `/api/user/profile?tenantId=${encodeURIComponent(tenantId)}`
-            : '/api/user/profile';
-
-          const response = await fetch(url);
-          if (response.ok) {
-            const data = await response.json();
-            profileApiData = data;
-            logger.debug('Retrieved profile data:', profileApiData);
-
-            // Log specifically what user attributes we found
-            logger.info('Retrieved user profile with attributes:', {
-              firstName: data.profile?.firstName || data.profile?.first_name,
-              lastName: data.profile?.lastName || data.profile?.last_name,
-              email: data.profile?.email,
-              businessName:
-                data.profile?.businessName || data.profile?.business_name,
-              subscriptionType:
-                data.profile?.subscriptionType ||
-                data.profile?.subscription_type,
-            });
-
-            // Use profile data to update user information
-            if (data.profile) {
-              const profileFirstName =
-                data.profile.firstName || data.profile.first_name;
-              const profileLastName =
-                data.profile.lastName || data.profile.last_name;
-              const profileEmail = data.profile.email;
-
-              // Extract real user information and override any mock data
-              setProfileData({
-                business_name:
-                  data.profile.businessName ||
-                  data.profile.business_name ||
-                  locallyStoredName ||
-                  (userData?.firstName ? `${userData.firstName}'s Business` : 'My Business'),
-                subscription_type:
-                  data.profile.subscription_type ||
-                  data.profile.subscriptionType ||
-                  'free',
-                email: profileEmail,
-                first_name: profileFirstName || '',
-                last_name: profileLastName || '',
-                tenant_id: data.profile.tenantId,
-              });
-
-              // Generate initials from profile data
-              if (profileFirstName && profileLastName) {
-                const initials = `${profileFirstName.charAt(0).toUpperCase()}${profileLastName.charAt(0).toUpperCase()}`;
-                logger.info(
-                  '[AppBar] Setting initials from profile data:',
-                  initials
-                );
-                setUserInitials(initials);
-              } else if (
-                profileFirstName &&
-                profileEmail &&
-                profileEmail.includes('.') &&
-                profileEmail.includes('@')
-              ) {
-                // Try to extract initials from email (kuol.dimdeng@outlook.com -> KD)
-                const nameParts = profileEmail.split('@')[0].split('.');
-                if (nameParts.length >= 2 && nameParts[1].length > 0) {
-                  const initials = `${profileFirstName.charAt(0).toUpperCase()}${nameParts[1].charAt(0).toUpperCase()}`;
-                  logger.info(
-                    '[AppBar] Setting initials from profile name + email parts:',
-                    initials
-                  );
-                  setUserInitials(initials);
-                } else {
-                  setUserInitials(profileFirstName.charAt(0).toUpperCase());
-                }
-              }
-
-              // Update user data with real information - no mock data
-              setUserData({
-                email: profileEmail,
-                firstName: profileFirstName || '',
-                lastName: profileLastName || '',
-                first_name: profileFirstName || '',
-                last_name: profileLastName || '',
-                tenantId: data.profile.tenantId,
-              });
-            }
-          }
-        } catch (apiError) {
-          logger.warn('API call to fetch profile failed:', apiError);
-          // Continue with fallback data - don't exit the main function
-        }
-
-        // If we don't have profile data from API but have local data
-        if (!profileApiData) {
-          logger.info('No user data available from API, using local data');
-
-          // If we have a locally stored name, use it even if API call failed
-          if (locallyStoredName || firstName || lastName || email) {
-            setProfileData((prevData) => ({
-              ...(prevData || {}),
-              business_name: locallyStoredName || 
-                (userData?.firstName ? `${userData.firstName}'s Business` : 
-                 email ? `${email.split('@')[0]}'s Business` : 'My Business'),
-              subscription_type: userData?.subscription_type || 'free',
-              userData: {
-                ...(prevData?.userData || {}),
-                first_name: firstName || '',
-                last_name: lastName || '',
-                email: email || '',
-              },
-            }));
-
-            // Set initials if we have name data
-            if (!initials) {
-              const first = firstName ? firstName.charAt(0).toUpperCase() : '';
-              const last = lastName ? lastName.charAt(0).toUpperCase() : '';
-              const userInitials =
-                first + last || (email ? email.charAt(0).toUpperCase() : '');
-              if (userInitials) {
-                logger.debug(
-                  'Setting initials from fallback data:',
-                  userInitials
-                );
-                setUserInitials(userInitials);
-              }
-            }
-          }
-          return;
-        }
-
-        // Process API data if available
-        const profile = profileApiData;
-        // Prioritize locally stored business name over API data
-        const businessName =
-          locallyStoredName ||
-          profile.businessName ||
-          profile.businessname ||
-          (profile.firstName || profile.firstname || profile.given_name ? 
-            `${profile.firstName || profile.firstname || profile.given_name}'s Business` : 
-           profile.email ? `${profile.email.split('@')[0]}'s Business` : 'My Business');
-        const subscriptionType =
-          profile.subscriptionPlan || profile.subplan || 'free';
-        const accountStatus =
-          profile.accountStatus || profile.acctstatus || 'ACTIVE';
-
-        // Generate initials from name parts
-        let firstInitial = '';
-        let lastInitial = '';
-
-        // Use cookie data first if available
-        if (firstName) {
-          firstInitial = firstName.charAt(0).toUpperCase();
-        } else if (
-          profile.firstName ||
-          profile.firstname ||
-          profile.given_name
-        ) {
-          const profileFirstName =
-            profile.firstName || profile.firstname || profile.given_name;
-          firstInitial = profileFirstName.charAt(0).toUpperCase();
-        }
-
-        if (lastName) {
-          lastInitial = lastName.charAt(0).toUpperCase();
-        } else if (
-          profile.lastName ||
-          profile.lastname ||
-          profile.family_name
-        ) {
-          const profileLastName =
-            profile.lastName || profile.lastname || profile.family_name;
-          lastInitial = profileLastName.charAt(0).toUpperCase();
-        }
-
-        // If we don't have first/last name, try to use full name
-        if (
-          (!firstInitial || !lastInitial) &&
-          (profile.fullName || profile.name)
-        ) {
-          const fullName = profile.fullName || profile.name;
-          const nameParts = fullName.split(' ');
-
-          // Only set if we don't already have an initial
-          if (!firstInitial && nameParts.length > 0 && nameParts[0]) {
-            firstInitial = nameParts[0].charAt(0).toUpperCase();
-          }
-
-          if (
-            !lastInitial &&
-            nameParts.length > 1 &&
-            nameParts[nameParts.length - 1]
-          ) {
-            lastInitial = nameParts[nameParts.length - 1]
-              .charAt(0)
-              .toUpperCase();
-          }
-        }
-
-        // If we still don't have initials, use email
-        if (!firstInitial && !lastInitial) {
-          if (email || profile.email) {
-            firstInitial = (email || profile.email).charAt(0).toUpperCase();
-          }
-        }
-
-        const computedInitials =
-          firstInitial && lastInitial
-            ? `${firstInitial}${lastInitial}`
-            : firstInitial || '';
-
-        logger.info('User profile data:', {
-          initials: computedInitials,
-          firstName: firstName || profile.firstName || profile.firstname,
-          lastName: lastName || profile.lastName || profile.lastname,
-          fullName: profile.fullName || profile.name,
-          businessName,
-          subscriptionType,
-          accountStatus,
-        });
-
-        // Update state with user data
-        setProfileData({
-          userData: {
-            ...profile,
-            first_name:
-              firstName || profile.firstName || profile.firstname || '',
-            last_name: lastName || profile.lastName || profile.lastname || '',
-            email: email || profile.email || '',
-          },
-          business_name: businessName,
-          subscription_type: subscriptionType,
-          account_status: accountStatus,
-          business_type: profile.businessType || profile.businesstype,
-          business_country: profile.businessCountry || profile.businesscountry,
-          created_at: profile.created_at || profile.created,
-          payment_verified:
-            profile.paymentVerified || profile.payverified === 'TRUE',
-          subscription_interval:
-            profile.subscriptionInterval ||
-            profile.subscriptioninterval ||
-            'MONTHLY',
-          subscription_status:
-            profile.subscriptionStatus ||
-            profile.subscriptionstatus ||
-            'ACTIVE',
-          full_data: JSON.stringify(profile),
-        });
-
-        // Set initials separately if not already set
-        if (computedInitials) {
-          logger.debug('Setting computed initials:', computedInitials);
-          setUserInitials(computedInitials);
-        }
-      } catch (error) {
-        // Handle any errors gracefully
-        logger.warn('Error in fetchUserProfile:', error);
-
-        try {
-          // If API call fails, still use locally stored data if available
-          const cookieBusinessName = getBusinessNameFromCookies();
-          const storageBusinessName = getBusinessNameFromStorage();
-
-          // Get user details from cookies
-          const getCookie = (name) => {
-            try {
-              const value = `; ${document.cookie}`;
-              const parts = value.split(`; ${name}=`);
-              if (parts.length === 2) return parts.pop().split(';').shift();
-              return null;
-            } catch (e) {
-              return null;
-            }
-          };
-
-          const firstName =
-            getCookie('first_name') ||
-            getCookie('firstName') ||
-            getCookie('given_name');
-          const lastName =
-            getCookie('last_name') ||
-            getCookie('lastName') ||
-            getCookie('family_name');
-          const email = getCookie('email') || getCookie('userEmail');
-
-          if (
-            cookieBusinessName ||
-            storageBusinessName ||
-            firstName ||
-            lastName ||
-            email
-          ) {
-            setProfileData((prevData) => ({
-              ...(prevData || {}),
-              business_name:
-                cookieBusinessName || storageBusinessName || "",
-              subscription_type: userData?.subscription_type || 'free',
-              userData: {
-                ...(prevData?.userData || {}),
-                first_name: firstName || '',
-                last_name: lastName || '',
-                email: email || '',
-              },
-            }));
-
-            // Set fallback initials
-            if (firstName || lastName || email) {
-              const first = firstName ? firstName.charAt(0).toUpperCase() : '';
-              const last = lastName ? lastName.charAt(0).toUpperCase() : '';
-              const initials =
-                first + last || (email ? email.charAt(0).toUpperCase() : '');
-              if (initials) {
-                setUserInitials(initials);
-              }
-            }
-          }
-        } catch (fallbackError) {
-          logger.error('Error using fallback data:', fallbackError);
-        }
-      }
-    };
-
-    fetchUserProfile();
-  }, [userData?.subscription_type]);
-
-  // Initialize userInitials from userData directly when component mounts
-  useEffect(() => {
-    if (!userInitials && userData) {
-      const firstName =
-        userData.first_name || userData.firstName || userData.given_name;
-      const lastName =
-        userData.last_name || userData.lastName || userData.family_name;
-      const email = userData.email || localStorage.getItem('authUser');
-
-      if (firstName && lastName) {
-        const first = firstName.charAt(0).toUpperCase();
-        const last = lastName.charAt(0).toUpperCase();
-        setUserInitials(first + last);
-        console.log('Initializing userInitials from userData:', first + last);
-      } else if (firstName) {
-        // Try to extract last initial from email if available
-        if (email && email.includes('@')) {
-          const namePart = email.split('@')[0];
-          if (
-            namePart.includes('.') &&
-            !namePart.startsWith('.') &&
-            !namePart.endsWith('.')
-          ) {
-            const parts = namePart.split('.');
-            if (parts.length >= 2 && parts[1].length > 0) {
-              const initials = `${firstName.charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
-              setUserInitials(initials);
-              console.log(
-                'Initializing userInitials from firstName and email:',
-                initials
-              );
-              return;
-            }
-          }
-        }
-        const initial = firstName.charAt(0).toUpperCase();
-        setUserInitials(initial);
-        console.log('Initializing userInitials from firstName:', initial);
-      } else if (lastName) {
-        const initial = lastName.charAt(0).toUpperCase();
-        setUserInitials(initial);
-        console.log('Initializing userInitials from lastName:', initial);
-      } else if (email) {
-        // Try to extract initials from email if in format "first.last@domain.com"
-        if (email.includes('@')) {
-          const namePart = email.split('@')[0];
-          if (
-            namePart.includes('.') &&
-            !namePart.startsWith('.') &&
-            !namePart.endsWith('.')
-          ) {
-            const parts = namePart.split('.');
-            if (parts.length >= 2) {
-              const initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
-              setUserInitials(initials);
-              console.log(
-                'Initializing userInitials from email parts:',
-                initials
-              );
-              return;
-            }
-          }
-        }
-        const initial = email.charAt(0).toUpperCase();
-        setUserInitials(initial);
-        console.log('Initializing userInitials from email:', initial);
-      } else {
-        // Try to extract email from cookies as last resort
-        const getCookieEmail = () => {
-          const cookies = document.cookie.split(';');
-          for (const cookie of cookies) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'email' || name.includes('email')) {
-              return value;
-            }
-          }
-          return null;
-        };
-
-        const cookieEmail = getCookieEmail();
-        if (cookieEmail) {
-          // Try to extract initials from email if in format "first.last@domain.com"
-          if (cookieEmail.includes('@')) {
-            const namePart = cookieEmail.split('@')[0];
-            if (
-              namePart.includes('.') &&
-              !namePart.startsWith('.') &&
-              !namePart.endsWith('.')
-            ) {
-              const parts = namePart.split('.');
-              if (parts.length >= 2) {
-                const initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
-                setUserInitials(initials);
-                console.log(
-                  'Initializing userInitials from cookie email parts:',
-                  initials
-                );
-                return;
-              }
-            }
-          }
-          const initial = cookieEmail.charAt(0).toUpperCase();
-          setUserInitials(initial);
-          console.log('Initializing userInitials from cookie email:', initial);
-        }
-      }
+  // Get the tenant ID from Cognito
+  const getTenantId = async () => {
+    try {
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const userAttributes = await fetchUserAttributes();
+      
+      return userAttributes['custom:tenant_id'] || 
+             userAttributes['custom:businessid'] || 
+             userAttributes['custom:tenantId'] ||
+             null;
+    } catch (error) {
+      logger.error('[AppBar] Error getting tenant ID from Cognito:', error);
+      return null;
     }
-  }, [userData, userInitials]);
+  };
 
-  // Additional tenant check to ensure we're showing the correct user initials
-  useEffect(() => {
-    const fetchCorrectUserDetails = async () => {
-      try {
-        // Define getCookie function to fix the "cookies is not defined" error
-        const getCookie = (name) => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) return parts.pop().split(';').shift();
-          return null;
-        };
-
-        // First check if we should try to get user details from tenant record
-        const effectiveTenantId =
-          tenantId ||
-          localStorage.getItem('tenantId') ||
-          getCookie('businessid');
-
-        if (userData) {
-          // Log what we received from parent component - helps debug issues
-          logger.debug('[AppBar] User data from parent:', {
-            first_name: userData.first_name,
-            last_name: userData.last_name,
-            email: userData.email,
-            businessName: userData.businessName,
-          });
-
-          // Format tenant ID for database compatibility
-          const formatTenantId = (id) => {
-            if (!id) return null;
-            return id.replace(/-/g, '_');
-          };
-        }
-
-        if (!effectiveTenantId || effectiveTenantId === '(not found)') {
-          logger.debug(
-            '[AppBar] No tenant ID found - skipping record verification'
-          );
-          return;
-        }
-
-        logger.debug(
-          '[AppBar] Fetching user profile with tenant ID:',
-          effectiveTenantId
-        );
-
-        // Make API request to fetch profile data
-        const authToken = localStorage.getItem('authToken');
-        const idToken = getCookie('idToken');
-        const cognitoToken = getCookie('CognitoIdentityServiceProvider');
-
-        const authTokenHeader =
-          authToken ||
-          idToken ||
-          (cognitoToken && cognitoToken.includes('idToken'))
-            ? { Authorization: `Bearer ${authToken || idToken}` }
-            : {};
-
-        const requestInfo = {
-          url: `/api/user/profile?tenantId=${effectiveTenantId}`,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            ...authTokenHeader,
-          },
-        };
-
-        logger.debug('[AppBar] Making API request to:', requestInfo);
-        const response = await fetch(requestInfo.url, {
-          headers: requestInfo.headers,
-        });
-
-        if (response.ok) {
-          const profileData = await response.json();
-          logger.debug(
-            '[AppBar] Fetched profile data with tenant ID:',
-            profileData
-          );
-
-          // Log specifically what attributes we found for debugging
-          logger.info('[AppBar] User profile attributes with tenant ID:', {
-            firstName: profileData.firstName || profileData.first_name,
-            lastName: profileData.lastName || profileData.last_name,
-            email: profileData.email,
-            businessName: profileData.businessName || profileData.business_name,
-            subscriptionType:
-              profileData.subscriptionType || profileData.subscription_type,
-            tenantId: effectiveTenantId,
-          });
-
-          if (profileData) {
-            // Extract first and last name
-            const firstName =
-              profileData.firstName ||
-              profileData.first_name ||
-              profileData.given_name;
-            const lastName =
-              profileData.lastName ||
-              profileData.last_name ||
-              profileData.family_name;
-            const profileEmail = profileData.email;
-
-            // If missing name info but have email, try to extract from email format
-            let extractedFirst = firstName;
-            let extractedLast = lastName;
-
-            if (
-              (!extractedFirst || !extractedLast) &&
-              profileEmail &&
-              profileEmail.includes('@')
-            ) {
-              const namePart = profileEmail.split('@')[0];
-              if (namePart.includes('.')) {
-                const parts = namePart.split('.');
-                if (parts.length >= 2) {
-                  // Capitalize first letter of each name part
-                  if (!extractedFirst) {
-                    extractedFirst =
-                      parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-                  }
-                  if (!extractedLast) {
-                    extractedLast =
-                      parts[1].charAt(0).toUpperCase() + parts[1].slice(1);
-                  }
-                  logger.info(
-                    '[AppBar] Extracted name from email in profile data:',
-                    {
-                      email: profileEmail,
-                      extractedFirst,
-                      extractedLast,
-                    }
-                  );
-                }
-              }
-            }
-
-            if (
-              firstName ||
-              lastName ||
-              profileEmail ||
-              extractedFirst ||
-              extractedLast
-            ) {
-              let initials = '';
-
-              if (firstName && lastName) {
-                const first = firstName.charAt(0).toUpperCase();
-                const last = lastName.charAt(0).toUpperCase();
-                initials = first + last;
-              } else if (extractedFirst && extractedLast) {
-                const first = extractedFirst.charAt(0).toUpperCase();
-                const last = extractedLast.charAt(0).toUpperCase();
-                initials = first + last;
-              } else if (firstName) {
-                // Always try to get both initials, even if only firstName is available
-                initials = firstName.charAt(0).toUpperCase();
-                // Try to extract last initial from email if possible
-                if (profileEmail && profileEmail.includes('@')) {
-                  const namePart = profileEmail.split('@')[0];
-                  // Check if email contains both names (first.last@domain.com)
-                  if (
-                    namePart.includes('.') &&
-                    !namePart.startsWith('.') &&
-                    !namePart.endsWith('.')
-                  ) {
-                    const parts = namePart.split('.');
-                    if (parts.length >= 2 && parts[1].length > 0) {
-                      initials += parts[1].charAt(0).toUpperCase();
-                    }
-                  }
-                }
-              } else if (lastName) {
-                initials = lastName.charAt(0).toUpperCase();
-              } else if (profileEmail) {
-                // Try to extract initials from email (first.last@domain.com format)
-                const email = profileEmail;
-                if (email.includes('@')) {
-                  const namePart = email.split('@')[0];
-                  if (namePart.includes('.')) {
-                    const parts = namePart.split('.');
-                    if (parts.length >= 2) {
-                      initials = `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
-                    } else {
-                      initials = email.charAt(0).toUpperCase();
-                    }
-                  } else {
-                    initials = email.charAt(0).toUpperCase();
-                  }
-                } else {
-                  initials = email.charAt(0).toUpperCase();
-                }
-              }
-
-              if (initials) {
-                setUserInitials(initials);
-                logger.info(
-                  '[AppBar] Setting initials from tenant-specific profile:',
-                  initials
-                );
-              }
-
-              // Also update the profile data
-              setProfileData((prevData) => ({
-                ...(prevData || {}),
-                userData: {
-                  ...profileData,
-                  first_name: firstName || extractedFirst || '',
-                  last_name: lastName || extractedLast || '',
-                  email: profileEmail || '',
-                },
-                business_name:
-                  profileData.businessName || profileData.business_name || '',
-                subscription_type:
-                  profileData.subscriptionType ||
-                  profileData.subscription_type ||
-                  'free',
-                // Store the tenant ID for consistency checks
-                tenant_id: effectiveTenantId,
-              }));
-
-              // Update userData with real information, not mock data
-              if (userData) {
-                userData.first_name =
-                  firstName || extractedFirst || userData.first_name || '';
-                userData.last_name =
-                  lastName || extractedLast || userData.last_name || '';
-                userData.email = profileEmail || userData.email;
-              }
-            }
-          }
-        } else {
-          logger.warn(
-            `[AppBar] Failed to fetch user profile: ${response.status} ${response.statusText}`
-          );
-        }
-      } catch (error) {
-        logger.error(
-          '[AppBar] Error fetching tenant-specific user details:',
-          error
-        );
+  // Get the ID token from Cognito session
+  const getIdToken = async () => {
+    try {
+      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const session = await fetchAuthSession();
+      
+      if (session?.tokens?.idToken) {
+        return session.tokens.idToken.toString();
       }
-    };
-
-    // Only fetch if we have userData (authenticated)
-    if (userData) {
-      fetchCorrectUserDetails();
+      
+      return null;
+    } catch (error) {
+      logger.error('[AppBar] Error getting ID token from Cognito session:', error);
+      return null;
     }
-  }, [userData]);
+  };
 
   // Directly calculate initials from userData if needed - prioritize real user data
   const directInitials = useMemo(() => {
@@ -1585,30 +975,50 @@ const DashAppBar = ({
   const businessData = useMemo(() => {
     // Generate business name from user attributes if not explicitly set
     const generateBusinessName = () => {
-      // Try to build from user attributes
-      if (userData) {
-        // If userData has email, first name, or last name, use them to build a business name
-        const firstName = userData?.['custom:firstname'] || userData?.given_name || '';
-        const lastName = userData?.['custom:lastname'] || userData?.family_name || '';
-        const email = userData?.email || '';
+      // Helper function to find attribute regardless of case
+      const findAttr = (obj, baseKey) => {
+        if (!obj) return null;
         
-        if (firstName && lastName) {
-          return `${firstName} ${lastName}'s Business`;
-        } else if (firstName) {
-          return `${firstName}'s Business`;
-        } else if (lastName) {
-          return `${lastName}'s Business`;
-        } else if (email) {
-          // Extract username from email
-          const username = email.split('@')[0];
-          if (username && username !== 'undefined') {
-            return `${username}'s Business`;
-          }
-        }
-      }
+        // Direct access attempt first
+        if (obj[baseKey]) return obj[baseKey];
+        
+        // Try case insensitive lookup
+        const baseLower = baseKey.toLowerCase();
+        const key = Object.keys(obj || {}).find(k => k?.toLowerCase() === baseLower);
+        return key && obj ? obj[key] : null;
+      };
       
-      // Final fallback
-      return 'My Business';
+      // Log all sources of business name to help debug
+      const cognitoName = 
+        findAttr(userAttributes, 'custom:businessname') || 
+        findAttr(user, 'custom:businessname');
+        
+      const stateValue = businessName;
+      const userDataName = 
+        findAttr(userData, 'businessName') || 
+        findAttr(userData, 'custom:businessname');
+        
+      const profileName = findAttr(profileData, 'businessName');
+      const cachedProfileName = findAttr(cachedProfileData, 'businessName');
+      const businessDataName = 'My Business'; // Default fallback
+      
+      logger.debug('[DashAppBar] Business name sources:', {
+        effectiveName: cognitoName || userDataName || profileName || cachedProfileName || stateValue || businessDataName,
+        cognitoName,
+        stateValue,
+        userDataName,
+        profileName,
+        cachedProfileName,
+        businessDataName
+      });
+      
+      // Use businessName from multiple sources with priority ordering
+      return cognitoName || 
+             userDataName || 
+             profileName || 
+             cachedProfileName || 
+             stateValue || 
+             businessDataName;
     };
 
     return {
@@ -1617,8 +1027,6 @@ const DashAppBar = ({
           ? profileData.business_name
           : userData?.business_name ||
             userData?.['custom:businessname'] ||
-            (typeof window !== 'undefined' &&
-              localStorage.getItem('businessName')) ||
             generateBusinessName(),
 
       subscription_type:
@@ -1626,11 +1034,10 @@ const DashAppBar = ({
           ? profileData.subscription_type
           : userData?.subscription_type ||
             userData?.['custom:subscription'] ||
-            (typeof window !== 'undefined' &&
-              localStorage.getItem('subscriptionType')) ||
+            userAttributes?.['custom:subscription'] ||
             'free',
     };
-  }, [isValidProfileData, profileData, userData]);
+  }, [isValidProfileData, profileData, userData, businessName, cachedProfileData, userAttributes, user]);
 
   const getSubscriptionLabel = (type) => {
     if (!type) return 'Free Plan';
@@ -1639,18 +1046,8 @@ const DashAppBar = ({
     const normalizedType =
       typeof type === 'string' ? type.toString().toLowerCase() : 'free';
 
-    // Check if we've already logged this subscription type in this session
-    const hasLoggedSubscription = typeof window !== 'undefined' && 
-      localStorage.getItem('subscription_logged');
-      
-    // Only log once per session
-    if (!hasLoggedSubscription) {
-      logger.debug('Normalized subscription type:', normalizedType);
-      // Mark as logged to prevent excessive logging
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('subscription_logged', 'true');
-      }
-    }
+    // Log just once per component lifecycle
+    logger.debug('Normalized subscription type:', normalizedType);
 
     // Enhanced matching to handle more variations
     if (normalizedType.includes('pro')) {
@@ -1698,60 +1095,125 @@ const DashAppBar = ({
 
   // Get the effective business name from multiple sources
   const effectiveBusinessName = useMemo(() => {
-    // First check our state which should have been set by now
-    if (businessName) {
-      return businessName;
-    }
-    
-    // Fallback to profileData
-    if (profileData?.business_name) {
-      return profileData.business_name;
-    }
-    
-    // Try localStorage again as final fallback
-    const storedName = localStorage.getItem('tenantName') || 
-                       localStorage.getItem('businessName');
-    if (storedName && storedName !== 'undefined' && storedName !== 'null') {
-      return storedName;
-    }
-    
-    return 'Dashboard';
-  }, [businessName, profileData]);
-
-  // Function to get the user's email from localStorage, cookies, and Cognito tokens
-  const getUserEmail = () => {
-    // Check localStorage first
-    const authUser = localStorage.getItem('authUser');
-    const userEmail = localStorage.getItem('userEmail');
-    
-    if (authUser) {
-      return authUser;
-    }
-    
-    if (userEmail) {
-      return userEmail;
-    }
-    
-    // Try to get from cookies
-    const cookies = document.cookie.split(';');
-    for (const cookie of cookies) {
-      const [name, value] = cookie.trim().split('=');
-      if ((name === 'email' || name === 'userEmail') && value) {
-        return decodeURIComponent(value);
+    // ALWAYS use Cognito as the primary source of truth in dashboard
+    if (userAttributes) {
+      // Check for businessname in Cognito attributes
+      if (userAttributes['custom:businessname'] && 
+          userAttributes['custom:businessname'] !== 'undefined' && 
+          userAttributes['custom:businessname'] !== 'null' &&
+          userAttributes['custom:businessname'] !== 'Default Business' &&
+          userAttributes['custom:businessname'] !== 'My Business') {
+        return userAttributes['custom:businessname'];
       }
-    }
-    
-    // Try to decode from idToken if available
-    const idToken = localStorage.getItem('idToken');
-    if (idToken) {
-      try {
-        const payload = JSON.parse(atob(idToken.split('.')[1]));
-        if (payload.email) {
-          return payload.email;
+      
+      // Try alternate Cognito attribute names
+      if (userAttributes['custom:tenant_name'] && 
+          userAttributes['custom:tenant_name'] !== 'undefined' && 
+          userAttributes['custom:tenant_name'] !== 'null') {
+        return userAttributes['custom:tenant_name'];
+      }
+      
+      // Generate business name from Cognito user attributes if available
+      const firstName = userAttributes['given_name'] || userAttributes['custom:firstname'] || '';
+      const lastName = userAttributes['family_name'] || userAttributes['custom:lastname'] || '';
+      const email = userAttributes['email'] || '';
+      
+      if (firstName && lastName) {
+        return `${firstName} ${lastName}'s Business`;
+      } else if (firstName) {
+        return `${firstName}'s Business`;
+      } else if (lastName) {
+        return `${lastName}'s Business`;
+      } else if (email) {
+        // Extract username from email
+        const username = email.split('@')[0];
+        if (username && username !== 'undefined') {
+          return `${username}'s Business`;
         }
-      } catch (error) {
-        console.error('Error parsing ID token:', error);
       }
+    }
+    
+    // Check app cache
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.businessName) {
+      return window.__APP_CACHE.tenant.businessName;
+    }
+    
+    // Only use these fallbacks if Cognito data is unavailable
+    if (userData) {
+      if (userData.businessName && userData.businessName !== 'undefined') {
+        return userData.businessName;
+      }
+      
+      if (userData['custom:businessname'] && userData['custom:businessname'] !== 'undefined') {
+        return userData['custom:businessname'];
+      }
+    }
+    
+    // Final fallbacks for API/state-based data
+    return businessName || 
+           (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : null) || 
+           (businessData?.business_name && businessData.business_name !== 'My Business' ? businessData.business_name : 'My Business');
+  }, [userAttributes, userData, businessName, profileData, businessData]);
+
+  // Function to get the user's email from app cache, cookies, and Cognito tokens
+  const getUserEmail = () => {
+    if (userData && userData.email) {
+      return userData.email;
+    }
+    
+    if (typeof window !== 'undefined') {
+      // Initialize app cache if needed
+      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+      if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+      
+      // Check app cache for email (primary source)
+      if (window.__APP_CACHE.auth.email) {
+        return window.__APP_CACHE.auth.email;
+      }
+      
+      if (window.__APP_CACHE.user.email) {
+        return window.__APP_CACHE.user.email;
+      }
+      
+      // Try to decode from idToken if available in app cache
+      const idToken = window.__APP_CACHE.auth.idToken;
+      if (idToken) {
+        try {
+          const payload = JSON.parse(atob(idToken.split('.')[1]));
+          if (payload.email) {
+            // Ensure data is in app cache
+            window.__APP_CACHE.auth.email = payload.email;
+            return payload.email;
+          }
+        } catch (error) {
+          console.error('Error parsing ID token:', error);
+        }
+      }
+      
+      // Last resort - try to get email from Cognito (async, will update later)
+      import('aws-amplify/auth')
+        .then(({ fetchUserAttributes }) => {
+          fetchUserAttributes()
+            .then(attributes => {
+              if (attributes.email) {
+                window.__APP_CACHE.auth.email = attributes.email;
+                // Update UI if needed
+                if (setUserData) {
+                  setUserData(prevData => ({
+                    ...prevData,
+                    email: attributes.email
+                  }));
+                }
+              }
+            })
+            .catch(e => {
+              logger.debug('[AppBar] Failed to fetch user attributes:', e);
+            });
+        })
+        .catch(e => {
+          logger.debug('[AppBar] Failed to import auth module:', e);
+        });
     }
     
     return null;
@@ -1774,81 +1236,13 @@ const DashAppBar = ({
 
   // Effect to fetch Cognito user attributes when authenticated
   useEffect(() => {
-    const fetchCognitoUserData = async () => {
+    // Define async function for user attributes fetch
+    async function fetchCognitoUserData() {
       try {
         logger.debug('[AppBar] Starting Cognito user attributes fetch');
         
-        // Helper function to get cookies
-        const getCookie = (name) => {
-          const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
-          if (parts.length === 2) {
-            const cookieValue = parts.pop().split(';').shift();
-            // Try to decode the cookie value
-            try {
-              return decodeURIComponent(cookieValue);
-            } catch (e) {
-              return cookieValue;
-            }
-          }
-          return '';
-        };
-        
-        // Try to extract data from JWT token
-        try {
-          const idTokenString = localStorage.getItem('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
-          if (idTokenString) {
-            const idToken = localStorage.getItem(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${idTokenString}.idToken`);
-            if (idToken) {
-              const payload = JSON.parse(atob(idToken.split('.')[1]));
-              logger.debug('[AppBar] JWT token payload:', payload);
-              
-              // If we have Cognito data in the JWT token but user is not authenticated,
-              // we can use this data
-              if (!isAuthenticated || !user) {
-                const jwtProfile = {
-                  firstName: payload['custom:firstname'] || payload['given_name'] || '',
-                  lastName: payload['custom:lastname'] || payload['family_name'] || '',
-                  email: payload['email'] || '',
-                  businessName: payload['custom:businessName'] || payload['custom:tenant_name'] || '',
-                  subscriptionType: payload['custom:subplan'] || payload['custom:subscription_plan'] || 'free',
-                  tenantId: payload['custom:tenant_ID'] || payload['custom:businessid'] || tenantId
-                };
-                
-                logger.info('[AppBar] Profile data from JWT token:', jwtProfile);
-                
-                // Update profile data state if we have useful information
-                if (jwtProfile.email || jwtProfile.firstName || jwtProfile.lastName || jwtProfile.businessName) {
-                  setProfileData(jwtProfile);
-                  
-                  // Generate and set user initials
-                  const initials = generateInitialsFromNames(jwtProfile.firstName, jwtProfile.lastName, jwtProfile.email);
-                  setUserInitials(initials || 'U');
-                  
-                  // Set business name if available
-                  if (jwtProfile.businessName) {
-                    setBusinessName(jwtProfile.businessName);
-                  }
-                  
-                  // Update userdata if callback available
-                  if (typeof setUserData === 'function') {
-                    setUserData(prev => ({
-                      ...prev,
-                      ...jwtProfile
-                    }));
-                  }
-                  
-                  return;
-                }
-              }
-            }
-          }
-        } catch (jwtError) {
-          logger.error('[AppBar] Error extracting data from JWT token:', jwtError);
-        }
-        
         // Try to get Cognito data first if authenticated
-        if (isAuthenticated && user) {
+        if (isAuthenticated) {
           try {
             logger.debug('[AppBar] User is authenticated, fetching from Cognito directly');
             
@@ -1863,7 +1257,7 @@ const DashAppBar = ({
             const firstName = attributes['custom:firstname'] || attributes['given_name'] || '';
             const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
             const email = attributes['email'] || '';
-            const businessName = attributes['custom:businessName'] || attributes['custom:tenant_name'] || '';
+            const businessName = attributes['custom:businessname'] || attributes['custom:tenant_name'] || '';
             const subscriptionType = attributes['custom:subplan'] || attributes['custom:subscription_plan'] || 'free';
             
             // Create profile object
@@ -1872,148 +1266,136 @@ const DashAppBar = ({
               lastName,
               email,
               businessName,
-              subscriptionType,
-              tenantId: tenantId || attributes['custom:tenant_ID'] || attributes['custom:businessid']
+              subscriptionType
             };
             
-            logger.info('[AppBar] Cognito user profile attributes:', profile);
+            logger.info('[AppBar] Profile data from Cognito:', profile);
             
-            // Update profile data state
-            setProfileData(profile);
-            
-            // Generate and set user initials
-            const initials = generateInitialsFromNames(firstName, lastName, email);
-            setUserInitials(initials || 'U');
-            
-            // Set business name if available
+            // Use Cognito business name if available
             if (businessName) {
+              logger.info('[AppBar] Setting business name from Cognito:', businessName);
               setBusinessName(businessName);
             }
             
+            // Generate and set user initials
+            const initials = generateInitialsFromNames(firstName, lastName, email);
+            if (initials) {
+              setUserInitials(initials);
+            }
+            
+            // Update profile state
+            setProfileData(prevProfile => ({
+              ...prevProfile,
+              ...profile
+            }));
+            
             // Update userdata if callback available
             if (typeof setUserData === 'function') {
-              setUserData(prev => ({
-                ...prev,
+              setUserData(prevData => ({
+                ...prevData,
                 ...profile
               }));
             }
             
             return;
-          } catch (error) {
-            logger.error('[AppBar] Error fetching authenticated Cognito user attributes:', error);
-            // Continue to fallback methods
+          } catch (cognitoError) {
+            logger.error('[AppBar] Error fetching Cognito attributes:', cognitoError);
+            // Continue with fallbacks below
           }
         }
         
-        // If we get here, either not authenticated or failed to get Cognito data
-        logger.debug('[AppBar] Using fallback method for user data');
-        
-        // Try to get data from cookies
-        const cookieFirstName = getCookie('firstName') || '';
-        const cookieLastName = getCookie('lastName') || '';
-        const cookieEmail = getCookie('email') || localStorage.getItem('userEmail') || '';
-        const cookieBusinessName = getCookie('businessName') || localStorage.getItem('businessName') || '';
-        
-        // Check if we got any useful data from cookies
-        if (cookieFirstName || cookieLastName || cookieEmail || cookieBusinessName) {
-          logger.debug('[AppBar] Retrieved user data from cookies/localStorage');
-          
-          const fallbackProfile = {
-            firstName: cookieFirstName,
-            lastName: cookieLastName,
-            email: cookieEmail,
-            businessName: cookieBusinessName,
-            subscriptionType: localStorage.getItem('subscription-plan') || 'free',
-            tenantId
-          };
-          
-          logger.info('[AppBar] Fallback profile data:', fallbackProfile);
-          
-          // Update profile data state
-          setProfileData(fallbackProfile);
-          
-          // Generate and set user initials
-          const initials = generateInitialsFromNames(cookieFirstName, cookieLastName, cookieEmail);
-          setUserInitials(initials || 'U');
-          
-          // Set business name if available
-          if (cookieBusinessName) {
-            setBusinessName(cookieBusinessName);
+        // If Cognito failed or user not authenticated, try JWT token as fallback
+        try {
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            if (!window.__APP_CACHE) window.__APP_CACHE = {};
+            if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+            if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
           }
           
-          // Update userdata if callback available
-          if (typeof setUserData === 'function') {
-            setUserData(prev => ({
-              ...prev,
-              ...fallbackProfile
-            }));
-          }
-        } else {
-          logger.debug('[AppBar] No user data available in cookies/localStorage');
-        }
-        
-      } catch (error) {
-        logger.error('[AppBar] Unexpected error in fetchCognitoUserData:', error);
-      }
-    };
-    
-    fetchCognitoUserData();
-  }, [isAuthenticated, user, tenantId, generateInitialsFromNames, setUserData]);
-
-  // Function to get user initials from JWT token
-  const getInitialsFromJwtToken = () => {
-    try {
-      const idTokenString = localStorage.getItem('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser');
-      if (idTokenString) {
-        const idToken = localStorage.getItem(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${idTokenString}.idToken`);
-        if (idToken) {
-          const payload = JSON.parse(atob(idToken.split('.')[1]));
-          logger.debug('[AppBar] Found JWT token payload for initials:', payload);
+          // Try to get token from app cache first
+          let idToken = null;
           
-          // First try to use firstname/lastname from token
-          const firstName = payload['custom:firstname'] || payload.given_name || '';
-          const lastName = payload['custom:lastname'] || payload.family_name || '';
-          
-          if (firstName && lastName) {
-            return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
-          } else if (firstName) {
-            return firstName.charAt(0).toUpperCase();
-          } else if (lastName) {
-            return lastName.charAt(0).toUpperCase();
-          }
-          
-          // Fall back to email if names not available
-          if (payload.email) {
-            const email = payload.email;
-            if (email.includes('@')) {
-              const namePart = email.split('@')[0];
-              if (namePart.includes('.')) {
-                const parts = namePart.split('.');
-                if (parts.length >= 2) {
-                  return `${parts[0].charAt(0).toUpperCase()}${parts[1].charAt(0).toUpperCase()}`;
+          if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.idToken) {
+            idToken = window.__APP_CACHE.auth.idToken;
+            logger.debug('[AppBar] Using JWT token from app cache');
+          } else {
+            // Try to get from auth session
+            try {
+              const { fetchAuthSession } = await import('aws-amplify/auth');
+              const session = await fetchAuthSession();
+              if (session?.tokens?.idToken) {
+                idToken = session.tokens.idToken.toString();
+                // Store in app cache for future use
+                if (typeof window !== 'undefined') {
+                  window.__APP_CACHE = window.__APP_CACHE || {};
+                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  window.__APP_CACHE.auth.idToken = idToken;
                 }
+                logger.debug('[AppBar] Retrieved token from auth session');
               }
-              return email.charAt(0).toUpperCase();
+            } catch (sessionError) {
+              logger.warn('[AppBar] Could not retrieve token from session:', sessionError);
             }
           }
+          
+          if (idToken) {
+            const payload = JSON.parse(atob(idToken.split('.')[1]));
+            logger.debug('[AppBar] JWT token payload:', payload);
+            // ... existing code ...
+          }
+        } catch (error) {
+          logger.error('[DashAppBar] Error updating business name in Cognito:', error);
+          return false;
+        }
+      } catch (cognitoError) {
+        logger.error('[AppBar] Error fetching Cognito attributes:', cognitoError);
+        // Continue with fallbacks below
+      }
+    }
+  }, [isAuthenticated, setUserData, generateInitialsFromNames]);
+
+  // Function to get user initials from JWT token
+  const getInitialsFromJwtToken = async () => {
+    try {
+      // Try to get token from app cache first
+      let idToken = null;
+      
+      if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.idToken) {
+        idToken = window.__APP_CACHE.auth.idToken;
+      } else {
+        // Try to get from auth session
+        try {
+          const { fetchAuthSession } = await import('aws-amplify/auth');
+          const session = await fetchAuthSession();
+          if (session?.tokens?.idToken) {
+            idToken = session.tokens.idToken.toString();
+            // Store in app cache for future use
+            if (typeof window !== 'undefined') {
+              window.__APP_CACHE = window.__APP_CACHE || {};
+              window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+              window.__APP_CACHE.auth.idToken = idToken;
+            }
+            logger.debug('[AppBar] Retrieved token from auth session for initials');
+          }
+        } catch (error) {
+          logger.warn('[AppBar] Error accessing auth session:', error);
         }
       }
-    } catch (e) {
-      logger.error('[AppBar] Error getting initials from JWT token:', e);
-    }
-    return null;
-  };
-  
-  // Get initials from JWT at component initialization
-  useEffect(() => {
-    if (!userInitials) {
-      const jwtInitials = getInitialsFromJwtToken();
-      if (jwtInitials) {
-        logger.info('[AppBar] Setting initials from JWT token:', jwtInitials);
-        setUserInitials(jwtInitials);
+      
+      if (!idToken) {
+        logger.warn('[AppBar] No JWT token found for initial extraction');
+        return null;
       }
+
+      const payload = JSON.parse(atob(idToken.split('.')[1]));
+      logger.debug('[AppBar] Found JWT token payload for initials:', payload);
+      // ... existing code ...
+    } catch (error) {
+      logger.warn('[AppBar] Error accessing auth session:', error);
+      return null;
     }
-  }, [userInitials]);
+  };
 
   return (
     <>
@@ -2030,8 +1412,8 @@ const DashAppBar = ({
             <Image 
               src="/static/images/PyfactorDashboard.png"
               alt="Pyfactor Dashboard Logo"
-              width={140}
-              height={40}
+              width={90}
+              height={80}
               className="object-contain"
               priority
             />
@@ -2046,7 +1428,7 @@ const DashAppBar = ({
                 <div className="flex items-center">
                   {/* Business name */}
                   <div className="text-white hidden md:flex items-center mr-3">
-                    <span className="font-semibold">{businessName || 'Dashboard'}</span>
+                    <span className="font-semibold">{effectiveBusinessName}</span>
                     <span className="mx-2 h-4 w-px bg-white/30"></span>
                   </div>
                   
@@ -2062,7 +1444,7 @@ const DashAppBar = ({
                   >
                     {/* Display business name on mobile inside the subscription button */}
                     <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                      {businessName || 'Dashboard'}:
+                      {effectiveBusinessName}:
                     </span>
                     <span className="whitespace-nowrap text-xs inline-block">
                       {userData.subscription_type ? getSubscriptionLabel(userData.subscription_type) : 'Free Plan'}
@@ -2205,15 +1587,21 @@ const DashAppBar = ({
                   <div>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">
-                        {userData?.name || 
-                         (userData?.first_name && userData?.last_name) ? 
-                           `${userData.first_name} ${userData.last_name}` : 
-                         userData?.first_name || 
-                         userData?.email?.split('@')[0] || 
-                         'Guest'}
+                        {userAttributes?.['custom:firstname'] && userAttributes?.['custom:lastname'] ? 
+                          `${userAttributes['custom:firstname']} ${userAttributes['custom:lastname']}` : 
+                        userAttributes?.['custom:firstname'] ? 
+                          userAttributes['custom:firstname'] :
+                        userAttributes?.['given_name'] && userAttributes?.['family_name'] ? 
+                          `${userAttributes['given_name']} ${userAttributes['family_name']}` :
+                        userData?.name || 
+                        (userData?.first_name && userData?.last_name) ? 
+                          `${userData.first_name} ${userData.last_name}` : 
+                        userData?.first_name || 
+                        userData?.email?.split('@')[0] || 
+                        'Guest'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {userData?.email}
+                        {userAttributes?.email || userData?.email}
                       </span>
                     </div>
                   </div>
@@ -2266,7 +1654,7 @@ const DashAppBar = ({
       {/* Add the subscription popup */}
       {showSubscriptionPopup && (
         <SubscriptionPopup
-          isOpen={showSubscriptionPopup}
+          open={showSubscriptionPopup}
           onClose={() => setShowSubscriptionPopup(false)}
           onSubscriptionClick={handleSubscriptionClick}
           onShowNotification={handleShowNotification}
@@ -2409,7 +1797,7 @@ const DashAppBar = ({
         </>
       )}
     </>
-  );
-};
+  )
+}
 
 export default DashAppBar;

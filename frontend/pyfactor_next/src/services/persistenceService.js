@@ -11,11 +11,26 @@ export const STORAGE_KEYS = {
   PAYMENT_DATA: 'payment-data',
 };
 
+// Initialize global app cache
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__PERSISTENCE_STORE = window.__PERSISTENCE_STORE || {};
+}
 
 class PersistenceService {
   async getData(key) {
     try {
-        const savedData = localStorage.getItem(key);
+        // Initialize global cache if needed
+        if (typeof window === 'undefined') {
+            logger.debug('Window object not available (server-side rendering)');
+            return null;
+        }
+        
+        if (!window.__PERSISTENCE_STORE) {
+            window.__PERSISTENCE_STORE = {};
+        }
+        
+        const savedData = window.__PERSISTENCE_STORE[key];
         
         if (!savedData) {
             logger.debug('No data found for key:', {
@@ -25,7 +40,7 @@ class PersistenceService {
             return null;
         }
 
-        const parsed = JSON.parse(savedData);
+        const parsed = typeof savedData === 'string' ? JSON.parse(savedData) : savedData;
         
         // Add specific logging for subscription data
         if (key === STORAGE_KEYS.SUBSCRIPTION_DATA) {
@@ -50,7 +65,6 @@ class PersistenceService {
         return null;
     }
 }
-
 
     // Enhanced validation for subscription data
     validateSubscriptionData(data) {
@@ -143,7 +157,13 @@ class PersistenceService {
         }
       };
 
-      localStorage.setItem(key, JSON.stringify(storageData));
+      // Save to global store
+      if (typeof window !== 'undefined') {
+        if (!window.__PERSISTENCE_STORE) {
+          window.__PERSISTENCE_STORE = {};
+        }
+        window.__PERSISTENCE_STORE[key] = storageData;
+      }
 
       logger.debug('Data saved successfully:', {
         requestId,
@@ -167,7 +187,11 @@ class PersistenceService {
   }
   async clearData(key) {
     try {
-      localStorage.removeItem(key);
+      // Clear from global store
+      if (typeof window !== 'undefined' && window.__PERSISTENCE_STORE) {
+        delete window.__PERSISTENCE_STORE[key];
+      }
+      
       logger.debug('Data cleared successfully:', { key });
       return true;
     } catch (error) {

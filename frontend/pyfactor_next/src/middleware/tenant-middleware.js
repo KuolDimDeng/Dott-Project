@@ -42,7 +42,7 @@ const PUBLIC_ROUTES = [
  * Order of precedence:
  * 1. URL path in /<tenant-id>/... format
  * 2. Request headers
- * 3. Cookies
+ * 3. Query parameters
  * 
  * @param {Request} request - The incoming request
  * @returns {Object} - The extracted tenant ID info with source and validation status
@@ -69,41 +69,30 @@ export function extractTenantId(request) {
       }
     }
     
-    // 3. Check for tenantId query parameter
+    // 3. Check for tenantId query parameter (including tid param)
     if (!tenantId) {
-      const queryTenantId = searchParams.get('tenantId');
+      const queryTenantId = searchParams.get('tenantId') || searchParams.get('tid');
       if (queryTenantId && UUID_PATTERN.test(queryTenantId)) {
         tenantId = queryTenantId;
         source = 'query_param';
       }
     }
     
-    // 4. Check request headers
+    // 4. Check request headers (including Cognito-specific headers)
     if (!tenantId) {
+      // Try standard tenant header
       const headerTenantId = request.headers.get('x-tenant-id');
       if (headerTenantId && UUID_PATTERN.test(headerTenantId)) {
         tenantId = headerTenantId;
         source = 'header';
       }
-    }
-    
-    // 5. Check cookies with better parsing
-    if (!tenantId) {
-      const cookies = request.cookies;
       
-      // Try primary tenant cookie
-      const tenantIdCookie = cookies.get('tenantId')?.value;
-      if (tenantIdCookie && UUID_PATTERN.test(tenantIdCookie)) {
-        tenantId = tenantIdCookie;
-        source = 'cookie_tenantId';
-      }
-      
-      // Try legacy/alternative cookie if primary not found
+      // Try Cognito-specific headers that might be set by our auth handlers
       if (!tenantId) {
-        const businessIdCookie = cookies.get('businessid')?.value;
-        if (businessIdCookie && UUID_PATTERN.test(businessIdCookie)) {
-          tenantId = businessIdCookie;
-          source = 'cookie_businessid';
+        const cognitoTenantId = request.headers.get('x-cognito-tenant-id');
+        if (cognitoTenantId && UUID_PATTERN.test(cognitoTenantId)) {
+          tenantId = cognitoTenantId;
+          source = 'cognito_header';
         }
       }
     }
@@ -149,13 +138,17 @@ function requiresTenantInUrl(path) {
   const queryString = path.includes('?') ? path.split('?')[1] : '';
   const searchParams = new URLSearchParams(queryString);
   
+  // Check for bypass parameters
   const freePlan = searchParams.get('freePlan') === 'true';
   const newAccount = searchParams.get('newAccount') === 'true';
+  const fromSignIn = searchParams.get('fromSignIn') === 'true';
+  const fromAuth = searchParams.get('fromAuth') === 'true';
+  const reset = searchParams.get('reset') === 'true';
   
-  // If dashboard with freePlan=true, don't require tenant in URL
+  // If any bypass flag is present, don't require tenant in URL
   if ((pathWithoutQuery === '/dashboard' || pathWithoutQuery.startsWith('/dashboard/')) && 
-      (freePlan || newAccount)) {
-    console.debug(`[Middleware] Allowing dashboard access without tenant ID (freePlan/newAccount)`);
+      (freePlan || newAccount || fromSignIn || fromAuth || reset)) {
+    console.debug(`[Middleware] Allowing dashboard access without tenant ID (special case)`);
     return false;
   }
   
@@ -177,32 +170,20 @@ function pathIncludesTenantId(path) {
 }
 
 /**
- * Set tenant cookies for the response with improved security settings
+ * Add tenant ID header to the response
  * 
  * @param {NextResponse} response - The Next.js response object
- * @param {string} tenantId - The tenant ID to set in cookies
+ * @param {string} tenantId - The tenant ID to set in header
  * @returns {NextResponse} - The updated response
  */
-function setTenantCookies(response, tenantId) {
+function addTenantHeader(response, tenantId) {
   if (!tenantId || !UUID_PATTERN.test(tenantId)) {
-    console.warn('[Middleware] Attempted to set invalid tenant ID in cookies:', tenantId);
+    console.warn('[Middleware] Attempted to set invalid tenant ID in header:', tenantId);
     return response;
   }
   
-  // Set cookies with enhanced secure settings
-  const cookieOptions = {
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 30 * 24 * 60 * 60, // 30 days
-    httpOnly: true // Prevent JavaScript access for security
-  };
-  
-  // Set primary tenant cookie
-  response.cookies.set('tenantId', tenantId, cookieOptions);
-  
-  // Set legacy cookie for backward compatibility
-  response.cookies.set('businessid', tenantId, cookieOptions);
+  // Set headers for server-side access
+  response.headers.set('x-tenant-id', tenantId);
   
   return response;
 }
@@ -213,79 +194,65 @@ function setTenantCookies(response, tenantId) {
  * This middleware:
  * 1. Handles tenant ID extraction from various sources
  * 2. Redirects routes that need tenant ID in URL
- * 3. Sets tenant ID in cookies for consistency
- * 4. Validates tenant ID format
- * 5. Adds tenant ID headers to responses
+ * 3. Validates tenant ID format
+ * 4. Adds tenant ID headers to responses
  * 
  * @param {Request} request - The incoming request
  * @returns {NextResponse} - The response
  */
 export function tenantMiddleware(request) {
   try {
-    const { pathname } = new URL(request.url);
+    const { pathname, searchParams } = new URL(request.url);
     
     // Skip middleware for public routes and API routes
     if (isPublicPath(pathname)) {
       console.debug(`[Middleware] Skipping middleware for public path: ${pathname}`);
       return NextResponse.next();
     }
+
+    // If the URL includes any bypass parameters, check if we still have a tenant ID
+    // that should be used for redirection
+    const fromAuth = searchParams.get('fromAuth') === 'true';
+    const fromSignIn = searchParams.get('fromSignIn') === 'true';
+    const reset = searchParams.get('reset') === 'true';
     
     // Extract tenant ID from request with detailed info
     const tenantInfo = extractTenantId(request);
-    console.debug(`[Middleware] Extracted tenant ID for path ${pathname}:`, tenantInfo);
-    
-    // Extract tenant ID value
     const tenantId = tenantInfo.tenantId;
     
-    // For routes that require tenant ID in URL, redirect if needed
-    if (requiresTenantInUrl(pathname) && !pathIncludesTenantId(pathname)) {
-      console.debug(`[Middleware] Path ${pathname} requires tenant ID in URL`);
+    // Continue with additional middleware logic, focusing on URL rewriting
+    // And tenant ID header injection, rather than cookie usage
+    
+    // If the path requires the tenant ID in the URL and it's not already there
+    if (requiresTenantInUrl(pathname) && !pathIncludesTenantId(pathname) && tenantId) {
+      // Redirect to include the tenant in the URL path
+      const url = new URL(`/${tenantId}${pathname}`, request.url);
       
-      if (tenantId) {
-        // Redirect to tenant-specific URL
-        const url = new URL(request.url);
-        
-        // Create tenant-specific path
-        const newPath = `/${tenantId}${pathname}`;
-        url.pathname = newPath;
-        
-        console.info(`[Middleware] Redirecting to tenant-specific URL: ${url.pathname}`);
-        
-        // Create redirect response and set cookies
-        const response = NextResponse.redirect(url);
-        return setTenantCookies(response, tenantId);
-      } else {
-        // No tenant ID available - redirect to signin with better error info
-        console.warn(`[Middleware] No tenant ID available for path ${pathname}, redirecting to sign-in`);
-        
-        const url = new URL('/auth/signin', request.url);
-        url.searchParams.set('error', 'no_tenant_id');
-        url.searchParams.set('redirect', pathname);
-        url.searchParams.set('errorSource', 'middleware');
-        
-        return NextResponse.redirect(url);
+      // Preserve query params
+      for (const [key, value] of searchParams.entries()) {
+        url.searchParams.set(key, value);
       }
+      
+      console.debug(`[Middleware] Redirecting to include tenant ID in URL: ${url.pathname}`);
+      const response = NextResponse.redirect(url);
+      
+      // Add tenant ID to response headers
+      return addTenantHeader(response, tenantId);
     }
     
-    // For all other routes, proceed with the request
-    // Add tenant ID headers for API routes
+    // For all other paths, enhance the response with tenant header if available
     const response = NextResponse.next();
     
     if (tenantId) {
-      console.debug(`[Middleware] Adding tenant ID header for path ${pathname}: ${tenantId}`);
-      response.headers.set('x-tenant-id', tenantId);
-      return setTenantCookies(response, tenantId);
+      // Add tenant ID header for server components
+      return addTenantHeader(response, tenantId);
     }
     
     return response;
   } catch (error) {
-    console.error('[Middleware] Unhandled error in tenant middleware:', error);
+    console.error('[Middleware] Tenant middleware error:', error);
     
-    // Create a simple response for errors to prevent breaking application
-    const response = NextResponse.next();
-    response.headers.set('x-middleware-error', 'true');
-    response.headers.set('x-error-message', error.message.substring(0, 100)); // Truncate for security
-    
-    return response;
+    // Return unmodified response if there's an error to prevent breaking the app
+    return NextResponse.next();
   }
 } 

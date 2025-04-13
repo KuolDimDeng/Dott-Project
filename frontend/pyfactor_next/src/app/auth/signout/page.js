@@ -17,17 +17,27 @@ export default function SignOut() {
         
         // First, clear all storage regardless of API result
         try {
-          // Clear localStorage and sessionStorage
-          localStorage.clear();
-          sessionStorage.clear();
-          
-          // Clear cookies
-          document.cookie.split(';').forEach(cookie => {
-            const [name] = cookie.trim().split('=');
-            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-          });
-          
-          logger.info("[SignOut] Cleared local storage and cookies");
+          // Initialize global app cache if not exists
+          if (typeof window !== 'undefined') {
+            if (!window.__APP_CACHE) {
+              window.__APP_CACHE = {};
+            }
+            
+            // Clear app cache
+            window.__APP_CACHE = {};
+            logger.info("[SignOut] Cleared global app cache");
+            
+            // Clear sessionStorage for backward compatibility
+            sessionStorage.clear();
+            
+            // Clear cookies for backward compatibility
+            document.cookie.split(';').forEach(cookie => {
+              const [name] = cookie.trim().split('=');
+              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+            });
+            
+            logger.info("[SignOut] Cleared session storage and cookies");
+          }
         } catch (storageError) {
           logger.error("[SignOut] Error clearing storage:", storageError);
         }

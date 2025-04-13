@@ -1,6 +1,12 @@
 // tenantLock.js
-const TENANT_LOCK_KEY = 'tenant_initialization_lock';
 const LOCK_TIMEOUT = 30000; // 30 seconds timeout
+
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+}
 
 /**
  * Try to acquire the tenant initialization lock
@@ -9,13 +15,17 @@ const LOCK_TIMEOUT = 30000; // 30 seconds timeout
 export const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
+  // Ensure app cache exists
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+  
   // Check if lock already exists
-  const existingLock = localStorage.getItem(TENANT_LOCK_KEY);
+  const existingLock = window.__APP_CACHE.tenant.locks.initialization;
   if (existingLock) {
     // Check if lock is stale (older than timeout)
-    const lockData = JSON.parse(existingLock);
     const now = Date.now();
-    if (now - lockData.timestamp < LOCK_TIMEOUT) {
+    if (now - existingLock.timestamp < LOCK_TIMEOUT) {
       console.log('Tenant initialization already in progress');
       return false;
     }
@@ -28,7 +38,7 @@ export const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  localStorage.setItem(TENANT_LOCK_KEY, JSON.stringify(lockData));
+  window.__APP_CACHE.tenant.locks.initialization = lockData;
   return true;
 };
 
@@ -37,5 +47,12 @@ export const acquireTenantLock = () => {
  */
 export const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(TENANT_LOCK_KEY);
+  
+  // Ensure app cache exists
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+  
+  // Remove lock
+  delete window.__APP_CACHE.tenant.locks.initialization;
 };

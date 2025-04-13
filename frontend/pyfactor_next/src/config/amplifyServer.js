@@ -7,6 +7,22 @@ const COGNITO_CLIENT_ID = '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = 'us-east-1_JPL8vGfb6';
 const AWS_REGION = 'us-east-1';
 
+// Export Amplify configuration for server runner
+export const amplifyConfig = {
+  Auth: {
+    Cognito: {
+      userPoolId: COGNITO_USER_POOL_ID,
+      userPoolClientId: COGNITO_CLIENT_ID,
+      region: AWS_REGION,
+      loginWith: {
+        username: true,
+        email: true,
+        phone: false,
+      }
+    }
+  }
+};
+
 // Server-side implementation of getCurrentUser
 export async function getCurrentUser(token) {
   try {

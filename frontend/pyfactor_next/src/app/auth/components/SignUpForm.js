@@ -18,6 +18,8 @@ export default function SignUpForm() {
     username: '',
     password: '',
     confirmPassword: '',
+    firstName: '',
+    lastName: '',
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,6 +55,16 @@ export default function SignUpForm() {
       newErrors.username = 'Please enter a valid email address';
     }
 
+    // Validate first name
+    if (!formData.firstName) {
+      newErrors.firstName = 'First name is required';
+    }
+
+    // Validate last name
+    if (!formData.lastName) {
+      newErrors.lastName = 'Last name is required';
+    }
+
     // Validate password
     if (!formData.password) {
       newErrors.password = 'Password is required';
@@ -83,106 +95,106 @@ export default function SignUpForm() {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage('');
-    setLoading(true);
     
-    // Generate a unique tenant ID for this user
-    let generatedTenantId;
-    try {
-      // Generate UUID using crypto API if available
-      generatedTenantId = crypto.randomUUID();
-      console.log('[SignUpForm] Generated tenant ID:', generatedTenantId);
-      setTenantId(generatedTenantId);
-    } catch (cryptoError) {
-      // Fallback to simple UUID if crypto not available
-      generatedTenantId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-      console.log('[SignUpForm] Generated fallback tenant ID:', generatedTenantId);
-      setTenantId(generatedTenantId);
+    if (loading) return; // Prevent double submission
+    
+    // Validate form
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setErrors(errors);
+      return;
     }
     
+    // Reset errors and set loading state
+    setErrors({});
+    setErrorMessage(null);
+    setLoading(true);
+    
     try {
-      console.log('[SignUpForm] Starting signup with tenant ID:', generatedTenantId);
+      // Ensure Amplify is properly configured
+      await clearExistingSession();
       
+      // Generate tenant ID with a UUID
+      const generatedTenantId = crypto.randomUUID();
+      
+      logger.debug('[SignUpForm] Starting sign-up process', { 
+        username: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        generatedTenantId
+      });
+      
+      // Check if domain is disabled by calling the admin API
       try {
-        // First check if this user exists but is disabled
-        const checkResponse = await fetch('/api/user/check-disabled', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ email: formData.username }),
-        });
+        // First check if the endpoint exists using a HEAD request
+        let endpointExists = false;
+        try {
+          const checkEndpoint = await fetch('/api/admin/check-domain-disabled', {
+            method: 'HEAD'
+          });
+          endpointExists = checkEndpoint.ok;
+        } catch (endpointError) {
+          // Endpoint doesn't exist or is not accessible
+          logger.warn('[SignUpForm] Domain check endpoint not available:', endpointError);
+          endpointExists = false;
+        }
         
-        const checkResult = await checkResponse.json();
-        console.log('[SignUpForm] Check disabled result:', checkResult);
-        
-        // If the user exists and is disabled, offer to reactivate their account
-        if (checkResult.success && checkResult.exists && checkResult.isDisabled) {
-          setLoading(false);
+        // Only proceed with the actual check if the endpoint exists
+        if (endpointExists) {
+          const disabledResponse = await fetch('/api/admin/check-domain-disabled', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email: formData.username
+            })
+          });
           
-          // Display a confirmation dialog or a dedicated UI for reactivation
-          const wantsToReactivate = window.confirm(
-            'Your account was previously closed. Would you like to reactivate it? ' +
-            'This will restore your previous data. Click OK to reactivate or Cancel to create a new account.'
-          );
-          
-          if (wantsToReactivate) {
-            setLoading(true);
-            // Call the reactivation API
-            const reactivateResponse = await fetch('/api/user/reactivate-account', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ 
-                email: formData.username, 
-                username: checkResult.username,
-                tenantId: checkResult.tenantInfo?.id
-              }),
-            });
-            
-            const reactivateResult = await reactivateResponse.json();
-            console.log('[SignUpForm] Reactivation result:', reactivateResult);
-            
-            if (reactivateResult.success) {
-              // Now try to sign in with the reactivated account
+          if (disabledResponse.ok) {
+            const responseText = await disabledResponse.text();
+            // Only try to parse if the response isn't empty
+            if (responseText && responseText.trim()) {
               try {
-                await signIn({ username: formData.username, password: formData.password });
-                router.push('/dashboard');
-                return;
-              } catch (signInError) {
-                console.error('[SignUpForm] Error signing in after reactivation:', signInError);
-                setErrorMessage('Account reactivated, but could not sign in. Please try signing in manually.');
-                setLoading(false);
-                return;
+                const disabledData = JSON.parse(responseText);
+                
+                if (disabledData.isDisabled) {
+                  setErrorMessage('This email domain has been disabled. Please use a different email address.');
+                  setLoading(false);
+                  return;
+                }
+              } catch (parseError) {
+                logger.error('[SignUpForm] Error parsing domain check response:', parseError);
+                // Continue with signup despite parse error
               }
-            } else {
-              setErrorMessage(`Could not reactivate account: ${reactivateResult.message}`);
-              setLoading(false);
-              return;
             }
           }
-          // If they don't want to reactivate, we'll continue with normal signup
-          // but this will likely fail with "User already exists" error
-          setLoading(true);
         }
       } catch (checkError) {
-        console.error('[SignUpForm] Error checking disabled status:', checkError);
+        logger.error('[SignUpForm] Error checking disabled status:', checkError);
         // Continue with normal signup
       }
       
-      // Normal sign-up process
+      // Use email address as username since Cognito is configured to require email as username
+      const username = formData.username; // Use the email address directly
+      
+      console.log('[SignUpForm] Using email as username for signup:', username);
+      
+      // Normal sign-up process using email as username
       const { isSignUpComplete, userId, userSub, nextStep } = await signUp({
-        username: formData.username,
+        username: username, // Use email as username as required by Cognito
         password: formData.password,
         options: {
           userAttributes: {
             email: formData.username,
-            'custom:tenant_ID': generatedTenantId, // Use generatedTenantId instead of tenantId
-            'custom:userrole': 'OWNER'    // Set user role to OWNER for new sign-ups
+            'custom:firstname': formData.firstName,
+            'custom:lastname': formData.lastName,
+            'custom:tenant_ID': generatedTenantId,
+            'custom:userrole': 'OWNER',
+            'custom:onboarding': 'not_started',
+            'custom:setupdone': 'false',
+            'custom:created_at': new Date().toISOString(),
+            'custom:updated_at': new Date().toISOString()
           },
           autoSignIn: false // Don't automatically sign in after signup
         }
@@ -192,18 +204,43 @@ export default function SignUpForm() {
         isSignUpComplete, 
         userId,
         nextStep: nextStep?.signUpStep,
-        tenantId: generatedTenantId
+        tenantId: generatedTenantId,
+        username: username
       });
       
-      // Store information needed for verification
-      localStorage.setItem('pyfactor_email', formData.username);
-      localStorage.setItem('needs_verification', 'true');
-      localStorage.setItem('signupTimestamp', Date.now().toString());
-      localStorage.setItem('tenantId', generatedTenantId); // Use generatedTenantId
+      // No longer store in localStorage or cookies - everything is in Cognito
       
-      // Also set as cookie for server-side access
-      document.cookie = `tenantId=${generatedTenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
-      document.cookie = `businessid=${generatedTenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+      // Ensure tenant record exists in database
+      try {
+        const baseUrl = window.location.origin;
+        logger.debug('[SignUpForm] Creating tenant record in database for tenant ID:', generatedTenantId);
+        
+        const tenantResponse = await fetch(`${baseUrl}/api/tenant/ensure-db-record`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenantId: generatedTenantId,
+            userId: userSub,
+            email: formData.username,
+            businessName: `${formData.firstName}'s Business`,
+            businessType: 'Other',
+            businessCountry: 'US'
+          })
+        });
+        
+        if (tenantResponse.ok) {
+          const tenantResult = await tenantResponse.json();
+          logger.debug('[SignUpForm] Tenant record created successfully:', tenantResult);
+        } else {
+          logger.warn('[SignUpForm] Failed to create tenant record in database:', 
+            await tenantResponse.text().catch(() => 'Unknown error'));
+        }
+      } catch (tenantError) {
+        logger.warn('[SignUpForm] Error creating tenant record:', tenantError);
+        // Continue with the flow even if tenant creation fails
+      }
       
       // Check if there's a next step in the sign-up flow
       if (nextStep?.signUpStep === 'CONFIRM_SIGN_UP') {
@@ -214,7 +251,8 @@ export default function SignUpForm() {
         try {
           const baseUrl = window.location.origin;
           logger.debug('[SignUpForm] Attempting admin confirmation after signup', { 
-            email: formData.username
+            email: formData.username,
+            username: username
           });
           
           const adminResponse = await fetch(`${baseUrl}/api/admin/confirm-user`, {
@@ -222,7 +260,10 @@ export default function SignUpForm() {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email: formData.username })
+            body: JSON.stringify({ 
+              email: formData.username,
+              username: username
+            })
           });
           
           if (adminResponse.ok) {
@@ -238,7 +279,7 @@ export default function SignUpForm() {
           });
         }
         
-        // Redirect to verification page
+        // Redirect to verification page with email as query parameter
         setTimeout(() => {
           router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
         }, 1500);
@@ -249,84 +290,21 @@ export default function SignUpForm() {
     } catch (error) {
       console.error('[SignUpForm] Sign-up error:', error);
       
-      // Handle "User already exists" error by suggesting login or reactivation
+      // Handle specific error cases
       if (error.name === 'UsernameExistsException') {
-        setErrorMessage('An account with this email already exists. Please sign in or reactivate your account if it was previously closed.');
+        // Should be unlikely since we're using a random UUID for username
+        setErrorMessage('An unexpected error occurred. Please try again.');
         
-        // Create a button that takes them to the reactivation flow
-        const reactivationLink = document.createElement('a');
-        reactivationLink.href = '#';
-        reactivationLink.textContent = 'Reactivate Closed Account';
-        reactivationLink.onclick = async (e) => {
-          e.preventDefault();
-          
-          try {
-            setLoading(true);
-            // Check if the user account is disabled
-            const checkResponse = await fetch('/api/user/check-disabled', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ email: formData.username }),
-            });
-            
-            const checkResult = await checkResponse.json();
-            
-            if (checkResult.success && checkResult.exists && checkResult.isDisabled) {
-              // Call the reactivation API
-              const reactivateResponse = await fetch('/api/user/reactivate-account', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                  email: formData.username, 
-                  username: checkResult.username,
-                  tenantId: checkResult.tenantInfo?.id
-                }),
-              });
-              
-              const reactivateResult = await reactivateResponse.json();
-              
-              if (reactivateResult.success) {
-                setLoading(false);
-                alert('Your account has been reactivated! Please sign in with your email and password.');
-                router.push('/auth/signin');
-              } else {
-                setLoading(false);
-                setErrorMessage(`Could not reactivate account: ${reactivateResult.message}`);
-              }
-            } else if (checkResult.success && checkResult.exists && !checkResult.isDisabled) {
-              setLoading(false);
-              setErrorMessage('This account is already active. Please sign in with your email and password.');
-            } else {
-              setLoading(false);
-              setErrorMessage('Account not found. Please sign up for a new account.');
-            }
-          } catch (reactivationError) {
-            setLoading(false);
-            console.error('[SignUpForm] Reactivation error:', reactivationError);
-            setErrorMessage('Error checking account status. Please try again.');
-          }
-        };
-        
-        // Add a container for error message and reactivation link
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-          errorContainer.innerHTML = '';
-          const errorText = document.createElement('p');
-          errorText.className = 'text-red-500 text-sm mt-2';
-          errorText.textContent = errorMessage;
-          errorContainer.appendChild(errorText);
-          
-          const linkContainer = document.createElement('div');
-          linkContainer.className = 'mt-2';
-          linkContainer.appendChild(reactivationLink);
-          errorContainer.appendChild(linkContainer);
-        }
+        // Log detailed error for debugging
+        console.error('[SignUpForm] UsernameExistsException with generated UUID. This should not happen.', error);
+      } else if (error.name === 'InvalidPasswordException') {
+        setErrorMessage('Password does not meet requirements. Please use at least 8 characters with uppercase, lowercase, numbers, and symbols.');
+      } else if (error.name === 'UserLambdaValidationException') {
+        // This often happens when email already exists
+        setErrorMessage('This email is already registered. Please sign in instead or use a different email.');
       } else {
-        setErrorMessage(error.message || 'An error occurred during sign-up');
+        // Generic error handling
+        setErrorMessage(error.message || 'An error occurred during sign-up. Please try again.');
       }
       
       setLoading(false);
@@ -370,6 +348,54 @@ export default function SignUpForm() {
             />
             {errors.username && (
               <p className="mt-2 text-sm text-red-600">{errors.username}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* First Name field */}
+        <div>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
+            First Name
+          </label>
+          <div className="mt-1">
+            <input
+              id="firstName"
+              name="firstName"
+              type="text"
+              autoComplete="given-name"
+              required
+              value={formData.firstName}
+              onChange={handleChange}
+              className={`appearance-none block w-full px-3 py-2 border ${
+                errors.firstName ? 'border-red-300' : 'border-gray-300'
+              } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+            />
+            {errors.firstName && (
+              <p className="mt-2 text-sm text-red-600">{errors.firstName}</p>
+            )}
+          </div>
+        </div>
+        
+        {/* Last Name field */}
+        <div>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
+            Last Name
+          </label>
+          <div className="mt-1">
+            <input
+              id="lastName"
+              name="lastName"
+              type="text"
+              autoComplete="family-name"
+              required
+              value={formData.lastName}
+              onChange={handleChange}
+              className={`appearance-none block w-full px-3 py-2 border ${
+                errors.lastName ? 'border-red-300' : 'border-gray-300'
+              } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+            />
+            {errors.lastName && (
+              <p className="mt-2 text-sm text-red-600">{errors.lastName}</p>
             )}
           </div>
         </div>

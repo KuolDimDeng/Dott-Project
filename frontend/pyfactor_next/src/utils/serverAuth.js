@@ -185,6 +185,10 @@ export function decodeToken(token) {
   }
 }
 
+/**
+ * Validate server session from tokens
+ * Prioritizes extracting user info from tokens rather than cookies
+ */
 export async function validateServerSession() {
   try {
     const cookieStore = cookies();
@@ -192,37 +196,34 @@ export async function validateServerSession() {
     // Get tokens from cookies
     const idToken = cookieStore.get('idToken')?.value;
     const accessToken = cookieStore.get('accessToken')?.value;
-    const userId = cookieStore.get('userId')?.value;
     
-    if (!idToken || !accessToken) {
-      throw new Error('No valid tokens found');
+    if (!idToken) {
+      throw new Error('No valid ID token found');
     }
     
-    // Get user attributes from cookies
-    const getAllCookies = () => {
-      const allCookies = cookieStore.getAll();
-      return Object.fromEntries(
-        allCookies.map(cookie => [cookie.name, cookie.value])
-      );
-    };
+    // Decode the ID token to get user information
+    const decodedToken = decodeToken(idToken);
+    if (!decodedToken) {
+      throw new Error('Failed to decode ID token');
+    }
     
-    const allCookies = getAllCookies();
+    // Extract user attributes directly from the token
+    const userId = decodedToken.sub;
     
-    // Extract user attributes from cookies
-    const attributes = {
-      email: allCookies.email,
-      'custom:businessname': allCookies.businessName,
-      'custom:businesstype': allCookies.businessType,
-      'custom:businessid': allCookies.businessId,
-      'custom:onboarding': allCookies.onboardedStatus,
-      'custom:subplan': allCookies.selectedPlan,
-      'custom:setupdone': allCookies.setupDone,
-      sub: userId,
-    };
+    // Extract all custom attributes from the token
+    const attributes = {};
+    Object.entries(decodedToken).forEach(([key, value]) => {
+      if (key.startsWith('custom:') || 
+          ['email', 'email_verified', 'sub', 'cognito:username'].includes(key)) {
+        attributes[key] = value;
+      }
+    });
     
-    logger.debug('[ServerAuth] Validated session with tokens', {
-      hasIdToken: !!idToken,
-      hasAccessToken: !!accessToken,
+    // Add standard fields
+    attributes.email = decodedToken.email;
+    attributes.sub = userId;
+    
+    logger.debug('[ServerAuth] Validated session with token data', {
       userId,
       attributes: Object.keys(attributes).filter(k => !!attributes[k])
     });

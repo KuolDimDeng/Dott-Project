@@ -3,9 +3,8 @@
 import { useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { Amplify } from 'aws-amplify';
-import { configureAmplify } from '@/config/amplifyUnified';
 
-// Get values from environment variables with fallbacks
+// Constants for Cognito configuration
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
@@ -16,15 +15,11 @@ const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
  */
 export default function ConfigureAmplify() {
   useEffect(() => {
-    logger.debug('[ConfigureAmplify] Ensuring Amplify is configured', {
-      userPoolId: COGNITO_USER_POOL_ID,
-      userPoolClientId: COGNITO_CLIENT_ID,
-      region: AWS_REGION
-    });
+    logger.debug('[ConfigureAmplify] Configuring Amplify on client side');
     
     try {
-      // Define the configuration object
-      const amplifyConfig = {
+      // Basic configuration for Amplify v6
+      const config = {
         Auth: {
           Cognito: {
             userPoolId: COGNITO_USER_POOL_ID,
@@ -39,23 +34,12 @@ export default function ConfigureAmplify() {
         }
       };
       
-      // Ensure Amplify is configured
-      Amplify.configure(amplifyConfig, { ssr: true });
-      
-      // Also call the configureAmplify function from amplifyUnified.js
-      configureAmplify();
-      
-      logger.debug('[ConfigureAmplify] Amplify configured successfully');
+      // Configure Amplify on the client side
+      Amplify.configure(config);
+      logger.info('[ConfigureAmplify] Amplify configured successfully');
     } catch (error) {
-      logger.error('[ConfigureAmplify] Error configuring Amplify:', {
-        message: error.message,
-        stack: error.stack
-      });
+      logger.error('[ConfigureAmplify] Error configuring Amplify:', error);
     }
-    
-    return () => {
-      logger.debug('[ConfigureAmplify] Component unmounted');
-    };
   }, []);
 
   // This component doesn't render anything

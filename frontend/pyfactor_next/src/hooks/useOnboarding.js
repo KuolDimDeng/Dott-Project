@@ -3,222 +3,201 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
+import { toast } from 'react-hot-toast';
 import { logger } from '@/utils/logger';
-import { determineOnboardingStep, setOnboardingCookies } from '@/utils/cookieManager';
-import { createTenantForUser, updateUserWithTenantId } from '@/utils/tenantUtils';
+import { tenantApi } from '@/utils/api';
+import { getTenantIdFromCognito } from '@/utils/tenantUtils';
 
 /**
- * Hook for managing onboarding state across the application
- * This provides a consistent way to track and update onboarding status
+ * Custom hook to manage onboarding state and functions
+ * Uses Cognito user attributes for storage instead of localStorage/cookies
  */
 export function useOnboarding() {
   const router = useRouter();
   const [step, setStep] = useState('business-info');
-  const [status, setStatus] = useState('pending');
-  const [businessInfo, setBusinessInfo] = useState({});
-  const [subscription, setSubscription] = useState({});
-  const [paymentInfo, setPaymentInfo] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Load initial state from cookies/localStorage
+  const [status, setStatus] = useState('not_started');
+  const [businessInfo, setBusinessInfo] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [paymentInfo, setPaymentInfo] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load initial state from Cognito
   useEffect(() => {
-    try {
-      // Load current step from cookie if available
-      const onboardingStep = getCookie('onboardingStep');
-      if (onboardingStep) {
-        setStep(onboardingStep);
-      }
-      
-      // Load status from cookie if available
-      const onboardedStatus = getCookie('onboardedStatus');
-      if (onboardedStatus) {
-        setStatus(onboardedStatus);
-      }
-      
-      // Load stored business info
-      const storedBusinessInfo = localStorage.getItem('businessInfo');
-      if (storedBusinessInfo) {
-        try {
-          setBusinessInfo(JSON.parse(storedBusinessInfo));
-        } catch (e) {
-          console.error('Error parsing stored business info:', e);
+    async function loadFromCognito() {
+      try {
+        setIsLoading(true);
+        const userAttributes = await fetchUserAttributes();
+        
+        // Set onboarding status from attributes
+        const onboardingStatus = userAttributes['custom:onboarding'] || 'not_started';
+        setStatus(onboardingStatus);
+        
+        // Set current step based on completion status
+        if (userAttributes['custom:business_info_done'] !== 'TRUE') {
+          setStep('business-info');
+        } else if (userAttributes['custom:subscription_done'] !== 'TRUE') {
+          setStep('subscription');
+        } else if (userAttributes['custom:payment_done'] !== 'TRUE') {
+          setStep('payment');
+        } else {
+          setStep('complete');
         }
-      }
-      
-      // Load stored subscription info
-      const storedSubscription = localStorage.getItem('subscriptionInfo');
-      if (storedSubscription) {
-        try {
-          setSubscription(JSON.parse(storedSubscription));
-        } catch (e) {
-          console.error('Error parsing stored subscription info:', e);
+        
+        // Load business info from attributes if available
+        if (userAttributes['custom:businessname'] || userAttributes['custom:businesstype']) {
+          setBusinessInfo({
+            name: userAttributes['custom:businessname'] || '',
+            type: userAttributes['custom:businesstype'] || '',
+            // Add other business info fields as needed
+          });
         }
-      }
-      
-      // Load stored payment info (only non-sensitive data)
-      const storedPaymentInfo = localStorage.getItem('paymentInfo');
-      if (storedPaymentInfo) {
-        try {
-          setPaymentInfo(JSON.parse(storedPaymentInfo));
-        } catch (e) {
-          console.error('Error parsing stored payment info:', e);
+        
+        // Load subscription info from attributes if available
+        if (userAttributes['custom:subscription']) {
+          try {
+            const subscriptionData = JSON.parse(userAttributes['custom:subscription']);
+            setSubscription(subscriptionData);
+          } catch (e) {
+            logger.error('Failed to parse subscription data from Cognito', e);
+          }
         }
+        
+        // Load payment info if available (might be limited due to security concerns)
+        if (userAttributes['custom:payment_done'] === 'TRUE') {
+          setPaymentInfo({ completed: true });
+        }
+        
+      } catch (error) {
+        logger.error('Failed to load onboarding data from Cognito', error);
+        toast.error('Failed to load your onboarding progress');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading onboarding state:', error);
     }
+    
+    loadFromCognito();
   }, []);
-  
-  // Helper to get a cookie by name
-  const getCookie = (name) => {
-    if (typeof document === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
-  };
-  
-  // Helper to set a cookie
-  const setCookie = (name, value, days = 30) => {
-    if (typeof document === 'undefined') return;
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    const expires = `expires=${date.toUTCString()}`;
-    document.cookie = `${name}=${value}; ${expires}; path=/; samesite=lax`;
-  };
-  
-  // Update business info
-  const updateBusinessInfo = useCallback((data) => {
-    setBusinessInfo(data);
-    localStorage.setItem('businessInfo', JSON.stringify(data));
-    setCookie('businessInfoCompleted', 'true');
-  }, []);
-  
-  // Update subscription info
-  const updateSubscription = useCallback((data) => {
-    setSubscription(data);
-    localStorage.setItem('subscriptionInfo', JSON.stringify(data));
-    setCookie('subscriptionCompleted', 'true');
-  }, []);
-  
-  // Update payment info
-  const updatePaymentInfo = useCallback((data) => {
-    setPaymentInfo(data);
-    localStorage.setItem('paymentInfo', JSON.stringify(data));
-    setCookie('paymentCompleted', 'true');
-  }, []);
-  
-  // Helper to ensure tenant exists
-  const ensureTenant = useCallback(async (businessId) => {
+
+  // Update business info in Cognito
+  const updateBusinessInfo = useCallback(async (info) => {
     try {
       setIsLoading(true);
       
-      // Import user attributes and fetch current user data
-      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-      const userAttributes = await fetchUserAttributes();
+      // Update Cognito attributes with business info
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:businessname': info.name || '',
+          'custom:businesstype': info.type || '',
+          'custom:business_info_done': 'TRUE',
+          'custom:onboarding': 'in_progress'
+        }
+      });
       
-      // Create tenant using utility function
-      const createdTenantId = await createTenantForUser(businessId, userAttributes);
-      
-      if (createdTenantId) {
-        // Update user attributes with tenant ID
-        await updateUserWithTenantId(createdTenantId);
-        
-        // Set state and redirect
-        logger.info('[useOnboarding] Tenant created successfully');
-        router.push(`/tenant/${createdTenantId}/dashboard?freePlan=true&newTenant=true`);
-        return createdTenantId;
-      } else {
-        // Failed to create tenant
-        logger.warn('[useOnboarding] Failed to create tenant');
-        router.push(`/dashboard?freePlan=true&requestTenantCreation=true&businessId=${businessId}`);
-        return null;
-      }
+      setBusinessInfo(info);
+      setStatus('in_progress');
+      setStep('subscription');
+      return true;
     } catch (error) {
-      logger.error('[useOnboarding] Error creating tenant:', error);
-      router.push(`/dashboard?freePlan=true&requestTenantCreation=true&businessId=${businessId}`);
-      return null;
+      logger.error('Failed to update business info in Cognito', error);
+      toast.error('Failed to save business information');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Update subscription info in Cognito
+  const updateSubscription = useCallback(async (info) => {
+    try {
+      setIsLoading(true);
+      
+      // Store subscription data as JSON string in Cognito
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:subscription': JSON.stringify(info),
+          'custom:subscription_done': 'TRUE',
+          'custom:onboarding': 'in_progress'
+        }
+      });
+      
+      setSubscription(info);
+      setStep('payment');
+      return true;
+    } catch (error) {
+      logger.error('Failed to update subscription info in Cognito', error);
+      toast.error('Failed to save subscription information');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Update payment info in Cognito
+  const updatePaymentInfo = useCallback(async (info) => {
+    try {
+      setIsLoading(true);
+      
+      // Update payment completion status in Cognito
+      // Note: We don't store actual payment details in Cognito for security
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:payment_done': 'TRUE',
+          'custom:onboarding': 'complete'
+        }
+      });
+      
+      setPaymentInfo(info);
+      setStatus('complete');
+      return true;
+    } catch (error) {
+      logger.error('Failed to update payment info in Cognito', error);
+      toast.error('Failed to process payment information');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Move to the next step in onboarding
+  const nextStep = useCallback(() => {
+    if (step === 'business-info') setStep('subscription');
+    else if (step === 'subscription') setStep('payment');
+    else if (step === 'payment') setStep('complete');
+  }, [step]);
+
+  // Complete the onboarding process
+  const completeOnboarding = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get tenant ID from Cognito
+      const tenantId = await getTenantIdFromCognito();
+      
+      if (!tenantId) {
+        throw new Error('No tenant ID found in Cognito attributes');
+      }
+      
+      // Mark onboarding as complete in Cognito
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:setupdone': 'TRUE',
+          'custom:onboarding': 'complete'
+        }
+      });
+      
+      // Redirect to dashboard with tenant ID
+      router.push(`/dashboard/${tenantId}`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to complete onboarding', error);
+      toast.error('Failed to complete onboarding process');
+      return false;
     } finally {
       setIsLoading(false);
     }
   }, [router]);
-  
-  // Navigate to the next step in the onboarding process
-  const nextStep = useCallback(async () => {
-    let nextStep = step;
-    
-    switch(step) {
-      case 'business-info':
-        nextStep = 'subscription';
-        break;
-      case 'subscription':
-        // Check if we have a free plan selected
-        if (subscription?.plan === 'free' || localStorage.getItem('freePlanSelected') === 'true') {
-          // For free plan, skip payment and go to dashboard
-          logger.debug('[useOnboarding] Free plan detected, skipping payment stage');
-          
-          // Check if we have tenant information already
-          const tenantId = localStorage.getItem('tenantId') || getCookie('tenantId');
-          const businessId = localStorage.getItem('businessId') || getCookie('businessid');
-          
-          if (tenantId) {
-            logger.debug('[useOnboarding] Tenant ID found, redirecting to tenant dashboard');
-            router.push(`/tenant/${tenantId}/dashboard?freePlan=true`);
-          } else if (businessId) {
-            // Try to create a tenant using the business ID
-            logger.debug('[useOnboarding] Business ID found, attempting to create tenant');
-            
-            // Show loading state while creating tenant
-            setIsLoading(true);
-            
-            try {
-              await ensureTenant(businessId);
-            } catch (error) {
-              logger.error('[useOnboarding] Error in tenant creation:', error);
-              router.push(`/dashboard?freePlan=true&requestTenantCreation=true&businessId=${businessId}`);
-            } finally {
-              setIsLoading(false);
-            }
-          } else {
-            // Fallback to redirect flow that will trigger tenant creation via middleware
-            logger.debug('[useOnboarding] No IDs found, redirecting to dashboard for tenant creation');
-            router.push('/dashboard?freePlan=true&requestTenantCreation=true');
-          }
-          return; // Exit early
-        } else {
-          nextStep = 'payment';
-        }
-        break;
-      case 'payment':
-        nextStep = 'setup';
-        break;
-      case 'setup':
-        nextStep = 'complete';
-        break;
-      default:
-        nextStep = 'business-info';
-    }
-    
-    setStep(nextStep);
-    setCookie('onboardingStep', nextStep);
-    router.push(`/onboarding/${nextStep}`);
-  }, [step, router, getCookie, ensureTenant]);
-  
-  // Complete onboarding
-  const completeOnboarding = useCallback(async () => {
-    setStatus('complete');
-    setCookie('onboardedStatus', 'complete');
-    setCookie('setupCompleted', 'true');
-    
-    // If we have a tenant ID, redirect to tenant dashboard
-    const tenantId = localStorage.getItem('tenantId') || getCookie('tenantId');
-    if (tenantId) {
-      router.push(`/tenant/${tenantId}/dashboard?newAccount=true`);
-    } else {
-      router.push('/dashboard?newAccount=true');
-    }
-  }, [router]);
-  
+
   return {
     step,
     status,

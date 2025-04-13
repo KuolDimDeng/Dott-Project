@@ -201,33 +201,14 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
     // Begin a transaction for atomicity
     await pool.query('BEGIN');
     
+    // Generate proper schema name from tenant ID for consistency
+    const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
+    
     // Create or update tenant record with the best available business name
-    const finalBusinessName = businessName || '';
+    const finalBusinessName = businessName || 'Default Business';
     
-    const tenantResult = await pool.query(`
-      INSERT INTO custom_auth_tenant (
-        id, name, owner_id, created_at, updated_at,
-        rls_enabled, rls_setup_date, tenant_id
-      )
-      VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1)
-      ON CONFLICT (id) DO UPDATE 
-      SET name = CASE
-            WHEN custom_auth_tenant.name IS NULL THEN $2
-            WHEN custom_auth_tenant.name = '' THEN $2
-            WHEN custom_auth_tenant.name = 'Default Business' THEN $2
-            WHEN custom_auth_tenant.name = 'My Business' THEN $2
-            WHEN $2 != '' AND $2 != 'Default Business' AND $2 != 'My Business' THEN $2
-            ELSE custom_auth_tenant.name
-          END, 
-          updated_at = NOW(),
-          owner_id = COALESCE($3, custom_auth_tenant.owner_id),
-          rls_enabled = true
-      RETURNING id, name, owner_id, rls_enabled;
-    `, [tenantId, finalBusinessName, userId]);
-    
-    // Set up RLS policy if needed
+    // Set RLS on the custom_auth_tenant table if needed
     try {
-      // Check if RLS is enabled on the table
       const rlsCheck = await pool.query(`
         SELECT relrowsecurity 
         FROM pg_class 
@@ -239,7 +220,73 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
         await pool.query(`ALTER TABLE custom_auth_tenant ENABLE ROW LEVEL SECURITY;`);
         logger.info('Enabled RLS on custom_auth_tenant table');
       }
-      
+    } catch (rlsError) {
+      logger.warn(`Error checking RLS status: ${rlsError.message}`);
+      // Continue anyway
+    }
+    
+    // Create tenant record with all necessary fields
+    const tenantResult = await pool.query(`
+      INSERT INTO custom_auth_tenant (
+        id, name, owner_id, created_at, updated_at,
+        rls_enabled, rls_setup_date, tenant_id, schema_name
+      )
+      VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1, $4)
+      ON CONFLICT (id) DO UPDATE 
+      SET name = CASE
+            WHEN custom_auth_tenant.name IS NULL THEN $2
+            WHEN custom_auth_tenant.name = '' THEN $2
+            WHEN custom_auth_tenant.name = 'Default Business' THEN $2
+            WHEN custom_auth_tenant.name = 'My Business' THEN $2
+            WHEN $2 != '' AND $2 != 'Default Business' AND $2 != 'My Business' THEN $2
+            ELSE custom_auth_tenant.name
+          END, 
+          updated_at = NOW(),
+          owner_id = COALESCE($3, custom_auth_tenant.owner_id),
+          rls_enabled = true,
+          schema_name = $4
+      RETURNING id, name, owner_id, rls_enabled, schema_name;
+    `, [tenantId, finalBusinessName, userId, schemaName]);
+    
+    // Associate user with tenant in tenant_users table
+    if (userId) {
+      try {
+        await pool.query(`
+          INSERT INTO tenant_users (tenant_id, user_id, role, created_at)
+          VALUES ($1, $2, 'owner', NOW())
+          ON CONFLICT (user_id) DO UPDATE
+          SET tenant_id = $1, role = 'owner', created_at = NOW()
+        `, [tenantId, userId]);
+        logger.info(`Associated user ${userId} with tenant ${tenantId}`);
+      } catch (userError) {
+        logger.warn(`Error associating user with tenant: ${userError.message}`);
+        
+        // See if tenant_users table exists, create if it doesn't
+        try {
+          await pool.query(`
+            CREATE TABLE IF NOT EXISTS tenant_users (
+              tenant_id UUID REFERENCES custom_auth_tenant(id),
+              user_id TEXT NOT NULL,
+              role TEXT DEFAULT 'user',
+              created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (user_id)
+            );
+          `);
+          
+          // Try again after creating the table
+          await pool.query(`
+            INSERT INTO tenant_users (tenant_id, user_id, role, created_at)
+            VALUES ($1, $2, 'owner', NOW())
+            ON CONFLICT (user_id) DO NOTHING
+          `, [tenantId, userId]);
+        } catch (createTableError) {
+          logger.error(`Error creating tenant_users table: ${createTableError.message}`);
+        }
+      }
+    }
+    
+    // Set up RLS policy if needed
+    try {
       // Check if RLS policy exists
       const policyCheck = await pool.query(`
         SELECT 1 
@@ -258,7 +305,7 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
         logger.info('Created RLS policy for custom_auth_tenant table');
       }
     } catch (rlsError) {
-      logger.warn(`Error setting up RLS: ${rlsError.message}`);
+      logger.warn(`Error setting up RLS policy: ${rlsError.message}`);
       // Continue anyway, not critical for tenant creation
     }
     

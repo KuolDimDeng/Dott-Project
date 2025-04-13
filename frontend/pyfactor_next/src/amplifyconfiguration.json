@@ -1,0 +1,15 @@
+{
+  "Auth": {
+    "Cognito": {
+      "userPoolId": "us-east-1_JPL8vGfb6",
+      "userPoolClientId": "1o5v84mrgn4gt87khtr179uc5b",
+      "region": "us-east-1",
+      "loginWith": {
+        "username": true,
+        "email": true,
+        "phone": false
+      }
+    }
+  },
+  "aws_project_region": "us-east-1"
+} 

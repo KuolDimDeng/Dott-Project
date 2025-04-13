@@ -11,7 +11,7 @@ const InvoiceForm = ({ mode = 'create' }) => {
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const [logo, setLogo] = useState(null);
   const [accentColor, setAccentColor] = useState('#000080'); // Navy blue as default
-  const [template, setTemplate] = useState('Contemporary');
+  const [template, setTemplate] = useState('Modern');
   const [invoiceItems, setInvoiceItems] = useState([]);
   const [userData, setUserData] = useState({
     first_name: '',
@@ -34,6 +34,10 @@ const InvoiceForm = ({ mode = 'create' }) => {
   const [selectedProduct, setSelectedProduct] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
+  const [invoiceStyle, setInvoiceStyle] = useState('modern');
+
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   useEffect(() => {
     logger.info('[InvoiceForm] Component mounted');
@@ -342,6 +346,35 @@ const InvoiceForm = ({ mode = 'create' }) => {
 
   const calculateTotal = () => {
     return calculateSubTotal() + calculateTax();
+  };
+
+  const handleStyleChange = (event) => {
+    setInvoiceStyle(event.target.value);
+    setTemplate(event.target.value === 'modern' ? 'Modern' : 'Classic');
+  };
+
+  const handleGeneratePreview = () => {
+    const previewData = {
+      style: invoiceStyle,
+      customer: userData,
+      items: invoiceItems,
+      logo,
+      accentColor,
+      template,
+      subtotal: calculateSubTotal(),
+      tax: calculateTax(),
+      total: calculateTotal(),
+      invoiceNumber: 'PREVIEW-001',
+      issueDate: new Date().toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0],
+    };
+    
+    setPreviewData(previewData);
+    setShowPreview(true);
+  };
+
+  const handleClosePreview = () => {
+    setShowPreview(false);
   };
 
   // Render Customer Selection Tab
@@ -691,164 +724,158 @@ const InvoiceForm = ({ mode = 'create' }) => {
 
   // Render Template Tab
   const renderTemplateTab = () => (
-    <>
-      <div className="w-full">
-        <h3 className="text-lg font-medium mb-4">
-          Invoice Template
-        </h3>
-        <button 
-          type="button"
-          onClick={handleOpenTemplateBuilder}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mb-6"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-          </svg>
-          Open Template Builder
-        </button>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Template Style
-            </label>
-            <select
-              value={template}
-              onChange={handleTemplateChange}
-              className="w-full p-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="Contemporary">Contemporary</option>
-              <option value="Professional">Professional</option>
-              <option value="Classic">Classic</option>
-              <option value="Modern">Modern</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Accent Color
-            </label>
-            <div className="flex items-center">
-              <div 
-                className="w-6 h-6 rounded-full mr-2" 
-                style={{ backgroundColor: accentColor }}
-              ></div>
-              <input
-                type="color"
-                value={accentColor}
-                onChange={handleAccentColorChange}
-                className="w-full p-1 border border-gray-300 rounded-md h-10"
-              />
-            </div>
-          </div>
-          
-          <div className="col-span-2 mt-4">
-            <label className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
-              </svg>
-              Upload Logo
-              <input
-                type="file"
-                className="hidden"
-                accept="image/*"
-                onChange={handleLogoUpload}
-              />
-            </label>
-            
-            {logo && (
-              <div className="mt-4 flex items-center">
-                <span className="text-sm text-gray-600 mr-2">
-                  Logo Preview:
-                </span>
-                <img src={logo} alt="Logo Preview" className="max-h-12" />
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="p-4 bg-white rounded-lg shadow-sm">
+      <h2 className="text-xl font-semibold mb-4">Invoice Appearance</h2>
       
-        <div className="mt-8">
-          <h3 className="text-lg font-medium mb-4">
-            Preview
-          </h3>
-          <div className="border border-gray-200 rounded-xl p-4">
-            <InvoicePreview
-              logo={logo}
-              accentColor={accentColor}
-              template={template}
-              userData={userData}
-              invoiceItems={invoiceItems}
-              products={products}
-              services={services}
-            />
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Invoice Style
+        </label>
+        <div className="flex space-x-4">
+          <div className="flex-1">
+            <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
+              <input
+                type="radio"
+                className="mt-1 mr-3"
+                name="invoiceStyle"
+                value="modern"
+                checked={invoiceStyle === 'modern'}
+                onChange={handleStyleChange}
+              />
+              <div>
+                <div className="font-medium">Modern</div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Clean, contemporary design with a minimal layout and modern typography
+                </p>
+              </div>
+            </label>
+          </div>
+          
+          <div className="flex-1">
+            <label className="flex items-start p-4 border rounded-lg cursor-pointer hover:bg-blue-50 transition-colors">
+              <input
+                type="radio"
+                className="mt-1 mr-3"
+                name="invoiceStyle"
+                value="classic"
+                checked={invoiceStyle === 'classic'}
+                onChange={handleStyleChange}
+              />
+              <div>
+                <div className="font-medium">Classic</div>
+                <p className="text-sm text-gray-600 mt-1">
+                  Traditional invoice format with a formal structure and conventional styling
+                </p>
+              </div>
+            </label>
           </div>
         </div>
       </div>
-    </>
+      
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Company Logo
+        </label>
+        <div className="mt-1 flex items-center">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleLogoUpload}
+            className="py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm"
+          />
+        </div>
+        {logo && (
+          <div className="mt-2">
+            <img src={logo} alt="Company Logo Preview" className="h-16 object-contain" />
+          </div>
+        )}
+      </div>
+
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Accent Color
+        </label>
+        <div className="mt-1 flex items-center">
+          <input
+            type="color"
+            value={accentColor}
+            onChange={handleAccentColorChange}
+            className="h-10 w-20 p-1 border border-gray-300 rounded-md"
+          />
+          <span className="ml-3 text-sm text-gray-600">{accentColor}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-between mt-8">
+        <button
+          type="button"
+          onClick={handleGeneratePreview}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        >
+          Preview Invoice
+        </button>
+      </div>
+    </div>
   );
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
-      <div className="mb-6 bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="flex w-full">
-          {["Customer", "Invoice Items", "Template"].map((label, index) => (
-            <button
-              key={index}
-              onClick={(e) => handleTabChange(e, index)}
-              className={`flex-1 py-4 px-4 text-center font-semibold text-base ${
-                activeTab === index
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
+    <div className="w-full max-w-5xl mx-auto">
       <ModernFormLayout
-        title="Create New Invoice"
-        subtitle="Generate a professional invoice for your customers"
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }}
-        isLoading={isSubmitting}
-        submitLabel="Save Invoice"
-        submitDisabled={invoiceItems.length === 0 || !selectedCustomer}
-        footer={
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="mr-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-            </svg>
-            Cancel
-          </button>
-        }
+        title={mode === 'create' ? 'Create New Invoice' : 'Edit Invoice'}
+        tabs={[
+          { label: 'Customer Information', id: 'customer' },
+          { label: 'Invoice Items', id: 'items' },
+          { label: 'Template', id: 'template' }
+        ]}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onSubmit={handleSave}
+        onCancel={handleCancel}
+        submitLabel={isSubmitting ? 'Saving...' : 'Save Invoice'}
+        isSubmitting={isSubmitting}
       >
         {activeTab === 0 && renderCustomerTab()}
         {activeTab === 1 && renderInvoiceItemsTab()}
         {activeTab === 2 && renderTemplateTab()}
-
-        {activeTab < 2 && (
-          <div className="w-full flex justify-end mt-6">
-            <button
-              type="button"
-              onClick={() => setActiveTab(activeTab + 1)}
-              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 flex items-center"
-            >
-              Next: {activeTab === 0 ? 'Invoice Items' : 'Template'}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-          </div>
-        )}
       </ModernFormLayout>
+      
+      {showPreview && previewData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-11/12 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-medium">Invoice Preview</h3>
+              <button 
+                onClick={handleClosePreview}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <InvoicePreview 
+                data={previewData} 
+                style={invoiceStyle}
+              />
+            </div>
+            <div className="p-4 border-t flex justify-end space-x-3">
+              <button 
+                onClick={handleClosePreview}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button 
+                onClick={handleSave}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Save Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

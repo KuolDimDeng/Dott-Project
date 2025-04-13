@@ -267,16 +267,50 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const handleDrawerToggle = useCallback(() => {
     // Explicitly set to the opposite of current state for clarity
     const newDrawerState = !drawerOpen;
+    console.log(`%c[DashboardContent] Toggling drawer from ${drawerOpen ? 'OPEN' : 'CLOSED'} to ${newDrawerState ? 'OPEN' : 'CLOSED'}`, 'background: #ecfdf5; color: #065f46; padding: 2px 4px; border-radius: 2px;');
     setDrawerOpen(newDrawerState);
     
     // Log for debugging
-    console.log('Drawer toggled: ', newDrawerState ? 'opened' : 'closed');
+    console.log('[DashboardContent] Drawer toggled: ', newDrawerState ? 'opened' : 'closed');
+    
+    // Force layout update
+    if (mainContentRef.current) {
+      // Calculate extra collapsed width when drawer is open
+      const extraCollapsedWidth = drawerWidth + 100; // Add 100px extra padding when drawer is open
+      const regularCollapsedWidth = iconOnlyWidth; // Width when drawer is collapsed
+      const isMobile = window.innerWidth < 640;
+      
+      // Apply all styles at once
+      Object.assign(mainContentRef.current.style, {
+        position: 'absolute',
+        top: '64px',
+        left: isMobile ? '0' : (newDrawerState ? `${drawerWidth}px` : `${regularCollapsedWidth}px`),
+        width: isMobile ? '100%' : (newDrawerState ? `calc(100% - ${extraCollapsedWidth}px)` : `calc(100% - ${regularCollapsedWidth}px)`),
+        minHeight: 'calc(100vh - 64px)',
+        backgroundColor: '#F8FAFC',
+        padding: '24px',
+        transition: 'all 300ms ease-in-out',
+        zIndex: '0'
+      });
+      
+      console.log(`[DashboardContent] Applied absolute positioning to main content:`);
+      console.log(`  - left: ${mainContentRef.current.style.left}`);
+      console.log(`  - width: ${mainContentRef.current.style.width}`);
+      
+      // Dispatch event for other components to react
+      const eventDetail = { isOpen: newDrawerState, width: newDrawerState ? drawerWidth : iconOnlyWidth, extraCollapse: true };
+      console.log('[DashboardContent] Dispatching drawerStateChanged event:', eventDetail);
+      window.dispatchEvent(new CustomEvent('drawerStateChanged', { detail: eventDetail }));
+    } else {
+      console.warn('[DashboardContent] mainContentRef.current is not available!');
+    }
     
     // Force a window resize event to ensure content reflows properly
     setTimeout(() => {
+      console.log('[DashboardContent] Dispatching delayed resize event');
       window.dispatchEvent(new Event('resize'));
-    }, 300); // Wait for the animation to complete
-  }, [drawerOpen, setDrawerOpen]);
+    }, 100); 
+  }, [drawerOpen, setDrawerOpen, drawerWidth, iconOnlyWidth]);
 
   const handleMainDashboardClick = useCallback(() => {
     resetAllStates();
@@ -670,7 +704,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       
       // First clear all storage before sign-out to prevent fetch loops and orphaned state
       sessionStorage.clear();
-      localStorage.removeItem('lastAuthUser');
+      
+      // Clear app cache
+      if (typeof window !== 'undefined' && window.__APP_CACHE) {
+        if (window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+        if (window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+      }
       
       // Clear cookies that might be related to auth
       document.cookie.split(';').forEach(c => {
@@ -718,13 +757,27 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       logger.info('[Dashboard] Verifying tenant record in AWS RDS');
       
       // Get tenant ID from various sources
-      const tenantId = localStorage.getItem('tenantId') || 
-                      document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1] ||
-                      effectiveTenantId;
+      let tenantId;
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+        tenantId = window.__APP_CACHE.tenant.id || 
+                  document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1] ||
+                  effectiveTenantId;
+      }
       
       if (!tenantId) {
         logger.warn('[Dashboard] No tenant ID found - skipping record verification');
         return;
+      }
+      
+      // Get user data from app cache
+      let userId, userEmail, businessName;
+      if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.auth) {
+        const user = window.__APP_CACHE.auth.user || {};
+        userId = user.sub;
+        userEmail = user.email;
+        businessName = window.__APP_CACHE.tenant.businessName || '';
       }
                        
       // Ensure tenant record exists
@@ -733,9 +786,9 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenantId,
-          userId: localStorage.getItem('userId'),
-          email: localStorage.getItem('userEmail'),
-          businessName: localStorage.getItem('businessName') || ''
+          userId,
+          email: userEmail,
+          businessName
         })
       });
       
@@ -776,10 +829,11 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         const hasTenantId = 
           document.cookie.includes('tenantId=') || 
           document.cookie.includes('businessid=') ||
-          localStorage.getItem('tenantId');
+          (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id);
         const hasIdToken = document.cookie.includes('idToken=') || 
                           document.cookie.includes('CognitoIdentityServiceProvider') &&
-                          document.cookie.includes('.idToken');
+                          document.cookie.includes('.idToken') ||
+                          (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token);
         
         // Log the auth check attempt for debugging
         logger.debug(`[Dashboard] Auth check attempt ${authCheckRetries + 1}/${MAX_AUTH_RETRIES}. Has cookies: session=${hasSessionCookie}, tenantId=${hasTenantId}, token=${hasIdToken}`);
@@ -864,30 +918,61 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     };
   }, [fetchUserData, router, tenantStatus]);
 
-  // Use useLayoutEffect to update the layout before browser painting
+  // Use useClientEffect to update the layout before browser painting
   useClientEffect(() => {
     // Function to update main content dimensions
     const updateMainContentLayout = () => {
       if (mainContentRef.current) {
         const isMobile = window.innerWidth < 640;
-        mainContentRef.current.style.width = isMobile ? '100%' : `calc(100% - ${drawerOpen ? drawerWidth : iconOnlyWidth}px)`;
-        mainContentRef.current.style.marginLeft = isMobile ? '0' : `${drawerOpen ? drawerWidth : iconOnlyWidth}px`;
+        
+        // Apply all styles at once
+        Object.assign(mainContentRef.current.style, {
+          position: 'absolute',
+          top: '64px',
+          left: isMobile ? '0' : (drawerOpen ? `${drawerWidth}px` : `${iconOnlyWidth}px`),
+          right: '0', // Keep right edge fixed to screen
+          width: 'auto', // Width will be determined by left and right
+          minHeight: 'calc(100vh - 64px)',
+          backgroundColor: '#F8FAFC',
+          padding: '24px',
+          transition: 'all 300ms ease-in-out',
+          zIndex: '0'
+        });
+        
+        console.log(`%c[MainContent] Updating layout with right edge fixed:`, 'background: #e0f2fe; color: #0369a1; padding: 2px 4px; border-radius: 2px;');
+        console.log(`  - drawerOpen: ${drawerOpen}`);
+        console.log(`  - isMobile: ${isMobile}`);
+        console.log(`  - left: ${mainContentRef.current.style.left}`);
+        console.log(`  - right: ${mainContentRef.current.style.right}`);
         
         // Force a reflow by accessing offset properties
-        void mainContentRef.current.offsetWidth;
+        const currentWidth = mainContentRef.current.offsetWidth;
+        console.log(`  - Calculated width: ${currentWidth}px`);
+      } else {
+        console.warn('[MainContent] mainContentRef.current is not available for layout update!');
       }
     };
     
     // Update immediately when drawerOpen state changes
+    console.log(`[MainContent] drawerOpen state changed to: ${drawerOpen ? 'OPEN' : 'CLOSED'}`);
     updateMainContentLayout();
     
     // Listen for custom drawer state change events from the Drawer component
-    const handleDrawerStateChange = () => {
+    const handleDrawerStateChange = (event) => {
+      const detail = event?.detail || {};
+      console.log(`%c[MainContent] Received drawerStateChanged event:`, 'background: #fef3c7; color: #92400e; padding: 2px 4px; border-radius: 2px;', detail);
+      
+      // Check if the drawer state matches our current state
+      if (detail.isOpen !== drawerOpen) {
+        console.warn(`[MainContent] Drawer state mismatch! Event says: ${detail.isOpen ? 'OPEN' : 'CLOSED'}, but our state is: ${drawerOpen ? 'OPEN' : 'CLOSED'}`);
+      }
+      
       updateMainContentLayout();
     };
     
     // Setup resize listener
     const handleResize = () => {
+      console.log('[MainContent] Window resize detected');
       updateMainContentLayout();
     };
     
@@ -896,6 +981,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     
     // Trigger a resize event after a short delay to ensure layout updates
     setTimeout(() => {
+      console.log('[MainContent] Dispatching delayed resize event after state change');
       window.dispatchEvent(new Event('resize'));
     }, 300);
     
@@ -1056,8 +1142,11 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
               setShowForm={setShowForm}
               setFormOption={setFormOption}
               tenantId={effectiveTenantId}
+              userAttributes={userAttributes}
+              isAuthenticated={isAuthenticated}
+              user={user}
             />
-            <div className="flex flex-grow pt-16">
+            <div className="flex flex-grow pt-16 relative">
               <Drawer
                 drawerOpen={drawerOpen}
                 handleDrawerToggle={handleDrawerToggle}
@@ -1074,11 +1163,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
               
               <div 
                 ref={mainContentRef}
-                className={`flex-grow bg-[#F8FAFC] min-h-[calc(100vh-64px)] p-6 transition-all duration-300 ease-in-out ${
-                  drawerOpen 
-                    ? `ml-[${drawerWidth}px] w-[calc(100%-${drawerWidth}px)]` 
-                    : 'ml-0 w-full'
-                }`}
+                style={{
+                  position: 'absolute',
+                  top: '64px',
+                  left: drawerOpen ? `${drawerWidth}px` : `${iconOnlyWidth}px`,
+                  right: '0',
+                  width: 'auto',
+                  minHeight: 'calc(100vh - 64px)',
+                  backgroundColor: '#F8FAFC',
+                  padding: '24px',
+                  transition: 'all 300ms ease-in-out',
+                  zIndex: '0'
+                }}
               >
                 <Suspense fallback={<LoadingComponent />}>
                   <RenderMainContent 

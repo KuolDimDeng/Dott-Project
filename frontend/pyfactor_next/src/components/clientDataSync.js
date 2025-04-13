@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { syncRepairedTenantId, storeTenantInfo } from '@/utils/tenantUtils';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
+import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
 
 /**
  * ClientDataSync component monitors for tenant ID inconsistencies
@@ -16,44 +16,27 @@ export default function ClientDataSync() {
   const session = useOptionalSession();
 
   useEffect(() => {
-    // Check for tenant ID inconsistencies between cookies and localStorage
+    // Check for tenant ID inconsistencies and sync with Cognito
     const checkAndSyncTenantIds = async () => {
       try {
-        // Only run this once
+        // Only run this once per cycle
         if (syncing) return;
         setSyncing(true);
 
-        // Get tenant ID from cookies
-        const getCookie = (name) => {
-          try {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-          } catch (e) {
-            return null;
-          }
-        };
-
-        // Use try/catch to prevent errors if localStorage is not available
-        let localStorageTenantId = null;
+        // Get tenant ID from Cognito
+        let cognitoTenantId = null;
         try {
-          localStorageTenantId = localStorage.getItem('tenantId');
+          cognitoTenantId = await getTenantIdFromCognito();
         } catch (e) {
-          // Ignore localStorage errors
+          logger.error('[ClientDataSync] Error getting tenant ID from Cognito:', e);
         }
-
-        const tenantIdCookie = getCookie('tenantId');
-        const businessIdCookie = getCookie('businessid');
         
         // Get tenant ID from session if available
         const sessionTenantId = session?.data?.user?.tenantId;
         const sessionStatus = session?.status;
 
         logger.info('[ClientDataSync] Checking tenant IDs:', {
-          tenantIdCookie,
-          businessIdCookie,
-          localStorageTenantId,
+          cognitoTenantId,
           sessionTenantId,
           sessionStatus
         });
@@ -62,47 +45,23 @@ export default function ClientDataSync() {
         if (sessionTenantId && isValidUuid(sessionTenantId)) {
           logger.info('[ClientDataSync] Using session tenant ID as source of truth:', sessionTenantId);
           
-          // If cookie or localStorage has different tenant ID, update them
-          if (tenantIdCookie !== sessionTenantId || businessIdCookie !== sessionTenantId || localStorageTenantId !== sessionTenantId) {
-            await storeTenantInfo(sessionTenantId);
-            logger.info('[ClientDataSync] Updated tenant IDs from session');
+          // If Cognito has a different tenant ID, update it
+          if (cognitoTenantId !== sessionTenantId) {
+            await updateTenantIdInCognito(sessionTenantId);
+            logger.info('[ClientDataSync] Updated Cognito tenant ID from session');
           }
           return;
         }
 
-        // If we have different IDs between cookies, try to sync them
-        if (tenantIdCookie && businessIdCookie && tenantIdCookie !== businessIdCookie) {
-          logger.info('[ClientDataSync] Different tenant IDs found in cookies');
-          
-          // Validate UUID format for both
-          if (isValidUuid(tenantIdCookie) && !isValidUuid(businessIdCookie)) {
-            await syncRepairedTenantId(businessIdCookie, tenantIdCookie);
-          } else if (!isValidUuid(tenantIdCookie) && isValidUuid(businessIdCookie)) {
-            await syncRepairedTenantId(tenantIdCookie, businessIdCookie);
-          }
-        }
-
-        // If local storage has a different tenant ID, sync it
-        if (localStorageTenantId && tenantIdCookie && localStorageTenantId !== tenantIdCookie) {
-          logger.info('[ClientDataSync] Different tenant ID in localStorage vs cookie');
-          
-          // Update localStorage with cookie value if it's valid
-          if (isValidUuid(tenantIdCookie)) {
-            try {
-              localStorage.setItem('tenantId', tenantIdCookie);
-              logger.info('[ClientDataSync] Updated localStorage with cookie tenant ID');
-            } catch (e) {
-              // Ignore localStorage errors
-            }
-          }
+        // If we have a valid Cognito tenant ID but no session ID, keep it
+        if (cognitoTenantId && isValidUuid(cognitoTenantId) && (!sessionTenantId || sessionStatus !== 'authenticated')) {
+          logger.info('[ClientDataSync] Using Cognito tenant ID:', cognitoTenantId);
+          return;
         }
 
         // Check for invalid tenant IDs
-        if (
-          (tenantIdCookie && !isValidUuid(tenantIdCookie)) ||
-          (businessIdCookie && !isValidUuid(businessIdCookie))
-        ) {
-          logger.warn('[ClientDataSync] Invalid tenant ID detected, requesting repair');
+        if (cognitoTenantId && !isValidUuid(cognitoTenantId)) {
+          logger.warn('[ClientDataSync] Invalid tenant ID detected in Cognito, requesting repair');
           
           try {
             const response = await fetch('/api/tenant/init', {
@@ -111,7 +70,7 @@ export default function ClientDataSync() {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ 
-                tenantId: tenantIdCookie || businessIdCookie,
+                tenantId: cognitoTenantId,
                 requestRepair: true 
               })
             });
@@ -122,16 +81,34 @@ export default function ClientDataSync() {
               if (data.tenant_id && isValidUuid(data.tenant_id)) {
                 logger.info(`[ClientDataSync] Received repaired tenant ID: ${data.tenant_id}`);
                 
-                // Use the repaired tenant ID
-                await storeTenantInfo(data.tenant_id);
+                // Update the Cognito tenant ID
+                await updateTenantIdInCognito(data.tenant_id);
               }
             }
           } catch (error) {
             logger.error('[ClientDataSync] Error requesting tenant ID repair:', error);
           }
         }
+        
+        // If we don't have a tenant ID, attempt to get from URL path
+        if (!cognitoTenantId && !sessionTenantId) {
+          try {
+            const pathParts = window.location.pathname.split('/');
+            for (const part of pathParts) {
+              if (isValidUuid(part)) {
+                logger.info(`[ClientDataSync] Found tenant ID in URL path: ${part}`);
+                await updateTenantIdInCognito(part);
+                break;
+              }
+            }
+          } catch (error) {
+            logger.error('[ClientDataSync] Error extracting tenant ID from URL:', error);
+          }
+        }
       } catch (error) {
         logger.error('[ClientDataSync] Error checking tenant IDs:', error);
+      } finally {
+        setSyncing(false);
       }
     };
 

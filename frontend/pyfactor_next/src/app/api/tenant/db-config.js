@@ -4,6 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
 
 // Cache for Prisma clients to avoid creating multiple connections
 const prismaClients = {};
@@ -22,6 +23,22 @@ const DB_DEFAULTS = {
   retryAttempts: 3,
   retryDelay: 1000 // 1 second between retry attempts
 };
+
+// Database connection configuration
+const dbConfig = {
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'tenant_manager',
+  password: process.env.DB_PASSWORD || 'postgres',
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  ssl: process.env.DB_SSL === 'true' ? {
+    rejectUnauthorized: false
+  } : undefined
+};
+
+// Create and cache the database pool
+let pool = null;
+let poolClosed = false;
 
 /**
  * Get database configuration with fallbacks
@@ -67,109 +84,56 @@ export function getDbConfig() {
 }
 
 /**
- * Create a database pool with proper error handlers
- * @returns {Pool} Database connection pool
+ * Create a database connection pool
+ * @returns {Promise<Pool>} The database connection pool
  */
 export async function createDbPool() {
-  const { Pool } = require('pg');
-  const config = getDbConfig();
+  // If we already have a valid pool, return it
+  if (pool && !poolClosed) {
+    return pool;
+  }
   
+  // Create a new pool
+  console.log('Creating new database connection pool');
   try {
-    console.log('[DB] Creating database pool with config:', {
-      host: config.host,
-      port: config.port,
-      database: config.database,
-      user: config.user,
-      ssl: config.ssl ? 'enabled' : 'disabled',
-      connectionTimeoutMillis: config.connectionTimeoutMillis,
-      max: config.max
-    });
+    pool = new Pool(getDbConfig());
+    poolClosed = false;
     
-    const pool = new Pool(config);
-    
-    // Add error handler to prevent uncaught exceptions
-    pool.on('error', (err) => {
-      // Log full error details for debugging
-      console.error('[DB] Pool error event:', {
-        message: err.message,
-        code: err.code,
-        severity: err.severity,
-        detail: err.detail,
-        hint: err.hint,
-        where: err.where,
-        stack: err.stack
-      });
-      // Don't crash on connection errors
-    });
-    
-    // Test connection to verify settings
-    console.log('[DB] Attempting to get client from pool...');
-    
-    // Implement retry logic for initial connection
-    let client = null;
-    let lastError = null;
-    let attemptCount = 0;
-    
-    while (attemptCount < DB_DEFAULTS.retryAttempts) {
-      try {
-        attemptCount++;
-        console.log(`[DB] Connection attempt ${attemptCount}/${DB_DEFAULTS.retryAttempts}...`);
-        
-        client = await pool.connect();
-        
-        // If we got here, connection successful - break retry loop
-        console.log('[DB] Client connected successfully');
-        break;
-      } catch (connectionError) {
-        lastError = connectionError;
-        console.error(`[DB] Connection attempt ${attemptCount} failed:`, {
-          message: connectionError.message,
-          code: connectionError.code
-        });
-        
-        // Don't wait on the last attempt
-        if (attemptCount < DB_DEFAULTS.retryAttempts) {
-          console.log(`[DB] Waiting ${DB_DEFAULTS.retryDelay}ms before retry...`);
-          await new Promise(resolve => setTimeout(resolve, DB_DEFAULTS.retryDelay));
-        }
-      }
-    }
-    
-    // If all connection attempts failed, throw the last error
-    if (!client) {
-      throw lastError || new Error('Failed to connect to database after multiple attempts');
-    }
-    
-    try {
-      console.log('[DB] Running test query...');
-      const testResult = await client.query('SELECT 1 as connection_test');
-      console.log('[DB] Database connection test successful', {
-        host: config.host,
-        database: config.database,
-        timestamp: new Date().toISOString(),
-        result: testResult.rows[0]
-      });
-    } catch (queryError) {
-      console.error('[DB] Test query failed:', {
-        message: queryError.message,
-        code: queryError.code,
-        severity: queryError.severity,
-        detail: queryError.detail
-      });
-      throw queryError;
-    } finally {
-      if (client) client.release();
-    }
-    
+    // Test the connection
+    const client = await pool.connect();
+    console.log('Database connection successful');
+    client.release();
     return pool;
   } catch (error) {
-    console.error('[DB] Error creating database pool:', {
-      message: error.message,
-      code: error.code,
-      severity: error.severity,
-      detail: error.detail
-    });
-    throw error; // Rethrow original error for proper handling
+    console.error('Error connecting to database:', error);
+    // Destroy the pool on connection error
+    if (pool) {
+      try {
+        await pool.end();
+      } catch (endError) {
+        console.error('Error ending pool after connection failure:', endError);
+      }
+      pool = null;
+      poolClosed = true;
+    }
+    throw error;
+  }
+}
+
+/**
+ * Close the database pool
+ */
+export async function closeDbPool() {
+  if (pool && !poolClosed) {
+    try {
+      await pool.end();
+      poolClosed = true;
+      console.log('Database connection pool closed');
+    } catch (error) {
+      console.error('Error closing database pool:', error);
+    } finally {
+      pool = null;
+    }
   }
 }
 

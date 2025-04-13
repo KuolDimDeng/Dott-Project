@@ -10,6 +10,13 @@ import { getTenantHeaders } from '@/utils/tenantUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
+// Add initialization of global app cache after imports
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.offline = window.__APP_CACHE.offline || {};
+}
+
 /**
  * Generates a product code based on product name
  * @param {string} productName - The name of the product
@@ -1130,9 +1137,17 @@ export const storeProductsOffline = (products) => {
   }
   
   try {
-    const offlineProducts = JSON.stringify(products);
-    localStorage.setItem('offline_products', offlineProducts);
-    logger.debug(`Stored ${products.length} products for offline use`);
+    // Store in app cache
+    if (typeof window !== 'undefined') {
+      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+      if (!window.__APP_CACHE.offline) window.__APP_CACHE.offline = {};
+      window.__APP_CACHE.offline.products = products;
+      window.__APP_CACHE.offline.productsTimestamp = Date.now();
+      
+      logger.debug(`Stored ${products.length} products in app cache for offline use`);
+    } else {
+      logger.warn('Unable to store products for offline use: window not defined');
+    }
   } catch (error) {
     logger.error('Failed to store products for offline use:', error);
   }
@@ -1144,15 +1159,19 @@ export const storeProductsOffline = (products) => {
  */
 export const getOfflineProducts = () => {
   try {
-    const offlineProducts = localStorage.getItem('offline_products');
-    if (offlineProducts) {
-      return JSON.parse(offlineProducts);
+    // Get from app cache
+    if (typeof window !== 'undefined' && 
+        window.__APP_CACHE?.offline?.products) {
+      logger.debug(`Retrieved ${window.__APP_CACHE.offline.products.length} products from app cache`);
+      return window.__APP_CACHE.offline.products;
+    } else {
+      logger.debug('No products found in app cache for offline use');
+      return [];
     }
   } catch (error) {
     logger.error('Failed to get offline products:', error);
+    return [];
   }
-  
-  return [];
 };
 
 /**
@@ -1241,7 +1260,7 @@ export const printProductBarcode = async (productId) => {
       
       correctTenantId = beforeContext?.fromContext?.tenantId || 
                       beforeContext?.fromCookie || 
-                      beforeContext?.fromLocalStorage;
+                      beforeContext?.fromAppCache;
     
       if (!correctTenantId) {
         // Try to get tenant from API

@@ -48,38 +48,16 @@ const shouldLogSessionMessage = (message, interval = LOG_THROTTLE_INTERVAL) => {
   return false;
 };
 
-// Parse user attributes from cookies for better resilience
-const getUserAttributesFromCookies = () => {
-  if (typeof document === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=');
-    acc[key] = value;
-    return acc;
-  }, {});
-  
-  // Check for onboarding-related cookies
-  const attributes = {};
-  if (cookies.onboardingStep) {
-    attributes['custom:onboarding'] = cookies.onboardingStep;
+// Function to get user attributes from Cognito
+const getUserAttributesFromCognito = async () => {
+  try {
+    const attributes = await fetchUserAttributes();
+    logger.debug('[useSession] Successfully retrieved user attributes from Cognito');
+    return attributes;
+  } catch (error) {
+    logger.warn('[useSession] Error retrieving user attributes from Cognito:', error);
+    return null;
   }
-  if (cookies.onboardedStatus) {
-    attributes.onboardingStatus = cookies.onboardedStatus;
-  }
-  if (cookies.subplan) {
-    attributes['custom:subplan'] = cookies.subplan;
-  }
-  if (cookies.tenantId || cookies.businessid) {
-    attributes['custom:tenantId'] = cookies.tenantId || cookies.businessid;
-  }
-  if (cookies.email) {
-    attributes.email = cookies.email;
-  }
-  if (cookies.hasSession === 'true') {
-    attributes.hasSession = true;
-  }
-  
-  return Object.keys(attributes).length > 0 ? attributes : null;
 };
 
 export function useSession() {
@@ -136,14 +114,17 @@ export function useSession() {
         logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
       }
       
-      // Check if we can use cookie fallback
-      const cookieAttributes = getUserAttributesFromCookies();
-      if (cookieAttributes?.hasSession) {
-        if (shouldLogSessionMessage('[useSession] Using cookie fallback after timeout')) {
-          logger.info('[useSession] Session loading timed out, but hasSession cookie found. Using cookie fallback.');
+      // Try to get attributes from Cognito as fallback
+      getUserAttributesFromCognito().then(attributes => {
+        if (attributes) {
+          if (shouldLogSessionMessage('[useSession] Using Cognito attributes fallback after timeout')) {
+            logger.info('[useSession] Session loading timed out, but Cognito attributes found. Using as fallback.');
+          }
+          setSession({ userAttributes: attributes });
         }
-        setSession({ userAttributes: cookieAttributes });
-      }
+      }).catch(err => {
+        logger.warn('[useSession] Failed to get fallback attributes after timeout:', err);
+      });
     }, LOADING_TIMEOUT);
     
     // Check if we're in cooldown period due to too many failures
@@ -163,74 +144,6 @@ export function useSession() {
     
     // Update last attempt timestamp
     lastRefreshAttemptRef.current = now;
-    
-    // Development mode bypass handling
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        // Check if bypass is enabled
-        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
-        const authSuccess = localStorage.getItem('authSuccess') === 'true';
-        
-        if (bypassAuth && authSuccess) {
-          logger.info('[useSession] Development mode: using bypass auth');
-          
-          // Create a mock session
-          const mockSession = {
-            tokens: {
-              idToken: {
-                toString: () => 'mock-id-token',
-                payload: {
-                  email: localStorage.getItem('authUser') || '',
-                  email_verified: true,
-                  'custom:onboarding': 'complete',
-                  'custom:setupdone': 'true',
-                  exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
-                }
-              },
-              accessToken: {
-                toString: () => 'mock-access-token',
-                payload: {
-                  sub: 'user-123',
-                  exp: Math.floor(Date.now() / 1000) + 3600 // 1 hour from now
-                }
-              }
-            }
-          };
-          
-          // User attributes
-          const mockAttributes = {
-            email: localStorage.getItem('authUser') || '',
-            email_verified: true,
-            'custom:onboarding': 'complete',
-            'custom:setupdone': 'true',
-            'custom:tenantId': localStorage.getItem('tenantId') || 'user-tenant'
-          };
-          
-          // Set mock session
-          setSession({
-            ...mockSession,
-            userAttributes: mockAttributes
-          });
-          
-          // Set cookies for server API routes
-          if (typeof document !== 'undefined') {
-            const expires = new Date();
-            expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000);
-            document.cookie = `bypassAuthValidation=true; path=/; expires=${expires.toUTCString()}`;
-            document.cookie = `authUser=${mockAttributes.email}; path=/; expires=${expires.toUTCString()}`;
-            document.cookie = `tenantId=${mockAttributes['custom:tenantId']}; path=/; expires=${expires.toUTCString()}`;
-            document.cookie = `hasSession=true; path=/; expires=${expires.toUTCString()}`;
-          }
-          
-          setError(null);
-          setIsLoading(false);
-          
-          return mockSession;
-        }
-      } catch (devError) {
-        logger.error('[useSession] Error in development mode bypass:', devError);
-      }
-    }
     
     // Prevent duplicate refresh attempts - both local and global
     if (refreshInProgressRef.current || (typeof window !== 'undefined' && window.__tokenRefreshInProgress)) {
@@ -253,10 +166,10 @@ export function useSession() {
         }
         setIsLoading(false);
         
-        // Even in cooldown, check if we have cookies we can use
-        const cookieAttributes = getUserAttributesFromCookies();
-        if (cookieAttributes?.hasSession && !session) {
-          setSession({ userAttributes: cookieAttributes });
+        // Even in cooldown, check if we have Cognito attributes we can use
+        const userAttributes = await getUserAttributesFromCognito();
+        if (userAttributes && !session) {
+          setSession({ userAttributes });
         }
         
         return session;
@@ -300,61 +213,11 @@ export function useSession() {
             logger.debug('[useSession] Session fetched successfully');
           }
           
-          // Store token in cookies for better resilience
-          if (typeof document !== 'undefined') {
-            // Use more secure cookie settings
-            const expires = new Date();
-            expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-            const domain = window.location.hostname === 'localhost' ? '' : `domain=${window.location.hostname}; `;
-            const secure = window.location.protocol === 'https:' ? 'secure; ' : '';
-            
-            document.cookie = `authToken=${sessionData.tokens.idToken.toString()}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-            document.cookie = `hasSession=true; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-          }
-          
           // Also try to fetch user attributes for a more complete session
           try {
             const userAttributes = await fetchUserAttributes();
             if (userAttributes) {
               sessionData.userAttributes = userAttributes;
-              
-              // Store important user attributes in cookies for better resilience
-              if (typeof document !== 'undefined') {
-                const expires = new Date();
-                expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 24 hours
-                const domain = window.location.hostname === 'localhost' ? '' : `domain=${window.location.hostname}; `;
-                const secure = window.location.protocol === 'https:' ? 'secure; ' : '';
-                
-                // Store tenant ID in cookie if available
-                if (userAttributes['custom:tenantId']) {
-                  document.cookie = `tenantId=${userAttributes['custom:tenantId']}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                }
-
-                // Store email in cookie for AppBar and other components
-                if (userAttributes.email) {
-                  document.cookie = `email=${userAttributes.email}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  // Also store in localStorage as a fallback
-                  localStorage.setItem('email', userAttributes.email);
-                  localStorage.setItem('authUser', userAttributes.email);
-                }
-                
-                // Store name parts if available
-                if (userAttributes.given_name) {
-                  document.cookie = `firstName=${userAttributes.given_name}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('firstName', userAttributes.given_name);
-                }
-                
-                if (userAttributes.family_name) {
-                  document.cookie = `lastName=${userAttributes.family_name}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('lastName', userAttributes.family_name);
-                }
-
-                // Store business name if available
-                if (userAttributes['custom:businessname']) {
-                  document.cookie = `businessName=${userAttributes['custom:businessname']}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('businessName', userAttributes['custom:businessname']);
-                }
-              }
             }
           } catch (attributeError) {
             logger.warn('[useSession] Failed to fetch user attributes:', attributeError);
@@ -373,17 +236,17 @@ export function useSession() {
           
           return sessionData;
         } else {
-          // Try cookie fallback if no session data found
-          logger.warn('[useSession] No session token found, trying cookie fallback');
-          const cookieAttributes = getUserAttributesFromCookies();
+          // Try Cognito fallback if no session data found
+          logger.warn('[useSession] No session token found, trying Cognito attributes fallback');
+          const userAttributes = await getUserAttributesFromCognito();
           
-          if (cookieAttributes?.hasSession) {
-            logger.info('[useSession] Using cookie-based session');
-            const cookieSession = { userAttributes: cookieAttributes };
-            setSession(cookieSession);
+          if (userAttributes) {
+            logger.info('[useSession] Using Cognito attributes for session');
+            const cognitoSession = { userAttributes };
+            setSession(cognitoSession);
             setError(null);
             setIsLoading(false);
-            return cookieSession;
+            return cognitoSession;
           }
           
           // Check if we're on the landing page or main site pages
@@ -415,15 +278,15 @@ export function useSession() {
         
         logger.error('[useSession] Error fetching session:', sessionError);
         
-        // Check for cookie fallback
-        const cookieAttributes = getUserAttributesFromCookies();
-        if (cookieAttributes?.hasSession) {
-          logger.info('[useSession] Session fetch failed, falling back to cookies');
-          const cookieSession = { userAttributes: cookieAttributes };
-          setSession(cookieSession);
+        // Check for Cognito fallback
+        const userAttributes = await getUserAttributesFromCognito();
+        if (userAttributes) {
+          logger.info('[useSession] Session fetch failed, falling back to Cognito attributes');
+          const cognitoSession = { userAttributes };
+          setSession(cognitoSession);
           setError(null);
           setIsLoading(false);
-          return cookieSession;
+          return cognitoSession;
         }
         
         setError(sessionError);
@@ -436,15 +299,15 @@ export function useSession() {
       
       logger.error('[useSession] Error refreshing session:', refreshError);
       
-      // Try cookie fallback as last resort
-      const cookieAttributes = getUserAttributesFromCookies();
-      if (cookieAttributes?.hasSession) {
-        logger.info('[useSession] Session refresh failed, falling back to cookies');
-        const cookieSession = { userAttributes: cookieAttributes };
-        setSession(cookieSession);
+      // Try Cognito fallback as last resort
+      const userAttributes = await getUserAttributesFromCognito();
+      if (userAttributes) {
+        logger.info('[useSession] Session refresh failed, falling back to Cognito attributes');
+        const cognitoSession = { userAttributes };
+        setSession(cognitoSession);
         setError(null);
         setIsLoading(false);
-        return cookieSession;
+        return cognitoSession;
       }
       
       setError(refreshError);
@@ -484,13 +347,16 @@ export function useSession() {
         setIsLoading(false);
         logger.warn('[useSession] Global loading timeout reached, forcing loading state to false');
         
-        // Check if we can use cookie fallback if no session
+        // Check if we can use Cognito fallback if no session
         if (!session) {
-          const cookieAttributes = getUserAttributesFromCookies();
-          if (cookieAttributes?.hasSession) {
-            logger.info('[useSession] Loading timed out with no session. Using cookie fallback.');
-            setSession({ userAttributes: cookieAttributes });
-          }
+          getUserAttributesFromCognito().then(userAttributes => {
+            if (userAttributes) {
+              logger.info('[useSession] Loading timed out with no session. Using Cognito attributes fallback.');
+              setSession({ userAttributes });
+            }
+          }).catch(err => {
+            logger.error('[useSession] Failed to get Cognito attributes after timeout:', err);
+          });
         }
       }
     }, LOADING_TIMEOUT + 2000); // A bit longer than the refreshSession timeout

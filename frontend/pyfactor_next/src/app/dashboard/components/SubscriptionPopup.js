@@ -8,7 +8,10 @@ import { logger } from '@/utils/logger';
 import { forceRedirect, storeRedirectDebugInfo, safeParseJson } from '@/utils/redirectUtils';
 import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
 
-const SubscriptionPopup = ({ open, onClose }) => {
+const SubscriptionPopup = ({ open, onClose, isOpen }) => {
+  // Use either open or isOpen prop for backward compatibility
+  const showPopup = open !== undefined ? open : (isOpen !== undefined ? isOpen : false);
+  
   const { userData, updateUserAttributes } = useAuth();
   const { notifySuccess, notifyError } = useNotification();
   
@@ -60,13 +63,13 @@ const SubscriptionPopup = ({ open, onClose }) => {
   
   // Reset selected plan when popup opens
   useEffect(() => {
-    if (open) {
+    if (showPopup) {
       // If user is on free plan, default to professional; otherwise use their current plan
       setSelectedPlan((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
       setIsSubmitting(false);
       setIsRedirectingToStripe(false);
     }
-  }, [open, userData]);
+  }, [showPopup, userData]);
   
   // Get plan color using the utility function
   const getPlanColor = (planId) => {
@@ -484,7 +487,7 @@ const SubscriptionPopup = ({ open, onClose }) => {
         notifyError('Something went wrong with the subscription dialog. Please try again later.');
       }}
     >
-      <Transition.Root show={open} as={Fragment}>
+      <Transition.Root show={showPopup} as={Fragment}>
         <Dialog as="div" className="relative z-50" onClose={onClose}>
           <Transition.Child
             as={Fragment}

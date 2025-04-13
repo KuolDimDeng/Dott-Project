@@ -7,6 +7,13 @@ const generateRequestId = () => {
     : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 };
 
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+}
+
 // Determine if we should use relative paths for internal Next.js API routes
 // or absolute paths for external APIs
 const isInternalApiPath = (url) => {
@@ -57,16 +64,31 @@ axiosInstance.interceptors.request.use(
       // config.baseURL = process.env.NEXT_PUBLIC_API_URL || '';
     }
     
-    // Add auth token from localStorage if available
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    // Add auth token from APP_CACHE if available, fallback to localStorage
+    let token = null;
+    if (typeof window !== 'undefined') {
+      // Initialize APP_CACHE if needed
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+      
+      token = window.__APP_CACHE.auth.token;
+    }
     
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add tenant ID from localStorage if available
-    const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') : null;
+    // Add tenant ID from APP_CACHE if available, fallback to localStorage
+    let tenantId = null;
+    if (typeof window !== 'undefined') {
+      // Initialize APP_CACHE tenant section if needed
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+      
+      tenantId = window.__APP_CACHE.tenant.id;
+    }
+    
     if (tenantId) {
       config.headers = config.headers || {};
       config.headers['x-tenant-id'] = tenantId;
@@ -104,20 +126,28 @@ axiosInstance.interceptors.response.use(
       // Redirect to login if token expired/invalid
       if (typeof window !== 'undefined') {
         // Clear auth data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        if (window.__APP_CACHE?.auth) {
+          delete window.__APP_CACHE.auth.token;
+          delete window.__APP_CACHE.auth.user;
+        }
         
         // Only redirect if not already on login page
         if (!window.location.pathname.includes('/login')) {
           console.log('[Axios] Authentication error, redirecting to login...');
           
           // Instead of immediate redirect, set a flag to avoid interrupting current operation
-          localStorage.setItem('auth_redirect_needed', 'true');
+          if (window.__APP_CACHE) {
+            window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+            window.__APP_CACHE.auth.redirectNeeded = true;
+          }
           
           // After a short delay, check if we should actually redirect
           setTimeout(() => {
-            if (localStorage.getItem('auth_redirect_needed') === 'true') {
-              localStorage.removeItem('auth_redirect_needed');
+            const redirectNeeded = window.__APP_CACHE?.auth?.redirectNeeded;
+            if (redirectNeeded) {
+              if (window.__APP_CACHE?.auth) {
+                delete window.__APP_CACHE.auth.redirectNeeded;
+              }
               window.location.href = '/login';
             }
           }, 2000);
@@ -132,12 +162,18 @@ axiosInstance.interceptors.response.use(
       
       // Instead of immediate redirect, set a flag
       if (typeof window !== 'undefined') {
-        localStorage.setItem('login_redirect_needed', 'true');
+        if (window.__APP_CACHE) {
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.loginRedirectNeeded = true;
+        }
         
         // After a short delay, check if we should actually redirect
         setTimeout(() => {
-          if (localStorage.getItem('login_redirect_needed') === 'true') {
-            localStorage.removeItem('login_redirect_needed');
+          const redirectNeeded = window.__APP_CACHE?.auth?.loginRedirectNeeded;
+          if (redirectNeeded) {
+            if (window.__APP_CACHE?.auth) {
+              delete window.__APP_CACHE.auth.loginRedirectNeeded;
+            }
             window.location.href = '/dashboard';
           }
         }, 2000);

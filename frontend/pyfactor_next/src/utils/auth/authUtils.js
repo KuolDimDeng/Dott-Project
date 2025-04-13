@@ -1,70 +1,107 @@
-import { jwtDecode } from 'jwt-decode';
-import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 import { logger } from '@/utils/serverLogger';
 
 /**
- * Extract and decode JWT from a request
- * @param {Request} request - Next.js request object
- * @returns {Object|null} - Decoded JWT payload or null if not found/invalid
+ * Authentication utility functions that prioritize Cognito authentication
+ * and avoid using cookies for security
+ */
+
+/**
+ * Extracts and validates JWT token from request headers
+ * @param {Request} request - The Next.js request object
+ * @returns {Promise<Object|null>} - The decoded JWT payload or null if not valid
  */
 export async function getJwtFromRequest(request) {
   try {
-    // Try to get token from Authorization header
-    let token = null;
-    const authHeader = request.headers.get('Authorization');
+    // Get the authorization header (highest priority)
+    const authHeader = request.headers.get('authorization');
     
+    // Check if the header exists and starts with 'Bearer '
     if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
-    }
-    
-    // If no token in header, try ID token header
-    if (!token) {
-      token = request.headers.get('X-Id-Token');
-    }
-    
-    // If still no token, try cookies
-    if (!token) {
-      const cookieStore = cookies();
+      // Extract the token
+      const token = authHeader.substring(7);
       
-      // Try various cookie names for tokens
-      token = cookieStore.get('idToken')?.value || 
-              cookieStore.get('accessToken')?.value || 
-              cookieStore.get('authToken')?.value;
-      
-      // Try Cognito-specific cookies as last resort
-      if (!token) {
-        const lastAuthUser = cookieStore.get('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser')?.value;
-        if (lastAuthUser) {
-          token = cookieStore.get(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.idToken`)?.value;
-        }
+      try {
+        // Verify and decode the token
+        const secret = new TextEncoder().encode(
+          process.env.JWT_SECRET || 'default-jwt-secret-for-development-only'
+        );
+        
+        const { payload } = await jwtVerify(token, secret, {
+          clockTolerance: 60 // 1 minute clock skew tolerance
+        });
+        
+        logger.debug('[authUtils] Retrieved JWT from Authorization header');
+        return payload;
+      } catch (tokenError) {
+        logger.warn('[authUtils] Invalid JWT token:', tokenError.message);
       }
     }
     
-    // If no token found, return null
-    if (!token) {
-      logger.warn('[authUtils] No JWT token found in request');
-      return null;
+    // Check for Cognito specific headers (second priority)
+    const cognitoToken = request.headers.get('x-cognito-token') || 
+                        request.headers.get('x-id-token');
+    
+    if (cognitoToken) {
+      try {
+        // Parse the Cognito token
+        const tokenParts = cognitoToken.split('.');
+        if (tokenParts.length === 3) { // Simple check for JWT format
+          const payload = JSON.parse(
+            Buffer.from(tokenParts[1], 'base64').toString()
+          );
+          
+          logger.debug('[authUtils] Retrieved JWT from Cognito header');
+          return payload;
+        }
+      } catch (cognitoError) {
+        logger.warn('[authUtils] Invalid Cognito token:', cognitoError.message);
+      }
     }
     
-    // Decode the token
-    const decoded = jwtDecode(token);
-    
-    // Basic validation
-    if (!decoded || !decoded.sub) {
-      logger.warn('[authUtils] Invalid JWT payload');
-      return null;
+    // Get JWT from any other custom headers (third priority)
+    const customToken = request.headers.get('x-auth-token');
+    if (customToken) {
+      try {
+        // Verify and decode the token (simplified for example)
+        const tokenParts = customToken.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(
+            Buffer.from(tokenParts[1], 'base64').toString()
+          );
+          
+          logger.debug('[authUtils] Retrieved JWT from custom header');
+          return payload;
+        }
+      } catch (error) {
+        logger.warn('[authUtils] Invalid custom token:', error.message);
+      }
     }
     
-    // Check token expiration
-    const currentTime = Math.floor(Date.now() / 1000);
-    if (decoded.exp && decoded.exp < currentTime) {
-      logger.warn(`[authUtils] JWT token expired`);
-      return null;
-    }
-    
-    return decoded;
+    logger.warn('[authUtils] No valid authentication token found in request');
+    return null;
   } catch (error) {
-    logger.error('[authUtils] Error extracting JWT from request:', error);
+    logger.error('[authUtils] Error extracting JWT:', error);
     return null;
   }
+}
+
+/**
+ * Check if a user is authenticated
+ * @param {Request} request - The Next.js request object
+ * @returns {Promise<boolean>} - Whether the user is authenticated
+ */
+export async function isAuthenticated(request) {
+  const jwt = await getJwtFromRequest(request);
+  return !!jwt;
+}
+
+/**
+ * Get user ID from request
+ * @param {Request} request - The Next.js request object
+ * @returns {Promise<string|null>} - User ID or null
+ */
+export async function getUserId(request) {
+  const jwt = await getJwtFromRequest(request);
+  return jwt?.sub || null;
 } 

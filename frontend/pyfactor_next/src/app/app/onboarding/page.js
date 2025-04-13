@@ -1,27 +1,82 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     logger.debug('[OnboardingPage] Checking authentication status');
     
-    // Check if user is authenticated
-    const authSuccess = localStorage.getItem('authSuccess');
-    const authUser = localStorage.getItem('authUser');
-    
-    if (!authSuccess || !authUser) {
-      logger.warn('[OnboardingPage] User not authenticated, redirecting to sign in');
-      router.push('/auth/signin');
-      return;
+    // Helper to initialize app cache
+    if (typeof window !== 'undefined') {
+      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
     }
     
-    logger.debug('[OnboardingPage] User authenticated, proceeding with onboarding');
+    // Function to check authentication
+    const checkAuth = async () => {
+      // First try Cognito authentication
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        
+        if (session?.tokens?.idToken) {
+          // User is authenticated via Cognito
+          logger.debug('[OnboardingPage] User authenticated via Cognito');
+          
+          // Store in app cache
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE.auth.authSuccess = true;
+            
+            // Try to extract email from token
+            try {
+              const idToken = session.tokens.idToken.toString();
+              const payload = JSON.parse(atob(idToken.split('.')[1]));
+              if (payload.email) {
+                window.__APP_CACHE.auth.email = payload.email;
+              }
+            } catch (e) {
+              logger.warn('[OnboardingPage] Could not extract email from token:', e);
+            }
+          }
+          
+          // Allow proceed with onboarding
+          setIsLoading(false);
+          return;
+        }
+      } catch (e) {
+        logger.warn('[OnboardingPage] Error checking Cognito auth:', e);
+      }
+      
+      // Fallback to app cache
+      if (typeof window !== 'undefined' && 
+          window.__APP_CACHE?.auth?.authSuccess && 
+          window.__APP_CACHE?.auth?.email) {
+        logger.debug('[OnboardingPage] User authenticated via app cache');
+        setIsLoading(false);
+        return;
+      }
+      
+      // User not authenticated, redirect to sign in
+      logger.warn('[OnboardingPage] User not authenticated, redirecting to sign in');
+      router.push('/auth/signin');
+    };
+    
+    checkAuth();
   }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-900"></div>
+        <p className="mt-2 text-gray-600">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

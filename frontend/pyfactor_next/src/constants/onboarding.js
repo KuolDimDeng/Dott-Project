@@ -4,18 +4,23 @@
  * to ensure consistency across the application
  */
 
-// Cognito attribute names
+// Cognito attribute names - These are the preferred attributes to use
 export const COGNITO_ATTRIBUTES = {
   ONBOARDING_STATUS: 'custom:onboarding',
   SETUP_COMPLETED: 'custom:setupdone',
+  BUSINESS_INFO_DONE: 'custom:business_info_done',
+  SUBSCRIPTION_DONE: 'custom:subscription_done',
+  PAYMENT_DONE: 'custom:payment_done',
   BUSINESS_ID: 'custom:businessid',
   BUSINESS_NAME: 'custom:businessname',
   BUSINESS_TYPE: 'custom:businesstype',
-  SUBSCRIPTION_PLAN: 'custom:subscriptionplan',
+  SUBSCRIPTION_PLAN: 'custom:subplan',
   ACCOUNT_STATUS: 'custom:acctstatus',
+  UPDATED_AT: 'custom:updated_at',
 };
 
-// Cookie names - consistent with Cognito attribute naming
+// DEPRECATED: Cookie names - use COGNITO_ATTRIBUTES instead
+// These are maintained for backward compatibility but will be removed in future versions
 export const COOKIE_NAMES = {
   ONBOARDING_STATUS: 'onboardingStatus',
   SETUP_COMPLETED: 'setupCompleted',
@@ -26,7 +31,8 @@ export const COOKIE_NAMES = {
   TENANT_ID: 'tenantId',
 };
 
-// LocalStorage keys - consistent with cookie naming
+// DEPRECATED: LocalStorage keys - use COGNITO_ATTRIBUTES instead 
+// These are maintained for backward compatibility but will be removed in future versions
 export const STORAGE_KEYS = {
   ONBOARDING_STATUS: 'onboardingStatus',
   SETUP_COMPLETED: 'setupCompleted',

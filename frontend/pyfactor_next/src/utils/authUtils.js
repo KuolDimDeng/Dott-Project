@@ -585,35 +585,43 @@ export async function clearAllAuthData() {
 }
 
 /**
- * Ensures the custom:created_at attribute is set for the current user
- * This is called during authentication to ensure we track when users first signed up
- * @returns {Promise<boolean>} - Whether the attribute was updated or already existed
+ * Ensures the user has a created_at attribute in Cognito
+ * This is important for tracking user lifetime and activity
  */
-export const ensureUserCreatedAt = async () => {
+export async function ensureUserCreatedAt(userInfo) {
   try {
-    const { fetchUserAttributes, updateUserAttributes } = await import('aws-amplify/auth');
-    
-    // Check if the user has the attribute already
-    const attributes = await fetchUserAttributes();
-    
-    // If the attribute already exists, no need to set it
-    if (attributes['custom:created_at']) {
-      return true;
+    // Check if Auth is available (handles chunk loading errors)
+    if (typeof Auth === 'undefined') {
+      console.warn('Auth module not available, skipping created_at check');
+      return;
     }
     
-    // Set the attribute to current timestamp if it doesn't exist
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:created_at': new Date().toISOString()
-      }
-    });
+    // Get current user attributes
+    const user = await Auth.currentAuthenticatedUser();
+    const userAttributes = await Auth.userAttributes(user);
     
-    return true;
+    // Check if created_at attribute exists
+    const hasCreatedAt = userAttributes.some(attr => attr.Name === 'custom:created_at');
+    
+    if (!hasCreatedAt) {
+      const timestamp = new Date().toISOString();
+      
+      // Add created_at attribute
+      await Auth.updateUserAttributes(user, {
+        'custom:created_at': timestamp
+      });
+      
+      logger.info('Added created_at attribute for user', {
+        userId: userInfo?.username,
+        timestamp
+      });
+    }
   } catch (error) {
-    console.error('Error ensuring user created_at attribute:', error);
-    return false;
+    // Handle chunk loading errors gracefully
+    logger.warn('Error ensuring user created_at attribute:', error.message || error);
+    // Continue without blocking the authentication flow
   }
-};
+}
 
 // Initialize Amplify right away
 ensureAmplifyConfigured();

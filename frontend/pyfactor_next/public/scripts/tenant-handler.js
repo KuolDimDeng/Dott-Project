@@ -3,7 +3,7 @@
  * 
  * This script helps handle tenant-specific URLs by:
  * 1. Extracting tenant ID from URL
- * 2. Storing it in localStorage and cookies
+ * 2. Storing it in window.__APP_CACHE instead of localStorage/cookies
  * 3. Handling redirects when necessary
  */
 
@@ -32,20 +32,26 @@
     return null;
   }
 
-  // Set tenant ID in cookies and localStorage
+  // Set tenant ID in app cache for client access
   function storeTenantId(tenantId) {
     if (!tenantId) return;
     
-    // Store in localStorage for client-side access
-    localStorage.setItem('tenantId', tenantId);
+    // Initialize app cache if it doesn't exist
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+      window.__APP_CACHE.tenant.id = tenantId;
+      window.__APP_CACHE.tenant.lastUpdated = new Date().toISOString();
+      
+      // Store in sessionStorage as a fallback for backward compatibility
+      try {
+        sessionStorage.setItem('tenantId', tenantId);
+      } catch (err) {
+        console.error('[tenant-handler] Failed to store in sessionStorage:', err);
+      }
+    }
     
-    // Store in cookies for server-side access
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30); // 30 days
-    document.cookie = `tenantId=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
-    document.cookie = `businessid=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
-    
-    console.log(`[tenant-handler] Stored tenant ID: ${tenantId}`);
+    console.log(`[tenant-handler] Stored tenant ID in app cache: ${tenantId}`);
   }
 
   // Main function to handle tenant ID from URL

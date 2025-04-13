@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import { updateTenantIdInCognito } from '@/utils/tenantUtils';
 
 /**
  * ResetAppState - A component that provides a button to reset all application state
@@ -19,6 +20,33 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
     try {
       setIsResetting(true);
       logger.info('[ResetAppState] Starting application state reset');
+
+      // Reset Cognito attributes
+      logger.debug('[ResetAppState] Resetting Cognito attributes');
+      try {
+        // Reset tenant ID in Cognito
+        await updateTenantIdInCognito('');
+        
+        // Reset other Cognito attributes
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:onboardingStep': '',
+            'custom:onboardedStatus': '',
+            'custom:businessInfoCompleted': 'FALSE',
+            'custom:subscriptionCompleted': 'FALSE',
+            'custom:paymentCompleted': 'FALSE',
+            'custom:setupCompleted': 'FALSE',
+            'custom:freePlanSelected': '',
+            'custom:businessInfo': '',
+            'custom:subscriptionInfo': '',
+            'custom:paymentInfo': ''
+          }
+        });
+        logger.debug('[ResetAppState] Successfully reset Cognito attributes');
+      } catch (cognitoErr) {
+        logger.warn('[ResetAppState] Error resetting Cognito attributes:', cognitoErr);
+      }
 
       // Clear localStorage
       logger.debug('[ResetAppState] Clearing localStorage');
@@ -40,7 +68,13 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         'pendingBusinessInfo',
         'userContext_loadAttempts',
         'userContext_refreshAttempts',
-        'userService_apiCallAttempts'
+        'userService_apiCallAttempts',
+        'tenantId',
+        'businessid',
+        'businessInfo',
+        'subscriptionInfo',
+        'paymentInfo',
+        'freePlanSelected'
       ];
 
       localStorageKeysToRemove.forEach(key => {
@@ -96,7 +130,13 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         'pendingBusinessInfo',
         'businessName',
         'businessType',
-        'selectedPlan'
+        'selectedPlan',
+        'tenantId',
+        'businessid',
+        'setupCompleted',
+        'businessInfoCompleted',
+        'subscriptionCompleted',
+        'paymentCompleted'
       ];
 
       cookiesToReset.forEach(cookieName => {
@@ -113,6 +153,19 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         window.__REDIRECT_LOOP_DETECTED = false;
         window.__HARD_CIRCUIT_BREAKER = false;
         window.__LAST_REDIRECT_ERROR = null;
+      }
+
+      // Call API endpoint to clear cookies on server side
+      try {
+        logger.debug('[ResetAppState] Clearing server-side cookies');
+        await fetch('/api/auth/clear-cookies', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (apiErr) {
+        logger.warn('[ResetAppState] Error clearing server-side cookies:', apiErr);
       }
 
       // Wait a bit to ensure storage operations complete
@@ -165,7 +218,7 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         
         {resetComplete ? (
           <div className="bg-green-50 text-green-600 p-3 rounded-md mb-4">
-            Reset successful! {redirectUrl ? 'Redirecting...' : 'Please refresh the page.'}
+            Reset successful! {redirectUrl ? 'Redirecting...' : 'Please refresh the page or sign in again.'}
           </div>
         ) : (
           <button

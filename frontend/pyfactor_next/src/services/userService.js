@@ -2,83 +2,48 @@
 
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { getUserAttributesFromCognito } from '../hooks/useSession';
+import { Auth } from 'aws-amplify';
+
+// Add global window-level cache to ensure cross-component deduplication
+if (typeof window !== 'undefined') {
+  // Initialize global cache object if it doesn't exist
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  // Initialize profile request tracking
+  window.__PENDING_PROFILE_REQUEST = window.__PENDING_PROFILE_REQUEST || null;
+}
 
 // Cache the current user to avoid repeated API calls
 let currentUserCache = null;
 let lastFetchTime = 0;
+let lastCacheTime = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+let pendingRequests = new Map();
+
+/**
+ * Helper to determine if current route is a dashboard route
+ */
+const isDashboardRoute = (pathname) => {
+  return pathname && (
+    pathname.startsWith('/dashboard') || 
+    pathname.includes('/tenant/') && pathname.includes('/dashboard')
+  );
+};
 
 /**
  * Get the current authenticated user
  * @returns {Promise<Object>} Current user data
  */
-export const getCurrentUser = async () => {
+export const getCurrentUser = async (isDashboardRoute = false) => {
+  logger.debug('[UserService] Getting current user');
+  
   try {
-    // Check if we have a valid cached user and it's not expired
-    const now = Date.now();
-    if (currentUserCache && (now - lastFetchTime < CACHE_TTL)) {
-      logger.debug('[UserService] Returning cached user data');
-      return currentUserCache;
-    }
-
-    // Fetch user data from API
-    const response = await fetch('/api/user/me', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include', // Important for sending cookies
-    });
-
-    if (!response.ok) {
-      // Try to get user data from local storage as fallback
-      if (typeof window !== 'undefined') {
-        const email = localStorage.getItem('userEmail');
-        const firstName = localStorage.getItem('firstName');
-        const lastName = localStorage.getItem('lastName');
-        
-        if (email) {
-          const fallbackUser = {
-            email,
-            firstName: firstName || '',
-            lastName: lastName || '',
-            name: email,
-            fullName: firstName && lastName ? `${firstName} ${lastName}` : email,
-            fallback: true,
-          };
-          
-          logger.warn('[UserService] API call failed, using fallback user data');
-          return fallbackUser;
-        }
-      }
-      
-      logger.error('[UserService] Failed to fetch user data:', response.status);
-      return null;
-    }
-
-    const userData = await response.json();
-    
-    // Save to cache
-    currentUserCache = userData;
-    lastFetchTime = now;
-    
-    // Also save basic info to localStorage for fallback
-    if (typeof window !== 'undefined' && userData.email) {
-      localStorage.setItem('userEmail', userData.email);
-      if (userData.firstName) localStorage.setItem('firstName', userData.firstName);
-      if (userData.lastName) localStorage.setItem('lastName', userData.lastName);
-    }
-    
-    return userData;
+    // Get user data from Cognito
+    const user = await getUserAttributesFromCognito();
+    return user;
   } catch (error) {
-    logger.error('[UserService] Error in getCurrentUser:', error);
-    
-    // Return fallback user data
-    return { 
-      username: getUserDisplayName() || "",
-      email: localStorage.getItem('userEmail') || "",
-      fallback: true
-    };
+    logger.error('[UserService] Error getting current user:', error);
+    throw error;
   }
 };
 
@@ -87,31 +52,41 @@ export const getCurrentUser = async () => {
  * @returns {Promise<void>}
  */
 export const logout = async () => {
-  try {
-    // Clear user cache
-    currentUserCache = null;
-    lastFetchTime = 0;
-    
-    // Clear localStorage
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('idToken');
-    }
-    
-    logger.debug('[UserService] User logged out successfully');
-  } catch (error) {
-    logger.error('[UserService] Error logging out:', error);
-    throw error;
+  logger.debug('[UserService] Logging out user');
+  
+  // Reset cache variables
+  currentUserCache = null;
+  lastCacheTime = 0;
+  
+  // Clear all pending requests
+  pendingRequests.clear();
+  
+  // Clear global cache if available
+  if (typeof window !== 'undefined' && window.__APP_CACHE) {
+    window.__APP_CACHE.userProfile = null;
   }
+  
+  // Call Auth API to complete logout
+  return await Auth.signOut();
 };
 
 /**
  * Clear the user cache
  */
 export const clearUserCache = () => {
+  logger.debug('[UserService] Clearing user cache');
+  
+  // Reset cache variables
   currentUserCache = null;
-  lastFetchTime = 0;
-  logger.debug('[UserService] User cache cleared');
+  lastCacheTime = 0;
+  
+  // Clear all pending requests
+  pendingRequests.clear();
+  
+  // Clear global cache if available
+  if (typeof window !== 'undefined' && window.__APP_CACHE) {
+    window.__APP_CACHE.userProfile = null;
+  }
 };
 
 /**
@@ -137,6 +112,112 @@ export const getUserById = async (userId) => {
 };
 
 /**
+ * Get user profile with caching and request deduplication
+ * @param {Object} options - Options for the request
+ * @param {string} options.tenantId - Optional tenant ID 
+ * @param {boolean} options.force - Force refresh cache
+ * @returns {Promise<Object>} User profile
+ */
+export const getUserProfile = async (tenantId) => {
+  logger.debug('[UserService] getUserProfile called' + (tenantId ? ` for tenant ${tenantId}` : ''));
+  
+  // Unique cache key based on tenant ID
+  const cacheKey = `profile-${tenantId || 'default'}`;
+  
+  // Check for existing in-flight request to avoid duplicates
+  if (pendingRequests.has(cacheKey)) {
+    logger.debug('[UserService] Using in-flight profile request');
+    return pendingRequests.get(cacheKey);
+  }
+  
+  // Check for cached data in memory first
+  const now = Date.now();
+  if (currentUserCache && (now - lastCacheTime < CACHE_TTL)) {
+    logger.debug('[UserService] Using memory-cached profile data');
+    return currentUserCache;
+  }
+  
+  // Check for cached data in global app cache
+  if (typeof window !== 'undefined' && window.__APP_CACHE?.userProfile) {
+    const { data, timestamp } = window.__APP_CACHE.userProfile;
+    if (data && (now - timestamp < CACHE_TTL)) {
+      logger.debug('[UserService] Using global-cached profile data');
+      currentUserCache = data;
+      lastCacheTime = timestamp;
+      return data;
+    }
+  }
+  
+  // Create promise for the actual request
+  const requestPromise = (async () => {
+    try {
+      // Build URL with tenant ID if provided
+      const url = tenantId 
+        ? `/api/user/profile?tenantId=${encodeURIComponent(tenantId)}`
+        : '/api/user/profile';
+      
+      // Add a cache buster with reduced frequency (changes only every minute)
+      const cacheBuster = Math.floor(now / (60 * 1000));
+      const requestUrl = `${url}${url.includes('?') ? '&' : '?'}_cb=${cacheBuster}`;
+      
+      logger.debug(`[UserService] Fetching profile from API: ${requestUrl}`);
+      
+      // Make request with appropriate headers to avoid caching
+      const response = await fetch(requestUrl, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'X-Request-ID': `profile-${Date.now()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Profile API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      logger.debug('[UserService] Profile API request successful');
+      
+      // Update local cache
+      currentUserCache = data;
+      lastCacheTime = now;
+      
+      // Update global cache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.userProfile = {
+          data,
+          timestamp: now
+        };
+      }
+      
+      return data;
+    } catch (error) {
+      logger.error('[UserService] Error fetching user profile:', error);
+      throw error;
+    } finally {
+      // Always remove from pending requests maps
+      pendingRequests.delete(cacheKey);
+      
+      // Clear global pending request flag
+      if (typeof window !== 'undefined') {
+        window.__PENDING_PROFILE_REQUEST = null;
+      }
+    }
+  })();
+  
+  // Store the promise in our pending requests map
+  pendingRequests.set(cacheKey, requestPromise);
+  
+  // Also store globally to avoid duplication across components
+  if (typeof window !== 'undefined') {
+    window.__PENDING_PROFILE_REQUEST = requestPromise;
+  }
+  
+  return requestPromise;
+};
+
+/**
  * Update user profile
  * @param {Object} profileData - Profile data to update
  * @returns {Promise<Object>} Updated profile
@@ -145,16 +226,8 @@ export const updateUserProfile = async (profileData) => {
   try {
     const result = await fetch.put('/api/user/profile/', profileData);
     
-    // Update cache with new data
-    if (currentUserCache && currentUserCache.profile) {
-      currentUserCache.profile = {
-        ...currentUserCache.profile,
-        ...profileData
-      };
-    } else {
-      // Force refresh of cache
-      clearUserCache();
-    }
+    // Clear cache to force refresh with new data
+    clearUserCache();
     
     return result;
   } catch (error) {
@@ -235,27 +308,29 @@ export const getUserTenantContext = async () => {
   }
 };
 
-// Function to get user's display name from available sources
-const getUserDisplayName = () => {
-  if (typeof window === 'undefined') return "";
-  
-  // Get name details
-  const firstName = localStorage.getItem('firstName') || 
-    document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1];
-  const lastName = localStorage.getItem('lastName') || 
-    document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1];
-  const email = localStorage.getItem('userEmail') || localStorage.getItem('authUser') || 
-    document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1];
-  
-  // Create a username from first name and last name, or email if not available
-  if (firstName && lastName) {
-    return `${firstName} ${lastName}`;
-  } else if (firstName) {
-    return firstName;
-  } else if (email) {
-    return email.split('@')[0];
+// Function to get user's display name from Cognito attributes
+const getUserDisplayName = async () => {
+  try {
+    const userAttributes = await getUserAttributesFromCognito();
+    
+    // Get name details from Cognito attributes
+    const firstName = userAttributes['given_name'] || userAttributes['custom:firstName'];
+    const lastName = userAttributes['family_name'] || userAttributes['custom:lastName'];
+    const email = userAttributes['email'];
+    
+    // Create a username from first name and last name, or email if not available
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (email) {
+      return email.split('@')[0];
+    }
+    return "";
+  } catch (error) {
+    logger.error('[UserService] Error getting user display name:', error);
+    return "";
   }
-  return "";
 };
 
 // Create a default export with all service methods
@@ -267,7 +342,8 @@ const userService = {
   updateUserProfile,
   getTenantUsers,
   inviteUser,
-  getUserTenantContext
+  getUserTenantContext,
+  getUserProfile
 };
 
 // Export as default for imports like: import userService from './userService'

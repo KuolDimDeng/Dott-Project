@@ -113,7 +113,15 @@ export function useSetupPolling() {
       if (!isPolling) return;
 
       // Check if we recently had a 429 error and need to wait longer
-      const last429Time = localStorage.getItem('last_429_error');
+      let last429Time = null;
+      
+      // Get from app cache if available
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.polling = window.__APP_CACHE.polling || {};
+        last429Time = window.__APP_CACHE.polling.last429ErrorTime;
+      }
+      
       if (last429Time) {
         const timeSince429 = Date.now() - parseInt(last429Time, 10);
         const minWaitTime = MAX_POLLING_INTERVAL * 4; // At least 4x max interval after a 429 (increased from 2x)
@@ -135,7 +143,9 @@ export function useSetupPolling() {
           return;
         } else {
           // Clear the 429 timestamp if enough time has passed
-          localStorage.removeItem('last_429_error');
+          if (typeof window !== 'undefined' && window.__APP_CACHE?.polling) {
+            delete window.__APP_CACHE.polling.last429ErrorTime;
+          }
         }
       }
 
@@ -175,7 +185,11 @@ export function useSetupPolling() {
           logger.info('[SetupPolling] Adding maximum delay for rate limiting', { nextDelay });
           
           // Store the last 429 timestamp to avoid polling too soon
-          localStorage.setItem('last_429_error', Date.now().toString());
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.polling = window.__APP_CACHE.polling || {};
+            window.__APP_CACHE.polling.last429ErrorTime = Date.now().toString();
+          }
           
           // Force a refresh of the user's Cognito attributes to update onboarding status
           try {

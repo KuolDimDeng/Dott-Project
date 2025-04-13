@@ -26,17 +26,21 @@ export async function completeOnboarding() {
     'custom:onboardingCompletedAt': new Date().toISOString()
   };
   
-  // Also store in localStorage as a last-resort fallback
+  // Store in app cache
   try {
-    localStorage.setItem('custom:onboarding', 'complete');
-    localStorage.setItem('custom:setupdone', 'true');
-    localStorage.setItem('custom:onboardingCompletedAt', new Date().toISOString());
-    
-    // Set cookies for server-side access
-    document.cookie = `onboardingStatus=complete; path=/; max-age=${60*60*24*7}`;
-    document.cookie = `setupDone=true; path=/; max-age=${60*60*24*7}`;
+    // Initialize app cache if needed
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      
+      // Store in app cache
+      window.__APP_CACHE.onboarding.status = 'complete';
+      window.__APP_CACHE.onboarding.setupDone = true;
+      window.__APP_CACHE.onboarding.completedAt = new Date().toISOString();
+      window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+    }
   } catch (storageError) {
-    logger.warn(`[completeOnboarding:${requestId}] Failed to set localStorage:`, storageError.message);
+    logger.warn(`[completeOnboarding:${requestId}] Failed to set app cache:`, storageError.message);
   }
 
   // Attempt 1: Direct Amplify call

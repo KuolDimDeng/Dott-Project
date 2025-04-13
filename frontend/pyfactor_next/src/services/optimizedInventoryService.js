@@ -192,17 +192,18 @@ export const optimizedInventoryService = {
     const tenantId = getTenantId() || 'default';
     const prefix = `inventory:${tenantId}:`;
     
-    // Clear all product-related cache entries
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix) && 
-          (key.includes('product_') || key.includes('optimized_products'))) {
-        inventoryCache.delete(key.replace(prefix, ''));
-      }
+    // Clear all product-related cache entries from memory cache
+    inventoryCache.clearTenant();
+    
+    // Clear from app cache if available
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.offline) {
+      delete window.__APP_CACHE.offline.products;
+      logger.debug('Cleared product cache from APP_CACHE');
     }
   },
 
   /**
-   * Store product data in local storage for offline access
+   * Store product data in app cache for offline access
    * @param {Array} products - List of products to store
    */
   storeProductsOffline(products) {
@@ -212,7 +213,11 @@ export const optimizedInventoryService = {
       }
       
       const tenantId = getTenantId() || 'default';
-      const storageKey = `offline_products_${tenantId}`;
+      
+      // Skip if window is not available
+      if (typeof window === 'undefined') {
+        return;
+      }
       
       // Store with timestamp
       const offlineData = {
@@ -220,8 +225,12 @@ export const optimizedInventoryService = {
         products: products
       };
       
-      localStorage.setItem(storageKey, JSON.stringify(offlineData));
-      logger.debug(`Stored ${products.length} products for offline use`);
+      // Initialize app cache
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.offline = window.__APP_CACHE.offline || {};
+      window.__APP_CACHE.offline[`products_${tenantId}`] = offlineData;
+      
+      logger.debug(`Stored ${products.length} products in APP_CACHE for offline use`);
     } catch (error) {
       logger.error('Error storing products offline:', error);
     }
@@ -233,15 +242,19 @@ export const optimizedInventoryService = {
    */
   getOfflineProducts() {
     try {
-      const tenantId = getTenantId() || 'default';
-      const storageKey = `offline_products_${tenantId}`;
-      
-      const offlineDataStr = localStorage.getItem(storageKey);
-      if (!offlineDataStr) {
+      // Skip if window is not available
+      if (typeof window === 'undefined') {
         return [];
       }
       
-      const offlineData = JSON.parse(offlineDataStr);
+      const tenantId = getTenantId() || 'default';
+      
+      // Check if app cache exists
+      if (!window.__APP_CACHE?.offline?.[`products_${tenantId}`]) {
+        return [];
+      }
+      
+      const offlineData = window.__APP_CACHE.offline[`products_${tenantId}`];
       
       // Check if data is stale (older than 24 hours)
       const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;

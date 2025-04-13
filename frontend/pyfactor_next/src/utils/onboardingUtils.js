@@ -10,6 +10,10 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { 
+  updateTenantIdInCognito, 
+  getTenantIdFromCognito 
+} from '@/utils/tenantUtils';
 
 export async function validateSession(providedTokens) {
   try {
@@ -415,29 +419,36 @@ export async function getOnboardingStatus() {
     
     // Check local storage as last resort (lowest priority)
     try {
-      statusData.localStorageStatus = localStorage.getItem('onboardedStatus');
-      statusData.localStorageStep = localStorage.getItem('onboardingStep');
-      statusData.sourcesPriority.push('localStorage');
-      
-      // Only use localStorage if we have no other data
-      if (!statusData.status && statusData.localStorageStatus) {
-        statusData.status = statusData.localStorageStatus;
-        statusData.step = statusData.localStorageStep;
+      // Initialize app cache if needed
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        
+        // Get from app cache
+        statusData.appCacheStatus = window.__APP_CACHE.onboarding.status;
+        statusData.appCacheStep = window.__APP_CACHE.onboarding.step;
+        statusData.sourcesPriority.push('appCache');
+        
+        // Only use app cache if we have no other data
+        if (!statusData.status && statusData.appCacheStatus) {
+          statusData.status = statusData.appCacheStatus;
+          statusData.step = statusData.appCacheStep;
+        }
+        
+        logger.debug('[getOnboardingStatus] Retrieved from app cache:', {
+          status: statusData.appCacheStatus,
+          step: statusData.appCacheStep
+        });
       }
-      
-      logger.debug('[getOnboardingStatus] Retrieved from localStorage:', {
-        status: statusData.localStorageStatus,
-        step: statusData.localStorageStep
-      });
-    } catch (storageError) {
-      logger.warn('[getOnboardingStatus] Error getting status from localStorage:', storageError);
+    } catch (cacheError) {
+      logger.warn('[getOnboardingStatus] Error getting status from app cache:', cacheError);
     }
     
     // Determine if there's inconsistency between sources
     const inconsistent = (
       (statusData.cognitoStatus && statusData.cookieStatus && statusData.cognitoStatus !== statusData.cookieStatus) ||
-      (statusData.cognitoStatus && statusData.localStorageStatus && statusData.cognitoStatus !== statusData.localStorageStatus) ||
-      (statusData.cookieStatus && statusData.localStorageStatus && statusData.cookieStatus !== statusData.localStorageStatus)
+      (statusData.cognitoStatus && statusData.appCacheStatus && statusData.cognitoStatus !== statusData.appCacheStatus) ||
+      (statusData.cookieStatus && statusData.appCacheStatus && statusData.cookieStatus !== statusData.appCacheStatus)
     );
     
     // If we detect inconsistency, synchronize all sources to match Cognito (source of truth)
@@ -445,7 +456,7 @@ export async function getOnboardingStatus() {
       logger.info('[getOnboardingStatus] Detected inconsistent status, synchronizing to Cognito:', {
         cognito: statusData.cognitoStatus,
         cookie: statusData.cookieStatus,
-        localStorage: statusData.localStorageStatus
+        appCache: statusData.appCacheStatus
       });
       
       await synchronizeOnboardingStatus(statusData.cognitoStatus, statusData.cognitoSetupDone);
@@ -453,7 +464,7 @@ export async function getOnboardingStatus() {
       // Update our return values to reflect the synchronized state
       statusData.status = statusData.cognitoStatus;
       statusData.cookieStatus = statusData.cognitoStatus;
-      statusData.localStorageStatus = statusData.cognitoStatus;
+      statusData.appCacheStatus = statusData.cognitoStatus;
     }
     
     // Set step based on status
@@ -552,15 +563,21 @@ async function synchronizeOnboardingStatus(status, setupDone) {
       logger.warn('[synchronizeOnboardingStatus] Error updating cookies:', cookieError);
     }
     
-    // Update localStorage with normalized case
+    // Update app cache with normalized case
     try {
-      localStorage.setItem('onboardedStatus', statusLower || 'not_started');
-      localStorage.setItem('onboardingStep', step);
-      localStorage.setItem('cognitoOnboardingStatus', statusLower || 'not_started');
-      localStorage.setItem('cognitoSetupDone', setupDone ? 'true' : 'false');
-      logger.debug('[synchronizeOnboardingStatus] Updated localStorage');
-    } catch (storageError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating localStorage:', storageError);
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        
+        window.__APP_CACHE.onboarding.status = statusLower || 'not_started';
+        window.__APP_CACHE.onboarding.step = step;
+        window.__APP_CACHE.onboarding.setupDone = setupDone;
+        window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+        
+        logger.debug('[synchronizeOnboardingStatus] Updated app cache');
+      }
+    } catch (cacheError) {
+      logger.warn('[synchronizeOnboardingStatus] Error updating app cache:', cacheError);
     }
     
     // Attempt to update Cognito via server endpoint if our status is different
@@ -764,37 +781,53 @@ export const setCookie = (name, value, maxAge = 60 * 60 * 24 * 30) => {
 };
 
 /**
- * Gets an item from localStorage with error handling
- * @param {string} key - The localStorage key
+ * Gets an item from app cache with error handling
+ * @param {string} key - The storage key
  * @returns {string|null} The value or null if not found or error occurs
  */
-export const getLocalStorage = (key) => {
+export const getAppCache = (key) => {
   try {
-    return localStorage.getItem(key);
+    if (typeof window === 'undefined') return null;
+    
+    // Ensure app cache exists
+    window.__APP_CACHE = window.__APP_CACHE || {};
+    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+    
+    // Extract the property from onboarding section
+    return window.__APP_CACHE.onboarding[key];
   } catch (e) {
-    logger.warn('[onboardingUtils] Error reading from localStorage:', e);
+    logger.warn('[onboardingUtils] Error reading from app cache:', e);
     return null;
   }
 };
 
 /**
- * Sets an item in localStorage with error handling
- * @param {string} key - The localStorage key
+ * Sets an item in app cache with error handling
+ * @param {string} key - The storage key
  * @param {string} value - The value to store
  * @returns {boolean} True if successful, false otherwise
  */
-export const setLocalStorage = (key, value) => {
+export const setAppCache = (key, value) => {
   try {
-    localStorage.setItem(key, value);
+    if (typeof window === 'undefined') return false;
+    
+    // Ensure app cache exists
+    window.__APP_CACHE = window.__APP_CACHE || {};
+    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+    
+    // Set the property in onboarding section
+    window.__APP_CACHE.onboarding[key] = value;
+    window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+    
     return true;
   } catch (e) {
-    logger.warn('[onboardingUtils] Error writing to localStorage:', e);
+    logger.warn('[onboardingUtils] Error writing to app cache:', e);
     return false;
   }
 };
 
 /**
- * Updates the onboarding status across all storage mechanisms (Cognito, cookies, localStorage)
+ * Updates the onboarding status across all storage mechanisms (Cognito, cookies, app cache)
  * @param {string} status - The new onboarding status, use ONBOARDING_STATUS constants
  * @param {Object} options - Additional options
  * @param {boolean} options.updateCognito - Whether to update Cognito attributes (default true)
@@ -805,15 +838,16 @@ export const updateOnboardingStatus = async (status, options = {}) => {
   const { updateCognito = true, wait = false } = options;
   
   try {
-    // Always update cookies and localStorage as fallbacks
+    // Always update cookies and app cache as fallbacks
     setCookie(COOKIE_NAMES.ONBOARDING_STATUS, status);
-    setLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS, status);
+    setAppCache('status', status);
     
     // Set additional cookies/storage based on status
     if (status === ONBOARDING_STATUS.COMPLETE) {
       setCookie(COOKIE_NAMES.SETUP_COMPLETED, 'true');
       setCookie(COOKIE_NAMES.ONBOARDING_STEP, ONBOARDING_STEPS.COMPLETE);
-      setLocalStorage(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+      setAppCache('setupDone', true);
+      setAppCache('step', ONBOARDING_STEPS.COMPLETE);
     }
     
     // Update Cognito if requested
@@ -873,17 +907,29 @@ export const isOnboardingComplete = () => {
     const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED)?.toLowerCase();
     const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP)?.toLowerCase();
     
-    // Check localStorage as backup
-    const localStorageStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS)?.toLowerCase();
-    const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED)?.toLowerCase();
+    // Check app cache as backup
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      
+      const appCacheStatus = window.__APP_CACHE.onboarding.status?.toLowerCase();
+      const appCacheSetupDone = window.__APP_CACHE.onboarding.setupDone;
+      
+      // Return true if ANY source indicates completion (using case-insensitive comparison)
+      return (
+        cookieStatus === 'complete' ||
+        cookieSetupCompleted === 'true' ||
+        cookieOnboardingStep === 'complete' ||
+        appCacheStatus === 'complete' ||
+        appCacheSetupDone === true
+      );
+    }
     
-    // Return true if ANY source indicates completion (using case-insensitive comparison)
+    // If window is not defined, just use cookie data
     return (
       cookieStatus === 'complete' ||
       cookieSetupCompleted === 'true' ||
-      cookieOnboardingStep === 'complete' ||
-      localStorageStatus === 'complete' ||
-      localStorageSetupCompleted === 'true'
+      cookieOnboardingStep === 'complete'
     );
   } catch (error) {
     logger.error('[onboardingUtils] Error checking onboarding status:', error);
@@ -896,9 +942,13 @@ export const isOnboardingComplete = () => {
  * @returns {string} The current onboarding step path
  */
 export const getCurrentOnboardingStep = () => {
-  // Get from cookie first, fallback to localStorage
-  const cookieStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
+  // Try to get from app cache first
+  if (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.step) {
+    return window.__APP_CACHE.onboarding.step;
+  }
   
+  // Fallback to cookie
+  const cookieStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
   if (cookieStep) {
     return cookieStep;
   }
@@ -911,3 +961,213 @@ export const getCurrentOnboardingStep = () => {
   // Default to first step
   return ONBOARDING_STEPS.BUSINESS_INFO;
 };
+
+/**
+ * Gets business information from Cognito
+ * @returns {Promise<Object>} Business information
+ */
+export async function getBusinessInfo() {
+  try {
+    // Import auth utilities
+    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    
+    // Get user attributes from Cognito
+    const attributes = await fetchUserAttributes();
+    
+    // Extract business info
+    const businessInfo = {
+      businessName: attributes['custom:businessname'] || '',
+      businessType: attributes['custom:businesstype'] || '',
+      businessSubtypes: attributes['custom:businesssubtypes'] || '',
+      dateFounded: attributes['custom:datefounded'] || '',
+      country: attributes['custom:country'] || '',
+      businessState: attributes['custom:state'] || '',
+      legalStructure: attributes['custom:legalstructure'] || '',
+      tenantId: attributes['custom:tenant_id'] || 
+               attributes['custom:businessid'] || 
+               attributes['custom:tenant_ID'] || ''
+    };
+    
+    logger.debug('[onboardingUtils] Got business info from Cognito:', businessInfo);
+    return businessInfo;
+  } catch (error) {
+    logger.error('[onboardingUtils] Error getting business info from Cognito:', error);
+    return {
+      businessName: '',
+      businessType: '',
+      tenantId: ''
+    };
+  }
+}
+
+/**
+ * Updates business information in Cognito
+ * @param {Object} info - Business information to update
+ * @returns {Promise<boolean>} Success status
+ */
+export async function updateBusinessInfo(info) {
+  if (!info) return false;
+  
+  try {
+    // Import auth utilities
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Create attributes to update
+    const attributesToUpdate = {
+      'custom:updated_at': new Date().toISOString()
+    };
+    
+    // Add business info fields that exist
+    if (info.businessName) attributesToUpdate['custom:businessname'] = info.businessName;
+    if (info.businessType) attributesToUpdate['custom:businesstype'] = info.businessType;
+    if (info.businessSubtypes) attributesToUpdate['custom:businesssubtypes'] = info.businessSubtypes;
+    if (info.dateFounded) attributesToUpdate['custom:datefounded'] = info.dateFounded;
+    if (info.country) attributesToUpdate['custom:country'] = info.country;
+    if (info.businessState) attributesToUpdate['custom:state'] = info.businessState;
+    if (info.legalStructure) attributesToUpdate['custom:legalstructure'] = info.legalStructure;
+    
+    // Update business info step as complete if new business info being set
+    if (info.businessName && info.businessType) {
+      attributesToUpdate['custom:business_info_done'] = 'TRUE';
+    }
+    
+    // Update tenant ID if it exists
+    if (info.tenantId) {
+      attributesToUpdate['custom:tenant_id'] = info.tenantId;
+      attributesToUpdate['custom:businessid'] = info.tenantId;
+      attributesToUpdate['custom:tenant_ID'] = info.tenantId;
+    }
+    
+    // Update Cognito attributes
+    await updateUserAttributes({
+      userAttributes: attributesToUpdate
+    });
+    
+    logger.info('[onboardingUtils] Updated business info in Cognito');
+    return true;
+  } catch (error) {
+    logger.error('[onboardingUtils] Error updating business info in Cognito:', error);
+    return false;
+  }
+}
+
+/**
+ * Updates subscription information in Cognito
+ * @param {Object} subscription - Subscription information to update
+ * @returns {Promise<boolean>} Success status
+ */
+export async function updateSubscriptionInfo(subscription) {
+  if (!subscription) return false;
+  
+  try {
+    // Import auth utilities
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Create attributes to update
+    const attributesToUpdate = {
+      'custom:updated_at': new Date().toISOString(),
+      'custom:subscription_done': 'TRUE'
+    };
+    
+    // Add subscription fields that exist
+    if (subscription.plan) attributesToUpdate['custom:subplan'] = subscription.plan;
+    if (subscription.interval) attributesToUpdate['custom:billingcycle'] = subscription.interval;
+    if (subscription.price) attributesToUpdate['custom:subprice'] = subscription.price.toString();
+    
+    // If it's a free plan, mark onboarding as complete
+    if (subscription.plan === 'free') {
+      attributesToUpdate['custom:onboarding'] = 'complete';
+      attributesToUpdate['custom:setupdone'] = 'true';
+      attributesToUpdate['custom:payment_done'] = 'TRUE';
+    } else {
+      // Otherwise, set onboarding step to payment
+      attributesToUpdate['custom:onboarding'] = 'payment';
+    }
+    
+    // Update Cognito attributes
+    await updateUserAttributes({
+      userAttributes: attributesToUpdate
+    });
+    
+    logger.info('[onboardingUtils] Updated subscription info in Cognito');
+    return true;
+  } catch (error) {
+    logger.error('[onboardingUtils] Error updating subscription info in Cognito:', error);
+    return false;
+  }
+}
+
+/**
+ * Completes the onboarding process by setting appropriate Cognito attributes
+ * @returns {Promise<boolean>} Success status
+ */
+export async function completeOnboarding() {
+  try {
+    // Import auth utilities
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Update Cognito attributes
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:onboarding': 'complete',
+        'custom:setupdone': 'true',
+        'custom:business_info_done': 'TRUE',
+        'custom:subscription_done': 'TRUE',
+        'custom:payment_done': 'TRUE',
+        'custom:onboardingCompletedAt': new Date().toISOString(),
+        'custom:updated_at': new Date().toISOString()
+      }
+    });
+    
+    logger.info('[onboardingUtils] Onboarding completed and set in Cognito');
+    return true;
+  } catch (error) {
+    logger.error('[onboardingUtils] Error completing onboarding in Cognito:', error);
+    return false;
+  }
+}
+
+/**
+ * Gets or creates a tenant ID for the user
+ * @returns {Promise<string|null>} The tenant ID or null on error
+ */
+export async function getOrCreateTenantId() {
+  try {
+    // First try to get the tenant ID from Cognito
+    const cognitoTenantId = await getTenantIdFromCognito();
+    if (cognitoTenantId) {
+      logger.debug('[onboardingUtils] Found tenant ID in Cognito:', cognitoTenantId);
+      return cognitoTenantId;
+    }
+    
+    // If no tenant ID exists, create one via the API
+    const response = await fetch('/api/tenant/create', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      logger.error('[onboardingUtils] Failed to create tenant ID from API:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+      return null;
+    }
+    
+    const data = await response.json();
+    if (data && data.tenantId) {
+      // Store the new tenant ID in Cognito
+      await updateTenantIdInCognito(data.tenantId);
+      logger.info('[onboardingUtils] Created and stored new tenant ID in Cognito:', data.tenantId);
+      return data.tenantId;
+    }
+    
+    logger.error('[onboardingUtils] API returned success but no tenant ID was found:', data);
+    return null;
+  } catch (error) {
+    logger.error('[onboardingUtils] Error getting or creating tenant ID:', error);
+    return null;
+  }
+}

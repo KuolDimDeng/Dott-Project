@@ -4,17 +4,17 @@ import React from 'react';
 import { SafeWrapper } from './ContextFix';
 
 /**
- * A utility component to safely wrap MUI components
+ * A utility component to safely wrap Tailwind components
  */
-export function MuiSafeWrapper({ children }) {
+export function TailwindSafeWrapper({ children }) {
   return <SafeWrapper>{children}</SafeWrapper>;
 }
 
 /**
- * A utility HOC (Higher Order Component) to safely wrap MUI components
+ * A utility HOC (Higher Order Component) to safely wrap Tailwind components
  */
-export function withMuiSafeContext(Component) {
-  function SafeMuiComponent(props) {
+export function withTailwindSafeContext(Component) {
+  function SafeTailwindComponent(props) {
     return (
       <SafeWrapper>
         <Component {...props} />
@@ -23,15 +23,15 @@ export function withMuiSafeContext(Component) {
   }
   
   // Copy display name for better debugging
-  SafeMuiComponent.displayName = `withMuiSafeContext(${Component.displayName || Component.name || 'Component'})`;
+  SafeTailwindComponent.displayName = `withTailwindSafeContext(${Component.displayName || Component.name || 'Component'})`;
   
-  return SafeMuiComponent;
+  return SafeTailwindComponent;
 }
 
 /**
- * A utility component to safely wrap ThemeProvider
+ * A utility component to safely wrap context providers
  */
-export function SafeThemeProvider({ children, ...props }) {
+export function SafeContextProvider({ children, ...props }) {
   return (
     <SafeWrapper>
       {React.cloneElement(children, props)}

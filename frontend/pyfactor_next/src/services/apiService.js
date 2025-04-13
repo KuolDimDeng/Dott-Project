@@ -411,12 +411,17 @@ export const getCurrentTenant = async () => {
  */
 export const getAuthTokens = async () => {
   try {
-    // Try to get tokens from cookies or local storage
+    // Initialize global cache if needed
+    if (typeof window !== 'undefined' && !window.__APP_CACHE) {
+      window.__APP_CACHE = {};
+    }
+    
+    // Try to get tokens from global cache or cookies
     const accessToken = typeof document !== 'undefined' 
-      ? localStorage.getItem('accessToken') || document.cookie.match(/accessToken=([^;]+)/)?.[1]
+      ? (window.__APP_CACHE.accessToken || document.cookie.match(/accessToken=([^;]+)/)?.[1])
       : null;
     const idToken = typeof document !== 'undefined' 
-      ? localStorage.getItem('idToken') || document.cookie.match(/idToken=([^;]+)/)?.[1]
+      ? (window.__APP_CACHE.idToken || document.cookie.match(/idToken=([^;]+)/)?.[1])
       : null;
       
     if (accessToken && idToken) {
@@ -438,10 +443,10 @@ export const logout = async () => {
   try {
     await axiosInstance.post('/api/auth/logout/');
     
-    // Clear local storage and cookies
-    if (typeof document !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('idToken');
+    // Clear global cache
+    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+      window.__APP_CACHE.accessToken = null;
+      window.__APP_CACHE.idToken = null;
     }
   } catch (error) {
     logger.error('[ApiService] Error logging out:', error);

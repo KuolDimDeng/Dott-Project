@@ -1,106 +1,108 @@
 /**
  * Utility functions for handling tenant information
+ * Updated to use Cognito attributes and headers instead of cookies
  */
 
 import { jwtDecode } from 'jwt-decode';
+import { logger } from '@/utils/serverLogger';
 
 /**
- * Extract tenant ID from various sources in the request
+ * Extract and validate tenant ID from various sources in the request
+ * Prioritizes Cognito attributes and secure headers over other methods
  * @param {Request} request - The request object
- * @returns {Promise<object>} - Object containing tenant IDs from different sources
+ * @returns {string|null} - The validated tenant ID or null if not found
  */
-export async function extractTenantId(request) {
-  const result = {
-    tenantId: null,
-    businessId: null,
-    tokenTenantId: null,
-    headers: {},
-    cookies: {}
-  };
+export function extractTenantId(request) {
+  if (!request) {
+    logger.error('[tenant] SECURITY ERROR: extractTenantId called without a request object');
+    return null;
+  }
   
   try {
-    // 1. Check headers
-    result.headers.tenantId = request.headers.get('x-tenant-id');
-    result.headers.businessId = request.headers.get('x-business-id');
+    // Define valid sources in priority order
+    let tenantId = null;
     
-    // Use the header values if present
-    if (result.headers.tenantId) {
-      result.tenantId = result.headers.tenantId;
+    // 1. First priority: Cognito specific headers
+    tenantId = request.headers.get('x-cognito-tenant-id');
+    if (tenantId) {
+      logger.debug(`[tenant] Tenant ID extracted from Cognito header: ${tenantId}`);
+      return validateTenantId(tenantId);
     }
     
-    if (result.headers.businessId) {
-      result.businessId = result.headers.businessId;
-    }
-    
-    // 2. Check cookies
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          result.cookies.tenantId = value;
-          result.tenantId = result.tenantId || value;
-        } else if (name === 'businessid') {
-          result.cookies.businessId = value;
-          result.businessId = result.businessId || value;
-        }
-      });
-    }
-    
-    // 3. Check search params
-    const url = new URL(request.url);
-    const paramTenantId = url.searchParams.get('tenantId');
-    const paramBusinessId = url.searchParams.get('businessId');
-    
-    if (paramTenantId) {
-      result.tenantId = result.tenantId || paramTenantId;
-    }
-    
-    if (paramBusinessId) {
-      result.businessId = result.businessId || paramBusinessId;
-    }
-    
-    // 4. Check authorization header for JWT token tenant ID
+    // 2. Second priority: Authorization headers with JWT token
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       try {
         const decoded = jwtDecode(token);
         
-        // Check custom claim for business ID or tenant ID
-        if (decoded['custom:businessid']) {
-          result.tokenTenantId = decoded['custom:businessid'];
+        // Check custom claims for tenant ID
+        if (decoded['custom:tenant_id'] || decoded['custom:tenant_ID'] || decoded['custom:businessid']) {
+          tenantId = decoded['custom:tenant_id'] || decoded['custom:tenant_ID'] || decoded['custom:businessid'];
+          logger.debug(`[tenant] Tenant ID extracted from JWT token: ${tenantId}`);
+          return validateTenantId(tenantId);
         }
       } catch (tokenError) {
-        console.error('Error decoding JWT token:', tokenError);
+        logger.error('[tenant] Error decoding JWT token:', tokenError);
       }
     }
     
-    // Also check authToken cookie directly
-    if (cookieHeader) {
-      const authTokenCookie = cookieHeader.split(';')
-        .find(cookie => cookie.trim().startsWith('authToken='));
+    // 3. Third priority: Standard tenant ID headers
+    tenantId = request.headers.get('x-tenant-id') || request.headers.get('x-business-id');
+    if (tenantId) {
+      logger.debug(`[tenant] Tenant ID extracted from request headers: ${tenantId}`);
+      return validateTenantId(tenantId);
+    }
+    
+    // 4. Fourth priority: URL path extraction (if in format /<tenant-id>/...)
+    try {
+      const url = new URL(request.url);
+      const pathParts = url.pathname.split('/').filter(Boolean);
       
-      if (authTokenCookie) {
-        const token = authTokenCookie.split('=')[1];
-        try {
-          const decoded = jwtDecode(token);
-          
-          // Check custom claim for business ID or tenant ID
-          if (decoded['custom:businessid']) {
-            result.tokenTenantId = decoded['custom:businessid'];
-          }
-        } catch (tokenError) {
-          console.error('Error decoding auth token cookie:', tokenError);
-        }
+      // Check if the first path part looks like a UUID
+      if (pathParts.length > 0 && 
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathParts[0])) {
+        tenantId = pathParts[0];
+        logger.debug(`[tenant] Tenant ID extracted from URL path: ${tenantId}`);
+        return validateTenantId(tenantId);
       }
+    } catch (urlPathError) {
+      logger.error('[tenant] Error extracting tenant ID from URL path:', urlPathError);
     }
     
+    // 5. Fifth priority: URL query parameters (least secure)
+    try {
+      const url = new URL(request.url);
+      tenantId = url.searchParams.get('tenantId') || url.searchParams.get('businessId') || url.searchParams.get('tid');
+      if (tenantId) {
+        logger.debug(`[tenant] Tenant ID extracted from URL parameters: ${tenantId}`);
+        return validateTenantId(tenantId);
+      }
+    } catch (urlError) {
+      logger.error('[tenant] Error parsing URL:', urlError);
+    }
+    
+    logger.warn('[tenant] No tenant ID found in request');
+    return null;
   } catch (error) {
-    console.error('Error extracting tenant ID:', error);
+    logger.error('[tenant] Error extracting tenant ID:', error);
+    return null;
+  }
+}
+
+/**
+ * Validates a tenant ID to ensure it matches UUID format
+ * @param {string} tenantId - The tenant ID to validate
+ * @returns {string|null} - The validated tenant ID or null if invalid
+ */
+function validateTenantId(tenantId) {
+  // Check for UUID format
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+    logger.error(`[tenant] SECURITY WARNING: Invalid tenant ID format detected: ${tenantId}`);
+    return null;
   }
   
-  return result;
+  return tenantId;
 }
 
 /**
@@ -115,5 +117,5 @@ export function getTenantSchema(tenantId) {
 
 export default {
   extractTenantId,
-  getTenantSchema
+  getTenantSchema,
 }; 

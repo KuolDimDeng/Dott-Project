@@ -3,50 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Redirecting to Dashboard...</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-      background-color: #f5f5f5;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      text-align: center;
-    }
-    .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border-left-color: #09f;
-      animation: spin 1s linear infinite;
-      margin-bottom: 20px;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-    .message {
-      color: #333;
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
-    .tenant-id {
-      color: #09f;
-      font-weight: bold;
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-  </style>
-</head>
-<body>
-  <div class="spinner"></div>
-  <div class="message">Preparing your dashboard...</div>
-  <div class="tenant-id" id="tenant-info">Tenant ID: Loading...</div>
-  
+  <title>Redirecting...</title>
   <script>
     // Extract tenant ID from URL path
     function getTenantIdFromUrl() {
@@ -62,18 +19,6 @@
       return null;
     }
     
-    // Get query parameters
-    function getQueryParams() {
-      const params = {};
-      const searchParams = new URLSearchParams(window.location.search);
-      
-      for (const [key, value] of searchParams.entries()) {
-        params[key] = value;
-      }
-      
-      return params;
-    }
-    
     // Store tenant ID in cookies and localStorage
     function storeTenantId(tenantId) {
       if (!tenantId) return;
@@ -86,21 +31,14 @@
       expiryDate.setDate(expiryDate.getDate() + 30);
       document.cookie = `tenantId=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
       document.cookie = `businessid=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
-      
-      // Update UI with tenant ID
-      const tenantInfoElement = document.getElementById('tenant-info');
-      if (tenantInfoElement) {
-        tenantInfoElement.innerText = `Tenant ID: ${tenantId}`;
-      }
     }
     
-    // Main redirect function
+    // Main redirect function - immediately redirect without showing loading UI
     function handleRedirect() {
       // Get tenant ID from URL
       const tenantId = getTenantIdFromUrl();
       
       if (!tenantId) {
-        console.error('No tenant ID found in URL');
         window.location.href = '/dashboard';
         return;
       }
@@ -109,15 +47,15 @@
       storeTenantId(tenantId);
       
       // Get existing query parameters
-      const queryParams = getQueryParams();
+      const queryParams = new URLSearchParams(window.location.search);
       
       // Create new query string, adding direct=true to prevent redirect loops
       const newParams = new URLSearchParams();
       
       // Add all existing query parameters
-      Object.entries(queryParams).forEach(([key, value]) => {
+      for (const [key, value] of queryParams.entries()) {
         newParams.append(key, value);
-      });
+      }
       
       // Add tenant ID and direct flag
       newParams.append('tenantId', tenantId);
@@ -127,17 +65,15 @@
       // Create redirect URL
       const redirectUrl = `/dashboard?${newParams.toString()}`;
       
-      // Log for debugging
-      console.log(`Redirecting to: ${redirectUrl}`);
-      
-      // Redirect after a short delay to allow tenant ID to be stored
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 1000);
+      // Redirect immediately
+      window.location.href = redirectUrl;
     }
     
-    // Run redirect function when page loads
-    window.onload = handleRedirect;
+    // Run redirect function immediately
+    handleRedirect();
   </script>
+</head>
+<body>
+  <!-- No visible content - immediate redirect -->
 </body>
-</html>
+</html> 

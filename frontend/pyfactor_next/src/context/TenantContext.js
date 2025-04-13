@@ -1,10 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession, updateUserAttributes } from 'aws-amplify/auth';
 import { jwtDecode } from 'jwt-decode';
 import { logger } from '@/utils/logger';
-import { getTenantId, storeTenantId, clearTenantStorage } from '@/utils/tenantUtils';
+import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
 import { apiService } from '@/lib/apiService';
 
 // Helper to detect browser environment
@@ -126,14 +126,19 @@ export const TenantProvider = ({ children }) => {
     }
   }, []);
 
-  // Function to update tenant ID in state and storage
-  const setTenantId = useCallback((newTenantId) => {
+  // Function to update tenant ID in state and Cognito
+  const setTenantId = useCallback(async (newTenantId) => {
     if (!newTenantId || newTenantId === tenantId) return;
     
     setTenantIdState(newTenantId);
     if (isBrowser) {
-      storeTenantId(newTenantId);
-      logger.info(`[TenantContext] Tenant ID updated: ${newTenantId}`);
+      try {
+        // Update Cognito attributes
+        await updateTenantIdInCognito(newTenantId);
+        logger.info(`[TenantContext] Tenant ID updated in Cognito: ${newTenantId}`);
+      } catch (error) {
+        logger.error('[TenantContext] Error updating tenant ID in Cognito:', error);
+      }
     }
   }, [tenantId]);
 
@@ -204,8 +209,8 @@ export const TenantProvider = ({ children }) => {
         return false;
       }
       
-      // Set new tenant ID
-      setTenantId(newTenantId);
+      // Set new tenant ID in state and Cognito
+      await setTenantId(newTenantId);
       
       // Fetch tenant info
       await fetchTenantInfo(newTenantId);
@@ -219,12 +224,17 @@ export const TenantProvider = ({ children }) => {
   }, [setTenantId, fetchTenantInfo]);
 
   // Clear tenant context (for logout)
-  const clearTenant = useCallback(() => {
+  const clearTenant = useCallback(async () => {
     if (isBrowser) {
-      clearTenantStorage();
-      setTenantIdState(null);
-      setTenantInfo(null);
-      logger.info('[TenantContext] Tenant context cleared');
+      try {
+        // Clear tenant ID in Cognito
+        await updateTenantIdInCognito('');
+        setTenantIdState(null);
+        setTenantInfo(null);
+        logger.info('[TenantContext] Tenant context cleared');
+      } catch (error) {
+        logger.error('[TenantContext] Error clearing tenant ID in Cognito:', error);
+      }
     }
   }, []);
 
@@ -236,130 +246,105 @@ export const TenantProvider = ({ children }) => {
       }
       
       setLoading(true);
+      logger.info('[TenantContext] Initializing tenant context');
       
-      // First check if we already have a tenant ID
-      let currentTenantId = getTenantId();
-      if (currentTenantId) {
-        logger.info(`[TenantContext] Using existing tenant ID: ${currentTenantId}`);
-        setTenantId(currentTenantId);
-        await fetchTenantInfo(currentTenantId);
-        return currentTenantId;
-      }
-      
-      // Try to get tenant from auth session
-      currentTenantId = await getTenantFromToken();
+      // Get tenant ID from Cognito
+      let currentTenantId = await getTenantIdFromCognito();
       
       if (currentTenantId) {
-        setTenantId(currentTenantId);
-        await fetchTenantInfo(currentTenantId);
-        return currentTenantId;
+        setTenantIdState(currentTenantId);
+        setTenantInfo(currentTenantId);
+        logger.debug('[TenantContext] Initialized with tenant ID from Cognito:', currentTenantId);
+        
+        // In the background, verify with JWT token
+        try {
+          const tokenTenantId = await getTenantFromToken();
+          
+          // If token has a different tenant ID, update state and Cognito
+          if (tokenTenantId && tokenTenantId !== currentTenantId) {
+            logger.info('[TenantContext] Token tenant ID differs from Cognito, updating:', tokenTenantId);
+            setTenantIdState(tokenTenantId);
+            await updateTenantIdInCognito(tokenTenantId);
+            
+            // Fetch info for the new tenant ID
+            await fetchTenantInfo(tokenTenantId);
+          } else {
+            // Fetch info for the current tenant ID
+            await fetchTenantInfo(currentTenantId);
+          }
+        } catch (tokenError) {
+          logger.warn('[TenantContext] Error verifying tenant ID from token:', tokenError);
+          // Still fetch info for the current tenant ID
+          await fetchTenantInfo(currentTenantId);
+        }
       } else {
-        // No fallback tenant ID - just report that no tenant ID was found
-        logger.warn('[TenantContext] No tenant ID found in any source');
-        setLoading(false);
-        return null;
+        // No tenant ID in Cognito, try to get from token
+        const tokenTenantId = await getTenantFromToken();
+        
+        if (tokenTenantId) {
+          logger.info('[TenantContext] Using tenant ID from token:', tokenTenantId);
+          setTenantIdState(tokenTenantId);
+          await updateTenantIdInCognito(tokenTenantId);
+          await fetchTenantInfo(tokenTenantId);
+        } else {
+          // Try to get from URL path
+          try {
+            const pathParts = window.location.pathname.split('/');
+            for (const part of pathParts) {
+              if (part && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(part)) {
+                logger.info('[TenantContext] Using tenant ID from URL path:', part);
+                setTenantIdState(part);
+                await updateTenantIdInCognito(part);
+                await fetchTenantInfo(part);
+                break;
+              }
+            }
+          } catch (urlError) {
+            logger.warn('[TenantContext] Error extracting tenant ID from URL:', urlError);
+          }
+        }
       }
     } catch (err) {
-      logger.error('[TenantContext] Error initializing tenant:', err);
-      setLoading(false);
+      logger.error('[TenantContext] Error initializing tenant context:', err);
       setError(err);
-      return null;
+    } finally {
+      setLoading(false);
     }
-  }, [getTenantFromToken, setTenantId, fetchTenantInfo]);
+  }, [getTenantFromToken, fetchTenantInfo]);
 
-  // Initialize on component mount
-  useEffect(() => {
-    // Skip on server-side rendering
-    if (!isBrowser) {
-      return;
-    }
-    
-    initializeTenant();
-  }, [initializeTenant]);
-
-  // Verify if user has access to the tenant
-  const verifyTenantAccess = useCallback(async (targetTenantId) => {
+  // Verify user has access to tenant
+  const verifyTenantAccess = useCallback(async (tenantId) => {
     try {
-      logger.info(`[TenantContext] Verifying access to tenant: ${targetTenantId}`);
-      
-      if (!targetTenantId) {
-        logger.warn('[TenantContext] No tenant ID provided for access verification');
+      if (!tenantId) {
+        logger.warn('[TenantContext] No tenant ID provided to verify access');
         return false;
       }
       
-      // Try to get user's authorized tenants from token
-      const session = await fetchAuthSession().catch(() => null);
-      if (!session?.tokens?.idToken) {
-        logger.warn('[TenantContext] No authenticated session for tenant access verification');
-        // Default to allowing access - we'll rely on server-side checks
-        return true;
-      }
-      
-      try {
-        const decoded = jwtDecode(session.tokens.idToken.toString());
-        
-        // Get tenant IDs from token
-        const authorizedTenants = [];
-        
-        // Look for tenant ID in various attributes
-        if (decoded['custom:tenant_ID']) {
-          authorizedTenants.push(decoded['custom:tenant_ID']);
-        }
-        if (decoded['custom:tenant_id']) {
-          authorizedTenants.push(decoded['custom:tenant_id']);
-        }
-        if (decoded['custom:businessid']) {
-          authorizedTenants.push(decoded['custom:businessid']);
-        }
-        if (decoded.tenantId) {
-          authorizedTenants.push(decoded.tenantId);
-        }
-        
-        // Also try multi-tenant attributes if they exist
-        if (decoded['custom:tenants']) {
-          try {
-            const tenantsArray = JSON.parse(decoded['custom:tenants']);
-            if (Array.isArray(tenantsArray)) {
-              authorizedTenants.push(...tenantsArray);
-            }
-          } catch (e) {
-            // Ignore parse errors
-          }
-        }
-        
-        // For now, default to allowing access if we can't determine authorized tenants
-        // This is a security simplification for development
-        if (authorizedTenants.length === 0) {
-          logger.debug('[TenantContext] No authorized tenants found in token, allowing access by default');
-          return true;
-        }
-        
-        // Check if target tenant is in authorized tenants
-        const hasAccess = authorizedTenants.includes(targetTenantId);
-        logger.debug(`[TenantContext] Tenant access check: ${hasAccess ? 'granted' : 'denied'}`);
-        
-        return hasAccess;
-      } catch (tokenError) {
-        logger.error('[TenantContext] Error decoding token for tenant access:', tokenError);
-        // Default to allowing access
-        return true;
-      }
-    } catch (error) {
-      logger.error('[TenantContext] Error verifying tenant access:', error);
-      // Default to allowing access
-      return true;
+      const hasAccess = await apiService.verifyTenantAccess(tenantId);
+      logger.info(`[TenantContext] User access to tenant ${tenantId}: ${hasAccess}`);
+      return hasAccess;
+    } catch (err) {
+      logger.error('[TenantContext] Error verifying tenant access:', err);
+      return false;
     }
   }, []);
 
+  // Initialize tenant context on component mount
+  useEffect(() => {
+    if (isBrowser) {
+      initializeTenant();
+    }
+  }, [initializeTenant]);
+
+  // Context value
   const value = {
     tenantId,
-    setTenantId,
     tenantInfo,
-    tenants,
     loading,
     error,
-    switchTenant,
+    setTenantId,
     fetchTenantInfo,
+    switchTenant,
     clearTenant,
     initializeTenant,
     verifyTenantAccess

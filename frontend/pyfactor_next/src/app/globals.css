@@ -56,22 +56,25 @@ body {
   background: rgba(var(--foreground-rgb), 0.3);
 }
 
-/* MUI overrides and customizations */
+/* Tailwind component classes */
 @layer components {
-  .MuiListItemButton-root {
-    @apply border-b-0 hover:bg-opacity-10 transition-colors duration-200;
+  /* Custom button styles */
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-none hover:shadow-md transition-shadow duration-200;
   }
-
-  .MuiButton-root {
-    @apply shadow-none hover:shadow-md transition-shadow duration-200;
+  
+  .btn-secondary {
+    @apply px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-none hover:shadow-md transition-shadow duration-200;
   }
-
-  .MuiTextField-root {
-    @apply w-full;
+  
+  /* Custom form input styles */
+  .form-input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
   }
-
-  .MuiPaper-root {
-    @apply shadow-md;
+  
+  /* Custom card style */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4;
   }
 }
 
@@ -201,21 +204,14 @@ body {
 .product-form input, 
 .product-form textarea, 
 .product-form select, 
-.product-form button,
-.product-form .MuiInputBase-root,
-.product-form .MuiOutlinedInput-input,
-.product-form .MuiFilledInput-input {
+.product-form button {
   pointer-events: auto !important;
   position: relative !important; 
   z-index: 50 !important;
 }
 
 /* Ensure text visibility in ALL form inputs */
-input, textarea, select, 
-.MuiInputBase-input,
-.MuiOutlinedInput-input,
-.MuiFilledInput-input,
-.MuiInput-input {
+input, textarea, select {
   pointer-events: auto !important;
   color: black !important; 
   caret-color: black !important;
@@ -228,17 +224,10 @@ input, textarea, select,
 /* Add visual cue for focused inputs */
 .product-form input:focus, 
 .product-form textarea:focus, 
-.product-form select:focus,
-.product-form .MuiInputBase-root:focus-within {
+.product-form select:focus {
   outline: 2px solid #4285f4 !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.3) !important;
-}
-
-/* Fix specifically for MUI components in product forms */
-.product-form .MuiTextField-root input,
-.product-form .MuiInputBase-root input {
-  pointer-events: auto !important;
 }
 
 /* Debug helper class */
@@ -248,156 +237,3 @@ input, textarea, select,
 }
 
 /* === END OF INPUT INTERACTIVITY FIXES === */
-
-/* === GLOBAL INPUT FIX === */
-/* Universal fix for all input fields across the application */
-
-/* 
- * This comprehensive fix ensures that all input elements:
- * 1. Receive events normally without interference
- * 2. Have proper focus and interaction states
- * 3. Use native event handling without interference
- */
-
-/* Base input elements */
-input, 
-textarea, 
-select,
-button,
-[role="textbox"],
-[contenteditable="true"] {
-  /* Reset to normal DOM behavior */
-  pointer-events: auto !important;
-  position: relative !important;
-  z-index: 1 !important; 
-  cursor: auto !important;
-  -webkit-user-select: auto !important;
-  user-select: auto !important;
-  -webkit-appearance: auto !important;
-  appearance: auto !important;
-}
-
-/* MUI-specific component fixes */
-.MuiInputBase-root, 
-.MuiOutlinedInput-root,
-.MuiFilledInput-root,
-.MuiInput-root,
-.MuiInputBase-input,
-.MuiOutlinedInput-input,
-.MuiFilledInput-input,
-.MuiInput-input,
-.MuiSelect-root,
-.MuiAutocomplete-root,
-.MuiButton-root,
-.MuiIconButton-root,
-.MuiCheckbox-root,
-.MuiRadio-root,
-.MuiSwitch-root,
-.MuiSlider-root {
-  pointer-events: auto !important;
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-/* Make inputs visibly focusable with consistent styling */
-input:focus, 
-textarea:focus, 
-select:focus,
-button:focus,
-.MuiInputBase-root:focus-within,
-.MuiOutlinedInput-root:focus-within,
-.MuiFilledInput-root:focus-within {
-  outline: 2px solid #1976d2 !important;
-  outline-offset: 1px !important;
-}
-
-/* Ensure inputs are visible when typing */
-input, textarea, select {
-  color: #000 !important;
-  caret-color: #1976d2 !important;
-  background-color: transparent !important; /* Keeps MUI styling intact */
-}
-
-/* Special fix for dashboards to prevent event capture */
-.dashboard-container input,
-.dashboard-container textarea,
-.dashboard-container select,
-form input,
-form textarea,
-form select,
-.MuiPaper-root input,
-.MuiPaper-root textarea,
-.MuiPaper-root select {
-  /* Enhanced protection against event capturers */
-  pointer-events: auto !important;  
-  position: relative !important;
-  z-index: 2 !important; /* Higher than normal z-index */
-}
-
-/* === END OF GLOBAL INPUT FIX === */
-
-/* === MUI Input Fix Styles === */
-/* These styles follow MUI's recommendations for input handling */
-
-/* Required keyframes for MUI TextField components */
-@keyframes mui-auto-fill { from { display: block; } }
-@keyframes mui-auto-fill-cancel { from { display: block; } }
-
-/* Ensure inputs are properly styled */
-.MuiInputBase-root {
-  position: relative !important;
-  z-index: 2 !important;
-}
-
-.MuiInputBase-input {
-  color: rgba(0, 0, 0, 0.87) !important; 
-  caret-color: black !important;
-}
-
-/* Ensure text fields in forms are interactive */
-.MuiFormControl-root {
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-/* Make form controls in product forms interactive */
-.product-form .MuiInputBase-root,
-.product-form .MuiOutlinedInput-input,
-.product-form .MuiFilledInput-input {
-  position: relative !important; 
-  z-index: 2 !important;
-}
-
-/* Add visual cue for focused inputs */
-.MuiInputBase-root.Mui-focused {
-  border-color: var(--primary-main) !important;
-}
-
-/* === END OF MUI INPUT FIX === */
-
-/* === TAILWIND TOGGLE SWITCH === */
-/* Custom styles for toggle switches created with Tailwind */
-
-.form-switch-checkbox:checked + .form-switch-label .form-switch-inner {
-  background-color: #3b82f6;
-}
-
-.form-switch-checkbox:checked + .form-switch-label .form-switch-switch {
-  transform: translateX(1.5rem);
-  background-color: white;
-}
-
-.form-switch-label:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.form-switch-checkbox:focus + .form-switch-label {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
-  outline-offset: 2px;
-}
-
-.form-switch-checkbox:checked:focus + .form-switch-label {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
-}
-
-/* === END OF TAILWIND TOGGLE SWITCH === */

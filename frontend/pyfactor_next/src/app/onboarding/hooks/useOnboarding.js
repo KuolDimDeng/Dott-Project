@@ -7,15 +7,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { updateUserAttributes, fetchUserAttributes } from 'aws-amplify/auth';
 import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
 
-// Function to parse cookies - useful for onboarding status fallback
-const getCookieValue = (name) => {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-};
-
+/**
+ * Hook for managing onboarding state with Cognito user attributes
+ * No longer uses cookies or localStorage for state management
+ */
 export function useOnboarding() {
   const router = useRouter();
   const { session, isLoading: sessionLoading, refreshSession } = useSession();
@@ -24,20 +19,6 @@ export function useOnboarding() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [localOnboardingStep, setLocalOnboardingStep] = useState(null);
   const [hasAttemptedRefresh, setHasAttemptedRefresh] = useState(false);
-
-  // Initialize onboarding data from cookies if possible
-  useEffect(() => {
-    // If no user data yet but we have cookie data, use that as a fallback
-    if (!user && !localOnboardingStep) {
-      const cookieStep = getCookieValue('onboardingStep');
-      const cookieStatus = getCookieValue('onboardedStatus');
-      
-      if (cookieStep || cookieStatus) {
-        logger.debug('[useOnboarding] Initializing from cookies:', { cookieStep, cookieStatus });
-        setLocalOnboardingStep(cookieStatus || cookieStep || ONBOARDING_STATES.NOT_STARTED);
-      }
-    }
-  }, [user, localOnboardingStep]);
 
   // Attempt to refresh user data if session not available
   useEffect(() => {
@@ -77,7 +58,7 @@ export function useOnboarding() {
       return typeof step === 'string' ? step.toUpperCase() : step;
     }
     
-    // Fallback to local state if we have it (from cookies or direct fetch)
+    // Fallback to local state if we have it (from direct fetch)
     if (localOnboardingStep) {
       return typeof localOnboardingStep === 'string' ? localOnboardingStep.toUpperCase() : localOnboardingStep;
     }
@@ -100,7 +81,8 @@ export function useOnboarding() {
       [ONBOARDING_STATES.COMPLETE]: 'dashboard'
     };
     
-    const subPlan = user?.['custom:subplan'] || getCookieValue('subplan');
+    // Get subscription plan from user attributes
+    const subPlan = user?.['custom:subplan'] || null;
     const nextStep = stepMap[normalizedStep];
     return typeof nextStep === 'function'
       ? nextStep(subPlan)
@@ -110,19 +92,9 @@ export function useOnboarding() {
   const updateOnboardingStatus = useCallback(async (newStatus) => {
     setIsUpdating(true);
     try {
-      // Set cookies as a fallback
-      document.cookie = `onboardingStep=${newStatus.toLowerCase()}; path=/; max-age=${60 * 60 * 24 * 7}`;
-      document.cookie = `onboardedStatus=${newStatus}; path=/; max-age=${60 * 60 * 24 * 7}`;
-      
-      // Update local state immediately
+      // Update local state immediately for responsive UI
       setLocalOnboardingStep(newStatus);
       
-      // Skip Cognito update if no user - will catch up later
-      if (!user) {
-        logger.debug('[useOnboarding] No user available, skipping attribute update but saved to cookies');
-        return true;
-      }
-
       // Update Cognito attributes using Amplify v6 format
       await updateUserAttributes({
         userAttributes: {
@@ -131,7 +103,7 @@ export function useOnboarding() {
         }
       });
 
-      logger.debug('[useOnboarding] Status updated:', {
+      logger.debug('[useOnboarding] Status updated in Cognito:', {
         newStatus,
         timestamp: new Date().toISOString()
       });
@@ -141,19 +113,15 @@ export function useOnboarding() {
       
       return true;
     } catch (error) {
-      logger.error('[useOnboarding] Failed to update status:', error);
-      // Even if Cognito update fails, we have cookies as fallback
-      return true; 
+      logger.error('[useOnboarding] Failed to update status in Cognito:', error);
+      return false;
     } finally {
       setIsUpdating(false);
     }
-  }, [user, refreshSession]);
+  }, [refreshSession]);
 
   const navigateToStep = useCallback((step) => {
-    // Store where we're going in a cookie first
-    document.cookie = `navigatingTo=${step.toLowerCase()}; path=/; max-age=3600`;
-    
-    // Then navigate
+    // Simply navigate to the step
     router.push(`/onboarding/${step.toLowerCase()}`);
   }, [router]);
 

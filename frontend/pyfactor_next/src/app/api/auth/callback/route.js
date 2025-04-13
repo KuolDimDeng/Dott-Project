@@ -1,94 +1,33 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getCurrentUser, fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
-import { determineOnboardingStep } from '@/utils/cookieManager';
 
 /**
- * API route for handling OAuth callback
- * This endpoint receives data from the client callback page and sets cookies
- * It also verifies the user's onboarding status and sets appropriate cookies
+ * Handles POST requests to the auth callback endpoint
+ * Processes the token and returns info required for client-side handling
  */
 export async function POST(request) {
   try {
-    const data = await request.json();
-    const { idToken, accessToken, refreshToken } = data;
+    logger.debug('[AUTH CALLBACK] Processing auth callback request');
     
-    if (!idToken || !accessToken) {
-      logger.error('[API Auth Callback] Missing required tokens');
-      return NextResponse.json(
-        { error: 'Missing required tokens' },
-        { status: 400 }
-      );
+    // Parse the request body
+    const body = await request.json();
+    
+    // Check if we have the required tokens in the request body
+    if (!body?.accessToken) {
+      logger.error('[AUTH CALLBACK] Missing access token in request body');
+      return NextResponse.json({ error: 'Missing access token' }, { status: 400 });
     }
     
-    // Create response
-    const response = NextResponse.json({ success: true });
+    // Simply pass back the token to the client
+    // All token processing happens on the client side
+    return NextResponse.json({
+      success: true,
+      accessToken: body.accessToken,
+      message: "Token received, client should process the token"
+    });
     
-    // Set secure cookie options
-    const cookieOptions = {
-      path: '/',
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 // 24 hours
-    };
-    
-    // Set required cookies
-    response.cookies.set('idToken', idToken, cookieOptions);
-    response.cookies.set('accessToken', accessToken, cookieOptions);
-    
-    // Set optional cookies if available
-    if (refreshToken) {
-      response.cookies.set('refreshToken', refreshToken, {
-        ...cookieOptions,
-        maxAge: 60 * 60 * 24 * 30 // 30 days for refresh token
-      });
-    }
-    
-    // Try to fetch user attributes to determine onboarding status
-    try {
-      const userAttributes = await fetchUserAttributes();
-      const onboardingStep = determineOnboardingStep(userAttributes);
-      
-      // Set onboarding cookies
-      const onboardingStatus = userAttributes['custom:onboarding'] || 'not_started';
-      response.cookies.set('onboardedStatus', onboardingStatus, cookieOptions);
-      response.cookies.set('onboardingStep', onboardingStep, cookieOptions);
-      
-      // Set completed steps cookies
-      const businessInfoDone = userAttributes['custom:business_info_done'] === 'TRUE';
-      const subscriptionDone = userAttributes['custom:subscription_done'] === 'TRUE'; 
-      const paymentDone = userAttributes['custom:payment_done'] === 'TRUE';
-      const setupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
-      
-      response.cookies.set('businessInfoCompleted', businessInfoDone ? 'true' : 'false', cookieOptions);
-      response.cookies.set('subscriptionCompleted', subscriptionDone ? 'true' : 'false', cookieOptions);
-      response.cookies.set('paymentCompleted', paymentDone ? 'true' : 'false', cookieOptions);
-      response.cookies.set('setupCompleted', setupDone ? 'true' : 'false', cookieOptions);
-      
-      // Set tenant ID if available
-      if (userAttributes['custom:tenant_id']) {
-        response.cookies.set('tenantId', userAttributes['custom:tenant_id'], cookieOptions);
-      }
-      
-      logger.debug('[API Auth Callback] Set onboarding cookies for status:', {
-        onboardingStatus,
-        nextStep: onboardingStep
-      });
-    } catch (error) {
-      logger.warn('[API Auth Callback] Could not fetch user attributes for onboarding status:', error);
-      // Set default onboarding cookies in case of error
-      response.cookies.set('onboardedStatus', 'not_started', cookieOptions);
-      response.cookies.set('onboardingStep', 'business-info', cookieOptions);
-    }
-    
-    logger.debug('[API Auth Callback] Successfully set cookies for OAuth callback');
-    
-    return response;
   } catch (error) {
-    logger.error('[API Auth Callback] Error setting cookies:', error);
-    return NextResponse.json(
-      { error: 'Failed to process callback' },
-      { status: 500 }
-    );
+    logger.error('[AUTH CALLBACK] Error processing auth callback', error);
+    return NextResponse.json({ error: 'Error processing auth callback' }, { status: 500 });
   }
 }

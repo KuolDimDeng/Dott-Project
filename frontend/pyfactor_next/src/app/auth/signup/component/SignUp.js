@@ -273,22 +273,35 @@ export default function SignUp() {
       
       // Store information for verification page
       try {
-        localStorage.setItem('signupCodeSent', 'true');
-        localStorage.setItem('signupCodeTimestamp', Date.now().toString());
-        localStorage.setItem('signupEmail', formData.email);
-        
-        // Remove any auto-signin data to ensure verification happens
-        localStorage.removeItem('tempPassword');
-        
-        // Log what we're storing
-        logger.debug('[SignUp] Stored verification data:', {
-          email: formData.email,
-          localStorage: {
-            signupCodeSent: true,
-            signupTimestamp: Date.now(),
-            hasEmail: !!formData.email
+        // Initialize app cache if needed
+        if (typeof window !== 'undefined') {
+          if (!window.__APP_CACHE) window.__APP_CACHE = {};
+          if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+          
+          // Store verification data in app cache
+          window.__APP_CACHE.auth.signupCodeSent = true;
+          window.__APP_CACHE.auth.signupCodeTimestamp = Date.now();
+          window.__APP_CACHE.auth.signupEmail = formData.email;
+          
+          // Store in sessionStorage as fallback for older code
+          try {
+            sessionStorage.setItem('signupCodeSent', 'true');
+            sessionStorage.setItem('signupCodeTimestamp', Date.now().toString());
+            sessionStorage.setItem('signupEmail', formData.email);
+          } catch (e) {
+            // Ignore sessionStorage errors
           }
-        });
+          
+          // Log what we're storing
+          logger.debug('[SignUp] Stored verification data:', {
+            email: formData.email,
+            appCache: {
+              signupCodeSent: true,
+              signupTimestamp: Date.now(),
+              hasEmail: !!formData.email
+            }
+          });
+        }
       } catch (e) {
         logger.error('[SignUp] Error storing verification data:', e);
         // Ignore storage errors
@@ -433,6 +446,15 @@ export default function SignUp() {
                   onClick={() => {
                     setIsSubmitting(false);
                     setError('');
+                    // Initialize app cache if it doesn't exist
+                    if (typeof window !== 'undefined') {
+                      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+                      // Remove loading state from app cache
+                      delete window.__APP_CACHE.auth.loadingState;
+                      // For backward compatibility
+                      sessionStorage.removeItem('auth_loading_state');
+                    }
                     console.log('Form state reset');
                   }}
                   className="mt-2 text-xs text-blue-600 hover:underline cursor-pointer"
@@ -480,7 +502,15 @@ export default function SignUp() {
                           onClick={() => {
                             setIsSubmitting(false);
                             setError('');
-                            localStorage.removeItem('auth_loading_state');
+                            // Initialize app cache if it doesn't exist
+                            if (typeof window !== 'undefined') {
+                              if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                              if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+                              // Remove loading state from app cache
+                              delete window.__APP_CACHE.auth.loadingState;
+                              // For backward compatibility
+                              sessionStorage.removeItem('auth_loading_state');
+                            }
                             console.log('Form state reset');
                           }}
                           className="px-2 py-1 bg-blue-100 text-blue-800 rounded"
@@ -490,12 +520,19 @@ export default function SignUp() {
                         <button 
                           type="button"
                           onClick={() => {
-                            localStorage.clear();
-                            console.log('Local storage cleared');
+                            // Clear app cache
+                            if (typeof window !== 'undefined') {
+                              if (window.__APP_CACHE && window.__APP_CACHE.auth) {
+                                window.__APP_CACHE.auth = {};
+                              }
+                              // Also clear sessionStorage for backward compatibility
+                              sessionStorage.clear();
+                            }
+                            console.log('App cache and session storage cleared');
                           }}
                           className="px-2 py-1 bg-red-100 text-red-800 rounded"
                         >
-                          Clear Local Storage
+                          Clear App Cache
                         </button>
                         <button 
                           type="button"

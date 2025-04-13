@@ -3,64 +3,67 @@ import PropTypes from 'prop-types';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 const InvoiceDetails = ({ invoiceId, onBackToCustomerDetails }) => {
   const [invoice, setInvoice] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [userDatabase, setUserDatabase] = useState(null);
+  
+  // Use the UserProfileContext instead of direct API calls
+  const { profileData, loading: profileLoading, error: profileError } = useUserProfile();
+  
+  // Get user database from profile data
+  const userDatabase = profileData?.schema_name;
 
-  const fetchUserProfile = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get('/api/profile/');
-      setUserDatabase(response.data.schema_name);
-      logger.debug('User profile:', response.data);
-      logger.debug('User database:', response.data.schema_name);
-    } catch (error) {
-      logger.error('Error fetching user profile:', error);
-      setError('Failed to load user profile');
-    }
-  }, []);
-
-  const fetchInvoice = useCallback(async () => {
-    if (!invoiceId || !userDatabase) {
-      logger.error('Invoice ID or User Database is not provided', { invoiceId, userDatabase });
-      setError('Invoice ID or User Database is not provided');
+  // Use this effect to fetch invoice details once we have userDatabase (from profile)
+  useEffect(() => {
+    if (!invoiceId) {
+      setError('Invoice ID is required');
       setIsLoading(false);
       return;
     }
-
-    setIsLoading(true);
-    setError(null);
-    logger.info(`Fetching invoice with ID: ${invoiceId} from database: ${userDatabase}`);
-    try {
-      const response = await axiosInstance.get(`/api/invoices/${invoiceId}/`, {
-        params: { database: userDatabase },
-      });
-      setInvoice(response.data);
-    } catch (error) {
-      logger.error('Error fetching invoice:', error);
-      if (error.response && error.response.status === 404) {
-        setError(
-          'Invoice not found. It may have been deleted or you may not have permission to view it.'
-        );
-      } else {
-        setError('Failed to fetch invoice. Please try again.');
-      }
-    } finally {
+    
+    // If profile is still loading, wait for it
+    if (profileLoading) {
+      return;
+    }
+    
+    // If we have a profile error, report it
+    if (profileError) {
+      setError('Error loading user profile: ' + profileError);
       setIsLoading(false);
+      return;
     }
-  }, [invoiceId, userDatabase]);
-
-  useEffect(() => {
-    fetchUserProfile();
-  }, [fetchUserProfile]);
-
-  useEffect(() => {
-    if (invoiceId && userDatabase) {
-      fetchInvoice();
+    
+    // Only attempt to fetch invoice if we have the database
+    if (!userDatabase) {
+      logger.warn('No user database available from profile, cannot fetch invoice details');
+      setError('User database information not available');
+      setIsLoading(false);
+      return;
     }
-  }, [invoiceId, userDatabase, fetchInvoice]);
+    
+    const fetchInvoiceDetails = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Include database name in the request
+        const response = await axiosInstance.get(`/api/invoices/${invoiceId}`, {
+          params: { schema_name: userDatabase }
+        });
+        
+        setInvoice(response.data);
+        setIsLoading(false);
+      } catch (err) {
+        logger.error('Error fetching invoice details:', err);
+        setError('Failed to load invoice details');
+        setIsLoading(false);
+      }
+    };
+    
+    fetchInvoiceDetails();
+  }, [invoiceId, userDatabase, profileLoading, profileError]);
 
   if (isLoading) {
     return (

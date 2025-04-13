@@ -1,88 +1,100 @@
 import { NextResponse } from 'next/server';
-import { jwtDecode } from 'jwt-decode';
-import { logger } from '@/utils/logger';
+import { createDbPool } from '../db-config';
+import { getJwtFromRequest } from '@/utils/auth/authUtils';
 
 /**
- * API route to get list of tenants for the current user
- * Returns all tenants the authenticated user has access to
+ * API route to list all tenants
  */
 export async function GET(request) {
+  const requestId = Date.now().toString(36);
+  let pool = null;
+  let client = null;
+
   try {
-    // Get the authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { 
-          error: 'Unauthorized - Valid Bearer token required' 
-        }, 
-        { status: 401 }
-      );
-    }
+    console.log(`[${requestId}] Tenant list request received`);
     
-    // Extract and verify the token
-    const token = authHeader.substring(7);
-    let decodedToken;
-    
+    // Connect to database
     try {
-      decodedToken = jwtDecode(token);
-    } catch (error) {
-      logger.error('[API] Error decoding token:', error);
-      return NextResponse.json(
-        { 
-          error: 'Invalid token format' 
-        }, 
-        { status: 401 }
-      );
+      pool = await createDbPool();
+      client = await pool.connect();
+      console.log(`[${requestId}] Database connection successful`);
+    } catch (dbError) {
+      console.error(`[${requestId}] Database connection error:`, dbError);
+      
+      // In development mode, provide mock data
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[${requestId}] Returning mock data in development mode`);
+        return NextResponse.json({
+          success: true,
+          tenants: [
+            {
+              id: '0cf5abab-70d7-4bee-b69c-1a0270054eac',
+              name: 'Development Tenant 1',
+              schema: 'tenant_0cf5abab_70d7_4bee_b69c_1a0270054eac',
+              status: 'active'
+            },
+            {
+              id: 'ff0e46de-8f17-493a-8e6b-9cabebf53f57',
+              name: 'Development Tenant 2',
+              schema: 'tenant_ff0e46de_8f17_493a_8e6b_9cabebf53f57',
+              status: 'active'
+            }
+          ]
+        });
+      }
+      
+      return NextResponse.json({
+        success: false,
+        message: `Database connection failed: ${dbError.message}`
+      }, { status: 500 });
     }
     
-    // Extract user information from token
-    const userId = decodedToken.sub;
+    // Get tenant list
+    let tenantsResult;
+    try {
+      tenantsResult = await client.query(`
+        SELECT 
+          id, 
+          name, 
+          schema_name AS schema,
+          created_at,
+          updated_at,
+          CASE WHEN is_active = true THEN 'active' ELSE 'inactive' END AS status
+        FROM public.custom_auth_tenant
+        ORDER BY name ASC
+      `);
+    } catch (queryError) {
+      console.error(`[${requestId}] Error querying tenants:`, queryError);
+      return NextResponse.json({
+        success: false,
+        message: `Database query failed: ${queryError.message}`
+      }, { status: 500 });
+    }
     
-    // Here you would normally:
-    // 1. Query your database for all tenants the user has access to
-    // 2. Return the list of tenants with access level details
+    console.log(`[${requestId}] Successfully returned ${tenantsResult.rows.length} tenants`);
     
-    // For now, we'll return a mock response
-    // In production, replace this with actual database queries
-    
-    // Example mock tenant list
-    const tenants = [
-      {
-        id: '70cc394b-6b7c-5e61-8213-9801cbc78708',
-        name: 'Primary Tenant',
-        description: 'Main tenant for your organization',
-        role: 'owner',
-        isActive: true,
-        created: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
-        name: 'Development Tenant',
-        description: 'Tenant for development and testing',
-        role: 'admin',
-        isActive: true,
-        created: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: '5e9f8f8f-f8f8-f8f8-f8f8-f8f8f8f8f8f8',
-        name: 'Demo Tenant',
-        description: 'Tenant for demonstrations and sales',
-        role: 'member',
-        isActive: true,
-        created: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString()
-      }
-    ];
-    
-    // Success - return tenant list
-    return NextResponse.json({ tenants }, { status: 200 });
+    return NextResponse.json({
+      success: true,
+      tenants: tenantsResult.rows
+    });
     
   } catch (error) {
-    logger.error('[API] Error retrieving tenant list:', error);
-    return NextResponse.json(
-      { 
-        error: 'Internal server error' 
-      }, 
-      { status: 500 }
-    );
+    console.error(`[${requestId}] Error getting tenant list:`, error);
+    
+    return NextResponse.json({
+      success: false,
+      message: `Failed to get tenant list: ${error.message}`
+    }, { status: 500 });
+    
+  } finally {
+    // Release database resources
+    if (client) {
+      try {
+        client.release();
+        console.log(`[${requestId}] Database client released`);
+      } catch (releaseError) {
+        console.error(`[${requestId}] Error releasing client:`, releaseError);
+      }
+    }
   }
 } 

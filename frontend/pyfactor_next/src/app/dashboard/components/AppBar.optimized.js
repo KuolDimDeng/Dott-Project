@@ -1,4 +1,3 @@
-import React, { useReducer, memo } from 'react';
 'use client';
 
 import React, {
@@ -7,6 +6,8 @@ import React, {
   useRef,
   useMemo,
   useCallback,
+  useReducer,
+  memo
 } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';

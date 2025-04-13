@@ -1,0 +1,289 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { logger } from '@/utils/logger';
+import { clearLegacyStorage, migrateUserDataToCognito } from '@/utils/migrationUtils';
+import { updateTenantIdInCognito } from '@/utils/tenantUtils';
+
+// Initialize global app cache at the top of the file
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  window.__APP_CACHE.migration = window.__APP_CACHE.migration || {};
+}
+
+/**
+ * A component that helps clean up cookies/localStorage data
+ * This is a transition component that can be added to layout files
+ * to ensure all legacy storage data is cleared after migrating to Cognito
+ */
+export default function MigrationComponent() {
+  const [migrationComplete, setMigrationComplete] = useState(false);
+
+  useEffect(() => {
+    // Only attempt migration and cleanup if we're in the browser
+    if (typeof window !== 'undefined') {
+      const runMigration = async () => {
+        try {
+          // Check if we've already run this migration
+          if (localStorage.getItem('migration_to_cognito_completed') === 'true') {
+            logger.debug('[MigrationComponent] Migration already completed');
+            setMigrationComplete(true);
+            return;
+          }
+
+          // First, try to migrate any important data to Cognito
+          const migrationResult = await migrateUserDataToCognito();
+          
+          if (migrationResult.success) {
+            logger.info('[MigrationComponent] Successfully migrated data to Cognito', 
+              migrationResult.migratedData);
+          } else {
+            logger.warn('[MigrationComponent] Some data migration failed:', 
+              migrationResult.message);
+          }
+          
+          // Even if migration wasn't fully successful, still try to clear legacy data
+          // Wait a short delay to ensure any async operations have completed
+          setTimeout(async () => {
+            try {
+              // Clear legacy storage data
+              const clearResult = await clearLegacyStorage();
+              
+              if (clearResult) {
+                logger.info('[MigrationComponent] Successfully cleared legacy data');
+              } else {
+                logger.warn('[MigrationComponent] Some data couldn't be cleared');
+              }
+              
+              // Mark migration as complete
+              setMigrationComplete(true);
+            } catch (clearError) {
+              logger.error('[MigrationComponent] Error clearing legacy data:', clearError);
+              setMigrationComplete(true);
+            }
+          }, 500);
+        } catch (error) {
+          logger.error('[MigrationComponent] Migration error:', error);
+          setMigrationComplete(true);
+        }
+      };
+      
+      // Run the migration
+      runMigration();
+    }
+  }, []);
+  
+  // This component doesn't render anything visible
+  return null;
+}
+
+/**
+ * Migration utility function to help with one-time data migration
+ * This enhanced function verifies tenant ID migration and provides better error handling
+ */
+export async function migrateToSingleTruthSource() {
+  if (typeof window === 'undefined') return false;
+  
+  try {
+    // Check if migration has already been done
+    if (localStorage.getItem('migration_to_cognito_completed') === 'true') {
+      logger.debug('[migrateToSingleTruthSource] Migration already completed');
+      return true;
+    }
+    
+    logger.info('[migrateToSingleTruthSource] Starting data migration to Cognito');
+    
+    // Import Cognito utilities
+    const { fetchUserAttributes, updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Get current Cognito attributes
+    const attributes = await fetchUserAttributes();
+    
+    // Prepare migration data
+    const migratedAttributes = {};
+    let hasMigrated = false;
+    
+    // Tenant ID migration - prioritize finding a valid UUID
+    // First check app cache, then localStorage, then cookies
+    const appCacheTenantId = typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id;
+    const localTenantId = localStorage.getItem('tenantId');
+    const cookieTenantId = getCookieValue('tenantId') || getCookieValue('businessid');
+    const effectiveTenantId = findValidUUID(appCacheTenantId, localTenantId, cookieTenantId);
+    
+    if (effectiveTenantId && 
+        !isValidUUID(attributes['custom:tenant_ID']) && 
+        !isValidUUID(attributes['custom:tenant_id'])) {
+      
+      // Use the tenant utils for consistent update
+      await updateTenantIdInCognito(effectiveTenantId);
+      
+      // Also update the migratedAttributes object for reporting
+      migratedAttributes['custom:tenant_ID'] = effectiveTenantId;
+      migratedAttributes['custom:tenant_id'] = effectiveTenantId;
+      migratedAttributes['custom:businessid'] = effectiveTenantId;
+      hasMigrated = true;
+      
+      // Store in app cache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE.tenant.id = effectiveTenantId;
+      }
+      
+      logger.info('[migrateToSingleTruthSource] Migrated tenant ID:', effectiveTenantId);
+    }
+    
+    // Collect business data from localStorage or cookies with proper mapping to Cognito attributes
+    const attributeMappings = {
+      'businessName': 'custom:businessname',
+      'businessType': 'custom:businesstype',
+      'country': 'custom:country',
+      'businessState': 'custom:state',
+      'legalStructure': 'custom:legalstructure',
+      'dateFounded': 'custom:datefounded'
+    };
+    
+    // Add onboarding status migrations
+    const onboardingStatus = 
+      (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.status) ||
+      localStorage.getItem('onboardingStatus') || 
+      localStorage.getItem('onboardingStep') || 
+      getCookieValue('onboardingStep') || 
+      getCookieValue('onboardedStatus');
+                            
+    if (onboardingStatus && !attributes['custom:onboarding']) {
+      migratedAttributes['custom:onboarding'] = onboardingStatus.toLowerCase();
+      hasMigrated = true;
+      
+      // Also store in app cache
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
+        window.__APP_CACHE.onboarding.status = onboardingStatus.toLowerCase();
+      }
+    }
+    
+    // Check if onboarding is complete
+    const setupCompleted = 
+      (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.completed === true) ||
+      localStorage.getItem('setupCompleted') === 'true' || 
+      getCookieValue('setupCompleted') === 'true';
+                          
+    if (setupCompleted && !attributes['custom:setupdone']) {
+      migratedAttributes['custom:setupdone'] = 'true';
+      migratedAttributes['custom:onboarding'] = 'complete';
+      hasMigrated = true;
+      
+      // Also store in app cache
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
+        window.__APP_CACHE.onboarding.status = 'complete';
+        window.__APP_CACHE.onboarding.completed = true;
+      }
+    }
+    
+    // Migrate business information
+    Object.entries(attributeMappings).forEach(([sourceKey, targetKey]) => {
+      // Check app cache first, then localStorage, then cookies
+      const appCacheValue = typeof window !== 'undefined' && 
+                          window.__APP_CACHE?.business && 
+                          window.__APP_CACHE.business[sourceKey];
+      const sourceValue = appCacheValue || 
+                          localStorage.getItem(sourceKey) || 
+                          getCookieValue(sourceKey);
+      
+      if (sourceValue && !attributes[targetKey]) {
+        migratedAttributes[targetKey] = sourceValue;
+        hasMigrated = true;
+        
+        // Also store in app cache
+        if (typeof window !== 'undefined') {
+          if (!window.__APP_CACHE) window.__APP_CACHE = {};
+          if (!window.__APP_CACHE.business) window.__APP_CACHE.business = {};
+          window.__APP_CACHE.business[sourceKey] = sourceValue;
+        }
+        
+        logger.debug(`[migrateToSingleTruthSource] Migrating ${sourceKey} to ${targetKey}:`, sourceValue);
+      }
+    });
+    
+    // Update Cognito with the migrated attributes if there are any
+    if (hasMigrated) {
+      // Add migration metadata
+      migratedAttributes['custom:migration_timestamp'] = new Date().toISOString();
+      migratedAttributes['custom:updated_at'] = new Date().toISOString();
+      
+      // Update attributes in Cognito
+      await updateUserAttributes({
+        userAttributes: migratedAttributes
+      });
+      
+      logger.info('[migrateToSingleTruthSource] Successfully migrated data to Cognito', {
+        migratedKeys: Object.keys(migratedAttributes)
+      });
+      
+      // Mark migration as complete in app cache
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.migration) window.__APP_CACHE.migration = {};
+        window.__APP_CACHE.migration.completed = true;
+        window.__APP_CACHE.migration.timestamp = new Date().toISOString();
+      }
+      
+      // Also mark in localStorage for backward compatibility
+      localStorage.setItem('migration_to_cognito_completed', 'true');
+      localStorage.setItem('migration_to_cognito_timestamp', new Date().toISOString());
+      return true;
+    } else {
+      logger.info('[migrateToSingleTruthSource] No data to migrate');
+      
+      // Mark migration as complete in app cache
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.migration) window.__APP_CACHE.migration = {};
+        window.__APP_CACHE.migration.completed = true;
+        window.__APP_CACHE.migration.timestamp = new Date().toISOString();
+      }
+      
+      // Also mark in localStorage for backward compatibility
+      localStorage.setItem('migration_to_cognito_completed', 'true');
+      localStorage.setItem('migration_to_cognito_timestamp', new Date().toISOString());
+      return true;
+    }
+  } catch (error) {
+    logger.error('[migrateToSingleTruthSource] Error migrating data:', error);
+    return false;
+  }
+}
+
+// Helper function to get cookie value
+function getCookieValue(name) {
+  if (typeof document === 'undefined') return null;
+  
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) {
+    try {
+      return decodeURIComponent(parts.pop().split(';').shift());
+    } catch (e) {
+      return parts.pop().split(';').shift();
+    }
+  }
+  return null;
+}
+
+// Enhanced UUID validation
+function isValidUUID(id) {
+  if (!id || typeof id !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+// Function to find the first valid UUID from a list of candidates
+function findValidUUID(...candidates) {
+  for (const candidate of candidates) {
+    if (isValidUUID(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+} 

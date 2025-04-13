@@ -33,4 +33,4 @@ export const config = {
     // Match all paths except for static resources
     '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
   ],
-};
+}; 

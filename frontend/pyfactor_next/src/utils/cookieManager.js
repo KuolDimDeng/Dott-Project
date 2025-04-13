@@ -2,17 +2,15 @@ import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 
 /**
- * Sets authentication cookies consistently across the application
+ * Sets authentication data in Cognito user attributes
  * @param {Object} tokens - The tokens object containing idToken and accessToken
  * @param {Object} userAttributes - Optional user attributes for onboarding status
- * @param {boolean} secure - Whether to set secure cookies (defaults to true in production)
- * @param {number} maxAge - Cookie expiration in seconds (defaults to 1 day)
- * @returns {boolean} - Success status of operation
+ * @returns {Promise<boolean>} - Success status of operation
  */
-export const setAuthCookies = (tokens, userAttributes = null, secure = null, maxAge = null) => {
+export const setAuthCookies = async (tokens, userAttributes = null) => {
   try {
     if (!tokens || !tokens.idToken || !tokens.accessToken) {
-      logger.error('[cookieManager] Missing required tokens for cookie setup');
+      logger.error('[cookieManager] Missing required tokens for auth setup');
       return false;
     }
 
@@ -25,49 +23,39 @@ export const setAuthCookies = (tokens, userAttributes = null, secure = null, max
     const now = Math.floor(Date.now() / 1000);
     const tokenLifetime = exp - now;
     
-    logger.debug('[cookieManager] Setting auth cookies', {
+    logger.debug('[cookieManager] Setting auth data in Cognito', {
       tokenLifetime: `${(tokenLifetime / 60).toFixed(1)} minutes`,
       hasAttributes: !!userAttributes
     });
     
-    // Default to env-appropriate settings
-    const isDev = process.env.NODE_ENV === 'development';
-    const useSecure = secure !== null ? secure : !isDev;
-    
-    // Use token expiration or fallback to provided maxAge or default (1 day)
-    const cookieMaxAge = maxAge || (tokenLifetime > 0 ? tokenLifetime : 24 * 60 * 60);
-    
-    // Use consistent options for all cookies
-    const cookieOptions = `path=/; max-age=${cookieMaxAge}; ${useSecure ? 'secure; ' : ''}${isDev ? 'samesite=lax' : 'samesite=strict'}`;
-    
-    // Set auth tokens
-    document.cookie = `idToken=${idToken}; ${cookieOptions}`;
-    document.cookie = `authToken=${accessToken}; ${cookieOptions}`;
-    
     // Set token expiration timestamp for refresh logic
     const expTime = new Date(exp * 1000).toISOString();
-    document.cookie = `tokenExpires=${expTime}; ${cookieOptions}`;
     
-    // Store in localStorage as backup
+    // Store token expiration in Cognito for refresh handling
     try {
-      localStorage.setItem('idToken', idToken);
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('tokenTimestamp', Date.now().toString());
-      localStorage.setItem('tokenExpires', expTime);
-    } catch (storageErr) {
-      logger.warn('[cookieManager] Could not store tokens in localStorage', {
-        error: storageErr.message
+      const { updateUserAttributes } = await import('aws-amplify/auth');
+      
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:token_expires': expTime
+        }
+      });
+      
+      logger.debug('[cookieManager] Token expiration stored in Cognito');
+    } catch (cognitoErr) {
+      logger.warn('[cookieManager] Could not store token expiration in Cognito', {
+        error: cognitoErr.message
       });
     }
     
-    // If user attributes provided, set onboarding related cookies
+    // If user attributes provided, set onboarding related attributes
     if (userAttributes) {
-      setOnboardingCookies(userAttributes, cookieOptions);
+      await setOnboardingAttributes(userAttributes);
     }
     
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error setting auth cookies:', {
+    logger.error('[cookieManager] Error setting auth data:', {
       error: error.message,
       stack: error.stack
     });
@@ -76,23 +64,18 @@ export const setAuthCookies = (tokens, userAttributes = null, secure = null, max
 };
 
 /**
- * Sets onboarding-related cookies based on user attributes
+ * Sets onboarding-related attributes in Cognito
  * @param {Object} attributes - User attributes from Cognito or API
- * @param {string} cookieOptions - Cookie options string
+ * @returns {Promise<boolean>} - Success status
  */
-export const setOnboardingCookies = (attributes, cookieOptions = null) => {
+export const setOnboardingAttributes = async (attributes) => {
   try {
     if (!attributes) {
-      logger.warn('[cookieManager] No attributes provided for onboarding cookies');
+      logger.warn('[cookieManager] No attributes provided for onboarding data');
       return false;
     }
     
-    // Set up default cookie options if not provided
-    const isDev = process.env.NODE_ENV === 'development';
-    const defaultOptions = `path=/; max-age=${7 * 24 * 60 * 60}; ${!isDev ? 'secure; ' : ''}${isDev ? 'samesite=lax' : 'samesite=strict'}`;
-    const options = cookieOptions || defaultOptions;
-    
-    logger.debug('[cookieManager] Setting onboarding cookies');
+    logger.debug('[cookieManager] Setting onboarding data in Cognito');
     
     // Extract onboarding status from attributes
     const onboardingStatus = 
@@ -100,10 +83,7 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
       attributes.onboarding || 
       'PENDING';
       
-    // Set onboarding status cookie
-    document.cookie = `onboardedStatus=${onboardingStatus}; ${options}`;
-    
-    // Set step completion flags
+    // Extract step completion flags
     const businessInfoDone = attributes['custom:business_info_done'] === 'TRUE' || 
                              attributes.businessInfoDone === 'true' || 
                              attributes.businessInfoDone === true;
@@ -119,21 +99,34 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
     const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
                     (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
     
-    // Set individual step cookies
-    document.cookie = `businessInfoCompleted=${businessInfoDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `subscriptionCompleted=${subscriptionDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `paymentCompleted=${paymentDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `setupCompleted=${setupDone ? 'true' : 'false'}; ${options}`;
+    // Update Cognito attributes
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:onboarding': onboardingStatus,
+        'custom:business_info_done': businessInfoDone ? 'TRUE' : 'FALSE',
+        'custom:subscription_done': subscriptionDone ? 'TRUE' : 'FALSE',
+        'custom:payment_done': paymentDone ? 'TRUE' : 'FALSE',
+        'custom:setupdone': setupDone ? 'true' : 'false'
+      }
+    });
     
     // Store tenant ID if available
     const tenantId = attributes['custom:tenant_id'] || attributes.tenantId;
     if (tenantId) {
-      document.cookie = `tenantId=${tenantId}; ${options}`;
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:tenant_id': tenantId,
+          'custom:tenant_ID': tenantId, // Uppercase version for consistency
+          'custom:businessid': tenantId // Legacy attribute
+        }
+      });
     }
     
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error setting onboarding cookies:', {
+    logger.error('[cookieManager] Error setting onboarding attributes:', {
       error: error.message,
       stack: error.stack
     });
@@ -142,24 +135,22 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
 };
 
 /**
- * Gets the current authentication token from cookies
- * @returns {string|null} - The ID token or null if not found
+ * Gets the current authentication token from Cognito
+ * @returns {Promise<string|null>} - The ID token or null if not found
  */
-export const getAuthToken = () => {
+export const getAuthToken = async () => {
   try {
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('idToken='));
+    // Import auth utilities
+    const { fetchAuthSession } = await import('aws-amplify/auth');
     
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
+    // Get current session
+    const session = await fetchAuthSession();
+    
+    if (session && session.tokens && session.tokens.idToken) {
+      return session.tokens.idToken.toString();
     }
     
-    // Try localStorage as fallback
-    const localToken = localStorage.getItem('idToken');
-    if (localToken) {
-      return localToken;
-    }
-    
+    logger.warn('[cookieManager] No auth token found in session');
     return null;
   } catch (error) {
     logger.error('[cookieManager] Error getting auth token:', {
@@ -170,36 +161,21 @@ export const getAuthToken = () => {
 };
 
 /**
- * Clears all authentication-related cookies
+ * Clears all authentication data by signing out
+ * @returns {Promise<boolean>} - Success status
  */
-export const clearAuthCookies = () => {
+export const clearAuthCookies = async () => {
   try {
-    const cookies = ['idToken', 'authToken', 'tokenExpires', 'onboardedStatus', 
-                    'businessInfoCompleted', 'subscriptionCompleted', 
-                    'paymentCompleted', 'setupCompleted', 'tokenExpired'];
+    // Import auth utilities
+    const { signOut } = await import('aws-amplify/auth');
     
-    // Set expiry to past date to clear
-    const expiry = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    // Sign out completely
+    await signOut({ global: true });
     
-    // Clear all auth cookies
-    cookies.forEach(name => {
-      document.cookie = `${name}=; path=/; ${expiry}`;
-    });
-    
-    // Clear localStorage
-    try {
-      localStorage.removeItem('idToken');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('tokenTimestamp');
-      localStorage.removeItem('tokenExpires');
-    } catch (storageErr) {
-      // Ignore localStorage errors
-    }
-    
-    logger.debug('[cookieManager] Auth cookies cleared');
+    logger.debug('[cookieManager] Auth session cleared via signOut');
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error clearing auth cookies:', {
+    logger.error('[cookieManager] Error clearing auth session:', {
       error: error.message
     });
     return false;
@@ -207,13 +183,23 @@ export const clearAuthCookies = () => {
 };
 
 /**
- * Sets a token expired flag to trigger automatic sign-out
+ * Sets a token expired flag in Cognito
+ * @returns {Promise<boolean>} - Success status
  */
-export const setTokenExpiredFlag = () => {
+export const setTokenExpiredFlag = async () => {
   try {
-    // Set a flag cookie indicating token expiration
-    document.cookie = `tokenExpired=true; path=/`;
-    logger.debug('[cookieManager] Token expired flag set');
+    // Import auth utilities
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Set token expired flag in Cognito
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:token_expired': 'true',
+        'custom:token_expired_at': new Date().toISOString()
+      }
+    });
+    
+    logger.debug('[cookieManager] Token expired flag set in Cognito');
     return true;
   } catch (error) {
     logger.error('[cookieManager] Error setting token expired flag:', {
@@ -256,5 +242,58 @@ export const determineOnboardingStep = (attributes) => {
     return 'setup';
   } else {
     return 'complete';
+  }
+};
+
+/**
+ * Updates onboarding status in Cognito attributes
+ * @param {string} status - Onboarding status to set
+ * @returns {Promise<boolean>} - Success status
+ */
+export const updateOnboardingStatus = async (status) => {
+  try {
+    if (!status) {
+      logger.warn('[cookieManager] No status provided for onboarding update');
+      return false;
+    }
+    
+    // Import auth utilities
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Update onboarding status in Cognito
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:onboarding': status,
+        'custom:updated_at': new Date().toISOString()
+      }
+    });
+    
+    logger.debug(`[cookieManager] Onboarding status updated to: ${status}`);
+    return true;
+  } catch (error) {
+    logger.error('[cookieManager] Error updating onboarding status:', {
+      error: error.message
+    });
+    return false;
+  }
+};
+
+/**
+ * Gets user attributes from Cognito
+ * @returns {Promise<Object|null>} - User attributes or null if not found
+ */
+export const getUserAttributes = async () => {
+  try {
+    // Import auth utilities
+    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    
+    // Get user attributes
+    const attributes = await fetchUserAttributes();
+    return attributes || null;
+  } catch (error) {
+    logger.error('[cookieManager] Error getting user attributes:', {
+      error: error.message
+    });
+    return null;
   }
 }; 

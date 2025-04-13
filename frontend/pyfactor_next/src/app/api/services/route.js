@@ -1,475 +1,314 @@
-import { NextResponse } from 'next/server';
-import { applyRLS, verifyTenantId, getDefaultTenantId } from '@/middleware/dev-tenant-middleware';
-// Only import pg in production, otherwise it's not needed
-const isProd = process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true';
-let Pool;
-if (isProd) {
-  import('pg').then((pg) => {
-    Pool = pg.Pool;
-  }).catch(e => console.error('Failed to load pg module:', e));
-}
+'use server';
 
-// Simple in-memory mock database for development
-const mockDb = {
-  services: [
-    {
-      id: '1',
-      service_name: 'Standard Cargo Handling',
-      description: 'Basic cargo handling service for standard shipments',
-      price: 100.00,
-      unit: 'per ton',
-      tenant_id: 'dev-tenant-dashboard-123',
-      created_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      service_name: 'Express Air Freight',
-      description: 'Expedited air freight service for urgent shipments',
-      price: 250.00,
-      unit: 'per shipment',
-      tenant_id: 'dev-tenant-dashboard-123',
-      created_at: new Date().toISOString()
-    }
-  ]
+import { NextResponse } from 'next/server';
+import { v4 as uuidv4 } from 'uuid';
+import { extractTenantId } from '@/utils/auth/tenant';
+import * as db from '@/utils/db/rls-database';
+
+// Fix logger import and add fallback
+const logger = {
+  info: function(message, ...args) {
+    console.log(message, ...args);
+  },
+  error: function(message, ...args) {
+    console.error(message, ...args);
+  },
+  warn: function(message, ...args) {
+    console.warn(message, ...args);
+  }
 };
 
 /**
- * GET handler for services with tenant-aware RLS
+ * GET handler for service listing with tenant-aware RLS
  */
 export async function GET(request) {
-  console.log('[API] Services GET request received');
+  const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => {
+    controller.abort();
+  }, 30000);
+
   try {
-    // Extract the URL parameters
-    const { searchParams } = new URL(request.url);
-    const urlTenantId = searchParams.get('tenant_id');
-    const schema = searchParams.get('schema');
+    logger.info(`[${requestId}] GET /api/services - Start processing request`);
     
-    // Extract tenant ID from headers and cookies
-    const headerTenantId = request.headers.get('x-tenant-id');
+    // Extract tenant info from various sources
+    const tenantInfo = await extractTenantId(request);
+    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
     
-    const cookieHeader = request.headers.get('cookie');
-    let cookieTenantId = null;
-    let devTenantId = null;
-    
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          cookieTenantId = value;
-        } else if (name === 'dev-tenant-id') {
-          devTenantId = value;
-        }
+    if (!finalTenantId) {
+      logger.error(`[${requestId}] No tenant ID found in request, headers:`, {
+        'x-tenant-id': request.headers.get('x-tenant-id'),
+        'x-business-id': request.headers.get('x-business-id'),
+        referer: request.headers.get('referer'),
+        cookie: request.headers.get('cookie')?.substring(0, 50) + '...' // Log partial cookie for debugging
       });
+      
+      return NextResponse.json(
+        { 
+          error: 'Tenant ID is required',
+          message: 'No tenant ID found in request headers, cookies, or JWT',
+          sources: tenantInfo
+        },
+        { status: 400 }
+      );
     }
     
-    // Determine the tenant ID to use, with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
+    logger.info(`[${requestId}] Fetching services for tenant ${finalTenantId}`);
     
-    // Check if schema parameter was provided and convert it to tenant_id if needed
-    let schemaTenantId = null;
-    if (schema && schema !== 'default_schema') {
-      // Try to extract tenant ID from schema name (if format is tenant_{id})
-      const schemaMatch = schema.match(/tenant_([a-f0-9_-]+)/i);
-      if (schemaMatch && schemaMatch[1]) {
-        schemaTenantId = schemaMatch[1].replace(/_/g, '-');
-      }
+    // Get search and filter parameters from URL
+    const { searchParams } = new URL(request.url);
+    const search = searchParams.get('search') || '';
+    const sortBy = searchParams.get('sortBy') || 'created_at';
+    const sortDir = searchParams.get('sortDir') || 'desc';
+    const limit = parseInt(searchParams.get('limit') || '100', 10);
+    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    
+    // Ensure tables and RLS policies exist
+    try {
+      await ensureInventoryServiceTable({
+        debug: true,
+        requestId
+      });
+    } catch (tableError) {
+      logger.error(`[${requestId}] Error ensuring inventory_service table: ${tableError.message}`);
+      return NextResponse.json(
+        { 
+          error: 'Database table initialization failed', 
+          message: tableError.message 
+        },
+        { status: 500 }
+      );
     }
     
-    const tenantId = urlTenantId || 
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     schemaTenantId ||
-                     (isKuolDeng ? kuolDengTenantId : null) ||
-                     getDefaultTenantId();
+    // Query services with RLS
+    // Note: No need to filter by tenant_id in the query - RLS will handle that
+    const query = `
+      SELECT * FROM public.inventory_service
+      WHERE ($1 = '' OR name ILIKE $2 OR description ILIKE $2)
+      ORDER BY ${sortBy} ${sortDir === 'asc' ? 'ASC' : 'DESC'}
+      LIMIT $3 OFFSET $4
+    `;
     
-    console.log(`[API] Listing services for tenant: ${tenantId}, schema: ${schema}`);
+    const params = [
+      search,
+      `%${search}%`,
+      limit,
+      offset
+    ];
     
-    // Connect to the actual RDS database
-    if (process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true') {
-      // Make sure we have the Pool class available
-      if (!Pool) {
-        console.warn('[API] PostgreSQL module not loaded, falling back to mock data');
-        // Return filtered mock data
-        const filteredServices = mockDb.services.filter(s => s.tenant_id === tenantId);
-        return NextResponse.json(filteredServices);
-      }
-      
-      let pool;
-      try {
-        // Create a connection pool to the RDS database
-        pool = new Pool({
-          host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
-          port: process.env.RDS_PORT || 5432,
-          database: process.env.RDS_DB_NAME || 'dott_main',
-          user: process.env.RDS_USERNAME || 'dott_admin',
-          password: process.env.RDS_PASSWORD,
-          ssl: { rejectUnauthorized: false }
-        });
-        
-        // Construct the tenant-specific schema name
-        const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
-        
-        // First check if the schema exists, create it if not
-        const checkSchemaQuery = `
-          SELECT EXISTS (
-            -- RLS: No need to check tenant schema existence
-    SELECT TRUE -- RLS handles tenant isolation now through policies
-          )
-        `;
-        const schemaResult = await pool.query(checkSchemaQuery, [schemaName]);
-        const schemaExists = schemaResult.rows[0].exists;
-        
-        if (!schemaExists) {
-          console.log(`[API] Schema ${schemaName} does not exist, creating it`);
-          await pool.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
-        }
-        
-        // Check if the services table exists
-        const checkTableQuery = `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = $1
-            AND table_name = 'services'
-          )
-        `;
-        const tableResult = await pool.query(checkTableQuery, [schemaName]);
-        const tableExists = tableResult.rows[0].exists;
-        
-        if (!tableExists) {
-          console.log(`[API] Table ${schemaName}.services does not exist, creating it`);
-          
-          // Create the services table
-          const createTableQuery = `
-            CREATE TABLE IF NOT EXISTS "${schemaName}"."services" (
-              "id" SERIAL PRIMARY KEY,
-              "service_name" VARCHAR(255) NOT NULL,
-              "description" TEXT,
-              "price" DECIMAL(10, 2) DEFAULT 0,
-              "unit" VARCHAR(50),
-              "duration" VARCHAR(50),
-              "is_active" BOOLEAN DEFAULT true,
-              "tenant_id" VARCHAR(100) NOT NULL,
-              "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            
-            -- Add RLS policy for multi-tenant security
-            ALTER TABLE "${schemaName}"."services" ENABLE ROW LEVEL SECURITY;
-            
-            -- Create policy that restricts access to rows based on tenant_id
-            DROP POLICY IF EXISTS tenant_isolation_policy ON "${schemaName}"."services";
-            CREATE POLICY tenant_isolation_policy ON "${schemaName}"."services"
-              USING (tenant_id = current_setting('app.current_tenant_id', TRUE));
-          `;
-          
-          await pool.query(createTableQuery);
-          
-          // Create a few sample services for the new tenant
-          const sampleServicesQuery = `
-            INSERT INTO "${schemaName}"."services" 
-            (service_name, description, price, unit, tenant_id) 
-            VALUES 
-            ($1, $2, $3, $4, $5),
-            ($6, $7, $8, $9, $10)
-          `;
-          
-          await pool.query(sampleServicesQuery, [
-            'Standard Cargo Handling', // service_name 1
-            'Basic cargo handling service for standard shipments', // description 1
-            100.00, // price 1
-            'per ton', // unit 1
-            tenantId, // tenant_id 1
-            'Express Air Freight', // service_name 2
-            'Expedited air freight service for urgent shipments', // description 2
-            250.00, // price 2
-            'per shipment', // unit 2
-            tenantId // tenant_id 2
-          ]);
-          
-          console.log(`[API] Created sample services for tenant ${tenantId}`);
-        }
-        
-        // Apply RLS policy by setting tenant ID in session
-        await pool.query(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
-        
-        // Now query the services
-        const query = `
-          SELECT * FROM "${schemaName}"."services" 
-          WHERE tenant_id = $1
-          ORDER BY service_name ASC
-        `;
-        
-        const result = await pool.query(query, [tenantId]);
-        console.log(`[API] Retrieved ${result.rows.length} services for tenant ${tenantId}`);
-        
-        // Close the connection pool
-        await pool.end();
-        
-        return NextResponse.json(result.rows);
-      } catch (dbError) {
-        console.error('[API] Database error:', dbError);
-        
-        // Close the connection pool on error if it exists
-        try {
-          if (pool) await pool.end();
-        } catch (e) {
-          // Ignore any errors from pool.end()
-        }
-        
-        // Return fallback mock data instead of throwing an error
-        console.log('[API] Returning fallback mock data due to database error');
-        const filteredServices = mockDb.services.map(service => ({
-          ...service,
-          tenant_id: tenantId
-        }));
-        
-        return NextResponse.json(filteredServices);
-      }
-    } else {
-      // DEVELOPMENT MODE: Use mock data directly
-      const filteredServices = mockDb.services.filter(s => s.tenant_id === tenantId);
-      
-      // If no services exist yet, create some with the current tenant ID
-      if (filteredServices.length === 0) {
-        console.log('[API] No services found for this tenant, creating default services');
-        
-        // Create default services with the current tenant ID
-        const defaultServices = [
-          {
-            id: `service-${Date.now()}-1`,
-            service_name: 'Standard Cargo Handling',
-            description: 'Basic cargo handling service for standard shipments',
-            price: 100.00,
-            unit: 'per ton',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          },
-          {
-            id: `service-${Date.now()}-2`,
-            service_name: 'Express Air Freight',
-            description: 'Expedited air freight service for urgent shipments',
-            price: 250.00,
-            unit: 'per shipment',
-            tenant_id: tenantId,
-            created_at: new Date().toISOString()
-          }
-        ];
-        
-        // Add the services to the mock database
-        mockDb.services.push(...defaultServices);
-        
-        // Return the newly created services
-        return NextResponse.json(defaultServices);
-      }
-      
-      // Return services with tenant ID information
-      return NextResponse.json(filteredServices);
+    // Execute the query with tenant context for RLS
+    let result;
+    try {
+      result = await db.query(query, params, {
+        signal: controller.signal,
+        requestId,
+        tenantId: finalTenantId,
+        debug: true
+      });
+    } catch (dbError) {
+      logger.error(`[${requestId}] Database error fetching services: ${dbError.message}`);
+      return NextResponse.json(
+        { 
+          error: 'Database error', 
+          message: dbError.message,
+          details: process.env.NODE_ENV === 'development' ? dbError.stack : undefined
+        },
+        { status: 500 }
+      );
     }
+    
+    logger.info(`[${requestId}] Found ${result.rows.length} services for tenant ${finalTenantId}`);
+    
+    return NextResponse.json({
+      data: result.rows,
+      meta: {
+        total: result.rows.length,
+        limit,
+        offset,
+        tenant: finalTenantId.substring(0, 8) + '...' // Include partial tenant ID for debugging
+      }
+    });
+    
   } catch (error) {
-    console.error('[API] Service GET error:', error.message);
-    return NextResponse.json({ 
-      error: 'Failed to fetch services',
-      message: error.message 
+    console.error(`[${requestId}] Error retrieving services: ${error.message}`, error);
+    
+    // If this is an abort error from the timeout
+    if (error.name === 'AbortError') {
+      return NextResponse.json({
+        success: false,
+        message: 'Request timed out',
+        error: 'Database request timed out after 15 seconds'
+      }, { status: 504 });
+    }
+    
+    return NextResponse.json({
+      success: false,
+      message: 'Error retrieving services',
+      error: error.message
+    }, { status: 500 });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/**
+ * POST handler for creating a new service with tenant-aware RLS
+ */
+export async function POST(request) {
+  const requestId = crypto.randomUUID();
+
+  try {
+    // Parse request body
+    const requestData = await request.json();
+    
+    // Extract tenant info from various sources
+    const tenantId = requestData.tenant_id || 
+                    requestData.tenantId || 
+                    request.headers.get('x-tenant-id') ||
+                    request.headers.get('tenant-id') ||
+                    request.headers.get('x-business-id');
+    
+    if (!tenantId) {
+      logger.error(`[${requestId}] No tenant ID found in request headers or body`);
+      return NextResponse.json({
+        success: false,
+        message: 'Tenant ID is required'
+      }, { status: 400 });
+    }
+    
+    logger.info(`[${requestId}] Creating service for tenant: ${tenantId}`);
+    
+    // Ensure inventory_service table exists with RLS
+    await ensureInventoryServiceTable({
+      debug: true,
+      requestId
+    });
+    
+    // Validate required service data
+    const { name, service_name } = requestData;
+    const finalName = name || service_name;
+    
+    if (!finalName) {
+      return NextResponse.json({
+        success: false,
+        message: 'Service name is required'
+      }, { status: 400 });
+    }
+    
+    // Generate a UUID for the service
+    const serviceId = uuidv4();
+    
+    // Insert the new service using RLS-aware query
+    const query = `
+      INSERT INTO public.inventory_service (
+        id, 
+        tenant_id, 
+        name, 
+        description, 
+        service_code,
+        price, 
+        unit,
+        is_for_sale,
+        is_recurring,
+        salestax,
+        duration,
+        billing_cycle,
+        created_at,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+    `;
+    
+    const params = [
+      serviceId,
+      tenantId,
+      finalName,
+      requestData.description || '',
+      requestData.service_code || `SRV-${Date.now()}`,
+      parseFloat(requestData.price) || 0,
+      requestData.unit || '',
+      requestData.is_for_sale === true || requestData.isForSale === true,
+      requestData.is_recurring === true || requestData.isRecurring === true,
+      parseFloat(requestData.salestax) || 0,
+      requestData.duration || '',
+      requestData.billing_cycle || 'monthly'
+    ];
+    
+    logger.info(`[${requestId}] Executing service insert with tenant context: ${tenantId}`);
+    
+    const result = await db.query(query, params, {
+      requestId,
+      tenantId, // Pass tenant ID for RLS context
+      debug: true
+    });
+    
+    const newService = result.rows[0];
+    
+    logger.info(`[${requestId}] Service created successfully: ${newService.id}`);
+    
+    return NextResponse.json({
+      success: true,
+      service: newService,
+      message: 'Service created successfully'
+    });
+    
+  } catch (error) {
+    console.error(`[${requestId}] Error creating service: ${error.message}`, error);
+    
+    return NextResponse.json({
+      success: false,
+      message: 'Error creating service',
+      error: error.message
     }, { status: 500 });
   }
 }
 
 /**
- * POST handler for service creation with tenant-aware RLS
+ * Helper function to ensure the inventory_service table exists
  */
-export async function POST(request) {
-  console.log('[API] Service POST request received');
+async function ensureInventoryServiceTable({ debug = false, requestId = 'system' } = {}) {
+  const createTableQuery = `
+    CREATE TABLE IF NOT EXISTS public.inventory_service (
+      id UUID PRIMARY KEY,
+      tenant_id VARCHAR(255) NOT NULL,
+      name VARCHAR(255) NOT NULL,
+      description TEXT,
+      service_code VARCHAR(100),
+      price DECIMAL(10, 2) DEFAULT 0,
+      unit VARCHAR(100),
+      is_for_sale BOOLEAN DEFAULT true,
+      is_recurring BOOLEAN DEFAULT false,
+      salestax DECIMAL(10, 2) DEFAULT 0,
+      duration VARCHAR(100),
+      billing_cycle VARCHAR(50) DEFAULT 'monthly',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+
+    -- Create an RLS policy if it doesn't already exist
+    ALTER TABLE public.inventory_service ENABLE ROW LEVEL SECURITY;
+
+    -- Drop any existing policies
+    DROP POLICY IF EXISTS inventory_service_tenant_isolation ON public.inventory_service;
+
+    -- Create new policy
+    CREATE POLICY inventory_service_tenant_isolation 
+      ON public.inventory_service
+      USING (tenant_id = current_setting('app.current_tenant_id')::VARCHAR);
+  `;
+
+  if (debug) {
+    logger.info(`[${requestId}] Ensuring inventory_service table exists`);
+  }
+
   try {
-    // Get request body
-    const serviceData = await request.json();
-    console.debug('[API] Service POST data:', serviceData);
-    
-    // Extract tenant info from request
-    const headerTenantId = request.headers.get('x-tenant-id');
-    
-    const cookieHeader = request.headers.get('cookie');
-    let cookieTenantId = null;
-    let devTenantId = null;
-    
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          cookieTenantId = value;
-        } else if (name === 'dev-tenant-id') {
-          devTenantId = value;
-        }
-      });
-    }
-    
-    // Determine tenant ID with priority
-    const kuolDengTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-    const isKuolDeng = cookieHeader?.includes('authUser=kuol.deng@example.com');
-    
-    const tenantId = serviceData.tenant_id || 
-                     headerTenantId || 
-                     cookieTenantId || 
-                     devTenantId || 
-                     (isKuolDeng ? kuolDengTenantId : null) || 
-                     getDefaultTenantId();
-    
-    console.debug('[API] Tenant ID determined for service creation:', tenantId);
-    
-    // Create service with tenant ID to ensure RLS
-    const enhancedServiceData = {
-      ...serviceData,
-      id: `service-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      tenant_id: tenantId,
-      created_at: new Date().toISOString()
-    };
-    
-    // Connect to the actual RDS database in production
-    if (process.env.NODE_ENV === 'production' || process.env.USE_RDS === 'true') {
-      // Make sure we have the Pool class available
-      if (!Pool) {
-        console.warn('[API] PostgreSQL module not loaded, falling back to mock data');
-        // Add to mock database
-        mockDb.services.push(enhancedServiceData);
-        console.log('[API] Created service with mock data. Tenant ID:', tenantId);
-        return NextResponse.json(enhancedServiceData, { status: 201 });
-      }
-      
-      let pool;
-      try {
-        // Create a connection pool to the RDS database
-        pool = new Pool({
-          host: process.env.RDS_HOSTNAME || 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com',
-          port: process.env.RDS_PORT || 5432,
-          database: process.env.RDS_DB_NAME || 'dott_main',
-          user: process.env.RDS_USERNAME || 'dott_admin',
-          password: process.env.RDS_PASSWORD,
-          ssl: { rejectUnauthorized: false }
-        });
-        
-        // Construct the tenant-specific schema name
-        const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
-        
-        // First check if the schema exists, create it if not
-        const checkSchemaQuery = `
-          SELECT EXISTS (
-            -- RLS: No need to check tenant schema existence
-    SELECT TRUE -- RLS handles tenant isolation now through policies
-          )
-        `;
-        const schemaResult = await pool.query(checkSchemaQuery, [schemaName]);
-        const schemaExists = schemaResult.rows[0].exists;
-        
-        if (!schemaExists) {
-          console.log(`[API] Schema ${schemaName} does not exist, creating it`);
-          await pool.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
-        }
-        
-        // Check if the services table exists
-        const checkTableQuery = `
-          SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = $1
-            AND table_name = 'services'
-          )
-        `;
-        const tableResult = await pool.query(checkTableQuery, [schemaName]);
-        const tableExists = tableResult.rows[0].exists;
-        
-        if (!tableExists) {
-          console.log(`[API] Table ${schemaName}.services does not exist, creating it`);
-          
-          // Create the services table
-          const createTableQuery = `
-            CREATE TABLE IF NOT EXISTS "${schemaName}"."services" (
-              "id" SERIAL PRIMARY KEY,
-              "service_name" VARCHAR(255) NOT NULL,
-              "description" TEXT,
-              "price" DECIMAL(10, 2) DEFAULT 0,
-              "unit" VARCHAR(50),
-              "duration" VARCHAR(50),
-              "is_active" BOOLEAN DEFAULT true,
-              "tenant_id" VARCHAR(100) NOT NULL,
-              "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-              "updated_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-            
-            -- Add RLS policy for multi-tenant security
-            ALTER TABLE "${schemaName}"."services" ENABLE ROW LEVEL SECURITY;
-            
-            -- Create policy that restricts access to rows based on tenant_id
-            DROP POLICY IF EXISTS tenant_isolation_policy ON "${schemaName}"."services";
-            CREATE POLICY tenant_isolation_policy ON "${schemaName}"."services"
-              USING (tenant_id = current_setting('app.current_tenant_id', TRUE));
-          `;
-          
-          await pool.query(createTableQuery);
-          console.log(`[API] Created services table for tenant ${tenantId}`);
-        }
-        
-        // Apply RLS policy by setting tenant ID in session
-        await pool.query(`SET LOCAL app.current_tenant_id = '${tenantId}'`);
-        
-        // SQL query to insert service with tenant ID for RLS
-        const query = `
-          INSERT INTO "${schemaName}"."services" (
-            service_name, 
-            description, 
-            price, 
-            unit, 
-            tenant_id, 
-            created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6)
-          RETURNING *
-        `;
-        
-        const values = [
-          enhancedServiceData.service_name,
-          enhancedServiceData.description,
-          enhancedServiceData.price,
-          enhancedServiceData.unit,
-          tenantId,
-          enhancedServiceData.created_at
-        ];
-        
-        const result = await pool.query(query, values);
-        
-        // Close the connection pool
-        await pool.end();
-        
-        console.log('[API] Created service with RLS tenant_id:', tenantId);
-        
-        return NextResponse.json(result.rows[0], { status: 201 });
-      } catch (dbError) {
-        console.error('[API] Database error:', dbError);
-        
-        // Close the connection pool on error
-        try {
-          if (pool) await pool.end();
-        } catch (e) {
-          // Ignore any errors from pool.end()
-        }
-        
-        // Add to mock database as fallback and return that instead
-        mockDb.services.push(enhancedServiceData);
-        console.log('[API] Falling back to mock data due to database error. Tenant ID:', tenantId);
-        return NextResponse.json(enhancedServiceData, { status: 201 });
-      }
-    } else {
-      // DEVELOPMENT MODE: Use mock database
-      mockDb.services.push(enhancedServiceData);
-      
-      console.log('[API] Created service with mock data. Tenant ID:', tenantId);
-      
-      // Return created service
-      return NextResponse.json(enhancedServiceData, { status: 201 });
+    await db.query(createTableQuery, [], { requestId });
+    if (debug) {
+      logger.info(`[${requestId}] inventory_service table initialized successfully`);
     }
   } catch (error) {
-    console.error('[API] Service POST error:', error.message);
-    return NextResponse.json({ 
-      error: 'Failed to create service',
-      message: error.message 
-    }, { status: 500 });
+    logger.error(`[${requestId}] Error initializing inventory_service table: ${error.message}`);
+    throw error;
   }
 } 

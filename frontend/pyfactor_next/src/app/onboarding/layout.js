@@ -131,8 +131,20 @@ export default function OnboardingLayout({ children }) {
 
       // Development mode bypass - prioritize this check before others
       if (process.env.NODE_ENV === 'development') {
-        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
-        const authSuccess = localStorage.getItem('authSuccess') === 'true';
+        // Initialize app cache if needed
+        if (typeof window !== 'undefined') {
+          if (!window.__APP_CACHE) window.__APP_CACHE = {};
+          if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+        }
+        
+        // Check for bypass flags in app cache or localStorage
+        const bypassAuth = 
+          (window.__APP_CACHE?.auth?.bypassValidation === true) || 
+          localStorage.getItem('bypassAuthValidation') === 'true';
+          
+        const authSuccess = 
+          (window.__APP_CACHE?.auth?.success === true) || 
+          localStorage.getItem('authSuccess') === 'true';
         
         if (bypassAuth && authSuccess) {
           logger.debug('[OnboardingLayout] Development mode: auth validation bypassed');
@@ -143,7 +155,11 @@ export default function OnboardingLayout({ children }) {
 
       // Simple auth check - check for tokens and refresh if needed
       const hasAuthToken = document.cookie.includes('authToken=') || document.cookie.includes('idToken=');
-      const bypassAuthValidation = localStorage.getItem('bypassAuthValidation') === 'true';
+      
+      // Check for bypass validation in app cache first, fall back to localStorage
+      const bypassAuthValidation = 
+        (window.__APP_CACHE?.auth?.bypassValidation === true) || 
+        localStorage.getItem('bypassAuthValidation') === 'true';
       
       if (!hasAuthToken && !bypassAuthValidation) {
         logger.debug('[OnboardingLayout] No auth tokens found, attempting refresh');

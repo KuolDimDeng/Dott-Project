@@ -1,3 +1,10 @@
+'use client';
+
+/**
+ * Utility module for tenant context operations that don't require the full React context
+ * This module is kept separate to avoid circular dependencies
+ */
+
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
 import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
@@ -12,11 +19,47 @@ import { useCallback, useState, useEffect } from 'react';
 // Define isBrowser constant for SSR detection
 const isBrowser = typeof window !== 'undefined';
 
+// Centralized local tenantId for components that can't access React context
+let currentTenantId = null;
+
+/**
+ * Sets the tenant context ID in the utility module
+ * This is useful for middleware and server components
+ * @param {string} tenantId - The tenant ID to set
+ */
+export function setTenantContext(tenantId) {
+  if (!tenantId) {
+    logger.warn('[tenantContext] Attempted to set empty tenant ID');
+    return;
+  }
+  
+  if (currentTenantId !== tenantId) {
+    logger.info(`[tenantContext] Tenant ID updated: ${tenantId}`);
+    currentTenantId = tenantId;
+  }
+}
+
+/**
+ * Gets the current tenant ID from the utility module
+ * @returns {string|null} The current tenant ID or null if not set
+ */
+export function getTenantContext() {
+  return currentTenantId;
+}
+
+/**
+ * Clears the tenant context
+ */
+export function clearTenantContext() {
+  logger.info('[tenantContext] Tenant context cleared');
+  currentTenantId = null;
+}
+
 /**
  * Get the current tenant context (ID and schema name)
  * @returns {Object} Object containing tenantId and schemaName
  */
-export const getTenantContext = () => {
+export const getTenantContextFull = () => {
   // Get tenant ID from auth store as the single source of truth
   const authState = useAuthStore.getState();
   let tenantId = authState.user?.businessId || null;
@@ -45,7 +88,7 @@ export const getTenantContext = () => {
  * @returns {Object} Headers object with tenant information
  */
 export const getTenantHeaders = () => {
-  const { tenantId, schemaName } = getTenantContext();
+  const { tenantId, schemaName } = getTenantContextFull();
   
   const headers = {};
   
@@ -58,67 +101,6 @@ export const getTenantHeaders = () => {
   }
   
   return headers;
-};
-
-/**
- * Store tenant information in auth store and localStorage
- * @param {string} tenantId The tenant ID to store
- */
-export const setTenantContext = (tenantId) => {
-  if (!tenantId) {
-    logger.warn('[TenantContext] Attempted to set empty tenant ID');
-    return;
-  }
-  
-  logger.debug(`[TenantContext] Setting tenant ID: ${tenantId}`);
-  
-  // Store in auth store (single source of truth)
-  const authState = useAuthStore.getState();
-  if (authState.user) {
-    useAuthStore.setState({
-      user: {
-        ...authState.user,
-        businessId: tenantId
-      }
-    });
-  } else {
-    // Create a minimal user object if none exists
-    useAuthStore.setState({
-      user: { businessId: tenantId }
-    });
-  }
-  
-  // Also store in localStorage as backup
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('tenantId', tenantId);
-    
-    // Set in cookie for server-side access
-    document.cookie = `tenantId=${tenantId}; path=/; max-age=31536000`; // 1 year
-  }
-};
-
-/**
- * Clear tenant context
- */
-export const clearTenantContext = () => {
-  logger.debug('[TenantContext] Clearing tenant context');
-  
-  // Clear from auth store
-  const authState = useAuthStore.getState();
-  if (authState.user) {
-    useAuthStore.setState({
-      user: {
-        ...authState.user,
-        businessId: null
-      }
-    });
-  }
-  
-  // Clear from localStorage and cookies
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('tenantId');
-    document.cookie = 'tenantId=; path=/; max-age=0';
-  }
 };
 
 /**
@@ -191,10 +173,13 @@ export const initializeTenantContext = async () => {
  * @returns {Promise<Object|null>} Tenant information or null if failed
  */
 export const fetchTenantInfo = async (tenantId) => {
-  if (!tenantId) return null;
-  
   try {
-    logger.debug(`[TenantContext] Fetching tenant info for: ${tenantId}`);
+    if (!tenantId) {
+      logger.warn(`[TenantContext] Cannot fetch tenant info: No tenant ID provided`);
+      return null;
+    }
+    
+    const isBrowser = typeof window !== 'undefined';
     
     // Call the tenant info API endpoint
     const response = await fetch(`/api/tenant/info?tenantId=${tenantId}`, {
@@ -208,10 +193,14 @@ export const fetchTenantInfo = async (tenantId) => {
     if (response.ok) {
       const data = await response.json();
       
-      // Store tenant info in localStorage for easier access
+      // Store tenant info in app cache for easier access
       if (isBrowser && data.tenant) {
-        localStorage.setItem('tenantData', JSON.stringify(data.tenant));
-        localStorage.setItem('tenantName', data.tenant.name || '');
+        // Initialize app cache if needed
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+        window.__APP_CACHE.tenant.data = data.tenant;
+        window.__APP_CACHE.tenant.name = data.tenant.name || '';
+        window.__APP_CACHE.tenant.lastUpdated = new Date().toISOString();
       }
       
       logger.debug(`[TenantContext] Tenant info fetched:`, data.tenant);

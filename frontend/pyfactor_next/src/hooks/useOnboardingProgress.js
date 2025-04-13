@@ -210,15 +210,24 @@ export function useOnboardingProgress() {
     document.cookie = `onboardingStep=${normalizedStep}${expiry}`;
     document.cookie = `onboardedStatus=${normalizedStep}${expiry}`;
     
-    // Also store in localStorage as additional backup
+    // Store in app cache instead of localStorage
     try {
-      localStorage.setItem('onboardingStep', normalizedStep);
-      localStorage.setItem('onboardingStatus', normalizedStep);
+      // Ensure app cache exists
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        
+        // Store in app cache
+        window.__APP_CACHE.onboarding.step = normalizedStep;
+        window.__APP_CACHE.onboarding.status = normalizedStep;
+        window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+      }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore storage errors
+      logger.warn('Failed to set onboarding data in app cache:', e);
     }
     
-    logger.debug(`Onboarding cookies set to ${normalizedStep}`);
+    logger.debug(`Onboarding cookies and app cache set to ${normalizedStep}`);
   };
 
   return {

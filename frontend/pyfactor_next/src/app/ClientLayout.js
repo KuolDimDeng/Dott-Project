@@ -17,6 +17,7 @@ import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import DynamicComponents from '@/components/DynamicComponents';
 import tokenRefreshService from '@/utils/tokenRefresh';
+import MigrationComponent from '@/components/MigrationComponent';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -153,7 +154,9 @@ export default function ClientLayout({ children }) {
                 
                 // Clear all relevant storage
                 try {
-                  localStorage.clear();
+                  if (typeof window !== 'undefined') {
+                    window.__APP_CACHE = {}; // Reset entire app cache
+                  }
                   sessionStorage.clear();
                   document.cookie.split(";").forEach(cookie => {
                     const name = cookie.split("=")[0].trim();
@@ -227,10 +230,15 @@ export default function ClientLayout({ children }) {
                 
                 // Clear redirect-related data in storage
                 try {
-                  localStorage.removeItem('signin_attempts');
-                  localStorage.removeItem('business_auth_errors');
-                  localStorage.removeItem('business_info_auth_errors');
-                  localStorage.removeItem('redirect_loop_count');
+                  if (typeof window !== 'undefined') {
+                    window.__APP_CACHE = window.__APP_CACHE || {};
+                    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                    
+                    delete window.__APP_CACHE.auth.signin_attempts;
+                    delete window.__APP_CACHE.auth.business_auth_errors;
+                    delete window.__APP_CACHE.auth.business_info_auth_errors;
+                    delete window.__APP_CACHE.auth.redirect_loop_count;
+                  }
                   sessionStorage.removeItem('signinRedirectTime');
                   sessionStorage.removeItem('lastRedirectPath');
                   sessionStorage.removeItem('loopDetected');
@@ -513,22 +521,41 @@ export default function ClientLayout({ children }) {
               return false;
             }
             
-            // Check if we've redirected too many times
-            const redirectCount = parseInt(localStorage.getItem('client_redirect_count') || '0', 10);
-            if (redirectCount >= 3) {
-              logger.error('[ClientLayout] Too many redirects detected, circuit breaker activated');
+            // Check for redirect loop counters in app cache
+            const redirectCount = typeof window !== 'undefined' && window.__APP_CACHE?.client?.redirect_count || 0;
+            logger.debug(`[ClientLayout] Client redirect count: ${redirectCount}`);
+            
+            if (redirectCount > 3) {
+              logger.error('[ClientLayout] Too many client redirects, forcing circuit breaker');
+              
+              // Reset counter
+              if (typeof window !== 'undefined') {
+                window.__APP_CACHE = window.__APP_CACHE || {};
+                window.__APP_CACHE.client = window.__APP_CACHE.client || {};
+                window.__APP_CACHE.client.redirect_count = 0;
+              }
+              
               // Force add noredirect parameter to prevent future redirects
               const currentUrl = new URL(window.location.href);
               currentUrl.searchParams.set('noredirect', 'true');
               window.history.replaceState({}, '', currentUrl.toString());
-              // Reset counter
-              localStorage.setItem('client_redirect_count', '0');
               setIsVerifying(false);
               return false;
             }
             
             // Increment redirect counter
-            localStorage.setItem('client_redirect_count', (redirectCount + 1).toString());
+            if (typeof window !== 'undefined') {
+              window.__APP_CACHE = window.__APP_CACHE || {};
+              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
+              window.__APP_CACHE.client.redirect_count = (redirectCount + 1);
+            }
+            
+            // Reset client redirect counter
+            if (typeof window !== 'undefined') {
+              window.__APP_CACHE = window.__APP_CACHE || {};
+              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
+              window.__APP_CACHE.client.redirect_count = 0;
+            }
             
             // Add from and noredirect parameters to signin URL
             const signInUrl = new URL('/auth/signin', window.location.origin);
@@ -584,7 +611,11 @@ export default function ClientLayout({ children }) {
         try {
           // Reset redirect counter if on signin page
           if (pathname.includes('signin') && typeof window !== 'undefined') {
-            localStorage.setItem('client_redirect_count', '0');
+            if (typeof window !== 'undefined') {
+              window.__APP_CACHE = window.__APP_CACHE || {};
+              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
+              window.__APP_CACHE.client.redirect_count = 0;
+            }
           }
           
           const sessionValid = await verifySession.current(pathname);
@@ -593,7 +624,11 @@ export default function ClientLayout({ children }) {
             
             // If validation successful, reset redirect counter
             if (sessionValid && typeof window !== 'undefined') {
-              localStorage.setItem('client_redirect_count', '0');
+              if (typeof window !== 'undefined') {
+                window.__APP_CACHE = window.__APP_CACHE || {};
+                window.__APP_CACHE.client = window.__APP_CACHE.client || {};
+                window.__APP_CACHE.client.redirect_count = 0;
+              }
             }
           }
         } catch (error) {
@@ -662,6 +697,9 @@ export default function ClientLayout({ children }) {
 
   return (
     <>
+      {/* Add MigrationComponent to migrate from cookies to Cognito */}
+      <MigrationComponent />
+      
       {/* GlobalEventDebugger removed to fix input field issues */}
       <AuthErrorBoundary onError={handleError}>
         <ConfigureAmplify />

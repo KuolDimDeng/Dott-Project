@@ -10,7 +10,6 @@ import { reconfigureAmplify } from '@/config/amplifyConfig';
 // Import standardized constants
 import { 
   COGNITO_ATTRIBUTES,
-  COOKIE_NAMES, 
   STORAGE_KEYS,
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
@@ -32,6 +31,12 @@ const sessionRefreshInProgress = {
   timestamp: 0
 };
 
+// Initialize global app cache if on client side
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+}
+
 /**
  * Try to acquire the tenant initialization lock
  * @returns {boolean} True if lock was acquired, false otherwise
@@ -39,13 +44,16 @@ const sessionRefreshInProgress = {
 const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
+  // Ensure the cache exists
+  if (!window.__APP_CACHE) window.__APP_CACHE = {};
+  if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+  
   // Check if lock already exists
-  const existingLock = localStorage.getItem(TENANT_LOCK_KEY);
+  const existingLock = window.__APP_CACHE.tenant.initLock;
   if (existingLock) {
     // Check if lock is stale (older than timeout)
-    const lockData = JSON.parse(existingLock);
     const now = Date.now();
-    if (now - lockData.timestamp < LOCK_TIMEOUT) {
+    if (now - existingLock.timestamp < LOCK_TIMEOUT) {
       logger.debug('Tenant initialization already in progress');
       return false;
     }
@@ -58,7 +66,7 @@ const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  localStorage.setItem(TENANT_LOCK_KEY, JSON.stringify(lockData));
+  window.__APP_CACHE.tenant.initLock = lockData;
   return true;
 };
 
@@ -67,7 +75,9 @@ const acquireTenantLock = () => {
  */
 const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(TENANT_LOCK_KEY);
+  if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
+    window.__APP_CACHE.tenant.initLock = null;
+  }
 };
 
 /**
@@ -90,15 +100,19 @@ const getSafeTenantId = () => {
     let tenantId = null;
     let source = null;
     
-    // Try localStorage first
+    // Ensure app cache exists
+    if (!window.__APP_CACHE) window.__APP_CACHE = {};
+    if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+    
+    // Try app cache first
     try {
-      tenantId = localStorage.getItem('tenantId');
+      tenantId = window.__APP_CACHE.tenant.id;
       if (tenantId) {
-        source = 'localStorage';
-        logger.debug('[TenantUtils] Retrieved tenant ID from localStorage:', tenantId);
+        source = 'app_cache';
+        logger.debug('[TenantUtils] Retrieved tenant ID from app cache:', tenantId);
       }
     } catch (e) {
-      logger.warn('[TenantUtils] Error accessing localStorage:', e);
+      logger.warn('[TenantUtils] Error accessing app cache:', e);
     }
     
     // Try sessionStorage next
@@ -114,65 +128,26 @@ const getSafeTenantId = () => {
       }
     }
     
-    // Try cookies next
+    // Remove cookie check and use Cognito directly as next source
     if (!tenantId) {
       try {
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-          try {
-            const [key, value] = cookie.trim().split('=');
-            if (key && value) {
-              acc[key] = value;
-            }
-          } catch (e) {
-            // Skip malformed cookie
-          }
-          return acc;
-        }, {});
-        
-        tenantId = cookies.tenantId || cookies.businessid;
-        if (tenantId) {
-          source = 'cookies';
-          logger.debug('[TenantUtils] Retrieved tenant ID from cookies:', tenantId);
-        }
-      } catch (e) {
-        logger.warn('[TenantUtils] Error accessing cookies:', e);
-      }
-    }
-    
-    // Try Cognito storage as a last resort
-    if (!tenantId) {
-      try {
-        // Look for Cognito storage keys
-        const cognitoKey = Object.keys(localStorage).find(key => 
-          key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
-        );
-        
-        if (cognitoKey) {
-          const lastAuthUser = localStorage.getItem(cognitoKey);
-          if (lastAuthUser) {
-            // User storage often contains the tenantId
-            const userDataKey = Object.keys(localStorage).find(key => 
-              key.includes('CognitoIdentityServiceProvider') && 
-              key.includes(lastAuthUser) && 
-              key.includes('userData')
-            );
-            
-            if (userDataKey) {
-              try {
-                const userData = JSON.parse(localStorage.getItem(userDataKey));
-                tenantId = userData?.tenantId || userData?.['custom:tenantId'] || userData?.['custom:businessid'];
-                if (tenantId) {
-                  source = 'cognito_storage';
-                  logger.debug('[TenantUtils] Retrieved tenant ID from Cognito storage:', tenantId);
-                }
-              } catch (e) {
-                logger.warn('[TenantUtils] Error parsing Cognito user data:', e);
+        // Use the Auth API to get the current user's attributes directly
+        fetchUserAttributes()
+          .then(attributes => {
+            const cognitoTenantId = attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
+            if (cognitoTenantId && !tenantId) {
+              // Store for future use
+              if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
+                window.__APP_CACHE.tenant.id = cognitoTenantId;
               }
+              logger.debug('[TenantUtils] Retrieved and stored tenant ID from Cognito:', cognitoTenantId);
             }
-          }
-        }
+          })
+          .catch(e => {
+            logger.warn('[TenantUtils] Error fetching Cognito attributes:', e);
+          });
       } catch (e) {
-        logger.warn('[TenantUtils] Error checking Cognito storage:', e);
+        logger.warn('[TenantUtils] Error checking Cognito attributes:', e);
       }
     }
     
@@ -247,29 +222,37 @@ export function useTenantInitialization() {
       return sessionTenantId;
     }
     
-    // Get from local storage next
-    const localStorageTenantId = 
-      typeof window !== 'undefined' ? localStorage.getItem('tenantId') : null;
-    
-    if (localStorageTenantId) {
-      // Set cookies to ensure consistency
-      if (typeof document !== 'undefined') {
-        document.cookie = `tenantId=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      }
-      return localStorageTenantId;
+    // Initialize app cache if needed
+    if (typeof window !== 'undefined') {
+      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+      if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
     }
     
-    // Get from cookie if available
-    const getCookieTenantId = () => {
-      if (typeof document === 'undefined') return null;
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; tenantId=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    };
+    // Get from app cache next
+    const cachedTenantId = 
+      typeof window !== 'undefined' ? window.__APP_CACHE.tenant.id : null;
     
-    // Return the cookie tenant ID or null if none available
-    return getCookieTenantId();
+    if (cachedTenantId) {
+      return cachedTenantId;
+    }
+    
+    // Try sessionStorage as fallback
+    if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+      try {
+        const storageTenantId = sessionStorage.getItem('tenantId');
+        if (storageTenantId) {
+          // Store in app cache for future use
+          if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
+            window.__APP_CACHE.tenant.id = storageTenantId;
+          }
+          return storageTenantId;
+        }
+      } catch (e) {
+        logger.warn('[TenantUtils] Error accessing sessionStorage:', e);
+      }
+    }
+    
+    return null;
   }, [session, sessionStatus]);
   
   /**
@@ -362,10 +345,12 @@ export function useTenantInitialization() {
         // Mark initialization as complete (used for performance optimizations)
         initializationComplete.current = true;
         
-        // Store tenant ID in all storage mechanisms for consistency
+        // Store tenant ID in app cache only, remove cookie usage
         if (typeof window !== 'undefined') {
-          localStorage.setItem('tenantId', tenantId);
-          document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+          if (!window.__APP_CACHE) window.__APP_CACHE = {};
+          if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+          
+          window.__APP_CACHE.tenant.id = tenantId;
         }
         
         return result;

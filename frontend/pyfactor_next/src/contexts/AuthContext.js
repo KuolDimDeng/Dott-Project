@@ -67,6 +67,14 @@ const extractEssentialTokenData = (tokens) => {
   };
 };
 
+// Helper to determine if a route is a dashboard route
+const isDashboardRoute = (pathname) => {
+  return pathname && (
+    pathname.startsWith('/dashboard') || 
+    pathname.includes('/tenant/') && pathname.includes('/dashboard')
+  );
+};
+
 export function AuthProvider({ children }) {
   // Use a single state object to reduce re-renders
   const [state, setState] = useState(initialState);
@@ -125,6 +133,10 @@ export function AuthProvider({ children }) {
     try {
       // Minimal logging
       logger.debug(`[Auth] Session check #${attempt}`);
+
+      // Get current path to determine if we're in dashboard
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isInDashboard = isDashboardRoute(currentPath);
 
       // Get current session with minimal error handling
       let tokens;
@@ -209,15 +221,27 @@ export function AuthProvider({ children }) {
             { tokens: minimalTokens }
           ));
 
-          // Handle onboarding redirect if needed
-          const currentPath = window.location.pathname;
-          if (onboardingStatus === 'not_started' && !currentPath.includes('/onboarding/business-info')) {
+          // Handle onboarding redirect if needed - but only for non-dashboard routes
+          // For dashboard routes, we want to use Cognito's authority for user state
+          if (!isInDashboard && onboardingStatus === 'not_started' && !currentPath.includes('/onboarding/business-info')) {
             router.push(appendLanguageParam('/onboarding/business-info'));
           }
         } catch (attributesError) {
-          setState(createStateSetter(false, false, false, null, null));
-          refreshingRef.current = false;
-          return;
+          // If in dashboard, we fail because Cognito is the source of truth
+          // If not in dashboard, we could try fallbacks here for auth flows
+          if (isInDashboard) {
+            setState(createStateSetter(false, false, false, null, null));
+            refreshingRef.current = false;
+            return;
+          } else {
+            // For non-dashboard routes, we could implement cookie/localStorage fallbacks here
+            logger.warn('[Auth] Could not get Cognito attributes but not in dashboard; continuing');
+            setState(createStateSetter(false, true, false, {
+              username: user.username,
+              userId: user.userId,
+              // No attributes available
+            }, { tokens: extractEssentialTokenData(tokens) }));
+          }
         }
       } catch (userError) {
         setState(createStateSetter(false, false, false, null, null));

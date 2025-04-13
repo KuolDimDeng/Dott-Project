@@ -5,6 +5,22 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { confirmSignUp, resendSignUpCode } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
+import { Auth } from 'aws-amplify';
+import { API } from 'aws-amplify';
+import { getCognitoAuth } from '@/utils/cognito';
+import { logInfo, logError, logDebug } from '@/utils/logger';
+
+// Initialize global app cache for auth
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+  window.__APP_CACHE.verification = window.__APP_CACHE.verification || {};
+}
+
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined' && !window.__APP_CACHE) {
+  window.__APP_CACHE = { auth: {}, user: {}, verification: {} };
+}
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -17,20 +33,45 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [resendError, setResendError] = useState(null);
+  const [resendSuccess, setResendSuccess] = useState(null);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
-    // Try to get email from URL parameters, then localStorage, then empty string
-    const storedEmail = localStorage.getItem('pyfactor_email');
-    const emailToUse = paramEmail || storedEmail || '';
-    
-    if (emailToUse) {
-      setEmail(emailToUse);
-      logger.debug('[VerifyEmail] Email set from params or localStorage', { 
-        source: paramEmail ? 'url' : 'localStorage',
-        email: emailToUse 
-      });
+    // Initialize app cache for auth if it doesn't exist
+    if (!window.__APP_CACHE) {
+      window.__APP_CACHE = {};
     }
-  }, [paramEmail]);
+    if (!window.__APP_CACHE.auth) {
+      window.__APP_CACHE.auth = {};
+    }
+
+    // Get email from URL query params or app cache or sessionStorage
+    const params = new URLSearchParams(window.location.search);
+    const emailFromURL = params.get('email');
+
+    if (emailFromURL) {
+      setEmail(emailFromURL);
+      // Store email in app cache
+      window.__APP_CACHE.auth.verificationEmail = emailFromURL;
+      // Fallback to sessionStorage for backward compatibility
+      sessionStorage.setItem('verificationEmail', emailFromURL);
+      console.log('Email from URL:', emailFromURL);
+    } else {
+      // Try to get email from app cache or sessionStorage
+      const cachedEmail = window.__APP_CACHE.auth.verificationEmail || sessionStorage.getItem('verificationEmail');
+      if (cachedEmail) {
+        setEmail(cachedEmail);
+        console.log('Email from cache:', cachedEmail);
+      }
+    }
+
+    // Check if email is already verified from app cache
+    const isEmailVerified = window.__APP_CACHE.auth.emailVerified === true;
+    if (isEmailVerified) {
+      setVerified(true);
+    }
+  }, []);
 
   const handleCodeChange = (e) => {
     setCode(e.target.value);
@@ -42,306 +83,207 @@ export default function VerifyEmailPage() {
     if (error) setError(null);
   };
 
-  const handleVerify = async (e) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!email) {
-      setError('Email address is required');
-      return;
-    }
-    
-    if (!code || code.length < 6) {
-      setError('Please enter a valid verification code');
-      return;
-    }
-    
+  const handleVerify = async () => {
     setIsVerifying(true);
-    setError(null);
-    setSuccessMessage(null);
-    
+    setError('');
+    setSuccessMessage('');
+
+    if (!email) {
+      setError('Please enter your email address.');
+      setIsVerifying(false);
+      return;
+    }
+
+    if (!code) {
+      setError('Please enter your verification code.');
+      setIsVerifying(false);
+      return;
+    }
+
     try {
-      logger.debug('[VerifyEmail] Attempting to verify email', { email, codeLength: code.length });
+      console.log('Verifying email:', email, 'with code:', code);
       
-      // Check if we already know the user is confirmed from localStorage
-      const verifiedEmail = localStorage.getItem('verifiedEmail');
-      if (verifiedEmail === email) {
-        logger.debug('[VerifyEmail] Email already verified according to localStorage, skipping confirmSignUp');
-        
-        // Set verification flags
-        localStorage.setItem('justVerified', 'true');
-        localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
-        
-        // Clean up verification data
-        localStorage.removeItem('pyfactor_email');
-        localStorage.removeItem('needs_verification');
-        
-        // Try to verify the email attribute directly
-        try {
-          const baseUrl = window.location.origin;
-          logger.debug('[VerifyEmail] Ensuring email_verified attribute is set via admin API');
-          
-          const adminResponse = await fetch(`${baseUrl}/api/admin/verify-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ email })
-          });
-          
-          if (adminResponse.ok) {
-            logger.debug('[VerifyEmail] Successfully marked email as verified via admin API');
-          } else {
-            logger.warn('[VerifyEmail] Failed to mark email as verified via admin API');
-          }
-        } catch (adminError) {
-          logger.warn('[VerifyEmail] Error calling admin verify-email API', { 
-            error: adminError.message 
-          });
-        }
-        
-        // Show success message
-        setSuccessMessage('Email already verified! Redirecting to sign in page...');
-        
-        // Redirect to sign-in page
-        setTimeout(() => {
-          router.push('/auth/signin');
-        }, 1500);
-        
+      // Initialize app cache if it doesn't exist
+      if (!window.__APP_CACHE) {
+        window.__APP_CACHE = {};
+      }
+      
+      // Initialize auth section if it doesn't exist
+      if (!window.__APP_CACHE.auth) {
+        window.__APP_CACHE.auth = {};
+      }
+
+      // Check if the email is already verified in the app cache
+      if (window.__APP_CACHE.auth.emailVerified && 
+          window.__APP_CACHE.auth.verifiedEmail === email) {
+        console.log('Email already verified according to app cache');
+        setSuccessMessage('Your email has already been verified! You can now sign in.');
+        setVerified(true);
+        setIsVerifying(false);
         return;
       }
+
+      // Attempt to verify the email with Cognito
+      const cognitoAuth = getCognitoAuth();
+      await cognitoAuth.confirmSignUp(email, code);
       
+      console.log('Email verification successful');
+      
+      // Set verification status in app cache
+      window.__APP_CACHE.auth.emailVerified = true;
+      window.__APP_CACHE.auth.verifiedEmail = email;
+      
+      // Fallback to sessionStorage for compatibility
       try {
-        // Actually verify the email with Cognito
-        const { isSignUpComplete, nextStep } = await confirmSignUp({
-          username: email,
-          confirmationCode: code
-        });
-        
-        logger.debug('[VerifyEmail] Email verification result', { 
-          isSignUpComplete, 
-          nextStep: nextStep?.signUpStep 
-        });
-        
-        if (isSignUpComplete) {
-          // Set verification flags
-          localStorage.setItem('verifiedEmail', email);
-          localStorage.setItem('justVerified', 'true');
-          localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
-          
-          // Clean up verification data
-          localStorage.removeItem('pyfactor_email');
-          localStorage.removeItem('needs_verification');
-          
-          // Show success message
-          setSuccessMessage('Email verified successfully! Redirecting to sign in page...');
-          
-          // Redirect to sign-in page
-          setTimeout(() => {
-            router.push('/auth/signin');
-          }, 1500);
-        } else {
-          throw new Error('Email verification failed. Please try again.');
-        }
-      } catch (verifyError) {
-        // Special handling for already confirmed users
-        if (verifyError.message?.includes('User cannot be confirmed') && verifyError.message?.includes('CONFIRMED')) {
-          // User is already confirmed, this is actually a success case
-          logger.info('[VerifyEmail] User is already confirmed, treating as success');
-          
-          // Try to verify the email through admin API since the user is already confirmed
-          try {
-            const baseUrl = window.location.origin;
-            logger.debug('[VerifyEmail] Attempting to mark email as verified via admin API');
-            
-            const adminResponse = await fetch(`${baseUrl}/api/admin/verify-email`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({ email })
-            });
-            
-            if (adminResponse.ok) {
-              logger.debug('[VerifyEmail] Successfully marked email as verified via admin API');
-            } else {
-              logger.warn('[VerifyEmail] Failed to mark email as verified via admin API');
-            }
-          } catch (adminError) {
-            logger.warn('[VerifyEmail] Error calling admin verify-email API', { 
-              error: adminError.message 
-            });
-          }
-          
-          // Set verification flags
-          localStorage.setItem('verifiedEmail', email);
-          localStorage.setItem('justVerified', 'true');
-          localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
-          
-          // Clean up verification data
-          localStorage.removeItem('pyfactor_email');
-          localStorage.removeItem('needs_verification');
-          
-          // Show success message
-          setSuccessMessage('Account already verified! Redirecting to sign in page...');
-          
-          // Redirect to sign-in page
-          setTimeout(() => {
-            router.push('/auth/signin');
-          }, 1500);
-        } else {
-          throw verifyError; // Re-throw for the outer catch block to handle
-        }
+        sessionStorage.setItem('email_verified', 'true');
+        sessionStorage.setItem('verified_email', email);
+      } catch (storageError) {
+        console.error('Error storing verification status in sessionStorage:', storageError);
       }
-    } catch (error) {
-      logger.error('[VerifyEmail] Verification error:', error);
       
-      // Handle specific errors
+      setSuccessMessage('Your email has been verified successfully! You can now sign in.');
+      setVerified(true);
+      
+    } catch (error) {
+      console.error('Error verifying email:', error);
+      
       if (error.code === 'CodeMismatchException') {
-        setError('Invalid verification code. Please check your email for the correct code.');
+        setError('The verification code is incorrect. Please try again.');
       } else if (error.code === 'ExpiredCodeException') {
-        setError('Verification code has expired. Please request a new code.');
-      } else if (error.code === 'LimitExceededException') {
-        setError('Too many attempts. Please try again later.');
-      } else if (error.message?.includes('network') || error.code === 'NetworkError') {
-        setError('Network error. Please check your internet connection and try again.');
+        setError('The verification code has expired. Please request a new code.');
+      } else if (error.code === 'UserNotFoundException') {
+        setError('This email address is not registered. Please sign up first.');
+      } else if (error.message?.includes('verified')) {
+        // Handle case where the email is already verified
+        setSuccessMessage('Your email is already verified. You can sign in now!');
+        setVerified(true);
+        
+        // Update verification status in app cache
+        window.__APP_CACHE.auth.emailVerified = true;
+        window.__APP_CACHE.auth.verifiedEmail = email;
+        
+        // Fallback to sessionStorage for compatibility
+        try {
+          sessionStorage.setItem('email_verified', 'true');
+          sessionStorage.setItem('verified_email', email);
+        } catch (storageError) {
+          console.error('Error storing verification status in sessionStorage:', storageError);
+        }
       } else {
-        setError(error.message || 'An error occurred during verification. Please try again.');
+        setError('Failed to verify your email. Please try again later.');
       }
-    } finally {
-      setIsVerifying(false);
     }
+    
+    setIsVerifying(false);
   };
 
   const handleResendCode = async () => {
+    setIsResending(true);
+    setResendError(null);
+    setResendSuccess(null);
+    setError(null);
+    setSuccessMessage(null);
+    
     if (!email) {
-      setError('Please enter your email address to receive a new code');
+      setResendError('Please enter your email address');
+      setIsResending(false);
       return;
     }
     
-    setIsResending(true);
-    setError(null);
-    
     try {
-      logger.debug('[VerifyEmail] Resending verification code', { email });
+      console.log('Resending verification code to:', email);
       
-      // Actually resend the code via Cognito
-      const result = await resendSignUpCode({
-        username: email
-      });
-      
-      logger.debug('[VerifyEmail] Code resent successfully', { 
-        destination: result.destination?.deliveryMedium,
-        hasDestination: !!result.destination,
-        rawResult: JSON.stringify(result)
-      });
-      
-      // Try to backup confirm with admin API to ensure account exists
-      try {
-        const baseUrl = window.location.origin;
-        logger.debug('[VerifyEmail] Attempting admin confirmation after resend', { email });
-        
-        const adminResponse = await fetch(`${baseUrl}/api/admin/confirm-user`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ email })
-        });
-        
-        if (adminResponse.ok) {
-          logger.debug('[VerifyEmail] Admin confirmation successful after resend');
-        } else {
-          // Non-fatal error, we still sent the code
-          logger.warn('[VerifyEmail] Admin confirmation failed after resend', { 
-            status: adminResponse.status
-          });
-        }
-      } catch (adminError) {
-        // Ignore admin API errors - the code was still sent
-        logger.warn('[VerifyEmail] Admin API error after resend', { 
-          error: adminError.message 
-        });
+      // Initialize app cache if it doesn't exist
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
       }
       
-      setSuccessMessage(`A new verification code has been sent to ${result.destination?.deliveryMedium === 'EMAIL' ? 'your email' : 'you'}`);
+      // Check if we've already sent a code recently
+      const lastCodeSentTime = window.__APP_CACHE.auth.lastCodeSentTime || 0;
+      const now = Date.now();
       
-      // Store information that we sent a code
-      try {
-        localStorage.setItem('verificationCodeSent', 'true');
-        localStorage.setItem('verificationCodeTimestamp', Date.now().toString());
-        localStorage.setItem('pendingVerificationEmail', email);
-      } catch (storageError) {
-        logger.warn('[VerifyEmail] Failed to update localStorage', { 
-          error: storageError.message 
-        });
-      }
-      
-      // Automatically clear success message after 5 seconds
-      setTimeout(() => {
-        setSuccessMessage(null);
-      }, 5000);
-    } catch (error) {
-      logger.error('[VerifyEmail] Error resending code:', { 
-        message: error.message, 
-        code: error.code,
-        name: error.name,
-        stack: error.stack
-      });
-      
-      // Handle specific errors
-      if (error.code === 'LimitExceededException') {
-        setError('Too many requests. Please try again later.');
-      } else if (error.code === 'UserNotFoundException') {
-        setError('We couldn\'t find an account with this email address.');
-      } else if (error.message?.includes('network') || error.code === 'NetworkError') {
-        setError('Network error. Please check your internet connection and try again.');
-      } 
-      // Special handling for already confirmed users
-      else if (error.message?.includes('User is already confirmed')) {
-        // User is already confirmed, treat as success
-        logger.info('[VerifyEmail] User is already confirmed, redirecting to sign in');
-        
-        // Set verification flags
-        localStorage.setItem('verifiedEmail', email);
-        localStorage.setItem('justVerified', 'true');
-        localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
-        
-        // Clean up verification data
-        localStorage.removeItem('pyfactor_email');
-        localStorage.removeItem('needs_verification');
-        
-        // Show success message
-        setSuccessMessage('Your account is already verified! Redirecting to sign in...');
-        
-        // Redirect to sign-in page after a short delay
-        setTimeout(() => {
-          router.push('/auth/signin');
-        }, 1500);
-        
-        // Don't show error for this case
+      if (lastCodeSentTime && (now - lastCodeSentTime < 60000)) {
+        setResendError('Please wait at least 1 minute before requesting a new code.');
+        setIsResending(false);
         return;
-      } else {
-        setError(error.message || 'An error occurred. Please try again.');
       }
-    } finally {
-      setIsResending(false);
+
+      // Resend the verification code
+      const cognitoAuth = getCognitoAuth();
+      await cognitoAuth.resendSignUp(email);
+      
+      // Update app cache with code sent time
+      window.__APP_CACHE.auth.lastCodeSentTime = now;
+      window.__APP_CACHE.auth.pendingVerificationEmail = email;
+        
+      // Fallback to sessionStorage for compatibility
+      try {
+        sessionStorage.setItem('pending_verification_email', email);
+        sessionStorage.setItem('last_code_sent_time', now.toString());
+      } catch (storageError) {
+        console.error('Error storing code sent status in sessionStorage:', storageError);
+      }
+        
+      setResendSuccess('A new verification code has been sent to your email address.');
+      setSuccessMessage('A new verification code has been sent to your email address.');
+      
+    } catch (error) {
+      console.error('Error resending verification code:', error);
+      
+      if (error.code === 'UserNotFoundException') {
+        setResendError('This email address is not registered. Please sign up first.');
+      } else if (error.code === 'LimitExceededException') {
+        setResendError('You have exceeded the limit for sending verification codes. Please try again later.');
+      } else if (error.message?.includes('already confirmed')) {
+        // Email is already verified
+        setResendSuccess('Your email is already verified. You can sign in now!');
+        setVerified(true);
+        
+        // Update verification status in app cache
+        window.__APP_CACHE.auth.emailVerified = true;
+        window.__APP_CACHE.auth.verifiedEmail = email;
+        
+        // Fallback to sessionStorage for compatibility
+        try {
+          sessionStorage.setItem('email_verified', 'true');
+          sessionStorage.setItem('verified_email', email);
+        } catch (storageError) {
+          console.error('Error storing verification status in sessionStorage:', storageError);
+        }
+      } else {
+        setResendError('Failed to resend verification code. Please try again later.');
+      }
     }
+    
+    setIsResending(false);
   };
 
   return (
     <div>
-      {/* Error message */}
+      {/* Error messages */}
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4" role="alert">
           <p className="text-red-700">{error}</p>
         </div>
       )}
       
-      {/* Success message */}
+      {resendError && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4" role="alert">
+          <p className="text-red-700">{resendError}</p>
+        </div>
+      )}
+      
+      {/* Success messages */}
       {successMessage && (
         <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
           <p className="text-green-700">{successMessage}</p>
+        </div>
+      )}
+      
+      {resendSuccess && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <p className="text-green-700">{resendSuccess}</p>
         </div>
       )}
       
@@ -439,9 +381,23 @@ export default function VerifyEmailPage() {
               <button
                 type="button"
                 onClick={() => {
-                  localStorage.setItem('verifiedEmail', email);
-                  localStorage.setItem('justVerified', 'true');
-                  localStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
+                  // Store verification data in app cache
+                  if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                  if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+                  window.__APP_CACHE.auth.verifiedEmail = email;
+                  window.__APP_CACHE.auth.justVerified = true;
+                  window.__APP_CACHE.auth.emailVerified = true; 
+                  window.__APP_CACHE.auth.emailVerifiedTimestamp = Date.now().toString();
+
+                  // Also keep in sessionStorage as fallback
+                  try {
+                    sessionStorage.setItem('verifiedEmail', email);
+                    sessionStorage.setItem('justVerified', 'true');
+                    sessionStorage.setItem('emailVerified', 'true');
+                    sessionStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
+                  } catch (err) {
+                    console.error('Failed to store verification data in sessionStorage:', err);
+                  }
                   setSuccessMessage('Email verification bypassed! Redirecting to sign in...');
                   setTimeout(() => router.push('/auth/signin'), 1500);
                 }}

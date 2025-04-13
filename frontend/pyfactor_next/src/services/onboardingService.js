@@ -20,26 +20,16 @@ const enhancedFetch = async (url, options = {}) => {
                                    (url.includes('state') && options.headers?.['X-Business-Info'] === 'true') ||
                                    (url.includes('verify-state') && url.includes('business-info'));
       
-      // Check if we're in an unauthenticated context
-      const hasAuthCookie = typeof document !== 'undefined' && 
-                           (document.cookie.includes('idToken=') || 
-                            document.cookie.includes('accessToken='));
-      
-      // Skip token refresh attempts for business-info pages when not authenticated
-      const shouldSkipAuthAttempts = isBusinessInfoRequest && !hasAuthCookie;
-      
-      // First try to get a valid session
+      // First try to get a valid session using Cognito directly
       let tokens = null;
       try {
-        if (!shouldSkipAuthAttempts) {
-          const authSession = await fetchAuthSession();
-          tokens = authSession.tokens;
-        }
+        const authSession = await fetchAuthSession();
+        tokens = authSession.tokens;
       } catch (sessionError) {
         logger.warn('[OnboardingService] Error fetching auth session:', sessionError.message);
       }
       
-      if (!tokens?.idToken && !shouldSkipAuthAttempts) {
+      if (!tokens?.idToken) {
         logger.debug('[OnboardingService] No valid session, attempting refresh');
         
         try {
@@ -56,7 +46,7 @@ const enhancedFetch = async (url, options = {}) => {
         }
       }
       
-      // Set up headers with auth tokens and cookies
+      // Set up headers with auth tokens from Cognito
       const headers = {
         ...(options.headers || {}),
         'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
@@ -69,22 +59,6 @@ const enhancedFetch = async (url, options = {}) => {
       
       if (tokens?.accessToken) {
         headers['Authorization'] = `Bearer ${tokens.accessToken.toString()}`;
-      }
-      
-      // Try to get cookies
-      try {
-        const savedIdToken = document.cookie.match(/idToken=([^;]+)/)?.[1];
-        const savedAccessToken = document.cookie.match(/accessToken=([^;]+)/)?.[1];
-        
-        if (!headers['X-Id-Token'] && savedIdToken) {
-          headers['X-Id-Token'] = decodeURIComponent(savedIdToken);
-        }
-        
-        if (!headers['Authorization'] && savedAccessToken) {
-          headers['Authorization'] = `Bearer ${decodeURIComponent(savedAccessToken)}`;
-        }
-      } catch (cookieError) {
-        logger.warn('[OnboardingService] Error reading token cookies:', cookieError);
       }
       
       // Add general onboarding headers
@@ -555,33 +529,44 @@ export const onboardingService = {
   },
 
   /**
-   * Update local state (cookies) for client-side access
+   * Update local state with current step data
+   * @param {string} step - The onboarding step
+   * @param {object} data - The data for the step
    */
   updateLocalState(step, data) {
-    logger.debug('[OnboardingService] Updating local state', { step, data });
+    if (!step) return;
     
     try {
-      // Set cookies with consistent expiration
-      const expiration = new Date();
-      expiration.setDate(expiration.getDate() + 7);
+      logger.debug('[OnboardingService] Updating local state:', { step });
       
-      // Set step and status cookies
-      document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
-      document.cookie = `onboardedStatus=${this.stepToStatus(step)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
+      // Make sure we're client-side and initialize global cache if needed
+      if (typeof window === 'undefined') return;
       
-      // Store key data in cookies
-      if (data?.businessName) {
-        document.cookie = `businessName=${encodeURIComponent(data.businessName)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
+      if (!window.__APP_CACHE) {
+        window.__APP_CACHE = {};
       }
       
-      if (data?.businessType) {
-        document.cookie = `businessType=${encodeURIComponent(data.businessType)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
+      if (!window.__APP_CACHE.onboarding) {
+        window.__APP_CACHE.onboarding = {};
       }
       
-      logger.debug('[OnboardingService] Local state updated successfully');
+      // Save data to global app cache for persistence
+      if (data && typeof data === 'object') {
+        // Store step data in global cache
+        window.__APP_CACHE.onboarding[`step_${step}`] = data;
+        
+        // Store onboarding step in global cache
+        window.__APP_CACHE.onboarding.currentStep = step;
+        window.__APP_CACHE.onboarding.lastUpdated = Date.now();
+        
+        // Store business info in global cache if present
+        if (step === 'business-info' && data.businessName) {
+          window.__APP_CACHE.onboarding.businessName = data.businessName;
+          window.__APP_CACHE.onboarding.businessType = data.businessType || 'Other';
+        }
+      }
     } catch (error) {
       logger.error('[OnboardingService] Error updating local state:', error);
-      throw error;
     }
   },
 
@@ -753,19 +738,50 @@ export const onboardingService = {
     return response.json()
   },
 
+  /**
+   * Update user's onboarding status in Cognito
+   * @param {object} updates - The updates to apply
+   */
   async updateOnboardingStatus(updates) {
-    const response = await fetch(`${BASE_URL}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(updates)
-    })
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.message || 'Failed to update onboarding status')
+    try {
+      if (!updates) return;
+      
+      logger.debug('[OnboardingService] Updating onboarding status:', updates);
+      
+      // Import dynamically to avoid SSR issues
+      const { updateUserAttributes } = await import('aws-amplify/auth');
+      
+      // Prepare the attribute updates
+      const userAttributes = {};
+      
+      if (updates.status) {
+        userAttributes['custom:onboarding'] = updates.status.toLowerCase();
+      }
+      
+      if (updates.step) {
+        userAttributes['custom:onboarding_step'] = updates.step;
+      }
+      
+      if (updates.businessName) {
+        userAttributes['custom:businessname'] = updates.businessName;
+      }
+      
+      if (updates.businessType) {
+        userAttributes['custom:businesstype'] = updates.businessType;
+      }
+      
+      // Add updated timestamp
+      userAttributes['custom:updated_at'] = new Date().toISOString();
+      
+      // Update the Cognito attributes
+      await updateUserAttributes({ userAttributes });
+      
+      logger.info('[OnboardingService] Successfully updated onboarding status in Cognito');
+      return true;
+    } catch (error) {
+      logger.error('[OnboardingService] Error updating onboarding status:', error);
+      return false;
     }
-    return response.json()
   },
 
   async createSetupTask(taskData) {

@@ -61,7 +61,12 @@ export default function SetupPage() {
         if (setupStartTime) {
           const duration = Date.now() - setupStartTime;
           setSetupDuration(duration);
-          localStorage.setItem('setupDuration', duration.toString());
+          // Store in app cache
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+            window.__APP_CACHE.setup.duration = duration;
+          }
         }
         
         // Mark setup as complete in cookies with 30-day expiration
@@ -73,9 +78,13 @@ export default function SetupPage() {
         document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
-        // Set localStorage flags
-        localStorage.setItem('setupComplete', 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
+        // Set app cache flags
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+          window.__APP_CACHE.setup.complete = true;
+          window.__APP_CACHE.setup.timestamp = Date.now();
+        }
         
         setSetupComplete(true);
         setSetupStatus('complete');
@@ -108,7 +117,14 @@ export default function SetupPage() {
         document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
-        localStorage.setItem('setupComplete', 'true');
+        // Set app cache flags
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+          window.__APP_CACHE.setup.complete = true;
+          window.__APP_CACHE.setup.timestamp = Date.now();
+          window.__APP_CACHE.setup.useRLS = true;
+        }
         localStorage.setItem('setupTimestamp', Date.now().toString());
         
         // Initialize setup
@@ -130,9 +146,13 @@ export default function SetupPage() {
         
         logger.debug('[SetupPage] Auth valid, storing tokens');
         
-        // Store tokens in localStorage as backup
-        localStorage.setItem('idToken', tokens.idToken.toString());
-        localStorage.setItem('accessToken', tokens.accessToken.toString());
+        // Store tokens in app cache
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.idToken = tokens.idToken.toString();
+          window.__APP_CACHE.auth.accessToken = tokens.accessToken.toString();
+        }
         
         // Set auth cookie for API calls
         document.cookie = `authToken=true; path=/; max-age=${60 * 60 * 24}; samesite=lax`;
@@ -181,15 +201,21 @@ export default function SetupPage() {
           document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
           
           localStorage.setItem('setupComplete', 'true');
-          localStorage.setItem('setupTimestamp', Date.now().toString());
-          localStorage.setItem('setupUseRLS', 'true');
-          
           // Calculate setup duration
           const duration = Date.now() - setupStartTime;
           setSetupDuration(duration);
           
           setSetupComplete(true);
           setSetupStatus('complete');
+          
+          // Set app cache flags
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+            window.__APP_CACHE.setup.complete = true;
+            window.__APP_CACHE.setup.timestamp = Date.now();
+            window.__APP_CACHE.setup.useRLS = true;
+          }
           
           return;
         }
@@ -249,10 +275,19 @@ export default function SetupPage() {
         localStorage.setItem('setupComplete', 'true');
         localStorage.setItem('setupTimestamp', Date.now().toString());
         
-        // Calculate setup duration
-        const duration = Date.now() - setupStartTime;
-        setSetupDuration(duration);
         localStorage.setItem('setupDuration', duration.toString());
+        
+        // Set final app cache flags
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+          
+          // Calculate setup duration
+          if (setupStartTime) {
+            const duration = Date.now() - setupStartTime;
+            window.__APP_CACHE.setup.duration = duration;
+          }
+        }
         
         // Mark setup as complete
         if (!isMounted) return;

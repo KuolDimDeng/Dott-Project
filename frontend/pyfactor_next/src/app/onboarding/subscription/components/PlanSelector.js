@@ -14,17 +14,27 @@ const handleSelectPlan = (plan) => {
     setCookie('onboardedStatus', 'complete');
     setCookie('setupCompleted', 'true');
     
-    // Store in localStorage for redundancy
+    // Store in app cache instead of localStorage
     try {
-      localStorage.setItem('setupSkipDatabaseCreation', 'true');
-      localStorage.setItem('setupUseRLS', 'true');
-      localStorage.setItem('skipSchemaCreation', 'true');
-      localStorage.setItem('freePlanSelected', 'true');
-      localStorage.setItem('onboardingStep', 'complete');
-      localStorage.setItem('setupCompleted', 'true');
-      localStorage.setItem('setupTimestamp', Date.now().toString());
+      // Initialize app cache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+        
+        // Store setup configuration
+        window.__APP_CACHE.setup.skipDatabaseCreation = true;
+        window.__APP_CACHE.setup.useRLS = true;
+        window.__APP_CACHE.setup.skipSchemaCreation = true;
+        window.__APP_CACHE.setup.freePlanSelected = true;
+        
+        // Store onboarding state
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        window.__APP_CACHE.onboarding.step = 'complete';
+        window.__APP_CACHE.onboarding.setupCompleted = true;
+        window.__APP_CACHE.onboarding.setupTimestamp = Date.now();
+      }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore storage errors
     }
     
     // Trigger background setup via a fire-and-forget API call

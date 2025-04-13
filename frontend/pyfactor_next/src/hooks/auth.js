@@ -13,7 +13,8 @@ import {
   fetchAuthSession as authFetchAuthSession,
   Hub,
   signOut as authSignOut,
-  resendSignUpCode as authResendSignUpCode
+  resendSignUpCode as authResendSignUpCode,
+  updateUserAttributes
 } from '@/config/amplifyUnified';
 import { useSession } from './useSession';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
@@ -60,6 +61,15 @@ function formatAuthErrorMessage(error) {
   return error.message || 'An error occurred';
 }
 
+// Add helper function to initialize app cache
+function getAppCache() {
+  if (typeof window === 'undefined') return null;
+  
+  if (!window.__APP_CACHE) window.__APP_CACHE = {};
+  if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+  return window.__APP_CACHE.auth;
+}
+
 export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -81,19 +91,31 @@ export const useAuth = () => {
       
       return () => clearTimeout(timeout);
     }
+    
+    // Attempt to load loading state from app cache
+    const appCache = getAppCache();
+    if (appCache && appCache.auth_loading_state) {
+      logger.debug('[Auth] Detected previous loading state in app cache:', appCache.auth_loading_state);
+      appCache.auth_loading_state = null;
+    }
   }, [isLoading]);
   
   // Force reset loading state on component mount
   useEffect(() => {
-    const loadingState = localStorage.getItem('auth_loading_state');
-    if (loadingState) {
-      logger.debug('[Auth] Found stored loading state, cleaning up');
-      localStorage.removeItem('auth_loading_state');
-    }
-    
-    // Safety reset
+    // Safety reset for loading state
     setIsLoading(false);
   }, []);
+
+  // Helper method to store authentication flags in Cognito attributes
+  const storeAuthStateInCognito = async (attributes) => {
+    try {
+      await safeUpdateUserAttributes(attributes);
+      return true;
+    } catch (error) {
+      logger.error('[Auth] Error storing auth state in Cognito:', error);
+      return false;
+    }
+  };
 
   // Helper function to create user in backend after Cognito signup
   const createBackendUser = async (userData) => {
@@ -166,37 +188,6 @@ export const useAuth = () => {
 
   // Function to validate authentication status - helps avoid false negatives
   const validateAuthentication = async () => {
-    // In development, bypass validation to ensure login flow works
-    if (process.env.NODE_ENV === 'development') {
-      const bypassValidation = localStorage.getItem('bypassAuthValidation');
-      if (bypassValidation === 'true') {
-        logger.debug('[Auth] Development bypass: Skipping session validation');
-        return true;
-      }
-    }
-    
-    // First check for session cookies
-    const hasSessionCookie = document.cookie.includes('hasSession=true');
-    const hasTenantId = document.cookie.includes('tenantId=') || document.cookie.includes('businessid=');
-    const hasAuthToken = document.cookie.includes('authToken=') || 
-                        (document.cookie.includes('CognitoIdentityServiceProvider') && 
-                         document.cookie.includes('.idToken'));
-    
-    if (hasSessionCookie) {
-      logger.debug('[Auth] Session cookie found, attempting validation');
-    }
-    
-    if (hasTenantId) {
-      logger.debug('[Auth] Tenant ID cookie found, good sign of previous authentication');
-    }
-    
-    // If we have both session and tenant ID, treat this as validated
-    // This acts as a fallback when Cognito validation fails but we know user was previously signed in
-    if (hasSessionCookie && hasTenantId && hasAuthToken) {
-      logger.info('[Auth] Session validated via cookies (hasSession + tenantId + authToken)');
-      return true;
-    }
-    
     try {
       // Try multiple validation methods with retries and fallbacks
       let methodIndex = 0;
@@ -214,34 +205,6 @@ export const useAuth = () => {
           logger.debug('[Auth] Trying validation method 2: getCurrentUser');
           const currentUser = await authGetCurrentUser();
           return currentUser?.userId ? true : false;
-        },
-        // Method 3: Check local storage for valid token data
-        async () => {
-          logger.debug('[Auth] Trying validation method 3: local storage tokens');
-          // Check for specific Cognito storage keys that indicate a previous session
-          if (typeof localStorage !== 'undefined') {
-            const lastAuthUserKey = Object.keys(localStorage).find(key => 
-              key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
-            );
-            
-            if (lastAuthUserKey) {
-              const lastAuthUser = localStorage.getItem(lastAuthUserKey);
-              if (lastAuthUser) {
-                // Look for token for this user
-                const tokenKey = Object.keys(localStorage).find(key => 
-                  key.includes('CognitoIdentityServiceProvider') && 
-                  key.includes(lastAuthUser) && 
-                  key.includes('idToken')
-                );
-                
-                if (tokenKey) {
-                  logger.debug('[Auth] Found valid token in local storage');
-                  return true;
-                }
-              }
-            }
-          }
-          return false;
         }
       ];
       
@@ -277,24 +240,20 @@ export const useAuth = () => {
         }
       }
       
-      // Last resort: If we have session cookies but all methods failed,
-      // we'll trust the cookies in development mode
-      if (process.env.NODE_ENV === 'development' && hasSessionCookie && hasTenantId) {
-        logger.warn('[Auth] All validation methods failed but session cookies found. Trusting cookies in development mode.');
+      // Check dev bypass from app cache instead of localStorage
+      const appCache = getAppCache();
+      const bypassValidation = appCache?.bypassAuthValidation === 'true';
+      
+      if (process.env.NODE_ENV === 'development' && bypassValidation) {
+        logger.debug('[Auth] Development mode: Bypassing validation via appCache setting');
         return true;
       }
       
       // All methods failed after retries
+      logger.debug('[Auth] All authentication validation methods failed');
       return false;
     } catch (error) {
       logger.error('[Auth] Error during validation:', error);
-      
-      // Last resort fallback - if we have cookies, consider authenticated
-      if (hasSessionCookie && hasTenantId) {
-        logger.info('[Auth] Validation error but session cookies found, using fallback authentication');
-        return true;
-      }
-      
       return false;
     }
   };
@@ -448,25 +407,29 @@ export const useAuth = () => {
         logger.debug('[Auth] Sign out completed with unknown status');
       }
       
-      // Clear local storage and cookies regardless of result
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Clear cookies
-        document.cookie.split(';').forEach(cookie => {
-          const [name] = cookie.trim().split('=');
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        });
-        
-        logger.debug('[Auth] Local storage and cookies cleared');
-      } catch (e) {
-        logger.error('[Auth] Error clearing storage:', e);
-      }
-      
       // Mark as signed out
       setIsAuthenticated(false);
       setUser(null);
+      
+      // Clear app cache related to authentication
+      const appCache = getAppCache();
+      if (appCache) {
+        Object.keys(appCache).forEach(key => {
+          delete appCache[key];
+        });
+      }
+      
+      // Clear Cognito attributes related to authentication state
+      try {
+        logger.debug('[Auth] Clearing auth-related Cognito attributes');
+        await storeAuthStateInCognito({
+          'custom:verificationInProgress': 'false',
+          'custom:verificationCodeSent': 'false',
+          'custom:signInInProgress': 'false'
+        });
+      } catch (attributeError) {
+        logger.warn('[Auth] Error clearing Cognito attributes during sign out:', attributeError);
+      }
       
       // Redirect to home page
       window.location.href = '/?signedOut=true';
@@ -474,14 +437,6 @@ export const useAuth = () => {
       return true;
     } catch (error) {
       logger.error('[Auth] Error signing out:', error);
-      
-      // Try to clear storage anyway on error
-      try {
-        localStorage.clear();
-        sessionStorage.clear();
-      } catch (e) {
-        // Ignore errors here
-      }
       
       // Redirect to home page even on error
       window.location.href = '/?signedOut=error';
@@ -496,9 +451,6 @@ export const useAuth = () => {
     setAuthError(null);
     
     try {
-      // Store loading state in localStorage for potential recovery
-      localStorage.setItem('auth_loading_state', 'signup');
-      
       logger.debug('[Auth] Starting sign up process', { 
         email: data.email, 
         hasPassword: !!data.password
@@ -558,12 +510,15 @@ export const useAuth = () => {
           const confirmResult = await confirmResponse.json();
           logger.debug('[Auth] User auto-confirmed successfully:', confirmResult);
           
-          // Store the confirmation status
+          // Store confirmation status in Cognito
           try {
-            localStorage.setItem('userConfirmed', 'true');
-            localStorage.setItem('userEmail', data.email);
+            await storeAuthStateInCognito({
+              'custom:userConfirmed': 'true',
+              'custom:userEmail': data.email
+            });
           } catch (e) {
             // Ignore storage errors
+            logger.warn('[Auth] Error storing confirmation status in Cognito:', e);
           }
         } else {
           // Enhanced error handling for non-OK responses
@@ -629,8 +584,6 @@ export const useAuth = () => {
       };
     } finally {
       setIsLoading(false);
-      // Clear loading state marker
-      localStorage.removeItem('auth_loading_state');
     }
   }, []);
 
@@ -693,11 +646,24 @@ export const useAuth = () => {
         
         logger.debug('[Auth] Backend user creation result:', result);
         
-        // Clear verification-related data from session storage
+        // Clear verification-related data from session storage and app cache
         try {
           sessionStorage.removeItem('pendingVerificationEmail');
           sessionStorage.removeItem('verificationCodeSent');
-          localStorage.removeItem('verificationCodeSentAt');
+          
+          // Clear from APP_CACHE
+          const appCache = getAppCache();
+          if (appCache) {
+            if (appCache.verificationCodeSentAt) {
+              delete appCache.verificationCodeSentAt;
+            }
+            if (appCache.verificationInProgress) {
+              delete appCache.verificationInProgress;
+            }
+            if (appCache.verificationStartTime) {
+              delete appCache.verificationStartTime;
+            }
+          }
         } catch (e) {
           // Ignore storage errors
         }
@@ -775,12 +741,25 @@ export const useAuth = () => {
         case 'tokenRefresh':
           try {
             // Check if we've had too many refresh attempts
-            const refreshCount = parseInt(sessionStorage.getItem('tokenRefreshCount') || '0', 10);
-            const lastRefreshTime = parseInt(sessionStorage.getItem('lastTokenRefreshTime') || '0', 10);
+            let refreshCount = 0;
+            let lastRefreshTime = 0;
+            
+            try {
+              // Get refresh tracking data from Cognito attributes
+              const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+              const userAttributes = await fetchUserAttributes();
+              
+              refreshCount = parseInt(userAttributes['custom:tokenRefreshCount'] || '0', 10);
+              lastRefreshTime = parseInt(userAttributes['custom:lastTokenRefreshTime'] || '0', 10);
+            } catch (attributeError) {
+              logger.warn('[Auth] Error getting refresh attributes from Cognito:', attributeError);
+            }
+            
             const now = Date.now();
             
             // Global lock to prevent concurrent refresh attempts
-            if (window.__tokenRefreshInProgress) {
+            const appCache = getAppCache();
+            if (appCache && appCache.tokenRefreshInProgress) {
               logger.debug('[Auth] Token refresh already in progress, skipping');
               return;
             }
@@ -788,25 +767,33 @@ export const useAuth = () => {
             // If we've refreshed more than 3 times in 30 seconds, stop to prevent loops
             if (refreshCount >= 3 && (now - lastRefreshTime) < 30000) {
               logger.error('[Auth] Too many token refresh attempts in short period, stopping refresh cycle');
-              sessionStorage.setItem('tokenRefreshCount', '0');
+              await storeAuthStateInCognito({
+                'custom:tokenRefreshCount': '0'
+              });
               // Add a longer cooldown period
-              window.__tokenRefreshCooldown = now + 60000; // 1 minute cooldown
+              if (appCache) {
+                appCache.tokenRefreshCooldown = now + 60000; // 1 minute cooldown
+              }
               return;
             }
             
             // Check if we're in cooldown period
-            if (window.__tokenRefreshCooldown && now < window.__tokenRefreshCooldown) {
+            if (appCache && appCache.tokenRefreshCooldown && now < appCache.tokenRefreshCooldown) {
               logger.warn('[Auth] Token refresh in cooldown period, skipping');
               return;
             }
             
             // Set global refresh lock
-            window.__tokenRefreshInProgress = true;
+            if (appCache) {
+              appCache.tokenRefreshInProgress = true;
+            }
             
             try {
-              // Update refresh count and timestamp
-              sessionStorage.setItem('tokenRefreshCount', (refreshCount + 1).toString());
-              sessionStorage.setItem('lastTokenRefreshTime', now.toString());
+              // Update refresh count and timestamp in Cognito
+              await storeAuthStateInCognito({
+                'custom:tokenRefreshCount': (refreshCount + 1).toString(),
+                'custom:lastTokenRefreshTime': now.toString()
+              });
               
               logger.debug('[Auth] Handling token refresh, attempt:', refreshCount + 1);
               
@@ -822,13 +809,16 @@ export const useAuth = () => {
               logger.debug('[Auth] Session fetched after token refresh:', sessionResponse);
             } finally {
               // Always clear the lock
-              window.__tokenRefreshInProgress = false;
+              if (appCache) {
+                appCache.tokenRefreshInProgress = false;
+              }
             }
           } catch (error) {
             logger.error('[Auth] Error during token refresh:', error);
             // Clear the lock in case of error
-            if (typeof window !== 'undefined') {
-              window.__tokenRefreshInProgress = false;
+            const appCache = getAppCache();
+            if (appCache) {
+              appCache.tokenRefreshInProgress = false;
             }
           }
           break;
@@ -845,42 +835,48 @@ export const useAuth = () => {
     return () => unsubscribe();
   }, [router, refreshSession]);
 
-  const handleResendVerificationCode = useCallback(async (email) => {
-    // Validate email is provided
-    if (!email) {
+  const resendVerificationCode = useCallback(async (email) => {
+    logger.debug('[Auth] Attempting to resend verification code for:', email);
+    
+    // Use app cache as a mutex to prevent duplicate requests
+    const appCache = getAppCache();
+    if (appCache && appCache.verificationInProgress) {
+      logger.debug('[Auth] Verification already in progress, preventing duplicate');
       return {
-        success: false,
-        error: 'Email is required to resend verification code'
+        success: true,
+        message: 'Verification code is being sent. Please wait...',
+        code: 'InProgress'
       };
     }
     
-    setIsLoading(true);
-    
-    // Implement a global lock to prevent multiple concurrent requests
-    if (typeof window !== 'undefined') {
-      if (window._verificationInProgress === true) {
-        logger.debug('[Auth] Verification already in progress, preventing duplicate');
-        return {
-          success: true,
-          message: 'Verification code is being sent. Please wait...',
-          code: 'InProgress'
-        };
-      }
-      
-      window._verificationInProgress = true;
+    if (appCache) {
+      appCache.verificationInProgress = true;
       // Auto-release lock after 10 seconds in case of error
-      const lockTimeout = setTimeout(() => {
-        window._verificationInProgress = false;
+      setTimeout(() => {
+        if (appCache) appCache.verificationInProgress = false;
       }, 10000);
     }
     
     try {
-      // Set a mutex flag to prevent duplicate sends
-      const verificationInProgress = localStorage.getItem('verificationInProgress');
-      const verificationStartTime = localStorage.getItem('verificationStartTime');
+      // Check if verification is already in progress by checking Cognito attributes
+      let verificationInProgress = false;
+      let verificationStartTime = null;
+      
+      try {
+        // Get current user attributes
+        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+        const userAttributes = await fetchUserAttributes();
+        
+        // Check verification status from attributes
+        verificationInProgress = userAttributes['custom:verificationInProgress'] === 'true';
+        verificationStartTime = userAttributes['custom:verificationStartTime'];
+      } catch (attributeError) {
+        logger.warn('[Auth] Error checking verification attributes:', attributeError);
+      }
+      
       const now = Date.now();
       
-      if (verificationInProgress === 'true' && verificationStartTime) {
+      if (verificationInProgress && verificationStartTime) {
         const timeSince = now - parseInt(verificationStartTime);
         // If the last verification attempt was less than 5 seconds ago, prevent duplicate
         if (timeSince < 5000) {
@@ -899,22 +895,40 @@ export const useAuth = () => {
         }
       }
       
-      // Set the mutex flag
+      // Set the verification in progress flag in Cognito
       try {
-        localStorage.setItem('verificationInProgress', 'true');
-        localStorage.setItem('verificationStartTime', now.toString());
+        await storeAuthStateInCognito({
+          'custom:verificationInProgress': 'true',
+          'custom:verificationStartTime': now.toString()
+        });
       } catch (e) {
-        logger.warn('[Auth] Failed to set verification mutex:', e);
+        logger.warn('[Auth] Failed to set verification status in Cognito:', e);
       }
       
       // Check if we've recently sent a code to prevent duplicates
       try {
-        const lastCodeSentTime = sessionStorage.getItem('verificationCodeSentAt');
-        const verificationCodeSent = sessionStorage.getItem('verificationCodeSent');
+        let lastCodeSentTime = null;
+        let recentlySent = false;
         
-        // Also check localStorage for cross-tab prevention
-        const signupCodeSent = localStorage.getItem('signupCodeSent');
-        const signupCodeTimestamp = localStorage.getItem('signupCodeTimestamp');
+        // Check app cache first
+        if (appCache) {
+          lastCodeSentTime = appCache.verificationCodeSentAt;
+          recentlySent = appCache.verificationCodeSent === 'true';
+        }
+        
+        // If not in app cache, try to get from Cognito attributes
+        if (!lastCodeSentTime) {
+          try {
+            // Get current user attributes to check for recent codes
+            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+            const userAttributes = await fetchUserAttributes();
+            
+            lastCodeSentTime = userAttributes['custom:verificationCodeSentAt'];
+            recentlySent = userAttributes['custom:verificationCodeSent'] === 'true';
+          } catch (attributeError) {
+            logger.warn('[Auth] Error checking code sent attributes:', attributeError);
+          }
+        }
         
         const thirtySecondsInMs = 30 * 1000;
         const currentTime = Date.now();
@@ -922,16 +936,18 @@ export const useAuth = () => {
         if (lastCodeSentTime && (currentTime - parseInt(lastCodeSentTime)) < thirtySecondsInMs) {
           logger.debug('[Auth] Code recently sent (last 30 seconds), preventing duplicate');
           
-          // Clear the mutex
+          // Clear the verification in progress flag
           try {
-            localStorage.removeItem('verificationInProgress');
+            await storeAuthStateInCognito({
+              'custom:verificationInProgress': 'false'
+            });
           } catch (e) {
-            logger.warn('[Auth] Failed to clear verification mutex:', e);
+            logger.warn('[Auth] Failed to clear verification status in Cognito:', e);
           }
           
-          if (typeof window !== 'undefined') {
-            window._verificationInProgress = false;
-            clearTimeout(window._verificationLockTimeout);
+          // Clear app cache flag
+          if (appCache) {
+            appCache.verificationInProgress = false;
           }
           
           return {
@@ -940,31 +956,9 @@ export const useAuth = () => {
             code: 'RecentlySent'
           };
         }
-        
-        if (signupCodeTimestamp && (currentTime - parseInt(signupCodeTimestamp)) < thirtySecondsInMs) {
-          logger.debug('[Auth] Code recently sent (localStorage, last 30 seconds), preventing duplicate');
-          
-          // Clear the mutex
-          try {
-            localStorage.removeItem('verificationInProgress');
-          } catch (e) {
-            logger.warn('[Auth] Failed to clear verification mutex:', e);
-          }
-          
-          if (typeof window !== 'undefined') {
-            window._verificationInProgress = false;
-            clearTimeout(window._verificationLockTimeout);
-          }
-          
-          return {
-            success: true,
-            message: 'Verification code was just sent. Please check your email inbox.',
-            code: 'RecentlySent'
-          };
-        }
-      } catch (storageError) {
-        logger.debug('[Auth] Error checking verification storage:', storageError);
-        // Continue if storage check fails
+      } catch (checkError) {
+        logger.debug('[Auth] Error checking recent verification code:', checkError);
+        // Continue if check fails
       }
       
       logger.debug('[Auth] Resending sign up code for:', email);
@@ -978,19 +972,23 @@ export const useAuth = () => {
           
           logger.debug('[Auth] Resend code API response:', result);
           
-          // Record that we sent a code
+          // Record that we sent a code in Cognito and app cache
           try {
             const timestamp = Date.now().toString();
-            sessionStorage.setItem('verificationCodeSentAt', timestamp);
-            sessionStorage.setItem('pendingVerificationEmail', email);
-            sessionStorage.setItem('verificationCodeSent', 'true');
-            sessionStorage.setItem('verificationCodeTimestamp', timestamp);
+            await storeAuthStateInCognito({
+              'custom:verificationCodeSentAt': timestamp,
+              'custom:pendingVerificationEmail': email,
+              'custom:verificationCodeSent': 'true'
+            });
             
-            // Also store in localStorage to prevent duplicates across tabs
-            localStorage.setItem('signupCodeSent', 'true');
-            localStorage.setItem('signupCodeTimestamp', timestamp);
+            // Also store in app cache
+            if (appCache) {
+              appCache.verificationCodeSentAt = timestamp;
+              appCache.pendingVerificationEmail = email;
+              appCache.verificationCodeSent = 'true';
+            }
           } catch (e) {
-            logger.warn('[Auth] Failed to store verification timestamp:', e);
+            logger.warn('[Auth] Failed to store verification timestamp in Cognito:', e);
           }
           
           return {
@@ -1032,17 +1030,9 @@ export const useAuth = () => {
       
       logger.debug('[Auth] Resend code operation completed with result:', response);
       
-      // Clear the mutex
-      try {
-        localStorage.removeItem('verificationInProgress');
-      } catch (e) {
-        logger.warn('[Auth] Failed to clear verification mutex:', e);
-      }
-      
-      // Release the window lock
-      if (typeof window !== 'undefined') {
-        window._verificationInProgress = false;
-        clearTimeout(window._verificationLockTimeout);
+      // Clear the verification in progress flag in app cache
+      if (appCache) {
+        appCache.verificationInProgress = false;
       }
       
       if (!response.success) {
@@ -1058,27 +1048,19 @@ export const useAuth = () => {
         name: error.name
       });
       
-      // Clear the mutex in case of error
-      try {
-        localStorage.removeItem('verificationInProgress');
-      } catch (e) {
-        logger.warn('[Auth] Failed to clear verification mutex:', e);
-      }
-      
-      // Release the window lock
-      if (typeof window !== 'undefined') {
-        window._verificationInProgress = false;
-        clearTimeout(window._verificationLockTimeout);
+      // Clear the verification in progress flag in app cache
+      const appCache = getAppCache();
+      if (appCache) {
+        appCache.verificationInProgress = false;
       }
       
       return {
         success: false,
-        error: error.message || 'Failed to resend verification code'
+        error: formatAuthErrorMessage(error),
+        code: error.code || 'UnknownError'
       };
-    } finally {
-      setIsLoading(false);
     }
-  }, []);
+  }, [retryOperation]);
 
   // Handle password reset request (forgot password)
   const resetPassword = useCallback(async (email) => {
@@ -1251,7 +1233,7 @@ export const useAuth = () => {
     signOut: handleSignOut,
     signUp: handleSignUp,
     confirmSignUp: handleConfirmSignUp,
-    resendVerificationCode: handleResendVerificationCode,
+    resendVerificationCode: resendVerificationCode,
     resetPassword,
     confirmPasswordReset,
     validateAuthentication,

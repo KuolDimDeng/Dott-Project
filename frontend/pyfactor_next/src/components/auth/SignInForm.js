@@ -188,101 +188,90 @@ const [state, dispatch] = useReducer(reducer, initialState);
     checkAuthStatus();
   }, []);
 
-  // Helper function to set consistent onboarding cookies
-  const setOnboardingCookies = (status, isComplete = false, userEmail = email) => {
-    const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-    const normalizedStatus = status?.toLowerCase() || 'not_started';
-    
-    // Set all cookies with normalized lowercase values
-    document.cookie = `onboardedStatus=${normalizedStatus}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `setupCompleted=${isComplete ? 'true' : 'false'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingStep=${isComplete ? 'complete' : normalizedStatus}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingInProgress=${isComplete ? 'false' : 'true'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    
-    // CRITICAL: Set userEmail cookie for middleware to identify known onboarded users
-    if (userEmail) {
-      document.cookie = `userEmail=${userEmail}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+  // Replace the setOnboardingCookies function with a function that updates Cognito
+  const updateOnboardingStatusInCognito = async (status, isComplete = false) => {
+    try {
+      const { updateUserAttributes } = await import('aws-amplify/auth');
+      
+      // Normalize status to standard format
+      const normalizedStatus = status.toLowerCase().replace(/-/g, '_');
+      
+      logger.debug('[SignInForm] Updating onboarding status in Cognito:', {
+        status: normalizedStatus,
+        isComplete
+      });
+      
+      // Update user attributes in Cognito
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:onboarding': isComplete ? 'complete' : normalizedStatus,
+          'custom:setupdone': isComplete ? 'true' : 'false',
+          'custom:updated_at': new Date().toISOString()
+        }
+      });
+      
+      logger.info('[SignInForm] Successfully updated onboarding status in Cognito', {
+        status: normalizedStatus,
+        isComplete
+      });
+      
+      return true;
+    } catch (error) {
+      logger.error('[SignInForm] Failed to update onboarding status in Cognito:', error);
+      return false;
     }
-    
-    logger.debug('[SignInForm] Set onboarding cookies:', {
-      status: normalizedStatus,
-      isComplete,
-      onboardingStep: isComplete ? 'complete' : normalizedStatus,
-      userEmail
-    });
   };
 
   // Helper function to determine redirect path based on user attributes
   const determineRedirectPath = (userAttributes) => {
-    // Get all relevant status indicators, normalizing to lowercase
+    // Exclusively use Cognito attributes (source of truth) for redirect decisions
+    // Normalize to lowercase for consistent comparison
     const onboardingStatus = (userAttributes['custom:onboarding'] || '').toLowerCase();
     const setupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
     
-    // Add detailed debugging
-    logger.debug('[SignInForm] determineRedirectPath with attributes:', { 
+    // Add detailed debugging for Cognito attributes
+    logger.debug('[SignInForm] determineRedirectPath using Cognito attributes:', { 
       rawOnboardingStatus: userAttributes['custom:onboarding'],
       normalizedOnboardingStatus: onboardingStatus,
       rawSetupDone: userAttributes['custom:setupdone'],
       normalizedSetupDone: setupDone,
+      tenantId: userAttributes['custom:tenant_ID'] || userAttributes['custom:tenant_id'] || userAttributes['custom:businessid'],
       isComplete: onboardingStatus === 'complete' || setupDone,
       redirectCondition: `onboardingStatus === 'complete'(${onboardingStatus === 'complete'}) || setupDone(${setupDone})`
     });
     
-    // Check if we should return to a specific onboarding step
-    const returnToOnboarding = localStorage.getItem('returnToOnboarding') === 'true';
-    const returnStep = localStorage.getItem('onboardingStep');
-    
-    // Clear the return flags immediately to prevent future redirect loops
-    try {
-      localStorage.removeItem('returnToOnboarding');
-      // Don't remove onboardingStep as it might be needed for state
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-    
-    // If we have explicit return info, prioritize it
-    if (returnToOnboarding && returnStep) {
-      logger.debug(`[SignInForm] Returning user to onboarding step from localStorage: ${returnStep}`);
-      
-      // Set cookies for server-side state persistence
-      const normalizedStep = returnStep.toLowerCase();
-      setOnboardingCookies(normalizedStep, normalizedStep === 'complete');
-      
-      return `/onboarding/${normalizedStep}?from=signin&ts=${Date.now()}`;
-    }
-    
-    // CRITICAL FIX: Handle exact compare to 'complete'
+    // Primary check: Onboarding completed users should go to dashboard
     if (onboardingStatus === 'complete' || setupDone) {
-      logger.debug('[SignInForm] User has completed onboarding, redirecting to dashboard');
-      setOnboardingCookies('complete', true);
+      logger.debug('[SignInForm] User has completed onboarding according to Cognito, redirecting to dashboard');
+      
+      // Update Cognito to ensure status is properly set
+      updateOnboardingStatusInCognito('complete', true);
+      
+      // Get tenant ID and include it in redirect if available
+      const tenantId = getBusinessOrTenantId(userAttributes);
+      if (tenantId) {
+        return `/tenant/${tenantId}/dashboard`;
+      }
+      
       return '/dashboard';
     }
     
-    // CRITICAL FIX: Check for free plan users stuck in subscription status
+    // Handle free plan users who shouldn't need to go through payment
     const userPlan = (userAttributes['custom:subplan'] || userAttributes['custom:subscription_plan'] || '').toLowerCase();
     const isFreePlan = userPlan === 'free' || userPlan === 'basic';
     
     if (onboardingStatus === 'subscription' && isFreePlan) {
-      logger.info('[SignInForm] Detected free plan user stuck in subscription status, fixing to complete');
+      logger.info('[SignInForm] Detected free plan user in subscription status, fixing to complete');
       
       // Update Cognito attributes to fix the status
-      try {
-        setTimeout(async () => {
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          await updateUserAttributes({
-            userAttributes: {
-              'custom:onboarding': 'complete',
-              'custom:setupdone': 'true'
-            }
-          });
-          logger.debug('[SignInForm] Fixed free plan user status to complete');
-        }, 100);
-      } catch (e) {
-        logger.error('[SignInForm] Error fixing free plan user status:', e);
+      updateOnboardingStatusInCognito('complete', true);
+      
+      // Get tenant ID and include it in redirect if available
+      const tenantId = getBusinessOrTenantId(userAttributes);
+      if (tenantId) {
+        return `/tenant/${tenantId}/dashboard`;
       }
       
-      // Set cookies for immediate effect
-      setOnboardingCookies('complete', true);
       return '/dashboard';
     }
     
@@ -290,23 +279,9 @@ const [state, dispatch] = useReducer(reducer, initialState);
     const knownOnboardedEmails = ['kuoldimdeng@outlook.com', 'dev@pyfactor.com'];
     if (userAttributes.email && knownOnboardedEmails.includes(userAttributes.email.toLowerCase())) {
       logger.debug('[SignInForm] Known onboarded user detected, forcing dashboard redirect');
-      setOnboardingCookies('complete', true);
       
-      // Trigger attribute update in the background
-      try {
-        setTimeout(async () => {
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          await updateUserAttributes({
-            userAttributes: {
-              'custom:onboarding': 'complete',
-              'custom:setupdone': 'true'
-            }
-          });
-          logger.debug('[SignInForm] Background update of attributes completed');
-        }, 100);
-      } catch (e) {
-        logger.error('[SignInForm] Error in background attribute update:', e);
-      }
+      // Update Cognito attributes
+      updateOnboardingStatusInCognito('complete', true);
       
       return '/dashboard';
     }
@@ -352,7 +327,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
     
     // Extra safety check for complete status
     if (normalizedKey === 'complete') {
-      setOnboardingCookies('complete', true);
+      updateOnboardingStatusInCognito('complete', true);
       return '/dashboard';
     }
     
@@ -361,8 +336,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
       ? statusToStep[normalizedKey]() 
       : statusToStep[normalizedKey] || 'business-info';
     
-    // Set the step cookie with normalized values
-    setOnboardingCookies(normalizedKey, step === 'dashboard');
+    // Update Cognito with the current step
+    updateOnboardingStatusInCognito(normalizedKey, step === 'dashboard');
     
     logger.debug(`[SignInForm] Redirecting user to onboarding step: ${step}`);
     return (step === 'dashboard') 
@@ -563,68 +538,6 @@ const [state, dispatch] = useReducer(reducer, initialState);
     }
   };
 
-  // Helper function to log all onboarding-related cookies
-  const logOnboardingCookies = (prefix = '') => {
-    try {
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      };
-      
-      logger.debug(`[SignInForm] ${prefix} Onboarding cookies:`, {
-        onboardedStatus: getCookie('onboardedStatus'),
-        setupCompleted: getCookie('setupCompleted'),
-        onboardingStep: getCookie('onboardingStep'),
-        onboardingInProgress: getCookie('onboardingInProgress'),
-        tenantId: getCookie('tenantId')
-      });
-    } catch (error) {
-      logger.error('[SignInForm] Error logging cookies:', error);
-    }
-  };
-
-  // Add a helper function to fix attributes if needed
-  const ensureCompleteStatus = async (userAttributes) => {
-    const needsFix = 
-      userAttributes['custom:onboarding'] !== 'complete' && 
-      userAttributes['custom:setupdone'] !== 'true';
-    
-    if (needsFix) {
-      logger.debug('[SignInForm] Detected inconsistent onboarding status, attempting to fix...');
-      
-      try {
-        // Import required function
-        const { updateUserAttributes } = await import('aws-amplify/auth');
-        
-        // Update the attributes
-        await updateUserAttributes({
-          userAttributes: {
-            'custom:onboarding': 'complete',
-            'custom:setupdone': 'true'
-          }
-        });
-        
-        logger.debug('[SignInForm] Successfully updated user attributes to complete');
-        
-        // Re-fetch to verify the update
-        const updatedAttributes = await fetchUserAttributes();
-        logger.debug('[SignInForm] Updated attributes:', {
-          onboarding: updatedAttributes['custom:onboarding'],
-          setupdone: updatedAttributes['custom:setupdone']
-        });
-        
-        return true;
-      } catch (error) {
-        logger.error('[SignInForm] Failed to update attributes:', error);
-        return false;
-      }
-    }
-    
-    return false;
-  };
-
   // Get plan type from attributes, being flexible about attribute name variations
   const getPlanType = (attributes) => {
     // Check various attribute names that might contain plan info
@@ -645,16 +558,96 @@ const [state, dispatch] = useReducer(reducer, initialState);
     return planValue;
   };
   
-  // Helper function to get business or tenant ID from attributes
+  // Update the getBusinessOrTenantId function to only use Cognito 
   const getBusinessOrTenantId = (attributes) => {
-    // Check various attribute names that might contain IDs
-    const businessId = attributes['custom:businessid'] || attributes['custom:business_id'];
-    const tenantId = attributes['custom:tenant_id'] || attributes['custom:tenantid'];
+    // Prioritize reading tenant ID from Cognito attributes
+    // Use custom:tenant_ID (uppercase) as the primary source of truth
+    const tenantId = attributes['custom:tenant_ID'];
     
-    return {
-      businessId,
-      tenantId
-    };
+    if (tenantId) {
+      logger.debug('[SignInForm] Found tenant ID in custom:tenant_ID attribute:', tenantId);
+      return tenantId;
+    }
+    
+    // Fallbacks for backward compatibility (prioritized)
+    const fallbacks = [
+      attributes['custom:tenant_id'],
+      attributes['custom:tenantId'],
+      attributes['custom:businessid'],
+      attributes.businessid,
+      attributes.tenantId
+    ];
+    
+    // Try each fallback and update Cognito if we find a valid one
+    for (const fallback of fallbacks) {
+      if (fallback) {
+        logger.warn('[SignInForm] Using fallback tenant ID attribute:', fallback);
+        
+        // Try to update Cognito with this tenant ID for future sign-ins
+        try {
+          const { updateUserAttributes } = await import('aws-amplify/auth');
+          updateUserAttributes({
+            userAttributes: {
+              'custom:tenant_ID': fallback,
+              'custom:updated_at': new Date().toISOString()
+            }
+          }).then(() => {
+            logger.info('[SignInForm] Successfully updated Cognito with fallback tenant ID');
+          }).catch(updateError => {
+            logger.error('[SignInForm] Failed to update Cognito with fallback tenant ID:', updateError);
+          });
+        } catch (updateError) {
+          logger.error('[SignInForm] Error importing updateUserAttributes:', updateError);
+        }
+        
+        return fallback;
+      }
+    }
+    
+    // No tenant ID found in any attribute
+    logger.error('[SignInForm] No tenant ID found in any Cognito attribute');
+    return null;
+  };
+
+  // New function to create tenant in database
+  const createTenantInDatabase = async (tenantId, userAttributes) => {
+    if (!tenantId) {
+      logger.error('[SignInForm] Cannot create tenant record without tenantId');
+      return false;
+    }
+
+    logger.info('[SignInForm] Creating tenant record in database:', { tenantId });
+    try {
+      // Get the base URL from the current window location
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      
+      // Call the tenant initialization API to create tenant record with RLS policy
+      const response = await fetch(`${baseUrl}/api/tenant/init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenantId,
+          forceCreate: true,
+          userName: userAttributes.name || userAttributes.email,
+          userEmail: userAttributes.email,
+          businessName: userAttributes['custom:businessname'] || '',
+          businessType: userAttributes['custom:businesstype'] || ''
+        })
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        logger.info('[SignInForm] Tenant record created successfully:', data);
+        return true;
+      } else {
+        logger.error('[SignInForm] Error creating tenant record:', data);
+        return false;
+      }
+    } catch (error) {
+      logger.error('[SignInForm] Exception creating tenant record:', error);
+      return false;
+    }
   };
 
   // Update the signIn handling code to use the new function
@@ -662,7 +655,6 @@ const [state, dispatch] = useReducer(reducer, initialState);
     e.preventDefault();
     
     logger.debug('[SignInForm] Starting sign-in process');
-    logOnboardingCookies('BEFORE SIGN-IN -');
     
     if (!email || !password) {
       setError('Please provide both email and password');
@@ -699,11 +691,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
         if (email.toLowerCase() === 'kuoldimdeng@outlook.com') {
           logger.debug('[SignInForm] POST-SIGN-IN CRITICAL USER OVERRIDE: Force dashboard redirect');
           
-          // Set all cookies for dashboard access
-          setOnboardingCookies('complete', true, email);
-          document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-          document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
-          document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
+          // Update Cognito with complete status
+          updateOnboardingStatusInCognito('complete', true);
           
           // CRITICAL: Make direct API call to update attributes
           try {
@@ -829,101 +818,55 @@ const [state, dispatch] = useReducer(reducer, initialState);
     }
   };
 
-  // Update handleSignInResponse to include known user check
+  // Update handleSignInResponse to remove cookie dependencies
   const handleSignInResponse = async (signInResult) => {
-    if (signInResult?.isSignedIn) {
+    logger.info('[SignInForm] Handling sign-in response');
+    
+    try {
+      // Get the user attributes directly from Cognito (source of truth)
+      const userAttributes = await fetchUserAttributes();
+      logger.debug('[SignInForm] User attributes fetched from Cognito:', userAttributes);
+      
+      // Get the tenant ID from Cognito attributes using our prioritized function
+      let tenantId = getBusinessOrTenantId(userAttributes);
+
+      // If no tenant ID is found in Cognito, this is an error condition
+      if (!tenantId) {
+        logger.error('[SignInForm] No tenant ID found in Cognito attributes');
+        setError('Your account does not have a tenant ID associated with it. Please contact support.');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Initialize tenant in database for the existing tenant ID
+      // This ensures the RLS policy exists for the user
+      const tenantInitResult = await createTenantInDatabase(tenantId, userAttributes);
+      if (!tenantInitResult) {
+        logger.warn('[SignInForm] Failed to initialize tenant in database, but continuing with sign-in flow');
+      }
+      
+      // Determine the redirect path based on user attributes from Cognito
+      const redirectTo = redirectPath || determineRedirectPath(userAttributes);
+      
+      // Log where we're redirecting to and why
+      logger.info(`[SignInForm] Sign-in successful, redirecting to: ${redirectTo}`, { 
+        source: redirectPath ? 'externally-specified' : 'determined-from-attributes',
+        tenantId,
+        onboardingStatus: userAttributes['custom:onboarding'] || 'not set',
+        setupDone: userAttributes['custom:setupdone'] || 'not set'
+      });
+      
+      // Redirect to the appropriate path (dashboard or onboarding)
+      router.push(redirectTo);
+      
+    } catch (error) {
+      logger.error('[SignInForm] Error after successful sign-in:', error);
+      
+      // If we fail to get attributes from Cognito, try a fallback redirect to dashboard
       try {
-        // CRITICAL: Set this cookie immediately, before any async operations
-        document.cookie = `userEmail=${email}; path=/; max-age=${60*60*24*7}; samesite=lax`;
-        logger.debug('[SignInForm] Immediately set userEmail cookie on sign-in:', email);
-        
-        logOnboardingCookies('AFTER SIGN-IN BEFORE FETCHING ATTRIBUTES -');
-        
-        // Add a small delay before fetching attributes to ensure they're up to date
-        logger.debug('[SignInForm] Waiting briefly before fetching user attributes...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const userAttributes = await fetchUserAttributes();
-        
-        // Check for known onboarded users first
-        const knownOnboardedEmails = ['kuoldimdeng@outlook.com', 'dev@pyfactor.com'];
-        if (userAttributes.email && knownOnboardedEmails.includes(userAttributes.email.toLowerCase())) {
-          logger.debug('[SignInForm] Known onboarded user detected in handleSignInResponse, forcing dashboard redirect');
-          
-          // Set cookies for consistent state
-          setOnboardingCookies('complete', true);
-          
-          // Trigger attribute update in the background
-          setTimeout(async () => {
-            try {
-              const { updateUserAttributes } = await import('aws-amplify/auth');
-              await updateUserAttributes({
-                userAttributes: {
-                  'custom:onboarding': 'complete',
-                  'custom:setupdone': 'true'
-                }
-              });
-              logger.debug('[SignInForm] Background update of attributes completed for known user');
-            } catch (e) {
-              logger.error('[SignInForm] Error in background attribute update for known user:', e);
-            }
-          }, 100);
-          
-          // Force redirect to dashboard
-          router.push('/dashboard');
-          return;
-        }
-        
-        // Add detailed logging of raw attribute values
-        logger.debug('[SignInForm] Raw user attributes after sign-in:', {
-          onboarding: userAttributes['custom:onboarding'],
-          setupdone: userAttributes['custom:setupdone'],
-          rawAttributes: JSON.stringify(userAttributes)
-        });
-        
-        // CRITICAL: If the user has already been onboarded (based on external knowledge) 
-        // but Cognito doesn't reflect this, fix it now
-        const fixApplied = await ensureCompleteStatus(userAttributes);
-        
-        // If we applied a fix, re-fetch the attributes
-        const finalAttributes = fixApplied ? 
-          await fetchUserAttributes() : 
-          userAttributes;
-        
-        // Normalize for consistent case handling
-        const onboardingStatus = finalAttributes['custom:onboarding']?.toLowerCase();
-        const setupDone = finalAttributes['custom:setupdone']?.toLowerCase() === 'true';
-        
-        logger.debug('[SignInForm] Final user attributes for redirection:', {
-          onboardingStatus,
-          setupDone,
-          isComplete: onboardingStatus === 'complete' || setupDone,
-          wasFixed: fixApplied
-        });
-        
-        // Set cookies with consistent case
-        setOnboardingCookies(
-          onboardingStatus || 'not_started', 
-          setupDone || onboardingStatus === 'complete'
-        );
-        
-        logOnboardingCookies('AFTER SETTING COOKIES -');
-        
-        // Force Cognito to complete any pending calls
-        const session = await fetchAuthSession();
-        
-        // Determine where to redirect the user
-        if (onboardingStatus === 'complete' || setupDone) {
-          logger.debug('[SignInForm] Authentication successful, redirecting to dashboard');
-          router.push('/dashboard');
-        } else {
-          logger.debug('[SignInForm] Authentication successful, redirecting to business info');
-          router.push('/onboarding/business-info');
-        }
-      } catch (error) {
-        logger.error('[SignInForm] Error fetching user attributes after sign-in:', error);
-        // Default redirect if attributes can't be fetched
         router.push('/dashboard');
+      } catch (routeError) {
+        logger.error('[SignInForm] Even fallback redirect failed:', routeError);
       }
     }
   };
@@ -952,7 +895,15 @@ const [state, dispatch] = useReducer(reducer, initialState);
           
           // Extract user and tenant information
           const userId = decodedToken.sub;
-          let tenantId = decodedToken['custom:tenant_id'] || decodedToken.tenant_id;
+          let tenantId = decodedToken['custom:tenant_ID'] || decodedToken['custom:tenant_id'] || decodedToken.tenant_id;
+          
+          // Check if tenant ID exists
+          if (!tenantId) {
+            logger.error('[SignInForm] No tenant ID found in token claims');
+            setError('Your account does not have a tenant ID associated with it. Please contact support.');
+            setIsLoading(false);
+            return;
+          }
           
           // Set cookies and local storage for tenant information
           setTenantIdCookies(tenantId);
@@ -998,6 +949,22 @@ const [state, dispatch] = useReducer(reducer, initialState);
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Remove the logOnboardingCookies function since it's no longer needed
+  // Replace with a function to log Cognito attributes
+  const logCognitoAttributes = async (prefix = '') => {
+    try {
+      const userAttributes = await fetchUserAttributes();
+      logger.debug(`${prefix} Cognito attributes:`, {
+        onboarding: userAttributes['custom:onboarding'],
+        setupdone: userAttributes['custom:setupdone'],
+        tenantId: userAttributes['custom:tenant_ID'] || userAttributes['custom:tenant_id'],
+        businessId: userAttributes['custom:businessid']
+      });
+    } catch (error) {
+      logger.error(`${prefix} Error fetching Cognito attributes:`, error);
     }
   };
 

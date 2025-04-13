@@ -1,217 +1,195 @@
 'use client';
 
-import React, { Suspense, lazy, useState, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 // Remove the direct imports and replace with lazy loading
 // import { TransportDashboard, VehicleManagement } from './transport';
 
 // Empty loading component (removed spinner)
-const LoadingComponent = () => null;
+const LoadingComponent = () => (
+  <div className="py-4 flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+    <span className="ml-2 text-gray-600">Loading component...</span>
+  </div>
+);
+
+// Add a custom error fallback component
+const ErrorFallback = ({ error, componentName, retry }) => (
+  <div className="p-4 border border-red-200 rounded-md bg-red-50 text-red-800">
+    <h2 className="text-lg font-medium">Failed to load {componentName}</h2>
+    <p className="text-sm mt-2">{error.message}</p>
+    {retry && (
+      <button 
+        onClick={retry} 
+        className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        Try Again
+      </button>
+    )}
+  </div>
+);
+
+// Enhanced lazy load with retry
+const enhancedLazy = (importFn, componentName) => {
+  return React.lazy(() => {
+    return importFn().catch(err => {
+      console.error(`Error loading ${componentName}:`, err);
+      return {
+        default: (props) => (
+          <ErrorFallback 
+            error={err} 
+            componentName={componentName} 
+            retry={() => window.location.reload()}
+          />
+        )
+      };
+    });
+  });
+};
 
 // Content Wrapper component
-const ContentWrapper = ({ children }) => (
-  <div className="flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-x-hidden">
+const ContentWrapper = ({ children, className = '' }) => (
+  <div className={`flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-auto relative z-10 main-content-wrapper ${className}`}>
     {children}
   </div>
 );
 
-// Lazy load all components
-const CustomerList = lazy(() => import('./lists/CustomerList.js'));
-const InvoiceTemplateBuilder = lazy(() => import('./forms/InvoiceTemplateBuilder.js'));
-const TransactionForm = lazy(() => import('../../createNew/forms/TransactionForm.js'));
-const TransactionList = lazy(() => import('./lists/TransactionList.js'));
-const ReportDisplay = lazy(() => import('./forms/ReportDisplay.js'));
-const BankingDashboard = lazy(() => import('./forms/BankingDashboard.js'));
-const AnalysisPage = lazy(() => import('./forms/AnalysisPage.js'));
-const InvoiceDetails = lazy(() => import('./forms/InvoiceDetails.js'));
-const CustomerDetails = lazy(() => import('./forms/CustomerDetails.js'));
-const RenderForm = lazy(() => import('./RenderForm.js').then(m => ({ default: m.default || m })));
-const ProductManagement = lazy(() => 
-  import('./forms/ProductManagement.js').catch(err => {
-    console.error('Error loading ProductManagement component:', err);
-    return { 
-      default: ({ mode, salesContext, isNewProduct }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Product Management</h1>
-          <p className="mb-4">Manage your product inventory</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Product management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const ServiceManagement = lazy(() => 
-  import('./forms/ServiceManagement.js').catch(err => {
-    console.error('Error loading ServiceManagement component:', err);
-    return { 
-      default: ({ mode, salesContext, newService }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Service Management</h1>
-          <p className="mb-4">Manage your services and offerings</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Service management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const EstimateManagement = lazy(() => 
-  import('./forms/EstimateManagement.js').catch(err => {
-    console.error('Error loading EstimateManagement component:', err);
-    return { 
-      default: ({ mode }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Estimate Management</h1>
-          <p className="mb-4">Create and manage your estimates</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Estimate management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const SalesOrderManagement = lazy(() => import('./forms/SalesOrderManagement.js'));
-const InvoiceManagement = lazy(() => 
-  import('./forms/InvoiceManagement.js').catch(err => {
-    console.error('Error loading InvoiceManagement component:', err);
-    return { 
-      default: ({ mode }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Invoice Management</h1>
-          <p className="mb-4">Create and manage your invoices</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Invoice management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const VendorManagement = lazy(() => 
-  import('./forms/VendorManagement.js').catch(err => {
-    console.error('Error loading VendorManagement component:', err);
-    return { 
-      default: ({ mode }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Vendor Management</h1>
-          <p className="mb-4">Manage your vendors and suppliers</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Vendor management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const BillManagement = lazy(() => 
-  import('./forms/BillManagement.js').catch(err => {
-    console.error('Error loading BillManagement component:', err);
-    return { 
-      default: ({ mode }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Bill Management</h1>
-          <p className="mb-4">Manage your bills and payments</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Bill management component is currently unavailable. Please refresh the page to try again.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const PurchaseOrderManagement = lazy(() => import('./forms/PurchaseOrderManagement.js'));
-const ExpensesManagement = lazy(() => import('./forms/ExpensesManagement.js'));
-const PurchaseReturnsManagement = lazy(() => import('./forms/PurchaseReturnsManagement.js'));
-const ProcurementManagement = lazy(() => import('./forms/ProcurementManagement.js'));
-const EmployeeManagement = lazy(() => import('./forms/EmployeeManagement.js'));
-const PayrollManagement = lazy(() => import('./forms/PayrollManagement.js'));
-const TimesheetManagement = lazy(() => import('./forms/TimesheetManagement.js'));
-const ChartOfAccountsManagement = lazy(() => import('./forms/ChartOfAccountsManagement.js'));
-const JournalEntryManagement = lazy(() => import('./forms/JournalEntryManagement.js'));
-const GeneralLedgerManagement = lazy(() => import('./forms/GeneralLedgerManagement.js'));
-const AccountReconManagement = lazy(() => import('./forms/AccountReconManagement.js'));
-const MonthEndManagement = lazy(() => import('./forms/MonthEndManagement.js'));
-const FinancialManagement = lazy(() => import('./forms/FinancialStatementsManagement.js'));
-const FixedAssetManagement = lazy(() => import('./forms/FixedAssetManagement.js'));
-const BudgetManagement = lazy(() => import('./forms/BudgetManagement.js'));
-const CostAccountingManagement = lazy(() => import('./forms/CostAccountingManagement.js'));
-const IntercompanyManagement = lazy(() => import('./forms/IntercompanyManagement.js'));
-const AuditTrailManagement = lazy(() => import('./forms/AuditTrailManagement.js'));
-const ProfitAndLossReport = lazy(() => import('./forms/ProfitAndLossReport.js'));
-const BalanceSheetReport = lazy(() => import('./forms/BalanceSheetReport.js'));
-const CashFlowReport = lazy(() => import('./forms/CashFlowReport.js'));
-const IncomeByCustomer = lazy(() => import('./forms/IncomeByCustomer.js'));
-const AgedReceivables = lazy(() => import('./forms/AgedReceivables.js'));
-const AgedPayables = lazy(() => import('./forms/AgedPayables.js'));
-const AccountBalances = lazy(() => import('./forms/AccountBalances.js'));
-const TrialBalances = lazy(() => import('./forms/TrialBalances.js'));
-const ProfitAndLossAnalysis = lazy(() => import('./forms/ProfitAndLossAnalysis.js'));
-const CashFlowAnalysis = lazy(() => import('./forms/CashFlowAnalysis.js'));
-const BudgetVsActualAnalysis = lazy(() => import('./forms/BudgetVsActualAnalysis.js'));
-const SalesAnalysis = lazy(() => import('./forms/SalesAnalysis.js'));
-const ExpenseAnalysis = lazy(() => import('./forms/ExpenseAnalysis.js'));
-const KPIDashboard = lazy(() => import('./dashboards/KPIDashboard'));
-const BalanceSheetAnalysis = lazy(() => import('./forms/BalanceSheetAnalysis.js'));
-const IntegrationSettings = lazy(() => import('../../Settings/integrations/components/IntegrationSettings.js'));
-const UserProfileSettings = lazy(() => import('@/app/Settings/UserProfile/components/UserProfileSettings'));
-const ProfileSettings = lazy(() => import('@/app/Settings/components/ProfileSettings'));
-const BusinessSettings = lazy(() => import('@/app/Settings/components/BusinessSettings'));
-const AccountingSettings = lazy(() => import('@/app/Settings/components/AccountingSettings'));
-const PayrollSettings = lazy(() => import('@/app/Settings/components/PayrollSettings'));
-const DeviceSettings = lazy(() => import('@/app/Settings/components/DeviceSettings'));
-const MyAccount = lazy(() => import('@/app/Settings/components/MyAccount'));
-const HelpCenter = lazy(() => import('@/app/Settings/components/HelpCenter'));
-const TermsAndConditions = lazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'));
-const PrivacyPolicy = lazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'));
-const DownloadTransactions = lazy(() => import('./forms/DownloadTransactions'));
-const ConnectBank = lazy(() => import('./forms/ConnectBank'));
-const PayrollTransactions = lazy(() => import('./forms/PayrollTransactions'));
-const BankReconciliation = lazy(() => import('./forms/BankReconciliation'));
-const PayrollReport = lazy(() => import('./forms/PayrollReport'));
-const BankReport = lazy(() => import('./forms/BankReport'));
-const InventoryItems = lazy(() => import('@/app/inventory/components/InventoryItemList'));
-const MainDashboard = lazy(() => import('./dashboards/MainDashboard'));
-const BankTransactions = lazy(() => import('./forms/BankTransactionPage'));
-const InventoryManagement = lazy(() => import('@/app/inventory/components/InventoryManagement.js'));
+// Lazy load all components with enhanced error handling
+const CustomerList = enhancedLazy(() => import('./lists/CustomerList.js'), 'Customer List');
+const InvoiceTemplateBuilder = enhancedLazy(() => import('./forms/InvoiceTemplateBuilder.js'), 'Invoice Template Builder');
+const TransactionForm = enhancedLazy(() => import('../../createNew/forms/TransactionForm.js'), 'Transaction Form');
+const TransactionList = enhancedLazy(() => import('./lists/TransactionList.js'), 'Transaction List');
+const ReportDisplay = enhancedLazy(() => import('./forms/ReportDisplay.js'), 'Report Display');
+const BankingDashboard = enhancedLazy(() => import('./forms/BankingDashboard.js'), 'Banking Dashboard');
+const AnalysisPage = enhancedLazy(() => import('./forms/AnalysisPage.js'), 'Analysis Page');
+const InvoiceDetails = enhancedLazy(() => import('./forms/InvoiceDetails.js'), 'Invoice Details');
+const CustomerDetails = enhancedLazy(() => import('./forms/CustomerDetails.js'), 'Customer Details');
+const RenderForm = enhancedLazy(() => import('./RenderForm.js').then(m => ({ default: m.default || m })), 'Render Form');
+const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
+const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
+const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
+const SalesOrderManagement = enhancedLazy(() => import('./forms/SalesOrderManagement.js'), 'Sales Order Management');
+const InvoiceManagement = enhancedLazy(() => import('./forms/InvoiceManagement.js'), 'Invoice Management');
+const VendorManagement = enhancedLazy(() => import('./forms/VendorManagement.js'), 'Vendor Management');
+const BillManagement = enhancedLazy(() => import('./forms/BillManagement.js'), 'Bill Management');
+const PurchaseOrderManagement = enhancedLazy(() => import('./forms/PurchaseOrderManagement.js'), 'Purchase Order Management');
+const ExpensesManagement = enhancedLazy(() => import('./forms/ExpensesManagement.js'), 'Expenses Management');
+const PurchaseReturnsManagement = enhancedLazy(() => import('./forms/PurchaseReturnsManagement.js'), 'Purchase Returns Management');
+const ProcurementManagement = enhancedLazy(() => import('./forms/ProcurementManagement.js'), 'Procurement Management');
+const EmployeeManagement = enhancedLazy(() => import('./forms/EmployeeManagement.js'), 'Employee Management');
+const PayrollManagement = enhancedLazy(() => import('./forms/PayrollManagement.js'), 'Payroll Management');
+const TimesheetManagement = enhancedLazy(() => import('./forms/TimesheetManagement.js'), 'Timesheet Management');
+const ChartOfAccountsManagement = enhancedLazy(() => import('./forms/ChartOfAccountsManagement.js'), 'Chart of Accounts Management');
+const JournalEntryManagement = enhancedLazy(() => import('./forms/JournalEntryManagement.js'), 'Journal Entry Management');
+const GeneralLedgerManagement = enhancedLazy(() => import('./forms/GeneralLedgerManagement.js'), 'General Ledger Management');
+const AccountReconManagement = enhancedLazy(() => import('./forms/AccountReconManagement.js'), 'Account Reconciliation Management');
+const MonthEndManagement = enhancedLazy(() => import('./forms/MonthEndManagement.js'), 'Month End Management');
+const FinancialManagement = enhancedLazy(() => import('./forms/FinancialStatementsManagement.js'), 'Financial Statements Management');
+const FixedAssetManagement = enhancedLazy(() => import('./forms/FixedAssetManagement.js'), 'Fixed Asset Management');
+const BudgetManagement = enhancedLazy(() => import('./forms/BudgetManagement.js'), 'Budget Management');
+const CostAccountingManagement = enhancedLazy(() => import('./forms/CostAccountingManagement.js'), 'Cost Accounting Management');
+const IntercompanyManagement = enhancedLazy(() => import('./forms/IntercompanyManagement.js'), 'Intercompany Management');
+const AuditTrailManagement = enhancedLazy(() => import('./forms/AuditTrailManagement.js'), 'Audit Trail Management');
+const ProfitAndLossReport = enhancedLazy(() => import('./forms/ProfitAndLossReport.js'), 'Profit and Loss Report');
+const BalanceSheetReport = enhancedLazy(() => import('./forms/BalanceSheetReport.js'), 'Balance Sheet Report');
+const CashFlowReport = enhancedLazy(() => import('./forms/CashFlowReport.js'), 'Cash Flow Report');
+const IncomeByCustomer = enhancedLazy(() => import('./forms/IncomeByCustomer.js'), 'Income by Customer');
+const AgedReceivables = enhancedLazy(() => import('./forms/AgedReceivables.js'), 'Aged Receivables');
+const AgedPayables = enhancedLazy(() => import('./forms/AgedPayables.js'), 'Aged Payables');
+const AccountBalances = enhancedLazy(() => import('./forms/AccountBalances.js'), 'Account Balances');
+const TrialBalances = enhancedLazy(() => import('./forms/TrialBalances.js'), 'Trial Balances');
+const ProfitAndLossAnalysis = enhancedLazy(() => import('./forms/ProfitAndLossAnalysis.js'), 'Profit and Loss Analysis');
+const CashFlowAnalysis = enhancedLazy(() => import('./forms/CashFlowAnalysis.js'), 'Cash Flow Analysis');
+const BudgetVsActualAnalysis = enhancedLazy(() => import('./forms/BudgetVsActualAnalysis.js'), 'Budget vs Actual Analysis');
+const SalesAnalysis = enhancedLazy(() => import('./forms/SalesAnalysis.js'), 'Sales Analysis');
+const ExpenseAnalysis = enhancedLazy(() => import('./forms/ExpenseAnalysis.js'), 'Expense Analysis');
+const KPIDashboard = enhancedLazy(() => import('./dashboards/KPIDashboard'), 'KPI Dashboard');
+const BalanceSheetAnalysis = enhancedLazy(() => import('./forms/BalanceSheetAnalysis.js'), 'Balance Sheet Analysis');
+const IntegrationSettings = enhancedLazy(() => import('../../Settings/integrations/components/IntegrationSettings.js'), 'Integration Settings');
+const UserProfileSettings = enhancedLazy(() => import('@/app/Settings/UserProfile/components/UserProfileSettings'), 'User Profile Settings');
+const ProfileSettings = enhancedLazy(() => import('@/app/Settings/components/ProfileSettings'), 'Profile Settings');
+const BusinessSettings = enhancedLazy(() => import('@/app/Settings/components/BusinessSettings'), 'Business Settings');
+const AccountingSettings = enhancedLazy(() => import('@/app/Settings/components/AccountingSettings'), 'Accounting Settings');
+const PayrollSettings = enhancedLazy(() => import('@/app/Settings/components/PayrollSettings'), 'Payroll Settings');
+const DeviceSettings = enhancedLazy(() => import('@/app/Settings/components/DeviceSettings'), 'Device Settings');
+const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
+const HelpCenter = enhancedLazy(() => import('@/app/Settings/components/HelpCenter'), 'Help Center');
+const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'), 'Terms and Conditions');
+const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
+const DownloadTransactions = enhancedLazy(() => import('./forms/DownloadTransactions'), 'Download Transactions');
+const ConnectBank = enhancedLazy(() => import('./forms/ConnectBank'), 'Connect Bank');
+const PayrollTransactions = enhancedLazy(() => import('./forms/PayrollTransactions'), 'Payroll Transactions');
+const BankReconciliation = enhancedLazy(() => import('./forms/BankReconciliation'), 'Bank Reconciliation');
+const PayrollReport = enhancedLazy(() => import('./forms/PayrollReport'), 'Payroll Report');
+const BankReport = enhancedLazy(() => import('./forms/BankReport'), 'Bank Report');
+const InventoryItems = enhancedLazy(() => import('@/app/inventory/components/InventoryItemList'), 'Inventory Items');
+const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
+const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
+const InventoryManagement = enhancedLazy(() => import('@/app/inventory/components/InventoryManagement.js'), 'Inventory Management');
 // Adding error handling to chunk loading
-const Home = lazy(() => 
-  import('./Home').catch(err => {
-    console.error('Error loading Home component:', err);
-    return { 
-      default: ({ userData }) => (
-        <div className="p-4">
-          <h1 className="text-xl font-semibold mb-2">Dashboard Home</h1>
-          <p className="mb-4">Welcome to your dashboard!</p>
-          <div className="bg-blue-100 p-3 rounded">
-            <p>Some dashboard components are currently loading. Please refresh the page if content doesn't appear.</p>
-          </div>
-        </div>
-      ) 
-    };
-  })
-);
-const HRDashboard = lazy(() => import('./forms/HRDashboard.js'));
+const Home = enhancedLazy(() => import('./Home'), 'Home');
+const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
 
 // Add lazy loading for Transport components
-const TransportDashboard = lazy(() => import('./transport/TransportDashboard.js'));
-const VehicleManagement = lazy(() => import('./transport/VehicleManagement.js'));
+const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');
+const VehicleManagement = enhancedLazy(() => import('./transport/VehicleManagement.js'), 'Vehicle Management');
 
 // CRM Components
-const CRMDashboard = lazy(() => import('./crm/CRMDashboard'));
-const ContactsManagement = lazy(() => import('./crm/ContactsManagement'));
-const LeadsManagement = lazy(() => import('./crm/LeadsManagement'));
-const OpportunitiesManagement = lazy(() => import('./crm/OpportunitiesManagement'));
-const DealsManagement = lazy(() => import('./crm/DealsManagement'));
-const ActivitiesManagement = lazy(() => import('./crm/ActivitiesManagement'));
-const CampaignsManagement = lazy(() => import('./crm/CampaignsManagement'));
-const ReportsManagement = lazy(() => import('./crm/ReportsManagement'));
+const CRMDashboard = enhancedLazy(() => import('./crm/CRMDashboard'), 'CRM Dashboard');
+const ContactsManagement = enhancedLazy(() => import('./crm/ContactsManagement'), 'Contacts Management');
+const LeadsManagement = enhancedLazy(() => import('./crm/LeadsManagement'), 'Leads Management');
+const OpportunitiesManagement = enhancedLazy(() => import('./crm/OpportunitiesManagement'), 'Opportunities Management');
+const DealsManagement = enhancedLazy(() => import('./crm/DealsManagement'), 'Deals Management');
+const ActivitiesManagement = enhancedLazy(() => import('./crm/ActivitiesManagement'), 'Activities Management');
+const CampaignsManagement = enhancedLazy(() => import('./crm/CampaignsManagement'), 'Campaigns Management');
+const ReportsManagement = enhancedLazy(() => import('./crm/ReportsManagement'), 'Reports Management');
 
 // Analytics Components
-const AIQueryPage = lazy(() => import('./forms/AIQueryPage.js'));
+const AIQueryPage = enhancedLazy(() => import('./forms/AIQueryPage.js'), 'AI Query Page');
+
+// Add a custom error boundary component
+class LazyLoadErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('LazyLoad Error caught by boundary:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-4 border border-red-200 rounded-md bg-red-50">
+          <h2 className="text-lg font-medium text-red-800">Failed to load component</h2>
+          <p className="text-sm mt-2 text-red-800">{this.state.error?.message || 'Unknown error'}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Use this wrapper around suspense components
+const SuspenseWithErrorBoundary = ({ children, fallback }) => (
+  <LazyLoadErrorBoundary>
+    <Suspense fallback={fallback || <LoadingComponent />}>
+      {children}
+    </Suspense>
+  </LazyLoadErrorBoundary>
+);
 
 /**
  * Renders the main content of the dashboard based on the current view
@@ -309,46 +287,99 @@ const RenderMainContent = React.memo(function RenderMainContent({
   tenantStatus,
   tenantError,
   tenantId,
+  // Drawer state props
+  drawerOpen,
+  drawerWidth,
+  iconOnlyWidth
 }) {
-  // Add render counter and previous props reference
+  // State to track drawer state
+  const [isDrawerOpen, setIsDrawerOpen] = useState(drawerOpen);
+  
+  // Use ref to store content wrapper element
+  const contentWrapperRef = useRef(null);
+  
+  // Update local state when drawer state changes from props
+  useEffect(() => {
+    setIsDrawerOpen(drawerOpen);
+  }, [drawerOpen]);
+  
+  // Create wrapper with ref
+  const CustomContentWrapper = useCallback(({ children, className = '' }) => {
+    return (
+      <div 
+        ref={contentWrapperRef}
+        className={`flex-grow w-full h-full m-0 p-2 sm:p-3 md:p-4 flex flex-col box-border overflow-auto relative z-10 ${className}`}
+        style={{ 
+          width: '100%',
+          maxWidth: '100%'
+        }}
+      >
+        {children}
+      </div>
+    );
+  }, []);
+  
+  // Use memo to avoid unnecessary re-renders
+  const WrapperComponent = useMemo(() => {
+    return CustomContentWrapper;
+  }, [CustomContentWrapper]);
+  
+  // Add useRef for render count and previous props for logging
   const renderCountRef = useRef(0);
   const prevPropsRef = useRef(null);
+  const [selectedTab, setSelectedTab] = useState(0);
   
-  // Log only when key props change and throttle the logging
+  // Add a cache ref to throttle logging with longer interval (reduced logging frequency)
+  const logCacheRef = useRef({
+    lastLogTime: 0,
+    logInterval: 10000, // Log at most once every 10 seconds (increased from 2s)
+  });
+  
+  // Use useEffect to track renders, but throttle the logging
   useEffect(() => {
     renderCountRef.current += 1;
     
-    // Only log every 5th render or when props actually change
-    const keyProps = { showMyAccount, showHelpCenter, tenantId, view };
-    const prevKeyProps = prevPropsRef.current;
-    
-    const propsChanged = !prevKeyProps || 
-      prevKeyProps.showMyAccount !== showMyAccount || 
-      prevKeyProps.showHelpCenter !== showHelpCenter ||
-      prevKeyProps.tenantId !== tenantId ||
-      prevKeyProps.view !== view;
-    
-    // Update previous props reference
-    prevPropsRef.current = keyProps;
-    
-    if (propsChanged || renderCountRef.current % 5 === 0) {
-      console.log(`RenderMainContent props (render #${renderCountRef.current}):`, {
-        showMyAccount,
-        showHelpCenter,
-        userData: userData ? { ...userData } : {},
-        view
-      });
+    // Only log if it's been more than logInterval since the last log and only in development
+    if (process.env.NODE_ENV === 'development') {
+      const now = Date.now();
+      if (now - logCacheRef.current.lastLogTime > logCacheRef.current.logInterval) {
+        // Update last log time
+        logCacheRef.current.lastLogTime = now;
+        
+        // Create a simplified props representation for comparison
+        const keyProps = { view, tenantId, showMyAccount, showHelpCenter };
+        const prevKeyProps = prevPropsRef.current;
+        
+        // Check if key props have changed
+        const propsChanged = !prevKeyProps || 
+          prevKeyProps.view !== view || 
+          prevKeyProps.tenantId !== tenantId ||
+          prevKeyProps.showMyAccount !== showMyAccount ||
+          prevKeyProps.showHelpCenter !== showHelpCenter;
+        
+        // Update previous props reference
+        prevPropsRef.current = keyProps;
+        
+        // Log only if props changed or every 20th render (reduced frequency)
+        if (propsChanged || renderCountRef.current % 20 === 0) {
+          console.log(`RenderMainContent rerender #${renderCountRef.current}:`, {
+            view, 
+            tenantId,
+            hasUserData: !!userData,
+          });
+        }
+      }
     }
-  }, [showMyAccount, showHelpCenter, userData, tenantId, view]);
-
-  const [selectedTab, setSelectedTab] = useState(0);
-
-  const handleTabChange = (event, newValue) => {
+  }, [view, tenantId, showMyAccount, showHelpCenter, userData]);
+  
+  // Memoize the handlers to prevent re-renders
+  const handleTabChange = useCallback((event, newValue) => {
     setSelectedTab(newValue);
-  };
+  }, []);
 
-  const renderSettingsTabs = () => {
-    // Update the log statement to be conditional
+  // Memoize the settings tabs renderer to prevent unnecessary re-renders
+  const renderSettingsTabs = useMemo(() => {
+    // Only log in development mode
     if (process.env.NODE_ENV === 'development') {
       console.log('RenderMainContent: renderSettingsTabs called with selectedSettingsOption:', selectedSettingsOption);
     }
@@ -357,7 +388,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
     let content = null;
 
     return (
-      <Suspense fallback={<LoadingComponent />}>
+      <SuspenseWithErrorBoundary>
         {(() => {
           switch (selectedSettingsOption) {
             case 'Profile Settings':
@@ -410,11 +441,12 @@ const RenderMainContent = React.memo(function RenderMainContent({
             </div>
           );
         })()}
-      </Suspense>
+      </SuspenseWithErrorBoundary>
     );
-  };
+  }, [selectedSettingsOption, selectedTab, handleTabChange]);
 
-  const renderContent = () => {
+  // Memoize the content renderer to prevent unnecessary re-renders
+  const renderContent = useMemo(() => {
     // If tenant status is pending or error, we still allow access to settings and help
     const isTenantStatusOk = !tenantStatus || tenantStatus === 'success';
     const isSettingsOrHelp = showMyAccount || showHelpCenter || 
@@ -425,8 +457,8 @@ const RenderMainContent = React.memo(function RenderMainContent({
     if (isSettingsOrHelp) {
       // Continue with existing settings rendering logic
       return (
-        <ContentWrapper>
-          {renderSettingsTabs()}
+        <WrapperComponent>
+          {renderSettingsTabs}
           {selectedSettingsOption === 'profile' && <ProfileSettings />}
           {selectedSettingsOption === 'business' && <BusinessSettings />}
           {selectedSettingsOption === 'accounting' && <AccountingSettings />}
@@ -436,14 +468,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
           {showHelpCenter && <HelpCenter />}
           {showTermsAndConditions && <TermsAndConditions />}
           {showPrivacyPolicy && <PrivacyPolicy />}
-        </ContentWrapper>
+        </WrapperComponent>
       );
     }
     
     // For all other features, check tenant status
     if (tenantStatus === 'pending') {
       return (
-        <ContentWrapper>
+        <WrapperComponent>
           <div className="flex flex-col items-center justify-center h-[70vh]">
             <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
             <h6 className="text-lg font-medium mt-2">
@@ -453,13 +485,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
               This may take a few moments.
             </p>
           </div>
-        </ContentWrapper>
+        </WrapperComponent>
       );
     }
     
     if (tenantStatus === 'error' || tenantStatus === 'invalid_tenant') {
       return (
-        <ContentWrapper>
+        <WrapperComponent>
           <div className="flex flex-col items-center justify-center h-[70vh] text-center max-w-[600px] mx-auto">
             <svg className="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -480,7 +512,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
               Refresh Page
             </button>
           </div>
-        </ContentWrapper>
+        </WrapperComponent>
       );
     }
     
@@ -488,8 +520,8 @@ const RenderMainContent = React.memo(function RenderMainContent({
     // CRM view handling
     if (view && view.startsWith('crm-')) {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             {view === 'crm-dashboard' && <CRMDashboard />}
             {view === 'crm-contacts' && <ContactsManagement />}
             {view === 'crm-leads' && <LeadsManagement />}
@@ -498,64 +530,46 @@ const RenderMainContent = React.memo(function RenderMainContent({
             {view === 'crm-activities' && <ActivitiesManagement />}
             {view === 'crm-campaigns' && <CampaignsManagement />}
             {view === 'crm-reports' && <ReportsManagement />}
-          </ContentWrapper>
-        </Suspense>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     // Analytics view handling
     if (view && view.startsWith('analytics-') || view === 'ai-query') {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             {view === 'analytics-dashboard' && <KPIDashboard userData={userData} />}
             {view === 'ai-query' && <AIQueryPage userData={userData} />}
-          </ContentWrapper>
-        </Suspense>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     // Additional case for createOptions
     if (showCreateOptions) {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
-            {/* Render components with proper props even when conditions aren't met
-                to ensure hook ordering consistency */}
-            <div style={{ display: selectedOption === 'Transaction' ? 'block' : 'none' }}>
-              <TransactionForm />
-            </div>
-            <div style={{ display: selectedOption === 'Product' ? 'block' : 'none' }}>
-              <ProductManagement isNewProduct={true} mode="create" />
-            </div>
-            <div style={{ display: selectedOption === 'Service' ? 'block' : 'none' }}>
-              <ServiceManagement mode="create" />
-            </div>
-            <div style={{ display: selectedOption === 'Invoice' ? 'block' : 'none' }}>
-              <InvoiceManagement mode="create" />
-            </div>
-            <div style={{ display: selectedOption === 'Bill' ? 'block' : 'none' }}>
-              <BillManagement mode="create" />
-            </div>
-            <div style={{ display: selectedOption === 'Estimate' ? 'block' : 'none' }}>
-              <EstimateManagement mode="create" />
-            </div>
-            <div style={{ display: selectedOption === 'Customer' ? 'block' : 'none' }}>
-              <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />
-            </div>
-            <div style={{ display: selectedOption === 'Vendor' ? 'block' : 'none' }}>
-              <VendorManagement mode="create" />
-            </div>
-          </ContentWrapper>
-        </Suspense>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
+            {selectedOption === 'Transaction' && <TransactionForm />}
+            {selectedOption === 'Product' && <ProductManagement isNewProduct={true} mode="create" />}
+            {selectedOption === 'Service' && <ServiceManagement mode="create" />}
+            {selectedOption === 'Invoice' && <InvoiceManagement mode="create" />}
+            {selectedOption === 'Bill' && <BillManagement mode="create" />}
+            {selectedOption === 'Estimate' && <EstimateManagement mode="create" />}
+            {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
+            {selectedOption === 'Vendor' && <VendorManagement mode="create" />}
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     // Handle special create views
     if (view && view.startsWith('create-')) {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             {view === 'create-product' && <ProductManagement isNewProduct={true} mode="create" />}
             {view === 'create-service' && <ServiceManagement mode="create" />}
             {view === 'create-invoice' && <InvoiceManagement mode="create" />}
@@ -564,16 +578,16 @@ const RenderMainContent = React.memo(function RenderMainContent({
             {view === 'create-customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
             {view === 'create-vendor' && <VendorManagement mode="create" />}
             {view === 'create-transaction' && <TransactionForm />}
-          </ContentWrapper>
-        </Suspense>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     // Transport view handling
     if (view && view.startsWith('transport-')) {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             {view === 'transport-dashboard' && <TransportDashboard />}
             {view === 'transport-equipment' && <VehicleManagement />}
             {view === 'transport-loads' && <div>Loads Management Component Coming Soon</div>}
@@ -582,141 +596,322 @@ const RenderMainContent = React.memo(function RenderMainContent({
             {view === 'transport-maintenance' && <div>Maintenance Management Component Coming Soon</div>}
             {view === 'transport-compliance' && <div>Compliance Management Component Coming Soon</div>}
             {view === 'transport-reports' && <div>Transport Reports Component Coming Soon</div>}
-          </ContentWrapper>
-        </Suspense>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     // Sales view handling
     if (view && view.startsWith('sales-')) {
       return (
-        <Suspense fallback={<LoadingComponent />}>
-          <ContentWrapper>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             {view === 'sales-dashboard' && <SalesAnalysis />}
-            <div style={{ display: view === 'sales-products' ? 'block' : 'none' }}>
-              <ProductManagement salesContext={true} />
-            </div>
+            {view === 'sales-products' && <ProductManagement salesContext={true} />}
             {view === 'sales-services' && <ServiceManagement salesContext={true} />}
             {view === 'sales-reports' && <ReportDisplay type="sales" />}
-          </ContentWrapper>
-        </Suspense>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
     if (showHome) {
       return (
-        <ContentWrapper>
-          <Suspense fallback={<LoadingComponent />}>
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
             <Home />
-          </Suspense>
-        </ContentWrapper>
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
       );
     }
 
-    return (
-      <Suspense fallback={<LoadingComponent />}>
-        {showEmployeeManagement && (
-          <ContentWrapper>
-            <EmployeeManagement />
-          </ContentWrapper>
-        )}
-        {showHRDashboard && (
-          <ContentWrapper>
-            <HRDashboard section={hrSection} />
-          </ContentWrapper>
-        )}
-        {showUserProfileSettings && <UserProfileSettings userData={userData} onUpdate={handleUserProfileUpdate} />}
-        {showMyAccount && (
-          <ErrorBoundary fallback={<div>Error loading account settings</div>}>
-            <Suspense fallback={<div className="py-8 px-4">Loading account settings...</div>}>
-              <MyAccount 
-                userData={{
-                  ...userData,
-                  // Force these fields to be included even if undefined
-                  // This ensures the MyAccount component can see they need to be populated
-                  firstName: userData?.firstName,
-                  lastName: userData?.lastName,
-                  first_name: userData?.first_name,
-                  last_name: userData?.last_name,
-                  email: userData?.email,
-                  tenantId: userData?.tenantId || tenantId,
-                }} 
-              />
-            </Suspense>
-          </ErrorBoundary>
-        )}
-        {showIntegrationSettings && <IntegrationSettings />}
-        {showMainDashboard && <MainDashboard userData={userData} />}
-        {showKPIDashboard && <KPIDashboard />}
-        {showTransactionForm && <TransactionForm />}
-        {showInvoiceBuilder && <InvoiceTemplateBuilder onClose={handleCloseInvoiceBuilder} />}
-        {showCustomerList && <CustomerList onCreateCustomer={handleCreateCustomer} onSelectCustomer={handleCustomerSelect} />}
-        {showCustomerDetails && selectedCustomer && <CustomerDetails customer={selectedCustomer} onBack={handleBackToCustomerDetails} />}
-        {selectedInvoiceId && <InvoiceDetails invoiceId={selectedInvoiceId} onBack={handleBackFromInvoice} />}
-        <div style={{ display: showProductManagement ? 'block' : 'none' }}>
-          <ProductManagement />
-        </div>
-        {showServiceManagement && <ServiceManagement />}
-        {showEstimateManagement && <EstimateManagement />}
-        {showSalesOrderManagement && <SalesOrderManagement />}
-        {showInvoiceManagement && <InvoiceManagement />}
-        {showVendorManagement && <VendorManagement />}
-        {showBillManagement && <BillManagement />}
-        {showPurchaseOrderManagement && <PurchaseOrderManagement />}
-        {showExpensesManagement && <ExpensesManagement />}
-        {showPurchaseReturnManagement && <PurchaseReturnsManagement />}
-        {showProcurementManagement && <ProcurementManagement />}
-        {showChartOfAccounts && <ChartOfAccountsManagement />}
-        {showJournalEntryManagement && <JournalEntryManagement />}
-        {showGeneralLedgerManagement && <GeneralLedgerManagement />}
-        {showAccountReconManagement && <AccountReconManagement />}
-        {showMonthEndManagement && <MonthEndManagement />}
-        {showFinancialStatements && <FinancialManagement />}
-        {showFixedAssetManagement && <FixedAssetManagement />}
-        {showBudgetManagement && <BudgetManagement />}
-        {showCostAccountingManagement && <CostAccountingManagement />}
-        {showIntercompanyManagement && <IntercompanyManagement />}
-        {showAuditTrailManagement && <AuditTrailManagement />}
-        {showProfitAndLossReport && <ProfitAndLossReport />}
-        {showBalanceSheetReport && <BalanceSheetReport />}
-        {showCashFlowReport && <CashFlowReport />}
-        {showIncomeByCustomer && <IncomeByCustomer />}
-        {showAgedReceivables && <AgedReceivables />}
-        {showAgedPayables && <AgedPayables />}
-        {showAccountBalances && <AccountBalances />}
-        {showTrialBalances && <TrialBalances />}
-        {showProfitAndLossAnalysis && <ProfitAndLossAnalysis />}
-        {showBalanceSheetAnalysis && <BalanceSheetAnalysis />}
-        {showCashFlowAnalysis && <CashFlowAnalysis />}
-        {showBudgetVsActualAnalysis && <BudgetVsActualAnalysis />}
-        {showSalesAnalysis && <SalesAnalysis />}
-        {showExpenseAnalysis && <ExpenseAnalysis />}
-        {showReports && selectedReport && <ReportDisplay reportType={selectedReport} />}
-        {showBankingDashboard && <BankingDashboard />}
-        {showPayrollDashboard && <div>Payroll Dashboard content goes here</div>}
-        {showAnalysisPage && <AnalysisPage />}
-        {showHelpCenter && <HelpCenter />}
-        {showPrivacyPolicy && <PrivacyPolicy />}
-        {showTermsAndConditions && <TermsAndConditions />}
-        {showDownloadTransactions && <DownloadTransactions />}
-        {showConnectBank && <ConnectBank />}
-        {showPayrollTransactions && <PayrollTransactions />}
-        {showBankRecon && <BankReconciliation />}
-        {showPayrollReport && <PayrollReport />}
-        {showBankReport && <BankReport />}
-        {showInventoryItems && <InventoryItems />}
-        {showBankTransactions && <BankTransactions />}
-        {showInventoryManagement && <InventoryManagement />}
-        {showHome && <Home />}
-      </Suspense>
-    );
-  };
+    // For all other views, use a more selective approach to component loading
+    // Instead of rendering all components conditionally, we'll choose just the one that needs to be displayed
+    let ActiveComponent = null;
+    let componentProps = {};
 
+    if (showEmployeeManagement) {
+      ActiveComponent = EmployeeManagement;
+    } else if (showHRDashboard) {
+      ActiveComponent = HRDashboard;
+      componentProps = { section: hrSection };
+    } else if (showUserProfileSettings) {
+      ActiveComponent = UserProfileSettings;
+      componentProps = { userData, onUpdate: handleUserProfileUpdate };
+    } else if (showMyAccount) {
+      ActiveComponent = MyAccount;
+      componentProps = {
+        userData: {
+          ...userData,
+          firstName: userData?.firstName,
+          lastName: userData?.lastName,
+          first_name: userData?.first_name,
+          last_name: userData?.last_name,
+          email: userData?.email,
+          tenantId: userData?.tenantId || tenantId,
+        }
+      };
+    } else if (showIntegrationSettings) {
+      ActiveComponent = IntegrationSettings;
+    } else if (showMainDashboard) {
+      ActiveComponent = MainDashboard;
+      componentProps = { userData };
+    } else if (showKPIDashboard) {
+      ActiveComponent = KPIDashboard;
+    } else if (showTransactionForm) {
+      ActiveComponent = TransactionForm;
+    } else if (showInvoiceBuilder) {
+      ActiveComponent = InvoiceTemplateBuilder;
+      componentProps = { onClose: handleCloseInvoiceBuilder };
+    } else if (showCustomerList) {
+      ActiveComponent = CustomerList;
+      componentProps = { onCreateCustomer: handleCreateCustomer, onSelectCustomer: handleCustomerSelect };
+    } else if (showCustomerDetails && selectedCustomer) {
+      ActiveComponent = CustomerDetails;
+      componentProps = { customer: selectedCustomer, onBack: handleBackToCustomerDetails };
+    } else if (selectedInvoiceId) {
+      ActiveComponent = InvoiceDetails;
+      componentProps = { invoiceId: selectedInvoiceId, onBack: handleBackFromInvoice };
+    } else if (showProductManagement) {
+      ActiveComponent = ProductManagement;
+    } else if (showServiceManagement) {
+      ActiveComponent = ServiceManagement;
+    } else if (showEstimateManagement) {
+      ActiveComponent = EstimateManagement;
+    } else if (showSalesOrderManagement) {
+      ActiveComponent = SalesOrderManagement;
+    } else if (showInvoiceManagement) {
+      ActiveComponent = InvoiceManagement;
+    } else if (showVendorManagement) {
+      ActiveComponent = VendorManagement;
+    } else if (showBillManagement) {
+      ActiveComponent = BillManagement;
+    } else if (showPurchaseOrderManagement) {
+      ActiveComponent = PurchaseOrderManagement;
+    } else if (showExpensesManagement) {
+      ActiveComponent = ExpensesManagement;
+    } else if (showPurchaseReturnManagement) {
+      ActiveComponent = PurchaseReturnsManagement;
+    } else if (showProcurementManagement) {
+      ActiveComponent = ProcurementManagement;
+    } else if (showChartOfAccounts) {
+      ActiveComponent = ChartOfAccountsManagement;
+    } else if (showJournalEntryManagement) {
+      ActiveComponent = JournalEntryManagement;
+    } else if (showGeneralLedgerManagement) {
+      ActiveComponent = GeneralLedgerManagement;
+    } else if (showAccountReconManagement) {
+      ActiveComponent = AccountReconManagement;
+    } else if (showMonthEndManagement) {
+      ActiveComponent = MonthEndManagement;
+    } else if (showFinancialStatements) {
+      ActiveComponent = FinancialManagement;
+    } else if (showFixedAssetManagement) {
+      ActiveComponent = FixedAssetManagement;
+    } else if (showBudgetManagement) {
+      ActiveComponent = BudgetManagement;
+    } else if (showCostAccountingManagement) {
+      ActiveComponent = CostAccountingManagement;
+    } else if (showIntercompanyManagement) {
+      ActiveComponent = IntercompanyManagement;
+    } else if (showAuditTrailManagement) {
+      ActiveComponent = AuditTrailManagement;
+    } else if (showProfitAndLossReport) {
+      ActiveComponent = ProfitAndLossReport;
+    } else if (showBalanceSheetReport) {
+      ActiveComponent = BalanceSheetReport;
+    } else if (showCashFlowReport) {
+      ActiveComponent = CashFlowReport;
+    } else if (showIncomeByCustomer) {
+      ActiveComponent = IncomeByCustomer;
+    } else if (showAgedReceivables) {
+      ActiveComponent = AgedReceivables;
+    } else if (showAgedPayables) {
+      ActiveComponent = AgedPayables;
+    } else if (showAccountBalances) {
+      ActiveComponent = AccountBalances;
+    } else if (showTrialBalances) {
+      ActiveComponent = TrialBalances;
+    } else if (showProfitAndLossAnalysis) {
+      ActiveComponent = ProfitAndLossAnalysis;
+    } else if (showBalanceSheetAnalysis) {
+      ActiveComponent = BalanceSheetAnalysis;
+    } else if (showCashFlowAnalysis) {
+      ActiveComponent = CashFlowAnalysis;
+    } else if (showBudgetVsActualAnalysis) {
+      ActiveComponent = BudgetVsActualAnalysis;
+    } else if (showSalesAnalysis) {
+      ActiveComponent = SalesAnalysis;
+    } else if (showExpenseAnalysis) {
+      ActiveComponent = ExpenseAnalysis;
+    } else if (showReports && selectedReport) {
+      ActiveComponent = ReportDisplay;
+      componentProps = { reportType: selectedReport };
+    } else if (showBankingDashboard) {
+      ActiveComponent = BankingDashboard;
+    } else if (showPayrollDashboard) {
+      // Use a plain div for PayrollDashboard for now
+      return (
+        <WrapperComponent>
+          <div>Payroll Dashboard content goes here</div>
+        </WrapperComponent>
+      );
+    } else if (showAnalysisPage) {
+      ActiveComponent = AnalysisPage;
+    } else if (showHelpCenter) {
+      ActiveComponent = HelpCenter;
+    } else if (showPrivacyPolicy) {
+      ActiveComponent = PrivacyPolicy;
+    } else if (showTermsAndConditions) {
+      ActiveComponent = TermsAndConditions;
+    } else if (showDownloadTransactions) {
+      ActiveComponent = DownloadTransactions;
+    } else if (showConnectBank) {
+      ActiveComponent = ConnectBank;
+    } else if (showPayrollTransactions) {
+      ActiveComponent = PayrollTransactions;
+    } else if (showBankRecon) {
+      ActiveComponent = BankReconciliation;
+    } else if (showPayrollReport) {
+      ActiveComponent = PayrollReport;
+    } else if (showBankReport) {
+      ActiveComponent = BankReport;
+    } else if (showInventoryItems) {
+      ActiveComponent = InventoryItems;
+    } else if (showBankTransactions) {
+      ActiveComponent = BankTransactions;
+    } else if (showInventoryManagement) {
+      ActiveComponent = InventoryManagement;
+    } else if (showHome) {
+      ActiveComponent = Home;
+    }
+
+    // Only render if we have an active component
+    if (ActiveComponent) {
+      return (
+        <WrapperComponent>
+          <SuspenseWithErrorBoundary>
+            <ActiveComponent {...componentProps} />
+          </SuspenseWithErrorBoundary>
+        </WrapperComponent>
+      );
+    }
+
+    // Default case - render nothing
+    return (
+      <WrapperComponent>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <h2 className="text-xl font-medium mb-2">Welcome to your dashboard</h2>
+            <p className="text-gray-600">Select an option from the menu to get started</p>
+          </div>
+        </div>
+      </WrapperComponent>
+    );
+  }, [
+    // Essential dependencies
+    view, 
+    tenantStatus, 
+    tenantError,
+    showMyAccount, 
+    showHelpCenter, 
+    showDeviceSettings, 
+    selectedSettingsOption, 
+    showTermsAndConditions, 
+    showPrivacyPolicy,
+    showCreateOptions,
+    selectedOption,
+    showHome,
+    showKPIDashboard,
+    showMainDashboard,
+    userData,
+    tenantId,
+    // Rendering decision variables
+    renderSettingsTabs,
+    // Other critical dependencies
+    selectedInvoiceId,
+    selectedCustomer,
+    handleCreateCustomer,
+    handleCustomerSelect,
+    handleBackToCustomerDetails,
+    handleBackFromInvoice,
+    handleCloseInvoiceBuilder,
+    handleUserProfileUpdate,
+    selectedReport,
+    hrSection,
+  ]);
+
+  // Return the final component with memoized content
   return (
-    <ContentWrapper>
-      {renderContent()}
-    </ContentWrapper>
+    <WrapperComponent>
+      {renderContent}
+    </WrapperComponent>
   );
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  // Return true if props are equal (component should NOT re-render)
+  // Return false if props differ (component SHOULD re-render)
+  
+  // Define the most important props that should trigger a re-render when changed
+  const criticalProps = [
+    'view',
+    'showMyAccount',
+    'showHelpCenter',
+    'tenantId',
+    'tenantStatus',
+    'showCreateOptions',
+    'selectedOption',
+    'showHome',
+    'showMainDashboard',
+    'showKPIDashboard'
+  ];
+  
+  // Check if any critical props have changed
+  for (const prop of criticalProps) {
+    if (prevProps[prop] !== nextProps[prop]) {
+      return false; // Props differ, should re-render
+    }
+  }
+
+  // Special check for userData that's more intelligent
+  if (prevProps.userData !== nextProps.userData) {
+    // Compare actual userData content instead of reference
+    if (!prevProps.userData || !nextProps.userData) {
+      return false; // One is null/undefined but the other isn't, should re-render
+    }
+    
+    // Only compare essential user data properties
+    const userDataProps = ['email', 'firstName', 'lastName', 'businessName', 'tenantId'];
+    for (const prop of userDataProps) {
+      if (prevProps.userData[prop] !== nextProps.userData[prop]) {
+        return false; // Should re-render because important user data changed
+      }
+    }
+  }
+  
+  // For active components, check relevant props
+  if (prevProps.view !== nextProps.view) {
+    return false; // View changed, should re-render
+  }
+  
+  if (prevProps.showCreateOptions && nextProps.showCreateOptions && 
+      prevProps.selectedOption !== nextProps.selectedOption) {
+    return false; // Selected option in create mode changed, should re-render
+  }
+  
+  // If we're showing customer details, check if the customer changed
+  if (prevProps.showCustomerDetails && nextProps.showCustomerDetails &&
+      prevProps.selectedCustomer?.id !== nextProps.selectedCustomer?.id) {
+    return false; // Selected customer changed, should re-render
+  }
+  
+  // If we're showing invoice details, check if the invoice ID changed
+  if (prevProps.selectedInvoiceId !== nextProps.selectedInvoiceId) {
+    return false; // Selected invoice changed, should re-render
+  }
+  
+  // Default to not re-rendering if no critical changes detected
+  return true;
 });
 
 export default RenderMainContent;

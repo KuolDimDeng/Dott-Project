@@ -88,18 +88,26 @@ const Drawer = ({
   
   // Add effect to handle drawer state changes
   useEffect(() => {
-    // Dispatch a custom event when drawer state changes
-    // This will allow other components to react to drawer changes
-    const event = new CustomEvent('drawerStateChanged', { 
-      detail: { isOpen } 
-    });
-    window.dispatchEvent(event);
+    // Log state change with measurements
+    console.log(`%c[Drawer] State changed: ${isOpen ? 'OPEN' : 'CLOSED'}`, 'background: #f3f4f6; color: #111827; padding: 2px 4px; border-radius: 2px;');
+    console.log(`[Drawer] Width: ${isOpen ? drawerWidth : iconOnlyWidth}px`);
+    
+    // Dispatch custom event for main content to react to drawer state changes
+    const detail = { isOpen, width: isOpen ? drawerWidth : iconOnlyWidth };
+    console.log('[Drawer] Dispatching drawerStateChanged event:', detail);
+    
+    window.dispatchEvent(new CustomEvent('drawerStateChanged', { detail }));
     
     // Handle resize events
     const handleResize = () => {
-      // Re-dispatch the event when window is resized
+      // Force a resize event when window is resized
+      console.log('[Drawer] Window resize detected, dispatching resize event');
+      window.dispatchEvent(new Event('resize'));
+      
+      // Also dispatch drawer state changed event to ensure content updates
+      console.log('[Drawer] Re-dispatching drawerStateChanged on resize with state:', { isOpen, width: isOpen ? drawerWidth : iconOnlyWidth });
       window.dispatchEvent(new CustomEvent('drawerStateChanged', { 
-        detail: { isOpen } 
+        detail: { isOpen, width: isOpen ? drawerWidth : iconOnlyWidth } 
       }));
     };
     
@@ -108,7 +116,13 @@ const Drawer = ({
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [isOpen]);
+  }, [isOpen, drawerWidth, iconOnlyWidth]);
+  
+  // Log when the toggle function is called
+  const enhancedToggleDrawer = () => {
+    console.log(`%c[Drawer] Toggle requested. Current state: ${isOpen ? 'OPEN' : 'CLOSED'}, will change to: ${!isOpen ? 'OPEN' : 'CLOSED'}`, 'background: #fee2e2; color: #991b1b; padding: 2px 4px; border-radius: 2px;');
+    toggleDrawer();
+  };
   
   return (
     <>
@@ -116,7 +130,7 @@ const Drawer = ({
       {isOpen && (
         <div 
           className="fixed inset-0 bg-black/30 z-40 sm:hidden"
-          onClick={toggleDrawer}
+          onClick={enhancedToggleDrawer}
           aria-label="Close menu overlay"
         />
       )}
@@ -125,7 +139,7 @@ const Drawer = ({
       <aside 
         key={`drawer-${isOpen ? 'open' : 'closed'}`} 
         className={`
-          fixed top-16 left-0 z-30
+          fixed top-16 left-0 z-50
           ${isOpen ? 'w-[260px]' : 'w-[60px]'}
           h-[calc(100vh-64px)] box-border
           bg-white shadow-md
@@ -137,7 +151,7 @@ const Drawer = ({
         {isOpen && (
           <button
             className="absolute top-3 right-3 p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 sm:hidden"
-            onClick={toggleDrawer}
+            onClick={enhancedToggleDrawer}
             aria-label="Close menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -150,7 +164,7 @@ const Drawer = ({
         {!isOpen && (
           <button
             className="fixed top-20 left-3 p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 sm:hidden"
-            onClick={toggleDrawer}
+            onClick={enhancedToggleDrawer}
             aria-label="Expand menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -188,7 +202,7 @@ const Drawer = ({
             handleInventoryClick={handleInventoryClick}
             handleHomeClick={handleHomeClick}
             handleCRMClick={handleCRMClick}
-            handleDrawerClose={toggleDrawer}
+            handleDrawerClose={enhancedToggleDrawer}
             isIconOnly={!isOpen}
             handleItemClick={handleItemClickWrapper}
           />

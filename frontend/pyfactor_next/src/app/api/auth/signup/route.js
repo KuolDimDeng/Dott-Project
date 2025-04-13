@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
+import { Cookies } from 'cookies';
 
 // Flag to determine if we're in development mode with no backend for signup only
 const BYPASS_SIGNUP_BACKEND = process.env.NEXT_PUBLIC_BYPASS_SIGNUP_BACKEND === 'true' || process.env.BYPASS_SIGNUP_BACKEND === 'true';
@@ -129,12 +130,27 @@ export async function POST(request) {
           businessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
         }
       }
-      // If all else fails, leave it blank for the user to update later
+      // If all else fails, use a generic business name
       if (!businessName) {
-        businessName = '';
-        logger.info('[Signup] No business name available, leaving blank for user to update later');
+        businessName = 'My Business';
+        logger.info('[Signup] No business name could be generated, using default: My Business');
       } else {
         logger.info(`[Signup] Generated business name from user data: ${businessName}`);
+      }
+      
+      // Set a cookie so the dashboard can access the business name during sign-up
+      try {
+        if (typeof Response !== 'undefined') {
+          // Create a Set-Cookie header for the response
+          const cookies = new Cookies();
+          cookies.set('businessName', businessName, {
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+            sameSite: 'lax'
+          });
+        }
+      } catch (cookieError) {
+        console.warn('[Signup] Error setting businessName cookie:', cookieError);
       }
     }
     
@@ -181,6 +197,41 @@ export async function POST(request) {
       const emailHash = userData.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
       const mockUserId = `dev-${emailHash}-${userData.cognito_id.substring(0, 8)}`;
       
+      // Ensure tenant exists by calling the tenant-manager API
+      try {
+        logger.info('[Signup] Ensuring tenant exists by calling tenant-manager API');
+        
+        // Create tenant using tenant-manager API with tenant_id and user_id
+        const tenantResponse = await fetch(`${process.env.NEXTAUTH_URL || ''}/api/tenant/tenant-manager`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tenant_id: tenantId,
+            user_id: data.cognitoId,
+            business_name: businessName,
+            forceCreate: true
+          })
+        });
+        
+        if (tenantResponse.ok) {
+          const tenantData = await tenantResponse.json();
+          logger.info('[Signup] Tenant creation result:', tenantData);
+          
+          if (tenantData.success) {
+            logger.info(`[Signup] Tenant ${tenantId} ${tenantData.created ? 'created' : 'already exists'}`);
+          } else {
+            logger.warn(`[Signup] Tenant creation response unsuccessful:`, tenantData);
+          }
+        } else {
+          logger.error(`[Signup] Error from tenant-manager API: ${tenantResponse.status}`);
+        }
+      } catch (tenantError) {
+        logger.error('[Signup] Error calling tenant-manager API:', tenantError);
+        // Continue with signup process even if tenant creation fails
+      }
+
       // Only update Cognito attributes if we have valid tokens (not Lambda request)
       if (accessToken && idToken) {
         try {

@@ -10,6 +10,12 @@ import { ensureUserCreatedAt } from '@/utils/authUtils';
 import ReactivationDialog from './ReactivationDialog';
 import { checkDisabledAccount } from '@/lib/account-reactivation';
 
+// Initialize global app cache for auth
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+}
+
 export default function SignInForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({ username: '', password: '' });
@@ -85,8 +91,18 @@ export default function SignInForm() {
             setSuccessMessage('Please verify your email before signing in. Redirecting...');
             
             // Store email for verification page
-            localStorage.setItem('pyfactor_email', formData.username);
-            localStorage.setItem('needs_verification', 'true');
+            if (typeof window !== 'undefined') {
+              window.__APP_CACHE.auth.email = formData.username;
+              window.__APP_CACHE.auth.needsVerification = true;
+              
+              // Set these in sessionStorage as minimal fallback for cross-page data
+              try {
+                sessionStorage.setItem('pyfactor_email', formData.username);
+                sessionStorage.setItem('needs_verification', 'true');
+              } catch (e) {
+                // Ignore sessionStorage errors
+              }
+            }
             
             // Redirect to verification page
             setTimeout(() => {
@@ -203,14 +219,15 @@ export default function SignInForm() {
                 // Check if tenant ID exists
                 const tenantId = userAttributes['custom:tenant_id'];
                 if (tenantId) {
-                  // Store the tenant ID in cookies and localStorage for reliable access
+                  // Store the tenant ID for reliable access
                   storeTenantId(tenantId);
                   
                   // Redirect to tenant-specific dashboard
                   router.push(`/${tenantId}/dashboard`);
                 } else {
-                  // Default dashboard without tenant ID
-                  router.push('/dashboard');
+                  // Default dashboard without tenant ID but with fromAuth parameter
+                  // This tells the middleware to handle tenant ID detection
+                  router.push('/dashboard?fromAuth=true');
                 }
               } else if (onboardingStatus) {
                 // Handle specific onboarding steps
@@ -379,8 +396,18 @@ export default function SignInForm() {
       // Handle other errors
       if (error.name === 'UserNotConfirmedException') {
         setError('Your account email has not been verified. Please check your email for verification instructions.');
-        localStorage.setItem('pyfactor_email', formData.username);
-        localStorage.setItem('needs_verification', 'true');
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE.auth.email = formData.username;
+          window.__APP_CACHE.auth.needsVerification = true;
+          
+          // Set these in sessionStorage as minimal fallback for cross-page data
+          try {
+            sessionStorage.setItem('pyfactor_email', formData.username);
+            sessionStorage.setItem('needs_verification', 'true');
+          } catch (e) {
+            // Ignore sessionStorage errors
+          }
+        }
       } else if (error.name === 'NotAuthorizedException') {
         setError('Incorrect username or password. Please try again.');
       } else if (error.name === 'UserNotFoundException') {

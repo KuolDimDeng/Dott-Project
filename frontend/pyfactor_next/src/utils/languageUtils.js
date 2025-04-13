@@ -2,8 +2,14 @@
 
 import { logger } from '@/utils/logger';
 
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
+}
+
 /**
- * Gets the language parameter from the URL, localStorage, or defaults to 'en'
+ * Gets the language parameter from the URL, app cache, or defaults to 'en'
  * @returns {string} The language code (e.g., 'en', 'fr', etc.)
  */
 export function getLanguageParam() {
@@ -13,12 +19,18 @@ export function getLanguageParam() {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     langParam = urlParams.get('lng');
     
-    // If not found in current URL, check localStorage or use default
+    // If not found in current URL, check app cache or use default
     if (!langParam && typeof window !== 'undefined') {
-      langParam = localStorage.getItem('preferredLanguage') || 'en';
+      // Initialize app cache if needed
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
+      
+      langParam = window.__APP_CACHE.preferences.language || 'en';
     } else if (langParam && typeof window !== 'undefined') {
       // Save the language preference for future use
-      localStorage.setItem('preferredLanguage', langParam);
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
+      window.__APP_CACHE.preferences.language = langParam;
     } else {
       langParam = 'en';
     }

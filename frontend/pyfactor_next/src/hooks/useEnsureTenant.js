@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
-import { getTenantId, validateTenantIdFormat, storeTenantInfo } from '@/utils/tenantUtils';
+import { 
+  validateTenantIdFormat, 
+  updateTenantIdInCognito, 
+  getTenantIdFromCognito
+} from '@/utils/tenantUtils';
 import { setTenantContext } from '@/utils/tenantContext';
 
 // Maximum number of retries for network operations
 const MAX_RETRIES = 3;
 // Base delay for exponential backoff (in ms)
-const BASE_DELAY = 1000;
+const BASE_DELAY = 500;
 
 /**
  * Hook to ensure tenant context is set properly for RLS
@@ -21,30 +25,25 @@ export default function useEnsureTenant() {
   useEffect(() => {
     const setTenant = async () => {
       try {
-        // Get current tenant ID with multiple sources
-        let currentTenantId = getTenantId();
+        // Get tenant ID from Cognito
+        let currentTenantId = await getTenantIdFromCognito();
         
         // If tenant ID is missing or invalid format, try to fix it
         if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
-          logger.warn('[useEnsureTenant] Invalid or missing tenant ID:', currentTenantId);
+          logger.warn('[useEnsureTenant] Invalid or missing tenant ID from Cognito:', currentTenantId);
           
-          // Try to get from localStorage directly as backup
-          currentTenantId = localStorage.getItem('tenantId');
-          
-          // Try to get from cookies as another backup
-          if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
-            try {
-              const cookies = document.cookie.split(';');
-              for (const cookie of cookies) {
-                const [name, value] = cookie.trim().split('=');
-                if (name === 'tenantId' && validateTenantIdFormat(value)) {
-                  currentTenantId = value;
-                  break;
-                }
+          // Try to get from URL as a fallback
+          try {
+            const pathParts = window.location.pathname.split('/');
+            for (const part of pathParts) {
+              if (validateTenantIdFormat(part)) {
+                currentTenantId = part;
+                logger.info('[useEnsureTenant] Using tenant ID from URL path:', currentTenantId);
+                break;
               }
-            } catch (cookieError) {
-              logger.error('[useEnsureTenant] Error checking cookies:', cookieError);
             }
+          } catch (urlError) {
+            logger.error('[useEnsureTenant] Error checking URL for tenant ID:', urlError);
           }
           
           // If still no valid tenant ID, use a fallback
@@ -53,8 +52,8 @@ export default function useEnsureTenant() {
             currentTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
             logger.warn('[useEnsureTenant] Using hardcoded fallback tenant ID:', currentTenantId);
             
-            // Store the fallback ID in all places
-            storeTenantInfo(currentTenantId);
+            // Store the fallback ID in Cognito
+            await updateTenantIdInCognito(currentTenantId);
           }
         }
         
@@ -71,12 +70,32 @@ export default function useEnsureTenant() {
               await new Promise(resolve => setTimeout(resolve, delay));
             }
             
+            // Get cognito user ID if available
+            let userId = null;
+            try {
+              const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+              const userAttributes = await fetchUserAttributes();
+              userId = userAttributes.sub || userAttributes.username;
+              logger.info('[useEnsureTenant] Found Cognito user ID:', userId);
+            } catch (userIdError) {
+              logger.error('[useEnsureTenant] Error getting user ID:', userIdError);
+            }
+            
+            // Add force parameter to check for existing tenant records
+            // This is key to prevent duplicate tenant creation
+            const initParams = {
+              tenantId: currentTenantId,
+              forceCreate: true,  // CHANGED: Always force create to ensure RLS policy exists
+              checkExisting: true, // Explicitly check for existing tenant
+              userId: userId       // Pass user ID if available
+            };
+            
             // Try the simplest and most direct approach first
-            logger.info('[useEnsureTenant] Trying init endpoint (local API)');
+            logger.info('[useEnsureTenant] Trying init endpoint (local API) with force create:', initParams);
             const initResponse = await fetch('/api/tenant/init', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tenantId: currentTenantId, forceCreate: true })
+              body: JSON.stringify(initParams)
             });
             
             if (initResponse.ok) {
@@ -100,7 +119,10 @@ export default function useEnsureTenant() {
             const verifySchemaResponse = await fetch('/api/tenant/verify-schema', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ tenantId: currentTenantId })
+              body: JSON.stringify({ 
+                tenantId: currentTenantId,
+                checkExisting: true // Add parameter to check existing
+              })
             });
             
             if (verifySchemaResponse.ok) {
@@ -123,7 +145,13 @@ export default function useEnsureTenant() {
               // As a last resort, try the tenant/init endpoint which has minimal dependencies
               try {
                 const lastResortResponse = await fetch('/api/tenant/init', {
-                  method: 'GET',
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    tenantId: currentTenantId,
+                    forceCreate: true,
+                    lastResort: true
+                  }),
                   cache: 'no-store'
                 });
                 
@@ -147,7 +175,9 @@ export default function useEnsureTenant() {
         // Proceed with local setup regardless of network success
         setTenantId(currentTenantId);
         setTenantContext(currentTenantId);
-        storeTenantInfo(currentTenantId);
+        
+        // Store tenant ID in Cognito
+        await updateTenantIdInCognito(currentTenantId);
         
         // Log tenant verification
         logger.info('[useEnsureTenant] Tenant verification complete:', {
@@ -164,7 +194,7 @@ export default function useEnsureTenant() {
         const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
         setTenantId(fallbackTenantId);
         setTenantContext(fallbackTenantId);
-        storeTenantInfo(fallbackTenantId);
+        await updateTenantIdInCognito(fallbackTenantId);
         
         setStatus('error');
         setError(err);
@@ -182,8 +212,8 @@ export default function useEnsureTenant() {
     
     const retrySetTenant = async () => {
       try {
-        // Get current tenant ID with multiple sources
-        let currentTenantId = getTenantId();
+        // Get current tenant ID from Cognito
+        let currentTenantId = await getTenantIdFromCognito();
         
         // If tenant ID is missing or invalid format, use fallback
         if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
@@ -195,7 +225,7 @@ export default function useEnsureTenant() {
         // Set tenant context locally first for immediate functionality
         setTenantId(currentTenantId);
         setTenantContext(currentTenantId);
-        storeTenantInfo(currentTenantId);
+        await updateTenantIdInCognito(currentTenantId);
         
         // Try to verify with API, but don't block UI functionality
         try {
@@ -208,27 +238,28 @@ export default function useEnsureTenant() {
               forceCreate: true
             })
           });
+          
+          logger.debug('[useEnsureTenant] Background tenant verification successful');
+          setStatus('verified');
         } catch (apiError) {
-          // Log but don't fail the UI
-          logger.warn('[useEnsureTenant] API verification failed in retry:', apiError);
+          logger.warn('[useEnsureTenant] Background verification failed, but UI can proceed:', apiError);
+          // Don't update status on API error - keep using the tenant ID we have
         }
-        
-        // Mark as verified
-        setStatus('verified');
       } catch (err) {
-        logger.error('[useEnsureTenant] Error in retry:', err);
-        
-        // Use fallback tenant ID for resilience
-        const fallbackTenantId = '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
-        setTenantId(fallbackTenantId);
-        setTenantContext(fallbackTenantId);
-        storeTenantInfo(fallbackTenantId);
-        setStatus('verified');
+        logger.error('[useEnsureTenant] Error during retry:', err);
+        setStatus('error');
+        setError(err);
       }
     };
     
     retrySetTenant();
   };
 
-  return { status, error, tenantId, retry };
+  // Return tenant information
+  return {
+    tenantId,
+    status,
+    error,
+    retry
+  };
 } 

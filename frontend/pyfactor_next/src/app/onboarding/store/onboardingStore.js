@@ -61,25 +61,29 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in app cache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
-          // Store each piece of information individually for easier access
-          localStorage.setItem('businessName', info.businessName || '');
-          localStorage.setItem('businessType', info.businessType || '');
-          localStorage.setItem('businessSubtypes', info.businessSubtypes || '');
-          localStorage.setItem('businessId', info.businessId || '');
-          localStorage.setItem('businessCountry', info.country || '');
-          localStorage.setItem('businessState', info.businessState || '');
-          localStorage.setItem('legalStructure', info.legalStructure || '');
-          localStorage.setItem('dateFounded', info.dateFounded || '');
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+            window.__APP_CACHE.onboarding.businessInfo = {
+              businessName: info.businessName || '',
+              businessType: info.businessType || '',
+              businessSubtypes: info.businessSubtypes || '',
+              businessId: info.businessId || '',
+              country: info.country || '',
+              businessState: info.businessState || '',
+              legalStructure: info.legalStructure || '',
+              dateFounded: info.dateFounded || '',
+              timestamp: Date.now()
+            };
+          }
           
-          // Also store the complete business info object
-          localStorage.setItem('onboardingBusinessInfo', JSON.stringify(info));
-          
-          console.log('💾 Saved business info to localStorage for development mode', info);
+          console.log('💾 Saved business info to app cache for development mode', info);
         } catch (storageError) {
-          console.warn('Failed to save business info to localStorage:', storageError);
+          console.warn('Failed to save business info to app cache:', storageError);
         }
       }
 
@@ -125,20 +129,28 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in app cache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('subscriptionPlan', subscription.plan || '');
-          localStorage.setItem('subscriptionInterval', subscription.interval || '');
-          localStorage.setItem('onboardingSubscription', JSON.stringify(subscription));
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+            window.__APP_CACHE.onboarding.subscription = {
+              plan: subscription.plan || '',
+              interval: subscription.interval || '',
+              timestamp: Date.now(),
+              details: subscription
+            };
+          }
           
           // Set a cookie for server-side access
           document.cookie = `subscriptionPlan=${subscription.plan}; path=/; max-age=86400`;
           document.cookie = `subscriptionInterval=${subscription.interval}; path=/; max-age=86400`;
           
-          console.log('💾 Saved subscription info to localStorage for development mode', subscription);
+          console.log('💾 Saved subscription info to app cache for development mode', subscription);
         } catch (storageError) {
-          console.warn('Failed to save subscription info to localStorage:', storageError);
+          console.warn('Failed to save subscription info to app cache:', storageError);
         }
       }
 
@@ -186,19 +198,29 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in app cache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('paymentId', payment.id || '');
-          localStorage.setItem('paymentVerified', 'true');
-          localStorage.setItem('paymentType', payment.paymentMethod?.type || 'credit_card');
-          localStorage.setItem('paymentLast4', payment.paymentMethod?.last4 || '4242');
-          localStorage.setItem('paymentExpiry', payment.paymentMethod?.expiry || '12/25');
-          localStorage.setItem('onboardingPayment', JSON.stringify(payment));
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+            window.__APP_CACHE.onboarding.payment = {
+              id: payment.id || '',
+              verified: true,
+              paymentMethod: {
+                type: payment.paymentMethod?.type || 'credit_card',
+                last4: payment.paymentMethod?.last4 || '4242',
+                expiry: payment.paymentMethod?.expiry || '12/25'
+              },
+              timestamp: Date.now(),
+              details: payment
+            };
+          }
           
-          console.log('💾 Saved payment info to localStorage for development mode', payment);
+          console.log('💾 Saved payment info to app cache for development mode', payment);
         } catch (storageError) {
-          console.warn('Failed to save payment info to localStorage:', storageError);
+          console.warn('Failed to save payment info to app cache:', storageError);
         }
       }
 
@@ -240,20 +262,21 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
       
-      // For development mode, save status in localStorage
+      // For development mode, save status in app cache
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('setupdone', 'true');
-          localStorage.setItem('onboardingStatus', ONBOARDING_STATES.COMPLETE);
-          localStorage.setItem('onboardingCompletedAt', new Date().toISOString());
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+            window.__APP_CACHE.onboarding.status = ONBOARDING_STATES.COMPLETE;
+            window.__APP_CACHE.onboarding.setupdone = true;
+            window.__APP_CACHE.onboarding.completedAt = new Date().toISOString();
+          }
           
-          // Set cookies for server-side access
-          document.cookie = `setupdone=true; path=/; max-age=86400`;
-          document.cookie = `onboardingStatus=${ONBOARDING_STATES.COMPLETE}; path=/; max-age=86400`;
-          
-          console.log('💾 Saved setup completion to localStorage for development mode');
+          console.log('💾 Saved setup completion to app cache for development mode');
         } catch (storageError) {
-          console.warn('Failed to save setup completion to localStorage:', storageError);
+          console.warn('Failed to save setup completion to app cache:', storageError);
         }
       }
       

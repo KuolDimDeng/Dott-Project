@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverAuth';
 
+/**
+ * Endpoint to verify user session and return Cognito attribute data
+ * This is a preferred replacement for cookie-based session validation
+ */
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 9);
   
@@ -21,24 +25,48 @@ export async function GET(request) {
     }
     
     try {
-      // Return basic user session data
+      // Prepare the response with cognito attributes
       logger.debug(`[Session API] Session verification successful for user ${user.userId} ${requestId}`);
+      
+      // Extract relevant user attributes from token
+      const {
+        email,
+        given_name: firstName = '',
+        family_name: lastName = '',
+        sub: userId,
+        'custom:onboarding': onboardingStatus = 'not_started',
+        'custom:businessname': businessName = '',
+        'custom:businesstype': businessType = '',
+        'custom:tenant_id': tenantId = '',
+        'custom:businessid': businessId = '',
+        'custom:setupdone': setupDone = '',
+        'custom:subscription_done': subscriptionDone = '',
+        'custom:payment_done': paymentDone = '',
+        'custom:business_info_done': businessInfoDone = '',
+        'custom:subplan': subscriptionPlan = ''
+      } = user.attributes || {};
       
       const response = {
         isLoggedIn: true,
         authenticated: true,
         user: {
-          id: user.userId,
-          email: user.attributes?.email,
-          lastLogin: new Date().toISOString(),
+          id: userId,
+          email,
+          firstName,
+          lastName,
+          onboardingStatus,
+          businessName,
+          businessType,
+          tenantId: tenantId || businessId || null,
+          subscriptionPlan,
+          setupDone: setupDone === 'TRUE',
+          subscriptionDone: subscriptionDone === 'TRUE',
+          paymentDone: paymentDone === 'TRUE',
+          businessInfoDone: businessInfoDone === 'TRUE',
+          lastVerified: new Date().toISOString(),
         },
         requestId
       };
-      
-      // Add onboarding status if available
-      if (user.attributes && user.attributes['custom:onboarding']) {
-        response.user.onboardingStatus = user.attributes['custom:onboarding'];
-      }
       
       return NextResponse.json(response);
       

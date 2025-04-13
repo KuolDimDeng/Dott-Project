@@ -12,6 +12,28 @@ import { logger } from '@/utils/logger';
 import PropTypes from 'prop-types';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  window.__APP_CACHE = window.__APP_CACHE || {};
+  window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+}
+
+// Store onboarding state in app cache as primary storage with localStorage as fallback
+try {
+  // Initialize app cache
+  if (typeof window !== 'undefined') {
+    if (!window.__APP_CACHE) window.__APP_CACHE = {};
+    if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
+    
+    // Store in app cache
+    window.__APP_CACHE.onboarding.inProgress = true;
+    window.__APP_CACHE.onboarding.step = 'business-info';
+    window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+  }
+} catch (e) {
+  logger.error('[Onboarding] Failed to set app cache storage', e);
+}
+
 // Simple redirect component - directs all users to business-info
 function OnboardingRedirect() {
   const router = useRouter();
@@ -149,14 +171,17 @@ const OnboardingContent = memo(function OnboardingContent() {
     logger.info('[Onboarding] Using fallback navigation for new user');
     setFallbackTriggered(true);
     
-    // Store onboarding state in localStorage as a fallback
+    // Store onboarding state in app cache
     try {
-      localStorage.setItem('onboardingInProgress', 'true');
-      localStorage.setItem('onboardingStep', 'business-info');
-      document.cookie = `onboardingInProgress=true;path=/;max-age=${60*60*24}`;
-      document.cookie = `onboardingStep=business-info;path=/;max-age=${60*60*24}`;
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
+        window.__APP_CACHE.onboarding.inProgress = true;
+        window.__APP_CACHE.onboarding.step = 'business-info';
+        window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+      }
     } catch (e) {
-      logger.error('[Onboarding] Failed to set fallback storage', e);
+      logger.error('[Onboarding] Failed to set app cache storage', e);
     }
     
     // Navigate directly to the first step

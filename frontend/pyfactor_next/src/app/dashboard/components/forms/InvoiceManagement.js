@@ -106,6 +106,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   const [products, setProducts] = useState(() => []);
   const [services, setServices] = useState(() => []);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchInvoices();
@@ -121,8 +122,25 @@ const [state, dispatch] = useReducer(reducer, initialState);
       
       try {
         const data = await invoiceApi.getAll();
+        
+        // Check if data is HTML instead of JSON
+        if (typeof data === 'string' && data.trim().startsWith('<!DOCTYPE html>')) {
+          console.error('[InvoiceManagement] Received HTML response instead of JSON for invoices');
+          setInvoices([]);
+          notifyError('Server returned an invalid response. Please try again later.');
+          return;
+        }
+        
         console.log('[InvoiceManagement] Invoices data:', data);
-        setInvoices(Array.isArray(data) ? data : []);
+        
+        // Set the invoices state only if we have valid data
+        if (Array.isArray(data)) {
+          setInvoices(data);
+        } else {
+          console.warn('[InvoiceManagement] Invalid invoice data format:', typeof data);
+          setInvoices([]);
+          notifyError('Invalid invoice data format received');
+        }
       } catch (apiError) {
         // Handle errors in API client
         console.error('[InvoiceManagement] Error in API call:', apiError);
@@ -159,27 +177,73 @@ const [state, dispatch] = useReducer(reducer, initialState);
 
   const fetchProducts = async () => {
     try {
-      const data = await productApi.getAll();
+      console.log('[InvoiceManagement] Fetching products...');
+      const data = await productApi.getAll({
+        tenantId: localStorage.getItem('tenantId'),
+        schema: `tenant_${localStorage.getItem('tenantId')?.replace(/-/g, '_')}`
+      });
+      
       // Ensure data is an array
-      setProducts(Array.isArray(data) ? data : []);
-      console.log('[InvoiceManagement] Products data:', Array.isArray(data) ? `${data.length} products loaded` : 'No products found or invalid format');
+      if (Array.isArray(data)) {
+        setProducts(data);
+        console.log(`[InvoiceManagement] Products data: ${data.length} products loaded`);
+      } else if (data && typeof data === 'object' && data.is_fallback) {
+        // Handle fallback data
+        setProducts(data);
+        console.log('[InvoiceManagement] Using fallback products');
+      } else {
+        console.warn('[InvoiceManagement] Received invalid products data format:', typeof data);
+        // Use fallback products
+        setProducts([
+          { id: 'fallback-1', name: 'Fallback Product 1', price: 9.99, stock_quantity: 10, is_fallback: true },
+          { id: 'fallback-2', name: 'Fallback Product 2', price: 19.99, stock_quantity: 5, is_fallback: true }
+        ]);
+        console.log('[InvoiceManagement] Using fallback products due to invalid format');
+      }
     } catch (error) {
-      console.error('Error fetching products:', error);
-      setProducts([]); // Set to empty array on error
-      notifyError('Failed to fetch products');
+      console.error('[InvoiceManagement] Error fetching products:', error);
+      setProducts([
+        { id: 'fallback-1', name: 'Fallback Product 1', price: 9.99, stock_quantity: 10, is_fallback: true },
+        { id: 'fallback-2', name: 'Fallback Product 2', price: 19.99, stock_quantity: 5, is_fallback: true }
+      ]);
+      console.log('[InvoiceManagement] Using fallback products due to error');
+      notifyError('Failed to fetch products. Using fallback data.');
     }
   };
 
   const fetchServices = async () => {
     try {
-      const data = await serviceApi.getAll();
+      console.log('[InvoiceManagement] Fetching services...');
+      const data = await serviceApi.getAll({
+        tenantId: localStorage.getItem('tenantId'),
+        schema: `tenant_${localStorage.getItem('tenantId')?.replace(/-/g, '_')}`
+      });
+      
       // Ensure data is an array
-      setServices(Array.isArray(data) ? data : []);
-      console.log('[InvoiceManagement] Services data:', Array.isArray(data) ? `${data.length} services loaded` : 'No services found or invalid format');
+      if (Array.isArray(data)) {
+        setServices(data);
+        console.log(`[InvoiceManagement] Services data: ${data.length} services loaded`);
+      } else if (data && typeof data === 'object' && data.is_fallback) {
+        // Handle fallback data
+        setServices(data);
+        console.log('[InvoiceManagement] Using fallback services');
+      } else {
+        console.warn('[InvoiceManagement] Received invalid services data format:', typeof data);
+        // Use fallback services
+        setServices([
+          { id: 'fallback-1', name: 'Fallback Service 1', price: 49.99, is_fallback: true },
+          { id: 'fallback-2', name: 'Fallback Service 2', price: 99.99, is_fallback: true }
+        ]);
+        console.log('[InvoiceManagement] Using fallback services due to invalid format');
+      }
     } catch (error) {
-      console.error('Error fetching services:', error);
-      setServices([]); // Set to empty array on error
-      notifyError('Failed to fetch services');
+      console.error('[InvoiceManagement] Error fetching services:', error);
+      setServices([
+        { id: 'fallback-1', name: 'Fallback Service 1', price: 49.99, is_fallback: true },
+        { id: 'fallback-2', name: 'Fallback Service 2', price: 99.99, is_fallback: true }
+      ]);
+      console.log('[InvoiceManagement] Using fallback services due to error');
+      notifyError('Failed to fetch services. Using fallback data.');
     }
   };
 
@@ -215,85 +279,173 @@ const [state, dispatch] = useReducer(reducer, initialState);
     newItems[index][field] = value;
 
     if (field === 'product') {
+      console.log(`[InvoiceManagement] Handling product selection: ${value}`);
+      
       // Create a combined array while making sure both arrays exist
       const allItems = [
         ...(Array.isArray(products) ? products : []), 
         ...(Array.isArray(services) ? services : [])
       ];
       
+      console.log(`[InvoiceManagement] Available items for selection: ${allItems.length}`);
+      
       // Find the selected item
       const selectedItem = allItems.find((item) => item.id === value);
       if (selectedItem) {
-        newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
+        console.log(`[InvoiceManagement] Selected item:`, selectedItem);
+        
+        // Set price directly from the selected item
+        const price = parseFloat(selectedItem.price) || 0;
+        newItems[index].unitPrice = price;
+        newItems[index].description = selectedItem.name || selectedItem.description || '';
+        
+        // Set item type for proper identification
+        if (products.some(p => p.id === value)) {
+          newItems[index].itemType = 'product';
+          newItems[index].productId = value;
+          newItems[index].serviceId = null;
+        } else {
+          newItems[index].itemType = 'service';
+          newItems[index].serviceId = value;
+          newItems[index].productId = null;
+        }
+        
+        console.log(`[InvoiceManagement] Updated item ${index} with price: ${price}`);
+      } else {
+        console.warn(`[InvoiceManagement] Could not find selected item with ID: ${value}`);
       }
     }
 
     if (field === 'quantity' || field === 'unitPrice') {
+      const quantity = field === 'quantity' ? parseFloat(value) || 0 : newItems[index].quantity;
+      const unitPrice = field === 'unitPrice' ? parseFloat(value) || 0 : newItems[index].unitPrice;
+      
       newItems[index][field] = parseFloat(value) || 0;
+      newItems[index].amount = quantity * unitPrice;
+      
+      console.log(`[InvoiceManagement] Updated ${field} for item ${index} to ${parseFloat(value)}, amount: ${newItems[index].amount}`);
     }
 
-    // TODO: Consider using useMemo for expensive operation
-const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [newItems]);
+    // Calculate total amount
+    const totalAmount = newItems.reduce((sum, item) => sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0)), 0);
+    
+    console.log(`[InvoiceManagement] Updated total amount: ${totalAmount}`);
 
     setNewInvoice((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: totalAmount - prev.discount,
+      totalAmount: totalAmount - (prev.discount || 0),
     }));
   };
 
   const handleItemRemove = (index) => {
+    console.log(`[InvoiceManagement] Removing item at index ${index}`);
     const newItems = newInvoice.items.filter((_, i) => i !== index);
-    // TODO: Consider using useMemo for expensive operation
-const totalAmount = useMemo(() => newItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [newItems]);
+    
+    // Calculate total amount consistently with handleItemChange
+    const totalAmount = newItems.reduce((sum, item) => sum + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0)), 0);
+    
+    console.log(`[InvoiceManagement] New total amount after removal: ${totalAmount}`);
+    
     setNewInvoice((prev) => ({
       ...prev,
       items: newItems,
-      totalAmount: totalAmount - prev.discount,
+      totalAmount: totalAmount - (prev.discount || 0),
     }));
   };
 
   const handleCreateInvoice = async (e) => {
-    e.preventDefault();
-
-    if (!newInvoice.customer) {
-      notifyError('Please select a customer');
-      return;
-    }
-
     try {
-      const invoiceData = {
-        customer: newInvoice.customer,
-        date: newInvoice.date.toISOString().split('T')[0], // Send only the date part
-        items: (newInvoice.items || []).map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-          unit_price: item.unitPrice, // Changed from 'unitPrice' to 'unit_price'
-        })),
-        discount: newInvoice.discount,
-        currency: newInvoice.currency,
-        totalAmount: newInvoice.totalAmount,
-      };
-
-      console.log('Sending invoice data:', invoiceData); // For debugging
-
-      const response = await invoiceApi.create(invoiceData);
-      notifySuccess('Invoice created successfully');
-      setNewInvoice({
-        customer: '',
-        date: new Date(),
-        items: [],
-        discount: 0,
-        currency: 'USD',
-        totalAmount: 0,
-      });
-      fetchInvoices();
-    } catch (error) {
-      console.error('Error creating invoice:', error);
-      if (error.response && error.response.data) {
-        console.error('Error details:', error.response.data);
+      e?.preventDefault();
+      
+      if (!newInvoice.customer) {
+        notifyError('Please select a customer');
+        return;
       }
-      notifyError('Failed to create invoice');
+      
+      if (newInvoice.items.length === 0) {
+        notifyError('Please add at least one item to the invoice');
+        return;
+      }
+      
+      setIsSubmitting(true);
+      
+      // Find the customer object
+      const customer = customers.find(c => c.id === newInvoice.customer);
+      if (!customer) {
+        notifyError('Selected customer not found');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Calculate totals
+      const subtotal = newInvoice.items.reduce((acc, item) => acc + ((parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0)), 0);
+      const discountAmount = subtotal * (parseFloat(newInvoice.discount) / 100 || 0);
+      const taxAmount = (subtotal - discountAmount) * 0.1; // Assuming 10% tax
+      const totalAmount = subtotal - discountAmount + taxAmount;
+      
+      // Format the invoice data
+      const invoiceData = {
+        customer_id: customer.id,
+        customer_name: customer.name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Unnamed Customer',
+        issue_date: newInvoice.date ? new Date(newInvoice.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        due_date: newInvoice.dueDate ? new Date(newInvoice.dueDate).toISOString().split('T')[0] : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        currency: newInvoice.currency || 'USD',
+        subtotal: subtotal,
+        tax_total: taxAmount,
+        total: totalAmount,
+        amount_paid: 0,
+        balance_due: totalAmount,
+        status: 'draft',
+        notes: newInvoice.notes || '',
+        terms: newInvoice.terms || 'Payment due within 30 days',
+        invoice_style: newInvoice.invoiceStyle || 'modern',
+        template: newInvoice.template || (newInvoice.invoiceStyle === 'classic' ? 'Classic' : 'Modern'),
+        accent_color: newInvoice.accentColor || '#000080',
+        items: newInvoice.items.map(item => ({
+          description: item.description || '',
+          quantity: parseFloat(item.quantity) || 0,
+          unit_price: parseFloat(item.unitPrice) || 0,
+          amount: (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0),
+          product_id: item.productId || (item.itemType === 'product' ? item.product : null),
+          service_id: item.serviceId || (item.itemType === 'service' ? item.product : null)
+        }))
+      };
+      
+      console.log('[InvoiceManagement] Creating invoice with data:', invoiceData);
+      
+      try {
+        const response = await invoiceApi.create(invoiceData);
+        console.log('[InvoiceManagement] Invoice created:', response);
+        notifySuccess('Invoice created successfully');
+        
+        // Reset the form
+        setNewInvoice({
+          customer: '',
+          date: new Date(),
+          items: [],
+          discount: 0,
+          currency: 'USD',
+          totalAmount: 0,
+          invoiceStyle: 'modern',
+          template: 'Modern',
+          accentColor: '#000080'
+        });
+        
+        // Refresh the invoices list
+        fetchInvoices();
+        
+        // Switch to the invoices list tab
+        setActiveTab(2);
+      } catch (apiError) {
+        console.error('[InvoiceManagement] API error creating invoice:', apiError);
+        notifyError(apiError.message || 'Failed to create invoice. Please try again.');
+      }
+    } catch (error) {
+      console.error('[InvoiceManagement] Error creating invoice:', error);
+      notifyError('Failed to create invoice. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

@@ -3,25 +3,24 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'aws-amplify/auth';
 
 export default function AccountClosed() {
   const router = useRouter();
   
   // Clear any remaining auth data on mount and set up redirect
   useEffect(() => {
-    // Clear localStorage
-    try {
-      localStorage.clear();
-    } catch (e) {
-      console.error('Failed to clear localStorage:', e);
-    }
+    // Clear any Cognito session
+    const clearCognitoSession = async () => {
+      try {
+        await signOut();
+        console.log('Successfully signed out of Cognito');
+      } catch (e) {
+        console.error('Failed to sign out of Cognito:', e);
+      }
+    };
     
-    // Clear cookies
-    document.cookie.split(';').forEach(c => {
-      document.cookie = c
-        .replace(/^ +/, '')
-        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-    });
+    clearCognitoSession();
     
     // Redirect to landing page after 5 seconds
     const redirectTimer = setTimeout(() => {

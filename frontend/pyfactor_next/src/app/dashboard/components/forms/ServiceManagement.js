@@ -83,6 +83,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     salestax: '',
     duration: '',
     billing_cycle: 'monthly',
+    unit: ''
   });
   const toast = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -107,9 +108,12 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
       console.log('[ServiceManagement] Fetching services...');
       
       try {
-        const data = await serviceApi.getAll();
-        console.log('[ServiceManagement] Services data:', data);
-        setServices(Array.isArray(data) ? data : []);
+        const response = await serviceApi.getAll();
+        console.log('[ServiceManagement] Services data:', response);
+        
+        // Check for the new response format with data field
+        const servicesData = response.data || response;
+        setServices(Array.isArray(servicesData) ? servicesData : []);
       } catch (apiError) {
         // Handle errors in API client
         console.error('[ServiceManagement] Error in API call:', apiError);
@@ -160,7 +164,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     try {
       // Map form field names to API expected field names
       const mappedService = {
-        service_name: newService.name,
+        name: newService.name,
         description: newService.description,
         price: parseFloat(newService.price) || 0,
         is_for_sale: newService.is_for_sale,
@@ -168,6 +172,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
         salestax: parseFloat(newService.salestax) || 0,
         duration: newService.duration,
         billing_cycle: newService.billing_cycle,
+        unit: newService.unit || ''
       };
       
       logger.debug('[ServiceManagement] Sending POST request to /api/services/ with mapped data:', mappedService);
@@ -183,6 +188,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
         salestax: '',
         duration: '',
         billing_cycle: 'monthly',
+        unit: ''
       });
       fetchServices();
       // Switch to List tab after creation
@@ -224,14 +230,15 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     try {
       // Map form field names to API expected field names
       const mappedService = {
-        service_name: editedService.name,
+        name: editedService.name,
         description: editedService.description,
         price: parseFloat(editedService.price) || 0,
         is_for_sale: editedService.is_for_sale,
-        is_recurring: editedService.is_recurring,
+        is_recurring: editedService.is_recurring, 
         salestax: parseFloat(editedService.salestax) || 0,
         duration: editedService.duration,
         billing_cycle: editedService.billing_cycle,
+        unit: editedService.unit || ''
       };
       
       logger.debug('[ServiceManagement] Updating service with mapped data:', mappedService);
@@ -318,7 +325,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             onChange={handleInputChange}
             required
             placeholder="Enter service name"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           />
         </div>
       </div>
@@ -327,7 +334,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Price <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
+          <div className="relative mt-1 rounded-md shadow-sm">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <span className="text-gray-500">$</span>
             </div>
@@ -338,7 +345,9 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               onChange={handleInputChange}
               required
               placeholder="0.00"
-              className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              step="0.01"
+              min="0"
+              className="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
           </div>
         </div>
@@ -354,23 +363,25 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             onChange={handleInputChange}
             rows={3}
             placeholder="Enter service description"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
           ></textarea>
         </div>
       </div>
-      <div className="col-span-12 md:col-span-6">
+      <div className="col-span-12 md:col-span-6 lg:col-span-4">
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Sales Tax (%)
           </label>
-          <div className="relative">
+          <div className="relative mt-1 rounded-md shadow-sm">
             <input
               name="salestax"
               type="number"
               value={newService.salestax}
               onChange={handleInputChange}
               placeholder="0.00"
-              className="w-full pr-7 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              min="0"
+              step="0.01"
+              className="w-full pr-7 pl-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
               <span className="text-gray-500">%</span>
@@ -378,19 +389,20 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
           </div>
         </div>
       </div>
-      <div className="col-span-12 md:col-span-6">
+      <div className="col-span-12 md:col-span-6 lg:col-span-4">
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Duration (minutes)
           </label>
-          <div className="relative">
+          <div className="relative mt-1 rounded-md shadow-sm">
             <input
               name="duration"
               type="number"
               value={newService.duration}
               onChange={handleInputChange}
               placeholder="60"
-              className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              min="0"
+              className="w-full pr-10 pl-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
               <span className="text-gray-500">min</span>
@@ -398,63 +410,81 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
           </div>
         </div>
       </div>
+      <div className="col-span-12 md:col-span-6 lg:col-span-4">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Unit
+          </label>
+          <input
+            name="unit"
+            type="text"
+            value={newService.unit}
+            onChange={handleInputChange}
+            placeholder="per hour, per session, etc."
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
+        </div>
+      </div>
       <div className="col-span-12">
-        <h3 className="font-semibold text-gray-800 mb-2 mt-4">
+        <h3 className="font-medium text-gray-900 mb-3 mt-2 text-sm">
           Service Options
         </h3>
-      </div>
-      <div className="col-span-12 md:col-span-6">
-        <label className="flex items-center cursor-pointer">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only"
-              name="is_for_sale"
-              checked={newService.is_for_sale}
-              onChange={handleInputChange}
-            />
-            <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner ${newService.is_for_sale ? 'bg-blue-500' : ''}`}></div>
-            <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform ${newService.is_for_sale ? 'translate-x-5' : ''} transition`}></div>
+        <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="flex items-center cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    name="is_for_sale"
+                    checked={newService.is_for_sale}
+                    onChange={handleInputChange}
+                  />
+                  <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner transition ${newService.is_for_sale ? 'bg-blue-500' : ''}`}></div>
+                  <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition ${newService.is_for_sale ? 'translate-x-5' : ''}`}></div>
+                </div>
+                <span className="ml-3 text-sm font-medium text-gray-700">Available for Sale</span>
+              </label>
+            </div>
+            <div>
+              <label className="flex items-center cursor-pointer">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    className="sr-only"
+                    name="is_recurring"
+                    checked={newService.is_recurring}
+                    onChange={handleInputChange}
+                  />
+                  <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner transition ${newService.is_recurring ? 'bg-blue-500' : ''}`}></div>
+                  <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition ${newService.is_recurring ? 'translate-x-5' : ''}`}></div>
+                </div>
+                <span className="ml-3 text-sm font-medium text-gray-700">Recurring Service</span>
+              </label>
+            </div>
           </div>
-          <span className="ml-3 text-sm font-medium text-gray-700">Available for Sale</span>
-        </label>
-      </div>
-      <div className="col-span-12 md:col-span-6">
-        <label className="flex items-center cursor-pointer">
-          <div className="relative">
-            <input
-              type="checkbox"
-              className="sr-only"
-              name="is_recurring"
-              checked={newService.is_recurring}
-              onChange={handleInputChange}
-            />
-            <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner ${newService.is_recurring ? 'bg-blue-500' : ''}`}></div>
-            <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform ${newService.is_recurring ? 'translate-x-5' : ''} transition`}></div>
-          </div>
-          <span className="ml-3 text-sm font-medium text-gray-700">Recurring Service</span>
-        </label>
-      </div>
-      {newService.is_recurring && (
-        <div className="col-span-12 md:col-span-6">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Billing Cycle
-            </label>
-            <select
-              name="billing_cycle"
-              value={newService.billing_cycle}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="quarterly">Quarterly</option>
-              <option value="annually">Annually</option>
-            </select>
-          </div>
+          
+          {newService.is_recurring && (
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Billing Cycle
+              </label>
+              <select
+                name="billing_cycle"
+                value={newService.billing_cycle}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              >
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="annually">Annually</option>
+              </select>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </ModernFormLayout>
   );
 
@@ -462,16 +492,16 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
   const renderServiceDetailsForm = () => {
     if (!selectedService) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[300px] p-6">
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-sm p-6">
           <p className="text-lg text-gray-500 mb-4">
             No service selected
           </p>
           <button 
             onClick={() => setActiveTab(2)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <DesignServicesIcon />
-            <span className="ml-2">Select a service from the list</span>
+            <span className="ml-2">View Services List</span>
           </button>
         </div>
       );
@@ -492,16 +522,16 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             <button 
               type="button"
               onClick={handleCancelEdit}
-              className="px-4 py-2 mr-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+              className="px-4 py-2 mr-2 border border-gray-300 rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:text-sm"
             >
               Cancel
             </button>
           ) : (
-            <div className="flex">
+            <div className="flex space-x-3">
               <button 
                 type="button"
                 onClick={handleEdit}
-                className="inline-flex items-center px-4 py-2 mr-2 border border-blue-500 text-blue-500 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-blue-600 rounded-md shadow-sm text-sm font-medium text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <EditIcon />
                 <span className="ml-2">Edit</span>
@@ -509,7 +539,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               <button 
                 type="button"
                 onClick={handleDelete}
-                className="inline-flex items-center px-4 py-2 border border-red-500 text-red-500 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-red-600 rounded-md shadow-sm text-sm font-medium text-red-600 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
               >
                 <DeleteIcon />
                 <span className="ml-2">Delete</span>
@@ -530,7 +560,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               onChange={handleInputChange}
               required
               disabled={!isEditing}
-              className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+              className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
             />
           </div>
         </div>
@@ -539,7 +569,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Price
             </label>
-            <div className="relative">
+            <div className="relative mt-1 rounded-md shadow-sm">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <span className="text-gray-500">$</span>
               </div>
@@ -550,7 +580,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
                 onChange={handleInputChange}
                 required
                 disabled={!isEditing}
-                className={`w-full pl-7 pr-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                className={`w-full pl-7 pr-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
               />
             </div>
           </div>
@@ -566,23 +596,23 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               onChange={handleInputChange}
               rows={3}
               disabled={!isEditing}
-              className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+              className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
             ></textarea>
           </div>
         </div>
-        <div className="col-span-12 md:col-span-6">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Sales Tax (%)
             </label>
-            <div className="relative">
+            <div className="relative mt-1 rounded-md shadow-sm">
               <input
                 name="salestax"
                 type="number"
                 value={isEditing ? editedService.salestax : selectedService.salestax}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full pr-7 pl-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                className={`w-full pr-7 pl-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <span className="text-gray-500">%</span>
@@ -590,19 +620,19 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             </div>
           </div>
         </div>
-        <div className="col-span-12 md:col-span-6">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4">
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Duration (minutes)
             </label>
-            <div className="relative">
+            <div className="relative mt-1 rounded-md shadow-sm">
               <input
                 name="duration"
                 type="number"
                 value={isEditing ? editedService.duration : selectedService.duration}
                 onChange={handleInputChange}
                 disabled={!isEditing}
-                className={`w-full pr-10 pl-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
+                className={`w-full pr-10 pl-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
               />
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                 <span className="text-gray-500">min</span>
@@ -610,66 +640,84 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             </div>
           </div>
         </div>
+        <div className="col-span-12 md:col-span-6 lg:col-span-4">
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Unit
+            </label>
+            <input
+              name="unit"
+              type="text"
+              value={isEditing ? editedService.unit : selectedService.unit}
+              onChange={handleInputChange}
+              disabled={!isEditing}
+              className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+            />
+          </div>
+        </div>
         <div className="col-span-12">
-          <h3 className="font-semibold text-gray-800 mb-2 mt-4">
+          <h3 className="font-medium text-gray-900 mb-3 text-sm">
             Service Options
           </h3>
-        </div>
-        <div className="col-span-12 md:col-span-6">
-          <label className={`flex items-center cursor-pointer ${!isEditing ? 'opacity-60' : ''}`}>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only"
-                name="is_for_sale"
-                checked={isEditing ? editedService.is_for_sale : selectedService.is_for_sale}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-              <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner ${(isEditing ? editedService.is_for_sale : selectedService.is_for_sale) ? 'bg-blue-500' : ''}`}></div>
-              <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform ${(isEditing ? editedService.is_for_sale : selectedService.is_for_sale) ? 'translate-x-5' : ''} transition`}></div>
+          <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className={`flex items-center cursor-pointer ${!isEditing ? 'opacity-75' : ''}`}>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      name="is_for_sale"
+                      checked={isEditing ? editedService.is_for_sale : selectedService.is_for_sale}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                    <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner transition ${(isEditing ? editedService.is_for_sale : selectedService.is_for_sale) ? 'bg-blue-500' : ''}`}></div>
+                    <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition ${(isEditing ? editedService.is_for_sale : selectedService.is_for_sale) ? 'translate-x-5' : ''}`}></div>
+                  </div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">Available for Sale</span>
+                </label>
+              </div>
+              <div>
+                <label className={`flex items-center cursor-pointer ${!isEditing ? 'opacity-75' : ''}`}>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      name="is_recurring"
+                      checked={isEditing ? editedService.is_recurring : selectedService.is_recurring}
+                      onChange={handleInputChange}
+                      disabled={!isEditing}
+                    />
+                    <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner transition ${(isEditing ? editedService.is_recurring : selectedService.is_recurring) ? 'bg-blue-500' : ''}`}></div>
+                    <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform transition ${(isEditing ? editedService.is_recurring : selectedService.is_recurring) ? 'translate-x-5' : ''}`}></div>
+                  </div>
+                  <span className="ml-3 text-sm font-medium text-gray-700">Recurring Service</span>
+                </label>
+              </div>
             </div>
-            <span className="ml-3 text-sm font-medium text-gray-700">Available for Sale</span>
-          </label>
-        </div>
-        <div className="col-span-12 md:col-span-6">
-          <label className={`flex items-center cursor-pointer ${!isEditing ? 'opacity-60' : ''}`}>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only"
-                name="is_recurring"
-                checked={isEditing ? editedService.is_recurring : selectedService.is_recurring}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-              <div className={`w-10 h-5 bg-gray-200 rounded-full shadow-inner ${(isEditing ? editedService.is_recurring : selectedService.is_recurring) ? 'bg-blue-500' : ''}`}></div>
-              <div className={`absolute left-0 top-0 w-5 h-5 bg-white rounded-full shadow transform ${(isEditing ? editedService.is_recurring : selectedService.is_recurring) ? 'translate-x-5' : ''} transition`}></div>
-            </div>
-            <span className="ml-3 text-sm font-medium text-gray-700">Recurring Service</span>
-          </label>
-        </div>
-        {(isEditing ? editedService.is_recurring : selectedService.is_recurring) && (
-          <div className="col-span-12 md:col-span-6">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Billing Cycle
-              </label>
-              <select
-                name="billing_cycle"
-                value={isEditing ? editedService.billing_cycle : selectedService.billing_cycle}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-                className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-100 text-gray-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500`}
-              >
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="annually">Annually</option>
-              </select>
-            </div>
+            
+            {(isEditing ? editedService.is_recurring : selectedService.is_recurring) && (
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Cycle
+                </label>
+                <select
+                  name="billing_cycle"
+                  value={isEditing ? editedService.billing_cycle : selectedService.billing_cycle}
+                  onChange={handleInputChange}
+                  disabled={!isEditing}
+                  className={`w-full px-3 py-2 border ${!isEditing ? 'bg-gray-50 text-gray-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="annually">Annually</option>
+                </select>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </ModernFormLayout>
     );
   };
@@ -679,10 +727,10 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     // Show loading state
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center h-64">
+        <div className="flex justify-center items-center py-12">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-600">Loading services...</p>
+            <p className="text-gray-500">Loading services...</p>
           </div>
         </div>
       );
@@ -691,8 +739,8 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
     // Show empty state with helpful message
     if (!services || services.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-md p-6">
-          <div className="text-center mb-6">
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="text-center max-w-md mx-auto">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
               className="h-16 w-16 text-gray-300 mx-auto mb-4" 
@@ -707,31 +755,32 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
                 d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" 
               />
             </svg>
-            <h3 className="text-xl font-semibold mb-2">No Services Yet</h3>
-            <p className="text-gray-500 max-w-md">
-              You haven't added any services to your catalog yet. Get started by clicking the "Create Service" button above.
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Services Added</h3>
+            <p className="text-gray-500 mb-6">
+              You haven't added any services to your catalog yet. Create your first service to get started.
             </p>
+            <button 
+              onClick={() => setActiveTab(0)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <AddCircleOutlineIcon />
+              <span className="ml-2">Create Service</span>
+            </button>
           </div>
-          <button 
-            onClick={() => setActiveTab(0)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            Create Your First Service
-          </button>
         </div>
       );
     }
     
-    // Existing table rendering code
+    // Services list with search and filters
     return (
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white rounded-xl shadow-sm mb-6 p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-4">
-            <h1 className="text-xl font-semibold text-gray-800">
-              Services
-            </h1>
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="px-4 py-5 sm:px-6 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-between sm:items-center space-y-4 sm:space-y-0">
+            <h3 className="text-lg font-medium text-gray-900">
+              Services ({filteredServices.length})
+            </h3>
             
-            <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-3">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <SearchIcon />
@@ -741,13 +790,13 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
                   placeholder="Search services..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full min-w-[200px]"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm"
                 />
               </div>
               
               <button 
                 onClick={() => setActiveTab(0)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 <AddCircleOutlineIcon />
                 <span className="ml-2">New Service</span>
@@ -755,119 +804,135 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
             </div>
           </div>
           
-          <div className="flex flex-wrap justify-between mb-4 gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
-                <FilterListIcon />
-                <span className="ml-2">All Services</span>
-              </button>
-              <button className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-full text-sm bg-white hover:bg-gray-50">
-                <FilterListIcon />
-                <span className="ml-2">Recurring</span>
-              </button>
-            </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button 
+              onClick={fetchServices} 
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs rounded-md font-medium bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <RefreshIcon />
+              <span className="ml-1.5">Refresh</span>
+            </button>
             
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={fetchServices} 
-                className="p-1.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+            <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs rounded-md font-medium bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <FilterListIcon />
+              <span className="ml-1.5">All Services</span>
+            </button>
+            
+            <button className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs rounded-md font-medium bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+              <FilterListIcon />
+              <span className="ml-1.5">Recurring</span>
+            </button>
+            
+            <div className="relative inline-block text-left">
+              <button
+                onClick={handleExportClick}
+                className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs rounded-md font-medium bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                <RefreshIcon />
+                Export
+                <ArrowDropDownIcon />
               </button>
               
-              <div className="relative">
-                <button
-                  onClick={handleExportClick}
-                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50"
-                >
-                  Export
-                  <ArrowDropDownIcon />
-                </button>
-                
-                {exportAnchorEl && (
-                  <div className="absolute right-0 z-10 mt-2 w-32 bg-white rounded-md shadow-lg">
-                    <div className="py-1">
-                      <button 
-                        onClick={() => handleExport('PDF')} 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        PDF
-                      </button>
-                      <button 
-                        onClick={() => handleExport('CSV')} 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        CSV
-                      </button>
-                      <button 
-                        onClick={() => handleExport('Excel')} 
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      >
-                        Excel
-                      </button>
-                    </div>
+              {exportAnchorEl && (
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-10">
+                  <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                    <button 
+                      onClick={() => handleExport('PDF')} 
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      role="menuitem"
+                    >
+                      PDF
+                    </button>
+                    <button 
+                      onClick={() => handleExport('CSV')} 
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      role="menuitem"
+                    >
+                      CSV
+                    </button>
+                    <button 
+                      onClick={() => handleExport('Excel')} 
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      role="menuitem"
+                    >
+                      Excel
+                    </button>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Duration
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredServices.map((service) => (
-                  <tr 
-                    key={service.id} 
-                    className="hover:bg-gray-50 cursor-pointer"
-                  >
-                    <td className="px-6 py-4" onClick={() => handleServiceSelect(service)}>
-                      <div className="flex items-center">
-                        <span className="font-medium text-gray-900">
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Service
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Price
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Duration
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredServices.map((service) => (
+                <tr 
+                  key={service.id} 
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleServiceSelect(service)}>
+                    <div className="flex items-center">
+                      <div className="ml-0">
+                        <div className="text-sm font-medium text-gray-900">
                           {service.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4" onClick={() => handleServiceSelect(service)}>
-                      ${parseFloat(service.price).toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4" onClick={() => handleServiceSelect(service)}>
-                      <div className="flex items-center">
-                        <span>{service.duration} min</span>
-                        {service.is_recurring && (
-                          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Recurring
-                          </span>
+                        </div>
+                        {service.description && (
+                          <div className="text-sm text-gray-500 truncate max-w-xs">
+                            {service.description.length > 60 
+                              ? `${service.description.substring(0, 60)}...` 
+                              : service.description}
+                          </div>
                         )}
                       </div>
-                    </td>
-                    <td className="px-6 py-4" onClick={() => handleServiceSelect(service)}>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${service.is_for_sale ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                        {service.is_for_sale ? "For Sale" : "Not For Sale"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleServiceSelect(service)}>
+                    <div className="text-sm text-gray-900">${parseFloat(service.price).toFixed(2)}</div>
+                    {service.unit && (
+                      <div className="text-sm text-gray-500">{service.unit}</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleServiceSelect(service)}>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-gray-900">{service.duration} min</span>
+                      {service.is_recurring && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                          Recurring
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap cursor-pointer" onClick={() => handleServiceSelect(service)}>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${service.is_for_sale ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {service.is_for_sale ? "For Sale" : "Not For Sale"}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex items-center space-x-2">
                       <button 
                         onClick={() => handleServiceSelect(service)} 
-                        className="text-blue-600 hover:text-blue-900 p-1.5 rounded-full hover:bg-blue-50 mr-1"
+                        className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                        title="Edit"
                       >
                         <EditIcon />
                       </button>
@@ -876,16 +941,17 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
                           setSelectedService(service);
                           handleDelete();
                         }} 
-                        className="text-red-600 hover:text-red-900 p-1.5 rounded-full hover:bg-red-50"
+                        className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
+                        title="Delete"
                       >
                         <DeleteIcon />
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -893,25 +959,25 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
 
   return (
     <div className="w-full">
-      <div className="mb-3 rounded-xl shadow-md overflow-hidden bg-white">
+      <div className="mb-4 bg-white rounded-lg shadow-sm overflow-hidden">
         <div className="flex border-b border-gray-200">
           <button 
             onClick={(e) => handleTabChange(e, 0)} 
-            className={`flex-1 py-4 px-4 text-center font-semibold text-base transition-colors duration-200 focus:outline-none ${activeTab === 0 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
+            className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors duration-200 focus:outline-none ${activeTab === 0 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
           >
-            Create
+            Create Service
           </button>
           <button 
             onClick={(e) => handleTabChange(e, 1)} 
-            className={`flex-1 py-4 px-4 text-center font-semibold text-base transition-colors duration-200 focus:outline-none ${activeTab === 1 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
+            className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors duration-200 focus:outline-none ${activeTab === 1 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
           >
-            Details
+            Service Details
           </button>
           <button 
             onClick={(e) => handleTabChange(e, 2)} 
-            className={`flex-1 py-4 px-4 text-center font-semibold text-base transition-colors duration-200 focus:outline-none ${activeTab === 2 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
+            className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors duration-200 focus:outline-none ${activeTab === 2 ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50' : 'text-gray-600 hover:text-blue-500 hover:bg-blue-50'}`}
           >
-            List
+            Services List
           </button>
         </div>
       </div>
@@ -921,10 +987,10 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
       {activeTab === 2 && renderServiceList()}
 
       {deleteDialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
             <div className="px-6 pt-6 pb-2">
-              <h2 className="text-xl font-semibold text-red-600">
+              <h2 className="text-xl font-semibold text-gray-900">
                 Confirm Delete
               </h2>
             </div>
@@ -934,7 +1000,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
               </p>
               
               {selectedService && (
-                <div className="mt-4 p-4 bg-gray-100 rounded-lg">
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
                   <p className="font-semibold">
                     {selectedService.name}
                   </p>
@@ -962,7 +1028,7 @@ const ServiceManagement = ({ salesContext = false, mode, newService: isNewServic
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Loading...
+                    Deleting...
                   </div>
                 ) : 'Delete Service'}
               </button>

@@ -468,7 +468,9 @@ export class OnboardingStateManager extends FormStateManager {
           cognitoAttributes['custom:onboardingCompletedAt'] = timestamp;
           
           // For cases where tenant ID might be set elsewhere 
-          const tenantId = this.state.onboarding.tenant_id || localStorage.getItem('tenantId');
+          const tenantId = this.state.onboarding.tenant_id || 
+            (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.tenantId) || 
+            (typeof window !== 'undefined' && window.__APP_CACHE?.tenantId);
           if (tenantId) {
             cognitoAttributes['custom:tenant_ID'] = tenantId;
             cognitoAttributes['custom:businessid'] = tenantId;
