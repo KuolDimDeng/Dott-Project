@@ -6,8 +6,8 @@ import SessionProviderWrapper from './SessionProviderWrapper';
 
 // Export metadata from this server component
 export const metadata = {
-  title: 'Dashboard | PyFactor',
-  description: 'PyFactor Dashboard - Manage your business efficiently',
+  title: 'Dashboard | Dott Business Management',
+  description: 'Loading your dashboard...',
 };
 
 // The layout is now a server component that wraps the client component

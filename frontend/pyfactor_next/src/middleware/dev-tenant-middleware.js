@@ -1,7 +1,7 @@
 /**
  * Tenant Middleware
  * This middleware extracts tenant ID from requests and applies Row Level Security (RLS).
- * It uses the Cognito user ID as the tenant ID when available.
+ * It prioritizes Cognito user attributes over cookies or URL parameters.
  */
 
 import { NextResponse } from 'next/server';
@@ -13,60 +13,70 @@ import { v4 as uuidv4 } from 'uuid';
  * @returns {Object} Object containing the extracted tenant ID and its source
  */
 export function extractTenantId(request) {
-  // Try URL parameters first
+  // Priority 1: Extract Cognito user ID which serves as the tenant ID
+  const cognitoUserId = extractCognitoUserId(request);
+  if (cognitoUserId) {
+    console.log('[Tenant Middleware] Using Cognito user ID as tenant:', cognitoUserId);
+    return {
+      tenantId: cognitoUserId,
+      source: 'cognito',
+      isValid: true
+    };
+  }
+  
+  // Priority 2: Try x-tenant-id header (more secure than URL or cookies)
+  const headerTenantId = request.headers.get('x-tenant-id');
+  if (headerTenantId) {
+    console.log('[Tenant Middleware] Using tenant ID from header:', headerTenantId);
+    return {
+      tenantId: headerTenantId,
+      source: 'header',
+      isValid: true
+    };
+  }
+  
+  // Priority 3: Try URL parameters (useful for direct access scenarios)
   const url = new URL(request.url);
   const urlTenantId = url.searchParams.get('tenant_id');
+  if (urlTenantId) {
+    console.log('[Tenant Middleware] Using tenant ID from URL parameter:', urlTenantId);
+    return {
+      tenantId: urlTenantId,
+      source: 'url',
+      isValid: true
+    };
+  }
   
-  // Try headers next
-  const headerTenantId = request.headers.get('x-tenant-id');
-  
-  // Try cookies last
+  // Priority 4: Legacy - try cookies (DEPRECATED)
+  // This is only kept for backward compatibility
   const cookieHeader = request.headers.get('cookie');
   let cookieTenantId = null;
-  let cognitoUserId = null;
   
   if (cookieHeader) {
-    // First priority: Extract the Cognito user ID which serves as the tenant ID
-    const cognitoUserMatch = cookieHeader.match(/CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser=([^;]+)/);
-    if (cognitoUserMatch && cognitoUserMatch[1]) {
-      cognitoUserId = cognitoUserMatch[1];
-      console.log('[Tenant Middleware] Found Cognito user ID as tenant:', cognitoUserId);
-    }
-    
-    // Extract tenant ID from cookies as fallback
     cookieHeader.split(';').forEach(cookie => {
       const [name, value] = cookie.trim().split('=');
       if (name === 'tenantId') {
         cookieTenantId = value;
       }
     });
+    
+    if (cookieTenantId) {
+      console.log('[Tenant Middleware] Using tenant ID from cookie (DEPRECATED):', cookieTenantId);
+      return {
+        tenantId: cookieTenantId,
+        source: 'cookie',
+        isValid: true
+      };
+    }
   }
   
-  // User-specific checks for Kuol's account
-  const isKuolAccount = cookieHeader && cookieHeader.includes('kuoldimdeng@outlook.com');
-  if (isKuolAccount && cognitoUserId) {
-    console.log('[Tenant Middleware] Identified Kuol by email, using Cognito ID as tenant ID');
-    return {
-      tenantId: cognitoUserId,
-      source: 'cognito_kuol',
-      isValid: true
-    };
-  }
-  
-  // Determine tenant ID with priority: Cognito ID > URL > Header > Cookie
-  const tenantId = cognitoUserId || urlTenantId || headerTenantId || cookieTenantId || generateTenantId();
-  
-  // Determine source for logging
-  let source = 'generated';
-  if (cognitoUserId) source = 'cognito';
-  else if (urlTenantId) source = 'url';
-  else if (headerTenantId) source = 'header';
-  else if (cookieTenantId) source = 'cookie';
-  
+  // If no tenant ID found, generate a new one
+  const generatedTenantId = generateTenantId();
+  console.log('[Tenant Middleware] Generated tenant ID:', generatedTenantId);
   return {
-    tenantId,
-    source,
-    isValid: true // All tenant IDs are valid since we generate one if not found
+    tenantId: generatedTenantId,
+    source: 'generated',
+    isValid: false
   };
 }
 
@@ -141,11 +151,25 @@ export function applyRLS(collection, tenantId) {
  * @returns {string|null} Cognito user ID if found, null otherwise
  */
 export function extractCognitoUserId(request) {
+  // First check Cognito-specific headers (preferred method)
+  const cognitoUserHeader = request.headers.get('x-cognito-user-id') || 
+                           request.headers.get('x-user-id');
+  if (cognitoUserHeader) {
+    console.log('[Tenant Middleware] Found Cognito user ID in header:', cognitoUserHeader);
+    return cognitoUserHeader;
+  }
+  
+  // Legacy method (DEPRECATED) - Check cookies
   const cookieHeader = request.headers.get('cookie');
   if (!cookieHeader) return null;
   
   const cognitoUserMatch = cookieHeader.match(/CognitoIdentityServiceProvider\.[^.]+\.LastAuthUser=([^;]+)/);
-  return cognitoUserMatch ? cognitoUserMatch[1] : null;
+  if (cognitoUserMatch && cognitoUserMatch[1]) {
+    console.log('[Tenant Middleware] Found Cognito user ID in cookie (DEPRECATED):', cognitoUserMatch[1]);
+    return cognitoUserMatch[1];
+  }
+  
+  return null;
 }
 
 /**

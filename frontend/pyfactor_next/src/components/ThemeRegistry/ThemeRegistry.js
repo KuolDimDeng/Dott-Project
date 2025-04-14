@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getThemePreference } from '@/utils/userPreferences';
+import { getCacheValue } from '@/utils/appCache';
 
 export default function ThemeRegistry({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -9,26 +11,61 @@ export default function ThemeRegistry({ children }) {
   useEffect(() => {
     setMounted(true);
     
-    // Check for dark mode preference
-    const savedTheme = localStorage.getItem('color-theme');
+    // Check for dark mode preference - first from AppCache (fastest)
+    const cachedTheme = getCacheValue('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+    if (cachedTheme === 'dark' || (!cachedTheme && prefersDark)) {
       document.documentElement.classList.add('dark');
-    } else {
+    } else if (cachedTheme === 'light') {
       document.documentElement.classList.remove('dark');
+    } else {
+      // If no cached value, check Cognito
+      getThemePreference('system')
+        .then(savedTheme => {
+          if (savedTheme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else if (savedTheme === 'light') {
+            document.documentElement.classList.remove('dark');
+          } else if (savedTheme === 'system' && prefersDark) {
+            // If system theme and dark mode preferred
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        })
+        .catch(() => {
+          // If error, fall back to system preference
+          if (prefersDark) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        });
     }
     
     // Listen to system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {
-      if (!localStorage.getItem('color-theme')) {
-        if (e.matches) {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
+      // Only update if using system preference (if no saved preference)
+      getCacheValue('theme')
+        .then(cachedTheme => {
+          if (!cachedTheme || cachedTheme === 'system') {
+            if (e.matches) {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          }
+        })
+        .catch(() => {
+          // If error checking cache, fall back to system preference
+          if (e.matches) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        });
     };
     
     mediaQuery.addEventListener('change', handleChange);

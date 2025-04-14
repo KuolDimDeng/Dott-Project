@@ -4,17 +4,18 @@ import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { extractTenantId } from '@/utils/auth/tenant';
 import * as db from '@/utils/db/rls-database';
+import { serverLogger } from '@/utils/logger';
 
-// Fix logger import and add fallback
-const logger = {
-  info: function(message, ...args) {
-    console.log(message, ...args);
+// Use a consistent logger with fallback in case import fails
+const logger = serverLogger || {
+  info: function(message) {
+    console.log(message);
   },
-  error: function(message, ...args) {
-    console.error(message, ...args);
+  error: function(message) {
+    console.error(message);
   },
-  warn: function(message, ...args) {
-    console.warn(message, ...args);
+  warn: function(message) {
+    console.warn(message);
   }
 };
 
@@ -36,12 +37,11 @@ export async function GET(request) {
     const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
     
     if (!finalTenantId) {
-      logger.error(`[${requestId}] No tenant ID found in request, headers:`, {
+      logger.error(`[${requestId}] No tenant ID found in request, headers: ${JSON.stringify({
         'x-tenant-id': request.headers.get('x-tenant-id'),
         'x-business-id': request.headers.get('x-business-id'),
-        referer: request.headers.get('referer'),
-        cookie: request.headers.get('cookie')?.substring(0, 50) + '...' // Log partial cookie for debugging
-      });
+        referer: request.headers.get('referer')
+      })}`);
       
       return NextResponse.json(
         { 

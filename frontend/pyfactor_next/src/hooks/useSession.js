@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import { setCacheValue, getCacheValue } from '@/utils/appCache';
+import { getTokens, storeTokens, areTokensExpired } from '@/utils/tokenManager';
 
 // Increase token refresh interval from default
 const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
@@ -49,9 +51,25 @@ const shouldLogSessionMessage = (message, interval = LOG_THROTTLE_INTERVAL) => {
 };
 
 // Function to get user attributes from Cognito
-const getUserAttributesFromCognito = async () => {
+export const getUserAttributesFromCognito = async () => {
   try {
+    // First check the AppCache for better performance
+    const cachedAttributes = getCacheValue('user_attributes');
+    if (cachedAttributes) {
+      if (shouldLogSessionMessage('[useSession] Using cached user attributes')) {
+        logger.debug('[useSession] Using cached user attributes');
+      }
+      return cachedAttributes;
+    }
+    
+    // If not in cache, fetch from Cognito
     const attributes = await fetchUserAttributes();
+    
+    // Store in AppCache for future use
+    if (attributes) {
+      setCacheValue('user_attributes', attributes, { ttl: 3600000 }); // 1 hour
+    }
+    
     logger.debug('[useSession] Successfully retrieved user attributes from Cognito');
     return attributes;
   } catch (error) {
@@ -106,7 +124,6 @@ export function useSession() {
     }
     
     // Set a timeout to clear loading state after LOADING_TIMEOUT regardless of session result
-    // This prevents users from getting stuck in a loading state if auth fails
     loadingTimeoutRef.current = setTimeout(() => {
       setIsLoading(false);
       
@@ -190,135 +207,110 @@ export function useSession() {
       
       setIsLoading(true);
       
-      // Try to get the cached session first
-      try {
-        const sessionData = await fetchAuthSession();
+      // Check if we have a session in the AppCache first
+      const cachedTokens = getTokens();
+      
+      // If tokens aren't expired, use them
+      if (cachedTokens && !areTokensExpired()) {
+        if (shouldLogSessionMessage('[useSession] Using cached tokens')) {
+          logger.debug('[useSession] Using cached tokens');
+        }
         
-        if (sessionData?.tokens?.idToken) {
-          // Verify token expiration
-          try {
-            const decodedToken = JSON.parse(atob(sessionData.tokens.idToken.toString().split('.')[1]));
-            const now = Math.floor(Date.now() / 1000);
-            
-            if (decodedToken.exp && decodedToken.exp < now) {
-              logger.debug('[useSession] Token expired, forcing refresh');
-              throw new Error('Token expired');
-            }
-          } catch (tokenError) {
-            logger.warn('[useSession] Token verification failed:', tokenError);
-            throw tokenError;
+        // Get user attributes to complete the session
+        const userAttributes = await getUserAttributesFromCognito();
+        
+        // If we have attributes, we can use the cached tokens
+        if (userAttributes) {
+          setSession({
+            tokens: cachedTokens,
+            userAttributes
+          });
+          setIsLoading(false);
+          refreshInProgressRef.current = false;
+          if (typeof window !== 'undefined') {
+            window.__tokenRefreshInProgress = false;
           }
           
-          if (shouldLogSessionMessage('[useSession] Session fetched successfully')) {
-            logger.debug('[useSession] Session fetched successfully');
-          }
+          return { tokens: cachedTokens, userAttributes };
+        }
+      }
+      
+      // If we need to fetch a new session, continue with the standard fetch
+      const sessionData = await fetchAuthSession();
+      
+      if (sessionData?.tokens?.idToken) {
+        // Store tokens in AppCache
+        const tokens = {
+          idToken: sessionData.tokens.idToken.toString(),
+          accessToken: sessionData.tokens.accessToken.toString(),
+          refreshToken: sessionData.tokens.refreshToken?.toString()
+        };
+        
+        // Store tokens in AppCache
+        storeTokens(tokens);
+        
+        // Get user attributes
+        const userAttributes = await getUserAttributesFromCognito();
+        
+        if (userAttributes) {
+          // Store in app cache for better performance
+          setSession({
+            tokens,
+            userAttributes
+          });
           
-          // Also try to fetch user attributes for a more complete session
-          try {
-            const userAttributes = await fetchUserAttributes();
-            if (userAttributes) {
-              sessionData.userAttributes = userAttributes;
-            }
-          } catch (attributeError) {
-            logger.warn('[useSession] Failed to fetch user attributes:', attributeError);
-            // Don't fail the session refresh if attributes fetch fails
-          }
-          
-          // Update global timestamp of last successful refresh
+          // Update global timestamp
           lastSuccessfulRefresh = Date.now();
-          
-          // Reset failure counter on success
           refreshFailuresRef.current = 0;
           
-          setSession(sessionData);
-          setError(null);
-          setIsLoading(false);
+          // Store important user info in AppCache
+          setCacheValue('user_info', {
+            email: userAttributes.email,
+            firstName: userAttributes.given_name,
+            lastName: userAttributes.family_name,
+            tenantId: userAttributes['custom:tenant_id'] || userAttributes['custom:businessid']
+          }, { ttl: 86400000 }); // 24 hours
           
-          return sessionData;
-        } else {
-          // Try Cognito fallback if no session data found
-          logger.warn('[useSession] No session token found, trying Cognito attributes fallback');
-          const userAttributes = await getUserAttributesFromCognito();
-          
-          if (userAttributes) {
-            logger.info('[useSession] Using Cognito attributes for session');
-            const cognitoSession = { userAttributes };
-            setSession(cognitoSession);
-            setError(null);
-            setIsLoading(false);
-            return cognitoSession;
+          if (shouldLogSessionMessage('[useSession] Session refreshed successfully')) {
+            logger.debug('[useSession] Session refreshed successfully');
           }
-          
-          // Check if we're on the landing page or main site pages
-          // If on landing page, we don't need to throw an error as it's expected to not have a session
-          const isPublicPage = typeof window !== 'undefined' && (
-            window.location.pathname === '/' || 
-            window.location.pathname.startsWith('/auth/') ||
-            window.location.pathname.startsWith('/public/') ||
-            window.location.pathname === '/about' ||
-            window.location.pathname === '/pricing' ||
-            window.location.pathname === '/contact'
-          );
-          
-          if (isPublicPage) {
-            logger.debug('[useSession] No session on public page - expected behavior');
-            setSession(null);
-            setError(null);
-            setIsLoading(false);
-            return null;
-          }
-          
-          // On protected pages, throw the error
-          logger.error('[useSession] No valid session data on protected page');
-          throw new Error('No valid session data');
         }
-      } catch (sessionError) {
-        // Increment failure counter
-        refreshFailuresRef.current += 1;
-        
-        logger.error('[useSession] Error fetching session:', sessionError);
-        
-        // Check for Cognito fallback
-        const userAttributes = await getUserAttributesFromCognito();
-        if (userAttributes) {
-          logger.info('[useSession] Session fetch failed, falling back to Cognito attributes');
-          const cognitoSession = { userAttributes };
-          setSession(cognitoSession);
-          setError(null);
-          setIsLoading(false);
-          return cognitoSession;
-        }
-        
-        setError(sessionError);
-        setIsLoading(false);
-        return null;
-      }
-    } catch (refreshError) {
-      // Increment failure counter
-      refreshFailuresRef.current += 1;
-      
-      logger.error('[useSession] Error refreshing session:', refreshError);
-      
-      // Try Cognito fallback as last resort
-      const userAttributes = await getUserAttributesFromCognito();
-      if (userAttributes) {
-        logger.info('[useSession] Session refresh failed, falling back to Cognito attributes');
-        const cognitoSession = { userAttributes };
-        setSession(cognitoSession);
-        setError(null);
-        setIsLoading(false);
-        return cognitoSession;
+      } else {
+        throw new Error('No ID token found in session');
       }
       
-      setError(refreshError);
+      setIsLoading(false);
+      return session;
+    } catch (error) {
+      refreshFailuresRef.current++;
+      
+      logger.error('[useSession] Failed to refresh session:', {
+        message: error.message,
+        code: error.code,
+        failureCount: refreshFailuresRef.current
+      });
+      
+      setError(error);
+      
+      // If we've reached max failures, set global cooldown
+      if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES && typeof window !== 'undefined') {
+        window.__tokenRefreshCooldown = Date.now() + REFRESH_COOLDOWN;
+        
+        logger.warn(`[useSession] Maximum refresh failures (${MAX_REFRESH_FAILURES}) reached. Entering cooldown for ${REFRESH_COOLDOWN/1000}s`);
+      }
+      
       setIsLoading(false);
       return null;
     } finally {
-      // Reset global lock
+      refreshInProgressRef.current = false;
       if (typeof window !== 'undefined') {
         window.__tokenRefreshInProgress = false;
       }
-      refreshInProgressRef.current = false;
+      
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
     }
   }, [session]);
 

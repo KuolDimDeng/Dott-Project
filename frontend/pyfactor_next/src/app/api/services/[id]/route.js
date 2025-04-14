@@ -3,17 +3,18 @@
 import { NextResponse } from 'next/server';
 import { extractTenantId } from '@/utils/auth/tenant';
 import * as db from '@/utils/db/rls-database';
+import { serverLogger } from '@/utils/logger';
 
-// Fix logger import and add fallback
-const logger = {
-  info: function(message, ...args) {
-    console.log(message, ...args);
+// Use a consistent logger with fallback in case import fails
+const logger = serverLogger || {
+  info: function(message) {
+    console.log(message);
   },
-  error: function(message, ...args) {
-    console.error(message, ...args);
+  error: function(message) {
+    console.error(message);
   },
-  warn: function(message, ...args) {
-    console.warn(message, ...args);
+  warn: function(message) {
+    console.warn(message);
   }
 };
 

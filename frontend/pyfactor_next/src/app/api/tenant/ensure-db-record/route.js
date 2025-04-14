@@ -87,7 +87,7 @@ export async function POST(request) {
       // Generate a business name if not provided or if it's a default one
       let finalBusinessName = businessName;
       
-      if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+      if (!finalBusinessName || finalBusinessName === '') {
         // Try to get user info from Cognito if we have a userId
         if (userId) {
           try {
@@ -127,7 +127,7 @@ export async function POST(request) {
         }
         
         // If still no valid business name, leave it blank for user to update later
-        if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+        if (!finalBusinessName || finalBusinessName === '') {
           finalBusinessName = '';
           logger.info(`[EnsureDBRecord][${requestId}] No business name available, leaving blank for user to update later`);
         }
@@ -143,8 +143,7 @@ export async function POST(request) {
         ON CONFLICT (id) DO UPDATE
         SET tenant_id = $1, 
             name = CASE
-                WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = '' OR 
-                     custom_auth_tenant.name = 'Default Business' OR custom_auth_tenant.name = 'My Business'
+                WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = ''
                 THEN $2
                 ELSE custom_auth_tenant.name
             END, 

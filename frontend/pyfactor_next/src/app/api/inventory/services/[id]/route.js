@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPool } from '@/utils/dbConnect';
-import { logger } from '@/utils/logger';
-import { getTenantId } from '@/utils/tenantUtils';
+import { serverLogger as logger } from '@/utils/logger';
+import { getTenantId } from '@/utils/serverTenantUtils';
 import { isUUID } from '@/utils/uuid-helpers';
 
 /**
@@ -45,7 +45,7 @@ export async function GET(request, { params }) {
     logger.info(`[Services][${requestId}] Returning service: ${id}`);
     return NextResponse.json(result.rows[0]);
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error fetching service: ${error.message}`, error);
+    logger.error(`[Services][${requestId}] Error fetching service: ${error.message}`);
     return NextResponse.json(
       { error: 'Failed to fetch service', message: error.message },
       { status: 500 }
@@ -133,7 +133,7 @@ export async function PUT(request, { params }) {
     logger.info(`[Services][${requestId}] Service updated: ${id}`);
     return NextResponse.json(updateResult.rows[0]);
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error updating service: ${error.message}`, error);
+    logger.error(`[Services][${requestId}] Error updating service: ${error.message}`);
     return NextResponse.json(
       { error: 'Failed to update service', message: error.message },
       { status: 500 }
@@ -197,7 +197,7 @@ export async function DELETE(request, { params }) {
       message: 'Service deleted successfully'
     });
   } catch (error) {
-    logger.error(`[Services][${requestId}] Error deleting service: ${error.message}`, error);
+    logger.error(`[Services][${requestId}] Error deleting service: ${error.message}`);
     return NextResponse.json(
       { error: 'Failed to delete service', message: error.message },
       { status: 500 }

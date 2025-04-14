@@ -14,6 +14,7 @@ import { apiClient } from '@/utils/apiClient';
 import axios from 'axios';
 import { logger } from '@/utils/logger';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
+import { getCacheValue } from '@/utils/appCache';
 
 // Import UI components needed for the Tailwind version
 const Typography = ({ variant, component, className, color, children, gutterBottom, ...props }) => {
@@ -414,17 +415,19 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forRent: false
   });
 
-  // Initialize tenantId from localStorage
-  const [tenantId, setTenantId] = useState(() => {
+  // Initialize tenantId from AppCache
+  const getTenantId = () => {
     try {
       return typeof window !== 'undefined' ? 
-        localStorage.getItem('tenantId') || localStorage.getItem('businessid') || 'default' : 
+        getCacheValue('tenantId') || getCacheValue('businessid') || 'default' :
         'default';
     } catch (e) {
-      console.error('Error accessing localStorage for tenantId:', e);
+      console.error('Error accessing AppCache for tenantId:', e);
       return 'default';
     }
-  });
+  };
+  
+  const [tenantId, setTenantId] = useState(getTenantId());
   
   // State for form fields - use a single object for better state preservation during hot reloading
   const [formState, setFormState] = useState(() => ({

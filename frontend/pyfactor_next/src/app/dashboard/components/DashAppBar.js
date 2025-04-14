@@ -128,7 +128,7 @@ const DashAppBar = ({
     // Check if we have a valid business name from any source
     const newBusinessName = cognitoName || userDataName || profileDataName || cachedName;
     
-    if (newBusinessName && newBusinessName !== 'My Business') {
+    if (newBusinessName && newBusinessName !== '') {
       logger.info('[DashAppBar] Setting business name from data source:', {
         name: newBusinessName,
         source: cognitoName ? 'cognito' : 
@@ -335,7 +335,7 @@ const DashAppBar = ({
         findAttr(userData, 'businessName') || 
         findAttr(userData, 'custom:businessname');
         
-      if (businessNameValue && businessNameValue !== 'My Business') {
+      if (businessNameValue && businessNameValue !== '') {
         logger.debug('[DashAppBar] Setting business name from userData:', businessNameValue);
         setBusinessName(businessNameValue);
       }
@@ -646,7 +646,7 @@ const DashAppBar = ({
         tenantId: userAttributes['custom:tenant_id'] || userAttributes['custom:businessid'] || null,
         firstName: userAttributes.given_name || '',
         lastName: userAttributes.family_name || '',
-        businessName: userAttributes['custom:businessname'] || 'My Business'
+        businessName: userAttributes['custom:businessname'] || ''
       };
     } catch (error) {
       logger.error('[AppBar] Error retrieving user info from Cognito:', error);
@@ -811,7 +811,7 @@ const DashAppBar = ({
     }
 
     // Ultimate fallback
-    return 'U';
+    return '';
   }, [userInitials, profileData, userData]);
 
   // Combine profile data with user data for display
@@ -998,27 +998,36 @@ const DashAppBar = ({
         findAttr(userData, 'businessName') || 
         findAttr(userData, 'custom:businessname');
         
-      const profileName = findAttr(profileData, 'businessName');
-      const cachedProfileName = findAttr(cachedProfileData, 'businessName');
-      const businessDataName = 'My Business'; // Default fallback
-      
-      logger.debug('[DashAppBar] Business name sources:', {
-        effectiveName: cognitoName || userDataName || profileName || cachedProfileName || stateValue || businessDataName,
+      const profileDataName = 
+        profileData?.businessName ||
+        (profileData?.userData ? findAttr(profileData.userData, 'businessName') : null);
+        
+      const generatedFromFirstName = 
+        userData?.firstName ? `${userData.firstName}'s Business` : 
+        userData?.first_name ? `${userData.first_name}'s Business` : 
+        userData?.given_name ? `${userData.given_name}'s Business` : null;
+        
+      const generatedFromEmail = 
+        userData?.email ? `${userData.email.split('@')[0]}'s Business` : null;
+        
+      // Log all potential sources to help with debugging
+      logger.debug('[AppBar] Business name sources:', {
         cognitoName,
         stateValue,
         userDataName,
-        profileName,
-        cachedProfileName,
-        businessDataName
+        profileDataName,
+        generatedFromFirstName,
+        generatedFromEmail
       });
       
-      // Use businessName from multiple sources with priority ordering
+      // Return the first valid business name (prioritized order)
       return cognitoName || 
-             userDataName || 
-             profileName || 
-             cachedProfileName || 
              stateValue || 
-             businessDataName;
+             userDataName || 
+             profileDataName || 
+             generatedFromFirstName || 
+             generatedFromEmail || 
+             '';  // Return empty string instead of 'My Business'
     };
 
     return {
@@ -1101,8 +1110,8 @@ const DashAppBar = ({
       if (userAttributes['custom:businessname'] && 
           userAttributes['custom:businessname'] !== 'undefined' && 
           userAttributes['custom:businessname'] !== 'null' &&
-          userAttributes['custom:businessname'] !== 'Default Business' &&
-          userAttributes['custom:businessname'] !== 'My Business') {
+          userAttributes['custom:businessname'] &&
+          userAttributes['custom:businessname'] !== '') {
         return userAttributes['custom:businessname'];
       }
       
@@ -1152,7 +1161,7 @@ const DashAppBar = ({
     // Final fallbacks for API/state-based data
     return businessName || 
            (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : null) || 
-           (businessData?.business_name && businessData.business_name !== 'My Business' ? businessData.business_name : 'My Business');
+           (businessData?.business_name && businessData.business_name !== '' ? businessData.business_name : '');
   }, [userAttributes, userData, businessName, profileData, businessData]);
 
   // Function to get the user's email from app cache, cookies, and Cognito tokens

@@ -502,7 +502,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
           logger.warn('[DashboardClient] Error getting business name from Cognito:', e);
         }
         
-        return 'My Business'; // Default fallback
+        return ''; // Default fallback
       }
       
       // Update the attributes using the API, with error handling for network issues
@@ -1231,10 +1231,10 @@ async function getBusinessNameFromCognito() {
     }
     
     // Default value if no other options
-    return 'My Business';
+    return '';
   } catch (error) {
     logger.error('[DashboardClient] Error getting business name from Cognito:', error);
-    return 'My Business';
+    return '';
   }
 }
 
@@ -1328,9 +1328,9 @@ const generateBusinessName = async () => {
     }
     
     // Default name if nothing else works
-    return 'My Business';
+    return '';
   } catch (error) {
     logger.error('[DashboardClient] Error generating business name:', error);
-    return 'My Business';
+    return '';
   }
 }; 

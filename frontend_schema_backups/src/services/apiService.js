@@ -5,6 +5,7 @@ import { logger } from '@/utils/logger';
 import { getTenantContext, setTenantContext, extractTenantFromResponse } from '@/utils/tenantContext';
 import { dataCache } from '@/utils/enhancedCache';
 import { getTenantId, getSchemaName } from '@/utils/tenantUtils';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 /**
  * ApiService - Centralized service for API requests with tenant awareness
@@ -411,12 +412,12 @@ export const getCurrentTenant = async () => {
  */
 export const getAuthTokens = async () => {
   try {
-    // Try to get tokens from cookies or local storage
-    const accessToken = typeof document !== 'undefined' 
-      ? localStorage.getItem('accessToken') || document.cookie.match(/accessToken=([^;]+)/)?.[1]
+    // Try to get tokens from AppCache
+    const accessToken = typeof window !== 'undefined' 
+      ? getCacheValue('access_token')
       : null;
-    const idToken = typeof document !== 'undefined' 
-      ? localStorage.getItem('idToken') || document.cookie.match(/idToken=([^;]+)/)?.[1]
+    const idToken = typeof window !== 'undefined' 
+      ? getCacheValue('id_token')
       : null;
       
     if (accessToken && idToken) {
@@ -438,10 +439,11 @@ export const logout = async () => {
   try {
     await axiosInstance.post('/api/auth/logout/');
     
-    // Clear local storage and cookies
-    if (typeof document !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('idToken');
+    // Clear from AppCache
+    if (typeof window !== 'undefined') {
+      removeCacheValue('access_token');
+      removeCacheValue('id_token');
+      removeCacheValue('auth_token');
     }
   } catch (error) {
     logger.error('[ApiService] Error logging out:', error);

@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { logger } from '@/utils/logger';
+import { getCognitoUserAttributes } from '@/utils/cognitoUtils';
 
 // Create a context for the user
 export const UserContext = createContext(null);
@@ -21,31 +22,43 @@ export const UserProvider = ({ children }) => {
     error,
     refreshUser: async () => {
       try {
-        // Get email from localStorage or cookie
-        const email = typeof window !== 'undefined' ? 
-          localStorage.getItem('authUser') || 
-          localStorage.getItem('userEmail') || 
-          document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1] || '' : '';
+        setLoading(true);
+        // Get user attributes from Cognito instead of localStorage/cookies
+        const attributes = await getCognitoUserAttributes();
         
-        // Get name details
-        const firstName = typeof window !== 'undefined' ? 
-          localStorage.getItem('firstName') || 
-          document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1] || '' : '';
-        const lastName = typeof window !== 'undefined' ? 
-          localStorage.getItem('lastName') || 
-          document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1] || '' : '';
+        if (!attributes) {
+          setUser(null);
+          setLoading(false);
+          return null;
+        }
+        
+        // Extract relevant user information from attributes
+        const email = attributes.email || '';
+        const firstName = attributes.given_name || '';
+        const lastName = attributes.family_name || '';
         
         // Create a username from first name and last name, or email if not available
         const username = firstName && lastName 
           ? `${firstName} ${lastName}` 
           : firstName || email.split('@')[0] || '';
         
-        // Simplified implementation
-        setUser({ username, email });
-        return user;
+        const userData = { 
+          username, 
+          email,
+          firstName,
+          lastName,
+          // Additional attributes if needed
+          phone: attributes.phone_number,
+          emailVerified: attributes.email_verified === 'true'
+        };
+        
+        setUser(userData);
+        setLoading(false);
+        return userData;
       } catch (err) {
         logger.error('[UserContext] Error refreshing user:', err);
         setError(err);
+        setLoading(false);
         throw err;
       }
     },
@@ -60,6 +73,13 @@ export const UserProvider = ({ children }) => {
     },
     setUser,
   };
+  
+  // Fetch user on mount
+  useEffect(() => {
+    contextValue.refreshUser().catch(err => {
+      logger.warn('[UserContext] Failed to load initial user data:', err);
+    });
+  }, []);
   
   return (
     <UserContext.Provider value={contextValue}>

@@ -3,6 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import NextLink from 'next/link';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 const CookieBanner = () => {
   const [open, setOpen] = useState(false);
@@ -20,7 +22,7 @@ const CookieBanner = () => {
 
     // Check if user has already made a cookie choice - with error handling
     try {
-      const cookieConsent = localStorage.getItem('cookieConsent');
+      const cookieConsent = getCacheValue('cookieConsent');
       if (!cookieConsent) {
         // Wait a short time before showing the banner for better UX
         const timer = setTimeout(() => {
@@ -29,14 +31,20 @@ const CookieBanner = () => {
         return () => clearTimeout(timer);
       }
     } catch (error) {
-      console.error('Error accessing localStorage:', error);
-      // Don't show banner if localStorage access fails
+      console.error('Error accessing AppCache:', error);
+      // Don't show banner if access fails
     }
   }, []);
 
   const handleAcceptAll = () => {
     try {
-      localStorage.setItem('cookieConsent', 'all');
+      // Store in AppCache for immediate access
+      setCacheValue('cookieConsent', 'all');
+      
+      // Store in Cognito for persistence
+      saveUserPreference(PREF_KEYS.COOKIE_CONSENT, 'all')
+        .catch(error => console.error('Failed to save consent to Cognito:', error));
+      
       setPreferences({
         essential: true,
         functional: true,
@@ -46,24 +54,36 @@ const CookieBanner = () => {
       setOpen(false);
       // Here you would enable all your cookie-setting scripts
     } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      console.error('Error saving consent preferences:', error);
     }
   };
 
   const handleAcceptSelected = () => {
     try {
-      localStorage.setItem('cookieConsent', JSON.stringify(preferences));
+      // Store in AppCache
+      setCacheValue('cookieConsent', preferences);
+      
+      // Store in Cognito for persistence
+      saveUserPreference(PREF_KEYS.COOKIE_CONSENT, JSON.stringify(preferences))
+        .catch(error => console.error('Failed to save consent to Cognito:', error));
+      
       setOpen(false);
       setShowPreferences(false);
       // Here you would enable only the cookie types that were selected
     } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      console.error('Error saving consent preferences:', error);
     }
   };
 
   const handleRejectAll = () => {
     try {
-      localStorage.setItem('cookieConsent', 'essential');
+      // Store in AppCache
+      setCacheValue('cookieConsent', 'essential');
+      
+      // Store in Cognito for persistence
+      saveUserPreference(PREF_KEYS.COOKIE_CONSENT, 'essential')
+        .catch(error => console.error('Failed to save consent to Cognito:', error));
+      
       setPreferences({
         essential: true,
         functional: false,
@@ -73,7 +93,7 @@ const CookieBanner = () => {
       setOpen(false);
       // Here you would disable all non-essential cookies
     } catch (error) {
-      console.error('Error saving to localStorage:', error);
+      console.error('Error saving consent preferences:', error);
     }
   };
 

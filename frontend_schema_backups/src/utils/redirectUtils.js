@@ -2,6 +2,7 @@
  * Utilities for handling redirects effectively
  */
 import { logger } from './logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const REDIRECT_DEBUG_KEY = 'pyfactor_redirect_debug';
 const MAX_STORED_REDIRECTS = 10;
@@ -167,12 +168,12 @@ export const storeRedirectDebugInfo = (debugInfo) => {
       windowLocation: window.location.href
     };
     
-    // Store in localStorage for persistence across sessions
-    const existingLogs = JSON.parse(localStorage.getItem('redirectDebugLogs') || '[]');
+    // Store in AppCache for persistence
+    const existingLogs = JSON.parse(getCacheValue('redirectDebugLogs') || '[]');
     existingLogs.push(redirectLog);
     // Keep only the last 10 logs to prevent storage overflow
     const trimmedLogs = existingLogs.slice(-10);
-    localStorage.setItem('redirectDebugLogs', JSON.stringify(trimmedLogs));
+    setCacheValue('redirectDebugLogs', JSON.stringify(trimmedLogs));
     
     // Log for immediate debugging
     logger.debug('Redirect debug info:', redirectLog);
@@ -197,7 +198,7 @@ export const forceRedirect = async (url, options = {}) => {
   storeRedirectDebugInfo({
     source,
     destination: url,
-    sessionId: sessionStorage.getItem('sessionId') || localStorage.getItem('sessionId') || 'unknown',
+    sessionId: sessionStorage.getItem('sessionId') || getCacheValue('sessionId') || 'unknown',
     additionalData: {
       preserveForm,
       redirectMethod: 'forceRedirect'
@@ -341,9 +342,9 @@ export const getRedirectParams = () => {
  */
 export const getRedirectDebugLogs = () => {
   try {
-    return JSON.parse(localStorage.getItem('redirectDebugLogs') || '[]');
+    return JSON.parse(getCacheValue('redirectDebugLogs') || '[]');
   } catch (error) {
-    logger.error('Failed to retrieve redirect debug logs:', error);
+    logger.error('Failed to get redirect debug logs:', error);
     return [];
   }
 };

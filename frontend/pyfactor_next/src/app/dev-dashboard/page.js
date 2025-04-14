@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 export default function DevDashboard() {
   const searchParams = useSearchParams();
@@ -13,19 +14,11 @@ export default function DevDashboard() {
     // Get tenant ID from URL parameters
     const urlTenantId = searchParams.get('tenantId');
     
-    // Check cookies and localStorage if not in URL
-    const getCookieTenantId = () => {
-      return document.cookie
-        .split('; ')
-        .find(row => row.startsWith('tenantId='))
-        ?.split('=')[1];
-    };
-    
-    const cookieTenantId = getCookieTenantId();
-    const storageTenantId = localStorage.getItem('tenantId');
+    // Get from AppCache
+    const cacheTenantId = getCacheValue('tenantId');
     
     // Use the first available tenant ID
-    const effectiveTenantId = urlTenantId || cookieTenantId || storageTenantId || 'unknown';
+    const effectiveTenantId = urlTenantId || cacheTenantId || 'unknown';
     
     // Update state
     setTenantId(effectiveTenantId);
@@ -33,15 +26,9 @@ export default function DevDashboard() {
     
     console.log('[DevDashboard] Initialized with tenant ID:', effectiveTenantId);
     
-    // Set the tenant ID in cookies and localStorage if not already there
-    if (effectiveTenantId) {
-      if (!cookieTenantId) {
-        document.cookie = `tenantId=${effectiveTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      }
-      
-      if (!storageTenantId) {
-        localStorage.setItem('tenantId', effectiveTenantId);
-      }
+    // Set the tenant ID in AppCache if not already there
+    if (effectiveTenantId && !cacheTenantId) {
+      setCacheValue('tenantId', effectiveTenantId);
     }
   }, [searchParams]);
   

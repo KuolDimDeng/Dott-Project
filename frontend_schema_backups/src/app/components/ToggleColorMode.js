@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { updateUserAttributes } from '@/config/amplifyUnified';
+import { logger } from '@/utils/logger';
 
 export default function ToggleColorMode() {
   const { t } = useTranslation();
@@ -9,7 +12,7 @@ export default function ToggleColorMode() {
   
   useEffect(() => {
     // Check for saved preference or system preference
-    const savedTheme = localStorage.getItem('color-theme');
+    const savedTheme = getCacheValue('color-theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
@@ -25,8 +28,21 @@ export default function ToggleColorMode() {
     setIsDarkMode(prev => {
       const newMode = !prev;
       
-      // Save preference
-      localStorage.setItem('color-theme', newMode ? 'dark' : 'light');
+      // Save preference in AppCache
+      setCacheValue('color-theme', newMode ? 'dark' : 'light', { ttl: 365 * 24 * 60 * 60 * 1000 }); // 1 year
+      
+      // Update Cognito user attributes to remember preference
+      try {
+        updateUserAttributes({
+          userAttributes: {
+            'custom:theme': newMode ? 'dark' : 'light',
+            'custom:preferences': JSON.stringify({ theme: newMode ? 'dark' : 'light' })
+          }
+        }).catch(err => logger.debug('Non-critical: Failed to update theme in Cognito', err));
+      } catch (error) {
+        // Non-critical error, just log for debugging
+        logger.debug('Non-critical: Error updating theme preference', error);
+      }
       
       // Apply theme
       if (newMode) {

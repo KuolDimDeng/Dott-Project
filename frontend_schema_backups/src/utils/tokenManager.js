@@ -1,22 +1,24 @@
+import { setCacheValue, removeCacheValue } from '@/utils/appCache';
+
 export const setAuthTokens = (tokens) => {
-    const config = 'path=/; max-age=3600; secure; samesite=lax';
-    
-    if (tokens.idToken) {
-      document.cookie = `idToken=${tokens.idToken}; ${config}`;
-    }
-    
-    if (tokens.accessToken) {
-      document.cookie = `accessToken=${tokens.accessToken}; ${config}`;
-    }
-    
-    if (tokens.refreshToken) {
-      document.cookie = `refreshToken=${tokens.refreshToken}; path=/; max-age=86400; secure; samesite=lax`;
-    }
-  };
+  // Store tokens in AppCache with 1 hour expiration (3600000ms)
+  if (tokens.idToken) {
+    setCacheValue('auth_idToken', tokens.idToken, { ttl: 3600000 });
+  }
   
-  export const clearAuthTokens = () => {
-    const config = 'path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=lax';
-    document.cookie = `idToken=; ${config}`;
-    document.cookie = `accessToken=; ${config}`;
-    document.cookie = `refreshToken=; ${config}`;
-  };
+  if (tokens.accessToken) {
+    setCacheValue('auth_accessToken', tokens.accessToken, { ttl: 3600000 });
+  }
+  
+  if (tokens.refreshToken) {
+    // Store refresh token with longer TTL (24 hours)
+    setCacheValue('auth_refreshToken', tokens.refreshToken, { ttl: 86400000 });
+  }
+};
+
+export const clearAuthTokens = () => {
+  // Remove auth tokens from AppCache
+  removeCacheValue('auth_idToken');
+  removeCacheValue('auth_accessToken');
+  removeCacheValue('auth_refreshToken');
+};

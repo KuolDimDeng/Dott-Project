@@ -1,15 +1,7 @@
-'use client';
-
-/**
- * Simple axios configuration file using only named exports
- * - No default exports
- * - No module.exports (CommonJS)
- * - Only ESM exports with simplified initialization
- */
+// Simplified axios configuration that works in both client and server environments
+// Uses dynamic imports for client-only dependencies
 
 import axios from 'axios';
-import { fetchAuthSession } from 'aws-amplify/auth';
-import { getTenantId, getTenantHeaders } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
 // Use the current origin as the base URL unless defined
@@ -146,19 +138,36 @@ const getCircuitBreaker = (endpoint) => {
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
-      // Add tenant headers for all requests
-      const tenantId = getTenantId();
-      if (tenantId) {
-        config.headers = {
-          ...config.headers,
-          'X-Tenant-ID': tenantId
-        };
-      }
+      // Check if we're in a browser environment
+      const isBrowser = typeof window !== 'undefined';
       
-      // Add authorization header for authenticated requests
-      const session = await fetchAuthSession();
-      if (session?.tokens?.idToken) {
-        config.headers.Authorization = `Bearer ${session.tokens.idToken.toString()}`;
+      if (isBrowser) {
+        try {
+          // Dynamically import client-side only modules
+          const { getTenantId } = await import('@/utils/tenantUtils');
+          const { fetchAuthSession } = await import('aws-amplify/auth');
+          
+          // Add tenant headers for all requests
+          const tenantId = await getTenantId();
+          if (tenantId) {
+            config.headers = {
+              ...config.headers,
+              'X-Tenant-ID': tenantId
+            };
+          }
+          
+          // Add authorization header for authenticated requests
+          try {
+            const session = await fetchAuthSession();
+            if (session?.tokens?.idToken) {
+              config.headers.Authorization = `Bearer ${session.tokens.idToken.toString()}`;
+            }
+          } catch (authError) {
+            logger.warn('[axiosConfig] Auth session error:', authError.message);
+          }
+        } catch (importError) {
+          logger.warn('[axiosConfig] Import error in request interceptor:', importError.message);
+        }
       }
       
       // Circuit breaker pattern
@@ -176,7 +185,7 @@ axiosInstance.interceptors.request.use(
       
       return config;
     } catch (error) {
-      logger.error('[axiosConfig] Error in request interceptor:', error);
+      logger.error('[axiosConfig] Error in request interceptor:', error.message);
       return config;
     }
   },
@@ -196,13 +205,14 @@ axiosInstance.interceptors.response.use(
       }
     } catch (e) {
       // Don't let circuit breaker errors affect response
-      logger.error('[axiosConfig] Error in circuit breaker success handling:', e);
+      logger.error('[axiosConfig] Error in circuit breaker success handling:', e.message);
     }
     
     return response;
   },
   async (error) => {
     const originalRequest = error.config;
+    const isBrowser = typeof window !== 'undefined';
     
     try {
       // Record failure in circuit breaker if available
@@ -213,20 +223,20 @@ axiosInstance.interceptors.response.use(
       }
     } catch (e) {
       // Don't let circuit breaker errors affect error response
-      logger.error('[axiosConfig] Error in circuit breaker failure handling:', e);
+      logger.error('[axiosConfig] Error in circuit breaker failure handling:', e.message);
     }
     
-    // If error is 401 Unauthorized and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If error is 401 Unauthorized and we haven't retried yet and we're in a browser
+    if (isBrowser && error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
         return await refreshTokenAndRetry(originalRequest);
       } catch (refreshError) {
-        logger.error('[axiosConfig] Token refresh failed:', refreshError);
+        logger.error('[axiosConfig] Token refresh failed:', refreshError.message);
         
-        // Redirect to login on refresh failure
-        if (typeof window !== 'undefined') {
+        // Redirect to login on refresh failure (only in browser)
+        if (isBrowser) {
           window.location.href = '/login';
         }
         
@@ -248,17 +258,8 @@ axiosInstance.interceptors.response.use(
       return new Promise(resolve => {
         setTimeout(() => {
           resolve(axiosInstance(originalRequest));
-        }, 1000);
+        }, 2000);
       });
-    }
-    
-    // Handle tenant errors
-    if (error.response?.status === 403 && 
-        error.response?.data?.message?.includes('tenant')) {
-      logger.error('[axiosConfig] Tenant access denied:', error.response.data);
-      
-      // Could redirect to tenant selection page
-      // window.location.href = '/tenant/select';
     }
     
     return Promise.reject(error);

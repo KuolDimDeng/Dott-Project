@@ -24,6 +24,8 @@ import { setTenantIdCookies } from '@/utils/tenantUtils';
 import { ensureAmplifyConfigured, authenticateUser, getAuthSessionWithRetries, clearAllAuthData } from '@/utils/authUtils';
 import { Auth } from 'aws-amplify';
 import jwtDecode from 'jwt-decode';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 export default function SignInForm({ propEmail, setParentEmail, mode, setMode, redirectPath, newAccount, plan }) {
   const [email, setEmail] = useState(propEmail || '');
@@ -64,7 +66,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       logger.debug('[SignInForm] Auto-signin triggered with email:', email);
       
       // Get the stored password for bypassed verification
-      const storedPassword = localStorage.getItem('tempPassword');
+      const storedPassword = getCacheValue('tempPassword');
       
       if (storedPassword) {
         // We have a stored password, use it for auto-signin
@@ -78,8 +80,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
             type: 'autoSubmit', 
             isCustomEvent: true 
           });
-          // Clear the password from localStorage after use for security
-          localStorage.removeItem('tempPassword');
+          // Clear the password from AppCache after use for security
+          removeCacheValue('tempPassword');
         }, 1000);
         
         return () => clearTimeout(timeoutId);
@@ -188,23 +190,40 @@ const [state, dispatch] = useReducer(reducer, initialState);
     checkAuthStatus();
   }, []);
 
-  // Helper function to set consistent onboarding cookies
-  const setOnboardingCookies = (status, isComplete = false, userEmail = email) => {
-    const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
+  // Helper function to set onboarding state in AppCache and Cognito
+  const setOnboardingState = async (status, isComplete = false, userEmail = email) => {
     const normalizedStatus = status?.toLowerCase() || 'not_started';
     
-    // Set all cookies with normalized lowercase values
-    document.cookie = `onboardedStatus=${normalizedStatus}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `setupCompleted=${isComplete ? 'true' : 'false'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingStep=${isComplete ? 'complete' : normalizedStatus}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingInProgress=${isComplete ? 'false' : 'true'}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+    // Set all values in AppCache with TTL of 7 days
+    const ttl = 7 * 24 * 60 * 60 * 1000;
+    setCacheValue('onboardedStatus', normalizedStatus, { ttl });
+    setCacheValue('setupCompleted', isComplete ? 'true' : 'false', { ttl });
+    setCacheValue('onboardingStep', isComplete ? 'complete' : normalizedStatus, { ttl });
+    setCacheValue('onboardingInProgress', isComplete ? 'false' : 'true', { ttl });
     
-    // CRITICAL: Set userEmail cookie for middleware to identify known onboarded users
+    // CRITICAL: Set userEmail in AppCache for identifying known onboarded users
     if (userEmail) {
-      document.cookie = `userEmail=${userEmail}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      setCacheValue('userEmail', userEmail, { ttl });
     }
     
-    logger.debug('[SignInForm] Set onboarding cookies:', {
+    // Set in Cognito attributes (non-blocking)
+    try {
+      const promises = [
+        saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, normalizedStatus),
+        saveUserPreference(PREF_KEYS.ONBOARDING_STEP, isComplete ? 'complete' : normalizedStatus),
+        saveUserPreference('custom:setupdone', isComplete ? 'true' : 'false')
+      ];
+      
+      // Don't wait for these to complete
+      Promise.all(promises).catch(err => 
+        logger.warn('[SignInForm] Error setting Cognito attributes:', err)
+      );
+    } catch (e) {
+      // Log but continue as AppCache will be our fallback
+      logger.warn('[SignInForm] Error initiating Cognito attribute save:', e);
+    }
+    
+    logger.debug('[SignInForm] Set onboarding state:', {
       status: normalizedStatus,
       isComplete,
       onboardingStep: isComplete ? 'complete' : normalizedStatus,
@@ -229,24 +248,19 @@ const [state, dispatch] = useReducer(reducer, initialState);
     });
     
     // Check if we should return to a specific onboarding step
-    const returnToOnboarding = localStorage.getItem('returnToOnboarding') === 'true';
-    const returnStep = localStorage.getItem('onboardingStep');
+    const returnToOnboarding = getCacheValue('returnToOnboarding') === 'true';
+    const returnStep = getCacheValue('onboardingStep');
     
-    // Clear the return flags immediately to prevent future redirect loops
-    try {
-      localStorage.removeItem('returnToOnboarding');
-      // Don't remove onboardingStep as it might be needed for state
-    } catch (e) {
-      // Ignore localStorage errors
-    }
+    // Clean up the flagging variables
+    removeCacheValue('returnToOnboarding');
     
     // If we have explicit return info, prioritize it
     if (returnToOnboarding && returnStep) {
-      logger.debug(`[SignInForm] Returning user to onboarding step from localStorage: ${returnStep}`);
+      logger.debug(`[SignInForm] Returning user to onboarding step from AppCache: ${returnStep}`);
       
       // Set cookies for server-side state persistence
       const normalizedStep = returnStep.toLowerCase();
-      setOnboardingCookies(normalizedStep, normalizedStep === 'complete');
+      setOnboardingState(normalizedStep, normalizedStep === 'complete');
       
       return `/onboarding/${normalizedStep}?from=signin&ts=${Date.now()}`;
     }
@@ -254,7 +268,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
     // CRITICAL FIX: Handle exact compare to 'complete'
     if (onboardingStatus === 'complete' || setupDone) {
       logger.debug('[SignInForm] User has completed onboarding, redirecting to dashboard');
-      setOnboardingCookies('complete', true);
+      setOnboardingState('complete', true);
       return '/dashboard';
     }
     
@@ -262,7 +276,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
     const knownOnboardedEmails = ['kuoldimdeng@outlook.com', 'dev@pyfactor.com'];
     if (userAttributes.email && knownOnboardedEmails.includes(userAttributes.email.toLowerCase())) {
       logger.debug('[SignInForm] Known onboarded user detected, forcing dashboard redirect');
-      setOnboardingCookies('complete', true);
+      setOnboardingState('complete', true);
       
       // Trigger attribute update in the background
       try {
@@ -307,7 +321,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
     
     // Extra safety check for complete status
     if (normalizedKey === 'complete') {
-      setOnboardingCookies('complete', true);
+      setOnboardingState('complete', true);
       return '/dashboard';
     }
     
@@ -317,7 +331,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       : statusToStep[normalizedKey] || 'business-info';
     
     // Set the step cookie with normalized values
-    setOnboardingCookies(normalizedKey, step === 'dashboard');
+    setOnboardingState(normalizedKey, step === 'dashboard');
     
     logger.debug(`[SignInForm] Redirecting user to onboarding step: ${step}`);
     return (step === 'dashboard') 
@@ -344,7 +358,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         setError('Confirming your account automatically... please wait.');
         
         // Store this email for future reference
-        localStorage.setItem('unconfirmedEmail', email);
+        setCacheValue('unconfirmedEmail', email);
         
         // Get the base URL from the current window location
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -593,8 +607,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
     }
     
     // SPECIAL HARD-CODED OVERRIDE FOR PROBLEMATIC USER
-    // Set cookie immediately so middleware can detect this user
-    document.cookie = `userEmail=${email}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+    // Set in AppCache immediately so middleware can detect this user
+    setCacheValue('userEmail', email, { ttl: 7 * 24 * 60 * 60 * 1000 });
     
     if (email.toLowerCase() === 'kuoldimdeng@outlook.com') {
       logger.debug('[SignInForm] PRE-SIGN-IN CRITICAL USER OVERRIDE for:', email);
@@ -622,11 +636,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
         if (email.toLowerCase() === 'kuoldimdeng@outlook.com') {
           logger.debug('[SignInForm] POST-SIGN-IN CRITICAL USER OVERRIDE: Force dashboard redirect');
           
-          // Set all cookies for dashboard access
-          setOnboardingCookies('complete', true, email);
-          document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-          document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
-          document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
+          // Set all onboarding state
+          setOnboardingState('complete', true, email);
           
           // CRITICAL: Make direct API call to update attributes
           try {
@@ -756,9 +767,9 @@ const [state, dispatch] = useReducer(reducer, initialState);
   const handleSignInResponse = async (signInResult) => {
     if (signInResult?.isSignedIn) {
       try {
-        // CRITICAL: Set this cookie immediately, before any async operations
-        document.cookie = `userEmail=${email}; path=/; max-age=${60*60*24*7}; samesite=lax`;
-        logger.debug('[SignInForm] Immediately set userEmail cookie on sign-in:', email);
+        // CRITICAL: Set userEmail in AppCache immediately, before any async operations
+        setCacheValue('userEmail', email, { ttl: 7 * 24 * 60 * 60 * 1000 });
+        logger.debug('[SignInForm] Immediately set userEmail in AppCache on sign-in:', email);
         
         logOnboardingCookies('AFTER SIGN-IN BEFORE FETCHING ATTRIBUTES -');
         
@@ -774,7 +785,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           logger.debug('[SignInForm] Known onboarded user detected in handleSignInResponse, forcing dashboard redirect');
           
           // Set cookies for consistent state
-          setOnboardingCookies('complete', true);
+          setOnboardingState('complete', true);
           
           // Trigger attribute update in the background
           setTimeout(async () => {
@@ -825,7 +836,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         });
         
         // Set cookies with consistent case
-        setOnboardingCookies(
+        setOnboardingState(
           onboardingStatus || 'not_started', 
           setupDone || onboardingStatus === 'complete'
         );
@@ -906,8 +917,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
       // Handle specific error types
       if (error.name === 'UserNotConfirmedException') {
         setError('Please verify your email before signing in.');
-        // Save email to localStorage for verification flow
-        localStorage.setItem('verificationEmail', email);
+        // Save email to AppCache for verification flow
+        setCacheValue('verificationEmail', email);
         router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
       } else if (error.name === 'NotAuthorizedException') {
         setError('Incorrect username or password.');

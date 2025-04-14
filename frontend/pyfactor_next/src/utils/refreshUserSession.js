@@ -2,6 +2,7 @@ import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 import { Hub } from '@/config/amplifyUnified';
+import { setCacheValue, getCacheValue } from './appCache';
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000;
@@ -353,15 +354,15 @@ export const refreshUserSession = async () => {
         throw new Error('No valid tokens in session');
       }
       
-      // Cache tokens in localStorage for fallback
-      if (typeof localStorage !== 'undefined') {
+      // Store tokens in AppCache for fallback
+      if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('idToken', session.tokens.idToken.toString());
-          localStorage.setItem('accessToken', session.tokens.accessToken.toString());
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
+          setCacheValue('idToken', session.tokens.idToken.toString());
+          setCacheValue('accessToken', session.tokens.accessToken.toString());
+          setCacheValue('tokenTimestamp', Date.now().toString());
           lastSuccessfulRefresh = Date.now();
         } catch (storageError) {
-          logger.warn('[refreshUserSession] Error storing tokens in localStorage', { 
+          logger.warn('[refreshUserSession] Error storing tokens in AppCache', { 
             error: storageError.message, 
             requestId 
           });
@@ -483,3 +484,24 @@ export async function clearUserSession() {
     return false;
   }
 }
+
+export const getStoredTokens = () => {
+  try {
+    if (typeof window === 'undefined') {
+      return { idToken: null, accessToken: null, tokenTimestamp: null };
+    }
+    
+    const idToken = getCacheValue('idToken');
+    const accessToken = getCacheValue('accessToken');
+    const tokenTimestamp = getCacheValue('tokenTimestamp');
+    
+    return {
+      idToken,
+      accessToken,
+      tokenTimestamp: tokenTimestamp ? parseInt(tokenTimestamp, 10) : null
+    };
+  } catch (error) {
+    logger.warn('[getStoredTokens] Error reading tokens from AppCache', error);
+    return { idToken: null, accessToken: null, tokenTimestamp: null };
+  }
+};

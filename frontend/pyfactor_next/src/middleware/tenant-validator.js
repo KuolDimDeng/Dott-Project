@@ -84,27 +84,22 @@ function getAuthToken(request) {
   console.log(`[DEBUG] getAuthToken START`);
   
   try {
-    // Try authorization header
+    // Priority 1: Authorization header (best practice)
     const authHeader = request.headers.get('authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       console.log(`[DEBUG] getAuthToken: Found token in Authorization header`);
       return authHeader.substring(7);
     }
     
-    // Try standard cookies
-    const idToken = request.cookies.get('idToken')?.value;
-    if (idToken) {
-      console.log(`[DEBUG] getAuthToken: Found idToken cookie`);
-      return idToken;
+    // Priority 2: Cognito-specific headers
+    const cognitoToken = request.headers.get('x-cognito-token') || 
+                         request.headers.get('x-id-token');
+    if (cognitoToken) {
+      console.log(`[DEBUG] getAuthToken: Found token in Cognito-specific header`);
+      return cognitoToken;
     }
     
-    const accessToken = request.cookies.get('accessToken')?.value;
-    if (accessToken) {
-      console.log(`[DEBUG] getAuthToken: Found accessToken cookie`);
-      return accessToken;
-    }
-    
-    // Try Cognito cookies
+    // Priority 3: Cognito cookies (these are automatically set by Cognito SDK)
     const lastAuthUser = request.cookies.get('CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.LastAuthUser')?.value;
     if (lastAuthUser) {
       const cognitoToken = request.cookies.get(`CognitoIdentityServiceProvider.1o5v84mrgn4gt87khtr179uc5b.${lastAuthUser}.idToken`)?.value;
@@ -112,6 +107,20 @@ function getAuthToken(request) {
         console.log(`[DEBUG] getAuthToken: Found Cognito token for user ${lastAuthUser}`);
         return cognitoToken;
       }
+    }
+    
+    // Priority 4: Legacy cookies (DEPRECATED - will be removed in future)
+    // These are only checked for backward compatibility
+    const idToken = request.cookies.get('idToken')?.value;
+    if (idToken) {
+      console.log(`[DEBUG] getAuthToken: Found legacy idToken cookie (DEPRECATED)`);
+      return idToken;
+    }
+    
+    const accessToken = request.cookies.get('accessToken')?.value;
+    if (accessToken) {
+      console.log(`[DEBUG] getAuthToken: Found legacy accessToken cookie (DEPRECATED)`);
+      return accessToken;
     }
     
     console.log(`[DEBUG] getAuthToken END: No token found`);

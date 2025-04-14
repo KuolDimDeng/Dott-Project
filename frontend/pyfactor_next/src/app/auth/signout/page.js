@@ -30,11 +30,22 @@ export default function SignOut() {
             // Clear sessionStorage for backward compatibility
             sessionStorage.clear();
             
-            // Clear cookies for backward compatibility
-            document.cookie.split(';').forEach(cookie => {
-              const [name] = cookie.trim().split('=');
-              document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-            });
+            // Clear cookies using a more modern approach
+            if (typeof window !== 'undefined') {
+              // Import js-cookie dynamically if needed
+              try {
+                // Get all cookies and expire them
+                const cookies = document.cookie.split(';');
+                for (const cookie of cookies) {
+                  const [name] = cookie.trim().split('=');
+                  // Set expiration to past date, include path, and set secure/samesite as needed
+                  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; secure; samesite=strict`;
+                }
+                logger.info("[SignOut] Cleared cookies using secure approach");
+              } catch (cookieError) {
+                logger.error("[SignOut] Error clearing cookies:", cookieError);
+              }
+            }
             
             logger.info("[SignOut] Cleared session storage and cookies");
           }

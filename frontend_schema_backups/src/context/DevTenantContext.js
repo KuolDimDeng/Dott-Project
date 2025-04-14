@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
+import { saveUserPreference, getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const DevTenantContext = createContext(null);
 
@@ -11,7 +13,7 @@ export function DevTenantProvider({ children }) {
   
   // Load or initialize tenant on component mount
   useEffect(() => {
-    const initializeTenant = () => {
+    const initializeTenant = async () => {
       try {
         // Try to get Cognito user ID from cookies first
         const cognitoUserId = getCognitoUserId();
@@ -23,14 +25,14 @@ export function DevTenantProvider({ children }) {
             name: `User Tenant (${cognitoUserId.substring(0, 8)})`
           };
           setCurrentTenant(userTenant);
-          saveTenantToStorage(userTenant);
+          await saveTenantToStorage(userTenant);
           console.log(`[DevTenant] Using Cognito user ID as tenant: ${cognitoUserId}`);
           return;
         }
         
-        // Check local storage as fallback
-        const storedTenantId = localStorage.getItem('tenantId');
-        const storedTenantName = localStorage.getItem('tenant-name');
+        // Check AppCache as fallback
+        const storedTenantId = getCacheValue('tenantId');
+        const storedTenantName = getCacheValue('tenant-name');
         
         if (storedTenantId) {
           const tenant = {
@@ -47,7 +49,7 @@ export function DevTenantProvider({ children }) {
             name: `New Tenant (${newTenantId.substring(0, 8)})`
           };
           setCurrentTenant(newTenant);
-          saveTenantToStorage(newTenant);
+          await saveTenantToStorage(newTenant);
           console.log(`[DevTenant] Generated new tenant: ${newTenant.name} (${newTenant.id})`);
         }
       } catch (error) {
@@ -59,7 +61,7 @@ export function DevTenantProvider({ children }) {
           name: `Fallback Tenant (${fallbackId.substring(0, 8)})` 
         };
         setCurrentTenant(fallbackTenant);
-        saveTenantToStorage(fallbackTenant);
+        await saveTenantToStorage(fallbackTenant);
       } finally {
         setIsLoading(false);
       }
@@ -85,19 +87,24 @@ export function DevTenantProvider({ children }) {
   };
   
   // Helper to save tenant to storage
-  const saveTenantToStorage = (tenant) => {
-    localStorage.setItem('tenantId', tenant.id);
-    localStorage.setItem('tenant-name', tenant.name);
+  const saveTenantToStorage = async (tenant) => {
+    // Save in AppCache
+    setCacheValue('tenantId', tenant.id);
+    setCacheValue('tenant-name', tenant.name);
     
-    // Also set in cookies for API requests
-    document.cookie = `tenantId=${tenant.id}; path=/; max-age=86400`;
+    // Save in Cognito attributes
+    await saveUserPreference(PREF_KEYS.TENANT_ID, tenant.id);
     
-    // For server-side access, also set in sessionStorage
-    sessionStorage.setItem('tenant_id', tenant.id);
+    // For server-side access, create a tenant reference in AppCache
+    setCacheValue('tenant_reference', {
+      id: tenant.id,
+      name: tenant.name,
+      timestamp: Date.now()
+    });
   };
   
   // Create a new tenant
-  const createTenant = (tenantName) => {
+  const createTenant = async (tenantName) => {
     if (!tenantName) {
       console.error('[DevTenant] Tenant name is required');
       return false;
@@ -111,7 +118,7 @@ export function DevTenantProvider({ children }) {
     
     // Switch to the new tenant
     setCurrentTenant(newTenant);
-    saveTenantToStorage(newTenant);
+    await saveTenantToStorage(newTenant);
     console.log(`[DevTenant] Created and switched to new tenant: ${newTenant.name} (${newTenant.id})`);
     
     return true;
@@ -162,8 +169,8 @@ export function getDevTenantId() {
   }
   
   // Fallbacks in order of priority
-  return localStorage.getItem('tenantId') || 
-         document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1] ||
-         sessionStorage.getItem('tenant_id') ||
+  return getCacheValue('tenantId') || 
+         getUserPreference(PREF_KEYS.TENANT_ID) ||
+         getCacheValue('tenant_reference')?.id ||
          uuidv4(); // Generate new ID if none found
 } 

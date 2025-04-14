@@ -138,31 +138,31 @@ export function useAuth() {
         throw new Error('Failed to get current user after sign in');
       }
 
-      // Set up cookies via API route instead of using refreshSession
+      // Store auth tokens in AppCache instead of setting cookies
       try {
-        logger.debug('[Auth] Setting cookies via API');
-        const response = await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken: sessionResponse.tokens.idToken.toString(),
-            accessToken: sessionResponse.tokens.accessToken.toString(),
-            refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          logger.error('[Auth] Failed to set cookies via API:', errorData);
-          throw new Error(`Failed to set cookies: ${errorData.error || response.statusText}`);
+        logger.debug('[Auth] Storing session tokens in AppCache');
+        
+        // Update global AppCache
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          
+          // Store tokens
+          window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
+          window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+          if (sessionResponse.tokens.refreshToken) {
+            window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+          }
+          
+          // Add session timestamp
+          window.__APP_CACHE.auth.lastAuthTime = Date.now();
+          window.__APP_CACHE.auth.tokenTimestamp = Date.now();
         }
         
-        logger.debug('[Auth] Cookies set successfully via API');
-      } catch (cookieError) {
-        logger.error('[Auth] Error setting cookies:', cookieError);
-        // Continue even if cookie setting fails
+        logger.debug('[Auth] Session tokens stored successfully in AppCache');
+      } catch (cacheError) {
+        logger.error('[Auth] Error storing tokens in AppCache:', cacheError);
+        // Continue even if AppCache storage fails
       }
 
       logger.debug('[Auth] Session established successfully');
@@ -260,7 +260,7 @@ export function useAuth() {
         'custom:businessid': '', // Will be set after confirmation
         'custom:businessname': userData.businessName || 
           (userData.firstName ? `${userData.firstName}'s Business` : 
-           userData.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
+           userData.email ? `${userData.email.split('@')[0]}'s Business` : ''),
         'custom:businesstype': userData.businessType || 'Other',
         'custom:datefounded': timestamp.split('T')[0], // Just the date part
         'custom:legalstructure': userData.legalStructure || 'Sole Proprietorship',
@@ -595,29 +595,31 @@ export function useAuth() {
             if (sessionResponse.tokens?.idToken) {
               setSession(sessionResponse);
               
-              // Set up cookies via API route
+              // Store auth tokens in AppCache instead of setting cookies
               try {
-                logger.debug('[Auth] Setting cookies via API after sign in event');
-                const response = await fetch('/api/auth/set-cookies', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    idToken: sessionResponse.tokens.idToken.toString(),
-                    accessToken: sessionResponse.tokens.accessToken.toString(),
-                    refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-                  })
-                });
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  logger.error('[Auth] Failed to set cookies via API after sign in event:', errorData);
-                } else {
-                  logger.debug('[Auth] Cookies set successfully via API after sign in event');
+                logger.debug('[Auth] Storing session tokens in AppCache');
+                
+                // Update global AppCache
+                if (typeof window !== 'undefined') {
+                  window.__APP_CACHE = window.__APP_CACHE || {};
+                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  
+                  // Store tokens
+                  window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
+                  window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+                  if (sessionResponse.tokens.refreshToken) {
+                    window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+                  }
+                  
+                  // Add session timestamp
+                  window.__APP_CACHE.auth.lastAuthTime = Date.now();
+                  window.__APP_CACHE.auth.tokenTimestamp = Date.now();
                 }
-              } catch (cookieError) {
-                logger.error('[Auth] Error setting cookies after sign in event:', cookieError);
+                
+                logger.debug('[Auth] Session tokens stored successfully in AppCache');
+              } catch (cacheError) {
+                logger.error('[Auth] Error storing tokens in AppCache:', cacheError);
+                // Continue even if AppCache storage fails
               }
               
               logger.debug('[Auth] Session established after sign in');
@@ -643,29 +645,31 @@ export function useAuth() {
             if (sessionResponse.tokens?.idToken) {
               setSession(sessionResponse);
               
-              // Set up cookies via API route
+              // Store auth tokens in AppCache instead of setting cookies
               try {
-                logger.debug('[Auth] Setting cookies via API after token refresh');
-                const response = await fetch('/api/auth/set-cookies', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    idToken: sessionResponse.tokens.idToken.toString(),
-                    accessToken: sessionResponse.tokens.accessToken.toString(),
-                    refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-                  })
-                });
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  logger.error('[Auth] Failed to set cookies via API after token refresh:', errorData);
-                } else {
-                  logger.debug('[Auth] Cookies set successfully via API after token refresh');
+                logger.debug('[Auth] Storing session tokens in AppCache');
+                
+                // Update global AppCache
+                if (typeof window !== 'undefined') {
+                  window.__APP_CACHE = window.__APP_CACHE || {};
+                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  
+                  // Store tokens
+                  window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
+                  window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+                  if (sessionResponse.tokens.refreshToken) {
+                    window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+                  }
+                  
+                  // Add session timestamp
+                  window.__APP_CACHE.auth.lastAuthTime = Date.now();
+                  window.__APP_CACHE.auth.tokenTimestamp = Date.now();
                 }
-              } catch (cookieError) {
-                logger.error('[Auth] Error setting cookies after token refresh:', cookieError);
+                
+                logger.debug('[Auth] Session tokens stored successfully in AppCache');
+              } catch (cacheError) {
+                logger.error('[Auth] Error storing tokens in AppCache:', cacheError);
+                // Continue even if AppCache storage fails
               }
               
               logger.debug('[Auth] Session refreshed successfully');

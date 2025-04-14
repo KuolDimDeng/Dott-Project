@@ -12,6 +12,8 @@ import { completeOnboarding } from '@/utils/completeOnboarding';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import CompletionStep from './components/CompletionStep';
 import { ArrowPathIcon, ExclamationTriangleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Setup stages with descriptions for progress tracking
 const SETUP_STAGES = [
@@ -61,10 +63,21 @@ export default function SetupPage() {
         if (setupStartTime) {
           const duration = Date.now() - setupStartTime;
           setSetupDuration(duration);
-          localStorage.setItem('setupDuration', duration.toString());
+          setCacheValue('setupDuration', duration.toString());
         }
         
-        // Mark setup as complete in cookies with 30-day expiration
+        // Update Cognito attributes for persistence across devices
+        try {
+          await saveUserPreference('custom:onboarding', 'complete');
+          await saveUserPreference('custom:setupdone', 'true');
+          await saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+          
+          logger.debug('[SetupPage] Updated Cognito attributes for onboarding completion');
+        } catch (attributeError) {
+          logger.warn('[SetupPage] Error updating Cognito attributes:', attributeError);
+        }
+        
+        // Keep cookies for backward compatibility
         const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
         const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         
@@ -73,9 +86,9 @@ export default function SetupPage() {
         document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
-        // Set localStorage flags
-        localStorage.setItem('setupComplete', 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
+        // Set AppCache values instead of localStorage
+        setCacheValue('setupComplete', 'true');
+        setCacheValue('setupTimestamp', Date.now().toString());
         
         setSetupComplete(true);
         setSetupStatus('complete');
@@ -99,7 +112,16 @@ export default function SetupPage() {
       if (skipLoading && useRLS) {
         logger.debug('[SetupPage] RLS skipLoading detected, bypassing auth check');
         
-        // Set cookies with 30-day expiration
+        // Update Cognito attributes
+        try {
+          await saveUserPreference('custom:onboarding', 'complete');
+          await saveUserPreference('custom:setupdone', 'true');
+          await saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+        } catch (error) {
+          logger.warn('[SetupPage] Error updating Cognito attributes for RLS:', error);
+        }
+        
+        // Keep cookies for backward compatibility
         const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
         const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         
@@ -108,8 +130,9 @@ export default function SetupPage() {
         document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
-        localStorage.setItem('setupComplete', 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
+        // Use AppCache instead of localStorage
+        setCacheValue('setupComplete', 'true');
+        setCacheValue('setupTimestamp', Date.now().toString());
         
         // Initialize setup
         setSetupStartTime(Date.now());
@@ -130,9 +153,9 @@ export default function SetupPage() {
         
         logger.debug('[SetupPage] Auth valid, storing tokens');
         
-        // Store tokens in localStorage as backup
-        localStorage.setItem('idToken', tokens.idToken.toString());
-        localStorage.setItem('accessToken', tokens.accessToken.toString());
+        // Store tokens in AppCache instead of localStorage
+        setCacheValue('idToken', tokens.idToken.toString());
+        setCacheValue('accessToken', tokens.accessToken.toString());
         
         // Set auth cookie for API calls
         document.cookie = `authToken=true; path=/; max-age=${60 * 60 * 24}; samesite=lax`;
@@ -172,17 +195,10 @@ export default function SetupPage() {
           
           if (!isMounted) return;
           
-          // Set cookies and localStorage
-          const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-          const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-          
-          document.cookie = `setupCompleted=true; ${cookieOptions}`;
-          document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-          document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
-          
-          localStorage.setItem('setupComplete', 'true');
-          localStorage.setItem('setupTimestamp', Date.now().toString());
-          localStorage.setItem('setupUseRLS', 'true');
+          // Use AppCache instead of localStorage
+          setCacheValue('setupComplete', 'true');
+          setCacheValue('setupTimestamp', Date.now().toString());
+          setCacheValue('setupUseRLS', 'true');
           
           // Calculate setup duration
           const duration = Date.now() - setupStartTime;
@@ -240,19 +256,16 @@ export default function SetupPage() {
           // Continue despite errors
         }
         
-        // Set final cookies and localStorage
+        // Set final cookies and AppCache values
         document.cookie = `setupCompleted=true; ${cookieOptions}`;
         document.cookie = `onboardingStep=complete; ${cookieOptions}`;
         document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
         document.cookie = `hasSession=true; ${cookieOptions}`;
         
-        localStorage.setItem('setupComplete', 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
-        
         // Calculate setup duration
         const duration = Date.now() - setupStartTime;
         setSetupDuration(duration);
-        localStorage.setItem('setupDuration', duration.toString());
+        setCacheValue('setupDuration', duration.toString());
         
         // Mark setup as complete
         if (!isMounted) return;

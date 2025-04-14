@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button, TextField, Card, Dialog } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 // Mock function to simulate API call to AI service
 const queryAI = async (query, businessData) => {
@@ -123,16 +124,16 @@ const AIQueryPage = ({ userData }) => {
     }
   }, [conversations]);
 
-  // Load conversation history and token data from localStorage on component mount
+  // Load conversation history and token data from AppCache on component mount
   useEffect(() => {
-    const savedHistory = localStorage.getItem('aiQueryHistory');
-    const savedTokens = localStorage.getItem('aiQueryTokens');
-    const savedCost = localStorage.getItem('aiQueryCost');
-    const savedRemainingTokens = localStorage.getItem('aiQueryRemainingTokens');
+    const savedHistory = getCacheValue('aiQueryHistory');
+    const savedTokens = getCacheValue('aiQueryTokens');
+    const savedCost = getCacheValue('aiQueryCost');
+    const savedRemainingTokens = getCacheValue('aiQueryRemainingTokens');
     
     if (savedHistory) {
       try {
-        setQueryHistory(JSON.parse(savedHistory));
+        setQueryHistory(typeof savedHistory === 'string' ? JSON.parse(savedHistory) : savedHistory);
       } catch (e) {
         console.error('Error parsing saved query history:', e);
       }
@@ -141,12 +142,12 @@ const AIQueryPage = ({ userData }) => {
     if (savedTokens) setTotalTokensUsed(parseInt(savedTokens, 10) || 0);
     if (savedCost) setTotalCost(parseFloat(savedCost) || 0);
     
-    // Set initial remaining tokens based on subscription tier if not in localStorage yet
+    // Set initial remaining tokens based on subscription tier if not in AppCache yet
     if (savedRemainingTokens) {
       setRemainingTokens(parseInt(savedRemainingTokens, 10));
     } else {
       setRemainingTokens(tierTokens);
-      localStorage.setItem('aiQueryRemainingTokens', tierTokens.toString());
+      setCacheValue('aiQueryRemainingTokens', tierTokens.toString());
     }
   }, [tierTokens]);
 
@@ -210,11 +211,11 @@ const AIQueryPage = ({ userData }) => {
       const updatedHistory = [newHistoryItem, ...queryHistory];
       setQueryHistory(updatedHistory);
       
-      // Save to localStorage
-      localStorage.setItem('aiQueryHistory', JSON.stringify(updatedHistory));
-      localStorage.setItem('aiQueryTokens', newTotalTokens.toString());
-      localStorage.setItem('aiQueryCost', newTotalCost.toString());
-      localStorage.setItem('aiQueryRemainingTokens', newRemainingTokens.toString());
+      // Save to AppCache
+      setCacheValue('aiQueryHistory', updatedHistory);
+      setCacheValue('aiQueryTokens', newTotalTokens.toString());
+      setCacheValue('aiQueryCost', newTotalCost.toString());
+      setCacheValue('aiQueryRemainingTokens', newRemainingTokens.toString());
       
     } catch (error) {
       console.error('Error querying AI:', error);
@@ -238,7 +239,7 @@ const AIQueryPage = ({ userData }) => {
 
   const handleClearHistory = () => {
     setQueryHistory([]);
-    localStorage.removeItem('aiQueryHistory');
+    removeCacheValue('aiQueryHistory');
   };
 
   const handleBuyTokens = () => {
@@ -265,7 +266,7 @@ const AIQueryPage = ({ userData }) => {
     if (packageToAdd) {
       const newRemainingTokens = remainingTokens + packageToAdd.tokens;
       setRemainingTokens(newRemainingTokens);
-      localStorage.setItem('aiQueryRemainingTokens', newRemainingTokens.toString());
+      setCacheValue('aiQueryRemainingTokens', newRemainingTokens.toString());
       
       // Close dialog
       setPurchaseDialogOpen(false);

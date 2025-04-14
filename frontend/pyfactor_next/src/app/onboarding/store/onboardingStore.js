@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
+import { setCacheValue } from '@/utils/appCache';
 
 // Create the store
 const useOnboardingStore = create((set, get) => ({
@@ -365,11 +366,11 @@ const useOnboardingStore = create((set, get) => ({
         }
       }
       
-      // Set cookies for immediate status update
+      // Set AppCache values for immediate status update instead of cookies
       if (attributeUpdateSuccess) {
-        document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
+        setCacheValue('onboardingStep', 'complete');
+        setCacheValue('onboardedStatus', 'complete');
+        setCacheValue('setupCompleted', true);
         
         // Update store state
         set({

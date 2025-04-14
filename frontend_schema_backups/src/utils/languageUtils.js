@@ -1,9 +1,11 @@
 'use client';
 
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getLanguagePreference, saveLanguagePreference } from '@/utils/userPreferences';
 
 /**
- * Gets the language parameter from the URL, localStorage, or defaults to 'en'
+ * Gets the language parameter from the URL, Cognito attributes, AppCache, or defaults to 'en'
  * @returns {string} The language code (e.g., 'en', 'fr', etc.)
  */
 export function getLanguageParam() {
@@ -13,12 +15,28 @@ export function getLanguageParam() {
     const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
     langParam = urlParams.get('lng');
     
-    // If not found in current URL, check localStorage or use default
+    // If not found in current URL, check AppCache or use default
     if (!langParam && typeof window !== 'undefined') {
-      langParam = localStorage.getItem('preferredLanguage') || 'en';
+      langParam = getCacheValue('preferredLanguage') || 'en';
+      
+      // If not in AppCache, try to get from Cognito asynchronously
+      // This will update AppCache for future use if found
+      getLanguagePreference().then(cognitoLang => {
+        if (cognitoLang && cognitoLang !== langParam) {
+          setCacheValue('preferredLanguage', cognitoLang);
+          logger.debug(`[LanguageUtils] Updated language from Cognito: ${cognitoLang}`);
+        }
+      }).catch(e => {
+        logger.error('[LanguageUtils] Error getting language from Cognito:', e);
+      });
     } else if (langParam && typeof window !== 'undefined') {
       // Save the language preference for future use
-      localStorage.setItem('preferredLanguage', langParam);
+      setCacheValue('preferredLanguage', langParam);
+      
+      // Also save to Cognito for persistence across devices
+      saveLanguagePreference(langParam).catch(e => {
+        logger.error('[LanguageUtils] Error saving language to Cognito:', e);
+      });
     } else {
       langParam = 'en';
     }

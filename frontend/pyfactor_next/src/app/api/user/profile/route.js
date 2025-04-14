@@ -194,8 +194,8 @@ export async function GET(req) {
     
     // Check for minimal business name in sign-up flow - important for the issue reported
     // Allow these requests to proceed even when user is not fully authenticated
-    const isMinimalBusinessName = req.headers.get('X-Business-Name') === 'Default Business' || 
-                                req.headers.get('X-Business-Name') === 'My Business';
+    const isMinimalBusinessName = req.headers.get('X-Business-Name') === '' ||
+                                 !req.headers.get('X-Business-Name');
     
     // Handle sign-up flow differently - provide a minimal profile even when not authenticated
     if (isSignUpFlow || (isDashboardRequest && !token)) {
@@ -207,7 +207,7 @@ export async function GET(req) {
       // Get business name from header or cookie
       const businessName = req.headers.get('X-Business-Name') || 
                           getCookieValue(cookieHeader, 'businessName') || 
-                          'My Business';
+                          '';
       
       // Use provided tenant ID or create a fallback
       const tenantId = effectiveTenantId || getDefaultTenantId();

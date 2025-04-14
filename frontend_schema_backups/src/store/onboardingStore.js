@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { logger } from '@/utils/logger';
 import { updateOnboardingStep, validateBusinessInfo } from '@/utils/onboardingUtils';
+import { setCognitoUserAttribute, getCognitoUserAttributes } from '@/utils/cognitoUtils';
+import { setInAppCache, getFromAppCache } from '@/utils/appCacheUtils';
 
 const useOnboardingStore = create(
   persist(
@@ -50,14 +52,12 @@ const useOnboardingStore = create(
 
           logger.debug('[OnboardingStore] Business info updated successfully');
 
-          // Update cookie for cross-page persistence
+          // Store business info in Cognito custom attributes
           try {
-            const now = new Date();
-            const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            document.cookie = `businessName=${encodeURIComponent(info.businessName || '')}; path=/; expires=${expires.toUTCString()}; samesite=lax`;
-            document.cookie = `businessType=${encodeURIComponent(info.businessType || '')}; path=/; expires=${expires.toUTCString()}; samesite=lax`;
+            await setCognitoUserAttribute('custom:businessName', info.businessName || '');
+            await setCognitoUserAttribute('custom:businessType', info.businessType || '');
           } catch (err) {
-            // Silent fail on cookie errors
+            logger.warn('[OnboardingStore] Failed to update Cognito attributes:', err);
           }
 
           return true;
@@ -71,21 +71,27 @@ const useOnboardingStore = create(
         }
       },
       
-      setSubscription: (plan, interval) => {
+      setSubscription: async (plan, interval) => {
         logger.debug('[OnboardingStore] Setting subscription', { plan, interval });
         set({ 
           selectedPlan: plan,
           subscriptionInterval: interval
         });
         
-        // Mark cookie for free plan fast path
+        // Store plan selection in Cognito attribute
         if (plan === 'free') {
           try {
-            const now = new Date();
-            const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            document.cookie = `freePlanSelected=true; path=/; expires=${expires.toUTCString()}; samesite=lax`;
+            await setCognitoUserAttribute('custom:plan', 'free');
+            await setInAppCache('freePlanSelected', 'true');
           } catch (err) {
-            // Silent fail on cookie errors
+            logger.warn('[OnboardingStore] Failed to update Cognito attributes:', err);
+          }
+        } else {
+          try {
+            await setCognitoUserAttribute('custom:plan', plan);
+            await setCognitoUserAttribute('custom:subscriptionInterval', interval);
+          } catch (err) {
+            logger.warn('[OnboardingStore] Failed to update Cognito attributes:', err);
           }
         }
       },
@@ -149,20 +155,14 @@ const useOnboardingStore = create(
       },
       
       // Fast path helper that checks for completion without API calls
-      isComplete: () => {
-        // Check cookies first for fastest performance
+      isComplete: async () => {
+        // Check Cognito attributes first for fastest performance
         try {
-          if (typeof document !== 'undefined') {
-            const getCookie = (name) => {
-              const value = `; ${document.cookie}`;
-              const parts = value.split(`; ${name}=`);
-              if (parts.length === 2) return parts.pop().split(';').shift();
-              return null;
-            };
-            
-            // Check if onboarding is complete via cookies
-            const setupCompleted = getCookie('setupCompleted') === 'true';
-            const onboardingStep = getCookie('onboardingStep');
+          const attributes = await getCognitoUserAttributes();
+          
+          if (attributes) {
+            const setupCompleted = attributes['custom:setupCompleted'] === 'true';
+            const onboardingStep = attributes['custom:onboardingStep'];
             
             if (setupCompleted || onboardingStep === 'complete') {
               return true;
@@ -170,6 +170,7 @@ const useOnboardingStore = create(
           }
         } catch (err) {
           // Silent fail and continue with store check
+          logger.warn('[OnboardingStore] Failed to get Cognito attributes:', err);
         }
         
         // Then check stored state

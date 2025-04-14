@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getThemePreference, saveThemePreference } from '@/utils/userPreferences';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Create the context
 const ThemeContext = createContext(null);
@@ -25,12 +27,27 @@ export function ThemeProvider({ children }) {
 
   // Initialize theme on component mount
   useEffect(() => {
-    // Get stored theme from localStorage
-    const storedTheme = localStorage.getItem('theme') || SYSTEM_THEME;
+    // First check if theme is in AppCache for immediate display
+    const cachedTheme = getCacheValue('theme');
     const currentSystemTheme = getSystemTheme();
-    
     setSystemTheme(currentSystemTheme);
-    setTheme(storedTheme === SYSTEM_THEME ? currentSystemTheme : storedTheme);
+    
+    if (cachedTheme) {
+      setTheme(cachedTheme === SYSTEM_THEME ? currentSystemTheme : cachedTheme);
+    } else {
+      // If not in cache, load from Cognito
+      const initTheme = async () => {
+        try {
+          const savedTheme = await getThemePreference(SYSTEM_THEME);
+          setTheme(savedTheme === SYSTEM_THEME ? currentSystemTheme : savedTheme);
+        } catch (error) {
+          console.error('Failed to get theme preference from Cognito:', error);
+          setTheme(currentSystemTheme); // Fall back to system preference
+        }
+      };
+      
+      initTheme();
+    }
     
     // Set up listener for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -62,7 +79,7 @@ export function ThemeProvider({ children }) {
         mediaQuery.removeListener(handleChange);
       }
     };
-  }, [theme]);
+  }, []);
 
   // Function to update theme
   const updateTheme = (newTheme) => {
@@ -78,8 +95,13 @@ export function ThemeProvider({ children }) {
       document.documentElement.classList.remove('dark');
     }
     
-    // Store theme preference in localStorage
-    localStorage.setItem('theme', newTheme);
+    // Store theme preference in Cognito and AppCache
+    saveThemePreference(newTheme).catch(error => {
+      console.error('Failed to save theme preference to Cognito:', error);
+    });
+    
+    // Also update AppCache for faster loading next time
+    setCacheValue('theme', newTheme);
   };
 
   // Apply current theme to document

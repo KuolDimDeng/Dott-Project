@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCognitoUserAttributes } from '@/utils/cognitoUtils';
 
 // Increase token refresh interval from default
 const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
@@ -44,38 +46,82 @@ const shouldLogSessionMessage = (message, interval = LOG_THROTTLE_INTERVAL) => {
   return false;
 };
 
-// Parse user attributes from cookies for better resilience
+// Get user attributes from Cognito as a fallback mechanism
+const getUserAttributesFromCognito = async () => {
+  try {
+    const attributes = await getCognitoUserAttributes();
+    if (!attributes) return null;
+    
+    // Add a flag to indicate this came from Cognito
+    return {
+      ...attributes,
+      hasSession: true,
+      source: 'cognito'
+    };
+  } catch (error) {
+    logger.warn('[useSession] Error getting attributes from Cognito:', error);
+    return null;
+  }
+};
+
+// Legacy function for transition period - will be removed in future version
 const getUserAttributesFromCookies = () => {
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined' || !window.__ENABLE_COOKIE_FALLBACK) return null;
   
-  const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-    const [key, value] = cookie.trim().split('=');
-    acc[key] = value;
-    return acc;
-  }, {});
+  try {
+    logger.warn('[useSession] Using legacy cookie fallback for session (migration mode)');
+    
+    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+    
+    // Check for onboarding-related cookies
+    const attributes = {};
+    if (cookies.onboardingStep) {
+      attributes['custom:onboarding'] = cookies.onboardingStep;
+    }
+    if (cookies.onboardedStatus) {
+      attributes.onboardingStatus = cookies.onboardedStatus;
+    }
+    if (cookies.subplan) {
+      attributes['custom:subplan'] = cookies.subplan;
+    }
+    if (cookies.tenantId || cookies.businessid) {
+      attributes['custom:tenantId'] = cookies.tenantId || cookies.businessid;
+    }
+    if (cookies.email) {
+      attributes.email = cookies.email;
+    }
+    if (cookies.hasSession === 'true') {
+      attributes.hasSession = true;
+    }
+    
+    // Add a flag to indicate this came from cookies (legacy)
+    if (Object.keys(attributes).length > 0) {
+      attributes.source = 'cookies-legacy';
+      
+      // Migrate this data to Cognito attributes
+      try {
+        Object.entries(attributes).forEach(([key, value]) => {
+          if (key !== 'hasSession' && key !== 'source') {
+            import('@/utils/cognitoUtils').then(({ setCognitoUserAttribute }) => {
+              setCognitoUserAttribute(key, value);
+            });
+          }
+        });
+      } catch (migrateError) {
+        logger.warn('[useSession] Error migrating cookie attributes to Cognito:', migrateError);
+      }
+      
+      return attributes;
+    }
+  } catch (error) {
+    logger.warn('[useSession] Error parsing cookies:', error);
+  }
   
-  // Check for onboarding-related cookies
-  const attributes = {};
-  if (cookies.onboardingStep) {
-    attributes['custom:onboarding'] = cookies.onboardingStep;
-  }
-  if (cookies.onboardedStatus) {
-    attributes.onboardingStatus = cookies.onboardedStatus;
-  }
-  if (cookies.subplan) {
-    attributes['custom:subplan'] = cookies.subplan;
-  }
-  if (cookies.tenantId || cookies.businessid) {
-    attributes['custom:tenantId'] = cookies.tenantId || cookies.businessid;
-  }
-  if (cookies.email) {
-    attributes.email = cookies.email;
-  }
-  if (cookies.hasSession === 'true') {
-    attributes.hasSession = true;
-  }
-  
-  return Object.keys(attributes).length > 0 ? attributes : null;
+  return null;
 };
 
 export function useSession() {
@@ -104,11 +150,21 @@ export function useSession() {
         logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
       }
       
-      // Check if we can use cookie fallback
+      // Check if we can use Cognito attributes as fallback
+      const cognitoAttributes = await getUserAttributesFromCognito();
+      if (cognitoAttributes) {
+        if (shouldLogSessionMessage('[useSession] Using Cognito attributes fallback after timeout')) {
+          logger.info('[useSession] Session loading timed out, but Cognito attributes found. Using as fallback.');
+        }
+        setSession({ userAttributes: cognitoAttributes });
+        return;
+      }
+      
+      // As a last resort during migration period, check cookies
       const cookieAttributes = getUserAttributesFromCookies();
       if (cookieAttributes?.hasSession) {
-        if (shouldLogSessionMessage('[useSession] Using cookie fallback after timeout')) {
-          logger.info('[useSession] Session loading timed out, but hasSession cookie found. Using cookie fallback.');
+        if (shouldLogSessionMessage('[useSession] Using legacy cookie fallback after timeout')) {
+          logger.info('[useSession] Session loading timed out, falling back to legacy cookies.');
         }
         setSession({ userAttributes: cookieAttributes });
       }
@@ -137,8 +193,8 @@ export function useSession() {
     if (process.env.NODE_ENV === 'development') {
       try {
         // Check if bypass is enabled
-        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
-        const authSuccess = localStorage.getItem('authSuccess') === 'true';
+        const bypassAuth = getCacheValue('bypassAuthValidation') === 'true';
+        const authSuccess = getCacheValue('authSuccess') === 'true';
         
         if (bypassAuth && authSuccess) {
           logger.info('[useSession] Development mode: using bypass auth');
@@ -149,7 +205,7 @@ export function useSession() {
               idToken: {
                 toString: () => 'mock-id-token',
                 payload: {
-                  email: localStorage.getItem('authUser') || '',
+                  email: getCacheValue('authUser') || '',
                   email_verified: true,
                   'custom:onboarding': 'complete',
                   'custom:setupdone': 'true',
@@ -168,11 +224,11 @@ export function useSession() {
           
           // User attributes
           const mockAttributes = {
-            email: localStorage.getItem('authUser') || '',
+            email: getCacheValue('authUser') || '',
             email_verified: true,
             'custom:onboarding': 'complete',
             'custom:setupdone': 'true',
-            'custom:tenantId': localStorage.getItem('tenantId') || 'user-tenant'
+            'custom:tenantId': getCacheValue('tenantId') || 'user-tenant'
           };
           
           // Set mock session
@@ -302,26 +358,26 @@ export function useSession() {
                 // Store email in cookie for AppBar and other components
                 if (userAttributes.email) {
                   document.cookie = `email=${userAttributes.email}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  // Also store in localStorage as a fallback
-                  localStorage.setItem('email', userAttributes.email);
-                  localStorage.setItem('authUser', userAttributes.email);
+                  // Also store in AppCache as a fallback
+                  setCacheValue('email', userAttributes.email);
+                  setCacheValue('authUser', userAttributes.email);
                 }
                 
                 // Store name parts if available
                 if (userAttributes.given_name) {
                   document.cookie = `firstName=${userAttributes.given_name}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('firstName', userAttributes.given_name);
+                  setCacheValue('firstName', userAttributes.given_name);
                 }
                 
                 if (userAttributes.family_name) {
                   document.cookie = `lastName=${userAttributes.family_name}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('lastName', userAttributes.family_name);
+                  setCacheValue('lastName', userAttributes.family_name);
                 }
 
                 // Store business name if available
                 if (userAttributes['custom:businessname']) {
                   document.cookie = `businessName=${userAttributes['custom:businessname']}; path=/; expires=${expires.toUTCString()}; ${domain}${secure}samesite=lax`;
-                  localStorage.setItem('businessName', userAttributes['custom:businessname']);
+                  setCacheValue('businessName', userAttributes['custom:businessname']);
                 }
               }
             }

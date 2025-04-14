@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCacheValue } from '@/utils/appCache';
 
 export default function ProductsPage() {
   const router = useRouter();
@@ -20,8 +21,9 @@ export default function ProductsPage() {
     try {
       setLoading(true);
       
-      // Get tenant ID from localStorage
-      const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') || localStorage.getItem('businessid') : null;
+      // Get tenant ID from AppCache
+      const tenantId = typeof window !== 'undefined' ? 
+        getCacheValue('tenantId') || getCacheValue('businessid') : null;
       console.log("Fetching products with tenant ID:", tenantId);
       
       // Construct schema name from tenant ID

@@ -6,6 +6,7 @@ import { userService } from '@/services/userService';
 import { useUser } from '@/contexts/UserContext';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { setTokens } from '@/utils/tenantUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // This component is currently not used directly in the app
 // It might be causing conflicts with ProductManagement.js
@@ -70,11 +71,11 @@ const ProductForm = () => {
         const sessionResult = await fetchAuthSession({ forceRefresh: true });
         
         if (sessionResult.tokens?.idToken && sessionResult.tokens?.accessToken) {
-          // Store tokens in localStorage
-          localStorage.setItem('tokens', JSON.stringify({
+          // Store tokens in AppCache instead of localStorage
+          setCacheValue('tokens', {
             accessToken: sessionResult.tokens.accessToken.toString(),
             idToken: sessionResult.tokens.idToken.toString()
-          }));
+          });
           
           // Update tokens in tenant utils
           setTokens({
@@ -182,11 +183,11 @@ const ProductForm = () => {
       const accessToken = sessionResult.tokens.accessToken.toString();
       const idToken = sessionResult.tokens.idToken.toString();
       
-      // Store tokens in localStorage
-      localStorage.setItem('tokens', JSON.stringify({
+      // Store tokens in AppCache instead of localStorage
+      setCacheValue('tokens', {
         accessToken,
         idToken
-      }));
+      });
       
       // Update tokens in tenant utils
       setTokens({
@@ -196,8 +197,8 @@ const ProductForm = () => {
       
       logger.info('Session refreshed successfully before submission');
       
-      // Get the tenant ID
-      const tenantId = localStorage.getItem('tenantId');
+      // Get the tenant ID from AppCache
+      const tenantId = getCacheValue('tenantId');
       if (!tenantId) {
         throw new Error('No valid tenant information available');
       }
@@ -291,50 +292,49 @@ const ProductForm = () => {
       setSnackbarMessage('Running authentication diagnostics...');
       setOpenSnackbar(true);
       
-      // Get the tokens directly from localStorage to ensure they're the latest
-      const tokensStr = localStorage.getItem('tokens');
+      // Get the tokens directly from AppCache to ensure they're the latest
+      const tokens = getCacheValue('tokens');
       let accessToken, idToken;
       
-      if (tokensStr) {
+      if (tokens) {
         try {
-          const tokens = JSON.parse(tokensStr);
           accessToken = tokens.accessToken;
           idToken = tokens.idToken;
-          logger.debug('Tokens found in localStorage:', {
+          logger.debug('Tokens found in AppCache:', {
             hasAccessToken: !!accessToken,
             hasIdToken: !!idToken
           });
         } catch (parseError) {
-          logger.error('Error parsing tokens from localStorage:', parseError);
+          logger.error('Error parsing tokens from AppCache:', parseError);
         }
       } else {
-        logger.warn('No tokens found in localStorage');
+        logger.warn('No tokens found in AppCache');
       }
       
-      // Also check regular localStorage keys as backup
+      // Also check regular AppCache keys as backup
       if (!accessToken) {
-        accessToken = localStorage.getItem('accessToken') || 
-                     localStorage.getItem('pyfactor_access_token');
+        accessToken = getCacheValue('accessToken') || 
+                     getCacheValue('pyfactor_access_token');
       }
       
       if (!idToken) {
-        idToken = localStorage.getItem('idToken') || 
-                 localStorage.getItem('pyfactor_id_token');
+        idToken = getCacheValue('idToken') || 
+                 getCacheValue('pyfactor_id_token');
       }
       
       // Get tenant info
-      const tenantId = localStorage.getItem('tenantId');
+      const tenantId = getCacheValue('tenantId');
       
       if (!tenantId) {
         setSnackbarSeverity('error');
-        setSnackbarMessage('No tenant ID found in localStorage');
+        setSnackbarMessage('No tenant ID found in AppCache');
         setOpenSnackbar(true);
         return;
       }
       
       if (!accessToken || !idToken) {
         setSnackbarSeverity('error');
-        setSnackbarMessage('No auth tokens found in localStorage');
+        setSnackbarMessage('No auth tokens found in AppCache');
         setOpenSnackbar(true);
         
         // Try to refresh auth session
@@ -346,11 +346,11 @@ const ProductForm = () => {
             accessToken = refreshResult.tokens.accessToken.toString();
             idToken = refreshResult.tokens.idToken.toString();
             
-            // Store in localStorage
-            localStorage.setItem('tokens', JSON.stringify({
+            // Store in AppCache
+            setCacheValue('tokens', {
               accessToken,
               idToken
-            }));
+            });
             
             logger.info('Successfully refreshed tokens');
             setSnackbarSeverity('success');
@@ -407,11 +407,11 @@ const ProductForm = () => {
             const sessionResult = await fetchAuthSession({ forceRefresh: true });
             
             if (sessionResult.tokens?.idToken && sessionResult.tokens?.accessToken) {
-              // Store tokens in localStorage
-              localStorage.setItem('tokens', JSON.stringify({
+              // Store tokens in AppCache
+              setCacheValue('tokens', {
                 accessToken: sessionResult.tokens.accessToken.toString(),
                 idToken: sessionResult.tokens.idToken.toString()
-              }));
+              });
               
               // Update tokens in tenant utils
               setTokens({

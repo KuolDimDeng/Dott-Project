@@ -5,8 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { confirmSignUp, resendSignUpCode } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { Auth } from 'aws-amplify';
-import { API } from 'aws-amplify';
 import { getCognitoAuth } from '@/utils/cognito';
 import { logInfo, logError, logDebug } from '@/utils/logger';
 
@@ -179,83 +177,41 @@ export default function VerifyEmailPage() {
 
   const handleResendCode = async () => {
     setIsResending(true);
-    setResendError(null);
-    setResendSuccess(null);
-    setError(null);
-    setSuccessMessage(null);
-    
+    setResendSuccess(false);
+    setResendError('');
+
     if (!email) {
-      setResendError('Please enter your email address');
+      setResendError('Please enter an email address');
       setIsResending(false);
       return;
     }
-    
+
     try {
-      console.log('Resending verification code to:', email);
+      await resendSignUpCode({ username: email });
+      console.log('Code resent successfully');
       
-      // Initialize app cache if it doesn't exist
-      if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-      }
+      // Initialize auth cache if needed
+      if (!window.__APP_CACHE) window.__APP_CACHE = {};
+      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
       
-      // Check if we've already sent a code recently
-      const lastCodeSentTime = window.__APP_CACHE.auth.lastCodeSentTime || 0;
-      const now = Date.now();
+      // Store verification status in app cache
+      window.__APP_CACHE.auth.verificationCodeSent = true;
+      // For backwards compatibility, also keep sessionStorage updated
+      sessionStorage.setItem('verificationCodeSent', 'true');
       
-      if (lastCodeSentTime && (now - lastCodeSentTime < 60000)) {
-        setResendError('Please wait at least 1 minute before requesting a new code.');
-        setIsResending(false);
-        return;
+      try {
+        // After resend, try to confirm the user via admin API if needed
+        console.log('User confirmation via admin API is now handled through server-side APIs');
+      } catch (confirmError) {
+        console.log('Could not confirm user via admin API after resend:', confirmError);
+        // Not throwing this error as it's just an additional attempt
       }
 
-      // Resend the verification code
-      const cognitoAuth = getCognitoAuth();
-      await cognitoAuth.resendSignUp(email);
-      
-      // Update app cache with code sent time
-      window.__APP_CACHE.auth.lastCodeSentTime = now;
-      window.__APP_CACHE.auth.pendingVerificationEmail = email;
-        
-      // Fallback to sessionStorage for compatibility
-      try {
-        sessionStorage.setItem('pending_verification_email', email);
-        sessionStorage.setItem('last_code_sent_time', now.toString());
-      } catch (storageError) {
-        console.error('Error storing code sent status in sessionStorage:', storageError);
-      }
-        
-      setResendSuccess('A new verification code has been sent to your email address.');
-      setSuccessMessage('A new verification code has been sent to your email address.');
-      
+      setResendSuccess(true);
     } catch (error) {
-      console.error('Error resending verification code:', error);
-      
-      if (error.code === 'UserNotFoundException') {
-        setResendError('This email address is not registered. Please sign up first.');
-      } else if (error.code === 'LimitExceededException') {
-        setResendError('You have exceeded the limit for sending verification codes. Please try again later.');
-      } else if (error.message?.includes('already confirmed')) {
-        // Email is already verified
-        setResendSuccess('Your email is already verified. You can sign in now!');
-        setVerified(true);
-        
-        // Update verification status in app cache
-        window.__APP_CACHE.auth.emailVerified = true;
-        window.__APP_CACHE.auth.verifiedEmail = email;
-        
-        // Fallback to sessionStorage for compatibility
-        try {
-          sessionStorage.setItem('email_verified', 'true');
-          sessionStorage.setItem('verified_email', email);
-        } catch (storageError) {
-          console.error('Error storing verification status in sessionStorage:', storageError);
-        }
-      } else {
-        setResendError('Failed to resend verification code. Please try again later.');
-      }
+      console.error('Error resending code:', error);
+      setResendError(getErrorMessage(error) || 'Error resending verification code');
     }
-    
     setIsResending(false);
   };
 

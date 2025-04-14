@@ -22,8 +22,8 @@ import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { TextField, Button, CircularProgress, Alert, Checkbox } from '@/components/ui/TailwindComponents';
 import { setTenantIdCookies } from '@/utils/tenantUtils';
 import { ensureAmplifyConfigured, authenticateUser, getAuthSessionWithRetries, clearAllAuthData } from '@/utils/authUtils';
-import { Auth } from 'aws-amplify';
 import jwtDecode from 'jwt-decode';
+import { setCacheValue, getCacheValue } from '@/utils/appCache';
 
 export default function SignInForm({ propEmail, setParentEmail, mode, setMode, redirectPath, newAccount, plan }) {
   const [email, setEmail] = useState(propEmail || '');
@@ -63,8 +63,9 @@ const [state, dispatch] = useReducer(reducer, initialState);
     if (mode === 'auto-signin' && email && !isLoading && !isAuthenticated) {
       logger.debug('[SignInForm] Auto-signin triggered with email:', email);
       
-      // Get the stored password for bypassed verification
-      const storedPassword = localStorage.getItem('tempPassword');
+      // Use appCache instead of localStorage for temporary password storage
+      const { getCacheValue, removeCacheValue } = require('@/utils/appCache');
+      const storedPassword = getCacheValue('tempPassword');
       
       if (storedPassword) {
         // We have a stored password, use it for auto-signin
@@ -78,8 +79,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
             type: 'autoSubmit', 
             isCustomEvent: true 
           });
-          // Clear the password from localStorage after use for security
-          localStorage.removeItem('tempPassword');
+          // Clear the password from appCache after use for security
+          removeCacheValue('tempPassword');
         }, 1000);
         
         return () => clearTimeout(timeoutId);
@@ -137,8 +138,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
           logger.debug('[SignInForm] Detected existing authentication session on signin page');
           
           try {
-            // Check if we can get user attributes (valid token)
-            const userAttributes = await Auth.fetchUserAttributes();
+            // Use the imported fetchUserAttributes instead of Auth.fetchUserAttributes
+            const userAttributes = await fetchUserAttributes();
             logger.debug('[SignInForm] Found authenticated user with attributes on signin page:', 
               { email: userAttributes.email, sub: userAttributes.sub });
             
@@ -363,8 +364,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
         // Display a special message during this process
         setError('Confirming your account automatically... please wait.');
         
-        // Store this email for future reference
-        localStorage.setItem('unconfirmedEmail', email);
+        // Store this email for future reference using AppCache instead of localStorage
+        setCacheValue('unconfirmedEmail', email);
         
         // Get the base URL from the current window location
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -585,19 +586,26 @@ const [state, dispatch] = useReducer(reducer, initialState);
         
         // Try to update Cognito with this tenant ID for future sign-ins
         try {
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          updateUserAttributes({
-            userAttributes: {
-              'custom:tenant_ID': fallback,
-              'custom:updated_at': new Date().toISOString()
+          // Create an async IIFE to support await
+          (async () => {
+            try {
+              const { updateUserAttributes } = await import('aws-amplify/auth');
+              updateUserAttributes({
+                userAttributes: {
+                  'custom:tenant_ID': fallback,
+                  'custom:updated_at': new Date().toISOString()
+                }
+              }).then(() => {
+                logger.info('[SignInForm] Successfully updated Cognito with fallback tenant ID');
+              }).catch(updateError => {
+                logger.error('[SignInForm] Failed to update Cognito with fallback tenant ID:', updateError);
+              });
+            } catch (innerError) {
+              logger.error('[SignInForm] Error importing updateUserAttributes:', innerError);
             }
-          }).then(() => {
-            logger.info('[SignInForm] Successfully updated Cognito with fallback tenant ID');
-          }).catch(updateError => {
-            logger.error('[SignInForm] Failed to update Cognito with fallback tenant ID:', updateError);
-          });
+          })();
         } catch (updateError) {
-          logger.error('[SignInForm] Error importing updateUserAttributes:', updateError);
+          logger.error('[SignInForm] Error in async operation:', updateError);
         }
         
         return fallback;
@@ -661,9 +669,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
       return;
     }
     
-    // SPECIAL HARD-CODED OVERRIDE FOR PROBLEMATIC USER
-    // Set cookie immediately so middleware can detect this user
-    document.cookie = `userEmail=${email}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+    // Update to use AppCache instead of cookies
+    setCacheValue('userEmail', email, { ttl: 7 * 24 * 60 * 60 * 1000 }); // 7 days
     
     if (email.toLowerCase() === 'kuoldimdeng@outlook.com') {
       logger.debug('[SignInForm] PRE-SIGN-IN CRITICAL USER OVERRIDE for:', email);

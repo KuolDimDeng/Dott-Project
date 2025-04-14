@@ -137,12 +137,10 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
           if (
             tenantCheck.rows?.length > 0 && 
             (
-              currentName === 'Default Business' || 
-              currentName === 'My Business' ||
               currentName === '' || 
               !currentName || 
               // Only override with a more specific name (avoid replacing a real name with a generic one)
-              (businessName && businessName !== 'Default Business' && businessName !== 'My Business' && businessName.length > 0)
+              (businessName && businessName.length > 0)
             )
           ) {
             // Update tenant name with real business name
@@ -205,7 +203,7 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
     const schemaName = `tenant_${tenantId.replace(/-/g, '_')}`;
     
     // Create or update tenant record with the best available business name
-    const finalBusinessName = businessName || 'Default Business';
+    const finalBusinessName = businessName || '';
     
     // Set RLS on the custom_auth_tenant table if needed
     try {
@@ -234,11 +232,8 @@ async function createTenantIfNotExists(pool, tenantId, businessName, userId) {
       VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), $1, $4)
       ON CONFLICT (id) DO UPDATE 
       SET name = CASE
-            WHEN custom_auth_tenant.name IS NULL THEN $2
             WHEN custom_auth_tenant.name = '' THEN $2
-            WHEN custom_auth_tenant.name = 'Default Business' THEN $2
-            WHEN custom_auth_tenant.name = 'My Business' THEN $2
-            WHEN $2 != '' AND $2 != 'Default Business' AND $2 != 'My Business' THEN $2
+            WHEN $2 != '' THEN $2
             ELSE custom_auth_tenant.name
           END, 
           updated_at = NOW(),

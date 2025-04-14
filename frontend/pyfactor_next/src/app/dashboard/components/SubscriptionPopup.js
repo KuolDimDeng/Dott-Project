@@ -7,6 +7,7 @@ import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import { logger } from '@/utils/logger';
 import { forceRedirect, storeRedirectDebugInfo, safeParseJson } from '@/utils/redirectUtils';
 import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
+import { setCacheValue } from '@/utils/appCache';
 
 const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   // Use either open or isOpen prop for backward compatibility
@@ -319,28 +320,18 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
         // Store selected plan info in sessionStorage for the payment page
         try {
           const subscriptionData = {
-            plan: selectedPlan,
-            billing_interval: billingCycle,
+            planId: selectedPlan,
             interval: billingCycle,
-            payment_method: 'credit_card',
-            timestamp: new Date().toISOString(),
-            // Include business info for database storage after payment
-            businessInfo: {
-              businessName: userData?.business_name || '',
-              businessType: userData?.business_type || '',
-              businessCountry: userData?.business_country || '',
-              legalStructure: userData?.legal_structure || '',
-              businessId: userData?.business_id || ''
-            }
+            timestamp: Date.now(),
           };
           
           sessionStorage.setItem('pendingSubscription', JSON.stringify(subscriptionData));
           
-          // Also store in localStorage as backup
-          localStorage.setItem('pendingSubscription_backup', JSON.stringify({
+          // Store in AppCache instead of localStorage
+          setCacheValue('pendingSubscription', {
             ...subscriptionData,
             backup_created: new Date().toISOString()
-          }));
+          });
           
           // Update Cognito with subscription plan information (intent to pay)
           try {

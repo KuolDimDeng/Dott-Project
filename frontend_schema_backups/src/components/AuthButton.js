@@ -5,26 +5,14 @@ import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
-import { fetchAuthSession } from 'aws-amplify/auth';
-
-// Helper function to get a cookie by name
-const getCookie = (name) => {
-  if (typeof document === 'undefined') return null;
-  
-  const cookies = document.cookie.split(';');
-  for (let i = 0; i < cookies.length; i++) {
-    const cookie = cookies[i].trim();
-    if (cookie.startsWith(name + '=')) {
-      return cookie.substring(name.length + 1);
-    }
-  }
-  return null;
-};
+import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { getAllUserAttributes } from '@/utils/authCookieReplacer';
 
 // Helper function to reset previously onboarded status (for testing only)
 export const resetPreviouslyOnboarded = () => {
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('previouslyOnboarded');
+    removeCacheValue('previouslyOnboarded');
     console.log('Cleared previously onboarded status for testing');
   }
 };
@@ -37,41 +25,64 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
   const [buttonText, setButtonText] = useState("GET STARTED FOR FREE");
   const { t } = useTranslation('auth');
 
-  // Check if cookies indicate a previous onboarding
+  // Check if Cognito attributes indicate a previous onboarding
   useEffect(() => {
-    try {
-      // Only check once on component mount
-      const onboardedStatus = getCookie('onboardedStatus');
-      const onboardingComplete = getCookie('onboardingComplete');
-      const setupCompleted = getCookie('setupCompleted');
-      
-      const isPreviouslyOnboarded = onboardedStatus === 'complete' || 
-                                   onboardingComplete === 'true' || 
-                                   setupCompleted === 'true';
+    const checkOnboardingStatus = async () => {
+      try {
+        // First check AppCache for faster response
+        const cachedOnboardingStatus = getCacheValue('onboarding_status');
+        if (cachedOnboardingStatus === 'complete') {
+          setPreviouslyOnboarded(true);
+          return;
+        }
+        
+        // Then try to get attributes from Cognito
+        const userAttributes = await getAllUserAttributes().catch(() => null);
+        
+        const isPreviouslyOnboarded = 
+          (userAttributes?.['custom:onboarding'] || '').toLowerCase() === 'complete' || 
+          (userAttributes?.['custom:setupdone'] || '').toLowerCase() === 'true';
                                    
-      setPreviouslyOnboarded(isPreviouslyOnboarded);
-      
-      // Always log authentication state for debugging
-      logger.debug('[AuthButton state]:', { 
-        isAuthenticated: !!user, 
-        previouslyOnboarded: isPreviouslyOnboarded,
-        buttonText
-      });
-    } catch (e) {
-      logger.error('[AuthButton] Error checking cookies:', e);
-    }
+        setPreviouslyOnboarded(isPreviouslyOnboarded);
+        
+        // Cache the result for faster access next time
+        if (isPreviouslyOnboarded) {
+          setCacheValue('onboarding_status', 'complete');
+        }
+        
+        // Always log authentication state for debugging
+        logger.debug('[AuthButton state]:', { 
+          isAuthenticated: !!user, 
+          previouslyOnboarded: isPreviouslyOnboarded,
+          buttonText
+        });
+      } catch (e) {
+        logger.error('[AuthButton] Error checking onboarding status:', e);
+      }
+    };
+    
+    checkOnboardingStatus();
   }, []);
 
   // Update authentication state when session changes - debounce the updates
   useEffect(() => {
     if (!loading) {
-      // Consider authenticated if we have a user or valid session
-      const hasValidSession = !!user || document.cookie.includes('hasSession=true');
+      // Get authentication status from the session
+      const checkSession = async () => {
+        try {
+          const session = await fetchAuthSession().catch(() => null);
+          const hasValidSession = !!user || !!session?.tokens?.idToken;
+          
+          // Avoid constant re-rendering
+          if (isAuthenticated !== hasValidSession) {
+            setIsAuthenticated(hasValidSession);
+          }
+        } catch (error) {
+          logger.error('[AuthButton] Error checking session:', error);
+        }
+      };
       
-      // Avoid constant re-rendering
-      if (isAuthenticated !== hasValidSession) {
-        setIsAuthenticated(hasValidSession);
-      }
+      checkSession();
     }
   }, [user, loading]);
 
@@ -95,34 +106,39 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
     }
   }, [isAuthenticated, previouslyOnboarded]);
 
-  // Helper function to update cookies
-  const updateCookies = async (onboardingStep, onboardedStatus, setupCompleted = false) => {
+  // Helper function to update onboarding attributes in Cognito
+  const updateOnboardingAttributes = async (onboardingStep, onboardedStatus, setupCompleted = false) => {
     try {
       const { tokens } = await fetchAuthSession();
       
       if (tokens?.idToken) {
-        logger.debug('[AuthButton] Updating cookies before navigation');
+        logger.debug('[AuthButton] Updating Cognito attributes before navigation');
         
-        await fetch('/api/auth/set-cookies', {
+        await fetch('/api/user/update-attributes', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${tokens.accessToken.toString()}`
           },
           body: JSON.stringify({
-            idToken: tokens.idToken.toString(),
-            accessToken: tokens.accessToken.toString(),
-            refreshToken: tokens.refreshToken?.toString(),
-            onboardingStep,
-            onboardedStatus,
-            setupCompleted
+            attributes: {
+              'custom:onboarding': onboardedStatus,
+              'custom:onboardingStep': onboardingStep,
+              'custom:setupdone': setupCompleted ? 'true' : 'false'
+            }
           }),
         });
         
-        logger.debug('[AuthButton] Successfully updated cookies');
+        // Update AppCache as well
+        setCacheValue('onboarding_status', onboardedStatus.toLowerCase());
+        setCacheValue('onboarding_step', onboardingStep);
+        setCacheValue('setup_completed', setupCompleted ? 'true' : 'false');
+        
+        logger.debug('[AuthButton] Successfully updated attributes');
       }
     } catch (error) {
-      logger.error('[AuthButton] Failed to update cookies:', error);
-      // Continue with navigation even if cookie update fails
+      logger.error('[AuthButton] Failed to update attributes:', error);
+      // Continue with navigation even if attribute update fails
     }
   };
   
@@ -132,7 +148,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
       return {
         text: t('your_dashboard', 'YOUR DASHBOARD'),
         action: async () => {
-          await updateCookies('complete', 'complete', true);
+          await updateOnboardingAttributes('complete', 'complete', true);
           router.push('/dashboard');
         }
       };
@@ -147,19 +163,19 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
           const onboardingStatus = user.attributes?.['custom:onboarding'];
           switch(onboardingStatus) {
             case 'BUSINESS_INFO':
-              await updateCookies('business-info', 'BUSINESS_INFO');
+              await updateOnboardingAttributes('business-info', 'BUSINESS_INFO');
               router.push('/onboarding/business-info');
               break;
             case 'SUBSCRIPTION':
-              await updateCookies('subscription', 'SUBSCRIPTION');
+              await updateOnboardingAttributes('subscription', 'SUBSCRIPTION');
               router.push('/onboarding/subscription');
               break;
             case 'PAYMENT':
-              await updateCookies('payment', 'PAYMENT');
+              await updateOnboardingAttributes('payment', 'PAYMENT');
               router.push('/onboarding/payment');
               break;
             case 'SETUP':
-              await updateCookies('setup', 'SETUP');
+              await updateOnboardingAttributes('setup', 'SETUP');
               router.push('/onboarding/setup');
               break;
             default:

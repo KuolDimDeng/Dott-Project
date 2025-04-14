@@ -129,6 +129,10 @@ const InventoryManagement = enhancedLazy(() => import('@/app/inventory/component
 // Adding error handling to chunk loading
 const Home = enhancedLazy(() => import('./Home'), 'Home');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
+const TaxManagement = enhancedLazy(() => import('./forms/TaxManagement.js'), 'Tax Management');
+const BenefitsManagement = enhancedLazy(() => import('./forms/BenefitsManagement.js'), 'Benefits Management');
+const ReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'Reports Management');
+const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
 
 // Add lazy loading for Transport components
 const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');

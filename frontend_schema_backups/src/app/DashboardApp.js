@@ -13,6 +13,8 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 /**
  * Global dashboard app component that runs at the application level
@@ -47,15 +49,15 @@ const DashboardApp = ({ children }) => {
       const setupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED);
       const freePlanSelected = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
       
-      // Check localStorage as well
+      // Check AppCache as well
       let localStorageOnboarding = null;
       let localStorageSetupDone = null;
       
       try {
-        localStorageOnboarding = localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS);
-        localStorageSetupDone = localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+        localStorageOnboarding = getCacheValue(STORAGE_KEYS.ONBOARDING_STATUS);
+        localStorageSetupDone = getCacheValue(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
       } catch (e) {
-        // Ignore localStorage errors
+        // Ignore AppCache errors
       }
       
       // Consider user onboarded if ANY of these indicators are true
@@ -96,6 +98,8 @@ const DashboardApp = ({ children }) => {
       // consider this as completed onboarding
       if (pathname.includes('/dashboard') && isNewAccount && planSelected) {
         logger.info('[DashboardApp] New account with plan detected, setting onboarding completion');
+        
+        // Set cookies for backward compatibility
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/`;
         document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/`;
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/`;
@@ -103,11 +107,21 @@ const DashboardApp = ({ children }) => {
           document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/`;
         }
         
+        // Update AppCache
         try {
-          localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
-          localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+          setCacheValue(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
+          setCacheValue(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+          
+          // Also update Cognito attributes in the background
+          saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE).catch(e => {
+            logger.warn('[DashboardApp] Error updating Cognito onboarding status:', e);
+          });
+          
+          saveUserPreference('custom:setupdone', 'true').catch(e => {
+            logger.warn('[DashboardApp] Error updating Cognito setup done:', e);
+          });
         } catch (e) {
-          // Ignore localStorage errors
+          // Ignore AppCache errors
         }
         
         return; // Allow dashboard access
@@ -201,7 +215,7 @@ const DashboardApp = ({ children }) => {
         
         setInitialCheckComplete(true);
         
-        // Also check cookies and localStorage to see if user is truly onboarded
+        // Also check cookies and AppCache to see if user is truly onboarded
         // Helper to get cookie value
         const getCookie = (name) => {
           const value = document.cookie.split('; ')
@@ -216,14 +230,14 @@ const DashboardApp = ({ children }) => {
         const cookieFreePlan = getCookie(COOKIE_NAMES.FREE_PLAN_SELECTED);
         const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
         
-        // Check localStorage too
+        // Check AppCache too
         let localStorageOnboarded = false;
         try {
           localStorageOnboarded = 
-            localStorage.getItem(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE || 
-            localStorage.getItem(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
+            getCacheValue(STORAGE_KEYS.ONBOARDING_STATUS) === ONBOARDING_STATUS.COMPLETE || 
+            getCacheValue(STORAGE_KEYS.SETUP_COMPLETED) === 'true';
         } catch (e) {
-          // Ignore localStorage errors
+          // Ignore AppCache errors
         }
         
         // Consider onboarded if ANY indicator shows completion
@@ -256,11 +270,11 @@ const DashboardApp = ({ children }) => {
              cookieFreePlan === 'true' ||
              cookieOnboardingStep === ONBOARDING_STEPS.COMPLETE ||
              localStorageOnboarded)) {
-          logger.info('[DashboardApp] Onboarding complete in cookies/localStorage, allowing dashboard access');
+          logger.info('[DashboardApp] Onboarding complete in cookies/AppCache, allowing dashboard access');
           
           // CRITICAL FIX: Always update Cognito attributes to match cookie state
           // This prevents race conditions where Cognito might not be updated yet
-          logger.info('[DashboardApp] Proactively updating Cognito to match cookies/localStorage state');
+          logger.info('[DashboardApp] Proactively updating Cognito to match cookies/AppCache state');
           try {
             const result = await fetch('/api/user/update-attributes', {
               method: 'POST',

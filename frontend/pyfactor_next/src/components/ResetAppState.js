@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
+import { clearCache } from '@/utils/appCache';
 
 /**
  * ResetAppState - A component that provides a button to reset all application state
@@ -32,11 +33,11 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         await updateUserAttributes({
           userAttributes: {
             'custom:onboardingStep': '',
-            'custom:onboardedStatus': '',
+            'custom:onboarding': '',
             'custom:businessInfoCompleted': 'FALSE',
             'custom:subscriptionCompleted': 'FALSE',
             'custom:paymentCompleted': 'FALSE',
-            'custom:setupCompleted': 'FALSE',
+            'custom:setupdone': 'FALSE',
             'custom:freePlanSelected': '',
             'custom:businessInfo': '',
             'custom:subscriptionInfo': '',
@@ -46,6 +47,15 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         logger.debug('[ResetAppState] Successfully reset Cognito attributes');
       } catch (cognitoErr) {
         logger.warn('[ResetAppState] Error resetting Cognito attributes:', cognitoErr);
+      }
+
+      // Clear AppCache
+      logger.debug('[ResetAppState] Clearing AppCache');
+      try {
+        clearCache();
+        logger.debug('[ResetAppState] Successfully cleared AppCache');
+      } catch (appCacheErr) {
+        logger.warn('[ResetAppState] Error clearing AppCache:', appCacheErr);
       }
 
       // Clear localStorage
@@ -153,6 +163,9 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         window.__REDIRECT_LOOP_DETECTED = false;
         window.__HARD_CIRCUIT_BREAKER = false;
         window.__LAST_REDIRECT_ERROR = null;
+        
+        // Reset APP_CACHE explicitly
+        window.__APP_CACHE = {};
       }
 
       // Call API endpoint to clear cookies on server side

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
-import { Cookies } from 'cookies';
 
 // Flag to determine if we're in development mode with no backend for signup only
 const BYPASS_SIGNUP_BACKEND = process.env.NEXT_PUBLIC_BYPASS_SIGNUP_BACKEND === 'true' || process.env.BYPASS_SIGNUP_BACKEND === 'true';
@@ -115,7 +114,7 @@ export async function POST(request) {
     
     // Generate a business name from user data if not provided
     let businessName = data.business_name || data.businessName;
-    if (!businessName || businessName === 'Default Business' || businessName === 'My Business') {
+    if (!businessName || businessName === '') {
       // Try to generate a business name from user's name
       if ((data.firstName || data.first_name) && (data.lastName || data.last_name)) {
         businessName = `${data.firstName || data.first_name} ${data.lastName || data.last_name}'s Business`;
@@ -130,28 +129,11 @@ export async function POST(request) {
           businessName = `${emailName.charAt(0).toUpperCase() + emailName.slice(1)}'s Business`;
         }
       }
-      // If all else fails, use a generic business name
-      if (!businessName) {
-        businessName = 'My Business';
-        logger.info('[Signup] No business name could be generated, using default: My Business');
-      } else {
-        logger.info(`[Signup] Generated business name from user data: ${businessName}`);
-      }
-      
-      // Set a cookie so the dashboard can access the business name during sign-up
-      try {
-        if (typeof Response !== 'undefined') {
-          // Create a Set-Cookie header for the response
-          const cookies = new Cookies();
-          cookies.set('businessName', businessName, {
-            path: '/',
-            maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-            sameSite: 'lax'
-          });
-        }
-      } catch (cookieError) {
-        console.warn('[Signup] Error setting businessName cookie:', cookieError);
-      }
+      // If no valid business name was found or generated, use empty string
+      businessName = '';
+      logger.info('[Signup] No business name could be generated, using empty string');
+    } else {
+      logger.info(`[Signup] Generated business name from user data: ${businessName}`);
     }
     
     const userData = {

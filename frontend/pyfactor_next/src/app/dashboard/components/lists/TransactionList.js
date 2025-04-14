@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import { getCacheValue } from '@/utils/appCache';
 
 const TransactionList = () => {
   const [transactions, setTransactions] = useState([]);
@@ -7,7 +8,7 @@ const TransactionList = () => {
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = getCacheValue('token');
         const response = await fetch('http://localhost:8000/api/transactions/', {
           headers: {
             Authorization: `Bearer ${token}`,

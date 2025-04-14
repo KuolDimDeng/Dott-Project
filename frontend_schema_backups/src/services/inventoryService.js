@@ -9,6 +9,7 @@ import userService from './userService';
 import { getTenantHeaders } from '@/utils/tenantUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * Generates a product code based on product name
@@ -1130,8 +1131,8 @@ export const storeProductsOffline = (products) => {
   }
   
   try {
-    const offlineProducts = JSON.stringify(products);
-    localStorage.setItem('offline_products', offlineProducts);
+    // Store products in AppCache with 24-hour TTL
+    setCacheValue('offline_products', products, { ttl: 24 * 60 * 60 * 1000 });
     logger.debug(`Stored ${products.length} products for offline use`);
   } catch (error) {
     logger.error('Failed to store products for offline use:', error);
@@ -1144,9 +1145,9 @@ export const storeProductsOffline = (products) => {
  */
 export const getOfflineProducts = () => {
   try {
-    const offlineProducts = localStorage.getItem('offline_products');
+    const offlineProducts = getCacheValue('offline_products');
     if (offlineProducts) {
-      return JSON.parse(offlineProducts);
+      return offlineProducts;
     }
   } catch (error) {
     logger.error('Failed to get offline products:', error);

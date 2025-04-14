@@ -2,6 +2,8 @@ import { logger } from '@/utils/logger';
 import { getAuthToken } from '@/utils/auth';
 import { API_BASE_URL } from '@/config/constants';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { updateUserAttributes, fetchUserAttributes } from '@/config/amplifyUnified';
 
 /**
  * Optimized utility function to verify tenant consistency for Row Level Security (RLS)
@@ -38,20 +40,16 @@ export async function verifyTenantForRLS() {
     // Get tenant ID from various sources
     let tenantId;
     try {
-      // First check localStorage
-      if (typeof localStorage !== 'undefined') {
-        tenantId = localStorage.getItem('tenantId');
-      }
+      // First check AppCache (replacement for localStorage)
+      tenantId = getCacheValue('tenantId');
       
-      // Then check cookies if not found in localStorage
-      if (!tenantId && typeof document !== 'undefined') {
-        const cookies = document.cookie.split(';');
-        for (const cookie of cookies) {
-          const [name, value] = cookie.trim().split('=');
-          if (name === 'tenantId' && value) {
-            tenantId = value;
-            break;
-          }
+      // Then check Cognito attributes if not found in AppCache
+      if (!tenantId) {
+        try {
+          const attributes = await fetchUserAttributes().catch(() => ({}));
+          tenantId = attributes['custom:tenantId'] || attributes['custom:businessid'];
+        } catch (cognitoError) {
+          logger.warn(`[Tenant] Error fetching Cognito attributes: ${cognitoError.message}`);
         }
       }
     } catch (e) {
@@ -131,14 +129,19 @@ export async function verifyTenantForRLS() {
     // Store tenant ID if we got a valid one from the API
     if (data.tenantId) {
       try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem('tenantId', data.tenantId);
-        }
+        // Store in AppCache (replacement for localStorage)
+        setCacheValue('tenantId', data.tenantId, { ttl: 30 * 24 * 60 * 60 * 1000 }); // 30 days
         
-        if (typeof document !== 'undefined') {
-          const expiration = new Date();
-          expiration.setDate(expiration.getDate() + 30);
-          document.cookie = `tenantId=${data.tenantId}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
+        // Store in Cognito attributes for persistence
+        try {
+          await updateUserAttributes({
+            userAttributes: {
+              'custom:tenantId': data.tenantId,
+              'custom:businessid': data.tenantId
+            }
+          }).catch(err => logger.warn(`[Tenant] Failed to update Cognito with tenant ID: ${err.message}`));
+        } catch (cognitoError) {
+          logger.warn(`[Tenant] Error updating Cognito attributes: ${cognitoError.message}`);
         }
       } catch (e) {
         logger.warn(`[Tenant] Error saving tenant ID: ${e.message}`);

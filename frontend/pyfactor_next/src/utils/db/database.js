@@ -398,17 +398,4 @@ export async function getClient() {
   return await pool.connect();
 }
 
-// Export the database functions
-export {
-  query,
-  getClient,
-  transaction,
-  ensureSchema,
-  ensureTable,
-  ensureProductsTable,
-  ensureInventoryProductTable,
-  ensureAllProductTables,
-  configureDatabase,
-  closePool,
-  getPool,
-}; 
+// All database functions are already exported individually above 

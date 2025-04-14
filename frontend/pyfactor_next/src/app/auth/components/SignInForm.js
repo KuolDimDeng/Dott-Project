@@ -153,7 +153,7 @@ export default function SignInForm() {
                       email: userAttributes.email || formData.username,
                       businessName: userAttributes['custom:businessname'] || 
                         (userAttributes['given_name'] ? `${userAttributes['given_name']}'s Business` : 
-                         userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : 'My Business'),
+                         userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : ''),
                       businessType: userAttributes['custom:businesstype'] || 'Other',
                       businessCountry: userAttributes['custom:businesscountry'] || 'US'
                     })

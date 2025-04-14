@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { syncRepairedTenantId, storeTenantInfo } from '@/utils/tenantUtils';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getUserPreference, saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 /**
  * ClientDataSync component monitors for tenant ID inconsistencies
@@ -16,44 +18,32 @@ export default function ClientDataSync() {
   const session = useOptionalSession();
 
   useEffect(() => {
-    // Check for tenant ID inconsistencies between cookies and localStorage
+    // Check for tenant ID inconsistencies between AppCache and Cognito attributes
     const checkAndSyncTenantIds = async () => {
       try {
         // Only run this once
         if (syncing) return;
         setSyncing(true);
 
-        // Get tenant ID from cookies
-        const getCookie = (name) => {
-          try {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
-          } catch (e) {
-            return null;
-          }
-        };
-
-        // Use try/catch to prevent errors if localStorage is not available
-        let localStorageTenantId = null;
+        // Get tenant ID from AppCache
+        const appCacheTenantId = getCacheValue('tenantId');
+        
+        // Get tenant ID from Cognito attributes
+        let cognitoTenantId = null;
         try {
-          localStorageTenantId = localStorage.getItem('tenantId');
+          cognitoTenantId = await getUserPreference(PREF_KEYS.TENANT_ID);
         } catch (e) {
-          // Ignore localStorage errors
+          // Ignore Cognito errors
+          logger.error('[ClientDataSync] Error getting tenant ID from Cognito:', e);
         }
-
-        const tenantIdCookie = getCookie('tenantId');
-        const businessIdCookie = getCookie('businessid');
         
         // Get tenant ID from session if available
         const sessionTenantId = session?.data?.user?.tenantId;
         const sessionStatus = session?.status;
 
         logger.info('[ClientDataSync] Checking tenant IDs:', {
-          tenantIdCookie,
-          businessIdCookie,
-          localStorageTenantId,
+          appCacheTenantId,
+          cognitoTenantId,
           sessionTenantId,
           sessionStatus
         });
@@ -62,45 +52,33 @@ export default function ClientDataSync() {
         if (sessionTenantId && isValidUuid(sessionTenantId)) {
           logger.info('[ClientDataSync] Using session tenant ID as source of truth:', sessionTenantId);
           
-          // If cookie or localStorage has different tenant ID, update them
-          if (tenantIdCookie !== sessionTenantId || businessIdCookie !== sessionTenantId || localStorageTenantId !== sessionTenantId) {
+          // If AppCache or Cognito has different tenant ID, update them
+          if (appCacheTenantId !== sessionTenantId || cognitoTenantId !== sessionTenantId) {
             await storeTenantInfo(sessionTenantId);
             logger.info('[ClientDataSync] Updated tenant IDs from session');
           }
           return;
         }
 
-        // If we have different IDs between cookies, try to sync them
-        if (tenantIdCookie && businessIdCookie && tenantIdCookie !== businessIdCookie) {
-          logger.info('[ClientDataSync] Different tenant IDs found in cookies');
+        // If Cognito and AppCache have different IDs, sync them
+        if (cognitoTenantId && appCacheTenantId && cognitoTenantId !== appCacheTenantId) {
+          logger.info('[ClientDataSync] Different tenant IDs found in Cognito vs AppCache');
           
           // Validate UUID format for both
-          if (isValidUuid(tenantIdCookie) && !isValidUuid(businessIdCookie)) {
-            await syncRepairedTenantId(businessIdCookie, tenantIdCookie);
-          } else if (!isValidUuid(tenantIdCookie) && isValidUuid(businessIdCookie)) {
-            await syncRepairedTenantId(tenantIdCookie, businessIdCookie);
-          }
-        }
-
-        // If local storage has a different tenant ID, sync it
-        if (localStorageTenantId && tenantIdCookie && localStorageTenantId !== tenantIdCookie) {
-          logger.info('[ClientDataSync] Different tenant ID in localStorage vs cookie');
-          
-          // Update localStorage with cookie value if it's valid
-          if (isValidUuid(tenantIdCookie)) {
-            try {
-              localStorage.setItem('tenantId', tenantIdCookie);
-              logger.info('[ClientDataSync] Updated localStorage with cookie tenant ID');
-            } catch (e) {
-              // Ignore localStorage errors
-            }
+          if (isValidUuid(cognitoTenantId) && !isValidUuid(appCacheTenantId)) {
+            await syncRepairedTenantId(appCacheTenantId, cognitoTenantId);
+          } else if (!isValidUuid(cognitoTenantId) && isValidUuid(appCacheTenantId)) {
+            await syncRepairedTenantId(cognitoTenantId, appCacheTenantId);
+          } else if (isValidUuid(cognitoTenantId) && isValidUuid(appCacheTenantId)) {
+            // Both are valid UUIDs but different - prioritize Cognito's value
+            await syncRepairedTenantId(appCacheTenantId, cognitoTenantId);
           }
         }
 
         // Check for invalid tenant IDs
         if (
-          (tenantIdCookie && !isValidUuid(tenantIdCookie)) ||
-          (businessIdCookie && !isValidUuid(businessIdCookie))
+          (appCacheTenantId && !isValidUuid(appCacheTenantId)) ||
+          (cognitoTenantId && !isValidUuid(cognitoTenantId))
         ) {
           logger.warn('[ClientDataSync] Invalid tenant ID detected, requesting repair');
           
@@ -111,7 +89,7 @@ export default function ClientDataSync() {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({ 
-                tenantId: tenantIdCookie || businessIdCookie,
+                tenantId: appCacheTenantId || cognitoTenantId,
                 requestRepair: true 
               })
             });

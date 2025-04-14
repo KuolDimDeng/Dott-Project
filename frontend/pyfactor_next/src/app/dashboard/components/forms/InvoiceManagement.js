@@ -8,6 +8,7 @@ import { logger } from '@/utils/logger';
 import { useNotification } from '@/context/NotificationContext';
 import PropTypes from 'prop-types';
 import { toast } from 'react-hot-toast';
+import { getCacheValue } from '@/utils/appCache';
 
 // Tailwind theme utility to replace useTheme from MUI
 const getTailwindColor = (colorName, shade = 500) => {
@@ -121,23 +122,31 @@ const [state, dispatch] = useReducer(reducer, initialState);
       console.log('[InvoiceManagement] Fetching invoices...');
       
       try {
-        const data = await invoiceApi.getAll();
+        const response = await fetch('/api/invoices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            operation: 'getAll',
+            tenantId: getCacheValue('tenantId'),
+            schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
+          })
+        });
         
         // Check if data is HTML instead of JSON
-        if (typeof data === 'string' && data.trim().startsWith('<!DOCTYPE html>')) {
+        if (typeof response === 'string' && response.trim().startsWith('<!DOCTYPE html>')) {
           console.error('[InvoiceManagement] Received HTML response instead of JSON for invoices');
           setInvoices([]);
           notifyError('Server returned an invalid response. Please try again later.');
           return;
         }
         
-        console.log('[InvoiceManagement] Invoices data:', data);
+        console.log('[InvoiceManagement] Invoices data:', response);
         
         // Set the invoices state only if we have valid data
-        if (Array.isArray(data)) {
-          setInvoices(data);
+        if (Array.isArray(response)) {
+          setInvoices(response);
         } else {
-          console.warn('[InvoiceManagement] Invalid invoice data format:', typeof data);
+          console.warn('[InvoiceManagement] Invalid invoice data format:', typeof response);
           setInvoices([]);
           notifyError('Invalid invoice data format received');
         }
@@ -164,8 +173,18 @@ const [state, dispatch] = useReducer(reducer, initialState);
 
   const fetchCustomers = async () => {
     try {
-      const data = await customerApi.getAll();
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          operation: 'getAll',
+          tenantId: getCacheValue('tenantId'),
+          schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
+        })
+      });
+      
       // Ensure data is an array
+      const data = await response.json();
       setCustomers(Array.isArray(data) ? data : []);
       console.log('[InvoiceManagement] Customers data:', Array.isArray(data) ? `${data.length} customers loaded` : 'No customers found or invalid format');
     } catch (error) {
@@ -179,8 +198,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
     try {
       console.log('[InvoiceManagement] Fetching products...');
       const data = await productApi.getAll({
-        tenantId: localStorage.getItem('tenantId'),
-        schema: `tenant_${localStorage.getItem('tenantId')?.replace(/-/g, '_')}`
+        tenantId: getCacheValue('tenantId'),
+        schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
       });
       
       // Ensure data is an array
@@ -215,8 +234,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
     try {
       console.log('[InvoiceManagement] Fetching services...');
       const data = await serviceApi.getAll({
-        tenantId: localStorage.getItem('tenantId'),
-        schema: `tenant_${localStorage.getItem('tenantId')?.replace(/-/g, '_')}`
+        tenantId: getCacheValue('tenantId'),
+        schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
       });
       
       // Ensure data is an array

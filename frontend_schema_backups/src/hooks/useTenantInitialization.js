@@ -7,6 +7,7 @@ import { getTenantId, storeTenantInfo } from '@/utils/tenantUtils';
 import { useAuth } from './auth';
 import { signIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
 import { reconfigureAmplify } from '@/config/amplifyConfig';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 // Import standardized constants
 import { 
   COGNITO_ATTRIBUTES,
@@ -16,6 +17,7 @@ import {
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
 import { useSession } from 'next-auth/react';
+import { getCognitoUserAttributes, setCognitoUserAttribute } from '@/utils/cognitoUtils';
 
 // Lock keys
 const TENANT_LOCK_KEY = 'tenant_initialization_lock';
@@ -40,7 +42,7 @@ const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Check if lock already exists
-  const existingLock = localStorage.getItem(TENANT_LOCK_KEY);
+  const existingLock = getCacheValue(TENANT_LOCK_KEY);
   if (existingLock) {
     // Check if lock is stale (older than timeout)
     const lockData = JSON.parse(existingLock);
@@ -58,7 +60,7 @@ const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  localStorage.setItem(TENANT_LOCK_KEY, JSON.stringify(lockData));
+  setCacheValue(TENANT_LOCK_KEY, JSON.stringify(lockData));
   return true;
 };
 
@@ -67,7 +69,7 @@ const acquireTenantLock = () => {
  */
 const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(TENANT_LOCK_KEY);
+  removeCacheValue(TENANT_LOCK_KEY);
 };
 
 /**
@@ -90,15 +92,15 @@ const getSafeTenantId = () => {
     let tenantId = null;
     let source = null;
     
-    // Try localStorage first
+    // Try AppCache first
     try {
-      tenantId = localStorage.getItem('tenantId');
+      tenantId = getCacheValue('tenantId');
       if (tenantId) {
-        source = 'localStorage';
-        logger.debug('[TenantUtils] Retrieved tenant ID from localStorage:', tenantId);
+        source = 'appCache';
+        logger.debug('[TenantUtils] Retrieved tenant ID from AppCache:', tenantId);
       }
     } catch (e) {
-      logger.warn('[TenantUtils] Error accessing localStorage:', e);
+      logger.warn('[TenantUtils] Error accessing AppCache:', e);
     }
     
     // Try sessionStorage next
@@ -117,6 +119,32 @@ const getSafeTenantId = () => {
     // Try cookies next
     if (!tenantId) {
       try {
+        // Instead of cookies, check Cognito attributes directly
+        const attributes = await getCognitoUserAttributes();
+        
+        if (attributes) {
+          const cognitoTenantId = 
+            attributes['custom:businessid'] || 
+            attributes['custom:tenantId'];
+          
+          if (cognitoTenantId) {
+            tenantId = cognitoTenantId;
+            source = 'cognito';
+            logger.debug('[TenantUtils] Retrieved tenant ID from Cognito attributes:', tenantId);
+            
+            // Store in AppCache for future access
+            setCacheValue('tenantId', tenantId);
+          }
+        }
+      } catch (e) {
+        logger.warn('[TenantUtils] Error accessing Cognito attributes:', e);
+      }
+    }
+    
+    // Check for legacy cookies as last resort during migration period
+    if (!tenantId && typeof window !== 'undefined' && window.__ENABLE_COOKIE_FALLBACK) {
+      try {
+        logger.warn('[TenantUtils] Using cookie fallback for tenantId (migration mode)');
         const cookies = document.cookie.split(';').reduce((acc, cookie) => {
           try {
             const [key, value] = cookie.trim().split('=');
@@ -131,48 +159,20 @@ const getSafeTenantId = () => {
         
         tenantId = cookies.tenantId || cookies.businessid;
         if (tenantId) {
-          source = 'cookies';
-          logger.debug('[TenantUtils] Retrieved tenant ID from cookies:', tenantId);
-        }
-      } catch (e) {
-        logger.warn('[TenantUtils] Error accessing cookies:', e);
-      }
-    }
-    
-    // Try Cognito storage as a last resort
-    if (!tenantId) {
-      try {
-        // Look for Cognito storage keys
-        const cognitoKey = Object.keys(localStorage).find(key => 
-          key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
-        );
-        
-        if (cognitoKey) {
-          const lastAuthUser = localStorage.getItem(cognitoKey);
-          if (lastAuthUser) {
-            // User storage often contains the tenantId
-            const userDataKey = Object.keys(localStorage).find(key => 
-              key.includes('CognitoIdentityServiceProvider') && 
-              key.includes(lastAuthUser) && 
-              key.includes('userData')
-            );
-            
-            if (userDataKey) {
-              try {
-                const userData = JSON.parse(localStorage.getItem(userDataKey));
-                tenantId = userData?.tenantId || userData?.['custom:tenantId'] || userData?.['custom:businessid'];
-                if (tenantId) {
-                  source = 'cognito_storage';
-                  logger.debug('[TenantUtils] Retrieved tenant ID from Cognito storage:', tenantId);
-                }
-              } catch (e) {
-                logger.warn('[TenantUtils] Error parsing Cognito user data:', e);
-              }
-            }
+          source = 'cookies-legacy';
+          logger.debug('[TenantUtils] Retrieved tenant ID from legacy cookies:', tenantId);
+          
+          // Migrate to Cognito attributes if we found a tenant ID in cookies
+          try {
+            setCognitoUserAttribute('custom:tenantId', tenantId);
+            setCognitoUserAttribute('custom:businessid', tenantId);
+            logger.debug('[TenantUtils] Migrated cookie tenant ID to Cognito attributes');
+          } catch (migrateError) {
+            logger.warn('[TenantUtils] Error migrating cookie tenant ID to Cognito:', migrateError);
           }
         }
       } catch (e) {
-        logger.warn('[TenantUtils] Error checking Cognito storage:', e);
+        logger.warn('[TenantUtils] Error accessing legacy cookies:', e);
       }
     }
     
@@ -247,30 +247,102 @@ export function useTenantInitialization() {
       return sessionTenantId;
     }
     
-    // Get from local storage next
-    const localStorageTenantId = 
-      typeof window !== 'undefined' ? localStorage.getItem('tenantId') : null;
+    // Get from AppCache next (replacement for localStorage)
+    const cachedTenantId = getCacheValue('tenantId');
     
-    if (localStorageTenantId) {
-      // Set cookies to ensure consistency
-      if (typeof document !== 'undefined') {
-        document.cookie = `tenantId=${localStorageTenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+    if (cachedTenantId) {
+      // Update Cognito attributes to ensure consistency
+      try {
+        updateUserAttributes({
+          userAttributes: {
+            'custom:businessid': cachedTenantId,
+            'custom:tenantId': cachedTenantId
+          }
+        }).catch(err => logger.warn('[TenantInit] Failed to update Cognito with cached tenant ID:', err));
+      } catch (error) {
+        logger.warn('[TenantInit] Error updating Cognito attributes:', error);
       }
-      return localStorageTenantId;
+      
+      return cachedTenantId;
     }
     
-    // Get from cookie if available
-    const getCookieTenantId = () => {
-      if (typeof document === 'undefined') return null;
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; tenantId=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
+    // Lastly check Cognito attributes directly
+    const checkCognitoAttributes = async () => {
+      try {
+        const attributes = await fetchUserAttributes().catch(() => ({}));
+        const cognitoTenantId = 
+          attributes['custom:businessid'] || 
+          attributes['custom:tenantId'];
+        
+        if (cognitoTenantId) {
+          // Save to AppCache for future fast access
+          setCacheValue('tenantId', cognitoTenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
+          return cognitoTenantId;
+        }
+      } catch (error) {
+        logger.warn('[TenantInit] Error fetching Cognito attributes:', error);
+      }
       return null;
     };
     
-    // Return the cookie tenant ID or null if none available
-    return getCookieTenantId();
+    // This will be processed asynchronously in a useEffect
+    return null;
   }, [session, sessionStatus]);
+  
+  // Initialize tenant ID from Cognito if not found in other sources
+  useEffect(() => {
+    const initFromCognito = async () => {
+      // Skip if we already have a tenant ID from other sources
+      if (getTenantId()) return;
+      
+      try {
+        const attributes = await fetchUserAttributes().catch(() => ({}));
+        const cognitoTenantId = 
+          attributes['custom:businessid'] || 
+          attributes['custom:tenantId'];
+        
+        if (cognitoTenantId) {
+          // Save to AppCache for future fast access
+          setCacheValue('tenantId', cognitoTenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
+          
+          // Force a re-render to update the UI
+          setVerificationResult({
+            tenantId: cognitoTenantId,
+            source: 'cognito'
+          });
+        }
+      } catch (error) {
+        logger.warn('[TenantInit] Error initializing from Cognito:', error);
+      }
+    };
+    
+    initFromCognito();
+  }, [session]);
+  
+  // Save tenant ID to all storage locations when it changes
+  const saveTenantId = useCallback(async (tenantId) => {
+    if (!tenantId) return;
+    
+    try {
+      // Save to AppCache
+      setCacheValue('tenantId', tenantId, { ttl: 30 * 24 * 60 * 60 * 1000 }); // 30 days
+      
+      // Save to Cognito attributes
+      try {
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:businessid': tenantId,
+            'custom:tenantId': tenantId
+          }
+        });
+        logger.debug('[TenantInit] Updated Cognito with tenant ID:', tenantId);
+      } catch (cognitoError) {
+        logger.warn('[TenantInit] Failed to update Cognito attributes:', cognitoError);
+      }
+    } catch (error) {
+      logger.error('[TenantInit] Error saving tenant ID:', error);
+    }
+  }, []);
   
   /**
    * Verify tenant schema exists and create if necessary
@@ -364,8 +436,20 @@ export function useTenantInitialization() {
         
         // Store tenant ID in all storage mechanisms for consistency
         if (typeof window !== 'undefined') {
-          localStorage.setItem('tenantId', tenantId);
-          document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+          // Store in AppCache instead of localStorage
+          setCacheValue('tenantId', tenantId, { ttl: 30 * 24 * 60 * 60 * 1000 }); // 30 days
+          
+          // Update Cognito attributes instead of using cookies
+          try {
+            updateUserAttributes({
+              userAttributes: {
+                'custom:businessid': tenantId,
+                'custom:tenantId': tenantId
+              }
+            }).catch(err => logger.warn('[TenantInit] Failed to update Cognito with tenant ID:', err));
+          } catch (error) {
+            logger.warn('[TenantInit] Error updating Cognito attributes:', error);
+          }
         }
         
         return result;

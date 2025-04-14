@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createNewTenantId, setDevTenantId, getDevTenantId } from '@/utils/devTools';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * Development mode component for managing tenant IDs
@@ -25,7 +26,7 @@ export default function TenantControls() {
     setCurrentTenantId(tenantId);
     
     // Check if using real DB
-    const isUsingRealDb = localStorage.getItem('dev_use_real_db') === 'true';
+    const isUsingRealDb = getCacheValue('dev_use_real_db') === 'true';
     setUsingRealDb(isUsingRealDb);
     
     // Add keyboard shortcut (Ctrl+Shift+T) to toggle the panel
@@ -74,7 +75,7 @@ export default function TenantControls() {
   // Toggle between real and mock DB
   const toggleDatabase = () => {
     const newValue = !usingRealDb;
-    localStorage.setItem('dev_use_real_db', newValue ? 'true' : 'false');
+    setCacheValue('dev_use_real_db', newValue ? 'true' : 'false');
     setUsingRealDb(newValue);
     setMessage(`${newValue ? 'Enabled' : 'Disabled'} real database. Refresh to apply.`);
   };

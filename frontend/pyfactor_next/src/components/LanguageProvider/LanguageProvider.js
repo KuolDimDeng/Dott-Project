@@ -3,13 +3,12 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { I18nextProvider, useTranslation } from 'react-i18next';
-import { useCookies } from 'react-cookie';
 import i18nInstance from '../../i18n';
+import { getLanguagePreference } from '@/utils/userPreferences';
 
 export function LanguageProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
   const pathname = usePathname();
-  const [cookies, setCookie] = useCookies(['i18nextLng']);
   
   // Force re-render when language changes
   const [, setRenderKey] = useState(0);
@@ -23,8 +22,8 @@ export function LanguageProvider({ children }) {
           return detectUserLanguage();
         }
         
-        // Get saved language from localStorage or cookie
-        const savedLang = localStorage.getItem('i18nextLng') || cookies.i18nextLng;
+        // Get saved language from Cognito
+        const savedLang = await getLanguagePreference();
         
         if (savedLang && i18nInstance.options.supportedLngs.includes(savedLang)) {
           await i18nInstance.changeLanguage(savedLang);
@@ -48,7 +47,7 @@ export function LanguageProvider({ children }) {
     };
 
     detectUserLanguage();
-  }, [cookies.i18nextLng]);
+  }, []);
 
   // Listen for language changes
   useEffect(() => {

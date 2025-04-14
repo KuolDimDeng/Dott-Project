@@ -4,7 +4,6 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { serverLogger } from '@/utils/serverLogger';
-import { cookies } from 'next/headers';
 import DashboardLoader from '@/components/DashboardLoader';
 import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
 import dynamic from 'next/dynamic';

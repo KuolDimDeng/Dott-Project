@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 export default function ThemeRegistry({ children }) {
   const [mounted, setMounted] = useState(false);
@@ -10,7 +11,7 @@ export default function ThemeRegistry({ children }) {
     setMounted(true);
     
     // Check for dark mode preference
-    const savedTheme = localStorage.getItem('color-theme');
+    const savedTheme = getCacheValue('color-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -22,7 +23,7 @@ export default function ThemeRegistry({ children }) {
     // Listen to system preference changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e) => {
-      if (!localStorage.getItem('color-theme')) {
+      if (!getCacheValue('color-theme')) {
         if (e.matches) {
           document.documentElement.classList.add('dark');
         } else {

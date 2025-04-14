@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import TransitionPage from '../TransitionPage';
 import { ONBOARDING_STEPS } from '@/constants/onboarding';
+import { setCacheValue } from '@/utils/appCache';
+import { updateUserAttributes } from '@/utils/cognitoAttributes';
 
 export default function SubscriptionToDashboardTransition() {
   const searchParams = useSearchParams();
@@ -40,19 +42,30 @@ export default function SubscriptionToDashboardTransition() {
   }, [searchParams]);
   
   // Handler for dashboard redirect setup
-  const handleBeforeNavigate = () => {
+  const handleBeforeNavigate = async () => {
     try {
-      // Set cookies for session state tracking
-      document.cookie = `onboardingStep=dashboard; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      document.cookie = `subscriptionCompleted=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      document.cookie = `freePlanSelected=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      document.cookie = `selectedPlan=${planData?.plan || 'free'}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      // Update Cognito attributes
+      const attributes = {
+        'custom:onboarding_step': 'complete',
+        'custom:subscription_completed': 'true',
+        'custom:free_plan_selected': 'true',
+        'custom:selected_plan': planData?.plan || 'free',
+        'custom:onboarding_status': 'complete'
+      };
       
-      // Store onboarding status in localStorage
-      localStorage.setItem('onboardingStatus', 'complete');
-      localStorage.setItem('freePlanSelected', 'true');
+      // Update Cognito in the background
+      updateUserAttributes(attributes).catch(err => {
+        console.error('Error updating Cognito attributes:', err);
+      });
       
-      // Store plan data in sessionStorage for dashboard
+      // Update AppCache for immediate access
+      setCacheValue('user_pref_custom:onboarding_step', 'complete', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:subscription_completed', 'true', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:free_plan_selected', 'true', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:selected_plan', planData?.plan || 'free', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:onboarding_status', 'complete', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      
+      // Store plan data in sessionStorage for dashboard (keep this for immediate access during navigation)
       sessionStorage.setItem('freePlanActivated', JSON.stringify({
         plan: planData?.plan || 'free',
         timestamp: Date.now(),

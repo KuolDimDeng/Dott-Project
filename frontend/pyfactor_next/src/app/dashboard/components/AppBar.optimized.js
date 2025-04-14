@@ -18,6 +18,7 @@ import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import { Avatar, Box } from '@/components/ui/TailwindComponents';
 import SubscriptionPopup from './SubscriptionPopup';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const AppBar = ({
   drawerOpen,
@@ -139,7 +140,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         userData.first_name || userData.firstName || userData.given_name;
       const lastName =
         userData.last_name || userData.lastName || userData.family_name;
-      const email = userData.email;
+      const email = userData.email || getCacheValue('authUser');
 
       // Always try to get both initials when possible
       if (firstName && lastName) {
@@ -492,8 +493,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
   // Get business name from localStorage as fallback
   const getBusinessNameFromStorage = () => {
     try {
-      // Check for business info in localStorage
-      const storedInfo = localStorage.getItem('businessInfo');
+      // Check for business info in AppCache
+      const storedInfo = getCacheValue('businessInfo');
       if (storedInfo) {
         const parsedInfo = JSON.parse(storedInfo);
         if (parsedInfo.businessName) {
@@ -502,7 +503,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
             ? decodeURIComponent(parsedInfo.businessName)
             : parsedInfo.businessName;
           logger.debug(
-            '[AppBar] Found business name in localStorage:',
+            '[AppBar] Found business name in AppCache:',
             decodedName
           );
           return decodedName;
@@ -510,20 +511,20 @@ const [state, dispatch] = useReducer(reducer, initialState);
       }
 
       // Try alternative storage keys
-      const alternateName = localStorage.getItem('businessName');
+      const alternateName = getCacheValue('businessName');
       if (alternateName) {
         // Decode URL-encoded values if present
         const decodedName = alternateName.includes('%')
           ? decodeURIComponent(alternateName)
           : alternateName;
         logger.debug(
-          '[AppBar] Found business name in alternate storage:',
+          '[AppBar] Found business name in alternate AppCache:',
           decodedName
         );
         return decodedName;
       }
     } catch (e) {
-      logger.error('[AppBar] Error reading localStorage:', e);
+      logger.error('[AppBar] Error reading AppCache:', e);
     }
     return null;
   };
@@ -532,7 +533,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Check for business name in cookies or localStorage first
+        // Check for business name in cookies or AppCache first
         const cookieBusinessName = getBusinessNameFromCookies();
         const storageBusinessName = getBusinessNameFromStorage();
         const locallyStoredName = cookieBusinessName || storageBusinessName;
@@ -603,7 +604,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         try {
           // Make API request with tenant ID to get correct profile
           const tenantId =
-            localStorage.getItem('tenantId') ||
+            getCacheValue('tenantId') ||
             getCookie('tenantId') ||
             getCookie('custom:businessid');
 
@@ -938,7 +939,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         userData.first_name || userData.firstName || userData.given_name;
       const lastName =
         userData.last_name || userData.lastName || userData.family_name;
-      const email = userData.email || localStorage.getItem('authUser');
+      const email = userData.email || getCacheValue('authUser');
 
       if (firstName && lastName) {
         const first = firstName.charAt(0).toUpperCase();
@@ -1055,7 +1056,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         // First check if we should try to get user details from tenant record
         const effectiveTenantId =
           tenantId ||
-          localStorage.getItem('tenantId') ||
+          getCacheValue('tenantId') ||
           getCookie('businessid');
 
         if (userData) {
@@ -1087,7 +1088,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
         );
 
         // Make API request to fetch profile data
-        const authToken = localStorage.getItem('authToken');
+        const authToken = getCacheValue('authToken');
         const idToken = getCookie('idToken');
         const cognitoToken = getCookie('CognitoIdentityServiceProvider');
 
@@ -1548,7 +1549,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           : userData?.business_name ||
             userData?.['custom:businessname'] ||
             (typeof window !== 'undefined' &&
-              localStorage.getItem('businessName')) ||
+              getCacheValue('businessName')) ||
             (userData?.firstName ? `${userData.firstName}'s Business` : 
              userData?.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
 
@@ -1558,7 +1559,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           : userData?.subscription_type ||
             userData?.['custom:subscription'] ||
             (typeof window !== 'undefined' &&
-              localStorage.getItem('subscriptionType')) ||
+              getCacheValue('subscriptionType')) ||
             'free',
     };
   }, [isValidProfileData, profileData, userData]);
@@ -1977,8 +1978,8 @@ const [state, dispatch] = useReducer(reducer, initialState);
                                 // Otherwise show business name if available
                                 const businessName =
                                   profileData?.business_name ||
-                                  localStorage.getItem('businessName') ||
-                                  localStorage.getItem('businessname');
+                                  getCacheValue('businessName') ||
+                                  getCacheValue('businessname');
                                 if (businessName) {
                                   return businessName;
                                 }

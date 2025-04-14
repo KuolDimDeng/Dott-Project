@@ -18,6 +18,7 @@ import ConfigureAmplify from '@/components/ConfigureAmplify';
 import DynamicComponents from '@/components/DynamicComponents';
 import tokenRefreshService from '@/utils/tokenRefresh';
 import MigrationComponent from '@/components/MigrationComponent';
+import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -53,53 +54,55 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Helper function to check cookie-based access for onboarding pages
-const checkCookieBasedAccess = (pathname) => {
+// Helper function to check preference-based access for onboarding pages
+const checkPreferenceBasedAccess = async (pathname) => {
   try {
-    const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-      const parts = cookie.trim().split('=');
-      if (parts.length > 1) {
-        try {
-          acc[parts[0].trim()] = decodeURIComponent(parts[1]);
-        } catch (e) {
-          acc[parts[0].trim()] = parts[1];
-        }
-      }
-      return acc;
-    }, {});
+    // Get user preferences from Cognito (via AppCache or direct)
+    const selectedPlan = await getUserPreference(PREF_KEYS.SUBSCRIPTION_PLAN, '');
+    const onboardedStatus = await getUserPreference(PREF_KEYS.ONBOARDING_STATUS, '');
+    const businessName = await getUserPreference(PREF_KEYS.BUSINESS_NAME, '');
+    const pendingVerification = await getUserPreference('custom:pendingVerification', 'false');
+    const verificationFlow = await getUserPreference('custom:verificationFlow', 'false');
+    
+    logger.debug('[ClientLayout] Checking preference-based access with Cognito attributes:', {
+      pathname,
+      selectedPlan,
+      onboardedStatus,
+      hasBusiness: !!businessName
+    });
     
     // Special case for free plan - direct them to setup after subscription
     if (pathname.includes('/onboarding/setup') && 
-        cookies.selectedPlan === 'free' && 
-        cookies.onboardedStatus === 'subscription') {
-      logger.debug('[ClientLayout] Free plan detected in cookie check, allowing setup access');
+        selectedPlan === 'free' && 
+        onboardedStatus === 'subscription') {
+      logger.debug('[ClientLayout] Free plan detected in preference check, allowing setup access');
       return true;
     }
     
     // Special case for dashboard access after free plan
     if (pathname === '/dashboard' && 
-        cookies.selectedPlan === 'free' && 
-        (cookies.onboardedStatus === 'subscription' || cookies.onboardedStatus === 'setup')) {
+        selectedPlan === 'free' && 
+        (onboardedStatus === 'subscription' || onboardedStatus === 'setup')) {
       logger.debug('[ClientLayout] Free plan detected for dashboard, allowing access');
       return true;
     }
     
     // Check for valid business info when going to subscription page
-    if (pathname.includes('/onboarding/subscription') && cookies.businessName) {
-      logger.debug('[ClientLayout] Business info found in cookies, allowing subscription access');
+    if (pathname.includes('/onboarding/subscription') && businessName) {
+      logger.debug('[ClientLayout] Business info found in preferences, allowing subscription access');
       return true;
     }
     
     // Check for verified email access
     if (pathname.includes('/auth/verify') && 
-        (cookies.pendingVerification === 'true' || cookies.verificationFlow === 'true')) {
-      logger.debug('[ClientLayout] Verification flow detected in cookies, allowing access');
+        (pendingVerification === 'true' || verificationFlow === 'true')) {
+      logger.debug('[ClientLayout] Verification flow detected in preferences, allowing access');
       return true;
     }
     
     return false;
   } catch (error) {
-    logger.warn('[ClientLayout] Error in cookie check:', error.message);
+    logger.warn('[ClientLayout] Error in preference check:', error.message);
     return false;
   }
 };
@@ -155,13 +158,12 @@ export default function ClientLayout({ children }) {
                 // Clear all relevant storage
                 try {
                   if (typeof window !== 'undefined') {
-                    window.__APP_CACHE = {}; // Reset entire app cache
+                    if (window.__APP_CACHE) {
+                      window.__APP_CACHE = {}; // Reset entire app cache
+                    }
+                    sessionStorage.clear();
+                    // No longer clearing cookies as they're not used for authentication
                   }
-                  sessionStorage.clear();
-                  document.cookie.split(";").forEach(cookie => {
-                    const name = cookie.split("=")[0].trim();
-                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-                  });
                 } catch (e) {
                   // Silent fail
                 }
@@ -432,6 +434,17 @@ export default function ClientLayout({ children }) {
           return true;
         }
         
+        // Check for onboarding and specific routes based on user preferences
+        if (pathname.includes('/onboarding') || pathname.includes('/auth/verify') || pathname === '/dashboard') {
+          const hasAccess = await checkPreferenceBasedAccess(pathname);
+          if (hasAccess) {
+            logger.debug('[ClientLayout] Allowing access based on user preferences');
+            setIsVerifying(false);
+            setIsAuthenticated(true);
+            return true;
+          }
+        }
+
         // CIRCUIT BREAKER: Check for redirect loop detection
         if (typeof window !== 'undefined' && window.__REDIRECT_LOOP_DETECTED) {
           logger.warn('[ClientLayout] Redirect loop detected previously, skipping verification');

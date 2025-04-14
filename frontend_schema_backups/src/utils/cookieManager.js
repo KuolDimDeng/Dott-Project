@@ -1,18 +1,19 @@
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 /**
- * Sets authentication cookies consistently across the application
+ * Sets authentication data consistently across the application using AppCache
  * @param {Object} tokens - The tokens object containing idToken and accessToken
  * @param {Object} userAttributes - Optional user attributes for onboarding status
- * @param {boolean} secure - Whether to set secure cookies (defaults to true in production)
- * @param {number} maxAge - Cookie expiration in seconds (defaults to 1 day)
+ * @param {boolean} secure - DEPRECATED parameter, kept for backward compatibility
+ * @param {number} maxAge - Cache TTL in seconds (defaults to 1 day)
  * @returns {boolean} - Success status of operation
  */
 export const setAuthCookies = (tokens, userAttributes = null, secure = null, maxAge = null) => {
   try {
     if (!tokens || !tokens.idToken || !tokens.accessToken) {
-      logger.error('[cookieManager] Missing required tokens for cookie setup');
+      logger.error('[cookieManager] Missing required tokens for setup');
       return false;
     }
 
@@ -25,49 +26,28 @@ export const setAuthCookies = (tokens, userAttributes = null, secure = null, max
     const now = Math.floor(Date.now() / 1000);
     const tokenLifetime = exp - now;
     
-    logger.debug('[cookieManager] Setting auth cookies', {
+    logger.debug('[cookieManager] Setting auth data in AppCache', {
       tokenLifetime: `${(tokenLifetime / 60).toFixed(1)} minutes`,
       hasAttributes: !!userAttributes
     });
     
-    // Default to env-appropriate settings
-    const isDev = process.env.NODE_ENV === 'development';
-    const useSecure = secure !== null ? secure : !isDev;
-    
     // Use token expiration or fallback to provided maxAge or default (1 day)
-    const cookieMaxAge = maxAge || (tokenLifetime > 0 ? tokenLifetime : 24 * 60 * 60);
+    const cacheTTL = maxAge || (tokenLifetime > 0 ? tokenLifetime * 1000 : 24 * 60 * 60 * 1000);
     
-    // Use consistent options for all cookies
-    const cookieOptions = `path=/; max-age=${cookieMaxAge}; ${useSecure ? 'secure; ' : ''}${isDev ? 'samesite=lax' : 'samesite=strict'}`;
+    // Store in AppCache
+    setCacheValue('id_token', idToken, { ttl: cacheTTL });
+    setCacheValue('access_token', accessToken, { ttl: cacheTTL });
+    setCacheValue('token_timestamp', Date.now().toString(), { ttl: cacheTTL });
+    setCacheValue('token_expires', new Date(exp * 1000).toISOString(), { ttl: cacheTTL });
     
-    // Set auth tokens
-    document.cookie = `idToken=${idToken}; ${cookieOptions}`;
-    document.cookie = `authToken=${accessToken}; ${cookieOptions}`;
-    
-    // Set token expiration timestamp for refresh logic
-    const expTime = new Date(exp * 1000).toISOString();
-    document.cookie = `tokenExpires=${expTime}; ${cookieOptions}`;
-    
-    // Store in localStorage as backup
-    try {
-      localStorage.setItem('idToken', idToken);
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('tokenTimestamp', Date.now().toString());
-      localStorage.setItem('tokenExpires', expTime);
-    } catch (storageErr) {
-      logger.warn('[cookieManager] Could not store tokens in localStorage', {
-        error: storageErr.message
-      });
-    }
-    
-    // If user attributes provided, set onboarding related cookies
+    // If user attributes provided, set onboarding related data
     if (userAttributes) {
-      setOnboardingCookies(userAttributes, cookieOptions);
+      setOnboardingCookies(userAttributes, cacheTTL);
     }
     
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error setting auth cookies:', {
+    logger.error('[cookieManager] Error setting auth data:', {
       error: error.message,
       stack: error.stack
     });
@@ -76,23 +56,22 @@ export const setAuthCookies = (tokens, userAttributes = null, secure = null, max
 };
 
 /**
- * Sets onboarding-related cookies based on user attributes
+ * Sets onboarding-related data based on user attributes using AppCache
  * @param {Object} attributes - User attributes from Cognito or API
- * @param {string} cookieOptions - Cookie options string
+ * @param {number} ttl - Cache TTL in milliseconds
  */
-export const setOnboardingCookies = (attributes, cookieOptions = null) => {
+export const setOnboardingCookies = (attributes, ttl = null) => {
   try {
     if (!attributes) {
-      logger.warn('[cookieManager] No attributes provided for onboarding cookies');
+      logger.warn('[cookieManager] No attributes provided for onboarding data');
       return false;
     }
     
-    // Set up default cookie options if not provided
-    const isDev = process.env.NODE_ENV === 'development';
-    const defaultOptions = `path=/; max-age=${7 * 24 * 60 * 60}; ${!isDev ? 'secure; ' : ''}${isDev ? 'samesite=lax' : 'samesite=strict'}`;
-    const options = cookieOptions || defaultOptions;
+    // Set up default TTL if not provided (7 days)
+    const defaultTTL = 7 * 24 * 60 * 60 * 1000;
+    const cacheTTL = typeof ttl === 'number' ? ttl : defaultTTL;
     
-    logger.debug('[cookieManager] Setting onboarding cookies');
+    logger.debug('[cookieManager] Setting onboarding data in AppCache');
     
     // Extract onboarding status from attributes
     const onboardingStatus = 
@@ -100,8 +79,8 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
       attributes.onboarding || 
       'PENDING';
       
-    // Set onboarding status cookie
-    document.cookie = `onboardedStatus=${onboardingStatus}; ${options}`;
+    // Set onboarding status in AppCache
+    setCacheValue('onboarded_status', onboardingStatus, { ttl: cacheTTL });
     
     // Set step completion flags
     const businessInfoDone = attributes['custom:business_info_done'] === 'TRUE' || 
@@ -119,21 +98,21 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
     const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
                     (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
     
-    // Set individual step cookies
-    document.cookie = `businessInfoCompleted=${businessInfoDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `subscriptionCompleted=${subscriptionDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `paymentCompleted=${paymentDone ? 'true' : 'false'}; ${options}`;
-    document.cookie = `setupCompleted=${setupDone ? 'true' : 'false'}; ${options}`;
+    // Set individual step data in AppCache
+    setCacheValue('business_info_completed', businessInfoDone ? 'true' : 'false', { ttl: cacheTTL });
+    setCacheValue('subscription_completed', subscriptionDone ? 'true' : 'false', { ttl: cacheTTL });
+    setCacheValue('payment_completed', paymentDone ? 'true' : 'false', { ttl: cacheTTL });
+    setCacheValue('setup_completed', setupDone ? 'true' : 'false', { ttl: cacheTTL });
     
     // Store tenant ID if available
     const tenantId = attributes['custom:tenant_id'] || attributes.tenantId;
     if (tenantId) {
-      document.cookie = `tenantId=${tenantId}; ${options}`;
+      setCacheValue('tenantId', tenantId, { ttl: cacheTTL });
     }
     
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error setting onboarding cookies:', {
+    logger.error('[cookieManager] Error setting onboarding data:', {
       error: error.message,
       stack: error.stack
     });
@@ -142,22 +121,23 @@ export const setOnboardingCookies = (attributes, cookieOptions = null) => {
 };
 
 /**
- * Gets the current authentication token from cookies
+ * Gets the current authentication token from AppCache
  * @returns {string|null} - The ID token or null if not found
  */
 export const getAuthToken = () => {
   try {
-    const cookies = document.cookie.split(';');
-    const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('idToken='));
-    
-    if (tokenCookie) {
-      return tokenCookie.split('=')[1];
+    // Try AppCache first
+    const cacheToken = getCacheValue('id_token');
+    if (cacheToken) {
+      return cacheToken;
     }
     
-    // Try localStorage as fallback
-    const localToken = localStorage.getItem('idToken');
-    if (localToken) {
-      return localToken;
+    // For backward compatibility, fall back to old key
+    const legacyToken = getCacheValue('idToken');
+    if (legacyToken) {
+      // Migrate old key format to new format
+      setCacheValue('id_token', legacyToken);
+      return legacyToken;
     }
     
     return null;
@@ -170,36 +150,37 @@ export const getAuthToken = () => {
 };
 
 /**
- * Clears all authentication-related cookies
+ * Clears all authentication-related data from AppCache
  */
 export const clearAuthCookies = () => {
   try {
-    const cookies = ['idToken', 'authToken', 'tokenExpires', 'onboardedStatus', 
-                    'businessInfoCompleted', 'subscriptionCompleted', 
-                    'paymentCompleted', 'setupCompleted', 'tokenExpired'];
+    const cacheKeys = [
+      'id_token', 
+      'access_token', 
+      'token_timestamp', 
+      'token_expires', 
+      'onboarded_status',
+      'business_info_completed', 
+      'subscription_completed', 
+      'payment_completed', 
+      'setup_completed', 
+      'token_expired',
+      // Legacy keys for backward compatibility
+      'idToken',
+      'accessToken',
+      'tokenTimestamp',
+      'tokenExpires'
+    ];
     
-    // Set expiry to past date to clear
-    const expiry = 'expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    
-    // Clear all auth cookies
-    cookies.forEach(name => {
-      document.cookie = `${name}=; path=/; ${expiry}`;
+    // Clear all auth data from AppCache
+    cacheKeys.forEach(key => {
+      removeCacheValue(key);
     });
     
-    // Clear localStorage
-    try {
-      localStorage.removeItem('idToken');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('tokenTimestamp');
-      localStorage.removeItem('tokenExpires');
-    } catch (storageErr) {
-      // Ignore localStorage errors
-    }
-    
-    logger.debug('[cookieManager] Auth cookies cleared');
+    logger.debug('[cookieManager] Auth data cleared from AppCache');
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error clearing auth cookies:', {
+    logger.error('[cookieManager] Error clearing auth data:', {
       error: error.message
     });
     return false;
@@ -207,13 +188,13 @@ export const clearAuthCookies = () => {
 };
 
 /**
- * Sets a token expired flag to trigger automatic sign-out
+ * Sets a token expired flag in AppCache to trigger automatic sign-out
  */
 export const setTokenExpiredFlag = () => {
   try {
-    // Set a flag cookie indicating token expiration
-    document.cookie = `tokenExpired=true; path=/`;
-    logger.debug('[cookieManager] Token expired flag set');
+    // Set a flag in AppCache indicating token expiration
+    setCacheValue('token_expired', 'true');
+    logger.debug('[cookieManager] Token expired flag set in AppCache');
     return true;
   } catch (error) {
     logger.error('[cookieManager] Error setting token expired flag:', {
@@ -255,6 +236,6 @@ export const determineOnboardingStep = (attributes) => {
   } else if (!setupDone) {
     return 'setup';
   } else {
-    return 'complete';
+    return 'dashboard';
   }
 }; 

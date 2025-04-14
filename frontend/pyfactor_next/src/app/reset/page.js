@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { clearCache } from '@/utils/appCache';
 
 export default function ResetPage() {
   const router = useRouter();
@@ -21,6 +22,9 @@ export default function ResetPage() {
       
       // Clear sessionStorage
       sessionStorage.clear();
+      
+      // Clear AppCache
+      clearCache();
       
       // Log successful reset
       console.log('Successfully reset application state');
@@ -49,7 +53,7 @@ export default function ResetPage() {
         )}
         
         <p className="text-sm text-gray-500 mt-4">
-          This page clears all application state including cookies, local storage, and session storage.
+          This page clears all application state including cookies, local storage, session storage, and AppCache.
         </p>
       </div>
     </div>

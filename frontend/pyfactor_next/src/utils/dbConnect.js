@@ -3,7 +3,7 @@
  */
 
 import { Pool } from 'pg';
-import logger from './logger';
+// import { serverLogger as logger } from './logger';
 
 // Singleton pool instance
 let _pool = null;
@@ -25,14 +25,14 @@ export function getPool() {
   if (!_pool) {
     try {
       _pool = new Pool(_config);
-      logger.info('[Database] Created connection pool');
+      console.info('[Database] Created connection pool');
       
       // Add error handler
       _pool.on('error', (err, client) => {
-        logger.error('[Database] Unexpected error on idle client:', err);
+        console.error('[Database] Unexpected error on idle client:', err);
       });
     } catch (error) {
-      logger.error('[Database] Failed to create connection pool:', error.message);
+      console.error('[Database] Failed to create connection pool:', error.message);
       throw error;
     }
   }
@@ -57,13 +57,13 @@ export async function query(text, params = [], options = {}) {
     
     const duration = Date.now() - start;
     if (options.debug || duration > 500) {
-      logger.debug(`[Database] Query completed in ${duration}ms, returned ${result.rowCount} rows`);
+      console.debug(`[Database] Query completed in ${duration}ms, returned ${result.rowCount} rows`);
     }
     
     return result;
   } catch (error) {
     const duration = Date.now() - start;
-    logger.error(`[Database] Query error after ${duration}ms:`, error.message);
+    console.error(`[Database] Query error after ${duration}ms:`, error.message);
     
     throw error;
   }
@@ -85,6 +85,6 @@ export async function closePool() {
   if (_pool) {
     await _pool.end();
     _pool = null;
-    logger.info('[Database] Connection pool closed');
+    console.info('[Database] Connection pool closed');
   }
 } 

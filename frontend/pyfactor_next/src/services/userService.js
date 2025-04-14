@@ -3,7 +3,7 @@
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { getUserAttributesFromCognito } from '../hooks/useSession';
-import { Auth } from 'aws-amplify';
+import { signOut } from 'aws-amplify/auth';
 
 // Add global window-level cache to ensure cross-component deduplication
 if (typeof window !== 'undefined') {
@@ -67,7 +67,7 @@ export const logout = async () => {
   }
   
   // Call Auth API to complete logout
-  return await Auth.signOut();
+  return await signOut();
 };
 
 /**

@@ -1,3 +1,7 @@
+import { setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { logger } from '@/utils/logger';
+
 const handleSelectPlan = (plan) => {
   if (isSubmitting) return;
   
@@ -5,26 +9,24 @@ const handleSelectPlan = (plan) => {
     // Set loading state while we prepare
     setIsSubmitting(true);
     
-    // For RLS implementation, set all required flags/cookies
-    setCookie('setupSkipDatabaseCreation', 'true');
-    setCookie('setupUseRLS', 'true');
-    setCookie('skipSchemaCreation', 'true');
-    setCookie('freePlanSelected', 'true');
-    setCookie('onboardingStep', 'complete'); // Mark as complete immediately
-    setCookie('onboardedStatus', 'COMPLETE');
-    setCookie('setupCompleted', 'true');
+    // Set all required configuration in AppCache
+    setCacheValue('setupSkipDatabaseCreation', true);
+    setCacheValue('setupUseRLS', true);
+    setCacheValue('skipSchemaCreation', true);
+    setCacheValue('freePlanSelected', true);
+    setCacheValue('onboardingStep', 'complete');
+    setCacheValue('onboardedStatus', 'COMPLETE');
+    setCacheValue('setupCompleted', true);
+    setCacheValue('setupTimestamp', Date.now());
     
-    // Store in localStorage for redundancy
+    // Store in Cognito attributes (non-blocking)
     try {
-      localStorage.setItem('setupSkipDatabaseCreation', 'true');
-      localStorage.setItem('setupUseRLS', 'true');
-      localStorage.setItem('skipSchemaCreation', 'true');
-      localStorage.setItem('freePlanSelected', 'true');
-      localStorage.setItem('onboardingStep', 'complete');
-      localStorage.setItem('setupCompleted', 'true');
-      localStorage.setItem('setupTimestamp', Date.now().toString());
+      saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, 'COMPLETE');
+      saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+      saveUserPreference(PREF_KEYS.SUBSCRIPTION_PLAN, 'free');
     } catch (e) {
-      // Ignore localStorage errors
+      // Log error but continue as AppCache can be our fallback
+      logger.warn('[PlanSelector] Error saving preferences to Cognito:', e);
     }
     
     // Trigger background setup via a fire-and-forget API call

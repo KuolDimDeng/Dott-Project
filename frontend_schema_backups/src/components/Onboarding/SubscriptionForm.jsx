@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { setCacheValue } from '@/utils/appCache';
+import { updateUserAttributes } from '@/utils/cognitoAttributes';
 
 // Subscription plans
 const PLANS = [
@@ -169,7 +171,7 @@ export default function SubscriptionForm() {
         return;
       }
       
-      // Store selection in session storage
+      // Store selection in session storage (keep this for immediate access)
       sessionStorage.setItem('selectedPlan', JSON.stringify({
         plan: plan.id,
         name: plan.name,
@@ -178,10 +180,29 @@ export default function SubscriptionForm() {
         timestamp: Date.now()
       }));
       
-      // Update cookies for server-side tracking
-      document.cookie = `selectedPlan=${plan.id}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      document.cookie = `billingCycle=${billingCycle}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-      document.cookie = `subscriptionCompleted=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
+      // Update Cognito user attributes
+      const attributes = {
+        'custom:subscription_plan': plan.id,
+        'custom:billing_cycle': billingCycle,
+        'custom:subscription_completed': 'true'
+      };
+      
+      // If it's a free plan, mark it as such
+      if (plan.id === 'basic') {
+        attributes['custom:free_plan_selected'] = 'true';
+      }
+      
+      // Update Cognito
+      await updateUserAttributes(attributes);
+      
+      // Update AppCache for faster access
+      setCacheValue('user_pref_custom:subscription_plan', plan.id, { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:billing_cycle', billingCycle, { ttl: 30 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:subscription_completed', 'true', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      
+      if (plan.id === 'basic') {
+        setCacheValue('user_pref_custom:free_plan_selected', 'true', { ttl: 30 * 24 * 60 * 60 * 1000 });
+      }
       
       logger.info('[SubscriptionForm] Plan selection confirmed:', { 
         plan: plan.id, 
@@ -192,7 +213,6 @@ export default function SubscriptionForm() {
       // Route based on plan type
       if (plan.id === 'basic') {
         // Free plan - redirect to transition page
-        document.cookie = `freePlanSelected=true; path=/; max-age=${60*60*24*30}; samesite=lax`;
         router.push('/onboarding/subscription-to-dashboard');
       } else {
         // Paid plan - redirect to payment transition page

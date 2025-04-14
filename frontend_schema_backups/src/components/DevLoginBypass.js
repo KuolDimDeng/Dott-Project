@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDevTenant } from '@/context/DevTenantContext';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Subscription plans for development mode
 const SUBSCRIPTION_PLANS = [
@@ -28,17 +29,17 @@ export default function DevLoginBypass() {
       setAvailableTenants(getAvailableTenants());
       
       // Check if the user is already in dev mode
-      const isDevMode = localStorage.getItem('dev-mode') === 'true';
+      const isDevMode = getCacheValue('dev-mode') === 'true';
       if (isDevMode) {
         // Start collapsed if already in dev mode
         setIsCollapsed(true);
         
         // Restore saved user info
-        const savedUserName = localStorage.getItem('dev-user-name');
+        const savedUserName = getCacheValue('dev-user-name');
         if (savedUserName) setUserName(savedUserName);
         
         // Restore saved subscription plan
-        const savedPlan = localStorage.getItem('dev-subscription-plan');
+        const savedPlan = getCacheValue('dev-subscription-plan');
         if (savedPlan) setSelectedPlan(savedPlan);
       }
     }
@@ -46,13 +47,13 @@ export default function DevLoginBypass() {
   
   // Bypass login and go to dashboard
   const handleLoginBypass = () => {
-    // Store user info in localStorage for persistence
-    localStorage.setItem('dev-user-name', userName);
-    localStorage.setItem('dev-mode', 'true');
-    localStorage.setItem('dev-authenticated', 'true');
+    // Store user info in AppCache for persistence
+    setCacheValue('dev-user-name', userName);
+    setCacheValue('dev-mode', 'true');
+    setCacheValue('dev-authenticated', 'true');
     
     // Store subscription plan
-    localStorage.setItem('dev-subscription-plan', selectedPlan);
+    setCacheValue('dev-subscription-plan', selectedPlan);
     
     // Add plan to session storage for AppBar to access
     sessionStorage.setItem('subscription-plan', selectedPlan);
@@ -81,8 +82,8 @@ export default function DevLoginBypass() {
     const plan = e.target.value;
     setSelectedPlan(plan);
     
-    // Immediately update localStorage and sessionStorage
-    localStorage.setItem('dev-subscription-plan', plan);
+    // Immediately update AppCache and sessionStorage
+    setCacheValue('dev-subscription-plan', plan);
     sessionStorage.setItem('subscription-plan', plan);
     
     // Trigger a custom event for AppBar to listen to

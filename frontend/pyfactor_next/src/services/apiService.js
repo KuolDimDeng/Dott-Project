@@ -412,20 +412,16 @@ export const getCurrentTenant = async () => {
 export const getAuthTokens = async () => {
   try {
     // Initialize global cache if needed
-    if (typeof window !== 'undefined' && !window.__APP_CACHE) {
-      window.__APP_CACHE = {};
-    }
-    
-    // Try to get tokens from global cache or cookies
-    const accessToken = typeof document !== 'undefined' 
-      ? (window.__APP_CACHE.accessToken || document.cookie.match(/accessToken=([^;]+)/)?.[1])
-      : null;
-    const idToken = typeof document !== 'undefined' 
-      ? (window.__APP_CACHE.idToken || document.cookie.match(/idToken=([^;]+)/)?.[1])
-      : null;
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
       
-    if (accessToken && idToken) {
-      return { accessToken, idToken };
+      // Get tokens from AppCache only
+      const { accessToken, idToken } = window.__APP_CACHE.auth;
+      
+      if (accessToken && idToken) {
+        return { accessToken, idToken };
+      }
     }
     
     return null;
@@ -443,10 +439,13 @@ export const logout = async () => {
   try {
     await axiosInstance.post('/api/auth/logout/');
     
-    // Clear global cache
-    if (typeof window !== 'undefined' && window.__APP_CACHE) {
-      window.__APP_CACHE.accessToken = null;
-      window.__APP_CACHE.idToken = null;
+    // Clear auth tokens from AppCache
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+      window.__APP_CACHE.auth.accessToken = null;
+      window.__APP_CACHE.auth.idToken = null;
+      window.__APP_CACHE.auth.refreshToken = null;
     }
   } catch (error) {
     logger.error('[ApiService] Error logging out:', error);

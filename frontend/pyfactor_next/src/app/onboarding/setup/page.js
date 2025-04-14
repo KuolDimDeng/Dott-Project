@@ -6,12 +6,15 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useTranslation } from 'react-i18next';
-import { refreshUserSession } from '@/utils/refreshUserSession';
+import { refreshUserSession } from '@/utils/auth';
 import { updateOnboardingStep } from '@/utils/onboardingUtils';
-import { completeOnboarding } from '@/utils/completeOnboarding';
+import { completeOnboarding } from '@/utils/onboardingUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import CompletionStep from './components/CompletionStep';
 import { ArrowPathIcon, ExclamationTriangleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { checkAuthStatus } from '@/utils/authUtils';
 
 // Setup stages with descriptions for progress tracking
 const SETUP_STAGES = [
@@ -61,30 +64,31 @@ export default function SetupPage() {
         if (setupStartTime) {
           const duration = Date.now() - setupStartTime;
           setSetupDuration(duration);
-          // Store in app cache
-          if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
-            window.__APP_CACHE.setup.duration = duration;
+          // Store in app cache only
+          setCacheValue('setup_duration', duration);
+        }
+        
+        // Update Cognito user attributes instead of using cookies
+        const updateCognitoAndCache = async () => {
+          try {
+            // Update Cognito attributes
+            await saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, 'complete');
+            await saveUserPreference('custom:setupdone', 'true');
+            await saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+            
+            // Set app cache flags
+            setCacheValue('setup_complete', true);
+            setCacheValue('setup_timestamp', Date.now());
+            setCacheValue('onboarding_status', 'complete');
+            
+            logger.debug('[SetupPage] Updated Cognito attributes and AppCache for setup completion');
+          } catch (error) {
+            logger.error('[SetupPage] Error updating Cognito attributes:', error);
           }
-        }
+        };
         
-        // Mark setup as complete in cookies with 30-day expiration
-        const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-        const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        
-        document.cookie = `setupCompleted=true; ${cookieOptions}`;
-        document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
-        document.cookie = `hasSession=true; ${cookieOptions}`;
-        
-        // Set app cache flags
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
-          window.__APP_CACHE.setup.complete = true;
-          window.__APP_CACHE.setup.timestamp = Date.now();
-        }
+        // Execute the update
+        updateCognitoAndCache();
         
         setSetupComplete(true);
         setSetupStatus('complete');
@@ -108,24 +112,22 @@ export default function SetupPage() {
       if (skipLoading && useRLS) {
         logger.debug('[SetupPage] RLS skipLoading detected, bypassing auth check');
         
-        // Set cookies with 30-day expiration
-        const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-        const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        
-        document.cookie = `setupCompleted=true; ${cookieOptions}`;
-        document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
-        document.cookie = `hasSession=true; ${cookieOptions}`;
-        
-        // Set app cache flags
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
-          window.__APP_CACHE.setup.complete = true;
-          window.__APP_CACHE.setup.timestamp = Date.now();
-          window.__APP_CACHE.setup.useRLS = true;
+        // Update Cognito attributes instead of cookies
+        try {
+          await saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, 'complete');
+          await saveUserPreference('custom:setupdone', 'true');
+          await saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+          
+          // Set app cache flags
+          setCacheValue('setup_complete', true);
+          setCacheValue('setup_timestamp', Date.now());
+          setCacheValue('setup_useRLS', true);
+          setCacheValue('onboarding_status', 'complete');
+          
+          logger.debug('[SetupPage] Updated Cognito and AppCache for RLS setup');
+        } catch (error) {
+          logger.error('[SetupPage] Error updating Cognito for RLS setup:', error);
         }
-        localStorage.setItem('setupTimestamp', Date.now().toString());
         
         // Initialize setup
         setSetupStartTime(Date.now());
@@ -144,18 +146,11 @@ export default function SetupPage() {
           throw new Error('Authentication required');
         }
         
-        logger.debug('[SetupPage] Auth valid, storing tokens');
+        logger.debug('[SetupPage] Auth valid, storing tokens in AppCache');
         
-        // Store tokens in app cache
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-          window.__APP_CACHE.auth.idToken = tokens.idToken.toString();
-          window.__APP_CACHE.auth.accessToken = tokens.accessToken.toString();
-        }
-        
-        // Set auth cookie for API calls
-        document.cookie = `authToken=true; path=/; max-age=${60 * 60 * 24}; samesite=lax`;
+        // Store tokens in app cache only
+        setCacheValue('auth_id_token', tokens.idToken.toString());
+        setCacheValue('auth_access_token', tokens.accessToken.toString());
         
         setAuthChecked(true);
       } catch (error) {
@@ -192,41 +187,38 @@ export default function SetupPage() {
           
           if (!isMounted) return;
           
-          // Set cookies and localStorage
-          const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-          const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-          
-          document.cookie = `setupCompleted=true; ${cookieOptions}`;
-          document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-          document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
-          
-          localStorage.setItem('setupComplete', 'true');
-          // Calculate setup duration
-          const duration = Date.now() - setupStartTime;
-          setSetupDuration(duration);
+          // Update Cognito attributes instead of cookies/localStorage
+          try {
+            await saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, 'complete');
+            await saveUserPreference('custom:setupdone', 'true');
+            await saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete');
+            
+            // Calculate setup duration
+            const duration = Date.now() - setupStartTime;
+            setSetupDuration(duration);
+            
+            // Update AppCache
+            setCacheValue('setup_complete', true);
+            setCacheValue('setup_timestamp', Date.now());
+            setCacheValue('setup_duration', duration);
+            setCacheValue('setup_useRLS', true);
+            setCacheValue('onboarding_status', 'complete');
+            
+            logger.debug('[SetupPage] Updated Cognito and AppCache for immediate RLS setup');
+          } catch (error) {
+            logger.error('[SetupPage] Error updating attributes for RLS setup:', error);
+          }
           
           setSetupComplete(true);
           setSetupStatus('complete');
-          
-          // Set app cache flags
-          if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
-            window.__APP_CACHE.setup.complete = true;
-            window.__APP_CACHE.setup.timestamp = Date.now();
-            window.__APP_CACHE.setup.useRLS = true;
-          }
-          
           return;
         }
         
         // Standard setup flow
         logger.debug('[SetupPage] Starting standard setup');
         
-        // Set initial cookies
-        const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
-        const cookieOptions = `path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        document.cookie = `setupInProgress=true; ${cookieOptions}`;
+        // Set initial state in AppCache
+        setCacheValue('setup_in_progress', true);
         
         // Start configuration
         if (!isMounted) return;
@@ -266,28 +258,25 @@ export default function SetupPage() {
           // Continue despite errors
         }
         
-        // Set final cookies and localStorage
-        document.cookie = `setupCompleted=true; ${cookieOptions}`;
-        document.cookie = `onboardingStep=complete; ${cookieOptions}`;
-        document.cookie = `onboardedStatus=complete; ${cookieOptions}`;
-        document.cookie = `hasSession=true; ${cookieOptions}`;
+        // Set final state in AppCache
+        setCacheValue('setup_completed', true);
+        setCacheValue('onboarding_step', 'complete');
+        setCacheValue('onboarded_status', 'complete');
+        setCacheValue('has_session', true);
+        setCacheValue('setup_timestamp', Date.now());
         
-        localStorage.setItem('setupComplete', 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
-        
-        localStorage.setItem('setupDuration', duration.toString());
-        
-        // Set final app cache flags
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
-          
-          // Calculate setup duration
-          if (setupStartTime) {
-            const duration = Date.now() - setupStartTime;
-            window.__APP_CACHE.setup.duration = duration;
-          }
+        // Calculate setup duration
+        if (setupStartTime) {
+          const duration = Date.now() - setupStartTime;
+          setCacheValue('setup_duration', duration);
         }
+        
+        // Store in Cognito attributes (non-blocking)
+        saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, 'complete')
+          .catch(err => logger.warn('[SetupPage] Error saving onboarding status to Cognito:', err));
+        
+        saveUserPreference(PREF_KEYS.ONBOARDING_STEP, 'complete')
+          .catch(err => logger.warn('[SetupPage] Error saving onboarding step to Cognito:', err));
         
         // Mark setup as complete
         if (!isMounted) return;

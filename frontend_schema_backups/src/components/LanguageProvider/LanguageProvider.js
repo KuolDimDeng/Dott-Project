@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import { useCookies } from 'react-cookie';
 import i18nInstance from '../../i18n';
+import { getCacheValue } from '@/utils/appCache';
 
 export function LanguageProvider({ children }) {
   const [isReady, setIsReady] = useState(false);
@@ -23,8 +24,8 @@ export function LanguageProvider({ children }) {
           return detectUserLanguage();
         }
         
-        // Get saved language from localStorage or cookie
-        const savedLang = localStorage.getItem('i18nextLng') || cookies.i18nextLng;
+        // Get saved language from AppCache or cookie
+        const savedLang = getCacheValue('i18nextLng') || cookies.i18nextLng;
         
         if (savedLang && i18nInstance.options.supportedLngs.includes(savedLang)) {
           await i18nInstance.changeLanguage(savedLang);

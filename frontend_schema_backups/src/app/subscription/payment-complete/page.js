@@ -4,21 +4,36 @@ useEffect(() => {
       setLoading(true);
       setMessage('Payment successful! Finalizing your account...');
       
-      // Set all required cookies and localStorage for completion
-      const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000);
+      // Update Cognito attributes with completion status
+      try {
+        await Auth.updateUserAttributes(Auth.currentAuthenticatedUser(), {
+          'custom:onboarding': 'COMPLETE',
+          'custom:onboarding_step': 'complete',
+          'custom:setupdone': 'true',
+          'custom:setup_rlsused': 'true',
+          'custom:updated_at': new Date().toISOString()
+        });
+      } catch (err) {
+        console.error('Failed to update Cognito attributes:', err);
+      }
       
-      // Mark everything complete immediately for better UX
-      document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `onboardingStep=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `onboardedStatus=COMPLETE; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `setupUseRLS=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `hasSession=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      
-      // Set localStorage flags
-      localStorage.setItem('setupCompleted', 'true');
-      localStorage.setItem('setupTimestamp', Date.now().toString());
-      localStorage.setItem('onboardingStep', 'complete');
-      localStorage.setItem('setupUseRLS', 'true');
+      // Set app cache for immediate UI feedback
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+        
+        // Onboarding completion
+        window.__APP_CACHE.onboarding.status = 'COMPLETE';
+        window.__APP_CACHE.onboarding.step = 'complete';
+        window.__APP_CACHE.onboarding.setupCompleted = true;
+        window.__APP_CACHE.onboarding.setupTimestamp = Date.now();
+        
+        // Setup configuration
+        window.__APP_CACHE.setup.skipDatabaseCreation = true;
+        window.__APP_CACHE.setup.useRLS = true;
+        window.__APP_CACHE.setup.skipSchemaCreation = true;
+      }
       
       // Trigger background setup before redirecting
       const requestId = crypto.randomUUID();

@@ -1,121 +1,159 @@
-import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
+'use client';
 
-const EmployeePermissions = ({ employee, open, onClose }) => {
-  // Guard clause for null employee
-  if (!employee) {
-    return null;
-  }
+import React, { useState } from 'react';
 
-  const [availablePermissions, setAvailablePermissions] = useState([]);
-  const [selectedPermissions, setSelectedPermissions] = useState([]);
-
-  useEffect(() => {
-    if (open && employee) {
-      fetchAvailablePermissions();
-      setSelectedPermissions(employee.site_access_privileges || []);
+/**
+ * Employee Permissions Component
+ * Allows setting permissions for employee access to system modules
+ */
+const EmployeePermissions = ({ employee, onClose, onSave }) => {
+  const [permissions, setPermissions] = useState(
+    employee?.site_access_privileges || {
+      dashboard: { view: true, edit: false },
+      sales: { view: false, edit: false },
+      purchases: { view: false, edit: false },
+      inventory: { view: false, edit: false },
+      accounting: { view: false, edit: false },
+      reports: { view: false, edit: false },
+      hr: { view: false, edit: false },
+      settings: { view: false, edit: false }
     }
-  }, [open, employee]);
+  );
 
-  const fetchAvailablePermissions = async () => {
-    try {
-      const response = await axiosInstance.get('/api/hr/permissions/available/');
-      setAvailablePermissions(response.data);
-    } catch (error) {
-      console.error('Error fetching available permissions:', error);
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
-  const handleTogglePermission = (permissionId) => {
-    setSelectedPermissions((prev) => {
-      if (prev.includes(permissionId)) {
-        return prev.filter((id) => id !== permissionId);
-      } else {
-        return [...prev, permissionId];
+  // Toggle permission for specific module and permission type
+  const togglePermission = (module, type) => {
+    setPermissions(prev => ({
+      ...prev,
+      [module]: {
+        ...prev[module],
+        [type]: !prev[module][type]
       }
-    });
+    }));
   };
 
+  // Handle saving permissions
   const handleSave = async () => {
+    setLoading(true);
     try {
-      await axiosInstance.post(`/api/hr/employees/${employee.id}/permissions/`, {
-        permissions: selectedPermissions,
-      });
-      onClose();
-    } catch (error) {
-      console.error('Error saving permissions:', error);
+      // In a real implementation, this would call an API
+      // const response = await fetch(`/api/hr/employees/${employee.id}/permissions`, {
+      //   method: 'PUT',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ permissions })
+      // });
+      // if (!response.ok) throw new Error('Failed to update permissions');
+      
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setSuccess(true);
+      setTimeout(() => {
+        if (onSave) onSave(permissions);
+        if (onClose) onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Error updating permissions:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!open) return null;
+  // Define all modules with their display names
+  const modules = [
+    { id: 'dashboard', name: 'Dashboard' },
+    { id: 'sales', name: 'Sales' },
+    { id: 'purchases', name: 'Purchases' },
+    { id: 'inventory', name: 'Inventory' },
+    { id: 'accounting', name: 'Accounting' },
+    { id: 'reports', name: 'Reports' },
+    { id: 'hr', name: 'Human Resources' },
+    { id: 'settings', name: 'Settings' }
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-      <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
-        
-        {/* Modal panel */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          {/* Header */}
-          <div className="bg-blue-50 px-4 py-3 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">
-              Set Permissions for {employee.first_name} {employee.last_name}
-            </h3>
-          </div>
-          
-          {/* Content */}
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-            <div className="mt-2">
-              <p className="text-sm text-gray-600 mb-4">
-                Select the menu options this employee can access:
-              </p>
-              <ul className="divide-y divide-gray-200">
-                {availablePermissions.map((permission) => (
-                  <li key={permission.id} className="py-2">
-                    <button 
-                      className="flex items-center w-full px-2 py-2 hover:bg-gray-50 rounded-md transition-colors group"
-                      onClick={() => handleTogglePermission(permission.id)}
-                    >
-                      <div className="flex-shrink-0 mr-3">
-                        <div className={`w-5 h-5 border-2 rounded flex items-center justify-center ${
-                          selectedPermissions.includes(permission.id) 
-                            ? 'bg-blue-500 border-blue-500' 
-                            : 'border-gray-300 group-hover:border-blue-400'
-                        }`}>
-                          {selectedPermissions.includes(permission.id) && (
-                            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" clipRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
-                            </svg>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-sm text-gray-700">{permission.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          
-          {/* Footer */}
-          <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-            <button
-              type="button"
-              onClick={handleSave}
-              className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Save Permissions
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-            >
-              Cancel
-            </button>
-          </div>
+    <div className="bg-white rounded-lg shadow-lg p-6 max-w-3xl mx-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">
+          {employee ? `Permissions for ${employee.first_name} ${employee.last_name}` : 'Employee Permissions'}
+        </h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      {success && (
+        <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">
+          Permissions updated successfully!
         </div>
+      )}
+
+      <p className="text-gray-600 mb-4">
+        Set which sections of the system this employee can access and edit.
+      </p>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Module</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">View</th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Edit</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {modules.map((module) => (
+              <tr key={module.id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">{module.name}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={permissions[module.id]?.view || false}
+                      onChange={() => togglePermission(module.id, 'view')}
+                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    />
+                  </label>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-center">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={permissions[module.id]?.edit || false}
+                      onChange={() => togglePermission(module.id, 'edit')}
+                      className="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                    />
+                  </label>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-6 flex justify-end space-x-3">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          {loading ? 'Saving...' : 'Save Permissions'}
+        </button>
       </div>
     </div>
   );

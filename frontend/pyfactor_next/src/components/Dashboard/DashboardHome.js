@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import dynamic from 'next/dynamic';
 import DashboardLoader from '@/components/DashboardLoader';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { setCacheValue } from '@/utils/appCache';
 
 // Dynamically import DashboardContent to avoid SSR issues
 const DashboardContent = dynamic(
@@ -40,9 +42,23 @@ export default function DashboardHome({ tenantId }) {
     
     logger.info(`[DashboardHome] Initializing tenant-specific dashboard for: ${tenantId}`);
     
-    // Ensure tenant ID is set in cookies
-    document.cookie = `tenantId=${tenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
-    document.cookie = `businessid=${tenantId}; path=/; max-age=${60*60*24*7}; samesite=lax`;
+    // Setup an async function to save the tenant ID in Cognito and AppCache
+    const saveTenantPreference = async () => {
+      try {
+        // Update AppCache for immediately availability
+        setCacheValue('tenant_id', tenantId);
+        setCacheValue('business_id', tenantId); // For backward compatibility
+        
+        // Save to Cognito for persistence
+        await saveUserPreference(PREF_KEYS.TENANT_ID, tenantId);
+        logger.debug(`[DashboardHome] Saved tenant ID to Cognito: ${tenantId}`);
+      } catch (error) {
+        logger.error(`[DashboardHome] Error saving tenant ID to preferences:`, error);
+      }
+    };
+    
+    // Call the async function
+    saveTenantPreference();
     
     // Verify we have the direct=true param to prevent redirect loops
     if (!searchParams.has('direct')) {

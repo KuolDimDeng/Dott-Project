@@ -24,27 +24,25 @@ export default async function RootLayout({ children, params }) {
   // Check if we're already on a tenant path
   const isTenantPath = pathname.startsWith('tenant/');
   
-  // We'll skip cookie-based redirection for now to fix the build
-  // This approach avoids the cookies() async API completely
+  // Use AppCache instead of cookies for better security
+  // This approach is async-compatible and more secure than cookies
   
-  /*
   let tenantId = null;
   try {
-    // Check if there's a tenant ID in cookies
-    const cookiesList = cookies();
-    const tenantIdCookie = cookiesList.has('tenantId') ? cookiesList.get('tenantId').value : null;
-    const businessIdCookie = cookiesList.has('businessid') ? cookiesList.get('businessid').value : null;
-    tenantId = tenantIdCookie || businessIdCookie;
+    // Check if there's a tenant ID in AppCache
+    const { getFromAppCache } = await import('@/utils/appCacheUtils');
+    const tenantIdFromCache = await getFromAppCache('tenantId');
+    const businessIdFromCache = await getFromAppCache('businessid');
+    tenantId = tenantIdFromCache || businessIdFromCache;
+    
+    // Only redirect on root route, not on all routes
+    // This prevents redirect loops and unnecessary redirects
+    if (tenantId && !isTenantPath && pathname === '') {
+      return redirect(`/tenant/${tenantId}`);
+    }
   } catch (error) {
-    console.error('Error accessing cookies:', error);
+    console.error('Error accessing AppCache:', error);
   }
-  
-  // Only redirect on root route, not on all routes
-  // This prevents redirect loops and unnecessary redirects
-  if (tenantId && !isTenantPath && pathname === '') {
-    return redirect(`/tenant/${tenantId}`);
-  }
-  */
   
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
@@ -72,17 +70,23 @@ export default async function RootLayout({ children, params }) {
         </Providers>
         <Script id="user-session-info" strategy="afterInteractive">
           {`
+            // Use app cache functions from window global
+            const getCacheValue = window.__APP_CACHE ? (key, defaultValue = null) => {
+              const entry = window.__APP_CACHE[key];
+              return entry ? (entry.value !== undefined ? entry.value : entry) : defaultValue;
+            } : () => null;
+            
             console.log('[RootLayout] Page loaded:', {
               pathname: window.location.pathname,
-              tenantId: localStorage.getItem('tenantId'),
-              businessId: localStorage.getItem('businessid')
+              tenantId: getCacheValue('tenantId'),
+              businessId: getCacheValue('businessid')
             });
             
-            // Client-side redirection based on local storage
+            // Client-side redirection based on AppCache instead of localStorage
             try {
               const path = window.location.pathname;
               if (path === '/' || path === '') {
-                const tenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
+                const tenantId = getCacheValue('tenantId') || getCacheValue('businessid');
                 if (tenantId) {
                   window.location.href = '/tenant/' + tenantId;
                 }

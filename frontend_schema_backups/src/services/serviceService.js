@@ -1,6 +1,7 @@
 import { apiService } from './apiService';
 import { logger } from '@/utils/logger';
 import { inventoryCache } from '@/utils/enhancedCache';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * ServiceService - Consolidated service for service-related operations
@@ -353,7 +354,7 @@ export const prefetchEssentialData = async () => {
 };
 
 /**
- * Store services in localStorage for offline access
+ * Store services in AppCache for offline access
  * @param {Array} services - Services to store
  */
 export const storeServicesOffline = (services) => {
@@ -367,7 +368,8 @@ export const storeServicesOffline = (services) => {
       services: services
     };
     
-    localStorage.setItem('offline_services', JSON.stringify(offlineData));
+    // Store in AppCache with 24-hour TTL
+    setCacheValue('offline_services', offlineData, { ttl: 24 * 60 * 60 * 1000 });
     logger.debug(`Stored ${services.length} services for offline use`);
   } catch (error) {
     logger.error('Error storing services offline:', error);
@@ -380,17 +382,9 @@ export const storeServicesOffline = (services) => {
  */
 export const getOfflineServices = () => {
   try {
-    const offlineDataStr = localStorage.getItem('offline_services');
-    if (!offlineDataStr) {
+    const offlineData = getCacheValue('offline_services');
+    if (!offlineData) {
       return [];
-    }
-    
-    const offlineData = JSON.parse(offlineDataStr);
-    
-    // Check if data is stale (older than 24 hours)
-    const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;
-    if (isStale) {
-      logger.warn('Offline service data is stale (>24h old)');
     }
     
     return offlineData.services || [];

@@ -1,6 +1,7 @@
 /**
  * Enhanced script to reset all redirect loop state
  * Also clears other application state that might be causing issues
+ * Uses AWS AppCache and Cognito instead of cookies and localStorage
  * 
  * To use in browser: Copy resetAllLoopState function and run in console
  * In Node.js: node scripts/reset-loops.js
@@ -10,9 +11,9 @@
 function resetAllLoopState() {
   console.log('🧹 Clearing all redirect loop and application state...');
 
-  // Clear localStorage keys related to redirect loops
-  console.log('📋 Clearing localStorage keys...');
-  const localStorageKeysToRemove = [
+  // Clear AppCache instead of localStorage
+  console.log('📋 Clearing AppCache keys...');
+  const keysToRemove = [
     // Redirect loop keys
     'redirect_loop_count',
     'signin_redirect_counter',
@@ -27,9 +28,10 @@ function resetAllLoopState() {
     'business_info_auth_errors',
     
     // Authentication keys
-    'amplify-signin-with-hostedUI',
-    'CognitoIdentityServiceProvider',
-    'aws.cognito.identity-id',
+    'idToken',
+    'accessToken',
+    'refreshToken',
+    'authUser',
     
     // Business info keys
     'businessName',
@@ -40,24 +42,51 @@ function resetAllLoopState() {
   ];
 
   let clearedCount = 0;
-  localStorageKeysToRemove.forEach(key => {
+  // Use modern async IIFE pattern to handle async AppCache operations
+  (async () => {
     try {
-      localStorage.removeItem(key);
-      clearedCount++;
+      // First, try to load the appCacheUtils module dynamically
+      const appCacheModule = await import('/utils/appCacheUtils.js').catch(() => null);
+      
+      if (appCacheModule) {
+        const { removeFromAppCache, clearAppCache } = appCacheModule;
+        
+        // Try clearing individual keys first
+        if (typeof removeFromAppCache === 'function') {
+          for (const key of keysToRemove) {
+            try {
+              await removeFromAppCache(key);
+              clearedCount++;
+            } catch (err) {
+              console.error(`Failed to remove AppCache key ${key}:`, err);
+            }
+          }
+          console.log(`✅ Removed ${clearedCount} AppCache keys`);
+        }
+        
+        // Then try clearing all AppCache
+        if (typeof clearAppCache === 'function') {
+          console.log('🗑️ Clearing all AppCache...');
+          await clearAppCache();
+          console.log('✅ All AppCache cleared');
+        }
+      } else {
+        // Fallback to localStorage if appCacheUtils is not available
+        console.log('⚠️ AppCache module not available, falling back to localStorage');
+        localStorage.clear();
+        console.log('✅ localStorage cleared as fallback');
+      }
     } catch (err) {
-      console.error(`Failed to remove localStorage key ${key}:`, err);
+      console.error('❌ Failed to clear AppCache:', err);
+      // Fallback to localStorage
+      try {
+        localStorage.clear();
+        console.log('✅ localStorage cleared as fallback after error');
+      } catch (fallbackErr) {
+        console.error('❌ Failed to clear localStorage fallback:', fallbackErr);
+      }
     }
-  });
-  console.log(`✅ Removed ${clearedCount} localStorage keys`);
-
-  // Full localStorage clear - backup approach
-  try {
-    console.log('🗑️ Clearing all localStorage...');
-    localStorage.clear();
-    console.log('✅ All localStorage cleared');
-  } catch (err) {
-    console.error('❌ Failed to clear all localStorage:', err);
-  }
+  })();
 
   // Clear sessionStorage keys related to redirect loops
   console.log('📋 Clearing sessionStorage keys...');
@@ -89,34 +118,6 @@ function resetAllLoopState() {
     console.error('❌ Failed to clear all sessionStorage:', err);
   }
 
-  // Remove cookies that might be causing loops
-  console.log('🍪 Clearing cookies...');
-  const cookiesToReset = [
-    'onboardedStatus',
-    'onboardingStep',
-    'authToken',
-    'idToken',
-    'refreshToken',
-    'hasSession',
-    'selectedPlan',
-    'redirect_counter',
-    'circuitBreakerActive',
-    'businessName',
-    'businessType',
-    'pendingBusinessInfo'
-  ];
-
-  clearedCount = 0;
-  cookiesToReset.forEach(cookieName => {
-    try {
-      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; samesite=lax`;
-      clearedCount++;
-    } catch (err) {
-      console.error(`Failed to reset cookie ${cookieName}:`, err);
-    }
-  });
-  console.log(`✅ Removed ${clearedCount} cookies`);
-
   // Reset global window flags
   if (typeof window !== 'undefined') {
     console.log('🚩 Resetting global flags...');
@@ -144,24 +145,24 @@ To reset redirect loops:
 2. Go to the Console tab
 3. Copy and paste this function:
 
-function resetAllLoopState() {
+async function resetAllLoopState() {
   console.log('🧹 Clearing all state...');
   
   try {
-    // Clear localStorage
-    localStorage.clear();
-    console.log('✅ localStorage cleared');
+    // Clear AWS AppCache (if available)
+    try {
+      const { clearAppCache } = await import('/utils/appCacheUtils.js');
+      await clearAppCache();
+      console.log('✅ AWS AppCache cleared');
+    } catch (err) {
+      console.log('⚠️ Could not load AppCache module, falling back to localStorage');
+      localStorage.clear();
+      console.log('✅ localStorage cleared as fallback');
+    }
     
     // Clear sessionStorage
     sessionStorage.clear();
     console.log('✅ sessionStorage cleared');
-    
-    // Clear cookies
-    document.cookie.split(';').forEach(cookie => {
-      const [name] = cookie.trim().split('=');
-      document.cookie = \`\${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; samesite=lax\`;
-    });
-    console.log('✅ cookies cleared');
     
     // Reset global flags
     window.__REDIRECT_LOOP_DETECTED = false;

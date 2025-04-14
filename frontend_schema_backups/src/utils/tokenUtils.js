@@ -4,6 +4,7 @@
 import { logger } from './logger';
 // Remove static import of server components
 // import { cookies, headers } from 'next/headers';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 /**
  * Check if code is running on server side
@@ -50,11 +51,11 @@ async function getClientAccessToken() {
     
     if (!session) {
       console.error('[tokenUtils] No current session available');
-      // Try fallback to cookies or localStorage
-      const localToken = localStorage.getItem('authToken') || getCookie('idToken');
-      if (localToken) {
-        console.log('[tokenUtils] Using fallback token from local storage/cookies');
-        return localToken;
+      // Try fallback to AppCache
+      const appCacheToken = getCacheValue('auth_token');
+      if (appCacheToken) {
+        console.log('[tokenUtils] Using fallback token from AppCache');
+        return appCacheToken;
       }
       throw new Error('No authentication session available');
     }
@@ -87,32 +88,15 @@ async function getClientAccessToken() {
   } catch (error) {
     console.error('[tokenUtils] Error getting access token:', error);
     
-    // Fallback to cookies
+    // Fallback to AppCache
     try {
-      const idToken = getCookie('idToken');
-      if (idToken) {
-        console.log('[tokenUtils] Using idToken from cookies as fallback');
-        return idToken;
+      const appCacheToken = getCacheValue('auth_token') || getCacheValue('id_token');
+      if (appCacheToken) {
+        console.log('[tokenUtils] Using token from AppCache as fallback');
+        return appCacheToken;
       }
-      
-      const authToken = getCookie('authToken');
-      if (authToken) {
-        console.log('[tokenUtils] Using authToken from cookies as fallback');
-        return authToken;
-      }
-    } catch (cookieError) {
-      console.error('[tokenUtils] Cookie fallback failed:', cookieError);
-    }
-    
-    // Second fallback to localStorage
-    try {
-      const localToken = localStorage.getItem('authToken') || localStorage.getItem('idToken');
-      if (localToken) {
-        console.log('[tokenUtils] Using token from localStorage as fallback');
-        return localToken;
-      }
-    } catch (storageError) {
-      console.error('[tokenUtils] localStorage fallback failed:', storageError);
+    } catch (cacheError) {
+      console.error('[tokenUtils] AppCache fallback failed:', cacheError);
     }
     
     // If all else fails, throw error to be handled by caller
@@ -135,20 +119,6 @@ async function getServerAccessToken() {
     logger.error('[tokenUtils] Error getting server access token:', error);
     return null;
   }
-}
-
-/**
- * Helper function to get a cookie by name (client-side only)
- * @param {string} name - Cookie name
- * @returns {string|null} Cookie value or null if not found
- */
-function getCookie(name) {
-  if (typeof document === 'undefined') return null;
-  
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
 }
 
 /**
@@ -181,24 +151,10 @@ async function getClientIdToken() {
       logger.debug('[TokenUtils] Error getting ID token from auth context:', e);
     }
 
-    // Try to get from cookies
-    if (typeof document !== 'undefined') {
-      const cookies = document.cookie.split(';');
-      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('idToken='));
-      if (tokenCookie) {
-        const token = tokenCookie.split('=')[1].trim();
-        if (token) {
-          return token;
-        }
-      }
-    }
-
-    // Try to get from localStorage as last resort
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('idToken');
-      if (token) {
-        return token;
-      }
+    // Try to get from AppCache
+    const appCacheToken = getCacheValue('id_token');
+    if (appCacheToken) {
+      return appCacheToken;
     }
 
     logger.warn('[TokenUtils] No ID token found from any source');
@@ -225,7 +181,7 @@ async function getServerIdToken() {
 }
 
 /**
- * Set tokens in cookies and localStorage
+ * Set tokens in AppCache
  * @param {Object} tokens - The tokens object containing accessToken and idToken
  */
 export function setTokens(tokens) {
@@ -233,45 +189,24 @@ export function setTokens(tokens) {
   
   const { accessToken, idToken } = tokens;
   
-  // Set in cookies
-  if (typeof document !== 'undefined') {
-    const expires = new Date();
-    expires.setTime(expires.getTime() + 24 * 60 * 60 * 1000); // 1 day expiry
-    
-    if (accessToken) {
-      document.cookie = `accessToken=${accessToken}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`;
-    }
-    
-    if (idToken) {
-      document.cookie = `idToken=${idToken}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`;
-    }
+  // Set in AppCache with 1 day expiry
+  const ttl = 24 * 60 * 60 * 1000; // 1 day in milliseconds
+  
+  if (accessToken) {
+    setCacheValue('access_token', accessToken, { ttl });
   }
   
-  // Set in localStorage as backup
-  if (typeof window !== 'undefined') {
-    if (accessToken) {
-      localStorage.setItem('accessToken', accessToken);
-    }
-    
-    if (idToken) {
-      localStorage.setItem('idToken', idToken);
-    }
+  if (idToken) {
+    setCacheValue('id_token', idToken, { ttl });
   }
 }
 
 /**
- * Clear all auth tokens
+ * Clear tokens from AppCache
  */
 export function clearTokens() {
-  // Clear from cookies
-  if (typeof document !== 'undefined') {
-    document.cookie = 'accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    document.cookie = 'idToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-  }
-  
-  // Clear from localStorage
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('idToken');
-  }
+  // Clear from AppCache
+  removeCacheValue('access_token');
+  removeCacheValue('id_token');
+  removeCacheValue('auth_token');
 } 

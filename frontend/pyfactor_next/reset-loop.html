@@ -77,9 +77,9 @@
         <h2>Redirect Loop Circuit Breaker</h2>
         <p>This tool will help you recover from redirect loops by clearing all application state, including:</p>
         <ul>
-            <li>All localStorage items</li>
-            <li>All sessionStorage items</li>
-            <li>All cookies (authentication, session state, etc.)</li>
+            <li>AWS AppCache memory storage</li>
+            <li>SessionStorage items</li>
+            <li>Temporary authentication state</li>
         </ul>
         
         <div class="warning">
@@ -89,6 +89,7 @@
         <div class="actions">
             <button id="resetButton">Reset Application State</button>
             <button class="secondary" id="diagnoseButton">Diagnose Current State</button>
+            <button class="secondary" id="clearCognitoBtn">Clear Cognito Attributes</button>
         </div>
         
         <div id="successMessage" class="success">
@@ -111,25 +112,34 @@
     </div>
     
     <script>
-        document.getElementById('resetButton').addEventListener('click', function() {
+        document.getElementById('resetButton').addEventListener('click', async function() {
             try {
-                // Clear localStorage
-                const localStorageItems = Object.keys(localStorage);
-                console.log(`Clearing ${localStorageItems.length} localStorage items...`);
-                localStorage.clear();
+                // Clear AppCache
+                if (window.__APP_CACHE) {
+                    console.log(`Clearing AppCache...`);
+                    const appCacheKeys = Object.keys(window.__APP_CACHE);
+                    console.log(`Found ${appCacheKeys.length} AppCache entries`);
+                    
+                    // Reset the AppCache object
+                    window.__APP_CACHE = {};
+                    console.log(`AppCache cleared`);
+                }
                 
                 // Clear sessionStorage
                 const sessionStorageItems = Object.keys(sessionStorage);
                 console.log(`Clearing ${sessionStorageItems.length} sessionStorage items...`);
                 sessionStorage.clear();
                 
-                // Clear cookies
-                const cookies = document.cookie.split(";");
-                console.log(`Clearing ${cookies.length} cookies...`);
-                cookies.forEach(cookie => {
-                    const name = cookie.split("=")[0].trim();
-                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
-                });
+                // Call the API to clear temporary auth state
+                try {
+                    await fetch('/api/auth/clear-session', {
+                        method: 'POST',
+                        credentials: 'include'
+                    });
+                    console.log('Session cleared via API');
+                } catch (apiError) {
+                    console.error('Error clearing session via API:', apiError);
+                }
                 
                 // Show success message
                 document.getElementById('successMessage').style.display = 'block';
@@ -150,27 +160,52 @@
             }
         });
         
-        document.getElementById('diagnoseButton').addEventListener('click', function() {
+        document.getElementById('clearCognitoBtn').addEventListener('click', async function() {
+            try {
+                if (confirm('Are you sure you want to reset your Cognito user attributes? This will clear all your saved preferences.')) {
+                    const response = await fetch('/api/auth/clear-attributes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        alert('Cognito attributes cleared successfully');
+                    } else {
+                        alert('Failed to clear Cognito attributes. You may need to be logged in.');
+                    }
+                }
+            } catch (error) {
+                alert(`Error clearing Cognito attributes: ${error.message}`);
+                console.error('Cognito reset error:', error);
+            }
+        });
+        
+        document.getElementById('diagnoseButton').addEventListener('click', async function() {
             const diagnosisDiv = document.getElementById('diagnosisResult');
             const diagnosisText = document.getElementById('diagnosisText');
             
             try {
                 const diagnosis = {
-                    localStorage: {},
+                    appCache: {},
                     sessionStorage: {},
-                    cookies: document.cookie.split(';').map(c => c.trim()),
+                    cognitoAttributes: {},
                     url: window.location.href,
                     userAgent: navigator.userAgent
                 };
                 
-                // Get localStorage items safely
-                Object.keys(localStorage).forEach(key => {
-                    try {
-                        diagnosis.localStorage[key] = localStorage.getItem(key);
-                    } catch (e) {
-                        diagnosis.localStorage[key] = `[Error reading: ${e.message}]`;
-                    }
-                });
+                // Get AppCache items
+                if (window.__APP_CACHE) {
+                    Object.keys(window.__APP_CACHE).forEach(key => {
+                        try {
+                            diagnosis.appCache[key] = window.__APP_CACHE[key];
+                        } catch (e) {
+                            diagnosis.appCache[key] = `[Error reading: ${e.message}]`;
+                        }
+                    });
+                }
                 
                 // Get sessionStorage items safely
                 Object.keys(sessionStorage).forEach(key => {
@@ -180,6 +215,23 @@
                         diagnosis.sessionStorage[key] = `[Error reading: ${e.message}]`;
                     }
                 });
+                
+                // Try to get Cognito attributes
+                try {
+                    const response = await fetch('/api/auth/user-attributes', {
+                        credentials: 'include'
+                    });
+                    
+                    if (response.ok) {
+                        const userData = await response.json();
+                        diagnosis.cognitoAttributes = userData.attributes || {};
+                        diagnosis.isAuthenticated = !!userData.isAuthenticated;
+                    } else {
+                        diagnosis.cognitoAttributes = { error: 'Failed to fetch Cognito attributes' };
+                    }
+                } catch (e) {
+                    diagnosis.cognitoAttributes = { error: e.message };
+                }
                 
                 diagnosisText.textContent = JSON.stringify(diagnosis, null, 2);
                 diagnosisDiv.style.display = 'block';

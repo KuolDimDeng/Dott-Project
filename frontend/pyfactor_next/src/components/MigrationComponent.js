@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { clearLegacyStorage, migrateUserDataToCognito } from '@/utils/migrationUtils';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
+import { getUserPreference, saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { setCacheValue } from '@/utils/appCache';
 
 // Initialize global app cache at the top of the file
 if (typeof window !== 'undefined') {
@@ -25,10 +27,25 @@ export default function MigrationComponent() {
     if (typeof window !== 'undefined') {
       const runMigration = async () => {
         try {
-          // Check if we've already run this migration
-          if (localStorage.getItem('migration_to_cognito_completed') === 'true') {
-            logger.debug('[MigrationComponent] Migration already completed');
+          // Check if we've already run this migration via Cognito attribute
+          const migrationStatus = await getUserPreference(PREF_KEYS.PREFERENCES_MIGRATED, 'false');
+          if (migrationStatus === 'true') {
+            logger.debug('[MigrationComponent] Migration already completed (Cognito)');
             setMigrationComplete(true);
+            return;
+          }
+          
+          // Backwards compatibility check for localStorage
+          if (localStorage.getItem('migration_to_cognito_completed') === 'true') {
+            // If localStorage shows completed but Cognito doesn't, update Cognito
+            await saveUserPreference(PREF_KEYS.PREFERENCES_MIGRATED, 'true');
+            const timestamp = localStorage.getItem('migration_to_cognito_timestamp') || new Date().toISOString();
+            await saveUserPreference('custom:migration_timestamp', timestamp);
+            
+            logger.debug('[MigrationComponent] Migration already completed (localStorage), updated Cognito');
+            setMigrationComplete(true);
+            // Still clear legacy storage to be safe
+            await clearLegacyStorage();
             return;
           }
 
@@ -38,6 +55,11 @@ export default function MigrationComponent() {
           if (migrationResult.success) {
             logger.info('[MigrationComponent] Successfully migrated data to Cognito', 
               migrationResult.migratedData);
+              
+            // Set migration complete flag in Cognito and AppCache
+            await saveUserPreference(PREF_KEYS.PREFERENCES_MIGRATED, 'true');
+            await saveUserPreference('custom:migration_timestamp', new Date().toISOString());
+            setCacheValue('preferences_migrated', 'true');
           } else {
             logger.warn('[MigrationComponent] Some data migration failed:', 
               migrationResult.message);

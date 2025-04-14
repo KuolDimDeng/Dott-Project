@@ -3,6 +3,7 @@
  * These functions are only available in development mode
  */
 import { logger } from './logger';
+import { setCacheValue, getCacheValue } from './appCache';
 
 /**
  * Set development mode options
@@ -15,15 +16,14 @@ export const setDevOptions = (options = {}) => {
   }
   
   try {
-    // Store settings in localStorage
+    // Store settings in AppCache
     if (options.useRealDb !== undefined) {
-      localStorage.setItem('dev_use_real_db', options.useRealDb ? 'true' : 'false');
+      setCacheValue('dev_use_real_db', options.useRealDb ? 'true' : 'false');
       console.log(`✅ Development DB mode set to: ${options.useRealDb ? 'REAL DATABASE' : 'MOCK DATABASE'}`);
     }
     
     if (options.tenantId) {
-      localStorage.setItem('dev-tenant-id', options.tenantId);
-      document.cookie = `dev-tenant-id=${options.tenantId}; path=/; max-age=86400`;
+      setCacheValue('dev-tenant-id', options.tenantId);
       console.log(`✅ Development tenant ID set to: ${options.tenantId}`);
     }
     
@@ -42,7 +42,7 @@ export const getDevTenantId = () => {
     return null;
   }
   
-  return localStorage.getItem('dev-tenant-id') || 'dev-tenant-123';
+  return getCacheValue('dev-tenant-id') || 'dev-tenant-123';
 };
 
 /**
@@ -54,8 +54,7 @@ export const setDevTenantId = (tenantId) => {
     return false;
   }
   
-  localStorage.setItem('dev-tenant-id', tenantId);
-  document.cookie = `dev-tenant-id=${tenantId}; path=/; max-age=86400`;
+  setCacheValue('dev-tenant-id', tenantId);
   console.log(`✅ Development tenant ID set to: ${tenantId}`);
   
   return true;
@@ -70,7 +69,7 @@ export const useRealDatabase = (enable = true) => {
     return false;
   }
   
-  localStorage.setItem('dev_use_real_db', enable ? 'true' : 'false');
+  setCacheValue('dev_use_real_db', enable ? 'true' : 'false');
   console.log(`✅ ${enable ? 'Enabled' : 'Disabled'} real database in development mode`);
   
   // Add a refresh notice
@@ -95,9 +94,8 @@ export const createNewTenantId = (prefix = 'tenant') => {
   const random = Math.floor(Math.random() * 10000);
   const newTenantId = `${prefix}-${timestamp}-${random}`;
   
-  // Store the new tenant ID
-  localStorage.setItem('dev-tenant-id', newTenantId);
-  document.cookie = `dev-tenant-id=${newTenantId}; path=/; max-age=86400`;
+  // Store the new tenant ID in AppCache
+  setCacheValue('dev-tenant-id', newTenantId);
   
   // Log success message with styling
   console.log(

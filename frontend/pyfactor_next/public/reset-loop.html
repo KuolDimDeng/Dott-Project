@@ -180,6 +180,13 @@
         // Clear sessionStorage
         sessionStorage.clear();
         
+        // Clear AppCache
+        if (window.__APP_CACHE) {
+          Object.keys(window.__APP_CACHE).forEach(key => {
+            delete window.__APP_CACHE[key];
+          });
+        }
+        
         showStatus('Full reset successful! Please reload the page.', 'success');
         
         // Redirect to sign-in with circuit breaker

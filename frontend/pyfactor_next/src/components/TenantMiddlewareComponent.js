@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useTenant } from '@/context/TenantContext';
+import { logger } from '@/utils/logger';
 
 /**
  * Client-side TenantMiddleware component
@@ -15,16 +16,47 @@ export default function TenantMiddlewareComponent() {
     // Initialize tenant on mount
     const initialize = async () => {
       try {
-        console.debug('[TenantMiddleware] Initializing tenant');
+        // Check if we're on a sign-in or authentication page to avoid unnecessary errors
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname;
+          const isAuthPage = path.includes('/auth/signin') || 
+                             path.includes('/auth/signup') || 
+                             path.includes('/auth/verify') ||
+                             path.includes('/auth/reset-password');
+          
+          if (isAuthPage) {
+            logger.debug('[TenantMiddleware] On auth page, skipping tenant initialization');
+            return;
+          }
+        }
+        
+        logger.debug('[TenantMiddleware] Initializing tenant');
         const tenantId = await initializeTenant();
         
         if (tenantId) {
-          console.info(`[TenantMiddleware] Tenant initialized: ${tenantId}`);
+          logger.info(`[TenantMiddleware] Tenant initialized: ${tenantId}`);
         } else {
-          console.warn('[TenantMiddleware] No tenant ID found during initialization');
+          logger.warn('[TenantMiddleware] No tenant ID found during initialization');
         }
       } catch (error) {
-        console.error('[TenantMiddleware] Error initializing tenant:', error);
+        // Check if this is an auth error on an auth page
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname;
+          const isAuthPage = path.includes('/auth/signin') || 
+                             path.includes('/auth/signup') || 
+                             path.includes('/auth/verify') ||
+                             path.includes('/auth/reset-password');
+          
+          if (isAuthPage && (
+              error.name === 'UserUnAuthenticatedException' || 
+              error.message?.includes('User needs to be authenticated')
+            )) {
+            logger.debug('[TenantMiddleware] User not authenticated on auth page (expected)');
+            return;
+          }
+        }
+        
+        logger.error('[TenantMiddleware] Error initializing tenant:', error);
       }
     };
 

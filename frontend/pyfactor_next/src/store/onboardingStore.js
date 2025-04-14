@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { logger } from '@/utils/logger';
 import { updateOnboardingStep, validateBusinessInfo } from '@/utils/onboardingUtils';
+import { saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
+import { setCacheValue, getCacheValue } from '@/utils/appCache';
 
 const useOnboardingStore = create(
   persist(
@@ -50,14 +52,23 @@ const useOnboardingStore = create(
 
           logger.debug('[OnboardingStore] Business info updated successfully');
 
-          // Update cookie for cross-page persistence
+          // Update Cognito attributes and AppCache for cross-page persistence
           try {
-            const now = new Date();
-            const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            document.cookie = `businessName=${encodeURIComponent(info.businessName || '')}; path=/; expires=${expires.toUTCString()}; samesite=lax`;
-            document.cookie = `businessType=${encodeURIComponent(info.businessType || '')}; path=/; expires=${expires.toUTCString()}; samesite=lax`;
+            // Store in AppCache for immediate UI feedback
+            setCacheValue('business_info', info);
+            setCacheValue(PREF_KEYS.BUSINESS_NAME, info.businessName || '');
+            setCacheValue(PREF_KEYS.BUSINESS_TYPE, info.businessType || '');
+            
+            // Update Cognito attributes
+            saveUserPreferences({
+              [PREF_KEYS.BUSINESS_NAME]: info.businessName || '',
+              [PREF_KEYS.BUSINESS_TYPE]: info.businessType || ''
+            }).catch(err => {
+              logger.warn('[OnboardingStore] Failed to update Cognito business info:', err);
+            });
           } catch (err) {
-            // Silent fail on cookie errors
+            // Silent fail on storage errors
+            logger.warn('[OnboardingStore] Error updating business info in storage:', err);
           }
 
           return true;
@@ -78,14 +89,22 @@ const useOnboardingStore = create(
           subscriptionInterval: interval
         });
         
-        // Mark cookie for free plan fast path
+        // For free plan fast path, update Cognito and AppCache
         if (plan === 'free') {
           try {
-            const now = new Date();
-            const expires = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-            document.cookie = `freePlanSelected=true; path=/; expires=${expires.toUTCString()}; samesite=lax`;
+            // Store in AppCache for immediate UI feedback
+            setCacheValue('subscription_plan', 'free');
+            setCacheValue('free_plan_selected', 'true');
+            
+            // Update Cognito attributes
+            saveUserPreferences({
+              [PREF_KEYS.SUBSCRIPTION_PLAN]: 'free'
+            }).catch(err => {
+              logger.warn('[OnboardingStore] Failed to update Cognito subscription info:', err);
+            });
           } catch (err) {
-            // Silent fail on cookie errors
+            // Silent fail on storage errors
+            logger.warn('[OnboardingStore] Error updating subscription in storage:', err);
           }
         }
       },
@@ -150,26 +169,21 @@ const useOnboardingStore = create(
       
       // Fast path helper that checks for completion without API calls
       isComplete: () => {
-        // Check cookies first for fastest performance
+        // Check AppCache first for fastest performance
         try {
-          if (typeof document !== 'undefined') {
-            const getCookie = (name) => {
-              const value = `; ${document.cookie}`;
-              const parts = value.split(`; ${name}=`);
-              if (parts.length === 2) return parts.pop().split(';').shift();
-              return null;
-            };
+          if (typeof window !== 'undefined') {
+            // Check if onboarding is complete via AppCache
+            const setupCompleted = getCacheValue('user_pref_custom:setupdone') === 'true';
+            const onboardingStep = getCacheValue('user_pref_custom:onboarding_step');
+            const onboardingStatus = getCacheValue('user_pref_custom:onboarding');
             
-            // Check if onboarding is complete via cookies
-            const setupCompleted = getCookie('setupCompleted') === 'true';
-            const onboardingStep = getCookie('onboardingStep');
-            
-            if (setupCompleted || onboardingStep === 'complete') {
+            if (setupCompleted || onboardingStep === 'complete' || onboardingStatus === 'COMPLETE') {
               return true;
             }
           }
         } catch (err) {
           // Silent fail and continue with store check
+          logger.warn('[OnboardingStore] Error checking completion status from AppCache:', err);
         }
         
         // Then check stored state

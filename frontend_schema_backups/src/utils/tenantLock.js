@@ -1,4 +1,6 @@
 // tenantLock.js
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+
 const TENANT_LOCK_KEY = 'tenant_initialization_lock';
 const LOCK_TIMEOUT = 30000; // 30 seconds timeout
 
@@ -10,10 +12,10 @@ export const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Check if lock already exists
-  const existingLock = localStorage.getItem(TENANT_LOCK_KEY);
+  const existingLock = getCacheValue(TENANT_LOCK_KEY);
   if (existingLock) {
     // Check if lock is stale (older than timeout)
-    const lockData = JSON.parse(existingLock);
+    const lockData = typeof existingLock === 'object' ? existingLock : JSON.parse(existingLock);
     const now = Date.now();
     if (now - lockData.timestamp < LOCK_TIMEOUT) {
       console.log('Tenant initialization already in progress');
@@ -28,7 +30,7 @@ export const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  localStorage.setItem(TENANT_LOCK_KEY, JSON.stringify(lockData));
+  setCacheValue(TENANT_LOCK_KEY, lockData, { ttl: LOCK_TIMEOUT });
   return true;
 };
 
@@ -37,5 +39,5 @@ export const acquireTenantLock = () => {
  */
 export const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(TENANT_LOCK_KEY);
+  removeCacheValue(TENANT_LOCK_KEY);
 };

@@ -138,31 +138,38 @@ export function useAuth() {
         throw new Error('Failed to get current user after sign in');
       }
 
-      // Set up cookies via API route instead of using refreshSession
+      // No longer need to set cookies, instead store in AppCache and update Cognito attributes
       try {
-        logger.debug('[Auth] Setting cookies via API');
-        const response = await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken: sessionResponse.tokens.idToken.toString(),
-            accessToken: sessionResponse.tokens.accessToken.toString(),
-            refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-          })
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          logger.error('[Auth] Failed to set cookies via API:', errorData);
-          throw new Error(`Failed to set cookies: ${errorData.error || response.statusText}`);
+        logger.debug('[Auth] Storing authentication tokens in AppCache');
+        
+        // Store tokens in AppCache for client-side access
+        const { setInAppCache } = await import('@/utils/appCacheUtils');
+        await setInAppCache('idToken', sessionResponse.tokens.idToken.toString(), 3600); // 1 hour TTL
+        await setInAppCache('accessToken', sessionResponse.tokens.accessToken.toString(), 3600);
+        if (sessionResponse.tokens.refreshToken) {
+          await setInAppCache('refreshToken', sessionResponse.tokens.refreshToken.toString(), 86400); // 24 hours TTL
         }
         
-        logger.debug('[Auth] Cookies set successfully via API');
-      } catch (cookieError) {
-        logger.error('[Auth] Error setting cookies:', cookieError);
-        // Continue even if cookie setting fails
+        // Update Cognito user attributes with essential information
+        const { setCognitoUserAttribute } = await import('@/utils/cognitoUtils');
+        
+        // Set the authenticated status in user attributes for services that need it
+        await setCognitoUserAttribute('custom:authenticated', 'true');
+        
+        // Extract email and other basic info from tokens if available
+        try {
+          const payload = sessionResponse.tokens.idToken.payload;
+          if (payload && payload.email) {
+            await setCognitoUserAttribute('email', payload.email);
+          }
+        } catch (payloadError) {
+          logger.warn('[Auth] Error extracting token payload:', payloadError);
+        }
+        
+        logger.debug('[Auth] Authentication data stored successfully');
+      } catch (storageError) {
+        logger.error('[Auth] Error storing authentication data:', storageError);
+        // Continue even if storage fails
       }
 
       logger.debug('[Auth] Session established successfully');
@@ -576,29 +583,25 @@ export function useAuth() {
             if (sessionResponse.tokens?.idToken) {
               setSession(sessionResponse);
               
-              // Set up cookies via API route
+              // Set up cookies via API route after sign in event
               try {
-                logger.debug('[Auth] Setting cookies via API after sign in event');
-                const response = await fetch('/api/auth/set-cookies', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    idToken: sessionResponse.tokens.idToken.toString(),
-                    accessToken: sessionResponse.tokens.accessToken.toString(),
-                    refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-                  })
-                });
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  logger.error('[Auth] Failed to set cookies via API after sign in event:', errorData);
-                } else {
-                  logger.debug('[Auth] Cookies set successfully via API after sign in event');
-                }
-              } catch (cookieError) {
-                logger.error('[Auth] Error setting cookies after sign in event:', cookieError);
+                logger.debug('[Auth] Storing authentication data after sign in event');
+                
+                // Store tokens in AppCache for client-side access
+                const { setInAppCache } = await import('@/utils/appCacheUtils');
+                const tokens = {
+                  idToken: payload.data.signInUserSession.idToken.jwtToken,
+                  accessToken: payload.data.signInUserSession.accessToken.jwtToken,
+                  refreshToken: payload.data.signInUserSession.refreshToken.token
+                };
+                
+                await setInAppCache('idToken', tokens.idToken, 3600); // 1 hour TTL
+                await setInAppCache('accessToken', tokens.accessToken, 3600);
+                await setInAppCache('refreshToken', tokens.refreshToken, 86400); // 24 hours TTL
+                
+                logger.debug('[Auth] Authentication data stored after sign in event');
+              } catch (storageError) {
+                logger.error('[Auth] Error storing authentication data after sign in event:', storageError);
               }
               
               logger.debug('[Auth] Session established after sign in');
@@ -624,29 +627,23 @@ export function useAuth() {
             if (sessionResponse.tokens?.idToken) {
               setSession(sessionResponse);
               
-              // Set up cookies via API route
+              // Set up cookies via API route after token refresh
               try {
-                logger.debug('[Auth] Setting cookies via API after token refresh');
-                const response = await fetch('/api/auth/set-cookies', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    idToken: sessionResponse.tokens.idToken.toString(),
-                    accessToken: sessionResponse.tokens.accessToken.toString(),
-                    refreshToken: sessionResponse.tokens.refreshToken ? sessionResponse.tokens.refreshToken.toString() : undefined
-                  })
-                });
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  logger.error('[Auth] Failed to set cookies via API after token refresh:', errorData);
-                } else {
-                  logger.debug('[Auth] Cookies set successfully via API after token refresh');
-                }
-              } catch (cookieError) {
-                logger.error('[Auth] Error setting cookies after token refresh:', cookieError);
+                logger.debug('[Auth] Storing refreshed tokens in AppCache');
+                
+                // Store tokens in AppCache for client-side access
+                const { setInAppCache } = await import('@/utils/appCacheUtils');
+                const tokens = {
+                  idToken: payload.data.signInUserSession.idToken.jwtToken,
+                  accessToken: payload.data.signInUserSession.accessToken.jwtToken
+                };
+                
+                await setInAppCache('idToken', tokens.idToken, 3600); // 1 hour TTL
+                await setInAppCache('accessToken', tokens.accessToken, 3600);
+                
+                logger.debug('[Auth] Refreshed tokens stored in AppCache');
+              } catch (storageError) {
+                logger.error('[Auth] Error storing refreshed tokens:', storageError);
               }
               
               logger.debug('[Auth] Session refreshed successfully');

@@ -1,5 +1,6 @@
 // Import customerApi instead of axiosInstance
 import { customerApi } from '@/utils/apiClient';
+import { getCacheValue } from '@/utils/appCache';
 
 // Update the fetchCustomers function to handle schema creation
 const fetchCustomers = async () => {
@@ -7,8 +8,8 @@ const fetchCustomers = async () => {
     setIsLoading(true);
     console.log('[CustomerManagement] Fetching customers...');
     
-    // Get tenant ID
-    const tenantId = localStorage.getItem('tenantId') || 'default';
+    // Use tenantId from AppCache
+    const tenantId = getCacheValue('tenantId') || 'default';
     
     try {
       const data = await customerApi.getAll();

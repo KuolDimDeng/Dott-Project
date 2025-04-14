@@ -17,6 +17,7 @@ import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import DynamicComponents from '@/components/DynamicComponents';
 import tokenRefreshService from '@/utils/tokenRefresh';
+import { getCacheValue, setCacheValue, removeCacheValue, clearCache } from '@/utils/appCache';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -153,8 +154,10 @@ export default function ClientLayout({ children }) {
                 
                 // Clear all relevant storage
                 try {
-                  localStorage.clear();
+                  clearCache(); // Uses AppCache clearCache instead of localStorage.clear()
                   sessionStorage.clear();
+                  
+                  // Clear cookies for backward compatibility only
                   document.cookie.split(";").forEach(cookie => {
                     const name = cookie.split("=")[0].trim();
                     document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
@@ -227,10 +230,10 @@ export default function ClientLayout({ children }) {
                 
                 // Clear redirect-related data in storage
                 try {
-                  localStorage.removeItem('signin_attempts');
-                  localStorage.removeItem('business_auth_errors');
-                  localStorage.removeItem('business_info_auth_errors');
-                  localStorage.removeItem('redirect_loop_count');
+                  removeCacheValue('signin_attempts');
+                  removeCacheValue('business_auth_errors');
+                  removeCacheValue('business_info_auth_errors');
+                  removeCacheValue('redirect_loop_count');
                   sessionStorage.removeItem('signinRedirectTime');
                   sessionStorage.removeItem('lastRedirectPath');
                   sessionStorage.removeItem('loopDetected');
@@ -514,21 +517,15 @@ export default function ClientLayout({ children }) {
             }
             
             // Check if we've redirected too many times
-            const redirectCount = parseInt(localStorage.getItem('client_redirect_count') || '0', 10);
-            if (redirectCount >= 3) {
-              logger.error('[ClientLayout] Too many redirects detected, circuit breaker activated');
-              // Force add noredirect parameter to prevent future redirects
-              const currentUrl = new URL(window.location.href);
-              currentUrl.searchParams.set('noredirect', 'true');
-              window.history.replaceState({}, '', currentUrl.toString());
-              // Reset counter
-              localStorage.setItem('client_redirect_count', '0');
-              setIsVerifying(false);
-              return false;
+            const redirectCount = parseInt(getCacheValue('client_redirect_count') || '0', 10);
+            if (redirectCount >= 5) {
+              logger.warn('[ClientLayout] Maximum client redirects reached, resetting counter');
+              setCacheValue('client_redirect_count', '0');
+              return true; // Allow the redirect but reset the counter
             }
             
-            // Increment redirect counter
-            localStorage.setItem('client_redirect_count', (redirectCount + 1).toString());
+            // Increment counter
+            setCacheValue('client_redirect_count', (redirectCount + 1).toString());
             
             // Add from and noredirect parameters to signin URL
             const signInUrl = new URL('/auth/signin', window.location.origin);
@@ -584,7 +581,7 @@ export default function ClientLayout({ children }) {
         try {
           // Reset redirect counter if on signin page
           if (pathname.includes('signin') && typeof window !== 'undefined') {
-            localStorage.setItem('client_redirect_count', '0');
+            setCacheValue('client_redirect_count', '0');
           }
           
           const sessionValid = await verifySession.current(pathname);
@@ -593,7 +590,7 @@ export default function ClientLayout({ children }) {
             
             // If validation successful, reset redirect counter
             if (sessionValid && typeof window !== 'undefined') {
-              localStorage.setItem('client_redirect_count', '0');
+              setCacheValue('client_redirect_count', '0');
             }
           }
         } catch (error) {

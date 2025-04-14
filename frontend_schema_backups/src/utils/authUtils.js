@@ -4,6 +4,7 @@ import { fetchAuthSession, signIn, signOut, getCurrentUser } from 'aws-amplify/a
 import { Amplify } from 'aws-amplify';
 import { logger } from './logger';
 import { jwtDecode } from 'jwt-decode';
+import { getCacheValue, setCacheValue, removeCacheValue, clearCache } from '@/utils/appCache';
 
 /**
  * Checks if a route is public (doesn't require authentication)
@@ -462,124 +463,56 @@ export async function logoutUser() {
 }
 
 /**
- * Completely clear all authentication data from all storage locations
- * @returns {Promise<boolean>} Success status
+ * Clear all authentication data and state
+ * Use this when logging out to ensure a clean slate
  */
 export async function clearAllAuthData() {
   try {
-    logger.debug('[authUtils] Clearing all authentication data');
+    logger.debug('[authUtils] Clearing all auth data');
     
-    // 1. Call Amplify signOut with global option
+    // 1. First sign out from Cognito - this is the source of truth
     try {
-      const { signOut } = await import('aws-amplify/auth');
-      await signOut({ global: true });
-      logger.debug('[authUtils] Successfully called Amplify signOut');
+      await signOut();
+      logger.debug('[authUtils] Cognito signOut successful');
     } catch (signOutError) {
-      logger.error('[authUtils] Error during Amplify signOut:', signOutError);
-      // Continue with other cleanup despite error
+      logger.error('[authUtils] Error signing out of Cognito:', signOutError);
     }
     
-    // 2. Clear all cookies
-    const cookiesToClear = [
-      'userEmail', 
-      'onboardedStatus', 
-      'setupCompleted', 
-      'onboardingStep', 
-      'onboardingInProgress',
-      'authState',
-      'idToken',
-      'accessToken',
-      'refreshToken',
-      'tenantId',
-      'userInfo',
-      'sessionId',
-      'pyfactor_session',
-      'amplify-signin-with-hostedUI',
-      'amplify-authenticator-authState'
-    ];
-    
-    cookiesToClear.forEach(cookieName => {
-      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}; samesite=lax`;
-      // Also try without domain for local cookies
-      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
-    });
-    
-    // 3. Clear localStorage items
-    try {
-      // Clear all Cognito-related items
-      const cognitoKeys = Object.keys(localStorage).filter(key => 
-        key.includes('CognitoIdentityServiceProvider') || 
-        key.includes('amplify') ||
-        key.includes('aws') ||
-        key.includes('token') ||
-        key.includes('auth')
-      );
-      
-      // Log found keys for debugging
-      logger.debug('[authUtils] Clearing Cognito-related localStorage keys:', cognitoKeys);
-      
-      // Clear each key
-      cognitoKeys.forEach(key => localStorage.removeItem(key));
-      
-      // Also clear known app-specific keys
-      const appKeys = [
-        'unconfirmedEmail',
-        'pendingVerificationEmail',
-        'verificationEmail',
-        'pyfactor_email',
-        'needs_verification',
-        'returnToOnboarding',
-        'onboardingStep',
-        'userEmail',
-        'tempPassword',
-        'businessInfo',
-        'businessName',
-        'businessType', 
-        'country',
-        'legalStructure',
-        'onboardingInProgress',
-        'onboardedStatus',
-        'tokenExpired'
-      ];
-      
-      appKeys.forEach(key => localStorage.removeItem(key));
-      
-      logger.debug('[authUtils] Successfully cleared localStorage items');
-    } catch (storageError) {
-      logger.error('[authUtils] Error clearing localStorage:', storageError);
-    }
-    
-    // 4. Clear sessionStorage
-    try {
-      sessionStorage.clear();
-      logger.debug('[authUtils] Successfully cleared sessionStorage');
-    } catch (sessionError) {
-      logger.error('[authUtils] Error clearing sessionStorage:', sessionError);
-    }
-    
-    // 5. Try to clear IndexedDB if browser supports it
-    if (window.indexedDB) {
-      try {
-        // Get list of all databases
-        const databases = await window.indexedDB.databases();
-        
-        // Delete each database
-        for (const db of databases) {
-          if (db.name) {
-            await window.indexedDB.deleteDatabase(db.name);
-          }
-        }
-        
-        logger.debug('[authUtils] Successfully cleared IndexedDB databases');
-      } catch (indexedDBError) {
-        logger.error('[authUtils] Error clearing IndexedDB:', indexedDBError);
+    // 2. Reset global auth state in app cache
+    if (typeof window !== 'undefined') {
+      // Clear app cache auth section
+      if (window.__APP_CACHE && window.__APP_CACHE.auth) {
+        Object.keys(window.__APP_CACHE.auth).forEach(key => {
+          delete window.__APP_CACHE.auth[key];
+        });
       }
+      
+      // Remove specific auth keys from app cache
+      removeCacheValue('access_token');
+      removeCacheValue('id_token');
+      removeCacheValue('refresh_token');
+      removeCacheValue('userId');
+      removeCacheValue('userEmail');
+      removeCacheValue('userRole');
+      removeCacheValue('tenantId');
+      removeCacheValue('tokenExpired');
+      removeCacheValue('lastAuthenticated');
+      
+      logger.debug('[authUtils] AppCache auth data cleared');
     }
     
-    logger.debug('[authUtils] Successfully cleared all authentication data');
+    // 3. For backward compatibility, also clear cookies and localStorage
+    if (typeof window !== 'undefined') {
+      // Clear session storage
+      sessionStorage.clear();
+      
+      logger.debug('[authUtils] All auth-related storage cleared');
+    }
+    
+    // 4. Force reload to ensure all state is reset
     return true;
   } catch (error) {
-    logger.error('[authUtils] Error clearing authentication data:', error);
+    logger.error('[authUtils] Error clearing auth data:', error);
     return false;
   }
 }

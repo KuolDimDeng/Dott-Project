@@ -73,8 +73,8 @@
 
     <div class="container">
         <h2>Clear Storage Options</h2>
-        <button id="clearCookiesBtn">Clear Cookies</button>
-        <button id="clearLocalStorageBtn">Clear LocalStorage</button>
+        <button id="clearCognitoBtn">Clear Cognito Attributes</button>
+        <button id="clearAppCacheBtn">Clear AppCache</button>
         <button id="clearSessionStorageBtn">Clear SessionStorage</button>
         <button id="clearAllBtn" class="warning">Clear All Storage</button>
         
@@ -94,11 +94,11 @@
     
     <div class="container">
         <h2>Current Storage Contents</h2>
-        <h3>Cookies</h3>
-        <pre id="cookiesContent">Loading...</pre>
+        <h3>AppCache</h3>
+        <pre id="appCacheContent">Loading...</pre>
         
-        <h3>LocalStorage</h3>
-        <pre id="localStorageContent">Loading...</pre>
+        <h3>Cognito Attributes</h3>
+        <pre id="cognitoContent">Loading...</pre>
         
         <h3>SessionStorage</h3>
         <pre id="sessionStorageContent">Loading...</pre>
@@ -106,37 +106,66 @@
 
     <script>
         // Display current tenant information
-        function displayTenantInfo() {
-            const tenantId = localStorage.getItem('tenantId') || getCookie('tenantId') || 'Not found';
-            const businessId = localStorage.getItem('businessid') || getCookie('businessid') || 'Not found';
+        async function displayTenantInfo() {
+            // Get tenant info from AppCache
+            const tenantId = window.__APP_CACHE?.['user_pref_custom:tenant_ID']?.value || 'Not found';
+            const businessId = window.__APP_CACHE?.['user_pref_custom:businessid']?.value || 'Not found';
             
             document.getElementById('currentTenantId').textContent = tenantId;
             document.getElementById('businessId').textContent = businessId;
-        }
-        
-        // Helper function to get cookie by name
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-            return null;
+            
+            // Alternative way is to fetch from Cognito via API
+            try {
+                const response = await fetch('/api/auth/user-attributes');
+                if (response.ok) {
+                    const userData = await response.json();
+                    if (userData.attributes && userData.attributes['custom:tenant_ID']) {
+                        document.getElementById('currentTenantId').textContent = userData.attributes['custom:tenant_ID'];
+                    }
+                    if (userData.attributes && userData.attributes['custom:businessid']) {
+                        document.getElementById('businessId').textContent = userData.attributes['custom:businessid'];
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching Cognito attributes:', error);
+            }
         }
         
         // Display current storage contents
-        function displayStorageContents() {
-            // Display cookies
-            document.getElementById('cookiesContent').textContent = document.cookie.split(';')
-                .map(cookie => cookie.trim())
-                .join('\n');
-            
-            // Display localStorage
+        async function displayStorageContents() {
+            // Display AppCache
             try {
-                const localStorageItems = Object.entries(localStorage)
-                    .map(([key, value]) => `${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`)
-                    .join('\n');
-                document.getElementById('localStorageContent').textContent = localStorageItems || 'Empty';
+                if (window.__APP_CACHE) {
+                    const appCacheItems = Object.entries(window.__APP_CACHE)
+                        .map(([key, value]) => {
+                            const displayValue = typeof value === 'object' 
+                                ? `${key}: ${JSON.stringify(value).substring(0, 100)}...` 
+                                : `${key}: ${value}`;
+                            return displayValue;
+                        })
+                        .join('\n');
+                    document.getElementById('appCacheContent').textContent = appCacheItems || 'Empty';
+                } else {
+                    document.getElementById('appCacheContent').textContent = 'AppCache not initialized';
+                }
             } catch (e) {
-                document.getElementById('localStorageContent').textContent = `Error: ${e.message}`;
+                document.getElementById('appCacheContent').textContent = `Error: ${e.message}`;
+            }
+            
+            // Display Cognito attributes
+            try {
+                const response = await fetch('/api/auth/user-attributes');
+                if (response.ok) {
+                    const userData = await response.json();
+                    const cognitoItems = Object.entries(userData.attributes || {})
+                        .map(([key, value]) => `${key}: ${value}`)
+                        .join('\n');
+                    document.getElementById('cognitoContent').textContent = cognitoItems || 'No attributes found';
+                } else {
+                    document.getElementById('cognitoContent').textContent = 'Failed to fetch Cognito attributes';
+                }
+            } catch (e) {
+                document.getElementById('cognitoContent').textContent = `Error: ${e.message}`;
             }
             
             // Display sessionStorage
@@ -150,31 +179,43 @@
             }
         }
         
-        // Clear all cookies
-        function clearCookies() {
-            const cookies = document.cookie.split(';');
-            
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i];
-                const eqPos = cookie.indexOf('=');
-                const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
-                document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+        // Clear Cognito attributes
+        async function clearCognitoAttributes() {
+            try {
+                const response = await fetch('/api/auth/clear-attributes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showSuccessMessage();
+                    await displayStorageContents();
+                    await displayTenantInfo();
+                } else {
+                    console.error('Failed to clear Cognito attributes');
+                }
+            } catch (e) {
+                console.error('Error clearing Cognito attributes:', e);
             }
-            
-            showSuccessMessage();
-            displayStorageContents();
-            displayTenantInfo();
         }
         
-        // Clear localStorage
-        function clearLocalStorage() {
+        // Clear AppCache
+        function clearAppCache() {
             try {
-                localStorage.clear();
-                showSuccessMessage();
-                displayStorageContents();
-                displayTenantInfo();
+                if (window.__APP_CACHE) {
+                    // Reset the AppCache object while preserving the reference
+                    Object.keys(window.__APP_CACHE).forEach(key => {
+                        delete window.__APP_CACHE[key];
+                    });
+                    
+                    showSuccessMessage();
+                    displayStorageContents();
+                    displayTenantInfo();
+                }
             } catch (e) {
-                console.error('Error clearing localStorage:', e);
+                console.error('Error clearing AppCache:', e);
             }
         }
         
@@ -191,9 +232,9 @@
         }
         
         // Clear all storage
-        function clearAllStorage() {
-            clearCookies();
-            clearLocalStorage();
+        async function clearAllStorage() {
+            await clearCognitoAttributes();
+            clearAppCache();
             clearSessionStorage();
         }
         
@@ -208,8 +249,8 @@
         }
         
         // Add event listeners
-        document.getElementById('clearCookiesBtn').addEventListener('click', clearCookies);
-        document.getElementById('clearLocalStorageBtn').addEventListener('click', clearLocalStorage);
+        document.getElementById('clearCognitoBtn').addEventListener('click', clearCognitoAttributes);
+        document.getElementById('clearAppCacheBtn').addEventListener('click', clearAppCache);
         document.getElementById('clearSessionStorageBtn').addEventListener('click', clearSessionStorage);
         document.getElementById('clearAllBtn').addEventListener('click', clearAllStorage);
         

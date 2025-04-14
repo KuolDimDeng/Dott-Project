@@ -1,6 +1,7 @@
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
 import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 /**
  * TenantContext - Single source of truth for tenant information
@@ -57,7 +58,7 @@ export const getTenantHeaders = () => {
 };
 
 /**
- * Store tenant information in auth store and localStorage
+ * Store tenant information in auth store and AppCache
  * @param {string} tenantId The tenant ID to store
  */
 export const setTenantContext = (tenantId) => {
@@ -84,12 +85,16 @@ export const setTenantContext = (tenantId) => {
     });
   }
   
-  // Also store in localStorage as backup
+  // Store in AppCache
   if (typeof window !== 'undefined') {
-    localStorage.setItem('tenantId', tenantId);
+    setCacheValue('tenantId', tenantId);
     
-    // Set in cookie for server-side access
-    document.cookie = `tenantId=${tenantId}; path=/; max-age=31536000`; // 1 year
+    // Set tenant ID in Cognito attributes via next login
+    if (window.__TENANT_ATTRIBUTES_QUEUE) {
+      window.__TENANT_ATTRIBUTES_QUEUE.push({ tenantId });
+    } else {
+      window.__TENANT_ATTRIBUTES_QUEUE = [{ tenantId }];
+    }
   }
 };
 
@@ -110,10 +115,9 @@ export const clearTenantContext = () => {
     });
   }
   
-  // Clear from localStorage and cookies
+  // Clear from AppCache
   if (typeof window !== 'undefined') {
-    localStorage.removeItem('tenantId');
-    document.cookie = 'tenantId=; path=/; max-age=0';
+    removeCacheValue('tenantId');
   }
 };
 

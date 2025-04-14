@@ -2,6 +2,7 @@
  * Dev Mode Utils
  * Helper utilities to connect development mode components with the dashboard
  */
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * Check if we are running in development mode
@@ -19,10 +20,10 @@ export const isDevMode = () => {
 export const getDevModeUser = () => {
   if (!isDevMode()) return null;
   
-  const userName = localStorage.getItem('dev-user-name') || 'Dev User';
-  const tenantId = localStorage.getItem('dev-tenant-id');
-  const tenantName = localStorage.getItem('dev-tenant-name');
-  const subscriptionPlan = localStorage.getItem('dev-subscription-plan') || 'basic';
+  const userName = getCacheValue('dev-user-name') || 'Dev User';
+  const tenantId = getCacheValue('dev-tenant-id');
+  const tenantName = getCacheValue('dev-tenant-name');
+  const subscriptionPlan = getCacheValue('dev-subscription-plan') || 'basic';
   
   return {
     name: userName,
@@ -46,7 +47,7 @@ export const getDevModeUser = () => {
 export const getDevSubscriptionPlan = () => {
   if (!isDevMode()) return null;
   
-  const planId = localStorage.getItem('dev-subscription-plan') || sessionStorage.getItem('subscription-plan') || 'basic';
+  const planId = getCacheValue('dev-subscription-plan') || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('subscription-plan') : null) || 'basic';
   
   const plans = {
     free: {

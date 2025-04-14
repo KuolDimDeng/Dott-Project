@@ -8,7 +8,7 @@ const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mr
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
 
-// Create Amplify configuration
+// Create Amplify configuration for v6
 const amplifyConfig = {
   Auth: {
     Cognito: {
@@ -26,16 +26,16 @@ const amplifyConfig = {
 
 // Configure Amplify globally - this ensures it happens once at module load time
 try {
-  logger.debug('[amplifyConfig] Initializing with config:', {
-    userPoolClientId: amplifyConfig.Auth.Cognito.userPoolClientId,
+  logger.debug('[AmplifyConfig] Initializing with config:', {
+    region: amplifyConfig.Auth.Cognito.region,
     userPoolId: amplifyConfig.Auth.Cognito.userPoolId,
-    region: amplifyConfig.Auth.Cognito.region
+    userPoolClientId: amplifyConfig.Auth.Cognito.userPoolClientId
   });
   
   Amplify.configure(amplifyConfig);
-  logger.info('[amplifyConfig] Amplify configured successfully');
+  logger.info('[AmplifyConfig] Amplify configured successfully');
 } catch (error) {
-  logger.error('[amplifyConfig] Error configuring Amplify:', error);
+  logger.error('[AmplifyConfig] Error configuring Amplify:', error);
 }
 
 export { amplifyConfig };
@@ -44,10 +44,10 @@ export { amplifyConfig };
 export function reconfigureAmplify() {
   try {
     Amplify.configure(amplifyConfig);
-    logger.info('[amplifyConfig] Amplify reconfigured successfully');
+    logger.info('[AmplifyConfig] Amplify reconfigured successfully');
     return true;
   } catch (error) {
-    logger.error('[amplifyConfig] Error reconfiguring Amplify:', error);
+    logger.error('[AmplifyConfig] Error reconfiguring Amplify:', error);
     return false;
   }
 } 

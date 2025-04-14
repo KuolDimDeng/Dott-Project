@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { setCacheValue } from '@/utils/appCache';
 
 // Language data with flags and native names
 const languages = [
@@ -50,9 +51,9 @@ export default function LanguageSelector() {
     // Dispatch an event for other components that need to know about language changes
     window.dispatchEvent(new CustomEvent('languageChange', { detail: { language: lang.code } }));
     
-    // Save preference to localStorage
+    // Save preference to AppCache
     try {
-      localStorage.setItem('i18nextLng', lang.code);
+      setCacheValue('i18nextLng', lang.code);
     } catch (e) {
       console.error('Failed to save language preference:', e);
     }

@@ -6,6 +6,7 @@
  */
 
 import { getTenantId } from './tenantUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Log levels
 const LOG_LEVELS = {
@@ -21,15 +22,15 @@ let currentLogLevel = process.env.NODE_ENV === 'production'
   ? LOG_LEVELS.INFO 
   : LOG_LEVELS.DEBUG;
 
-// Allow log level to be set via localStorage for debugging
+// Allow log level to be set via AppCache for debugging
 if (typeof window !== 'undefined') {
   try {
-    const storedLogLevel = localStorage.getItem('logLevel');
+    const storedLogLevel = getCacheValue('logLevel');
     if (storedLogLevel && LOG_LEVELS[storedLogLevel] !== undefined) {
       currentLogLevel = LOG_LEVELS[storedLogLevel];
     }
   } catch (error) {
-    console.error('Error reading log level from localStorage', error);
+    console.error('Error reading log level from AppCache', error);
   }
 }
 
@@ -141,9 +142,9 @@ export const logger = {
       
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('logLevel', level);
+          setCacheValue('logLevel', level);
         } catch (error) {
-          console.error('Error saving log level to localStorage', error);
+          console.error('Error saving log level to AppCache', error);
         }
       }
       

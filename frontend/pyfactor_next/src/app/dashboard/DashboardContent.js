@@ -21,6 +21,7 @@ import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { useAuth } from '@/hooks/auth';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
+import { getCacheValue, removeCacheValue, clearCache } from '@/utils/appCache';
 
 // Import React components only - removed debug components
 
@@ -377,53 +378,35 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     }
   }, [resetAllStates, setView]);
 
-  // Add HR click handler
+  // Handler for HR options
   const handleHRClick = useCallback((value) => {
     resetAllStates();
     console.log('HR option selected:', value);
     
     switch(value) {
       case 'dashboard':
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'dashboard'
-        });
+        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
         break;
       case 'employees':
-        updateState({ 
-          showEmployeeManagement: true,
-          hrSection: 'employees'
-        });
+        updateState({ showEmployeeManagement: true });
         break;
       case 'timesheets':
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'timesheets'
-        });
+        updateState({ showTimesheetManagement: true });
         break;
       case 'taxes':
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'taxes'
-        });
+        updateState({ showTaxManagement: true });
         break;
       case 'benefits':
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'benefits'
-        });
+        updateState({ showBenefitsManagement: true });
         break;
       case 'reports':
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'reports'
-        });
+        updateState({ showReportsManagement: true });
+        break;
+      case 'performance':
+        updateState({ showPerformanceManagement: true });
         break;
       default:
-        updateState({ 
-          showHRDashboard: true,
-          hrSection: 'dashboard'
-        });
+        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
     }
   }, [resetAllStates, updateState]);
 
@@ -697,26 +680,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Handle sign out
   const handleSignOut = useCallback(async () => {
     try {
-      logger.debug('Signing out user');
-      
-      // Close the menu before signing out
       handleClose();
       
-      // First clear all storage before sign-out to prevent fetch loops and orphaned state
-      sessionStorage.clear();
+      // Clear App Cache
+      clearCache();
       
-      // Clear app cache
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        if (window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
-        if (window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
-      }
-      
-      // Clear cookies that might be related to auth
-      document.cookie.split(';').forEach(c => {
-        document.cookie = c
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
+      // No need to clear cookies, as they're not used for authentication anymore
       
       // Set a variable to prevent fetch data attempts after signout
       window.isSigningOut = true;
@@ -756,14 +725,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     try {
       logger.info('[Dashboard] Verifying tenant record in AWS RDS');
       
-      // Get tenant ID from various sources
+      // Get tenant ID from AppCache
       let tenantId;
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-        tenantId = window.__APP_CACHE.tenant.id || 
-                  document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1] ||
-                  effectiveTenantId;
+        tenantId = getCacheValue('tenantId') || getCacheValue('businessid') || effectiveTenantId;
       }
       
       if (!tenantId) {
@@ -824,22 +789,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     
     const checkAuthAndFetchData = async () => {
       try {
-        // First check if we have session cookies that indicate we're authenticated
-        const hasSessionCookie = document.cookie.includes('hasSession=true');
-        const hasTenantId = 
-          document.cookie.includes('tenantId=') || 
-          document.cookie.includes('businessid=') ||
-          (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id);
-        const hasIdToken = document.cookie.includes('idToken=') || 
-                          document.cookie.includes('CognitoIdentityServiceProvider') &&
-                          document.cookie.includes('.idToken') ||
-                          (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token);
+        // Check if we have authentication data in AppCache first
+        const hasAppCacheAuth = typeof window !== 'undefined' && 
+                             window.__APP_CACHE?.auth?.idToken && 
+                             window.__APP_CACHE?.tenant?.id;
         
         // Log the auth check attempt for debugging
-        logger.debug(`[Dashboard] Auth check attempt ${authCheckRetries + 1}/${MAX_AUTH_RETRIES}. Has cookies: session=${hasSessionCookie}, tenantId=${hasTenantId}, token=${hasIdToken}`);
+        logger.debug(`[Dashboard] Auth check attempt ${authCheckRetries + 1}/${MAX_AUTH_RETRIES}. Using AppCache auth: ${!!hasAppCacheAuth}`);
         
         try {
-          // Try getting the current user session
+          // Primary authentication method - get current user via Cognito SDK
           await getCurrentUser();
           
           // If the above didn't throw, fetch the user data
@@ -848,14 +807,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
           }
           return; // Successfully authenticated
         } catch (authError) {
-          logger.warn('[Dashboard] Auth check failed:', authError);
+          logger.warn('[Dashboard] Primary auth check failed:', authError);
           
-          // If we have cookies indicating a previous session, retry a few times
-          if ((hasSessionCookie || hasTenantId || hasIdToken) && authCheckRetries < MAX_AUTH_RETRIES) {
+          // If we have AppCache data, retry a few times
+          if (hasAppCacheAuth && authCheckRetries < MAX_AUTH_RETRIES) {
             authCheckRetries++;
             logger.info(`Auth check attempt ${authCheckRetries}/${MAX_AUTH_RETRIES} - Failed but trying again`);
             
-            // Try with a fallback method using cookies
+            // Try with fetchAuthSession as a backup method
             try {
               const session = await fetchAuthSession();
               if (session?.tokens?.idToken) {
@@ -875,35 +834,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
             return;
           }
           
-          // Use cookies as fallback if they exist
-          if (hasSessionCookie && hasTenantId) {
-            logger.info('[Dashboard] Using cookie fallback for authentication');
-            // Create fallback fetching mechanism
-            fetchUserData();
-            return;
-          }
-          
           // User is not authenticated after retries, redirect to sign in
           logger.debug('[Dashboard] User not authenticated, redirecting to sign-in page');
           if (isMounted) {
-            router.push('/auth/signin');
+            // Preserve return URL so user can be redirected back after sign in
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            router.push(`/auth/signin?returnUrl=${returnUrl}`);
           }
         }
       } catch (error) {
         logger.error('Error checking auth state:', error);
         
-        // Fallback with cookies if available before redirect
-        const hasSessionCookie = document.cookie.includes('hasSession=true');
-        const hasTenantId = document.cookie.includes('tenantId=') || 
-                           document.cookie.includes('businessid=');
-        
-        if (hasSessionCookie && hasTenantId) {
-          logger.info('[Dashboard] Using cookie fallback after error');
-          fetchUserData();
-          return;
-        }
-        
-        // Redirect on error as a fallback
+        // Redirect on error
         if (isMounted) {
           router.push('/auth/signin');
         }

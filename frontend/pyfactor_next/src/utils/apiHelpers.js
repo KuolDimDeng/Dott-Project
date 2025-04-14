@@ -3,6 +3,7 @@
  */
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
+import { getCacheValue } from './appCache';
 
 // Request cache for throttling duplicate requests
 const requestCache = new Map();
@@ -23,9 +24,11 @@ const LONG_CACHE_ENDPOINTS = [
  * Handles development mode and authentication bypassing
  */
 export const getApiHeaders = () => {
+  // Initialize headers with standard values
   const headers = {
     'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache'
+    'Accept': 'application/json',
+    'X-Client-Version': '1.0.0',
   };
   
   // Add timestamp to prevent caching
@@ -33,7 +36,7 @@ export const getApiHeaders = () => {
   
   try {
     // Include idToken if available
-    const idToken = localStorage.getItem('idToken');
+    const idToken = getCacheValue('idToken');
     if (idToken) {
       headers['Authorization'] = `Bearer ${idToken}`;
     }
@@ -171,27 +174,36 @@ const handleApiError = (error, method, endpoint, params = {}) => {
  */
 export const apiRequest = async (method, endpoint, data = null, params = {}) => {
   try {
-    // Get tenant ID from localStorage or use default
-    let tenantId = localStorage.getItem('tenantId') || 'default';
+    // Get tenant ID - ensure server-compatible approach
+    let tenantId = null;
     
-    // Ensure tenant ID is properly formatted for schema name
-    if (tenantId) {
-      // Check for masked tenant ID format and try to get proper tenant ID
-      if (tenantId.includes('----') || !tenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        console.warn('[ApiRequest] Found invalid tenant ID format. Using proper ID from localStorage if available.');
-        
-        // Try to get actual tenant ID from localStorage proper_tenant_id
-        const properTenantId = localStorage.getItem('proper_tenant_id');
-        if (properTenantId && properTenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-          console.log('[ApiRequest] Using proper tenant ID from storage:', properTenantId);
-          tenantId = properTenantId;
+    // Only access storage in browser environment
+    const isBrowser = typeof window !== 'undefined';
+    
+    if (isBrowser) {
+      // Try to get from AppCache first
+      try {
+        tenantId = getCacheValue('tenantId');
+      } catch (e) {
+        console.warn('[ApiRequest] Error accessing AppCache:', e.message);
+      }
+      
+      // Ensure tenant ID is properly formatted for schema name
+      if (tenantId) {
+        // Check for masked tenant ID format and try to get proper tenant ID
+        if (tenantId.includes('----') || !tenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          console.warn('[ApiRequest] Found invalid tenant ID format. Looking for proper ID.');
           
-          // Update the main tenantId in localStorage
-          localStorage.setItem('tenantId', tenantId);
-        } else {
-          // If no proper ID available, just use the schema without tenant ID validation
-          // The server endpoints will handle this by using a default schema
-          console.warn('[ApiRequest] No proper tenant ID found, continuing with existing ID');
+          // Try to get actual tenant ID from AppCache
+          try {
+            const properTenantId = getCacheValue('proper_tenant_id');
+            if (properTenantId && properTenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+              console.log('[ApiRequest] Using proper tenant ID from AppCache:', properTenantId);
+              tenantId = properTenantId;
+            }
+          } catch (e) {
+            console.warn('[ApiRequest] Error accessing AppCache for proper ID:', e.message);
+          }
         }
       }
     }

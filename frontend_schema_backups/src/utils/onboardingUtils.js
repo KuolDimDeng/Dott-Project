@@ -10,6 +10,12 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { 
+  getUserAttribute, 
+  updateUserAttributes as updateAttributes,
+  getAllUserAttributes  
+} from '@/utils/cognitoAttributes';
 
 export async function validateSession(providedTokens) {
   try {
@@ -31,13 +37,13 @@ export async function validateSession(providedTokens) {
 
     // Client-side handling
     if (!tokens) {
-      const cookieTokens = parseCookies();
-      if (cookieTokens.accessToken && cookieTokens.idToken) {
-        tokens = {
-          accessToken: cookieTokens.accessToken,
-          idToken: cookieTokens.idToken
-        };
-        logger.debug('[OnboardingUtils] Using tokens from client cookies');
+      // Try to get tokens from AppCache
+      const accessToken = getCacheValue('access_token');
+      const idToken = getCacheValue('id_token');
+      
+      if (accessToken && idToken) {
+        tokens = { accessToken, idToken };
+        logger.debug('[OnboardingUtils] Using tokens from AppCache');
       }
     }
 
@@ -78,9 +84,9 @@ export async function validateSession(providedTokens) {
             idToken: session.tokens.idToken.toString()
           };
           
-          // Update cookies
-          document.cookie = `idToken=${tokens.idToken}; path=/`;
-          document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+          // Update AppCache
+          setCacheValue('access_token', tokens.accessToken);
+          setCacheValue('id_token', tokens.idToken);
         } else {
           throw new Error('Token refresh failed');
         }
@@ -94,9 +100,9 @@ export async function validateSession(providedTokens) {
           idToken: session.tokens.idToken.toString()
         };
         
-        // Update cookies
-        document.cookie = `idToken=${tokens.idToken}; path=/`;
-        document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+        // Update AppCache
+        setCacheValue('access_token', tokens.accessToken);
+        setCacheValue('id_token', tokens.idToken);
       }
     }
 
@@ -313,13 +319,13 @@ export async function completeOnboarding() {
       }
     }
     
-    // Set cookies for immediate client-side status update
+    // Set AppCache for immediate client-side status update
     if (attributeUpdateSuccess) {
-      document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
-      document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-      document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
+      setCacheValue('user_pref_custom:onboarding_step', 'complete', { ttl: 7 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:onboarding', 'complete', { ttl: 7 * 24 * 60 * 60 * 1000 });
+      setCacheValue('user_pref_custom:setup_completed', 'true', { ttl: 7 * 24 * 60 * 60 * 1000 });
       
-      logger.debug('[OnboardingUtils] Updated cookies for immediate status change', {
+      logger.debug('[OnboardingUtils] Updated AppCache for immediate status change', {
         requestId,
         elapsedMs: performance.now() - startTime
       });
@@ -363,7 +369,7 @@ export async function getOnboardingStatus() {
     
     // Get status from Cognito attributes (highest priority)
     try {
-      const userAttributes = await fetchUserAttributes();
+      const userAttributes = await getAllUserAttributes();
       if (userAttributes) {
         statusData.cognitoStatus = userAttributes['custom:onboarding'];
         statusData.cognitoSetupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
@@ -384,74 +390,43 @@ export async function getOnboardingStatus() {
       logger.warn('[getOnboardingStatus] Error getting status from Cognito:', cognitoError);
     }
     
-    // Get status from cookies (medium priority)
+    // Check AppCache (medium priority)
     try {
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      };
+      statusData.appCacheStatus = getCacheValue('user_pref_custom:onboarding');
+      statusData.appCacheStep = getCacheValue('user_pref_custom:onboarding_step');
+      statusData.sourcesPriority.push('appCache');
       
-      statusData.cookieStatus = getCookie('onboardedStatus');
-      statusData.cookieStep = getCookie('onboardingStep');
-      statusData.sourcesPriority.push('cookies');
-      
-      // If we don't have Cognito data, use cookie data
-      if (!statusData.status && statusData.cookieStatus) {
-        statusData.status = statusData.cookieStatus;
-        statusData.step = statusData.cookieStep;
+      // If we don't have Cognito data, use AppCache data
+      if (!statusData.status && statusData.appCacheStatus) {
+        statusData.status = statusData.appCacheStatus;
+        statusData.step = statusData.appCacheStep;
       }
       
-      logger.debug('[getOnboardingStatus] Retrieved from cookies:', {
-        status: statusData.cookieStatus,
-        step: statusData.cookieStep
+      logger.debug('[getOnboardingStatus] Retrieved from AppCache:', {
+        status: statusData.appCacheStatus,
+        step: statusData.appCacheStep
       });
-    } catch (cookieError) {
-      logger.warn('[getOnboardingStatus] Error getting status from cookies:', cookieError);
-    }
-    
-    // Check local storage as last resort (lowest priority)
-    try {
-      statusData.localStorageStatus = localStorage.getItem('onboardedStatus');
-      statusData.localStorageStep = localStorage.getItem('onboardingStep');
-      statusData.sourcesPriority.push('localStorage');
-      
-      // Only use localStorage if we have no other data
-      if (!statusData.status && statusData.localStorageStatus) {
-        statusData.status = statusData.localStorageStatus;
-        statusData.step = statusData.localStorageStep;
-      }
-      
-      logger.debug('[getOnboardingStatus] Retrieved from localStorage:', {
-        status: statusData.localStorageStatus,
-        step: statusData.localStorageStep
-      });
-    } catch (storageError) {
-      logger.warn('[getOnboardingStatus] Error getting status from localStorage:', storageError);
+    } catch (cacheError) {
+      logger.warn('[getOnboardingStatus] Error getting status from AppCache:', cacheError);
     }
     
     // Determine if there's inconsistency between sources
     const inconsistent = (
-      (statusData.cognitoStatus && statusData.cookieStatus && statusData.cognitoStatus !== statusData.cookieStatus) ||
-      (statusData.cognitoStatus && statusData.localStorageStatus && statusData.cognitoStatus !== statusData.localStorageStatus) ||
-      (statusData.cookieStatus && statusData.localStorageStatus && statusData.cookieStatus !== statusData.localStorageStatus)
+      (statusData.cognitoStatus && statusData.appCacheStatus && statusData.cognitoStatus !== statusData.appCacheStatus)
     );
     
-    // If we detect inconsistency, synchronize all sources to match Cognito (source of truth)
+    // If we detect inconsistency, synchronize AppCache to match Cognito (source of truth)
     if (inconsistent && statusData.cognitoStatus) {
       logger.info('[getOnboardingStatus] Detected inconsistent status, synchronizing to Cognito:', {
         cognito: statusData.cognitoStatus,
-        cookie: statusData.cookieStatus,
-        localStorage: statusData.localStorageStatus
+        appCache: statusData.appCacheStatus
       });
       
       await synchronizeOnboardingStatus(statusData.cognitoStatus, statusData.cognitoSetupDone);
       
       // Update our return values to reflect the synchronized state
       statusData.status = statusData.cognitoStatus;
-      statusData.cookieStatus = statusData.cognitoStatus;
-      statusData.localStorageStatus = statusData.cognitoStatus;
+      statusData.appCacheStatus = statusData.cognitoStatus;
     }
     
     // Set step based on status
@@ -497,7 +472,7 @@ export async function getOnboardingStatus() {
       status: 'NOT_STARTED',
       step: 'business-info',
       setupDone: false,
-      error: error.message
+      sourcesPriority: ['default']
     };
   }
 }
@@ -511,102 +486,38 @@ export async function getOnboardingStatus() {
  */
 async function synchronizeOnboardingStatus(status, setupDone) {
   try {
-    const logger = console;
-    logger.debug('[synchronizeOnboardingStatus] Synchronizing status to:', status);
+    // Update AppCache
+    const statusLower = (status || 'not_started').toLowerCase();
     
-    // Determine the appropriate step for the status
-    let step = 'business-info';
+    setCacheValue('user_pref_custom:onboarding', statusLower, { ttl: 7 * 24 * 60 * 60 * 1000 });
+    setCacheValue('user_pref_custom:onboarding_step', getStepFromStatus(statusLower), { ttl: 7 * 24 * 60 * 60 * 1000 });
+    setCacheValue('user_pref_custom:setup_completed', setupDone ? 'true' : 'false', { ttl: 7 * 24 * 60 * 60 * 1000 });
     
-    // Normalize status to lowercase
-    const statusLower = status?.toLowerCase();
-    
-    switch (statusLower) {
-      case 'business_info':
-      case 'business-info':
-        step = 'subscription';
-        break;
-      case 'subscription':
-        step = 'payment';
-        break;
-      case 'payment':
-        step = 'setup';
-        break;
-      case 'setup':
-      case 'complete':
-        step = 'dashboard';
-        break;
-      default:
-        step = 'business-info';
-    }
-    
-    // Update cookies with normalized case
-    try {
-      const expiration = new Date();
-      expiration.setDate(expiration.getDate() + 30); // 30 days
-      document.cookie = `onboardedStatus=${statusLower || 'not_started'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      logger.debug('[synchronizeOnboardingStatus] Updated cookies');
-    } catch (cookieError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating cookies:', cookieError);
-    }
-    
-    // Update localStorage with normalized case
-    try {
-      localStorage.setItem('onboardedStatus', statusLower || 'not_started');
-      localStorage.setItem('onboardingStep', step);
-      localStorage.setItem('cognitoOnboardingStatus', statusLower || 'not_started');
-      localStorage.setItem('cognitoSetupDone', setupDone ? 'true' : 'false');
-      logger.debug('[synchronizeOnboardingStatus] Updated localStorage');
-    } catch (storageError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating localStorage:', storageError);
-    }
-    
-    // Attempt to update Cognito via server endpoint if our status is different
-    try {
-      const userAttributes = await fetchUserAttributes();
-      if (userAttributes && userAttributes['custom:onboarding'] !== status) {
-        logger.info('[synchronizeOnboardingStatus] Updating Cognito attributes via API');
-        
-        // Try server-side update
-        const response = await fetch('/api/user/update-attributes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            attributes: {
-              'custom:onboarding': status,
-              'custom:setupdone': setupDone ? 'true' : 'false'
-            }
-          })
-        });
-        
-        if (response.ok) {
-          logger.info('[synchronizeOnboardingStatus] Server-side attribute update successful');
-        } else {
-          logger.warn('[synchronizeOnboardingStatus] Server-side attribute update failed');
-        }
-      }
-    } catch (serverError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating Cognito via API:', serverError);
-    }
-    
-    // Dispatch an event for components to listen to
-    try {
-      window.dispatchEvent(new CustomEvent('onboardingStatusUpdated', {
-        detail: {
-          status,
-          step,
-          setupDone,
-          source: 'synchronizeOnboardingStatus'
-        }
-      }));
-      logger.debug('[synchronizeOnboardingStatus] Dispatched status update event');
-    } catch (eventError) {
-      logger.warn('[synchronizeOnboardingStatus] Error dispatching status update event:', eventError);
-    }
+    return true;
   } catch (error) {
-    console.error('[synchronizeOnboardingStatus] Error synchronizing onboarding status:', error);
+    console.error('[synchronizeOnboardingStatus] Error:', error);
+    return false;
+  }
+}
+
+// Helper function to get step from status
+function getStepFromStatus(status) {
+  switch (status) {
+    case 'not_started':
+    case 'not-started':
+      return 'business-info';
+    case 'business_info':
+    case 'business-info':
+      return 'subscription';
+    case 'subscription':
+      return 'payment';
+    case 'payment':
+      return 'setup';
+    case 'setup':
+    case 'complete':
+      return 'dashboard';
+    default:
+      return 'business-info';
   }
 }
 
@@ -736,63 +647,55 @@ export async function validatePayment(data) {
 }
 
 /**
+ * @deprecated Use getAttributeValue instead which uses Cognito and AppCache
  * Gets a cookie value by name
  * @param {string} name - The cookie name
  * @returns {string|null} The cookie value or null if not found
  */
 export const getCookie = (name) => {
-  if (typeof document === 'undefined') return null;
+  logger.warn('[DEPRECATED] getCookie is deprecated. Use getAttributeValue or getCacheValue instead');
   
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
+  // Forward to AppCache
+  return getCacheValue(name);
 };
 
 /**
+ * @deprecated Use setAttributeValue instead which uses Cognito and AppCache
  * Sets a cookie with the specified name and value
  * @param {string} name - The cookie name
  * @param {string} value - The cookie value
  * @param {number} maxAge - Cookie max age in seconds (default 30 days)
  */
 export const setCookie = (name, value, maxAge = 60 * 60 * 24 * 30) => {
-  if (typeof document === 'undefined') return;
+  logger.warn('[DEPRECATED] setCookie is deprecated. Use setAttributeValue or setCacheValue instead');
   
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
+  // Forward to AppCache
+  setCacheValue(name, value, { ttl: maxAge * 1000 });
 };
 
 /**
- * Gets an item from localStorage with error handling
- * @param {string} key - The localStorage key
- * @returns {string|null} The value or null if not found or error occurs
+ * Get a value from AppCache (replacement for getLocalStorage)
+ * 
+ * @param {string} key - The cache key
+ * @returns {*} The cached value or null
  */
 export const getLocalStorage = (key) => {
-  try {
-    return localStorage.getItem(key);
-  } catch (e) {
-    logger.warn('[onboardingUtils] Error reading from localStorage:', e);
-    return null;
-  }
+  return getCacheValue(`app_${key}`);
 };
 
 /**
- * Sets an item in localStorage with error handling
- * @param {string} key - The localStorage key
- * @param {string} value - The value to store
- * @returns {boolean} True if successful, false otherwise
+ * Set a value in AppCache (replacement for setLocalStorage)
+ * 
+ * @param {string} key - The cache key
+ * @param {*} value - The value to cache
+ * @returns {boolean} True if successful
  */
 export const setLocalStorage = (key, value) => {
-  try {
-    localStorage.setItem(key, value);
-    return true;
-  } catch (e) {
-    logger.warn('[onboardingUtils] Error writing to localStorage:', e);
-    return false;
-  }
+  return setCacheValue(`app_${key}`, value, { ttl: 30 * 24 * 60 * 60 * 1000 });
 };
 
 /**
- * Updates the onboarding status across all storage mechanisms (Cognito, cookies, localStorage)
+ * Updates the onboarding status across all storage mechanisms (Cognito, cookies, AppCache)
  * @param {string} status - The new onboarding status, use ONBOARDING_STATUS constants
  * @param {Object} options - Additional options
  * @param {boolean} options.updateCognito - Whether to update Cognito attributes (default true)
@@ -800,89 +703,108 @@ export const setLocalStorage = (key, value) => {
  * @returns {Promise<boolean>} True if successful
  */
 export const updateOnboardingStatus = async (status, options = {}) => {
-  const { updateCognito = true, wait = false } = options;
-  
   try {
-    // Always update cookies and localStorage as fallbacks
-    setCookie(COOKIE_NAMES.ONBOARDING_STATUS, status);
-    setLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS, status);
+    const { setupDone = false, step = null } = options;
     
-    // Set additional cookies/storage based on status
-    if (status === ONBOARDING_STATUS.COMPLETE) {
-      setCookie(COOKIE_NAMES.SETUP_COMPLETED, 'true');
-      setCookie(COOKIE_NAMES.ONBOARDING_STEP, ONBOARDING_STEPS.COMPLETE);
-      setLocalStorage(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+    // Normalize status
+    const statusLower = (status || 'not_started').toLowerCase();
+    
+    // Create a collection of attributes to update
+    const attributes = {
+      'onboarding': statusLower,
+      'setup_completed': setupDone ? 'true' : 'false'
+    };
+    
+    // Add step if provided, otherwise derive from status
+    if (step) {
+      attributes['onboarding_step'] = step;
+    } else {
+      attributes['onboarding_step'] = getStepFromStatus(statusLower);
     }
     
-    // Update Cognito if requested
-    if (updateCognito) {
-      const updateAttributes = async () => {
-        try {
-          // Prepare attributes to update
-          const userAttributes = {
-            [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: status
-          };
-          
-          // Add extra attributes for complete status
-          if (status === ONBOARDING_STATUS.COMPLETE) {
-            userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED] = 'true';
-          }
-          
-          // Update attributes
-          await updateUserAttributes({
-            userAttributes 
-          });
-          
-          logger.debug('[onboardingUtils] Cognito attributes updated successfully:', { status });
-          return true;
-        } catch (error) {
-          logger.warn('[onboardingUtils] Error updating Cognito attributes:', error);
-          return false;
-        }
-      };
-      
-      // Either wait for update or do it in background
-      if (wait) {
-        const success = await updateAttributes();
-        return success;
-      } else {
-        // Fire and forget
-        updateAttributes().catch(error => {
-          logger.error('[onboardingUtils] Background Cognito update failed:', error);
-        });
-      }
-    }
+    // Update Cognito attributes
+    await updateAttributes(attributes);
+    
+    // Update AppCache for immediate access
+    setCacheValue('user_pref_custom:onboarding', statusLower, { ttl: 30 * 24 * 60 * 60 * 1000 });
+    setCacheValue('user_pref_custom:onboarding_step', attributes['onboarding_step'], { ttl: 30 * 24 * 60 * 60 * 1000 });
+    setCacheValue('user_pref_custom:setup_completed', setupDone ? 'true' : 'false', { ttl: 30 * 24 * 60 * 60 * 1000 });
     
     return true;
   } catch (error) {
-    logger.error('[onboardingUtils] Failed to update onboarding status:', error);
+    console.error('[updateOnboardingStatus] Error:', error);
+    return false;
+  }
+};
+
+/**
+ * Gets a value from Cognito attributes with AppCache fallback
+ * @param {string} name - The attribute name
+ * @returns {Promise<string|null>} The attribute value or null if not found
+ */
+export const getAttributeValue = async (name) => {
+  try {
+    return await getUserAttribute(name);
+  } catch (error) {
+    console.error(`[getAttributeValue] Error getting attribute ${name}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Sets a value in Cognito attributes and AppCache
+ * @param {string} name - The attribute name
+ * @param {string} value - The value to set
+ * @param {Object} options - Options
+ * @param {boolean} options.updateCognito - Whether to update Cognito (default true)
+ * @returns {Promise<boolean>} True if successful
+ */
+export const setAttributeValue = async (name, value, options = { updateCognito: true }) => {
+  try {
+    const attributes = {
+      [name]: value
+    };
+    
+    return await updateAttributes(attributes);
+  } catch (error) {
+    console.error(`[setAttributeValue] Error setting attribute ${name}:`, error);
     return false;
   }
 };
 
 /**
  * Checks if the user has completed onboarding by examining all sources
- * @returns {boolean} True if onboarding is complete
+ * @returns {Promise<boolean>} True if onboarding is complete
  */
-export const isOnboardingComplete = () => {
+export const isOnboardingComplete = async () => {
   try {
-    // Check cookies first (most reliable client-side indicator)
-    const cookieStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS)?.toLowerCase();
-    const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED)?.toLowerCase();
-    const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP)?.toLowerCase();
+    // Check AppCache first for performance
+    const appCacheStatus = getCacheValue(STORAGE_KEYS.ONBOARDING_STATUS)?.toLowerCase();
+    const appCacheSetupCompleted = getCacheValue(STORAGE_KEYS.SETUP_COMPLETED)?.toLowerCase();
     
-    // Check localStorage as backup
-    const localStorageStatus = getLocalStorage(STORAGE_KEYS.ONBOARDING_STATUS)?.toLowerCase();
-    const localStorageSetupCompleted = getLocalStorage(STORAGE_KEYS.SETUP_COMPLETED)?.toLowerCase();
+    // Return true if AppCache indicates completion
+    if (appCacheStatus === 'complete' || appCacheSetupCompleted === 'true') {
+      return true;
+    }
     
-    // Return true if ANY source indicates completion (using case-insensitive comparison)
-    return (
-      cookieStatus === 'complete' ||
-      cookieSetupCompleted === 'true' ||
-      cookieOnboardingStep === 'complete' ||
-      localStorageStatus === 'complete' ||
-      localStorageSetupCompleted === 'true'
-    );
+    // Then check Cognito attributes
+    try {
+      const attributes = await fetchUserAttributes().catch(() => ({}));
+      const cognitoOnboarding = (attributes['custom:onboarding'] || '').toLowerCase();
+      const cognitoSetupDone = (attributes['custom:setupdone'] || '').toLowerCase();
+      
+      // Cache the results for future fast access
+      if (cognitoOnboarding === 'complete' || cognitoSetupDone === 'true') {
+        setCacheValue(STORAGE_KEYS.ONBOARDING_STATUS, 'complete');
+        setCacheValue(STORAGE_KEYS.SETUP_COMPLETED, 'true');
+        return true;
+      }
+    } catch (cognitoError) {
+      logger.warn('[onboardingUtils] Error checking Cognito attributes:', cognitoError);
+      // Continue checking other sources
+    }
+    
+    return false;
   } catch (error) {
     logger.error('[onboardingUtils] Error checking onboarding status:', error);
     return false;
@@ -891,18 +813,44 @@ export const isOnboardingComplete = () => {
 
 /**
  * Gets the current onboarding step (for routing)
- * @returns {string} The current onboarding step path
+ * @returns {Promise<string>} The current onboarding step path
  */
-export const getCurrentOnboardingStep = () => {
-  // Get from cookie first, fallback to localStorage
-  const cookieStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
-  
-  if (cookieStep) {
-    return cookieStep;
+export const getCurrentOnboardingStep = async () => {
+  // Check AppCache first
+  const cachedStep = getCacheValue(STORAGE_KEYS.ONBOARDING_STEP);
+  if (cachedStep) {
+    return cachedStep;
   }
   
-  // If no specific step found but onboarding is complete, return complete
-  if (isOnboardingComplete()) {
+  // Then check Cognito
+  try {
+    const attributes = await fetchUserAttributes().catch(() => ({}));
+    const onboardingStatus = (attributes['custom:onboarding'] || '').toLowerCase();
+    
+    // Map onboarding status to step
+    switch (onboardingStatus) {
+      case 'business_info':
+        return ONBOARDING_STEPS.BUSINESS_INFO;
+      case 'subscription':
+        return ONBOARDING_STEPS.SUBSCRIPTION;
+      case 'payment':
+        return ONBOARDING_STEPS.PAYMENT;
+      case 'setup':
+        return ONBOARDING_STEPS.SETUP;
+      case 'complete':
+        return ONBOARDING_STEPS.COMPLETE;
+      default:
+        // If no specific step found but setup is complete, return complete
+        if (attributes['custom:setupdone']?.toLowerCase() === 'true') {
+          return ONBOARDING_STEPS.COMPLETE;
+        }
+    }
+  } catch (error) {
+    logger.warn('[onboardingUtils] Error fetching Cognito attributes:', error);
+  }
+  
+  // If onboarding is complete based on AppCache, return complete
+  if (getCacheValue(STORAGE_KEYS.ONBOARDING_STATUS) === 'complete') {
     return ONBOARDING_STEPS.COMPLETE;
   }
   

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from 'aws-amplify/auth';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 // Increase initial polling interval and add exponential backoff
 const BASE_POLLING_INTERVAL = 30000; // 30 seconds (increased from 15 seconds)
@@ -113,7 +114,7 @@ export function useSetupPolling() {
       if (!isPolling) return;
 
       // Check if we recently had a 429 error and need to wait longer
-      const last429Time = localStorage.getItem('last_429_error');
+      const last429Time = getCacheValue('last_429_error');
       if (last429Time) {
         const timeSince429 = Date.now() - parseInt(last429Time, 10);
         const minWaitTime = MAX_POLLING_INTERVAL * 4; // At least 4x max interval after a 429 (increased from 2x)
@@ -135,7 +136,7 @@ export function useSetupPolling() {
           return;
         } else {
           // Clear the 429 timestamp if enough time has passed
-          localStorage.removeItem('last_429_error');
+          removeCacheValue('last_429_error');
         }
       }
 
@@ -175,7 +176,7 @@ export function useSetupPolling() {
           logger.info('[SetupPolling] Adding maximum delay for rate limiting', { nextDelay });
           
           // Store the last 429 timestamp to avoid polling too soon
-          localStorage.setItem('last_429_error', Date.now().toString());
+          setCacheValue('last_429_error', Date.now().toString());
           
           // Force a refresh of the user's Cognito attributes to update onboarding status
           try {

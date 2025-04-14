@@ -221,7 +221,7 @@ export async function POST(request) {
     // Generate a business name if not provided
     let finalBusinessName = businessName;
     
-    if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+    if (!finalBusinessName || finalBusinessName === '') {
       // Try to get user info from Cognito if we have a userId
       if (userId) {
         try {
@@ -248,7 +248,7 @@ export async function POST(request) {
           // Extract business name from user attributes
           if (cognitoUser.UserAttributes) {
             for (const attr of cognitoUser.UserAttributes) {
-              if (attr.Name === 'custom:businessname' && attr.Value && attr.Value !== 'Default Business' && attr.Value !== 'My Business') {
+              if (attr.Name === 'custom:businessname' && attr.Value && attr.Value !== '') {
                 finalBusinessName = attr.Value;
                 serverLogger.info(`Using business name from Cognito: ${finalBusinessName}`);
                 break;
@@ -256,7 +256,7 @@ export async function POST(request) {
             }
             
             // If still no business name, try to create one from user attributes
-            if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+            if (!finalBusinessName || finalBusinessName === '') {
               let firstName = '';
               let lastName = '';
               let email = '';
@@ -285,7 +285,7 @@ export async function POST(request) {
                 }
               }
               
-              if (finalBusinessName && finalBusinessName !== 'Default Business' && finalBusinessName !== 'My Business') {
+              if (finalBusinessName && finalBusinessName !== '') {
                 serverLogger.info(`Generated business name from user attributes: ${finalBusinessName}`);
               }
             }
@@ -296,7 +296,7 @@ export async function POST(request) {
       }
       
       // If still no business name, leave blank for user to complete later
-      if (!finalBusinessName || finalBusinessName === 'Default Business' || finalBusinessName === 'My Business') {
+      if (!finalBusinessName || finalBusinessName === '') {
         finalBusinessName = '';
         serverLogger.info('No business name available, leaving blank for user to update later');
       }
@@ -307,7 +307,7 @@ export async function POST(request) {
        VALUES ($1, $2, $3, NOW(), NOW(), true, NOW(), true)
        ON CONFLICT (id) DO UPDATE 
        SET name = CASE
-                  WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = '' OR custom_auth_tenant.name = 'Default Business' OR custom_auth_tenant.name = 'My Business' 
+                  WHEN custom_auth_tenant.name IS NULL OR custom_auth_tenant.name = ''
                   THEN COALESCE($2, custom_auth_tenant.name)
                   ELSE custom_auth_tenant.name
                 END, 

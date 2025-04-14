@@ -2,6 +2,8 @@
 import { logger } from '@/utils/logger';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { refreshUserSession } from '@/utils/refreshUserSession';
+import { getFromAppCache } from '@/utils/appCacheUtils';
+import { getCognitoIdToken, getCognitoAccessToken } from '@/utils/cognitoUtils';
 
 const BASE_URL = '/api/onboarding'
 
@@ -21,12 +23,17 @@ const enhancedFetch = async (url, options = {}) => {
                                    (url.includes('verify-state') && url.includes('business-info'));
       
       // Check if we're in an unauthenticated context
-      const hasAuthCookie = typeof document !== 'undefined' && 
-                           (document.cookie.includes('idToken=') || 
-                            document.cookie.includes('accessToken='));
+      let hasAuthToken = false;
+      try {
+        // Use AppCache for token checks
+        const savedIdToken = await getFromAppCache('idToken');
+        hasAuthToken = !!savedIdToken;
+      } catch (err) {
+        logger.warn('[OnboardingService] Error checking for auth token:', err);
+      }
       
       // Skip token refresh attempts for business-info pages when not authenticated
-      const shouldSkipAuthAttempts = isBusinessInfoRequest && !hasAuthCookie;
+      const shouldSkipAuthAttempts = isBusinessInfoRequest && !hasAuthToken;
       
       // First try to get a valid session
       let tokens = null;
@@ -56,7 +63,7 @@ const enhancedFetch = async (url, options = {}) => {
         }
       }
       
-      // Set up headers with auth tokens and cookies
+      // Set up headers with auth tokens from Cognito
       const headers = {
         ...(options.headers || {}),
         'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
@@ -71,20 +78,46 @@ const enhancedFetch = async (url, options = {}) => {
         headers['Authorization'] = `Bearer ${tokens.accessToken.toString()}`;
       }
       
-      // Try to get cookies
-      try {
-        const savedIdToken = document.cookie.match(/idToken=([^;]+)/)?.[1];
-        const savedAccessToken = document.cookie.match(/accessToken=([^;]+)/)?.[1];
-        
-        if (!headers['X-Id-Token'] && savedIdToken) {
-          headers['X-Id-Token'] = decodeURIComponent(savedIdToken);
+      // Try to get tokens from Cognito directly
+      if (!headers['X-Id-Token'] || !headers['Authorization']) {
+        try {
+          if (!headers['X-Id-Token']) {
+            const idToken = await getCognitoIdToken();
+            if (idToken) {
+              headers['X-Id-Token'] = idToken;
+            }
+          }
+          
+          if (!headers['Authorization']) {
+            const accessToken = await getCognitoAccessToken();
+            if (accessToken) {
+              headers['Authorization'] = `Bearer ${accessToken}`;
+            }
+          }
+        } catch (tokenError) {
+          logger.warn('[OnboardingService] Error fetching tokens from Cognito:', tokenError);
         }
-        
-        if (!headers['Authorization'] && savedAccessToken) {
-          headers['Authorization'] = `Bearer ${decodeURIComponent(savedAccessToken)}`;
+      }
+      
+      // Fall back to AppCache as a last resort
+      if (!headers['X-Id-Token'] || !headers['Authorization']) {
+        try {
+          if (!headers['X-Id-Token']) {
+            const savedIdToken = await getFromAppCache('idToken');
+            if (savedIdToken) {
+              headers['X-Id-Token'] = savedIdToken;
+            }
+          }
+          
+          if (!headers['Authorization']) {
+            const savedAccessToken = await getFromAppCache('accessToken');
+            if (savedAccessToken) {
+              headers['Authorization'] = `Bearer ${savedAccessToken}`;
+            }
+          }
+        } catch (cacheError) {
+          logger.warn('[OnboardingService] Error reading token from AppCache:', cacheError);
         }
-      } catch (cookieError) {
-        logger.warn('[OnboardingService] Error reading token cookies:', cookieError);
       }
       
       // Add general onboarding headers
@@ -555,28 +588,43 @@ export const onboardingService = {
   },
 
   /**
-   * Update local state (cookies) for client-side access
+   * Update local state using AWS AppCache instead of cookies
    */
   updateLocalState(step, data) {
     logger.debug('[OnboardingService] Updating local state', { step, data });
     
     try {
-      // Set cookies with consistent expiration
-      const expiration = new Date();
-      expiration.setDate(expiration.getDate() + 7);
+      // Import AppCache and Cognito utilities
+      import('@/utils/appCacheUtils').then(({ setInAppCache }) => {
+        // Set step and status in AppCache
+        setInAppCache('onboardingStep', step, 7 * 24 * 60 * 60); // 7 days TTL
+        setInAppCache('onboardedStatus', this.stepToStatus(step), 7 * 24 * 60 * 60);
+        
+        // Store key data in AppCache
+        if (data?.businessName) {
+          setInAppCache('businessName', data.businessName, 7 * 24 * 60 * 60);
+        }
+        
+        if (data?.businessType) {
+          setInAppCache('businessType', data.businessType, 7 * 24 * 60 * 60);
+        }
+      }).catch(err => logger.error('[OnboardingService] Error importing AppCache utils:', err));
       
-      // Set step and status cookies
-      document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
-      document.cookie = `onboardedStatus=${this.stepToStatus(step)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
-      
-      // Store key data in cookies
-      if (data?.businessName) {
-        document.cookie = `businessName=${encodeURIComponent(data.businessName)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
-      }
-      
-      if (data?.businessType) {
-        document.cookie = `businessType=${encodeURIComponent(data.businessType)}; path=/; expires=${expiration.toUTCString()}; SameSite=Strict`;
-      }
+      // Also update Cognito attributes for persistence
+      import('@/utils/cognitoUtils').then(({ setCognitoUserAttribute }) => {
+        // Set onboarding step in Cognito
+        setCognitoUserAttribute('custom:onboardingStep', step);
+        setCognitoUserAttribute('custom:onboardingStatus', this.stepToStatus(step));
+        
+        // Store key data in Cognito
+        if (data?.businessName) {
+          setCognitoUserAttribute('custom:businessName', data.businessName);
+        }
+        
+        if (data?.businessType) {
+          setCognitoUserAttribute('custom:businessType', data.businessType);
+        }
+      }).catch(err => logger.error('[OnboardingService] Error importing Cognito utils:', err));
       
       logger.debug('[OnboardingService] Local state updated successfully');
     } catch (error) {

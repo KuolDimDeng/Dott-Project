@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getFromAppCache, setInAppCache } from '@/utils/appCacheUtils';
 
 // Create the context
 const ThemeContext = createContext(null);
@@ -25,12 +26,16 @@ export function ThemeProvider({ children }) {
 
   // Initialize theme on component mount
   useEffect(() => {
-    // Get stored theme from localStorage
-    const storedTheme = localStorage.getItem('theme') || SYSTEM_THEME;
-    const currentSystemTheme = getSystemTheme();
+    // Get stored theme from AppCache instead of localStorage
+    const getStoredTheme = async () => {
+      const storedTheme = await getFromAppCache('theme') || SYSTEM_THEME;
+      const currentSystemTheme = getSystemTheme();
+      
+      setSystemTheme(currentSystemTheme);
+      setTheme(storedTheme === SYSTEM_THEME ? currentSystemTheme : storedTheme);
+    };
     
-    setSystemTheme(currentSystemTheme);
-    setTheme(storedTheme === SYSTEM_THEME ? currentSystemTheme : storedTheme);
+    getStoredTheme();
     
     // Set up listener for system theme changes
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -78,8 +83,8 @@ export function ThemeProvider({ children }) {
       document.documentElement.classList.remove('dark');
     }
     
-    // Store theme preference in localStorage
-    localStorage.setItem('theme', newTheme);
+    // Store theme preference in AppCache instead of localStorage
+    setInAppCache('theme', newTheme);
   };
 
   // Apply current theme to document

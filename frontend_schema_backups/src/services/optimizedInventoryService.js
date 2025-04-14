@@ -2,6 +2,7 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { inventoryCache } from '@/utils/cacheUtils';
 import { getTenantId } from '@/utils/tenantUtils';
+import { getFromAppCache, setInAppCache, removeFromAppCache, listAppCacheKeys } from '@/utils/appCacheUtils';
 
 /**
  * Enhanced service for inventory-related API calls using optimized endpoints
@@ -192,17 +193,21 @@ export const optimizedInventoryService = {
     const tenantId = getTenantId() || 'default';
     const prefix = `inventory:${tenantId}:`;
     
-    // Clear all product-related cache entries
-    for (const key of Object.keys(localStorage)) {
-      if (key.startsWith(prefix) && 
-          (key.includes('product_') || key.includes('optimized_products'))) {
-        inventoryCache.delete(key.replace(prefix, ''));
-      }
-    }
+    // Clear all product-related cache entries using AppCache instead of localStorage
+    listAppCacheKeys().then(keys => {
+      keys.forEach(key => {
+        if (key.startsWith(prefix) && 
+            (key.includes('product_') || key.includes('optimized_products'))) {
+          inventoryCache.delete(key.replace(prefix, ''));
+        }
+      });
+    }).catch(err => {
+      logger.error('Error clearing product cache:', err);
+    });
   },
 
   /**
-   * Store product data in local storage for offline access
+   * Store product data in AppCache for offline access
    * @param {Array} products - List of products to store
    */
   storeProductsOffline(products) {
@@ -220,7 +225,7 @@ export const optimizedInventoryService = {
         products: products
       };
       
-      localStorage.setItem(storageKey, JSON.stringify(offlineData));
+      setInAppCache(storageKey, JSON.stringify(offlineData));
       logger.debug(`Stored ${products.length} products for offline use`);
     } catch (error) {
       logger.error('Error storing products offline:', error);
@@ -231,12 +236,12 @@ export const optimizedInventoryService = {
    * Get offline product data
    * @returns {Array} List of products from offline storage
    */
-  getOfflineProducts() {
+  async getOfflineProducts() {
     try {
       const tenantId = getTenantId() || 'default';
       const storageKey = `offline_products_${tenantId}`;
       
-      const offlineDataStr = localStorage.getItem(storageKey);
+      const offlineDataStr = await getFromAppCache(storageKey);
       if (!offlineDataStr) {
         return [];
       }

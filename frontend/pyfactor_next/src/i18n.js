@@ -4,6 +4,8 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
+import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Import translation resources for all languages
 import enCommon from '../public/locales/en/common.json';
@@ -135,6 +137,9 @@ const resources = {
 // Create a single i18n instance to be used throughout the app
 const i18nInstance = i18next.createInstance();
 
+// Create custom Cognito language detector
+const cognitoDetector = getCognitoLanguageDetector();
+
 // Initialize i18next for client-side
 if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
   i18nInstance
@@ -147,11 +152,10 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       ns: ['common', 'onboarding'],
       defaultNS: 'common',
       detection: {
-        order: ['cookie', 'localStorage', 'navigator', 'htmlTag'],
-        lookupCookie: 'i18nextLng',
-        lookupLocalStorage: 'i18nextLng',
-        caches: ['localStorage', 'cookie'],
-        cookieExpirationDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 year
+        order: ['cognitoDetector', 'navigator', 'htmlTag'],
+        lookupFromPathIndex: 0,
+        checkWhitelist: true,
+        caches: [], // Removed 'localStorage' and 'cookie' from caches
       },
       interpolation: {
         escapeValue: false, // React already protects from XSS
@@ -161,18 +165,25 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       },
     });
 
+  // Register the custom Cognito detector
+  i18nInstance.services.languageDetector.addDetector(cognitoDetector);
+
   // Add a language change listener to force re-render of components
-  i18nInstance.on('languageChanged', (lng) => {
+  i18nInstance.on('languageChanged', async (lng) => {
     // Update HTML lang attribute and text direction for RTL languages
     if (typeof document !== 'undefined') {
       document.documentElement.lang = lng;
       document.documentElement.dir = ['ar', 'he', 'fa', 'ur'].includes(lng) ? 'rtl' : 'ltr';
       
-      // Store the language in localStorage for persistence
-      localStorage.setItem('i18nextLng', lng);
-      
-      // Create/update the cookie for SSR
-      document.cookie = `i18nextLng=${lng};path=/;max-age=${60 * 60 * 24 * 365}`;
+      // Store the language in AWS Cognito attributes
+      try {
+        await saveLanguagePreference(lng);
+        
+        // Also store in AppCache for faster access
+        setCacheValue('user_pref_custom:language', lng);
+      } catch (error) {
+        console.error('Failed to save language preference to Cognito:', error);
+      }
       
       // Force re-render by dispatching a custom event
       window.dispatchEvent(new Event('languageChange'));

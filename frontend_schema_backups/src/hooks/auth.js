@@ -18,6 +18,7 @@ import {
 import { useSession } from './useSession';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 // Initialize Hub protection on import
 setupHubDeduplication();
@@ -85,10 +86,10 @@ export const useAuth = () => {
   
   // Force reset loading state on component mount
   useEffect(() => {
-    const loadingState = localStorage.getItem('auth_loading_state');
+    const loadingState = getCacheValue('auth_loading_state');
     if (loadingState) {
       logger.debug('[Auth] Found stored loading state, cleaning up');
-      localStorage.removeItem('auth_loading_state');
+      removeCacheValue('auth_loading_state');
     }
     
     // Safety reset
@@ -168,32 +169,29 @@ export const useAuth = () => {
   const validateAuthentication = async () => {
     // In development, bypass validation to ensure login flow works
     if (process.env.NODE_ENV === 'development') {
-      const bypassValidation = localStorage.getItem('bypassAuthValidation');
+      const bypassValidation = getCacheValue('bypassAuthValidation');
       if (bypassValidation === 'true') {
         logger.debug('[Auth] Development bypass: Skipping session validation');
         return true;
       }
     }
     
-    // First check for session cookies
-    const hasSessionCookie = document.cookie.includes('hasSession=true');
-    const hasTenantId = document.cookie.includes('tenantId=') || document.cookie.includes('businessid=');
-    const hasAuthToken = document.cookie.includes('authToken=') || 
-                        (document.cookie.includes('CognitoIdentityServiceProvider') && 
-                         document.cookie.includes('.idToken'));
+    // First check for authentication tokens in AppCache
+    const accessToken = getCacheValue('access_token');
+    const idToken = getCacheValue('id_token');
+    const tenantId = getCacheValue('tenantId');
     
-    if (hasSessionCookie) {
-      logger.debug('[Auth] Session cookie found, attempting validation');
+    if (accessToken && idToken) {
+      logger.debug('[Auth] Auth tokens found in AppCache, good sign of previous authentication');
     }
     
-    if (hasTenantId) {
-      logger.debug('[Auth] Tenant ID cookie found, good sign of previous authentication');
+    if (tenantId) {
+      logger.debug('[Auth] Tenant ID found in AppCache, good sign of previous authentication');
     }
     
-    // If we have both session and tenant ID, treat this as validated
-    // This acts as a fallback when Cognito validation fails but we know user was previously signed in
-    if (hasSessionCookie && hasTenantId && hasAuthToken) {
-      logger.info('[Auth] Session validated via cookies (hasSession + tenantId + authToken)');
+    // If we have both tokens and tenant ID, treat this as validated
+    if (accessToken && idToken && tenantId) {
+      logger.info('[Auth] Session validated via AppCache (access_token + id_token + tenantId)');
       return true;
     }
     
@@ -215,31 +213,19 @@ export const useAuth = () => {
           const currentUser = await authGetCurrentUser();
           return currentUser?.userId ? true : false;
         },
-        // Method 3: Check local storage for valid token data
+        // Method 3: Check AWS Amplify tokens
         async () => {
-          logger.debug('[Auth] Trying validation method 3: local storage tokens');
-          // Check for specific Cognito storage keys that indicate a previous session
-          if (typeof localStorage !== 'undefined') {
-            const lastAuthUserKey = Object.keys(localStorage).find(key => 
-              key.includes('CognitoIdentityServiceProvider') && key.includes('LastAuthUser')
-            );
-            
-            if (lastAuthUserKey) {
-              const lastAuthUser = localStorage.getItem(lastAuthUserKey);
-              if (lastAuthUser) {
-                // Look for token for this user
-                const tokenKey = Object.keys(localStorage).find(key => 
-                  key.includes('CognitoIdentityServiceProvider') && 
-                  key.includes(lastAuthUser) && 
-                  key.includes('idToken')
-                );
-                
-                if (tokenKey) {
-                  logger.debug('[Auth] Found valid token in local storage');
-                  return true;
-                }
-              }
+          logger.debug('[Auth] Trying validation method 3: Amplify tokens');
+          try {
+            const session = await fetchAuthSession();
+            if (session?.tokens?.idToken) {
+              // Store tokens in AppCache for future use
+              setCacheValue('access_token', session.tokens.accessToken.toString());
+              setCacheValue('id_token', session.tokens.idToken.toString());
+              return true;
             }
+          } catch (error) {
+            logger.warn('[Auth] Error getting Amplify session:', error);
           }
           return false;
         }
@@ -279,7 +265,7 @@ export const useAuth = () => {
       
       // Last resort: If we have session cookies but all methods failed,
       // we'll trust the cookies in development mode
-      if (process.env.NODE_ENV === 'development' && hasSessionCookie && hasTenantId) {
+      if (process.env.NODE_ENV === 'development' && accessToken && tenantId) {
         logger.warn('[Auth] All validation methods failed but session cookies found. Trusting cookies in development mode.');
         return true;
       }
@@ -290,7 +276,7 @@ export const useAuth = () => {
       logger.error('[Auth] Error during validation:', error);
       
       // Last resort fallback - if we have cookies, consider authenticated
-      if (hasSessionCookie && hasTenantId) {
+      if (accessToken && tenantId) {
         logger.info('[Auth] Validation error but session cookies found, using fallback authentication');
         return true;
       }
@@ -448,21 +434,21 @@ export const useAuth = () => {
         logger.debug('[Auth] Sign out completed with unknown status');
       }
       
-      // Clear local storage and cookies regardless of result
+      // Clear AppCache instead of localStorage
+      clearCache();
+      sessionStorage.clear();
+      
+      // Clear cookies - REPLACED WITH APPCACHE CLEAR
+      // Use the clearAppCache utility to clean all storage
       try {
-        localStorage.clear();
-        sessionStorage.clear();
-        
-        // Clear cookies
-        document.cookie.split(';').forEach(cookie => {
-          const [name] = cookie.trim().split('=');
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-        });
-        
-        logger.debug('[Auth] Local storage and cookies cleared');
-      } catch (e) {
-        logger.error('[Auth] Error clearing storage:', e);
+        const { clearAppCache } = await import('@/utils/appCacheUtils');
+        await clearAppCache();
+        logger.debug('[Auth] AppCache cleared successfully');
+      } catch (err) {
+        logger.error('[Auth] Error clearing AppCache:', err);
       }
+      
+      logger.debug('[Auth] All cache and storage cleared');
       
       // Mark as signed out
       setIsAuthenticated(false);
@@ -477,7 +463,8 @@ export const useAuth = () => {
       
       // Try to clear storage anyway on error
       try {
-        localStorage.clear();
+        // Clear AppCache instead of localStorage
+        clearCache();
         sessionStorage.clear();
       } catch (e) {
         // Ignore errors here
@@ -496,8 +483,8 @@ export const useAuth = () => {
     setAuthError(null);
     
     try {
-      // Store loading state in localStorage for potential recovery
-      localStorage.setItem('auth_loading_state', 'signup');
+      // Store loading state in AppCache for potential recovery
+      setCacheValue('auth_loading_state', 'signup');
       
       logger.debug('[Auth] Starting sign up process', { 
         email: data.email, 
@@ -560,8 +547,8 @@ export const useAuth = () => {
           
           // Store the confirmation status
           try {
-            localStorage.setItem('userConfirmed', 'true');
-            localStorage.setItem('userEmail', data.email);
+            setCacheValue('userConfirmed', 'true');
+            setCacheValue('userEmail', data.email);
           } catch (e) {
             // Ignore storage errors
           }
@@ -630,7 +617,7 @@ export const useAuth = () => {
     } finally {
       setIsLoading(false);
       // Clear loading state marker
-      localStorage.removeItem('auth_loading_state');
+      removeCacheValue('auth_loading_state');
     }
   }, []);
 
@@ -693,13 +680,15 @@ export const useAuth = () => {
         
         logger.debug('[Auth] Backend user creation result:', result);
         
-        // Clear verification-related data from session storage
+        // Clear any previous verification state
         try {
-          sessionStorage.removeItem('pendingVerificationEmail');
+          removeCacheValue('verificationCodeSentAt');
+          sessionStorage.removeItem('verificationCodeSentAt');
           sessionStorage.removeItem('verificationCodeSent');
-          localStorage.removeItem('verificationCodeSentAt');
+          sessionStorage.removeItem('verificationCodeTimestamp');
+          sessionStorage.removeItem('pendingVerificationEmail');
         } catch (e) {
-          // Ignore storage errors
+          // Silent failure
         }
       } catch (error) {
         // Log the backend registration failure but don't fail the overall verification
@@ -876,8 +865,8 @@ export const useAuth = () => {
     
     try {
       // Set a mutex flag to prevent duplicate sends
-      const verificationInProgress = localStorage.getItem('verificationInProgress');
-      const verificationStartTime = localStorage.getItem('verificationStartTime');
+      const verificationInProgress = getCacheValue('verificationInProgress');
+      const verificationStartTime = getCacheValue('verificationStartTime');
       const now = Date.now();
       
       if (verificationInProgress === 'true' && verificationStartTime) {
@@ -900,21 +889,17 @@ export const useAuth = () => {
       }
       
       // Set the mutex flag
-      try {
-        localStorage.setItem('verificationInProgress', 'true');
-        localStorage.setItem('verificationStartTime', now.toString());
-      } catch (e) {
-        logger.warn('[Auth] Failed to set verification mutex:', e);
-      }
+      setCacheValue('verificationInProgress', 'true');
+      setCacheValue('verificationStartTime', now.toString());
       
       // Check if we've recently sent a code to prevent duplicates
       try {
         const lastCodeSentTime = sessionStorage.getItem('verificationCodeSentAt');
         const verificationCodeSent = sessionStorage.getItem('verificationCodeSent');
         
-        // Also check localStorage for cross-tab prevention
-        const signupCodeSent = localStorage.getItem('signupCodeSent');
-        const signupCodeTimestamp = localStorage.getItem('signupCodeTimestamp');
+        // Also check AppCache for cross-tab prevention
+        const signupCodeSent = getCacheValue('signupCodeSent');
+        const signupCodeTimestamp = getCacheValue('signupCodeTimestamp');
         
         const thirtySecondsInMs = 30 * 1000;
         const currentTime = Date.now();
@@ -923,11 +908,7 @@ export const useAuth = () => {
           logger.debug('[Auth] Code recently sent (last 30 seconds), preventing duplicate');
           
           // Clear the mutex
-          try {
-            localStorage.removeItem('verificationInProgress');
-          } catch (e) {
-            logger.warn('[Auth] Failed to clear verification mutex:', e);
-          }
+          removeCacheValue('verificationInProgress');
           
           if (typeof window !== 'undefined') {
             window._verificationInProgress = false;
@@ -942,14 +923,10 @@ export const useAuth = () => {
         }
         
         if (signupCodeTimestamp && (currentTime - parseInt(signupCodeTimestamp)) < thirtySecondsInMs) {
-          logger.debug('[Auth] Code recently sent (localStorage, last 30 seconds), preventing duplicate');
+          logger.debug('[Auth] Code recently sent (AppCache, last 30 seconds), preventing duplicate');
           
           // Clear the mutex
-          try {
-            localStorage.removeItem('verificationInProgress');
-          } catch (e) {
-            logger.warn('[Auth] Failed to clear verification mutex:', e);
-          }
+          removeCacheValue('verificationInProgress');
           
           if (typeof window !== 'undefined') {
             window._verificationInProgress = false;
@@ -980,15 +957,15 @@ export const useAuth = () => {
           
           // Record that we sent a code
           try {
-            const timestamp = Date.now().toString();
-            sessionStorage.setItem('verificationCodeSentAt', timestamp);
+            const verificationTimestamp = Date.now();
+            sessionStorage.setItem('verificationCodeSentAt', verificationTimestamp.toString());
             sessionStorage.setItem('pendingVerificationEmail', email);
             sessionStorage.setItem('verificationCodeSent', 'true');
-            sessionStorage.setItem('verificationCodeTimestamp', timestamp);
+            sessionStorage.setItem('verificationCodeTimestamp', verificationTimestamp.toString());
             
-            // Also store in localStorage to prevent duplicates across tabs
-            localStorage.setItem('signupCodeSent', 'true');
-            localStorage.setItem('signupCodeTimestamp', timestamp);
+            // Also store in AppCache to prevent duplicates across tabs
+            setCacheValue('signupCodeSent', 'true');
+            setCacheValue('signupCodeTimestamp', verificationTimestamp.toString());
           } catch (e) {
             logger.warn('[Auth] Failed to store verification timestamp:', e);
           }
@@ -1033,11 +1010,7 @@ export const useAuth = () => {
       logger.debug('[Auth] Resend code operation completed with result:', response);
       
       // Clear the mutex
-      try {
-        localStorage.removeItem('verificationInProgress');
-      } catch (e) {
-        logger.warn('[Auth] Failed to clear verification mutex:', e);
-      }
+      removeCacheValue('verificationInProgress');
       
       // Release the window lock
       if (typeof window !== 'undefined') {
@@ -1059,11 +1032,7 @@ export const useAuth = () => {
       });
       
       // Clear the mutex in case of error
-      try {
-        localStorage.removeItem('verificationInProgress');
-      } catch (e) {
-        logger.warn('[Auth] Failed to clear verification mutex:', e);
-      }
+      removeCacheValue('verificationInProgress');
       
       // Release the window lock
       if (typeof window !== 'undefined') {

@@ -3,6 +3,7 @@
  * 
  * Provides consistent logging with prefixes for debug levels
  */
+import { setCacheValue, getCacheValue } from './appCache';
 
 const LOG_LEVELS = {
   DEBUG: 0,
@@ -14,18 +15,18 @@ const LOG_LEVELS = {
 // Default to INFO in production, DEBUG in development
 const DEFAULT_LOG_LEVEL = process.env.NODE_ENV === 'production' ? LOG_LEVELS.INFO : LOG_LEVELS.DEBUG;
 
-// Get configured log level from localStorage or environment
+// Get configured log level from AppCache or environment
 const getLogLevel = () => {
   try {
-    // Try to get from localStorage if available
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const storedLevel = window.localStorage.getItem('logLevel');
+    // Try to get from AppCache if available
+    if (typeof window !== 'undefined') {
+      const storedLevel = getCacheValue('logLevel');
       if (storedLevel && LOG_LEVELS[storedLevel] !== undefined) {
         return LOG_LEVELS[storedLevel];
       }
     }
   } catch (e) {
-    // Ignore localStorage errors
+    // Ignore AppCache errors
   }
   
   // Fall back to default
@@ -72,13 +73,13 @@ export const logger = {
   // Set the current log level
   setLogLevel: (level) => {
     try {
-      if (typeof window !== 'undefined' && window.localStorage) {
+      if (typeof window !== 'undefined') {
         if (LOG_LEVELS[level] !== undefined) {
-          window.localStorage.setItem('logLevel', level);
+          setCacheValue('logLevel', level);
         }
       }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore AppCache errors
     }
   }
 };

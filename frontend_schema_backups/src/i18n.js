@@ -4,6 +4,8 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Import translation resources for all languages
 import enCommon from '../public/locales/en/common.json';
@@ -48,6 +50,17 @@ import yoOnboarding from '../public/locales/yo/onboarding.json';
 import amOnboarding from '../public/locales/am/onboarding.json';
 import zuOnboarding from '../public/locales/zu/onboarding.json';
 import koOnboarding from '../public/locales/ko/onboarding.json';
+
+// Create a custom language detector for AppCache
+const appCacheLanguageDetector = {
+  name: 'appCache',
+  lookup() {
+    return getCacheValue('language');
+  },
+  cacheUserLanguage(lng) {
+    setCacheValue('language', lng);
+  }
+};
 
 const resources = {
   en: {
@@ -147,11 +160,8 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       ns: ['common', 'onboarding'],
       defaultNS: 'common',
       detection: {
-        order: ['cookie', 'localStorage', 'navigator', 'htmlTag'],
-        lookupCookie: 'i18nextLng',
-        lookupLocalStorage: 'i18nextLng',
-        caches: ['localStorage', 'cookie'],
-        cookieExpirationDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365), // 1 year
+        order: ['appCache', 'navigator', 'htmlTag'],
+        caches: [],
       },
       interpolation: {
         escapeValue: false, // React already protects from XSS
@@ -161,6 +171,9 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       },
     });
 
+  // Register the custom detector
+  i18nInstance.services.languageDetector.addDetector(appCacheLanguageDetector);
+
   // Add a language change listener to force re-render of components
   i18nInstance.on('languageChanged', (lng) => {
     // Update HTML lang attribute and text direction for RTL languages
@@ -168,11 +181,12 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       document.documentElement.lang = lng;
       document.documentElement.dir = ['ar', 'he', 'fa', 'ur'].includes(lng) ? 'rtl' : 'ltr';
       
-      // Store the language in localStorage for persistence
-      localStorage.setItem('i18nextLng', lng);
+      // Store in AppCache
+      setCacheValue('language', lng);
       
-      // Create/update the cookie for SSR
-      document.cookie = `i18nextLng=${lng};path=/;max-age=${60 * 60 * 24 * 365}`;
+      // Store in Cognito attributes (async operation)
+      saveUserPreference(PREF_KEYS.LANGUAGE, lng)
+        .catch(error => console.error('Failed to save language preference to Cognito:', error));
       
       // Force re-render by dispatching a custom event
       window.dispatchEvent(new Event('languageChange'));

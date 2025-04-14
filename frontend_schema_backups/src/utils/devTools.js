@@ -3,6 +3,13 @@
  * These functions are only available in development mode
  */
 import { logger } from './logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference } from '@/utils/userPreferences';
+
+const DEV_KEYS = {
+  USE_REAL_DB: 'dev_use_real_db',
+  TENANT_ID: 'dev-tenant-id'
+};
 
 /**
  * Set development mode options
@@ -15,15 +22,19 @@ export const setDevOptions = (options = {}) => {
   }
   
   try {
-    // Store settings in localStorage
+    // Store settings in AppCache
     if (options.useRealDb !== undefined) {
-      localStorage.setItem('dev_use_real_db', options.useRealDb ? 'true' : 'false');
+      setCacheValue(DEV_KEYS.USE_REAL_DB, options.useRealDb ? 'true' : 'false');
       console.log(`✅ Development DB mode set to: ${options.useRealDb ? 'REAL DATABASE' : 'MOCK DATABASE'}`);
     }
     
     if (options.tenantId) {
-      localStorage.setItem('dev-tenant-id', options.tenantId);
-      document.cookie = `dev-tenant-id=${options.tenantId}; path=/; max-age=86400`;
+      setCacheValue(DEV_KEYS.TENANT_ID, options.tenantId);
+      
+      // Also save in Cognito for persistence
+      saveUserPreference('custom:dev_tenant_id', options.tenantId)
+        .catch(err => logger.error('[DevTools] Error saving tenant ID to Cognito:', err));
+        
       console.log(`✅ Development tenant ID set to: ${options.tenantId}`);
     }
     
@@ -42,7 +53,7 @@ export const getDevTenantId = () => {
     return null;
   }
   
-  return localStorage.getItem('dev-tenant-id') || 'dev-tenant-123';
+  return getCacheValue(DEV_KEYS.TENANT_ID) || 'dev-tenant-123';
 };
 
 /**
@@ -54,8 +65,12 @@ export const setDevTenantId = (tenantId) => {
     return false;
   }
   
-  localStorage.setItem('dev-tenant-id', tenantId);
-  document.cookie = `dev-tenant-id=${tenantId}; path=/; max-age=86400`;
+  setCacheValue(DEV_KEYS.TENANT_ID, tenantId);
+  
+  // Also save in Cognito for persistence
+  saveUserPreference('custom:dev_tenant_id', tenantId)
+    .catch(err => logger.error('[DevTools] Error saving tenant ID to Cognito:', err));
+    
   console.log(`✅ Development tenant ID set to: ${tenantId}`);
   
   return true;
@@ -70,7 +85,12 @@ export const useRealDatabase = (enable = true) => {
     return false;
   }
   
-  localStorage.setItem('dev_use_real_db', enable ? 'true' : 'false');
+  setCacheValue(DEV_KEYS.USE_REAL_DB, enable ? 'true' : 'false');
+  
+  // Also save in Cognito for persistence
+  saveUserPreference('custom:dev_use_real_db', enable ? 'true' : 'false')
+    .catch(err => logger.error('[DevTools] Error saving DB preference to Cognito:', err));
+    
   console.log(`✅ ${enable ? 'Enabled' : 'Disabled'} real database in development mode`);
   
   // Add a refresh notice
@@ -95,9 +115,12 @@ export const createNewTenantId = (prefix = 'tenant') => {
   const random = Math.floor(Math.random() * 10000);
   const newTenantId = `${prefix}-${timestamp}-${random}`;
   
-  // Store the new tenant ID
-  localStorage.setItem('dev-tenant-id', newTenantId);
-  document.cookie = `dev-tenant-id=${newTenantId}; path=/; max-age=86400`;
+  // Store the new tenant ID in AppCache
+  setCacheValue(DEV_KEYS.TENANT_ID, newTenantId);
+  
+  // Also save in Cognito for persistence
+  saveUserPreference('custom:dev_tenant_id', newTenantId)
+    .catch(err => logger.error('[DevTools] Error saving tenant ID to Cognito:', err));
   
   // Log success message with styling
   console.log(

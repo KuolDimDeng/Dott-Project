@@ -1,4 +1,6 @@
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { fetchUserAttributes, updateUserAttributes } from '@/config/amplifyUnified';
 
 /**
  * TokenRefreshService
@@ -37,26 +39,24 @@ class TokenRefreshService {
    */
   needsRefresh() {
     try {
-      // Skip refresh check if onboarding is in progress with cookie fallback
-      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-        const [key, value] = cookie.trim().split('=');
-        acc[key] = value;
-        return acc;
-      }, {});
-
+      // Skip refresh check if onboarding is in progress with fallback data
+      const onboardingInProgress = getCacheValue('onboardingInProgress') === 'true';
+      const businessInfo = getCacheValue('businessInfo');
+      
       // If we're in onboarding and have fallback data, don't keep refreshing
-      if (cookies.onboardingInProgress === 'true' && 
-          (cookies.businessName || localStorage.getItem('businessInfo'))) {
+      if (onboardingInProgress && businessInfo) {
         logger.debug('[TokenRefresh] Skipping refresh during onboarding with fallback data');
         return false;
       }
 
       // Check for direct token expired flag
-      if (cookies.tokenExpired === 'true') {
+      const tokenExpired = getCacheValue('tokenExpired') === 'true';
+      if (tokenExpired) {
         return true;
       }
 
-      const idToken = cookies.idToken;
+      // Get token from AppCache
+      const idToken = getCacheValue('idToken');
       if (!idToken) return true;
 
       // Parse token to get expiration
@@ -120,9 +120,22 @@ class TokenRefreshService {
           // Special handling for onboarding scenario
           const pathname = window.location.pathname;
           if (pathname.includes('/onboarding/')) {
-            // Store the current onboarding state in cookies
-            document.cookie = `onboardingInProgress=true;path=/;max-age=${60*60*24}`;
-            document.cookie = `onboardingStep=${pathname.split('/').pop()};path=/;max-age=${60*60*24}`;
+            // Store the current onboarding state in AppCache
+            setCacheValue('onboardingInProgress', 'true', { ttl: 24 * 60 * 60 * 1000 });
+            setCacheValue('onboardingStep', pathname.split('/').pop(), { ttl: 24 * 60 * 60 * 1000 });
+            
+            // Also try to update Cognito attributes
+            try {
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:onboardingInProgress': 'true',
+                  'custom:onboardingStep': pathname.split('/').pop()
+                }
+              }).catch(err => logger.warn('[TokenRefresh] Failed to update Cognito:', err));
+            } catch (cognitoError) {
+              logger.warn('[TokenRefresh] Error updating Cognito attributes:', cognitoError);
+            }
+            
             logger.warn('[TokenRefresh] Token refresh failed during onboarding, saved state');
           }
 
@@ -134,13 +147,8 @@ class TokenRefreshService {
         logger.debug('[TokenRefresh] Token refreshed successfully');
 
         // Clear any token expired flags
-        document.cookie = 'tokenExpired=;path=/;expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        try {
-          localStorage.removeItem('tokenExpired');
-        } catch (e) {
-          // Ignore localStorage errors
-        }
-
+        removeCacheValue('tokenExpired');
+        
         // Notify subscribers
         this.notifySubscribers();
         resolve(result);

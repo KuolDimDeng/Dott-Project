@@ -12,6 +12,7 @@ import DashboardLoader from '@/components/DashboardLoader';
 import { useNotification } from '@/context/NotificationContext';
 import { useSession } from 'next-auth/react';
 import { v4 as uuidv4 } from 'uuid';
+import { Auth } from 'aws-amplify';
 
 // Dynamically import DatabaseAdmin component to avoid loading it until needed
 const DatabaseAdmin = dynamic(() => import('@/components/DatabaseAdmin'), {
@@ -57,18 +58,19 @@ function checkForUserOnboardingData() {
 // Helper to get business name from user data
 function getUserBusinessName() {
   try {
-    // Try cookies first
-    const getCookie = (name) => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return null;
-    };
+    // Try Cognito attributes first (source of truth)
+    const userAttrs = Auth.currentUserPoolUser()?.attributes;
+    if (userAttrs && userAttrs['custom:businessname']) {
+      return userAttrs['custom:businessname'];
+    }
     
-    const cookieName = getCookie('businessName') || getCookie('custom:businessname');
-    if (cookieName) return cookieName;
+    // Try AppCache next
+    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+      const cachedName = window.__APP_CACHE.user_pref_custom_businessname;
+      if (cachedName) return cachedName;
+    }
     
-    // Then try localStorage
+    // Legacy fallbacks (for migration only)
     if (typeof localStorage !== 'undefined') {
       try {
         // Try businessInfo object

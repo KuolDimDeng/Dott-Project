@@ -1,5 +1,7 @@
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
+import { Auth } from 'aws-amplify';
+import { removeCacheValue, setCacheValue } from './appCache';
 
 /**
  * Utility functions to help migrate from cookie/localStorage to Cognito attributes
@@ -15,6 +17,10 @@ export async function migrateUserDataToCognito() {
   try {
     const migratedData = {};
     
+    // Import userPreferences utils
+    const { saveUserPreference, PREF_KEYS } = await import('@/utils/userPreferences');
+    const { setCacheValue } = await import('@/utils/appCache');
+    
     // Check and migrate tenantId from cookies or localStorage
     const localTenantId = getCookie('tenantId') || localStorage.getItem('tenantId');
     if (localTenantId) {
@@ -26,85 +32,183 @@ export async function migrateUserDataToCognito() {
         // Update the tenant ID in Cognito
         await updateTenantIdInCognito(localTenantId);
       }
+      
+      // Also set it in AppCache
+      setCacheValue('tenant_id', localTenantId);
     }
     
     // Check and migrate onboarding status
     const onboardingStatus = getCookie('onboardingStep') || localStorage.getItem('onboardingStep');
     if (onboardingStatus) {
       migratedData.onboardingStatus = onboardingStatus;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.ONBOARDING_STATUS, onboardingStatus);
+      
+      // Also set in AppCache
+      setCacheValue('onboarding_status', onboardingStatus);
     }
     
     // Check and migrate setup completed status
     const setupCompleted = localStorage.getItem('setupCompleted') === 'true' || 
                           getCookie('setupCompleted') === 'true';
-    migratedData.setupCompleted = setupCompleted;
+    if (setupCompleted) {
+      migratedData.setupCompleted = setupCompleted;
+      
+      // Save to Cognito
+      await saveUserPreference('custom:setupdone', 'true');
+      
+      // Also set in AppCache
+      setCacheValue('setup_completed', true);
+    }
     
     // Check and migrate business information
     const businessName = localStorage.getItem('businessName') || getCookie('businessName');
     if (businessName) {
       migratedData.businessName = businessName;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.BUSINESS_NAME, businessName);
+      
+      // Also set in AppCache
+      setCacheValue('business_name', businessName);
     }
     
     const businessType = localStorage.getItem('businessType') || getCookie('businessType');
     if (businessType) {
       migratedData.businessType = businessType;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.BUSINESS_TYPE, businessType);
+      
+      // Also set in AppCache
+      setCacheValue('business_type', businessType);
     }
     
-    // Call the migration API endpoint to update Cognito attributes
-    const response = await fetch('/api/auth/migrate-to-cognito', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(migratedData),
+    // UI Preferences Migration
+    
+    // Theme preference
+    const theme = localStorage.getItem('color-theme') || getCookie('theme');
+    if (theme) {
+      migratedData.theme = theme;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.THEME, theme);
+      
+      // Also set in AppCache
+      setCacheValue('user_theme', theme);
+    }
+    
+    // UI Scale preference
+    const uiScale = localStorage.getItem('ui-scale') || getCookie('ui-scale');
+    if (uiScale) {
+      migratedData.uiScale = uiScale;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.UI_SCALE, uiScale);
+      
+      // Also set in AppCache
+      setCacheValue('ui_scale', uiScale);
+    }
+    
+    // UI Density preference
+    const uiDensity = localStorage.getItem('ui-density') || getCookie('ui-density');
+    if (uiDensity) {
+      migratedData.uiDensity = uiDensity;
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.UI_DENSITY, uiDensity);
+      
+      // Also set in AppCache
+      setCacheValue('ui_density', uiDensity);
+    }
+    
+    // Sidebar collapsed state
+    const sidebarCollapsed = localStorage.getItem('sidebar-collapsed');
+    if (sidebarCollapsed !== null) {
+      migratedData.sidebarCollapsed = sidebarCollapsed === 'true' ? 'true' : 'false';
+      
+      // Save to Cognito
+      await saveUserPreference(PREF_KEYS.SIDEBAR_COLLAPSED, sidebarCollapsed === 'true' ? 'true' : 'false');
+      
+      // Also set in AppCache
+      setCacheValue('sidebar_collapsed', sidebarCollapsed === 'true');
+    }
+    
+    // Set migration timestamp in Cognito
+    await saveUserPreference('custom:migration_timestamp', new Date().toISOString());
+    
+    // Mark migration as complete in Cognito
+    await saveUserPreference(PREF_KEYS.PREFERENCES_MIGRATED, 'true');
+    
+    // Set migration flags in AppCache
+    setCacheValue('preferences_migrated', 'true');
+    setCacheValue('migration_timestamp', new Date().toISOString());
+    
+    // No need to call API endpoint as we've set everything in Cognito directly
+    
+    // Clear cookies and localStorage after successful migration
+    if (Object.keys(migratedData).length > 0) {
+      clearMigratedLocalData(migratedData);
+    }
+    
+    return {
+      success: true,
+      migratedData,
+      message: 'User data successfully migrated to Cognito attributes',
+    };
+  } catch (error) {
+    logger.error('[Migration] Failed to migrate user data to Cognito', {
+      error: error.message,
+      stack: error.stack,
     });
     
-    const result = await response.json();
-    
-    if (result.success) {
-      logger.info('[Migration] Successfully migrated user data to Cognito', {
-        migratedAttributes: result.migrated_attributes,
-      });
-      
-      // Clear cookies and localStorage after successful migration
-      if (Object.keys(migratedData).length > 0) {
-        clearMigratedLocalData(migratedData);
-      }
-      
-      return {
-        success: true,
-        migratedData,
-        message: 'User data successfully migrated to Cognito attributes',
-      };
-    } else {
-      logger.error('[Migration] Failed to migrate user data to Cognito', {
-        error: result.error,
-        message: result.message,
-      });
-      
-      return {
-        success: false,
-        error: result.error,
-        message: result.message || 'Failed to migrate user data to Cognito',
-      };
-    }
-  } catch (error) {
-    logger.error('[Migration] Error during migration process:', error);
     return {
       success: false,
-      error: 'Migration process failed',
-      message: error.message || 'An unexpected error occurred during migration',
+      error: error,
+      message: error.message || 'Failed to migrate user data to Cognito',
     };
   }
 }
 
 /**
- * Clears migrated data from cookies and localStorage
+ * Clears migrated data from cookies, localStorage, and AppCache
  * @param {Object} migratedData The data that was migrated
  */
 function clearMigratedLocalData(migratedData) {
   try {
-    // Clear from localStorage
+    // Clear from AppCache first
+    if (migratedData.tenantId) {
+      removeCacheValue('tenantId');
+    }
+    if (migratedData.onboardingStatus) {
+      removeCacheValue('onboardingStep');
+    }
+    if (migratedData.setupCompleted !== undefined) {
+      removeCacheValue('setupCompleted');
+    }
+    if (migratedData.businessName) {
+      removeCacheValue('businessName');
+    }
+    if (migratedData.businessType) {
+      removeCacheValue('businessType');
+    }
+    
+    // Clear UI preferences from AppCache
+    if (migratedData.theme) {
+      removeCacheValue('color-theme');
+    }
+    if (migratedData.uiScale) {
+      removeCacheValue('ui-scale');
+    }
+    if (migratedData.uiDensity) {
+      removeCacheValue('ui-density');
+    }
+    if (migratedData.sidebarCollapsed !== undefined) {
+      removeCacheValue('sidebar-collapsed');
+    }
+    
+    // Clear from localStorage (legacy)
     if (migratedData.tenantId) {
       localStorage.removeItem('tenantId');
     }
@@ -119,6 +223,20 @@ function clearMigratedLocalData(migratedData) {
     }
     if (migratedData.businessType) {
       localStorage.removeItem('businessType');
+    }
+    
+    // Clear UI preferences from localStorage
+    if (migratedData.theme) {
+      localStorage.removeItem('color-theme');
+    }
+    if (migratedData.uiScale) {
+      localStorage.removeItem('ui-scale');
+    }
+    if (migratedData.uiDensity) {
+      localStorage.removeItem('ui-density');
+    }
+    if (migratedData.sidebarCollapsed !== undefined) {
+      localStorage.removeItem('sidebar-collapsed');
     }
     
     // Clear from cookies
@@ -138,7 +256,21 @@ function clearMigratedLocalData(migratedData) {
       document.cookie = 'businessType=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     }
     
-    logger.info('[Migration] Cleared migrated data from localStorage and cookies');
+    // Clear UI preferences from cookies
+    if (migratedData.theme) {
+      document.cookie = 'theme=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    if (migratedData.uiScale) {
+      document.cookie = 'ui-scale=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    if (migratedData.uiDensity) {
+      document.cookie = 'ui-density=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    if (migratedData.sidebarCollapsed !== undefined) {
+      document.cookie = 'sidebar-collapsed=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+    }
+    
+    logger.info('[Migration] Cleared migrated data from AppCache, localStorage and cookies');
   } catch (error) {
     logger.error('[Migration] Error clearing local data after migration:', error);
   }
@@ -172,7 +304,7 @@ export async function clearLegacyStorage() {
   if (typeof window === 'undefined') return;
   
   try {
-    logger.info('[migrationUtils] Clearing legacy cookies and localStorage data');
+    logger.info('[migrationUtils] Clearing all legacy cookies, localStorage, and AppCache data');
     
     // Clear cookies - expanded to include all possible cookies
     const cookiesToClear = [
@@ -183,6 +315,7 @@ export async function clearLegacyStorage() {
       
       // Auth tokens
       'idToken', 'accessToken', 'refreshToken', 'authToken', 'tokenExpires', 'tokenTimestamp',
+      'token', // Include token explicitly
       
       // Onboarding status
       'onboardingStep', 'onboardedStatus', 'setupCompleted', 'businessInfoCompleted', 
@@ -194,69 +327,68 @@ export async function clearLegacyStorage() {
       
       // User info
       'email', 'userEmail', 'first_name', 'firstName', 'given_name', 
-      'last_name', 'lastName', 'family_name', 'hasSession',
-      
-      // Setup flags
-      'setupSkipDatabaseCreation', 'setupUseRLS', 'skipSchemaCreation', 'setupTimestamp'
     ];
     
-    cookiesToClear.forEach(name => {
-      document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-      document.cookie = `${name}=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-    });
-    
-    // Clear localStorage - expanded to include all possible keys
-    const localStorageToClear = [
-      // Tenant IDs and Business info
-      'tenantId', 'tenant', 'tenantData', 'tenantName', 'businessid', 'businessName', 'businessType',
-      'businessSubtypes', 'businessInfo', 'businessCountry', 'businessState', 'legalStructure',
-      'dateFounded', 'proper_tenant_id', 'custom:businessname', 'custom:businesstype',
-      'custom:tenant_id', 'custom:businessid', 'custom:tenant_ID',
-      
-      // Auth tokens
-      'idToken', 'accessToken', 'refreshToken', 'tokenTimestamp', 'tokenExpires', 'authToken',
-      'token_expired', 'token_expired_at', 'token_expires', 'authSuccess',
-      
-      // Onboarding status
-      'onboardingStep', 'onboardingStatus', 'onboardedStatus', 'setupCompleted', 'setupdone',
-      'freePlanSelected', 'onboardingBusinessInfo', 'onboardingSubscription', 'onboardingPayment',
-      'onboardingCompletedAt', 'custom:onboarding', 'custom:setupdone', 'custom:business_info_done',
-      'custom:subscription_done', 'custom:payment_done', 'custom:onboardingCompletedAt',
-      
-      // Subscription info
-      'subscriptionPlan', 'subscriptionInterval', 'billingCycle', 'subplan', 'subprice',
-      'custom:subplan', 'custom:billingcycle', 'custom:subprice',
-      
-      // User info
-      'userEmail', 'email', 'firstName', 'lastName', 'authUser', 'userProfileData',
-      'userProfileTimestamp',
-      
-      // Setup flags
-      'setupSkipDatabaseCreation', 'setupUseRLS', 'skipSchemaCreation', 'setupTimestamp',
-      
-      // Redirection markers
-      'returnToOnboarding', 'lastRedirect', 'redirectAttempts', 'signin_attempts',
-      'business_auth_errors', 'business_info_auth_errors', 'client_redirect_count'
-    ];
-    
-    // Clear localStorage keys
-    localStorageToClear.forEach(key => {
-      try {
-        localStorage.removeItem(key);
-      } catch (e) {
-        // Ignore errors for individual keys
-      }
-    });
-    
-    // Store a flag to indicate migration is complete
-    try {
-      localStorage.setItem('migration_to_cognito_completed', 'true');
-      localStorage.setItem('migration_to_cognito_timestamp', new Date().toISOString());
-    } catch (e) {
-      // Ignore storage errors
+    // Clear all cookies
+    for (const name of cookiesToClear) {
+      document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Secure; SameSite=Lax;`;
     }
     
-    logger.info('[migrationUtils] Legacy data cleared successfully');
+    // Also clear all cookies by getting all and expiring them
+    document.cookie.split(';').forEach(cookie => {
+      const name = cookie.split('=')[0].trim();
+      document.cookie = `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Secure; SameSite=Lax;`;
+    });
+    
+    // Clear AppCache and localStorage items - expanded list
+    const itemsToClear = [
+      // Tenant IDs and Business info
+      'tenantId', 'businessid', 'businessName', 'businessType', 'businessSubtypes',
+      'business_name', 'business_type', 'country', 'business_country', 'business_state',
+      'legalStructure', 'dateFounded', 'business_date_founded',
+      
+      // Auth tokens
+      'idToken', 'accessToken', 'refreshToken', 'authToken', 'tokenExpires', 'tokenTimestamp',
+      'token', // Explicitly include token
+      
+      // Onboarding status
+      'onboardingStep', 'onboardedStatus', 'setupCompleted', 'businessInfoCompleted', 
+      'subscriptionCompleted', 'paymentCompleted', 'freePlanSelected',
+      'navigatingTo', 'onboardingInProgress',
+      
+      // UI preferences
+      'color-theme', 'ui-scale', 'ui-density', 'sidebar-collapsed',
+      
+      // Languages and localization
+      'i18nextLng', 'language',
+      
+      // Session data
+      'lastVisitedPage', 'dashboard_version', 'tour_completed',
+      
+      // User preferences (these should all be in Cognito)
+      'user_settings', 'user_preferences', 'dashboard_preferences',
+    ];
+    
+    // Clear all specified localStorage items
+    for (const item of itemsToClear) {
+      localStorage.removeItem(item);
+      removeCacheValue(item);
+    }
+    
+    // Keep the migration flags in AppCache for backwards compatibility
+    // This helps prevent repeated migration attempts
+    setCacheValue('migration_to_cognito_completed', 'true');
+    setCacheValue('migration_to_cognito_timestamp', new Date().toISOString());
+    
+    // Also keep in localStorage for older components
+    localStorage.setItem('migration_to_cognito_completed', 'true');
+    localStorage.setItem('migration_to_cognito_timestamp', new Date().toISOString());
+    
+    // Import userPreferences to confirm migration status in Cognito
+    const { saveUserPreference, PREF_KEYS } = await import('@/utils/userPreferences');
+    await saveUserPreference(PREF_KEYS.PREFERENCES_MIGRATED, 'true');
+    
+    logger.info('[migrationUtils] Successfully cleared legacy data');
     return true;
   } catch (error) {
     logger.error('[migrationUtils] Error clearing legacy data:', error);

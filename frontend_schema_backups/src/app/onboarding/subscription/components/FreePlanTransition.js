@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
+import { setCacheValue } from '@/utils/appCache';
+import { updateUserAttributes } from '@/config/amplifyUnified';
 
 export default function FreePlanTransition() {
   const router = useRouter();
@@ -13,20 +15,24 @@ export default function FreePlanTransition() {
   useEffect(() => {
     logger.debug('[FreePlanTransition] Free plan selected, redirecting immediately to setup');
     
-    // Set additional cookies for setup
-    if (typeof document !== 'undefined') {
-      document.cookie = `setupSkipDatabaseCreation=true; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
-      document.cookie = `setupUseRLS=true; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
-      document.cookie = `skipSchemaCreation=true; path=/; max-age=${7 * 24 * 60 * 60}; samesite=lax`;
-    }
+    // Set values in AppCache
+    setCacheValue('setupSkipDatabaseCreation', 'true', { ttl: 7 * 24 * 60 * 60 * 1000 }); // 7 days
+    setCacheValue('setupUseRLS', 'true', { ttl: 7 * 24 * 60 * 60 * 1000 });
+    setCacheValue('skipSchemaCreation', 'true', { ttl: 7 * 24 * 60 * 60 * 1000 });
     
-    // Store in localStorage as well for redundancy
+    // Update Cognito attributes for persistence
     try {
-      localStorage.setItem('setupSkipDatabaseCreation', 'true');
-      localStorage.setItem('setupUseRLS', 'true');
-      localStorage.setItem('skipSchemaCreation', 'true');
-    } catch (e) {
-      // Ignore localStorage errors
+      updateUserAttributes({
+        userAttributes: {
+          'custom:setupSkipDatabaseCreation': 'true',
+          'custom:setupUseRLS': 'true',
+          'custom:skipSchemaCreation': 'true',
+          'custom:subplan': 'free',
+          'custom:subscriptioninterval': 'monthly'
+        }
+      }).catch(err => logger.warn('[FreePlanTransition] Failed to update Cognito attributes:', err));
+    } catch (cognitoError) {
+      logger.warn('[FreePlanTransition] Error updating Cognito attributes:', cognitoError);
     }
     
     // Use immediate navigation without timeout for RLS

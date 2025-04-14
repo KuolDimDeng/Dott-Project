@@ -3,6 +3,7 @@
  */
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Request cache for throttling duplicate requests
 const requestCache = new Map();
@@ -32,8 +33,8 @@ export const getApiHeaders = () => {
   headers['X-Request-Time'] = Date.now().toString();
   
   try {
-    // Include idToken if available
-    const idToken = localStorage.getItem('idToken');
+    // Include idToken if available from AppCache instead of localStorage
+    const idToken = getCacheValue('id_token');
     if (idToken) {
       headers['Authorization'] = `Bearer ${idToken}`;
     }
@@ -171,23 +172,23 @@ const handleApiError = (error, method, endpoint, params = {}) => {
  */
 export const apiRequest = async (method, endpoint, data = null, params = {}) => {
   try {
-    // Get tenant ID from localStorage or use default
-    let tenantId = localStorage.getItem('tenantId') || 'default';
+    // Get tenant ID from AppCache instead of localStorage
+    let tenantId = getCacheValue('tenantId') || 'default';
     
     // Ensure tenant ID is properly formatted for schema name
     if (tenantId) {
       // Check for masked tenant ID format and try to get proper tenant ID
       if (tenantId.includes('----') || !tenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        console.warn('[ApiRequest] Found invalid tenant ID format. Using proper ID from localStorage if available.');
+        console.warn('[ApiRequest] Found invalid tenant ID format. Using proper ID from AppCache if available.');
         
-        // Try to get actual tenant ID from localStorage proper_tenant_id
-        const properTenantId = localStorage.getItem('proper_tenant_id');
+        // Try to get actual tenant ID from AppCache proper_tenant_id
+        const properTenantId = getCacheValue('proper_tenant_id');
         if (properTenantId && properTenantId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-          console.log('[ApiRequest] Using proper tenant ID from storage:', properTenantId);
+          console.log('[ApiRequest] Using proper tenant ID from AppCache:', properTenantId);
           tenantId = properTenantId;
           
-          // Update the main tenantId in localStorage
-          localStorage.setItem('tenantId', tenantId);
+          // Update the main tenantId in AppCache
+          setCacheValue('tenantId', tenantId);
         } else {
           // If no proper ID available, just use the schema without tenant ID validation
           // The server endpoints will handle this by using a default schema

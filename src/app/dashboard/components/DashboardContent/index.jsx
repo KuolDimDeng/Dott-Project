@@ -77,7 +77,11 @@ function DashboardContent() {
   // Fetch user data
   const fetchUserData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      // Get token from AppCache instead of localStorage
+      const appCache = window.__APP_CACHE || {};
+      const auth = appCache.auth || {};
+      const token = auth.accessToken || '';
+      
       const response = await axiosInstance.get('/api/profile/', {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,13 +103,19 @@ function DashboardContent() {
       } else {
         logger.error('Error fetching user data:', response.statusText);
         addMessage('error', `Error fetching user data: ${response.statusText}`);
-        localStorage.removeItem('token');
+        // Clear token from AppCache instead of localStorage
+        if (window.__APP_CACHE && window.__APP_CACHE.auth) {
+          delete window.__APP_CACHE.auth.accessToken;
+        }
         router.push('/auth/signin');
       }
     } catch (error) {
       logger.error('Error fetching user data:', error);
       addMessage('error', `Error fetching user data: ${error.message}`);
-      localStorage.removeItem('token');
+      // Clear token from AppCache instead of localStorage
+      if (window.__APP_CACHE && window.__APP_CACHE.auth) {
+        delete window.__APP_CACHE.auth.accessToken;
+      }
       router.push('/auth/signin');
     }
   }, [addMessage, router]);

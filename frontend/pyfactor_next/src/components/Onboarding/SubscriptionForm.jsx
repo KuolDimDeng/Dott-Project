@@ -246,36 +246,52 @@ export default function SubscriptionForm() {
   // Handle continue button click
   const handleContinue = async () => {
     if (!selectedPlan) {
-      setError('Please select a plan to continue');
+      setError('Please select a plan to continue.');
       return;
     }
     
-    setSubmitting(true);
-    setError(null);
-    setProcessingStatus('Processing your selection...');
+    const requestId = generateRequestId();
+    logger.debug(`[SubscriptionForm] Handling plan selection for ${selectedPlan}/${billingCycle}`, { requestId });
     
     try {
+      // Clear any previous errors
+      setError('');
+      setSubmitting(true);
+      setProcessingStatus('Processing your selection...');
+      
+      // Get the selected plan data
       const plan = PLANS.find(p => p.id === selectedPlan);
+      if (!plan) {
+        throw new Error('Selected plan not found');
+      }
       
-      // Generate a request ID for tracking this flow
-      const requestId = generateRequestId();
-      
-      logger.info('[SubscriptionForm] Plan selection confirmed:', { 
-        plan: plan.id, 
-        billingCycle,
-        price: plan.price[billingCycle],
-        requestId
-      });
-      
-      // Update cookies for server-side tracking
-      const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-      document.cookie = `selectedPlan=${plan.id}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `billingCycle=${billingCycle}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `${COOKIE_NAMES.SUBSCRIPTION_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      // Set up the AppCache for the subscription
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.subscription = window.__APP_CACHE.subscription || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        
+        // Store subscription details
+        window.__APP_CACHE.subscription.plan = plan.id;
+        window.__APP_CACHE.subscription.billingCycle = billingCycle;
+        window.__APP_CACHE.subscription.isComplete = true;
+        window.__APP_CACHE.subscription.timestamp = new Date().toISOString();
+        
+        // Update onboarding status
+        if (plan.id === 'free' || plan.id === 'basic') {
+          window.__APP_CACHE.onboarding.status = 'complete';
+          window.__APP_CACHE.onboarding.step = 'complete';
+          window.__APP_CACHE.onboarding.completed = true;
+        } else {
+          window.__APP_CACHE.onboarding.status = 'subscription';
+          window.__APP_CACHE.onboarding.step = 'subscription';
+        }
+      }
       
       // Check for development mode
       const devMode = process.env.NODE_ENV === 'development';
-      const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
+      const bypassAuth = typeof window !== 'undefined' && 
+                         window.__APP_CACHE?.debug?.bypassAuth === true;
       
       // Update Cognito attributes FIRST before redirecting
       try {
@@ -284,11 +300,14 @@ export default function SubscriptionForm() {
         if (devMode && bypassAuth) {
           logger.debug('[SubscriptionForm] Development mode: skipping Cognito update');
           
-          // Store in localStorage as fallback
-          localStorage.setItem('custom:subplan', plan.id);
-          localStorage.setItem('custom:subscriptioninterval', billingCycle);
-          localStorage.setItem('custom:onboarding', plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription');
-          localStorage.setItem('custom:updated_at', new Date().toISOString());
+          // Store in AppCache
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE.cognito = window.__APP_CACHE.cognito || {};
+            window.__APP_CACHE.cognito.subplan = plan.id;
+            window.__APP_CACHE.cognito.subscriptioninterval = billingCycle;
+            window.__APP_CACHE.cognito.onboarding = plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription';
+            window.__APP_CACHE.cognito.updated_at = new Date().toISOString();
+          }
         } else {
           // Safe attributes that won't cause permission issues
           const safeAttributes = {
@@ -320,7 +339,7 @@ export default function SubscriptionForm() {
         }
       } catch (attrError) {
         logger.warn('[SubscriptionForm] Failed to update Cognito attributes:', attrError);
-        // Continue anyway - cookies will serve as backup
+        // Continue anyway - AppCache will serve as backup
       }
       
       // Use the onboarding service to update progress
@@ -361,7 +380,7 @@ export default function SubscriptionForm() {
         }
       } catch (storageError) {
         logger.warn('[SubscriptionForm] SessionStorage error:', storageError);
-        // Continue despite error - cookies are more important
+        // Continue despite error - AppCache is more important
       }
       
       // Route based on plan type
@@ -392,10 +411,12 @@ export default function SubscriptionForm() {
         if (devMode && bypassAuth) {
           logger.debug('[SubscriptionForm] Development mode: bypassing payment');
           
-          // Set complete status in localStorage
-          localStorage.setItem('custom:onboarding', 'complete');
-          localStorage.setItem('custom:setupdone', 'true');
-          localStorage.setItem('custom:payment_completed', 'true');
+          // Set complete status in AppCache
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE.onboarding.status = 'complete';
+            window.__APP_CACHE.onboarding.step = 'complete';
+            window.__APP_CACHE.onboarding.completed = true;
+          }
           
           // Redirect directly to dashboard
           window.location.href = `/dashboard?newAccount=true&plan=${plan.id}&dev=true&requestId=${requestId}`;
@@ -425,23 +446,24 @@ export default function SubscriptionForm() {
     // Show loading state
     setSubmitting(true);
     
-    // Set all required cookies for free plan selection - handle completion immediately
-    const expiresDate = new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
-    
-    // Critical cookies for onboarding completion - use consistent lowercase values
-    document.cookie = `freePlanSelected=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardingStep=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `onboardedStatus=complete; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `setupCompleted=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    
-    // Store essential values in localStorage too - use consistent lowercase values
-    localStorage.setItem('freePlanSelected', 'true');
-    localStorage.setItem('onboardingStep', 'complete');
-    localStorage.setItem('onboardedStatus', 'complete');
-    localStorage.setItem('setupCompleted', 'true');
-    localStorage.setItem('custom:onboarding', 'complete'); // Ensure lowercase
-    localStorage.setItem('custom:setupdone', 'true');      // Ensure lowercase
-    localStorage.setItem('custom:subscription_plan', 'free'); // Ensure lowercase
+    // Store free plan selection in AppCache
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.subscription = window.__APP_CACHE.subscription || {};
+      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      
+      // Set subscription details
+      window.__APP_CACHE.subscription.plan = 'free';
+      window.__APP_CACHE.subscription.billingCycle = 'monthly';
+      window.__APP_CACHE.subscription.isComplete = true;
+      window.__APP_CACHE.subscription.timestamp = new Date().toISOString();
+      
+      // Set onboarding as complete
+      window.__APP_CACHE.onboarding.status = 'complete';
+      window.__APP_CACHE.onboarding.step = 'complete';
+      window.__APP_CACHE.onboarding.completed = true;
+      window.__APP_CACHE.onboarding.freePlanSelected = true;
+    }
     
     // First check for Cognito tenant ID by fetching user attributes
     let tenantId = null;
@@ -454,178 +476,48 @@ export default function SubscriptionForm() {
       if (userAttributes['custom:tenant_ID'] && isValidUUID(userAttributes['custom:tenant_ID'])) {
         tenantId = userAttributes['custom:tenant_ID'];
         logger.debug('[SubscriptionForm] Using tenant ID from Cognito attributes:', tenantId);
+      } else if (userAttributes['custom:tenantId'] && isValidUUID(userAttributes['custom:tenantId'])) {
+        tenantId = userAttributes['custom:tenantId'];
+        logger.debug('[SubscriptionForm] Using tenantId from Cognito attributes:', tenantId);
+      }
+      
+      // Update Cognito attributes for free plan
+      try {
+        const { updateUserAttributes } = await import('aws-amplify/auth');
+        await updateUserAttributes({
+          userAttributes: {
+            'custom:onboarding': 'complete',
+            'custom:setupdone': 'true',
+            'custom:subplan': 'free',
+            'custom:subscriptioninterval': 'monthly',
+            'custom:updated_at': new Date().toISOString()
+          }
+        });
+        logger.debug('[SubscriptionForm] Updated Cognito attributes for free plan');
+      } catch (updateError) {
+        logger.warn('[SubscriptionForm] Failed to update Cognito attributes for free plan:', updateError);
+        // Continue anyway as we have the AppCache backup
       }
     } catch (attributeError) {
       logger.warn('[SubscriptionForm] Failed to fetch Cognito attributes:', attributeError);
       // Continue with fallback methods
     }
     
-    // If we couldn't get tenant ID from Cognito, try local storage and cookies
+    // If we couldn't get tenant ID from Cognito, try AppCache
     if (!tenantId || !isValidUUID(tenantId)) {
-      tenantId = localStorage.getItem('tenantId') || 
-                getCookie('tenantId') || 
-                localStorage.getItem('businessid') || 
-                getCookie('businessid');
-                
-      if (tenantId && isValidUUID(tenantId)) {
-        logger.debug('[SubscriptionForm] Using tenant ID from local storage/cookies:', tenantId);
+      const appCache = window.__APP_CACHE || {};
+      const tenant = appCache.tenant || {};
+      tenantId = tenant.id;
+      
+      if (!tenantId || !isValidUUID(tenantId)) {
+        // As a last resort, redirect without tenant ID
+        logger.warn('[SubscriptionForm] No valid tenant ID found, redirecting to dashboard without tenant path');
+        window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true`;
+        return;
       }
     }
     
-    // Only generate a new tenant ID if one doesn't already exist
-    if (!tenantId || !isValidUUID(tenantId)) {
-      tenantId = crypto.randomUUID();
-      logger.debug('[SubscriptionForm] Generated new tenant ID:', tenantId);
-    }
-    
-    // Store the tenant ID consistently in client storage
-    localStorage.setItem('tenantId', tenantId);
-    localStorage.setItem('businessid', tenantId);
-    document.cookie = `tenantId=${tenantId}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    document.cookie = `businessid=${tenantId}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-    
-    // Flag for reauthentication to ensure we can update attributes later
-    localStorage.setItem('needsReauthentication', 'true');
-    
-    // Show notification about possible reauthentication requirement
-    notifyInfo(
-      'For full access to all features, you may need to sign out and sign in again after completing onboarding.',
-      { autoHideDuration: 8000 }
-    );
-    
-    // First try direct Cognito update for immediate effect
-    try {
-      const { updateUserAttributes } = await import('aws-amplify/auth');
-      const timestamp = new Date().toISOString();
-      
-      // Create the attributes object to update - ensure consistent lowercase values
-      const attributesToUpdate = {
-        'custom:onboarding': 'complete',        // Ensure lowercase
-        'custom:setupdone': 'true',             // Ensure lowercase
-        'custom:subplan': 'free',               // Ensure lowercase
-        'custom:subscriptioninterval': 'monthly', // Ensure lowercase
-        'custom:tenant_ID': tenantId,
-        'custom:acctstatus': 'active',
-        'custom:payverified': 'false',
-        'custom:updated_at': timestamp
-      };
-      
-      // Log the update attempt with detailed information
-      console.log(`[DEBUG][${new Date().toISOString()}] ATTEMPTING COGNITO UPDATE - Direct Method`, {
-        attributes: attributesToUpdate,
-        tenantId,
-        timestamp
-      });
-      logger.debug('[SubscriptionForm] Attempting direct Cognito attribute update', {
-        attributeKeys: Object.keys(attributesToUpdate),
-        tenantId,
-        timestamp,
-        callLocation: 'handleFreePlanSelection',
-        method: 'direct'
-      });
-      
-      // Using await to ensure this completes before redirect
-      await updateUserAttributes({
-        userAttributes: attributesToUpdate
-      });
-      
-      console.log(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE SUCCESSFUL - Direct Method`);
-      logger.info('[SubscriptionForm] Successfully updated Cognito attributes directly');
-    } catch (directUpdateError) {
-      console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Direct Method`, directUpdateError);
-      logger.warn('[SubscriptionForm] Direct Cognito update failed:', directUpdateError);
-    }
-    
-    // Also use the server-side API as a backup approach
-    try {
-      // Generate a unique request ID for tracking
-      const requestId = generateRequestId();
-      
-      // Current timestamp for all date fields
-      const timestamp = new Date().toISOString();
-      
-      // Create the attributes object for server-side update
-      const serverAttributes = {
-        'custom:onboarding': 'complete',          // Ensure lowercase
-        'custom:setupdone': 'true',               // Ensure lowercase
-        'custom:subplan': 'free',                 // Ensure lowercase
-        'custom:subscriptioninterval': 'monthly', // Ensure lowercase
-        'custom:tenant_ID': tenantId,
-        'custom:businessid': tenantId,
-        'custom:userrole': 'OWNER',
-        'custom:acctstatus': 'active',
-        'custom:payverified': 'false',
-        'custom:created_at': timestamp,
-        'custom:updated_at': timestamp,
-        'custom:setupcompletedtime': timestamp,
-        'custom:onboardingCompletedAt': timestamp
-      };
-      
-      // Log the server-side update attempt with clearer success/failure tracking
-      console.log(`[DEBUG][${new Date().toISOString()}] ATTEMPTING COGNITO UPDATE - Server API Method`, {
-        requestId,
-        attributes: serverAttributes,
-        tenantId
-      });
-      logger.debug('[SubscriptionForm] Attempting server-side Cognito attribute update', {
-        requestId,
-        attributeKeys: Object.keys(serverAttributes),
-        tenantId,
-        method: 'serverApi'
-      });
-      
-      // Make server-side API call to update attributes
-      fetch('/api/onboarding/complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-ID': requestId
-        },
-        body: JSON.stringify({
-          plan: 'free',
-          billingCycle: 'monthly',
-          tenantId: tenantId, // Send tenant ID to ensure consistency
-          attributes: serverAttributes
-        })
-      })
-      .then(response => {
-        if (response.ok) {
-          console.log(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE SUCCESSFUL - Server API Method`, {
-            requestId,
-            status: response.status
-          });
-          logger.debug('[SubscriptionForm] Server-side attribute update succeeded');
-          
-          // Parse and log the response data
-          response.json().then(data => {
-            console.log(`[DEBUG][${new Date().toISOString()}] Server API response:`, data);
-            logger.debug('[SubscriptionForm] Server-side update response', data);
-          }).catch(err => {
-            console.log(`[DEBUG][${new Date().toISOString()}] Could not parse response:`, err);
-          });
-        } else {
-          console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Server API Method`, {
-            requestId,
-            status: response.status
-          });
-          logger.warn('[SubscriptionForm] Server-side attribute update failed with status:', response.status);
-        }
-      })
-      .catch(error => {
-        console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE FAILED - Server API Method`, {
-          requestId,
-          error: error.message
-        });
-        logger.warn('[SubscriptionForm] Server-side attribute update failed:', error);
-      });
-    } catch (e) {
-      // Log but don't block the flow - we still want to redirect
-      console.error(`[DEBUG][${new Date().toISOString()}] COGNITO UPDATE PREPARATION FAILED`, e);
-      logger.warn('[SubscriptionForm] Error triggering server-side attribute update:', e);
-    }
-    
-    // Immediately redirect to dashboard with the tenant ID
-    logger.info('[SubscriptionForm] Redirecting to dashboard with free plan and tenant ID:', tenantId);
+    // Redirect with tenant ID if we have it
     window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
   };
   

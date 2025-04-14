@@ -630,15 +630,18 @@ class UserFlowAutomation:
         <head>
             <title>Redirecting to Dashboard</title>
             <script>
-                // Store auth tokens in local storage
-                localStorage.setItem('idToken', '{self.id_token}');
-                localStorage.setItem('accessToken', '{self.access_token}');
-                localStorage.setItem('refreshToken', '{self.refresh_token}');
-                localStorage.setItem('email', '{self.user_email}');
-                localStorage.setItem('tenantId', '{self.tenant_id}');
+                // Initialize AppCache if not already done
+                window.__APP_CACHE = window.__APP_CACHE || {};
                 
-                // Set cookies if needed
-                document.cookie = "tenantId={self.tenant_id}; path=/; SameSite=Lax";
+                // Store auth tokens in AppCache instead of localStorage
+                window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                window.__APP_CACHE.auth.idToken = '{self.id_token}';
+                window.__APP_CACHE.auth.accessToken = '{self.access_token}';
+                window.__APP_CACHE.auth.refreshToken = '{self.refresh_token}';
+                window.__APP_CACHE.auth.email = '{self.user_email}';
+                window.__APP_CACHE.auth.tenantId = '{self.tenant_id}';
+                
+                // No longer using cookies
                 
                 // Redirect to dashboard
                 window.location.href = "{dashboard_url}";

@@ -5,6 +5,7 @@ import ProductForm from '../components/ProductForm'; // Import from the new Tail
 import { useRouter } from 'next/navigation';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useNotification } from '@/context/NotificationContext'; // Import the notification hook
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Simple HTML-based fallback form with no dependencies
 function FallbackForm({ onSubmit }) {
@@ -136,14 +137,9 @@ export default function NewProductPage() {
       logDebug("Starting product submission with data", productData);
       setLoading(true);
       
-      // Get tenant ID from localStorage
-      let tenantId = null;
-      if (typeof window !== 'undefined') {
-        tenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
-        logDebug("Using tenant ID for product creation", { tenantId });
-      } else {
-        logDebug("Window is undefined, cannot access localStorage");
-      }
+      // Get tenant ID
+      let tenantId = getCacheValue('tenantId') || getCacheValue('businessid');
+      logDebug("Using tenant ID for product creation", { tenantId });
       
       // Debug every field
       logDebug("Product data fields", {
@@ -306,18 +302,18 @@ export default function NewProductPage() {
         logDebug("Attempting local storage fallback");
         if (typeof window !== 'undefined') {
           // Get existing products
-          const existingProducts = JSON.parse(localStorage.getItem('offlineProducts') || '[]');
+          const existingProducts = JSON.parse(getCacheValue('offlineProducts') || '[]');
           
           // Add the new product with a local ID
           const offlineProduct = {
             ...productData,
             id: `offline-${Date.now()}`,
-            created_at: new Date().toISOString(),
-            is_offline: true
+            createdAt: new Date().toISOString(),
+            status: 'offline'
           };
           
           // Save to localStorage
-          localStorage.setItem('offlineProducts', JSON.stringify([...existingProducts, offlineProduct]));
+          setCacheValue('offlineProducts', [...existingProducts, offlineProduct]);
           
           logDebug("Saved product to offline storage", offlineProduct);
           notifySuccess(`Product saved offline. Will sync when connection is restored.`);

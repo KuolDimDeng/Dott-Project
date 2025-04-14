@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import { clearCache } from '@/utils/appCache';
 
 /**
  * ResetAppState - A component that provides a button to reset all application state
@@ -20,42 +21,13 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
       setIsResetting(true);
       logger.info('[ResetAppState] Starting application state reset');
 
-      // Clear localStorage
-      logger.debug('[ResetAppState] Clearing localStorage');
-      const localStorageKeysToRemove = [
-        'redirect_loop_count',
-        'signin_redirect_counter',
-        'signin_attempts',
-        'business_auth_errors',
-        'business_info_auth_errors',
-        'noRedirectToSignin',
-        'preventSigninRedirects',
-        'preventAllRedirects',
-        'lastRedirectPath',
-        'loopDetected',
-        'businessName',
-        'businessType',
-        'onboardingStep',
-        'client_redirect_count',
-        'pendingBusinessInfo',
-        'userContext_loadAttempts',
-        'userContext_refreshAttempts',
-        'userService_apiCallAttempts'
-      ];
-
-      localStorageKeysToRemove.forEach(key => {
-        try {
-          localStorage.removeItem(key);
-        } catch (err) {
-          logger.warn(`[ResetAppState] Failed to remove localStorage key ${key}:`, err);
-        }
-      });
-
-      // For safety, try to clear everything
+      // Clear AppCache instead of localStorage
+      logger.debug('[ResetAppState] Clearing AppCache');
       try {
-        localStorage.clear();
+        clearCache();
+        logger.debug('[ResetAppState] AppCache cleared successfully');
       } catch (err) {
-        logger.warn('[ResetAppState] Failed to clear all localStorage:', err);
+        logger.warn('[ResetAppState] Failed to clear AppCache:', err);
       }
 
       // Clear sessionStorage

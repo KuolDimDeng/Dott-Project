@@ -1,8 +1,10 @@
-// Dashboard page (Server Component)
-// Do NOT add 'use client' directive here since we're exporting metadata
+// Dashboard page (Client Component)
 
+'use client';
+
+import React from 'react';
 import { redirect } from 'next/navigation';
-import { serverLogger } from '@/utils/serverLogger';
+import { useSearchParams } from 'next/navigation';
 import DashboardLoader from '@/components/DashboardLoader';
 import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
 
@@ -13,25 +15,25 @@ import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
  * instead of server-side redirects to avoid NEXT_REDIRECT errors
  */
 
-// Dashboard metadata
-export const metadata = {
-  title: 'Dashboard | Dott Business Management',
-  description: 'Loading your dashboard...'
-};
+// Dashboard metadata - moved to layout.js since metadata can't be exported from client components
+// export const metadata = {
+//   title: 'Dashboard | Dott Business Management',
+//   description: 'Loading your dashboard...'
+// };
 
-// Server component that renders client-side navigation
-export default function DashboardPage(props) {
-  // Get search params safely
-  const searchParams = props.searchParams || {};
+// Client component that handles navigation
+export default function DashboardPage() {
+  // Use the useSearchParams hook instead of accessing props directly
+  const searchParams = useSearchParams();
   
-  // Parse tenant ID from URL parameters
-  const tenantId = searchParams.tenantId || null;
-  const fromSignIn = searchParams.fromSignIn === 'true';
-  const fromAuth = searchParams.fromAuth === 'true';
-  const reset = searchParams.reset === 'true';
+  // Parse tenant ID from URL parameters using the get method
+  const tenantId = searchParams.get('tenantId') || null;
+  const fromSignIn = searchParams.get('fromSignIn') === 'true';
+  const fromAuth = searchParams.get('fromAuth') === 'true';
+  const reset = searchParams.get('reset') === 'true';
   
   // Log initialization information
-  serverLogger.info(`Dashboard: tenantId=${tenantId}, fromSignIn=${fromSignIn}`);
+  console.info(`Dashboard: tenantId=${tenantId}, fromSignIn=${fromSignIn}`);
   
   // Determine the redirect path based on tenant ID
   let redirectPath = '';

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 // Create a UUID function for browsers that don't support crypto.randomUUID
 const generateRequestId = () => {
@@ -57,16 +58,16 @@ axiosInstance.interceptors.request.use(
       // config.baseURL = process.env.NEXT_PUBLIC_API_URL || '';
     }
     
-    // Add auth token from localStorage if available
-    const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
+    // Add auth token from AppCache if available
+    const token = typeof window !== 'undefined' ? getCacheValue('authToken') : null;
     
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add tenant ID from localStorage if available
-    const tenantId = typeof window !== 'undefined' ? localStorage.getItem('tenantId') : null;
+    // Add tenant ID from AppCache if available
+    const tenantId = typeof window !== 'undefined' ? getCacheValue('tenantId') : null;
     if (tenantId) {
       config.headers = config.headers || {};
       config.headers['x-tenant-id'] = tenantId;
@@ -104,20 +105,20 @@ axiosInstance.interceptors.response.use(
       // Redirect to login if token expired/invalid
       if (typeof window !== 'undefined') {
         // Clear auth data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('user');
+        removeCacheValue('authToken');
+        removeCacheValue('user');
         
         // Only redirect if not already on login page
         if (!window.location.pathname.includes('/login')) {
           console.log('[Axios] Authentication error, redirecting to login...');
           
           // Instead of immediate redirect, set a flag to avoid interrupting current operation
-          localStorage.setItem('auth_redirect_needed', 'true');
+          setCacheValue('auth_redirect_needed', 'true');
           
           // After a short delay, check if we should actually redirect
           setTimeout(() => {
-            if (localStorage.getItem('auth_redirect_needed') === 'true') {
-              localStorage.removeItem('auth_redirect_needed');
+            if (getCacheValue('auth_redirect_needed') === 'true') {
+              removeCacheValue('auth_redirect_needed');
               window.location.href = '/login';
             }
           }, 2000);
@@ -132,12 +133,12 @@ axiosInstance.interceptors.response.use(
       
       // Instead of immediate redirect, set a flag
       if (typeof window !== 'undefined') {
-        localStorage.setItem('login_redirect_needed', 'true');
+        setCacheValue('login_redirect_needed', 'true');
         
         // After a short delay, check if we should actually redirect
         setTimeout(() => {
-          if (localStorage.getItem('login_redirect_needed') === 'true') {
-            localStorage.removeItem('login_redirect_needed');
+          if (getCacheValue('login_redirect_needed') === 'true') {
+            removeCacheValue('login_redirect_needed');
             window.location.href = '/dashboard';
           }
         }, 2000);

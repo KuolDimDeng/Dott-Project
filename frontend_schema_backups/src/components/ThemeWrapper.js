@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 export default function ThemeWrapper({ children }) {
   const [theme, setTheme] = useState('light');
@@ -9,8 +10,8 @@ export default function ThemeWrapper({ children }) {
   useEffect(() => {
     setMounted(true);
     
-    // Initialize theme from localStorage or system preference
-    const savedTheme = localStorage.getItem('color-theme');
+    // Initialize theme from AppCache or system preference
+    const savedTheme = getCacheValue('color-theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
     if (savedTheme) {
@@ -24,7 +25,7 @@ export default function ThemeWrapper({ children }) {
   
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem('color-theme', theme);
+      setCacheValue('color-theme', theme);
       document.documentElement.classList.toggle('dark', theme === 'dark');
     }
   }, [theme, mounted]);

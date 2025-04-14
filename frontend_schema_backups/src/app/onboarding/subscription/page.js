@@ -119,53 +119,90 @@ const generateRequestId = () => {
 };
 
 // Helper to get business info from multiple sources
-const getBusinessInfoFromSources = () => {
+const getBusinessInfoFromSources = async () => {
   const sources = {};
   
-  // Try cookies first
-  const cookies = getCookies();
-  if (cookies.businessName) {
-    sources.cookies = {
-      businessName: cookies.businessName,
-      businessType: cookies.businessType || 'Other'
-    };
-  }
-  
-  // Try localStorage as fallback
-  try {
-    const storedInfo = localStorage.getItem('businessInfo');
-    if (storedInfo) {
-      try {
-        sources.localStorage = JSON.parse(storedInfo);
-      } catch (e) {
-        // Invalid JSON, ignore
-      }
-    }
+  // Try AppCache first (fastest)
+  if (typeof window !== 'undefined' && window.__APP_CACHE) {
+    const businessNameCache = window.__APP_CACHE['user_pref_custom:businessname']?.value;
+    const businessTypeCache = window.__APP_CACHE['user_pref_custom:businesstype']?.value;
     
-    // Try individual keys
-    const businessName = localStorage.getItem('businessName') || localStorage.getItem('custom:businessname');
-    const businessType = localStorage.getItem('businessType') || localStorage.getItem('custom:businesstype');
-    
-    if (businessName) {
-      sources.localStorageKeys = {
-        businessName,
-        businessType: businessType || 'Other'
+    if (businessNameCache) {
+      sources.appCache = {
+        businessName: businessNameCache,
+        businessType: businessTypeCache || 'Other'
       };
     }
-  } catch (e) {
-    // localStorage access error, ignore
   }
   
-  // Combine sources, prioritizing cookies over localStorage
+  // Try Cognito attributes next (most authoritative)
+  try {
+    const response = await fetch('/api/auth/user-attributes');
+    if (response.ok) {
+      const userData = await response.json();
+      if (userData.attributes && userData.attributes['custom:businessname']) {
+        sources.cognito = {
+          businessName: userData.attributes['custom:businessname'],
+          businessType: userData.attributes['custom:businesstype'] || 'Other'
+        };
+      }
+    }
+  } catch (e) {
+    logger.warn('[getBusinessInfo] Error fetching Cognito attributes:', e);
+  }
+  
+  // Combine sources, prioritizing Cognito over AppCache
   return {
     // Return the business info from the first available source
-    businessInfo: sources.cookies || sources.localStorage || sources.localStorageKeys || { 
+    businessInfo: sources.cognito || sources.appCache || { 
       businessName: 'Your Business', 
       businessType: 'Other' 
     },
     // Return all sources for debugging
     sources
   };
+};
+
+// Get user attributes from Cognito
+const getUserAttributes = async () => {
+  try {
+    const response = await fetch('/api/auth/user-attributes');
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (e) {
+    logger.warn('[getUserAttributes] Error fetching attributes:', e);
+  }
+  return { attributes: {} };
+};
+
+// Update user attributes in Cognito
+const updateUserAttributes = async (attributes) => {
+  try {
+    const response = await fetch('/api/auth/update-attributes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ attributes })
+    });
+    return response.ok;
+  } catch (e) {
+    logger.error('[updateUserAttributes] Error updating attributes:', e);
+    return false;
+  }
+};
+
+// Update AppCache value
+const updateAppCache = (key, value) => {
+  if (typeof window !== 'undefined' && window.__APP_CACHE) {
+    window.__APP_CACHE[key] = {
+      value,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days
+      ttl: 7 * 24 * 60 * 60 * 1000
+    };
+  }
 };
 
 export default function SubscriptionPage() {
@@ -198,12 +235,17 @@ export default function SubscriptionPage() {
             from: params.get('from')
           });
           
-          // Store the tenant ID from redirect
+          // Store the tenant ID in Cognito and AppCache
           try {
-            localStorage.setItem('tenantId', tenantIdFromUrl);
-            localStorage.setItem('businessid', tenantIdFromUrl);
-            document.cookie = `tenantId=${tenantIdFromUrl}; path=/; max-age=${60*60*24*30}; samesite=lax`;
-            document.cookie = `businessid=${tenantIdFromUrl}; path=/; max-age=${60*60*24*30}; samesite=lax`;
+            // Save to Cognito
+            await updateUserAttributes({
+              'custom:tenant_ID': tenantIdFromUrl,
+              'custom:businessid': tenantIdFromUrl
+            });
+            
+            // Update AppCache
+            updateAppCache('user_pref_custom:tenant_ID', tenantIdFromUrl);
+            updateAppCache('user_pref_custom:businessid', tenantIdFromUrl);
           } catch (e) {
             // Ignore storage errors
             logger.warn('[SubscriptionPage] Failed to store tenant ID from URL', e);
@@ -212,19 +254,14 @@ export default function SubscriptionPage() {
         
         // Check for development mode bypass
         const devMode = process.env.NODE_ENV === 'development';
-        const bypassAuth = localStorage.getItem('bypassAuthValidation') === 'true';
+        const bypassAuth = window.__APP_CACHE?.['bypass_auth_validation']?.value === 'true';
         
         if (devMode && bypassAuth) {
           logger.debug('[SubscriptionPage] Development mode: bypassing auth checks');
           
-          // Get business name from localStorage in dev mode
-          const businessName = localStorage.getItem('custom:businessname') || 
-                               localStorage.getItem('businessName') || 
-                               'Development Business';
-          
-          const businessType = localStorage.getItem('custom:businesstype') || 
-                               localStorage.getItem('businessType') || 
-                               'Other';
+          // Get business name from AppCache in dev mode
+          const businessName = window.__APP_CACHE?.['user_pref_custom:businessname']?.value || 'Development Business';
+          const businessType = window.__APP_CACHE?.['user_pref_custom:businesstype']?.value || 'Other';
           
           setBusinessData({
             businessName,
@@ -236,7 +273,7 @@ export default function SubscriptionPage() {
         }
         
         // Get business info from all possible sources
-        const { businessInfo, sources } = getBusinessInfoFromSources();
+        const { businessInfo, sources } = await getBusinessInfoFromSources();
         logger.debug('[SubscriptionPage] Found business info from sources:', sources);
         
         // Only update state if we have a business name
@@ -244,19 +281,9 @@ export default function SubscriptionPage() {
           setBusinessData(businessInfo);
         }
         
-        // Debug cookie state
-        const cookieData = {
-          businessName: getCookies().businessName || '',
-          businessType: getCookies().businessType || '',
-          onboardingStep: getCookies().onboardingStep || '',
-          onboardedStatus: getCookies().onboardedStatus || '',
-          tenantId: getCookies().tenantId || '',
-          businessid: getCookies().businessid || '',
-          hasIdToken: !!localStorage.getItem('idToken'),
-          hasAccessToken: !!localStorage.getItem('accessToken')
-        };
-        
-        logger.debug('[SubscriptionPage] Initializing with cookies:', cookieData);
+        // Debug state
+        const userData = await getUserAttributes();
+        logger.debug('[SubscriptionPage] Initializing with user attributes:', userData.attributes);
         
         // Try to get authentication session
         let session = null;
@@ -265,7 +292,7 @@ export default function SubscriptionPage() {
           // If this succeeds, we have valid tokens
         } catch (authError) {
           logger.warn('[SubscriptionPage] Auth session error:', authError);
-          // Continue despite auth error - we'll use cookies
+          // Continue despite auth error - we'll use Cognito attributes
         }
         
         // Check for free plan selection in URL
@@ -281,76 +308,49 @@ export default function SubscriptionPage() {
       }
     };
     
-    const selectFreePlan = () => {
-      // For RLS implementation, set all required flags/cookies for direct to dashboard
+    const selectFreePlan = async () => {
+      // For RLS implementation, set all required flags for direct to dashboard
       setSelectedPlan('free');
       
       // Set loading state while we prepare
       setSubmitting(true);
       
-      // Set cookies for RLS configuration - mark everything as complete
-      const expiresDate = new Date(new Date().getTime() + 7 * 24 * 60 * 60 * 1000);
-      document.cookie = `setupSkipDatabaseCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `setupUseRLS=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `skipSchemaCreation=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-      document.cookie = `${COOKIE_NAMES.SETUP_COMPLETED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
+      // Update Cognito attributes
+      const attributes = {
+        'custom:subscription_plan': 'free',
+        'custom:onboarding_step': ONBOARDING_STEPS.COMPLETE,
+        'custom:onboarding': ONBOARDING_STATUS.COMPLETE,
+        'custom:setup_completed': 'true',
+        'custom:free_plan_selected': 'true',
+        'custom:skip_database_creation': 'true',
+        'custom:use_rls': 'true',
+        'custom:skip_schema_creation': 'true'
+      };
       
-      // Store in localStorage as well
       try {
-        localStorage.setItem('setupSkipDatabaseCreation', 'true');
-        localStorage.setItem('setupUseRLS', 'true');
-        localStorage.setItem('skipSchemaCreation', 'true');
-        localStorage.setItem(STORAGE_KEYS.ONBOARDING_STATUS, ONBOARDING_STATUS.COMPLETE);
-        localStorage.setItem(STORAGE_KEYS.SETUP_COMPLETED, 'true');
-        localStorage.setItem('setupTimestamp', Date.now().toString());
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      // Trigger background setup via a fire-and-forget API call
-      try {
-        // Generate a unique request ID
-        const requestId = generateRequestId();
+        await updateUserAttributes(attributes);
         
-        // Create URL with parameters for tracking
-        const url = `/api/onboarding/background-setup?plan=free&timestamp=${Date.now()}&requestId=${requestId}&background=true`;
-        
-        // Use fetch with no-cors to avoid waiting for response
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Background-Setup': 'true',
-            'X-Request-ID': requestId
-          },
-          // Don't wait for response with keepalive
-          keepalive: true,
-          // Add basic body data
-          body: JSON.stringify({
-            plan: 'free',
-            timestamp: Date.now(),
-            requestId
-          })
-        }).catch(() => {
-          // Ignore errors - this is background processing
+        // Update AppCache for faster access
+        Object.entries(attributes).forEach(([key, value]) => {
+          updateAppCache(`user_pref_${key}`, value);
         });
+        
+        logger.info('[SubscriptionPage] Free plan selected, redirecting to dashboard');
+        
+        // Redirect to dashboard
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 500);
       } catch (error) {
-        // Ignore errors in background setup
-        console.log('Background setup triggered');
+        logger.error('[SubscriptionPage] Error saving free plan selection:', error);
+        setMessage('Failed to select free plan. Please try again.');
+        setSubmitting(false);
       }
-      
-      // Go directly to dashboard immediately
-      setTimeout(() => {
-        window.location.href = '/dashboard?newAccount=true&setupBackground=true&noLoading=true';
-      }, 100);
     };
-
-    // Start initialization
+    
+    // Run initialization
     initializeSubscription();
-  }, [searchParams]);
+  }, [router]);
   
   // Process URL parameters when redirected from tenant page
   useEffect(() => {

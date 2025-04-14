@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
+import { saveLanguagePreference, getLanguagePreference } from '@/utils/userPreferences';
 
 // Language data with flags and native names
 const languages = [
@@ -26,6 +27,26 @@ export default function LanguageSelector() {
   
   const dropdownRef = useRef(null);
   
+  // Initialize language from Cognito on mount
+  useEffect(() => {
+    async function initializeLanguage() {
+      try {
+        const langCode = await getLanguagePreference();
+        if (langCode && langCode !== i18n.language) {
+          const lang = languages.find(l => l.code === langCode);
+          if (lang) {
+            i18n.changeLanguage(langCode);
+            setCurrentLang(lang);
+          }
+        }
+      } catch (error) {
+        console.error('Error initializing language from Cognito:', error);
+      }
+    }
+    
+    initializeLanguage();
+  }, []);
+  
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -41,7 +62,7 @@ export default function LanguageSelector() {
   }, []);
   
   // Handle language change
-  const changeLanguage = (lang) => {
+  const changeLanguage = async (lang) => {
     i18n.changeLanguage(lang.code);
     setCurrentLang(lang);
     setIsOpen(false);
@@ -50,11 +71,11 @@ export default function LanguageSelector() {
     // Dispatch an event for other components that need to know about language changes
     window.dispatchEvent(new CustomEvent('languageChange', { detail: { language: lang.code } }));
     
-    // Save preference to localStorage
+    // Save preference to Cognito
     try {
-      localStorage.setItem('i18nextLng', lang.code);
+      await saveLanguagePreference(lang.code);
     } catch (e) {
-      console.error('Failed to save language preference:', e);
+      console.error('Failed to save language preference to Cognito:', e);
     }
   };
   

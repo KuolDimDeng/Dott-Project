@@ -2,38 +2,65 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getThemePreference, saveThemePreference } from '@/utils/userPreferences';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 export default function ToggleColorMode() {
   const { t } = useTranslation();
   const [isDarkMode, setIsDarkMode] = useState(false);
   
   useEffect(() => {
-    // Check for saved preference or system preference
-    const savedTheme = localStorage.getItem('color-theme');
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (savedTheme === 'dark' || (!savedTheme && systemPrefersDark)) {
-      setIsDarkMode(true);
-      document.documentElement.classList.add('dark');
+    // First check AppCache for faster initial render
+    const cachedTheme = getCacheValue('theme');
+    if (cachedTheme) {
+      const isDark = cachedTheme === 'dark';
+      setIsDarkMode(isDark);
+      document.documentElement.classList.toggle('dark', isDark);
     } else {
-      setIsDarkMode(false);
-      document.documentElement.classList.remove('dark');
+      // Fall back to system preference while loading from Cognito
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDarkMode(systemPrefersDark);
+      document.documentElement.classList.toggle('dark', systemPrefersDark);
     }
+    
+    // Then load from Cognito
+    const loadTheme = async () => {
+      try {
+        const savedTheme = await getThemePreference('system');
+        
+        // If system preference, use matching theme
+        if (savedTheme === 'system') {
+          const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          setIsDarkMode(systemPrefersDark);
+          document.documentElement.classList.toggle('dark', systemPrefersDark);
+        } else {
+          const isDark = savedTheme === 'dark';
+          setIsDarkMode(isDark);
+          document.documentElement.classList.toggle('dark', isDark);
+        }
+      } catch (error) {
+        console.error('Failed to load theme preference:', error);
+      }
+    };
+    
+    loadTheme();
   }, []);
   
   const toggleColorMode = () => {
     setIsDarkMode(prev => {
       const newMode = !prev;
+      const newTheme = newMode ? 'dark' : 'light';
       
-      // Save preference
-      localStorage.setItem('color-theme', newMode ? 'dark' : 'light');
+      // Save preference to Cognito
+      saveThemePreference(newTheme).catch(error => {
+        console.error('Failed to save theme preference:', error);
+      });
+      
+      // Update AppCache for faster loading next time
+      setCacheValue('theme', newTheme);
       
       // Apply theme
-      if (newMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      document.documentElement.classList.toggle('dark', newMode);
       
       return newMode;
     });

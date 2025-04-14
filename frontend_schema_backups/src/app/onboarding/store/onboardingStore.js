@@ -5,6 +5,8 @@ import { create } from 'zustand';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Create the store
 const useOnboardingStore = create((set, get) => ({
@@ -61,25 +63,25 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in AppCache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
           // Store each piece of information individually for easier access
-          localStorage.setItem('businessName', info.businessName || '');
-          localStorage.setItem('businessType', info.businessType || '');
-          localStorage.setItem('businessSubtypes', info.businessSubtypes || '');
-          localStorage.setItem('businessId', info.businessId || '');
-          localStorage.setItem('businessCountry', info.country || '');
-          localStorage.setItem('businessState', info.businessState || '');
-          localStorage.setItem('legalStructure', info.legalStructure || '');
-          localStorage.setItem('dateFounded', info.dateFounded || '');
+          setCacheValue('businessName', info.businessName || '');
+          setCacheValue('businessType', info.businessType || '');
+          setCacheValue('businessSubtypes', info.businessSubtypes || '');
+          setCacheValue('businessId', info.businessId || '');
+          setCacheValue('businessCountry', info.country || '');
+          setCacheValue('businessState', info.businessState || '');
+          setCacheValue('legalStructure', info.legalStructure || '');
+          setCacheValue('dateFounded', info.dateFounded || '');
           
           // Also store the complete business info object
-          localStorage.setItem('onboardingBusinessInfo', JSON.stringify(info));
+          setCacheValue('onboardingBusinessInfo', JSON.stringify(info));
           
-          console.log('💾 Saved business info to localStorage for development mode', info);
+          console.log('💾 Saved business info to AppCache for development mode', info);
         } catch (storageError) {
-          console.warn('Failed to save business info to localStorage:', storageError);
+          console.warn('Failed to save business info to AppCache:', storageError);
         }
       }
 
@@ -125,20 +127,20 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in AppCache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('subscriptionPlan', subscription.plan || '');
-          localStorage.setItem('subscriptionInterval', subscription.interval || '');
-          localStorage.setItem('onboardingSubscription', JSON.stringify(subscription));
+          setCacheValue('subscriptionPlan', subscription.plan || '');
+          setCacheValue('subscriptionInterval', subscription.interval || '');
+          setCacheValue('onboardingSubscription', JSON.stringify(subscription));
           
-          // Set a cookie for server-side access
-          document.cookie = `subscriptionPlan=${subscription.plan}; path=/; max-age=86400`;
-          document.cookie = `subscriptionInterval=${subscription.interval}; path=/; max-age=86400`;
+          // Store in Cognito attributes for server-side access
+          await saveUserPreference('custom:subscriptionPlan', subscription.plan);
+          await saveUserPreference('custom:subscriptionInterval', subscription.interval);
           
-          console.log('💾 Saved subscription info to localStorage for development mode', subscription);
+          console.log('💾 Saved subscription info to AppCache for development mode', subscription);
         } catch (storageError) {
-          console.warn('Failed to save subscription info to localStorage:', storageError);
+          console.warn('Failed to save subscription info to AppCache:', storageError);
         }
       }
 
@@ -186,19 +188,19 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
 
-      // Store in localStorage for development mode if needed
+      // Store in AppCache for development mode if needed
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('paymentId', payment.id || '');
-          localStorage.setItem('paymentVerified', 'true');
-          localStorage.setItem('paymentType', payment.paymentMethod?.type || 'credit_card');
-          localStorage.setItem('paymentLast4', payment.paymentMethod?.last4 || '4242');
-          localStorage.setItem('paymentExpiry', payment.paymentMethod?.expiry || '12/25');
-          localStorage.setItem('onboardingPayment', JSON.stringify(payment));
+          setCacheValue('paymentId', payment.id || '');
+          setCacheValue('paymentVerified', 'true');
+          setCacheValue('paymentType', payment.paymentMethod?.type || 'credit_card');
+          setCacheValue('paymentLast4', payment.paymentMethod?.last4 || '4242');
+          setCacheValue('paymentExpiry', payment.paymentMethod?.expiry || '12/25');
+          setCacheValue('onboardingPayment', JSON.stringify(payment));
           
-          console.log('💾 Saved payment info to localStorage for development mode', payment);
+          console.log('💾 Saved payment info to AppCache for development mode', payment);
         } catch (storageError) {
-          console.warn('Failed to save payment info to localStorage:', storageError);
+          console.warn('Failed to save payment info to AppCache:', storageError);
         }
       }
 
@@ -240,138 +242,49 @@ const useOnboardingStore = create((set, get) => ({
         throw new Error('No valid session');
       }
       
-      // For development mode, save status in localStorage
+      // For development mode, save status in AppCache
       if (process.env.NODE_ENV === 'development') {
         try {
-          localStorage.setItem('setupdone', 'true');
-          localStorage.setItem('onboardingStatus', ONBOARDING_STATES.COMPLETE);
-          localStorage.setItem('onboardingCompletedAt', new Date().toISOString());
+          setCacheValue('setupdone', 'true');
+          setCacheValue('onboardingStatus', ONBOARDING_STATES.COMPLETE);
+          setCacheValue('onboardingCompletedAt', new Date().toISOString());
           
-          // Set cookies for server-side access
-          document.cookie = `setupdone=true; path=/; max-age=86400`;
-          document.cookie = `onboardingStatus=${ONBOARDING_STATES.COMPLETE}; path=/; max-age=86400`;
+          // Store in Cognito attributes for persistence
+          await saveUserPreference('custom:setupdone', 'true');
+          await saveUserPreference('custom:onboarding', ONBOARDING_STATES.COMPLETE);
+          await saveUserPreference('custom:onboardingCompletedAt', new Date().toISOString());
           
-          console.log('💾 Saved setup completion to localStorage for development mode');
+          console.log('💾 Saved setup completion to AppCache for development mode');
         } catch (storageError) {
-          console.warn('Failed to save setup completion to localStorage:', storageError);
+          console.warn('Failed to save setup completion to AppCache:', storageError);
         }
       }
-      
-      const requestId = crypto.randomUUID();
-      let attributeUpdateSuccess = false;
-      
-      // Try multiple approaches to ensure attributes are updated
-      logger.debug('[OnboardingStore] Starting setup completion', {
-        requestId,
-        startTime: new Date().toISOString()
+
+      // Update user attributes
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:onboarding': ONBOARDING_STATES.COMPLETE,
+          'custom:setupdone': 'true',
+          'custom:updated_at': new Date().toISOString(),
+          'custom:onboardingCompletedAt': new Date().toISOString()
+        }
       });
-      
-      // 1. First try: Update user attributes directly
-      try {
-        await updateUserAttributes({
-          userAttributes: {
-            'custom:setupdone': 'true',
-            'custom:onboarding': ONBOARDING_STATES.COMPLETE,
-            'custom:updated_at': new Date().toISOString(),
-            'custom:onboardingCompletedAt': new Date().toISOString()
-          }
-        });
-        
-        attributeUpdateSuccess = true;
-        logger.debug('[OnboardingStore] Updated attributes directly', { requestId });
-      } catch (updateError) {
-        logger.error('[OnboardingStore] Direct attribute update failed:', {
-          requestId,
-          error: updateError.message
-        });
-        
-        // 2. Second try: Call the completion API endpoint
-        try {
-          const response = await fetch('/api/onboarding/setup/complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${tokens.accessToken}`,
-              'X-Request-ID': requestId
-            }
-          });
-          
-          if (response.ok) {
-            attributeUpdateSuccess = true;
-            logger.debug('[OnboardingStore] Setup completed via API', { requestId });
-          } else {
-            throw new Error(`API returned status ${response.status}`);
-          }
-        } catch (apiError) {
-          logger.error('[OnboardingStore] API completion failed:', {
-            requestId,
-            error: apiError.message
-          });
-          
-          // 3. Third try: Use the update-attributes API
-          try {
-            const attributeResponse = await fetch('/api/user/update-attributes', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${tokens.accessToken}`,
-                'X-Request-ID': requestId
-              },
-              body: JSON.stringify({
-                attributes: {
-                  'custom:setupdone': 'true',
-                  'custom:onboarding': ONBOARDING_STATES.COMPLETE,
-                  'custom:updated_at': new Date().toISOString()
-                },
-                forceUpdate: true
-              })
-            });
-            
-            if (attributeResponse.ok) {
-              attributeUpdateSuccess = true;
-              logger.debug('[OnboardingStore] Setup completed via attributes API', { requestId });
-            } else {
-              throw new Error(`Attributes API returned status ${attributeResponse.status}`);
-            }
-          } catch (attributesApiError) {
-            logger.error('[OnboardingStore] All methods failed:', {
-              requestId,
-              error: attributesApiError.message
-            });
-          }
-        }
-      }
-      
-      // Set cookies for immediate status update
-      if (attributeUpdateSuccess) {
-        document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-        document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
-        
-        // Update store state
-        set({
-          currentStep: ONBOARDING_STATES.COMPLETE,
-          isLoading: false,
-          error: null
-        });
-        
-        logger.info('[OnboardingStore] Setup completed successfully', { requestId });
-        return true;
-      } else {
-        throw new Error('Failed to update onboarding status after multiple attempts');
-      }
+
+      // Update store state
+      set({
+        currentStep: ONBOARDING_STATES.COMPLETE,
+        error: null,
+        isLoading: false
+      });
+
+      logger.debug('[OnboardingStore] Setup completed');
+      return true;
     } catch (error) {
-      logger.error('[OnboardingStore] Failed to complete setup:', {
-        error: error.message,
-        code: error.code,
-        stack: error.stack
-      });
-      
+      logger.error('[OnboardingStore] Failed to complete setup:', error);
       set({
         error: error.message,
         isLoading: false
       });
-      
       return false;
     }
   },

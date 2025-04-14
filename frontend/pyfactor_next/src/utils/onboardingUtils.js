@@ -14,79 +14,38 @@ import {
   updateTenantIdInCognito, 
   getTenantIdFromCognito 
 } from '@/utils/tenantUtils';
+import { 
+  saveOnboardingStatus, 
+  getOnboardingStatus as getUserOnboardingStatus,
+  saveOnboardingStep,
+  getOnboardingStep,
+  saveUserPreference,
+  PREF_KEYS,
+  updateOnboardingData
+} from '@/utils/userPreferences';
+import { setCacheValue, getCacheValue } from '@/utils/appCache';
 
 export async function validateSession(providedTokens) {
   try {
-    let tokens = providedTokens;
-
-    // Server-side handling
-    if (typeof window === 'undefined') {
-      if (!tokens?.accessToken || !tokens?.idToken) {
-        throw new Error('No valid session tokens provided for server-side operation');
-      }
-      
-      // Check if token is expired
-      if (isTokenExpired(tokens.accessToken)) {
-        throw new Error('Token expired for server-side operation');
-      }
-      
-      return { tokens };
-    }
-
-    // Client-side handling
-    if (!tokens) {
-      const cookieTokens = parseCookies();
-      if (cookieTokens.accessToken && cookieTokens.idToken) {
-        tokens = {
-          accessToken: cookieTokens.accessToken,
-          idToken: cookieTokens.idToken
-        };
-        logger.debug('[OnboardingUtils] Using tokens from client cookies');
-      }
-    }
-
-    // Check if tokens are expired or missing
-    let needsRefresh = !tokens?.accessToken || !tokens?.idToken;
+    let tokens = providedTokens || {};
     
-    if (tokens?.accessToken && !needsRefresh) {
+    // If no tokens provided, try to get them from the current session
+    if (!tokens.idToken || !tokens.accessToken) {
+      // Attempt to refresh the session first to ensure tokens are valid
       try {
-        // Check if token is expired or about to expire (within 5 minutes)
-        const decoded = jwtDecode(tokens.accessToken);
-        const now = Math.floor(Date.now() / 1000);
-        const fiveMinutesInSeconds = 5 * 60;
+        // Force refresh to ensure we have the latest tokens
+        const session = await fetchAuthSession({ forceRefresh: true });
+        tokens = {
+          accessToken: session.tokens.accessToken.toString(),
+          idToken: session.tokens.idToken.toString()
+        };
         
-        if (decoded.exp && decoded.exp - now < fiveMinutesInSeconds) {
-          logger.info('[OnboardingUtils] Token is expired or about to expire, refreshing');
-          needsRefresh = true;
-        }
-      } catch (tokenError) {
-        logger.warn('[OnboardingUtils] Error checking token expiration:', tokenError);
-        needsRefresh = true;
-      }
-    }
-
-    // If tokens need refresh, get fresh tokens
-    if (needsRefresh) {
-      logger.debug('[OnboardingUtils] Tokens need refresh, getting new tokens');
-      
-      // Try to use our specialized refresh function first
-      try {
-        const refreshedToken = await getRefreshedAccessToken();
-        if (refreshedToken) {
-          logger.info('[OnboardingUtils] Successfully refreshed token');
-          
-          // Get a fresh session to get both tokens
-          const session = await fetchAuthSession();
-          tokens = {
-            accessToken: session.tokens.accessToken.toString(),
-            idToken: session.tokens.idToken.toString()
-          };
-          
-          // Update cookies
-          document.cookie = `idToken=${tokens.idToken}; path=/`;
-          document.cookie = `accessToken=${tokens.accessToken}; path=/`;
-        } else {
-          throw new Error('Token refresh failed');
+        // Store in AppCache instead of cookies
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.accessToken = tokens.accessToken;
+          window.__APP_CACHE.auth.idToken = tokens.idToken;
         }
       } catch (refreshError) {
         logger.warn('[OnboardingUtils] Token refresh failed, falling back to fetchAuthSession:', refreshError);
@@ -98,9 +57,13 @@ export async function validateSession(providedTokens) {
           idToken: session.tokens.idToken.toString()
         };
         
-        // Update cookies
-        document.cookie = `idToken=${tokens.idToken}; path=/`;
-        document.cookie = `accessToken=${tokens.accessToken}; path=/`;
+        // Store in AppCache instead of cookies
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.accessToken = tokens.accessToken;
+          window.__APP_CACHE.auth.idToken = tokens.idToken;
+        }
       }
     }
 
@@ -124,15 +87,23 @@ export async function validateSession(providedTokens) {
   }
 }
 
-function parseCookies() {
-  const cookies = {};
+function getAppCacheValues() {
+  const cache = {};
   if (typeof window !== 'undefined') {
-    document.cookie.split(';').forEach(cookie => {
-      const [name, value] = cookie.trim().split('=');
-      cookies[name] = value;
-    });
+    window.__APP_CACHE = window.__APP_CACHE || {};
+    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+    
+    // Add auth tokens
+    cache.accessToken = window.__APP_CACHE.auth.accessToken;
+    cache.idToken = window.__APP_CACHE.auth.idToken;
+    
+    // Add onboarding status
+    cache.onboardingStep = window.__APP_CACHE.onboarding.step;
+    cache.onboardedStatus = window.__APP_CACHE.onboarding.status;
+    cache.setupCompleted = window.__APP_CACHE.onboarding.completed;
   }
-  return cookies;
+  return cache;
 }
 
 export async function updateOnboardingStep(step, additionalAttributes = {}, tokens = null) {
@@ -196,6 +167,16 @@ export async function updateOnboardingStep(step, additionalAttributes = {}, toke
       await updateUserAttributes({
         userAttributes: formattedAttributes
       });
+      
+      // Also update in AppCache for better performance
+      setCacheValue('onboarding_step', stepValue);
+      
+      // Update onboarding status in app cache for immediate use
+      if (additionalAttributes['custom:setupdone'] || additionalAttributes.setupdone) {
+        setCacheValue('onboarding_status', 'complete');
+      } else {
+        setCacheValue('onboarding_status', stepValue);
+      }
     }
 
     logger.debug('[OnboardingUtils] Step updated successfully');
@@ -234,6 +215,15 @@ export async function completeOnboarding() {
       // First attempt: Use Amplify updateUserAttributes
       await updateUserAttributes({ userAttributes });
       attributeUpdateSuccess = true;
+      
+      // Update AppCache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        window.__APP_CACHE.onboarding.status = 'complete';
+        window.__APP_CACHE.onboarding.step = 'complete';
+        window.__APP_CACHE.onboarding.completed = true;
+      }
       
       logger.debug('[OnboardingUtils] Attributes updated via Amplify', {
         requestId,
@@ -319,18 +309,6 @@ export async function completeOnboarding() {
       }
     }
     
-    // Set cookies for immediate client-side status update
-    if (attributeUpdateSuccess) {
-      document.cookie = `onboardingStep=complete; path=/; max-age=${60*60*24*7}`;
-      document.cookie = `onboardedStatus=complete; path=/; max-age=${60*60*24*7}`;
-      document.cookie = `setupCompleted=true; path=/; max-age=${60*60*24*7}`;
-      
-      logger.debug('[OnboardingUtils] Updated cookies for immediate status change', {
-        requestId,
-        elapsedMs: performance.now() - startTime
-      });
-    }
-    
     logger.debug('[OnboardingUtils] Onboarding completion process finished', {
       requestId,
       success: attributeUpdateSuccess,
@@ -356,475 +334,19 @@ export async function completeOnboarding() {
  */
 export async function getOnboardingStatus() {
   try {
-    const logger = console;
-    logger.debug('[getOnboardingStatus] Checking onboarding status from multiple sources');
-    
-    let statusData = {
-      status: null,
-      step: null,
-      setupDone: false,
-      nextStep: null,
-      sourcesPriority: []
-    };
-    
-    // Get status from Cognito attributes (highest priority)
-    try {
-      const userAttributes = await fetchUserAttributes();
-      if (userAttributes) {
-        statusData.cognitoStatus = userAttributes['custom:onboarding'];
-        statusData.cognitoSetupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
-        statusData.sourcesPriority.push('cognito');
-        
-        // Cognito is the source of truth, so set the status from here if available
-        if (statusData.cognitoStatus) {
-          statusData.status = statusData.cognitoStatus;
-          statusData.setupDone = statusData.cognitoSetupDone;
-        }
-        
-        logger.debug('[getOnboardingStatus] Retrieved from Cognito:', {
-          status: statusData.cognitoStatus,
-          setupDone: statusData.cognitoSetupDone
-        });
-      }
-    } catch (cognitoError) {
-      logger.warn('[getOnboardingStatus] Error getting status from Cognito:', cognitoError);
+    // Check AppCache first
+    const cachedStatus = getCacheValue('onboarding_status');
+    if (cachedStatus) {
+      return cachedStatus;
     }
     
-    // Get status from cookies (medium priority)
-    try {
-      const getCookie = (name) => {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-      };
-      
-      statusData.cookieStatus = getCookie('onboardedStatus');
-      statusData.cookieStep = getCookie('onboardingStep');
-      statusData.sourcesPriority.push('cookies');
-      
-      // If we don't have Cognito data, use cookie data
-      if (!statusData.status && statusData.cookieStatus) {
-        statusData.status = statusData.cookieStatus;
-        statusData.step = statusData.cookieStep;
-      }
-      
-      logger.debug('[getOnboardingStatus] Retrieved from cookies:', {
-        status: statusData.cookieStatus,
-        step: statusData.cookieStep
-      });
-    } catch (cookieError) {
-      logger.warn('[getOnboardingStatus] Error getting status from cookies:', cookieError);
-    }
-    
-    // Check local storage as last resort (lowest priority)
-    try {
-      // Initialize app cache if needed
-      if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-        
-        // Get from app cache
-        statusData.appCacheStatus = window.__APP_CACHE.onboarding.status;
-        statusData.appCacheStep = window.__APP_CACHE.onboarding.step;
-        statusData.sourcesPriority.push('appCache');
-        
-        // Only use app cache if we have no other data
-        if (!statusData.status && statusData.appCacheStatus) {
-          statusData.status = statusData.appCacheStatus;
-          statusData.step = statusData.appCacheStep;
-        }
-        
-        logger.debug('[getOnboardingStatus] Retrieved from app cache:', {
-          status: statusData.appCacheStatus,
-          step: statusData.appCacheStep
-        });
-      }
-    } catch (cacheError) {
-      logger.warn('[getOnboardingStatus] Error getting status from app cache:', cacheError);
-    }
-    
-    // Determine if there's inconsistency between sources
-    const inconsistent = (
-      (statusData.cognitoStatus && statusData.cookieStatus && statusData.cognitoStatus !== statusData.cookieStatus) ||
-      (statusData.cognitoStatus && statusData.appCacheStatus && statusData.cognitoStatus !== statusData.appCacheStatus) ||
-      (statusData.cookieStatus && statusData.appCacheStatus && statusData.cookieStatus !== statusData.appCacheStatus)
-    );
-    
-    // If we detect inconsistency, synchronize all sources to match Cognito (source of truth)
-    if (inconsistent && statusData.cognitoStatus) {
-      logger.info('[getOnboardingStatus] Detected inconsistent status, synchronizing to Cognito:', {
-        cognito: statusData.cognitoStatus,
-        cookie: statusData.cookieStatus,
-        appCache: statusData.appCacheStatus
-      });
-      
-      await synchronizeOnboardingStatus(statusData.cognitoStatus, statusData.cognitoSetupDone);
-      
-      // Update our return values to reflect the synchronized state
-      statusData.status = statusData.cognitoStatus;
-      statusData.cookieStatus = statusData.cognitoStatus;
-      statusData.appCacheStatus = statusData.cognitoStatus;
-    }
-    
-    // Set step based on status
-    if (statusData.status) {
-      // Normalize to lowercase
-      const statusLower = statusData.status.toLowerCase();
-      
-      switch (statusLower) {
-        case 'not_started':
-        case 'not-started':
-          statusData.step = 'business-info';
-          break;
-        case 'business_info':
-        case 'business-info':
-          statusData.step = 'subscription';
-          break;
-        case 'subscription':
-          statusData.step = 'payment';
-          break;
-        case 'payment':
-          statusData.step = 'setup';
-          break;
-        case 'setup':
-        case 'complete':
-          statusData.step = 'dashboard';
-          break;
-        default:
-          statusData.step = 'business-info';
-      }
-    }
-    
-    // Set default values if nothing was found
-    if (!statusData.status) {
-      statusData.status = 'not_started';
-      statusData.step = 'business-info';
-    }
-    
-    return statusData;
+    // Then try Cognito
+    return await getUserOnboardingStatus('not_started');
   } catch (error) {
-    console.error('[getOnboardingStatus] Error retrieving onboarding status:', error);
-    // Return a default status in case of error
-    return {
-      status: 'not_started',
-      step: 'business-info',
-      setupDone: false,
-      error: error.message
-    };
+    logger.error('[OnboardingUtils] Error getting onboarding status:', error);
+    return 'not_started';
   }
 }
-
-/**
- * Synchronizes onboarding status across all storage mechanisms
- * 
- * @param {string} status - The status to set
- * @param {boolean} setupDone - Whether setup is done
- * @returns {Promise<void>}
- */
-async function synchronizeOnboardingStatus(status, setupDone) {
-  try {
-    const logger = console;
-    logger.debug('[synchronizeOnboardingStatus] Synchronizing status to:', status);
-    
-    // Determine the appropriate step for the status
-    let step = 'business-info';
-    
-    // Normalize status to lowercase
-    const statusLower = status?.toLowerCase();
-    
-    switch (statusLower) {
-      case 'business_info':
-      case 'business-info':
-        step = 'subscription';
-        break;
-      case 'subscription':
-        step = 'payment';
-        break;
-      case 'payment':
-        step = 'setup';
-        break;
-      case 'setup':
-      case 'complete':
-        step = 'dashboard';
-        break;
-      default:
-        step = 'business-info';
-    }
-    
-    // Update cookies with normalized case
-    try {
-      const expiration = new Date();
-      expiration.setDate(expiration.getDate() + 30); // 30 days
-      document.cookie = `onboardedStatus=${statusLower || 'not_started'}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      document.cookie = `onboardingStep=${step}; path=/; expires=${expiration.toUTCString()}; samesite=lax`;
-      logger.debug('[synchronizeOnboardingStatus] Updated cookies');
-    } catch (cookieError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating cookies:', cookieError);
-    }
-    
-    // Update app cache with normalized case
-    try {
-      if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-        
-        window.__APP_CACHE.onboarding.status = statusLower || 'not_started';
-        window.__APP_CACHE.onboarding.step = step;
-        window.__APP_CACHE.onboarding.setupDone = setupDone;
-        window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
-        
-        logger.debug('[synchronizeOnboardingStatus] Updated app cache');
-      }
-    } catch (cacheError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating app cache:', cacheError);
-    }
-    
-    // Attempt to update Cognito via server endpoint if our status is different
-    try {
-      const userAttributes = await fetchUserAttributes();
-      if (userAttributes && userAttributes['custom:onboarding'] !== status) {
-        logger.info('[synchronizeOnboardingStatus] Updating Cognito attributes via API');
-        
-        // Try server-side update
-        const response = await fetch('/api/user/update-attributes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            attributes: {
-              'custom:onboarding': status,
-              'custom:setupdone': setupDone ? 'true' : 'false'
-            }
-          })
-        });
-        
-        if (response.ok) {
-          logger.info('[synchronizeOnboardingStatus] Server-side attribute update successful');
-        } else {
-          logger.warn('[synchronizeOnboardingStatus] Server-side attribute update failed');
-        }
-      }
-    } catch (serverError) {
-      logger.warn('[synchronizeOnboardingStatus] Error updating Cognito via API:', serverError);
-    }
-    
-    // Dispatch an event for components to listen to
-    try {
-      window.dispatchEvent(new CustomEvent('onboardingStatusUpdated', {
-        detail: {
-          status,
-          step,
-          setupDone,
-          source: 'synchronizeOnboardingStatus'
-        }
-      }));
-      logger.debug('[synchronizeOnboardingStatus] Dispatched status update event');
-    } catch (eventError) {
-      logger.warn('[synchronizeOnboardingStatus] Error dispatching status update event:', eventError);
-    }
-  } catch (error) {
-    console.error('[synchronizeOnboardingStatus] Error synchronizing onboarding status:', error);
-  }
-}
-
-export async function validateBusinessInfo(data) {
-  logger.debug('[OnboardingUtils] Validating business info:', data);
-
-  const {
-    businessName,
-    businessType,
-    businessSubtypes = '',
-    country,
-    businessState = '',
-    legalStructure,
-    dateFounded,
-    businessId = crypto.randomUUID()
-  } = data;
-
-  const errors = [];
-
-  if (!businessName || businessName.trim().length < 2) {
-    errors.push({ field: 'businessName', message: 'Business name must be at least 2 characters' });
-  }
-
-  if (!businessType) {
-    errors.push({ field: 'businessType', message: 'Business type is required' });
-  }
-
-  if (!legalStructure) {
-    errors.push({ field: 'legalStructure', message: 'Legal structure is required' });
-  }
-
-  if (!dateFounded) {
-    errors.push({ field: 'dateFounded', message: 'Date founded is required' });
-  }
-
-  if (!country) {
-    errors.push({ field: 'country', message: 'Country is required' });
-  }
-
-  if (errors.length > 0) {
-    logger.error('[OnboardingUtils] Business info validation failed:', {
-      errors,
-      data
-    });
-    const error = new Error('Validation failed');
-    error.fields = errors;
-    throw error;
-  }
-
-  logger.debug('[OnboardingUtils] Business info validation successful:', {
-    businessId,
-    businessName,
-    businessType
-  });
-
-  // Generate a properly formatted version string (v1.0.0)
-  const attrVersion = 'v1.0.0';
-  logger.debug('[OnboardingUtils] Setting attribute version:', { attrVersion });
-
-  // Format attributes for Cognito
-  return {
-    'custom:businessid': businessId,
-    'custom:businessname': businessName,
-    'custom:businesstype': businessType,
-    'custom:businesssubtypes': businessSubtypes,
-    'custom:businesscountry': country,
-    'custom:businessstate': businessState,
-    'custom:legalstructure': legalStructure,
-    'custom:datefounded': dateFounded,
-    'custom:onboarding': 'business_info',
-    'custom:updated_at': new Date().toISOString(),
-    'custom:acctstatus': 'active',
-    'custom:attrversion': attrVersion // Using semantic versioning format
-  };
-}
-
-export async function validateSubscription(data) {
-  const validPlans = ['free', 'professional', 'enterprise'];
-  const validIntervals = ['monthly', 'yearly'];
-
-  logger.debug('[Subscription] Values before validation:', {
-    rawPlan: data.plan,
-    rawInterval: data.interval,
-    convertedPlan: data.plan?.toLowerCase(),
-    convertedInterval: data.interval?.toLowerCase(),
-    validPlans: ['free', 'professional', 'enterprise'],
-    validIntervals: ['monthly', 'yearly']
-  });
-
-  // Case-insensitive validation
-  const plan = data.plan?.toLowerCase();
-  const interval = data.interval?.toLowerCase();
-
-  if (!validPlans.includes(plan)) {
-    throw new Error(`Invalid subscription plan. Must be one of: ${validPlans.join(', ')}`);
-  }
-
-  if (!validIntervals.includes(interval)) {
-    throw new Error(`Invalid subscription interval. Must be one of: ${validIntervals.join(', ')}`);
-  }
-
-  // Format subscription info for Cognito attributes
-  const formattedAttributes = {
-    'custom:subplan': String(data.plan).toLowerCase(),
-    'custom:subscriptioninterval': String(data.interval).toLowerCase()
-  };
-
-  return formattedAttributes;
-}
-
-export async function validatePayment(data) {
-  if (!data.paymentId) {
-    throw new Error('Payment ID is required');
-  }
-
-  if (typeof data.verified !== 'boolean') {
-    throw new Error('Payment verification status is required');
-  }
-
-  // Format payment info for Cognito attributes
-  const formattedAttributes = {
-    'custom:paymentid': String(data.paymentId),
-    'custom:payverified': data.verified ? 'true' : 'false'
-  };
-
-  return formattedAttributes;
-}
-
-/**
- * Gets a cookie value by name
- * @param {string} name - The cookie name
- * @returns {string|null} The cookie value or null if not found
- */
-export const getCookie = (name) => {
-  if (typeof document === 'undefined') return null;
-  
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-};
-
-/**
- * Sets a cookie with the specified name and value
- * @param {string} name - The cookie name
- * @param {string} value - The cookie value
- * @param {number} maxAge - Cookie max age in seconds (default 30 days)
- */
-export const setCookie = (name, value, maxAge = 60 * 60 * 24 * 30) => {
-  if (typeof document === 'undefined') return;
-  
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; samesite=lax`;
-};
-
-/**
- * Gets an item from app cache with error handling
- * @param {string} key - The storage key
- * @returns {string|null} The value or null if not found or error occurs
- */
-export const getAppCache = (key) => {
-  try {
-    if (typeof window === 'undefined') return null;
-    
-    // Ensure app cache exists
-    window.__APP_CACHE = window.__APP_CACHE || {};
-    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-    
-    // Extract the property from onboarding section
-    return window.__APP_CACHE.onboarding[key];
-  } catch (e) {
-    logger.warn('[onboardingUtils] Error reading from app cache:', e);
-    return null;
-  }
-};
-
-/**
- * Sets an item in app cache with error handling
- * @param {string} key - The storage key
- * @param {string} value - The value to store
- * @returns {boolean} True if successful, false otherwise
- */
-export const setAppCache = (key, value) => {
-  try {
-    if (typeof window === 'undefined') return false;
-    
-    // Ensure app cache exists
-    window.__APP_CACHE = window.__APP_CACHE || {};
-    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-    
-    // Set the property in onboarding section
-    window.__APP_CACHE.onboarding[key] = value;
-    window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
-    
-    return true;
-  } catch (e) {
-    logger.warn('[onboardingUtils] Error writing to app cache:', e);
-    return false;
-  }
-};
 
 /**
  * Updates the onboarding status across all storage mechanisms (Cognito, cookies, app cache)
@@ -835,63 +357,40 @@ export const setAppCache = (key, value) => {
  * @returns {Promise<boolean>} True if successful
  */
 export const updateOnboardingStatus = async (status, options = {}) => {
-  const { updateCognito = true, wait = false } = options;
-  
   try {
-    // Always update cookies and app cache as fallbacks
-    setCookie(COOKIE_NAMES.ONBOARDING_STATUS, status);
-    setAppCache('status', status);
+    const normalizedStatus = (status || '').toLowerCase();
+    const { step = normalizedStatus, setupDone = normalizedStatus === 'complete' } = options;
     
-    // Set additional cookies/storage based on status
-    if (status === ONBOARDING_STATUS.COMPLETE) {
-      setCookie(COOKIE_NAMES.SETUP_COMPLETED, 'true');
-      setCookie(COOKIE_NAMES.ONBOARDING_STEP, ONBOARDING_STEPS.COMPLETE);
-      setAppCache('setupDone', true);
-      setAppCache('step', ONBOARDING_STEPS.COMPLETE);
+    logger.debug(`[OnboardingUtils] Updating onboarding status: ${normalizedStatus}, step: ${step}, setupDone: ${setupDone}`);
+    
+    // Save to Cognito
+    const attributes = {
+      [PREF_KEYS.ONBOARDING_STATUS]: normalizedStatus,
+      [PREF_KEYS.ONBOARDING_STEP]: step,
+    };
+    
+    // Add setup done flag if provided
+    if (setupDone !== undefined) {
+      attributes['custom:setupdone'] = setupDone ? 'true' : 'false';
     }
     
-    // Update Cognito if requested
-    if (updateCognito) {
-      const updateAttributes = async () => {
-        try {
-          // Prepare attributes to update
-          const userAttributes = {
-            [COGNITO_ATTRIBUTES.ONBOARDING_STATUS]: status
-          };
-          
-          // Add extra attributes for complete status
-          if (status === ONBOARDING_STATUS.COMPLETE) {
-            userAttributes[COGNITO_ATTRIBUTES.SETUP_COMPLETED] = 'true';
-          }
-          
-          // Update attributes
-          await updateUserAttributes({
-            userAttributes 
-          });
-          
-          logger.debug('[onboardingUtils] Cognito attributes updated successfully:', { status });
-          return true;
-        } catch (error) {
-          logger.warn('[onboardingUtils] Error updating Cognito attributes:', error);
-          return false;
-        }
-      };
-      
-      // Either wait for update or do it in background
-      if (wait) {
-        const success = await updateAttributes();
-        return success;
-      } else {
-        // Fire and forget
-        updateAttributes().catch(error => {
-          logger.error('[onboardingUtils] Background Cognito update failed:', error);
-        });
-      }
-    }
+    // Update timestamp
+    attributes['custom:updated_at'] = new Date().toISOString();
+    
+    // Update in Cognito
+    await updateOnboardingData({
+      status: normalizedStatus,
+      step: step
+    });
+    
+    // Update in AppCache
+    setCacheValue('onboarding_status', normalizedStatus);
+    setCacheValue('onboarding_step', step);
+    setCacheValue('setup_done', setupDone);
     
     return true;
   } catch (error) {
-    logger.error('[onboardingUtils] Failed to update onboarding status:', error);
+    logger.error('[OnboardingUtils] Error updating onboarding status:', error);
     return false;
   }
 };
@@ -903,32 +402,29 @@ export const updateOnboardingStatus = async (status, options = {}) => {
 export const isOnboardingComplete = () => {
   try {
     // Check cookies first (most reliable client-side indicator)
-    const cookieStatus = getCookie(COOKIE_NAMES.ONBOARDING_STATUS)?.toLowerCase();
-    const cookieSetupCompleted = getCookie(COOKIE_NAMES.SETUP_COMPLETED)?.toLowerCase();
-    const cookieOnboardingStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP)?.toLowerCase();
+    const cookieStatus = getCacheValue('onboarding_status')?.toLowerCase();
+    const cookieSetupCompleted = getCacheValue('setup_done');
+    const cookieOnboardingStep = getCacheValue('onboarding_step')?.toLowerCase();
     
     // Check app cache as backup
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-      
-      const appCacheStatus = window.__APP_CACHE.onboarding.status?.toLowerCase();
-      const appCacheSetupDone = window.__APP_CACHE.onboarding.setupDone;
+      const appCacheStatus = getCacheValue('onboarding_status')?.toLowerCase();
+      const appCacheSetupDone = getCacheValue('setup_done');
       
       // Return true if ANY source indicates completion (using case-insensitive comparison)
       return (
         cookieStatus === 'complete' ||
-        cookieSetupCompleted === 'true' ||
+        cookieSetupCompleted === true ||
         cookieOnboardingStep === 'complete' ||
         appCacheStatus === 'complete' ||
         appCacheSetupDone === true
       );
     }
     
-    // If window is not defined, just use cookie data
+    // If window is not defined, just use cache data
     return (
       cookieStatus === 'complete' ||
-      cookieSetupCompleted === 'true' ||
+      cookieSetupCompleted === true ||
       cookieOnboardingStep === 'complete'
     );
   } catch (error) {
@@ -941,25 +437,20 @@ export const isOnboardingComplete = () => {
  * Gets the current onboarding step (for routing)
  * @returns {string} The current onboarding step path
  */
-export const getCurrentOnboardingStep = () => {
-  // Try to get from app cache first
-  if (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.step) {
-    return window.__APP_CACHE.onboarding.step;
+export const getCurrentOnboardingStep = async () => {
+  try {
+    // Check AppCache first
+    const cachedStep = getCacheValue('onboarding_step');
+    if (cachedStep) {
+      return cachedStep;
+    }
+    
+    // Then try Cognito
+    return await getOnboardingStep('business_info');
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error getting current onboarding step:', error);
+    return 'business_info';
   }
-  
-  // Fallback to cookie
-  const cookieStep = getCookie(COOKIE_NAMES.ONBOARDING_STEP);
-  if (cookieStep) {
-    return cookieStep;
-  }
-  
-  // If no specific step found but onboarding is complete, return complete
-  if (isOnboardingComplete()) {
-    return ONBOARDING_STEPS.COMPLETE;
-  }
-  
-  // Default to first step
-  return ONBOARDING_STEPS.BUSINESS_INFO;
 };
 
 /**
@@ -1006,47 +497,46 @@ export async function getBusinessInfo() {
  * @returns {Promise<boolean>} Success status
  */
 export async function updateBusinessInfo(info) {
-  if (!info) return false;
-  
   try {
-    // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    if (!info) return false;
     
-    // Create attributes to update
-    const attributesToUpdate = {
-      'custom:updated_at': new Date().toISOString()
-    };
+    logger.debug('[OnboardingUtils] Updating business info:', Object.keys(info));
     
-    // Add business info fields that exist
-    if (info.businessName) attributesToUpdate['custom:businessname'] = info.businessName;
-    if (info.businessType) attributesToUpdate['custom:businesstype'] = info.businessType;
-    if (info.businessSubtypes) attributesToUpdate['custom:businesssubtypes'] = info.businessSubtypes;
-    if (info.dateFounded) attributesToUpdate['custom:datefounded'] = info.dateFounded;
-    if (info.country) attributesToUpdate['custom:country'] = info.country;
-    if (info.businessState) attributesToUpdate['custom:state'] = info.businessState;
-    if (info.legalStructure) attributesToUpdate['custom:legalstructure'] = info.legalStructure;
+    // Prepare the attributes to update
+    const attributes = {};
     
-    // Update business info step as complete if new business info being set
-    if (info.businessName && info.businessType) {
-      attributesToUpdate['custom:business_info_done'] = 'TRUE';
+    if (info.businessName) {
+      attributes[PREF_KEYS.BUSINESS_NAME] = info.businessName;
     }
     
-    // Update tenant ID if it exists
-    if (info.tenantId) {
-      attributesToUpdate['custom:tenant_id'] = info.tenantId;
-      attributesToUpdate['custom:businessid'] = info.tenantId;
-      attributesToUpdate['custom:tenant_ID'] = info.tenantId;
+    if (info.businessType) {
+      attributes[PREF_KEYS.BUSINESS_TYPE] = info.businessType;
     }
     
-    // Update Cognito attributes
-    await updateUserAttributes({
-      userAttributes: attributesToUpdate
-    });
+    // Add other business info attributes as needed
+    if (info.businessCountry) {
+      attributes['custom:businesscountry'] = info.businessCountry;
+    }
     
-    logger.info('[onboardingUtils] Updated business info in Cognito');
+    if (info.businessState) {
+      attributes['custom:businessstate'] = info.businessState;
+    }
+    
+    // Update onboarding step/status
+    attributes[PREF_KEYS.ONBOARDING_STEP] = 'subscription';
+    attributes[PREF_KEYS.ONBOARDING_STATUS] = 'in_progress';
+    
+    // Update in Cognito
+    await saveUserPreferences(attributes);
+    
+    // Update in AppCache
+    setCacheValue('business_info', info);
+    setCacheValue('onboarding_step', 'subscription');
+    setCacheValue('onboarding_status', 'in_progress');
+    
     return true;
   } catch (error) {
-    logger.error('[onboardingUtils] Error updating business info in Cognito:', error);
+    logger.error('[OnboardingUtils] Error updating business info:', error);
     return false;
   }
 }

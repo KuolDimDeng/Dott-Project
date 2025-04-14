@@ -2,6 +2,8 @@
 
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Cache the current user to avoid repeated API calls
 let currentUserCache = null;
@@ -14,19 +16,19 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
  */
 export const getCurrentUser = async () => {
   try {
-    // Get user details from localStorage or cookies
+    // Get user details from AppCache or Cognito attributes
     const email = typeof window !== 'undefined' ? 
-      localStorage.getItem('authUser') || 
-      localStorage.getItem('userEmail') || 
-      document.cookie.split(';').find(c => c.trim().startsWith('email='))?.split('=')[1] || '' : '';
+      getCacheValue('user_email') || 
+      await getUserPreference(PREF_KEYS.EMAIL, '') : '';
     
     // Get name details
     const firstName = typeof window !== 'undefined' ? 
-      localStorage.getItem('firstName') || 
-      document.cookie.split(';').find(c => c.trim().startsWith('firstName='))?.split('=')[1] || '' : '';
+      getCacheValue('user_first_name') || 
+      await getUserPreference('custom:firstName', '') : '';
+    
     const lastName = typeof window !== 'undefined' ? 
-      localStorage.getItem('lastName') || 
-      document.cookie.split(';').find(c => c.trim().startsWith('lastName='))?.split('=')[1] || '' : '';
+      getCacheValue('user_last_name') || 
+      await getUserPreference('custom:lastName', '') : '';
     
     // Create a username from first name and last name, or email if not available
     const username = firstName && lastName 
@@ -50,10 +52,11 @@ export const logout = async () => {
     currentUserCache = null;
     lastFetchTime = 0;
     
-    // Clear localStorage
+    // Clear AppCache tokens
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('idToken');
+      removeCacheValue('access_token');
+      removeCacheValue('id_token');
+      removeCacheValue('auth_token');
     }
     
     logger.debug('[UserService] User logged out successfully');

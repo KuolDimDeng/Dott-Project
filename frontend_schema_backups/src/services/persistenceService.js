@@ -1,5 +1,6 @@
 // src/services/persistenceService.js
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 export const STORAGE_KEYS = {
   VERSION: '1.0',
@@ -15,7 +16,7 @@ export const STORAGE_KEYS = {
 class PersistenceService {
   async getData(key) {
     try {
-        const savedData = localStorage.getItem(key);
+        const savedData = getCacheValue(key);
         
         if (!savedData) {
             logger.debug('No data found for key:', {
@@ -24,23 +25,17 @@ class PersistenceService {
             });
             return null;
         }
-
-        const parsed = JSON.parse(savedData);
         
         // Add specific logging for subscription data
         if (key === STORAGE_KEYS.SUBSCRIPTION_DATA) {
             logger.debug('Retrieved subscription data:', {
-                selected_plan: parsed.data?.selected_plan,
-                timestamp: new Date(parsed.timestamp).toISOString()
+                selected_plan: savedData.data?.selected_plan,
+                timestamp: new Date(savedData.timestamp).toISOString()
             });
         }
 
-        if (Date.now() - parsed.timestamp > parsed.expiry) {
-            await this.clearData(key);
-            return null;
-        }
-
-        return parsed.data;
+        // If expiry is handled by AppCache already, we just need to return the data
+        return savedData.data;
 
     } catch (error) {
         logger.error('Data retrieval failed:', {
@@ -134,7 +129,6 @@ class PersistenceService {
       const storageData = {
         version: STORAGE_KEYS.VERSION,
         timestamp: Date.now(),
-        expiry: options.expiry || STORAGE_KEYS.DEFAULT_EXPIRY,
         data,
         metadata: {
           lastModified: new Date().toISOString(),
@@ -143,7 +137,9 @@ class PersistenceService {
         }
       };
 
-      localStorage.setItem(key, JSON.stringify(storageData));
+      // Use AppCache with expiry
+      const ttl = options.expiry || STORAGE_KEYS.DEFAULT_EXPIRY;
+      setCacheValue(key, storageData, { ttl });
 
       logger.debug('Data saved successfully:', {
         requestId,
@@ -167,7 +163,7 @@ class PersistenceService {
   }
   async clearData(key) {
     try {
-      localStorage.removeItem(key);
+      removeCacheValue(key);
       logger.debug('Data cleared successfully:', { key });
       return true;
     } catch (error) {

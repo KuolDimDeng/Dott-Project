@@ -212,7 +212,7 @@ export function UserProfileProvider({ children }) {
               lastName: '',
               tenantId: localStorage.getItem('tenantId') || '',
               role: 'client',
-              businessName: localStorage.getItem('businessName') || 'My Business',
+              businessName: localStorage.getItem('businessName') || '',
               isMinimalProfile: true,
               authErrorType: authError.name,
               preferences: {
@@ -291,7 +291,7 @@ export function UserProfileProvider({ children }) {
           lastName: '',
           tenantId: tenantId || localStorage.getItem('tenantId') || '',
           role: 'client',
-          businessName: localStorage.getItem('businessName') || 'My Business',
+          businessName: localStorage.getItem('businessName') || '',
           isSigningUp: true,
           preferences: {
             theme: 'light',
@@ -510,7 +510,7 @@ export function UserProfileProvider({ children }) {
             lastName: '',
             tenantId: tenantId || localStorage.getItem('tenantId') || '',
             role: 'client',
-            businessName: localStorage.getItem('businessName') || 'My Business',
+            businessName: localStorage.getItem('businessName') || '',
             isSigningUp: true,
             preferences: {
               theme: 'light',

@@ -2,6 +2,8 @@ import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 import { Hub } from '@/config/amplifyUnified';
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 1000;
@@ -165,22 +167,20 @@ export const refreshUserSession = async () => {
     console.log('%c[PyFactor] Token refresh in progress...', 'color: #2563eb; font-weight: bold;');
     
     // Return cached tokens if available
-    if (typeof localStorage !== 'undefined') {
-      const idToken = localStorage.getItem('idToken');
-      const accessToken = localStorage.getItem('accessToken');
-      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
-      
-      if (idToken && accessToken && tokenTimestamp) {
-        const tokenAge = now - parseInt(tokenTimestamp, 10);
-        if (tokenAge < TOKEN_CACHE_DURATION) {
-          return {
-            tokens: {
-              idToken: { toString: () => idToken },
-              accessToken: { toString: () => accessToken }
-            },
-            isFromCache: true
-          };
-        }
+    const idToken = getCacheValue('idToken');
+    const accessToken = getCacheValue('accessToken');
+    const tokenTimestamp = getCacheValue('tokenTimestamp');
+    
+    if (idToken && accessToken && tokenTimestamp) {
+      const tokenAge = now - parseInt(tokenTimestamp, 10);
+      if (tokenAge < TOKEN_CACHE_DURATION) {
+        return {
+          tokens: {
+            idToken: { toString: () => idToken },
+            accessToken: { toString: () => accessToken }
+          },
+          isFromCache: true
+        };
       }
     }
     
@@ -209,22 +209,20 @@ export const refreshUserSession = async () => {
     logger.warn('[refreshUserSession] In global cooldown period, skipping refresh', { requestId });
     
     // Return cached tokens if available
-    if (typeof localStorage !== 'undefined') {
-      const idToken = localStorage.getItem('idToken');
-      const accessToken = localStorage.getItem('accessToken');
-      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
-      
-      if (idToken && accessToken && tokenTimestamp) {
-        const tokenAge = now - parseInt(tokenTimestamp, 10);
-        if (tokenAge < TOKEN_CACHE_DURATION) {
-          return {
-            tokens: {
-              idToken: { toString: () => idToken },
-              accessToken: { toString: () => accessToken }
-            },
-            isFromCache: true
-          };
-        }
+    const idToken = getCacheValue('idToken');
+    const accessToken = getCacheValue('accessToken');
+    const tokenTimestamp = getCacheValue('tokenTimestamp');
+    
+    if (idToken && accessToken && tokenTimestamp) {
+      const tokenAge = now - parseInt(tokenTimestamp, 10);
+      if (tokenAge < TOKEN_CACHE_DURATION) {
+        return {
+          tokens: {
+            idToken: { toString: () => idToken },
+            accessToken: { toString: () => accessToken }
+          },
+          isFromCache: true
+        };
       }
     }
     
@@ -247,27 +245,25 @@ export const refreshUserSession = async () => {
   }
   
   // Check if we have valid cached tokens first
-  if (typeof localStorage !== 'undefined') {
-    const idToken = localStorage.getItem('idToken');
-    const accessToken = localStorage.getItem('accessToken');
-    const tokenTimestamp = localStorage.getItem('tokenTimestamp');
-    
-    if (idToken && accessToken && tokenTimestamp) {
-      const tokenAge = now - parseInt(tokenTimestamp, 10);
-      // Use cached tokens if they're less than 15 minutes old
-      if (tokenAge < TOKEN_CACHE_DURATION) {
-        logger.debug('[refreshUserSession] Using cached tokens', { 
-          tokenAge,
-          requestId 
-        });
-        return {
-          tokens: {
-            idToken: { toString: () => idToken },
-            accessToken: { toString: () => accessToken }
-          },
-          isFromCache: true
-        };
-      }
+  const idToken = getCacheValue('idToken');
+  const accessToken = getCacheValue('accessToken');
+  const tokenTimestamp = getCacheValue('tokenTimestamp');
+  
+  if (idToken && accessToken && tokenTimestamp) {
+    const tokenAge = now - parseInt(tokenTimestamp, 10);
+    // Use cached tokens if they're less than 15 minutes old
+    if (tokenAge < TOKEN_CACHE_DURATION) {
+      logger.debug('[refreshUserSession] Using cached tokens', { 
+        tokenAge,
+        requestId 
+      });
+      return {
+        tokens: {
+          idToken: { toString: () => idToken },
+          accessToken: { toString: () => accessToken }
+        },
+        isFromCache: true
+      };
     }
   }
   
@@ -286,27 +282,25 @@ export const refreshUserSession = async () => {
     });
     
     // Return cached tokens if available
-    if (typeof localStorage !== 'undefined') {
-      const idToken = localStorage.getItem('idToken');
-      const accessToken = localStorage.getItem('accessToken');
-      const tokenTimestamp = localStorage.getItem('tokenTimestamp');
-      
-      if (idToken && accessToken && tokenTimestamp) {
-        const tokenAge = now - parseInt(tokenTimestamp, 10);
-        // Only use cached tokens if they're less than 15 minutes old
-        if (tokenAge < TOKEN_CACHE_DURATION) {
-          logger.debug('[refreshUserSession] Using cached tokens due to throttling', { 
-            tokenAge,
-            requestId 
-          });
-          return {
-            tokens: {
-              idToken: { toString: () => idToken },
-              accessToken: { toString: () => accessToken }
-            },
-            isFromCache: true
-          };
-        }
+    const idToken = getCacheValue('idToken');
+    const accessToken = getCacheValue('accessToken');
+    const tokenTimestamp = getCacheValue('tokenTimestamp');
+    
+    if (idToken && accessToken && tokenTimestamp) {
+      const tokenAge = now - parseInt(tokenTimestamp, 10);
+      // Only use cached tokens if they're less than 15 minutes old
+      if (tokenAge < TOKEN_CACHE_DURATION) {
+        logger.debug('[refreshUserSession] Using cached tokens due to throttling', { 
+          tokenAge,
+          requestId 
+        });
+        return {
+          tokens: {
+            idToken: { toString: () => idToken },
+            accessToken: { toString: () => accessToken }
+          },
+          isFromCache: true
+        };
       }
     }
     
@@ -353,15 +347,15 @@ export const refreshUserSession = async () => {
         throw new Error('No valid tokens in session');
       }
       
-      // Cache tokens in localStorage for fallback
-      if (typeof localStorage !== 'undefined') {
+      // Cache tokens in AppCache for fallback
+      if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('idToken', session.tokens.idToken.toString());
-          localStorage.setItem('accessToken', session.tokens.accessToken.toString());
-          localStorage.setItem('tokenTimestamp', Date.now().toString());
+          setCacheValue('idToken', session.tokens.idToken.toString());
+          setCacheValue('accessToken', session.tokens.accessToken.toString());
+          setCacheValue('tokenTimestamp', Date.now().toString());
           lastSuccessfulRefresh = Date.now();
         } catch (storageError) {
-          logger.warn('[refreshUserSession] Error storing tokens in localStorage', { 
+          logger.warn('[refreshUserSession] Error storing tokens in AppCache', { 
             error: storageError.message, 
             requestId 
           });
@@ -392,48 +386,43 @@ export const refreshUserSession = async () => {
   return refreshPromise;
 };
 
-function storeTokensInCookies(tokens) {
+function storeTokensInAppCache(tokens) {
   try {
     if (tokens.idToken) {
       const decodedToken = parseJwt(tokens.idToken.toString());
       const tokenExpiry = decodedToken.exp * 1000;
       const now = Date.now();
-      const maxAgeSeconds = Math.floor((tokenExpiry - now) / 1000);
+      const ttlMilliseconds = Math.min((tokenExpiry - now), 2 * 24 * 60 * 60 * 1000);
       
-      setCookie('idToken', tokens.idToken.toString(), { 
-        maxAge: Math.min(maxAgeSeconds, 2 * 24 * 60 * 60),
-        sameSite: 'lax'
-      });
+      // Store in AppCache with expiry
+      setCacheValue('idToken', tokens.idToken.toString(), { ttl: ttlMilliseconds });
       
       if (decodedToken.sub) {
-        setCookie('userId', decodedToken.sub, { 
-          maxAge: 7 * 24 * 60 * 60,
-          sameSite: 'lax'
-        });
+        setCacheValue('userId', decodedToken.sub, { ttl: 7 * 24 * 60 * 60 * 1000 });
       }
       
-      setCookie('tokenExpiry', tokenExpiry.toString(), { 
-        maxAge: Math.min(maxAgeSeconds, 2 * 24 * 60 * 60),
-        sameSite: 'lax'
-      });
+      setCacheValue('tokenExpiry', tokenExpiry.toString(), { ttl: ttlMilliseconds });
     }
     
     if (tokens.accessToken) {
-      setCookie('accessToken', tokens.accessToken.toString(), { 
-        maxAge: 24 * 60 * 60,
-        sameSite: 'lax'
-      });
+      setCacheValue('accessToken', tokens.accessToken.toString(), { ttl: 24 * 60 * 60 * 1000 });
     }
     
-    setCookie('hasSession', 'true', { 
-      maxAge: 24 * 60 * 60,
-      sameSite: 'lax'
-    });
+    setCacheValue('hasSession', 'true', { ttl: 24 * 60 * 60 * 1000 });
     
-    logger.debug('[RefreshSession] Stored tokens in cookies with enhanced security');
+    // Store session state in Cognito attributes (non-blocking)
+    try {
+      saveUserPreference(PREF_KEYS.SESSION_ACTIVE, 'true')
+        .catch(err => logger.warn('[storeTokensInAppCache] Error saving session state to Cognito:', err));
+    } catch (e) {
+      // Log but continue as AppCache will be our primary storage
+      logger.warn('[storeTokensInAppCache] Error initiating Cognito storage:', e);
+    }
+    
+    logger.debug('[RefreshSession] Stored tokens in AppCache with enhanced security');
     return true;
-  } catch (cookieError) {
-    logger.warn('[RefreshSession] Failed to update cookies with new tokens:', cookieError);
+  } catch (error) {
+    logger.warn('[RefreshSession] Failed to update AppCache with new tokens:', error);
     return false;
   }
 }
@@ -442,8 +431,26 @@ export async function clearUserSession() {
   try {
     logger.debug('[Session] Starting session cleanup');
 
+    // Clear session tokens from AppCache
+    removeCacheValue('idToken');
+    removeCacheValue('accessToken');
+    removeCacheValue('refreshToken');
+    removeCacheValue('tokenExpiry');
+    removeCacheValue('hasSession');
+    removeCacheValue('userId');
+    
+    // Clear session state in Cognito attributes (non-blocking)
     try {
-      const response = await fetch('/api/auth/clear-cookies', {
+      saveUserPreference(PREF_KEYS.SESSION_ACTIVE, 'false')
+        .catch(err => logger.warn('[clearUserSession] Error updating session state in Cognito:', err));
+    } catch (e) {
+      // Log error but continue
+      logger.warn('[clearUserSession] Error initiating Cognito update:', e);
+    }
+    
+    // Try API call to clear server-side session (for backward compatibility)
+    try {
+      const response = await fetch('/api/auth/clear-session', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -452,27 +459,15 @@ export async function clearUserSession() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(`Failed to clear cookies via API: ${errorData.error || response.statusText}`);
+        throw new Error(`Failed to clear session via API: ${errorData.error || response.statusText}`);
       }
 
-      logger.debug('[Session] Session cleared successfully');
+      logger.debug('[Session] Session cleared successfully (server + client)');
       return true;
-    } catch (cookieError) {
-      logger.warn('[Session] Failed to clear cookies via API, falling back to client-side:', {
-        error: cookieError.message
+    } catch (apiError) {
+      logger.warn('[Session] Failed to clear session via API, but client-side clearance successful:', {
+        error: apiError.message
       });
-      
-      const cookiesCleared = [
-        clearCookie('idToken'),
-        clearCookie('accessToken'),
-        clearCookie('refreshToken')
-      ];
-
-      if (!cookiesCleared.every(Boolean)) {
-        throw new Error('Failed to clear one or more cookies');
-      }
-      
-      logger.debug('[Session] Session cleared successfully (client-side fallback)');
       return true;
     }
   } catch (error) {

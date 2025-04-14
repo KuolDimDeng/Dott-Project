@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { getTenantId, validateTenantIdFormat, storeTenantInfo } from '@/utils/tenantUtils';
 import { setTenantContext } from '@/utils/tenantContext';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Maximum number of retries for network operations
 const MAX_RETRIES = 3;
@@ -28,22 +30,15 @@ export default function useEnsureTenant() {
         if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
           logger.warn('[useEnsureTenant] Invalid or missing tenant ID:', currentTenantId);
           
-          // Try to get from localStorage directly as backup
-          currentTenantId = localStorage.getItem('tenantId');
+          // Try to get from AppCache directly as backup
+          currentTenantId = getCacheValue('tenantId');
           
-          // Try to get from cookies as another backup
+          // Try to get from Cognito attributes as another backup
           if (!currentTenantId || !validateTenantIdFormat(currentTenantId)) {
             try {
-              const cookies = document.cookie.split(';');
-              for (const cookie of cookies) {
-                const [name, value] = cookie.trim().split('=');
-                if (name === 'tenantId' && validateTenantIdFormat(value)) {
-                  currentTenantId = value;
-                  break;
-                }
-              }
-            } catch (cookieError) {
-              logger.error('[useEnsureTenant] Error checking cookies:', cookieError);
+              currentTenantId = await getUserPreference(PREF_KEYS.TENANT_ID);
+            } catch (cognitoError) {
+              logger.error('[useEnsureTenant] Error getting tenant ID from Cognito:', cognitoError);
             }
           }
           

@@ -462,66 +462,32 @@ export async function logoutUser() {
 }
 
 /**
- * Completely clear all authentication data from all storage locations
+ * Clears all authentication-related data from browser
  * @returns {Promise<boolean>} Success status
  */
 export async function clearAllAuthData() {
   try {
     logger.debug('[authUtils] Clearing all authentication data');
     
-    // 1. Call Amplify signOut with global option
+    // Import required functions
+    const { signOut } = await import('aws-amplify/auth');
+    const { clearCache, removeCacheValue } = await import('@/utils/appCache');
+    
+    // 1. Try to sign out with Amplify API first
     try {
-      const { signOut } = await import('aws-amplify/auth');
-      await signOut({ global: true });
-      logger.debug('[authUtils] Successfully called Amplify signOut');
+      await signOut();
+      logger.debug('[authUtils] Successfully signed out from Amplify');
     } catch (signOutError) {
-      logger.error('[authUtils] Error during Amplify signOut:', signOutError);
-      // Continue with other cleanup despite error
+      logger.warn('[authUtils] Error signing out from Amplify:', signOutError);
+      // Continue with cleanup even if signOut fails
     }
     
-    // 2. Clear all cookies
-    const cookiesToClear = [
-      'userEmail', 
-      'onboardedStatus', 
-      'setupCompleted', 
-      'onboardingStep', 
-      'onboardingInProgress',
-      'authState',
-      'idToken',
-      'accessToken',
-      'refreshToken',
-      'tenantId',
-      'userInfo',
-      'sessionId',
-      'pyfactor_session',
-      'amplify-signin-with-hostedUI',
-      'amplify-authenticator-authState'
-    ];
-    
-    cookiesToClear.forEach(cookieName => {
-      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; domain=${window.location.hostname}; samesite=lax`;
-      // Also try without domain for local cookies
-      document.cookie = `${cookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`;
-    });
-    
-    // 3. Clear localStorage items
+    // 2. Clear appCache - our primary client-side storage now
     try {
-      // Clear all Cognito-related items
-      const cognitoKeys = Object.keys(localStorage).filter(key => 
-        key.includes('CognitoIdentityServiceProvider') || 
-        key.includes('amplify') ||
-        key.includes('aws') ||
-        key.includes('token') ||
-        key.includes('auth')
-      );
+      // Clear all app cache
+      clearCache();
       
-      // Log found keys for debugging
-      logger.debug('[authUtils] Clearing Cognito-related localStorage keys:', cognitoKeys);
-      
-      // Clear each key
-      cognitoKeys.forEach(key => localStorage.removeItem(key));
-      
-      // Also clear known app-specific keys
+      // Ensure specific auth keys are cleared from appCache
       const appKeys = [
         'unconfirmedEmail',
         'pendingVerificationEmail',
@@ -539,26 +505,34 @@ export async function clearAllAuthData() {
         'legalStructure',
         'onboardingInProgress',
         'onboardedStatus',
-        'tokenExpired'
+        'tokenExpired',
+        // Additional auth-related cache keys
+        'auth_id_token',
+        'auth_access_token',
+        'auth_refresh_token',
+        'id_token',
+        'access_token',
+        'refresh_token'
       ];
       
-      appKeys.forEach(key => localStorage.removeItem(key));
-      
-      logger.debug('[authUtils] Successfully cleared localStorage items');
+      appKeys.forEach(key => removeCacheValue(key));
+      logger.debug('[authUtils] Successfully cleared cache items');
     } catch (storageError) {
-      logger.error('[authUtils] Error clearing localStorage:', storageError);
+      logger.error('[authUtils] Error clearing cache:', storageError);
     }
     
-    // 4. Clear sessionStorage
-    try {
-      sessionStorage.clear();
-      logger.debug('[authUtils] Successfully cleared sessionStorage');
-    } catch (sessionError) {
-      logger.error('[authUtils] Error clearing sessionStorage:', sessionError);
+    // 3. Clear sessionStorage
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.clear();
+        logger.debug('[authUtils] Successfully cleared sessionStorage');
+      } catch (sessionError) {
+        logger.error('[authUtils] Error clearing sessionStorage:', sessionError);
+      }
     }
     
-    // 5. Try to clear IndexedDB if browser supports it
-    if (window.indexedDB) {
+    // 4. Try to clear IndexedDB if browser supports it
+    if (typeof window !== 'undefined' && window.indexedDB) {
       try {
         // Get list of all databases
         const databases = await window.indexedDB.databases();
@@ -590,25 +564,26 @@ export async function clearAllAuthData() {
  */
 export async function ensureUserCreatedAt(userInfo) {
   try {
-    // Check if Auth is available (handles chunk loading errors)
-    if (typeof Auth === 'undefined') {
-      console.warn('Auth module not available, skipping created_at check');
-      return;
-    }
+    // Import required functions
+    const { getCurrentUser, updateUserAttributes } = await import('aws-amplify/auth');
     
-    // Get current user attributes
-    const user = await Auth.currentAuthenticatedUser();
-    const userAttributes = await Auth.userAttributes(user);
+    // Get current user
+    const currentUser = await getCurrentUser();
+    
+    // Get user attributes
+    const { userAttributes } = currentUser;
     
     // Check if created_at attribute exists
-    const hasCreatedAt = userAttributes.some(attr => attr.Name === 'custom:created_at');
+    const hasCreatedAt = userAttributes && userAttributes['custom:created_at'];
     
     if (!hasCreatedAt) {
       const timestamp = new Date().toISOString();
       
       // Add created_at attribute
-      await Auth.updateUserAttributes(user, {
-        'custom:created_at': timestamp
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:created_at': timestamp
+        }
       });
       
       logger.info('Added created_at attribute for user', {

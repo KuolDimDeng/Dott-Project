@@ -1,3 +1,274 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser, signOut } from 'aws-amplify/auth';
+import { saveUserPreference, getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { logger } from '@/utils/logger';
+
+// Auth-specific preference keys
+const AUTH_PREF_KEYS = {
+  NEEDS_REAUTHENTICATION: 'custom:needs_reauthentication',
+  LAST_AUTH_TIME: 'custom:last_auth_time',
+  AUTH_TOKEN_EXPIRY: 'custom:auth_token_expiry',
+  AUTH_MIGRATION_COMPLETE: 'custom:auth_preferences_migrated'
+};
+
+// Constants
+const CACHE_KEY_PREFIX = 'auth_';
+const SESSION_TIMEOUT = 60 * 60 * 1000; // 1 hour in milliseconds
+
+/**
+ * Hook for managing authentication state
+ * Uses Cognito attributes with AppCache for better performance
+ * 
+ * @returns {Object} Auth state and related utilities
+ */
+export function useAuth() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [needsReauthentication, setNeedsReauthentication] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Check if auth migration is complete
+  const checkAuthMigration = useCallback(async () => {
+    try {
+      // First check AppCache
+      const cachedMigration = getCacheValue(`${CACHE_KEY_PREFIX}migration_complete`);
+      if (cachedMigration === true) {
+        return true;
+      }
+      
+      // If not in cache, check Cognito
+      const migrationComplete = await getUserPreference(AUTH_PREF_KEYS.AUTH_MIGRATION_COMPLETE);
+      
+      // If migration is complete, update cache
+      if (migrationComplete === 'true') {
+        setCacheValue(`${CACHE_KEY_PREFIX}migration_complete`, true);
+        return true;
+      }
+      
+      // If migration is not complete, perform migration
+      if (typeof window !== 'undefined') {
+        // Check if there are any auth-related items in localStorage that need migration
+        // Get values from window.__APP_CACHE first, then fall back to localStorage for migration
+        const appCache = window.__APP_CACHE || {};
+        const auth = appCache.auth || {};
+        
+        const needsReauth = auth.needsReauthentication === true || 
+                           (typeof localStorage !== 'undefined' && localStorage.getItem('needsReauthentication') === 'true');
+        
+        const lastAuthTime = auth.lastAuthTime || 
+                            (typeof localStorage !== 'undefined' && localStorage.getItem('lastAuthTime'));
+        
+        const tokenExpiry = auth.tokenExpiry || 
+                           (typeof localStorage !== 'undefined' && localStorage.getItem('tokenExpiry'));
+        
+        // If any items exist, migrate them to Cognito
+        if (needsReauth || lastAuthTime || tokenExpiry) {
+          const attributes = {};
+          
+          if (needsReauth) {
+            attributes[AUTH_PREF_KEYS.NEEDS_REAUTHENTICATION] = 'true';
+            setNeedsReauthentication(true);
+          }
+          
+          if (lastAuthTime) {
+            attributes[AUTH_PREF_KEYS.LAST_AUTH_TIME] = lastAuthTime;
+          }
+          
+          if (tokenExpiry) {
+            attributes[AUTH_PREF_KEYS.AUTH_TOKEN_EXPIRY] = tokenExpiry;
+          }
+          
+          // Save to Cognito
+          if (Object.keys(attributes).length > 0) {
+            // Save all attributes
+            await Promise.all(
+              Object.entries(attributes).map(([key, value]) => 
+                saveUserPreference(key, value)
+              )
+            );
+            
+            // Update AppCache
+            if (needsReauth) {
+              setCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`, true);
+            }
+            
+            if (lastAuthTime) {
+              setCacheValue(`${CACHE_KEY_PREFIX}last_auth_time`, lastAuthTime);
+            }
+            
+            if (tokenExpiry) {
+              setCacheValue(`${CACHE_KEY_PREFIX}token_expiry`, tokenExpiry);
+            }
+            
+            // Clear from localStorage now that we've migrated
+            if (typeof localStorage !== 'undefined') {
+              localStorage.removeItem('needsReauthentication');
+              localStorage.removeItem('lastAuthTime');
+              localStorage.removeItem('tokenExpiry');
+            }
+          }
+        }
+        
+        // Mark migration as complete
+        await saveUserPreference(AUTH_PREF_KEYS.AUTH_MIGRATION_COMPLETE, 'true');
+        setCacheValue(`${CACHE_KEY_PREFIX}migration_complete`, true);
+      }
+      
+      return true;
+    } catch (error) {
+      logger.error('[useAuth] Error checking auth migration:', error);
+      return false;
+    }
+  }, []);
+  
+  // Check authentication status
+  const checkAuth = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get current user from Amplify
+      const authUser = await getCurrentUser();
+      setIsAuthenticated(!!authUser);
+      setUser(authUser);
+      
+      // Check if migration is needed
+      await checkAuthMigration();
+      
+      // Check if re-authentication is needed
+      // First check AppCache for better performance
+      const cachedNeedsReauth = getCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`);
+      if (cachedNeedsReauth === true) {
+        setNeedsReauthentication(true);
+      } else {
+        // If not in cache, check Cognito
+        const needsReauth = await getUserPreference(AUTH_PREF_KEYS.NEEDS_REAUTHENTICATION);
+        if (needsReauth === 'true') {
+          setNeedsReauthentication(true);
+          setCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`, true);
+        } else {
+          setNeedsReauthentication(false);
+          setCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`, false);
+        }
+      }
+      
+      // Check last auth time to determine session expiry
+      if (authUser) {
+        const cachedLastAuthTime = getCacheValue(`${CACHE_KEY_PREFIX}last_auth_time`);
+        const lastAuthTime = cachedLastAuthTime 
+          ? parseInt(cachedLastAuthTime, 10)
+          : parseInt(await getUserPreference(AUTH_PREF_KEYS.LAST_AUTH_TIME, Date.now().toString()), 10);
+        
+        const now = Date.now();
+        if (now - lastAuthTime > SESSION_TIMEOUT) {
+          // Session expired, needs re-authentication
+          await setReauthenticationRequired(true);
+        }
+      }
+      
+      return authUser;
+    } catch (error) {
+      logger.error('[useAuth] Error checking auth status:', error);
+      setIsAuthenticated(false);
+      setUser(null);
+      setError(error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [checkAuthMigration]);
+  
+  // Set re-authentication required flag
+  const setReauthenticationRequired = useCallback(async (required = true) => {
+    try {
+      // Update state
+      setNeedsReauthentication(required);
+      
+      // Update AppCache
+      setCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`, required);
+      
+      // Save to Cognito
+      await saveUserPreference(AUTH_PREF_KEYS.NEEDS_REAUTHENTICATION, required ? 'true' : 'false');
+      
+      // Store in global AppCache for easy access
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+        window.__APP_CACHE.auth.needsReauthentication = required;
+      }
+    } catch (error) {
+      logger.error('[useAuth] Error setting reauthentication flag:', error);
+    }
+  }, []);
+  
+  // Update last auth time
+  const updateLastAuthTime = useCallback(async () => {
+    try {
+      const now = Date.now();
+      
+      // Update AppCache
+      setCacheValue(`${CACHE_KEY_PREFIX}last_auth_time`, now);
+      
+      // Save to Cognito
+      await saveUserPreference(AUTH_PREF_KEYS.LAST_AUTH_TIME, now.toString());
+      
+      // Reset re-authentication flag
+      await setReauthenticationRequired(false);
+      
+      // Store in global AppCache for easy access
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+        window.__APP_CACHE.auth.lastAuthTime = now;
+      }
+    } catch (error) {
+      logger.error('[useAuth] Error updating last auth time:', error);
+    }
+  }, [setReauthenticationRequired]);
+  
+  // Sign out handler
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut();
+      setIsAuthenticated(false);
+      setUser(null);
+      
+      // Clear auth-related caches
+      setCacheValue(`${CACHE_KEY_PREFIX}needs_reauthentication`, null);
+      setCacheValue(`${CACHE_KEY_PREFIX}last_auth_time`, null);
+      setCacheValue(`${CACHE_KEY_PREFIX}token_expiry`, null);
+      
+      // Redirect to login page
+      router.push('/login');
+    } catch (error) {
+      logger.error('[useAuth] Error signing out:', error);
+      setError(error);
+    }
+  }, [router]);
+  
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  
+  return {
+    isAuthenticated,
+    isLoading,
+    user,
+    error,
+    needsReauthentication,
+    checkAuth,
+    setReauthenticationRequired,
+    updateLastAuthTime,
+    signOut: handleSignOut
+  };
+}
+
 const signUp = async (userData) => {
   setIsLoading(true);
   setError(null);

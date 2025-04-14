@@ -5,16 +5,24 @@ const handleSelectPlan = (plan) => {
     // Set loading state while we prepare
     setIsSubmitting(true);
     
-    // For RLS implementation, set all required flags/cookies
-    setCookie('setupSkipDatabaseCreation', 'true');
-    setCookie('setupUseRLS', 'true');
-    setCookie('skipSchemaCreation', 'true');
-    setCookie('freePlanSelected', 'true');
-    setCookie('onboardingStep', 'complete'); // Mark as complete immediately
-    setCookie('onboardedStatus', 'complete');
-    setCookie('setupCompleted', 'true');
+    // Update Cognito attributes with setup config
+    try {
+      Auth.updateUserAttributes(Auth.currentAuthenticatedUser(), {
+        'custom:onboarding': 'COMPLETE',
+        'custom:onboarding_step': 'complete',
+        'custom:setupdone': 'true',
+        'custom:setup_freeplan': 'true',
+        'custom:setup_rlsused': 'true',
+        'custom:setup_skipdatabase': 'true',
+        'custom:updated_at': new Date().toISOString()
+      }).catch(err => {
+        console.error('Failed to update Cognito attributes:', err);
+      });
+    } catch (err) {
+      console.error('Failed to update user attributes:', err);
+    }
     
-    // Store in app cache instead of localStorage
+    // Store in app cache instead of localStorage and cookies
     try {
       // Initialize app cache
       if (typeof window !== 'undefined') {
@@ -30,6 +38,7 @@ const handleSelectPlan = (plan) => {
         // Store onboarding state
         window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
         window.__APP_CACHE.onboarding.step = 'complete';
+        window.__APP_CACHE.onboarding.status = 'COMPLETE';
         window.__APP_CACHE.onboarding.setupCompleted = true;
         window.__APP_CACHE.onboarding.setupTimestamp = Date.now();
       }

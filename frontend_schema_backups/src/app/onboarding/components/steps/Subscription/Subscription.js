@@ -33,6 +33,7 @@ import {
   Collapse,
   Fade
 } from '@/components/ui/TailwindComponents';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const PLANS = [
   {
@@ -163,20 +164,20 @@ export function Subscription({ metadata }) {
         
         logger.info('[Subscription] Successfully initialized with business data');
 
-        // Ensure onboarding cookies are set consistently
-        if (typeof document !== 'undefined') {
+        // Ensure onboarding data is set consistently in AppCache
+        if (typeof window !== 'undefined') {
           try {
-            const expiration = new Date();
-            expiration.setDate(expiration.getDate() + 7);
+            // One week TTL in milliseconds
+            const oneWeekTTL = 7 * 24 * 60 * 60 * 1000;
             
-            document.cookie = `onboardingStep=subscription; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=business_info; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `businessName=${encodeURIComponent(metadata.businessName)}; path=/; expires=${expiration.toUTCString()}`;
+            setCacheValue('onboarding_step', 'subscription', { ttl: oneWeekTTL });
+            setCacheValue('onboarded_status', 'business_info', { ttl: oneWeekTTL });
+            setCacheValue('business_name', metadata.businessName, { ttl: oneWeekTTL });
             if (metadata.businessType) {
-              document.cookie = `businessType=${encodeURIComponent(metadata.businessType)}; path=/; expires=${expiration.toUTCString()}`;
+              setCacheValue('business_type', metadata.businessType, { ttl: oneWeekTTL });
             }
           } catch (e) {
-            logger.error('[Subscription] Error setting cookies:', e);
+            logger.error('[Subscription] Error setting AppCache values:', e);
           }
         }
       } else if (metadata.noBusinessData) {
@@ -316,13 +317,13 @@ export function Subscription({ metadata }) {
       // Make plan ID consistent by always using lowercase
       const normalizedPlanId = planId.toLowerCase();
 
-      // Save the subscription plan to cookies regardless of plan type
-      if (typeof document !== 'undefined') {
-        const expiration = new Date();
-        expiration.setDate(expiration.getDate() + 7); // 7 days
+      // Save the subscription plan to AppCache regardless of plan type
+      if (typeof window !== 'undefined') {
+        // One week TTL in milliseconds
+        const oneWeekTTL = 7 * 24 * 60 * 60 * 1000;
         
-        document.cookie = `subscriptionPlan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
-        document.cookie = `subscriptionInterval=${billingInterval}; path=/; expires=${expiration.toUTCString()}`;
+        setCacheValue('subscription_plan', normalizedPlanId, { ttl: oneWeekTTL });
+        setCacheValue('subscription_interval', billingInterval, { ttl: oneWeekTTL });
       }
 
       // If free plan, no payment needed
@@ -353,15 +354,15 @@ export function Subscription({ metadata }) {
             backgroundSetup: true // Flag indicating setup should happen in background
           }));
           
-          // Store the business info in cookies
-          if (typeof document !== 'undefined') {
-            const expiration = new Date();
-            expiration.setDate(expiration.getDate() + 7); // 7 days
+          // Store the business info in AppCache
+          if (typeof window !== 'undefined') {
+            // One week TTL in milliseconds
+            const oneWeekTTL = 7 * 24 * 60 * 60 * 1000;
             
             // Set our state to SUBSCRIPTION
-            document.cookie = `onboardingStep=setup; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=subscription; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `subplan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
+            setCacheValue('onboarding_step', 'setup', { ttl: oneWeekTTL });
+            setCacheValue('onboarded_status', 'subscription', { ttl: oneWeekTTL });
+            setCacheValue('sub_plan', normalizedPlanId, { ttl: oneWeekTTL });
           }
           
           // Update Cognito attributes via the API with more comprehensive set of attributes
@@ -426,12 +427,11 @@ export function Subscription({ metadata }) {
           logger.info('[Subscription] Tenant verified successfully:', tenantData);
           
           // Update setup status
-          if (typeof document !== 'undefined') {
-            const expiration = new Date();
-            expiration.setDate(expiration.getDate() + 7);
-            document.cookie = `setupCompleted=true; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `onboardedStatus=COMPLETE; path=/; expires=${expiration.toUTCString()}`;
-            document.cookie = `tenantId=${tenantData.tenantId}; path=/; expires=${expiration.toUTCString()}`;
+          if (typeof window !== 'undefined') {
+            const oneWeekTTL = 7 * 24 * 60 * 60 * 1000;
+            setCacheValue('setup_completed', true, { ttl: oneWeekTTL });
+            setCacheValue('onboarded_status', 'COMPLETE', { ttl: oneWeekTTL });
+            setCacheValue('tenant_id', tenantData.tenantId, { ttl: oneWeekTTL });
           }
           
           // Set success message
@@ -457,14 +457,12 @@ export function Subscription({ metadata }) {
         // Set an error message indicating the selected plan
         setError(`Setting up ${normalizedPlanId} plan...`);
 
-        // Store the business info in cookies for paid plans too
-        if (typeof document !== 'undefined') {
-          const expiration = new Date();
-          expiration.setDate(expiration.getDate() + 7); // 7 days
-          
-          document.cookie = `onboardingStep=payment; path=/; expires=${expiration.toUTCString()}`;
-          document.cookie = `onboardedStatus=subscription; path=/; expires=${expiration.toUTCString()}`;
-          document.cookie = `subplan=${normalizedPlanId}; path=/; expires=${expiration.toUTCString()}`;
+        // Store the business info in AppCache for paid plans too
+        if (typeof window !== 'undefined') {
+          const oneWeekTTL = 7 * 24 * 60 * 60 * 1000;
+          setCacheValue('onboarding_step', 'payment', { ttl: oneWeekTTL });
+          setCacheValue('onboarded_status', 'subscription', { ttl: oneWeekTTL });
+          setCacheValue('sub_plan', normalizedPlanId, { ttl: oneWeekTTL });
         }
         
         // Update Cognito attributes for paid plans

@@ -2,6 +2,7 @@
 
 import { Component } from 'react';
 import { resetAllCircuitBreakers } from '@/utils/circuit-breaker';
+import { clearCache } from '@/utils/appCache';
 
 /**
  * ErrorBoundary component to catch JavaScript errors in child components
@@ -38,9 +39,9 @@ export class ErrorBoundary extends Component {
       // Reset circuit breakers to stop redirect loops
       resetAllCircuitBreakers();
       
-      // Clear session storage and local storage
+      // Clear session storage and AppCache
       sessionStorage.clear();
-      localStorage.clear();
+      clearCache();
       
       this.setState({ 
         hasError: false,

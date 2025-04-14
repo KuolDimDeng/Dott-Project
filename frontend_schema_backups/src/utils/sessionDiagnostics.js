@@ -1,11 +1,13 @@
 'use client';
 
 import { logger } from '@/utils/logger';
+import { getCacheValue } from '@/utils/appCache';
+import { fetchUserAttributes } from '@/config/amplifyUnified';
 
 /**
  * Utility to diagnose common session issues and log helpful information
  */
-export const checkSessionHealth = () => {
+export const checkSessionHealth = async () => {
   if (typeof window === 'undefined') return;
   
   try {
@@ -21,31 +23,29 @@ export const checkSessionHealth = () => {
       logger.warn(`[SessionDiagnostics] Token refresh cooldown active for ${timeLeft} more seconds`);
     }
     
-    // Check localStorage
-    const tenantId = localStorage.getItem('tenantId');
-    const userEmail = localStorage.getItem('userEmail');
-    const previouslyOnboarded = localStorage.getItem('previouslyOnboarded');
+    // Check AppCache (replacement for localStorage)
+    const tenantId = getCacheValue('tenantId');
+    const userEmail = getCacheValue('userEmail');
+    const previouslyOnboarded = getCacheValue('previouslyOnboarded');
     
-    logger.debug('[SessionDiagnostics] localStorage state', {
+    logger.debug('[SessionDiagnostics] AppCache state', {
       tenantId,
       userEmail,
       previouslyOnboarded,
     });
     
-    // Check cookies
-    const cookies = {};
-    document.cookie.split(';').forEach(cookie => {
-      const [name, value] = cookie.trim().split('=');
-      if (name) cookies[name] = value;
-    });
-    
-    logger.debug('[SessionDiagnostics] Cookies state', {
-      authToken: cookies.authToken ? '✓ Present' : '✗ Missing',
-      authUser: cookies.authUser,
-      tenantId: cookies.tenantId,
-      hasSession: cookies.hasSession,
-      bypassAuthValidation: cookies.bypassAuthValidation,
-    });
+    // Check Cognito attributes
+    try {
+      const attributes = await fetchUserAttributes().catch(() => ({}));
+      logger.debug('[SessionDiagnostics] Cognito attributes state', {
+        tenantId: attributes['custom:tenantId'] || attributes['custom:businessid'],
+        userEmail: attributes.email,
+        onboardingStatus: attributes['custom:onboarding'],
+        setupDone: attributes['custom:setupdone'],
+      });
+    } catch (cognitoError) {
+      logger.warn('[SessionDiagnostics] Error fetching Cognito attributes', cognitoError);
+    }
     
     // Check session storage
     const tokenRefreshCount = sessionStorage.getItem('tokenRefreshCount');
@@ -73,7 +73,10 @@ export const installSessionDiagnostics = () => {
   
   try {
     // Check session health on page load
-    window.addEventListener('load', checkSessionHealth);
+    window.addEventListener('load', () => {
+      // Use setTimeout to ensure session initialization is complete
+      setTimeout(checkSessionHealth, 1000);
+    });
     
     // Also expose function globally for manual checks
     window.__checkSessionHealth = checkSessionHealth;

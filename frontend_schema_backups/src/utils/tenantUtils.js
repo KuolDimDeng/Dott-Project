@@ -8,6 +8,10 @@
 import Cookies from 'js-cookie';
 import { logger } from './logger';
 import { jwtDecode } from 'jwt-decode';
+// Import the AppCache utilities
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
+// Import user preferences for Cognito attributes
+import { saveUserPreference, getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 
 // Helper function to detect if code is running in browser
 const isBrowser = typeof window !== 'undefined';
@@ -59,24 +63,16 @@ export function storeTenantId(tenantId) {
   }
 
   try {
-    // Set in cookies (both secure and regular for compatibility)
-    Cookies.set('tenantId', tenantId, COOKIE_CONFIG);
+    // Store in AppCache
+    setCacheValue('tenantId', tenantId);
     
-    // Set in sessionStorage (more secure than localStorage)
+    // Store in Cognito attributes (async)
     try {
-      sessionStorage.setItem('tenantId', tenantId);
+      saveUserPreference(PREF_KEYS.TENANT_ID, tenantId)
+        .then(() => logger.debug(`[TenantUtils] Tenant ID saved to Cognito: ${tenantId}`))
+        .catch(err => logger.error('[TenantUtils] Error saving tenant ID to Cognito:', err));
     } catch (e) {
-      // Ignore sessionStorage errors
-      logger.error('[TenantUtils] Error saving to sessionStorage:', e);
-    }
-
-    // Legacy: Set in localStorage with warning (less secure)
-    try {
-      localStorage.setItem('tenantId', tenantId);
-      localStorage.setItem('businessid', tenantId); // For backward compatibility
-    } catch (e) {
-      // Ignore localStorage errors
-      logger.error('[TenantUtils] Error saving to localStorage:', e);
+      logger.error('[TenantUtils] Error initiating Cognito tenant save:', e);
     }
     
     logger.debug(`[TenantUtils] Tenant ID stored: ${tenantId}`);
@@ -87,7 +83,7 @@ export function storeTenantId(tenantId) {
 
 /**
  * Get tenant ID from all available sources with priority
- * Uses caching to avoid excessive cookie reads and logging
+ * Uses caching to avoid excessive reads and logging
  * @returns {string|null} - Tenant ID from most secure source
  */
 export function getTenantId() {
@@ -103,53 +99,30 @@ export function getTenantId() {
       return cachedTenantId;
     }
     
-    // Try from cookies first (most secure)
-    const cookieTenantId = Cookies.get('tenantId');
-    if (cookieTenantId) {
+    // Try from AppCache first (fastest)
+    const appCacheTenantId = getCacheValue('tenantId');
+    if (appCacheTenantId) {
       // Only log first time or when value changes
-      if (cookieTenantId !== cachedTenantId) {
-        logger.debug(`[TenantUtils] Got tenant ID from cookie: ${cookieTenantId}`);
+      if (appCacheTenantId !== cachedTenantId) {
+        logger.debug(`[TenantUtils] Got tenant ID from AppCache: ${appCacheTenantId}`);
       }
       
       // Update cache
-      cachedTenantId = cookieTenantId;
+      cachedTenantId = appCacheTenantId;
       lastCacheTime = now;
-      return cookieTenantId;
+      return appCacheTenantId;
     }
     
-    // Try from sessionStorage next
-    const sessionTenantId = sessionStorage.getItem('tenantId');
-    if (sessionTenantId) {
-      // Only log when value changes
-      if (sessionTenantId !== cachedTenantId) {
-        logger.debug(`[TenantUtils] Got tenant ID from sessionStorage: ${sessionTenantId}`);
-      }
-      
-      // Sync to cookies
-      storeTenantId(sessionTenantId);
-      
-      // Update cache
-      cachedTenantId = sessionTenantId;
-      lastCacheTime = now;
-      return sessionTenantId;
-    }
-    
-    // Try from localStorage last (least secure)
-    const localTenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
-    if (localTenantId) {
-      // Only log when value changes
-      if (localTenantId !== cachedTenantId) {
-        logger.debug(`[TenantUtils] Got tenant ID from localStorage: ${localTenantId}`);
-      }
-      
-      // Sync to more secure storage
-      storeTenantId(localTenantId);
-      
-      // Update cache
-      cachedTenantId = localTenantId;
-      lastCacheTime = now;
-      return localTenantId;
-    }
+    // Try from Cognito attributes (async check, will update AppCache for future)
+    getUserPreference(PREF_KEYS.TENANT_ID)
+      .then(cognitoTenantId => {
+        if (cognitoTenantId) {
+          logger.debug(`[TenantUtils] Got tenant ID from Cognito: ${cognitoTenantId}`);
+          // Store in AppCache for future fast access
+          setCacheValue('tenantId', cognitoTenantId);
+        }
+      })
+      .catch(err => logger.error('[TenantUtils] Error getting tenant ID from Cognito:', err));
     
     // Only log no tenant found once
     if (cachedTenantId !== null) {
@@ -166,7 +139,7 @@ export function getTenantId() {
 
 /**
  * Clear all tenant-related storage
- * This removes tenant IDs from cookies and storage
+ * This removes tenant IDs from AppCache and Cognito
  */
 export function clearTenantStorage() {
   if (!isBrowser) {
@@ -175,24 +148,17 @@ export function clearTenantStorage() {
   }
 
   try {
-    // Clear cookies
-    Cookies.remove('tenantId', { path: '/' });
-    Cookies.remove('businessid', { path: '/' });
+    // Clear from AppCache
+    removeCacheValue('tenantId');
     
-    // Clear sessionStorage
-    try {
-      sessionStorage.removeItem('tenantId');
-    } catch (e) {
-      // Ignore errors
-    }
+    // Clear from Cognito (async)
+    saveUserPreference(PREF_KEYS.TENANT_ID, '')
+      .then(() => logger.debug('[TenantUtils] Tenant ID cleared from Cognito'))
+      .catch(err => logger.error('[TenantUtils] Error clearing tenant ID from Cognito:', err));
     
-    // Clear localStorage
-    try {
-      localStorage.removeItem('tenantId');
-      localStorage.removeItem('businessid');
-    } catch (e) {
-      // Ignore errors
-    }
+    // Reset cache
+    cachedTenantId = null;
+    lastCacheTime = 0;
     
     logger.debug('[TenantUtils] Tenant storage cleared successfully');
   } catch (error) {
@@ -241,37 +207,31 @@ export function getTenantHeaders(existingHeaders = {}, tenantIdOverride) {
 }
 
 /**
- * Synchronize a repaired tenant ID by updating cookies and localStorage
+ * Synchronize a repaired tenant ID by updating AppCache and Cognito
  * @param {string} oldTenantId - The old/invalid tenant ID
  * @param {string} newTenantId - The new/valid tenant ID to use
  */
 export async function syncRepairedTenantId(oldTenantId, newTenantId) {
   if (!isBrowser) {
-    logger.debug('[TenantUtils] Cannot sync tenant IDs on server side');
     return;
   }
-
+  
   try {
-    logger.debug('[TenantUtils] Syncing repaired tenant ID', {
-      oldTenantId, 
-      newTenantId
-    });
+    logger.info(`[TenantUtils] Synchronizing repaired tenant ID: ${oldTenantId} -> ${newTenantId}`);
     
-    // Update localStorage
-    try {
-      localStorage.setItem('tenantId', newTenantId);
-    } catch (e) {
-      // Ignore localStorage errors
-      logger.error('[TenantUtils] Error saving to localStorage:', e);
-    }
+    // Update AppCache
+    setCacheValue('tenantId', newTenantId);
     
-    // Update cookies
-    document.cookie = `tenantId=${newTenantId}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-    document.cookie = `businessid=${newTenantId}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+    // Update Cognito
+    await saveUserPreference(PREF_KEYS.TENANT_ID, newTenantId);
     
-    logger.debug('[TenantUtils] Tenant ID sync complete');
+    // Update cache
+    cachedTenantId = newTenantId;
+    lastCacheTime = Date.now();
+    
+    logger.debug(`[TenantUtils] Tenant ID repaired: ${newTenantId}`);
   } catch (error) {
-    logger.error('[TenantUtils] Error syncing tenant ID:', error);
+    logger.error('[TenantUtils] Error saving repaired tenant ID:', error);
   }
 }
 
@@ -293,25 +253,22 @@ export function getSchemaName(tenantId) {
 }
 
 /**
- * Store tenant information in localStorage and cookies
+ * Store tenant information in Cognito attributes and AppCache
  * @param {string} tenantId - The tenant ID to store
  */
-export function storeTenantInfo(tenantId) {
+export async function storeTenantInfo(tenantId) {
   if (!isBrowser || !tenantId) {
     return;
   }
   
   try {
-    // Store in localStorage
-    localStorage.setItem('tenantId', tenantId);
+    // Store in AppCache
+    setCacheValue('tenantId', tenantId);
     
-    // Store in cookies
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30); // 30 days expiry
-    document.cookie = `tenantId=${tenantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
-    document.cookie = `businessid=${tenantId}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+    // Store in Cognito attributes
+    await saveUserPreference(PREF_KEYS.TENANT_ID, tenantId);
     
-    // Update cache
+    // Update memory cache
     cachedTenantId = tenantId;
     lastCacheTime = Date.now();
     
@@ -368,16 +325,25 @@ export function setTokens(tokens = {}) {
   
   try {
     if (tokens.accessToken || tokens.idToken) {
-      // Store tokens in localStorage
-      const existingTokens = JSON.parse(localStorage.getItem('tokens') || '{}');
+      // Store tokens in AppCache
+      const existingTokens = getCacheValue('tokens') || {};
       const updatedTokens = {
         ...existingTokens,
         ...(tokens.accessToken ? { accessToken: tokens.accessToken } : {}),
         ...(tokens.idToken ? { idToken: tokens.idToken } : {})
       };
       
-      localStorage.setItem('tokens', JSON.stringify(updatedTokens));
-      logger.debug('[TenantUtils] Tokens updated');
+      setCacheValue('tokens', updatedTokens);
+      
+      // Also cache individual tokens for easier access
+      if (tokens.accessToken) {
+        setCacheValue('accessToken', tokens.accessToken);
+      }
+      if (tokens.idToken) {
+        setCacheValue('idToken', tokens.idToken);
+      }
+      
+      logger.debug('[TenantUtils] Tokens updated in AppCache');
     }
   } catch (error) {
     logger.error('[TenantUtils] Error setting tokens:', error);
@@ -395,24 +361,18 @@ export function extractTenantId() {
   }
 
   try {
-    // Try from cookies first (most secure)
-    const cookieTenantId = Cookies.get('tenantId');
-    if (cookieTenantId) {
-      return cookieTenantId;
+    // Try from Cognito attributes first (most secure)
+    const cognitoTenantId = getUserPreference(PREF_KEYS.TENANT_ID);
+    if (cognitoTenantId) {
+      return cognitoTenantId;
     }
     
-    // Try from localStorage 
-    const localTenantId = localStorage.getItem('tenantId') || localStorage.getItem('businessid');
-    if (localTenantId) {
-      return localTenantId;
+    // Try from AppCache
+    const cacheTenantId = getCacheValue('tenantId');
+    if (cacheTenantId) {
+      return cacheTenantId;
     }
     
-    // Try from sessionStorage
-    const sessionTenantId = sessionStorage.getItem('tenantId');
-    if (sessionTenantId) {
-      return sessionTenantId;
-    }
-
     // Final fallback - check URL/search params if available
     if (typeof window !== 'undefined' && window.location?.search) {
       try {
@@ -429,10 +389,40 @@ export function extractTenantId() {
     }
     
     // Log a warning if no tenant ID was found
-    logger.warn('[TenantUtils] No tenant ID found in client storage');
+    logger.warn('[TenantUtils] No tenant ID found in storage');
     return null;
   } catch (error) {
     logger.error('[TenantUtils] Error extracting tenant ID:', error);
     return null;
+  }
+}
+
+/**
+ * Set tenant ID in AppCache and Cognito
+ * @param {string} tenantId - Tenant ID to store
+ */
+export function setTenantIdCookies(tenantId) {
+  if (!isBrowser || !tenantId) {
+    return;
+  }
+
+  try {
+    // Use existing storeTenantId function which already handles AppCache and Cognito
+    storeTenantId(tenantId);
+    
+    // Also store business ID for backward compatibility
+    setCacheValue('businessid', tenantId, { ttl: 30 * 24 * 60 * 60 * 1000 });
+    
+    // For server-side access, set tenant reference
+    setCacheValue('tenant_reference', {
+      id: tenantId,
+      timestamp: Date.now()
+    }, { ttl: 30 * 24 * 60 * 60 * 1000 });
+    
+    logger.debug(`[TenantUtils] Set tenant ID in all storage: ${tenantId}`);
+    return true;
+  } catch (error) {
+    logger.error('[TenantUtils] Error in setTenantIdCookies:', error);
+    return false;
   }
 }

@@ -79,6 +79,20 @@ export const TenantProvider = ({ children }) => {
   // Get tenant ID from JWT token
   const getTenantFromToken = useCallback(async () => {
     try {
+      // Check if we're on a sign-in or authentication page to avoid unnecessary errors
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const isAuthPage = path.includes('/auth/signin') || 
+                           path.includes('/auth/signup') || 
+                           path.includes('/auth/verify') ||
+                           path.includes('/auth/reset-password');
+        
+        if (isAuthPage) {
+          logger.debug('[TenantContext] On auth page, skipping token tenant fetch');
+          return null;
+        }
+      }
+
       const session = await fetchAuthSession();
       if (!session?.tokens?.idToken) {
         logger.debug('[TenantContext] No ID token found in session');
@@ -121,6 +135,23 @@ export const TenantProvider = ({ children }) => {
       
       return tokenTenantId;
     } catch (error) {
+      // Suppress authentication errors on auth-related pages
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const isAuthPage = path.includes('/auth/signin') || 
+                           path.includes('/auth/signup') || 
+                           path.includes('/auth/verify') ||
+                           path.includes('/auth/reset-password');
+        
+        if (isAuthPage && (
+            error.name === 'UserUnAuthenticatedException' || 
+            error.message?.includes('User needs to be authenticated')
+          )) {
+          logger.debug('[TenantContext] User not authenticated on auth page (expected)');
+          return null;
+        }
+      }
+      
       logger.error('[TenantContext] Error getting tenant from token:', error);
       return null;
     }
@@ -244,6 +275,19 @@ export const TenantProvider = ({ children }) => {
       if (!isBrowser) {
         return;
       }
+
+      // Check if we're on a sign-in or authentication page to avoid unnecessary errors
+      const path = window.location.pathname;
+      const isAuthPage = path.includes('/auth/signin') || 
+                          path.includes('/auth/signup') || 
+                          path.includes('/auth/verify') ||
+                          path.includes('/auth/reset-password');
+      
+      if (isAuthPage) {
+        logger.debug('[TenantContext] On auth page, skipping tenant initialization');
+        setLoading(false);
+        return null;
+      }
       
       setLoading(true);
       logger.info('[TenantContext] Initializing tenant context');
@@ -273,7 +317,16 @@ export const TenantProvider = ({ children }) => {
             await fetchTenantInfo(currentTenantId);
           }
         } catch (tokenError) {
-          logger.warn('[TenantContext] Error verifying tenant ID from token:', tokenError);
+          // Check if this is an auth error on an auth page
+          if (isAuthPage && (
+            tokenError.name === 'UserUnAuthenticatedException' || 
+            tokenError.message?.includes('User needs to be authenticated')
+          )) {
+            logger.debug('[TenantContext] User not authenticated on auth page (expected)');
+          } else {
+            logger.warn('[TenantContext] Error verifying tenant ID from token:', tokenError);
+          }
+          
           // Still fetch info for the current tenant ID
           await fetchTenantInfo(currentTenantId);
         }
@@ -305,6 +358,24 @@ export const TenantProvider = ({ children }) => {
         }
       }
     } catch (err) {
+      // Check if this is an auth error on an auth page
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const isAuthPage = path.includes('/auth/signin') || 
+                           path.includes('/auth/signup') || 
+                           path.includes('/auth/verify') ||
+                           path.includes('/auth/reset-password');
+        
+        if (isAuthPage && (
+            err.name === 'UserUnAuthenticatedException' || 
+            err.message?.includes('User needs to be authenticated')
+          )) {
+          logger.debug('[TenantContext] User not authenticated on auth page (expected)');
+          setLoading(false);
+          return null;
+        }
+      }
+      
       logger.error('[TenantContext] Error initializing tenant context:', err);
       setError(err);
     } finally {

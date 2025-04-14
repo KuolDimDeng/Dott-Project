@@ -4,6 +4,7 @@
  * This utility helps prevent infinite redirect loops and provides
  * emergency circuit breaking functionality across the application.
  */
+import { getCacheValue, setCacheValue, removeCacheValue } from './appCache';
 
 // Track redirect attempts for different pages
 export const REDIRECT_THRESHOLDS = {
@@ -20,7 +21,7 @@ export const REDIRECT_THRESHOLDS = {
  */
 export function shouldBlockRedirects(pageKey = 'default') {
   const storageKey = `${pageKey}_redirect_count`;
-  const count = parseInt(localStorage.getItem(storageKey) || '0', 10);
+  const count = parseInt(getCacheValue(storageKey) || '0', 10);
   const threshold = REDIRECT_THRESHOLDS[pageKey] || REDIRECT_THRESHOLDS.default;
   
   return count >= threshold;
@@ -33,10 +34,10 @@ export function shouldBlockRedirects(pageKey = 'default') {
  */
 export function incrementRedirectCount(pageKey = 'default') {
   const storageKey = `${pageKey}_redirect_count`;
-  const currentCount = parseInt(localStorage.getItem(storageKey) || '0', 10);
+  const currentCount = parseInt(getCacheValue(storageKey) || '0', 10);
   const newCount = currentCount + 1;
   
-  localStorage.setItem(storageKey, newCount.toString());
+  setCacheValue(storageKey, newCount.toString());
   return newCount;
 }
 
@@ -46,7 +47,7 @@ export function incrementRedirectCount(pageKey = 'default') {
  */
 export function resetRedirectCount(pageKey = 'default') {
   const storageKey = `${pageKey}_redirect_count`;
-  localStorage.setItem(storageKey, '0');
+  setCacheValue(storageKey, '0');
 }
 
 /**
@@ -82,8 +83,8 @@ export function resetAllCircuitBreakers() {
   });
   
   // Clear other related storage items
-  localStorage.removeItem('signin_attempts');
-  localStorage.removeItem('business_auth_errors');
-  localStorage.removeItem('middleware_redirect_counter');
-  localStorage.removeItem('preventSigninRedirects');
+  removeCacheValue('signin_attempts');
+  removeCacheValue('business_auth_errors');
+  removeCacheValue('middleware_redirect_counter');
+  removeCacheValue('preventSigninRedirects');
 } 

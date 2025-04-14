@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { axiosInstance } from '@/lib/axiosConfig';
 import debounce from 'lodash/debounce';
 import { ChatIcon, SendIcon, CloseIcon } from '@/app/components/icons';
+import { getCacheValue } from '@/utils/appCache';
 
 const Chatbot = ({ userName, backgroundColor = 'bg-white dark:bg-gray-800' }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,7 +70,7 @@ const Chatbot = ({ userName, backgroundColor = 'bg-white dark:bg-gray-800' }) =>
 
   const initializeWebSocket = useCallback(
     (database_name) => {
-      const token = localStorage.getItem('token');
+      const token = getCacheValue('token');
       console.log('Retrieved token:', token);
 
       if (!token || token === 'null') {
@@ -192,83 +193,4 @@ const Chatbot = ({ userName, backgroundColor = 'bg-white dark:bg-gray-800' }) =>
   return (
     <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
       {isOpen ? (
-        <div className={`w-[300px] h-[400px] shadow-lg rounded-lg flex flex-col ${backgroundColor} pointer-events-auto`}>
-          <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium dark:text-white">Hello {userName}, need help?</h3>
-            <button
-              onClick={handleToggle}
-              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Close Chat"
-            >
-              <CloseIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-            </button>
-          </div>
-          <div className="flex-grow overflow-y-auto p-4">
-            {error && (
-              <p className="text-red-600 dark:text-red-400 mb-2">
-                {error}
-              </p>
-            )}
-            {Array.isArray(messages) &&
-              messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`mb-3 ${msg.is_from_user ? 'text-right' : 'text-left'}`}
-                >
-                  <div
-                    className={`inline-block p-2 rounded-lg max-w-[80%] ${
-                      msg.is_from_user 
-                        ? 'bg-blue-50 dark:bg-blue-900 text-gray-800 dark:text-gray-100' 
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
-                    }`}
-                  >
-                    {typeof msg.message === 'string' ? (
-                      msg.message.split('\n').map((line, lineIndex) => (
-                        <p
-                          key={lineIndex}
-                          className={`block ${lineIndex < msg.message.split('\n').length - 1 ? 'mb-1' : ''}`}
-                        >
-                          {line}
-                        </p>
-                      ))
-                    ) : (
-                      <p>{msg.message}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            <div ref={messagesEndRef} />
-          </div>
-          <div className="p-4 flex">
-            <input
-              type="text"
-              className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-main focus:border-primary-main dark:bg-gray-700 dark:text-white"
-              value={input}
-              onChange={handleInputChange}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder="Type a message..."
-              aria-label="Type a message"
-            />
-            <button
-              onClick={handleSend}
-              className="px-3 py-2 bg-primary-main hover:bg-primary-dark text-white rounded-r-md transition-colors focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
-              aria-label="Send Message"
-            >
-              <SendIcon className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={handleToggle}
-          className="w-12 h-12 rounded-full bg-primary-main hover:bg-primary-dark text-white flex items-center justify-center shadow-lg focus:outline-none focus:ring-2 focus:ring-primary-main focus:ring-opacity-50"
-          aria-label="Open Chat"
-        >
-          <ChatIcon className="w-6 h-6" />
-        </button>
-      )}
-    </div>
-  );
-};
-
-export default Chatbot;
+        <div className={`w-[300px] h-[400px] shadow-lg rounded-lg flex flex-col ${backgroundColor} pointer-events-auto`
