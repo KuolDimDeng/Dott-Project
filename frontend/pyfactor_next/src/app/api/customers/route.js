@@ -139,8 +139,8 @@ export async function GET(request) {
     
     // Query customers with RLS
     const queryResults = await db.query(
-      `SELECT * FROM public.crm_customer ORDER BY business_name ASC`,
-      [],
+      `SELECT * FROM public.crm_customer WHERE tenant_id = $1 ORDER BY business_name ASC`,
+      [formattedTenantId],
       {
         requestId,
         tenantId: formattedTenantId,
@@ -230,6 +230,9 @@ async function ensureCrmCustomerTable(tenantId, requestId) {
         `);
       }
       
+      // Attempt to repair any data issues with tenant_id
+      await fixTenantDataIntegrity(client, tenantId, requestId);
+      
       // Check if the policy already exists
       const policyExists = await client.query(`
         SELECT EXISTS (
@@ -241,8 +244,82 @@ async function ensureCrmCustomerTable(tenantId, requestId) {
       // Create the policy if it doesn't exist
       if (!policyExists.rows[0].exists) {
         await client.query(`
+          -- Create RLS function with debugging capabilities
+          CREATE OR REPLACE FUNCTION tenant_isolation_debug(record_tenant_id UUID, debug BOOLEAN DEFAULT FALSE)
+          RETURNS BOOLEAN AS $$
+          DECLARE
+              current_tenant UUID;
+              result BOOLEAN;
+          BEGIN
+              -- Try to get current tenant with explicit cast
+              BEGIN
+                  current_tenant := NULLIF(current_setting('app.current_tenant_id', TRUE), '')::UUID;
+              EXCEPTION WHEN OTHERS THEN
+                  current_tenant := NULL;
+              END;
+              
+              -- Strict matching logic
+              result := 
+                  record_tenant_id IS NOT NULL AND
+                  current_tenant IS NOT NULL AND
+                  record_tenant_id = current_tenant;
+                  
+              -- Log details if debugging enabled
+              IF debug THEN
+                  RAISE NOTICE 'Tenant check: record=%, current=%, result=%', 
+                      record_tenant_id, current_tenant, result;
+              END IF;
+              
+              RETURN result;
+          END;
+          $$ LANGUAGE plpgsql;
+        
+          -- Create policy using the function
           CREATE POLICY tenant_isolation_policy ON public.crm_customer
-            USING (tenant_id = current_setting('app.current_tenant_id', TRUE)::UUID);
+            USING (tenant_isolation_debug(tenant_id, FALSE));
+        `);
+      } else {
+        // Update existing policy to fix any existing deployments
+        await client.query(`
+          -- Create RLS function with debugging capabilities
+          CREATE OR REPLACE FUNCTION tenant_isolation_debug(record_tenant_id UUID, debug BOOLEAN DEFAULT FALSE)
+          RETURNS BOOLEAN AS $$
+          DECLARE
+              current_tenant UUID;
+              result BOOLEAN;
+          BEGIN
+              -- Try to get current tenant with explicit cast
+              BEGIN
+                  current_tenant := NULLIF(current_setting('app.current_tenant_id', TRUE), '')::UUID;
+              EXCEPTION WHEN OTHERS THEN
+                  current_tenant := NULL;
+              END;
+              
+              -- Strict matching logic
+              result := 
+                  record_tenant_id IS NOT NULL AND
+                  current_tenant IS NOT NULL AND
+                  record_tenant_id = current_tenant;
+                  
+              -- Log details if debugging enabled
+              IF debug THEN
+                  RAISE NOTICE 'Tenant check: record=%, current=%, result=%', 
+                      record_tenant_id, current_tenant, result;
+              END IF;
+              
+              RETURN result;
+          END;
+          $$ LANGUAGE plpgsql;
+          
+          -- Drop and recreate policy
+          DROP POLICY IF EXISTS tenant_isolation_policy ON public.crm_customer;
+          CREATE POLICY tenant_isolation_policy ON public.crm_customer
+            USING (tenant_isolation_debug(tenant_id, FALSE));
+          
+          -- SECURITY FIX: Force all rows to have a valid tenant_id
+          UPDATE public.crm_customer 
+          SET tenant_id = '00000000-0000-0000-0000-000000000000'
+          WHERE tenant_id IS NULL OR tenant_id::text = '';
         `);
       }
       
@@ -259,6 +336,82 @@ async function ensureCrmCustomerTable(tenantId, requestId) {
   } catch (error) {
     logger.error(`[${requestId}] Error ensuring crm_customer table:`, error);
     throw error;
+  }
+}
+
+/**
+ * Fix tenant data integrity issues by assigning correct tenant IDs
+ * @param {Object} client - Database client
+ * @param {string} currentTenantId - Current tenant ID
+ * @param {string} requestId - Request ID for logging
+ */
+async function fixTenantDataIntegrity(client, currentTenantId, requestId) {
+  try {
+    // First, try to identify which rows belong to which tenant based on creation time
+    // Get customers that might have wrong tenant IDs (created within last 7 days)
+    const recentCustomers = await client.query(`
+      SELECT DISTINCT tenant_id FROM public.crm_customer 
+      WHERE created_at > NOW() - INTERVAL '7 days'
+    `);
+    
+    logger.info(`[${requestId}] Found ${recentCustomers.rows.length} distinct tenant IDs in recent customers`);
+    
+    if (recentCustomers.rows.length < 2) {
+      // No mixed tenant data, likely a new installation
+      logger.info(`[${requestId}] No mixed tenant data detected, skipping repair`);
+      return;
+    }
+    
+    // Count how many customers each tenant has
+    const tenantCounts = await client.query(`
+      SELECT tenant_id, COUNT(*) as count FROM public.crm_customer 
+      GROUP BY tenant_id
+    `);
+    
+    logger.info(`[${requestId}] Tenant counts: ${JSON.stringify(tenantCounts.rows)}`);
+    
+    // If there's a security issue with tenant IDs, we need to fix it
+    // Check if there are rows with NULL or empty tenant_id
+    const invalidTenantRows = await client.query(`
+      SELECT COUNT(*) FROM public.crm_customer 
+      WHERE tenant_id IS NULL OR tenant_id::text = ''
+    `);
+    
+    if (parseInt(invalidTenantRows.rows[0].count) > 0) {
+      logger.warn(`[${requestId}] Found ${invalidTenantRows.rows[0].count} rows with invalid tenant IDs`);
+      
+      // Fix these rows by setting a sentinel tenant ID
+      await client.query(`
+        UPDATE public.crm_customer 
+        SET tenant_id = '00000000-0000-0000-0000-000000000000'
+        WHERE tenant_id IS NULL OR tenant_id::text = ''
+      `);
+      
+      logger.info(`[${requestId}] Fixed invalid tenant IDs`);
+    }
+    
+    // Debug: Get a sample of rows to validate tenant IDs
+    const sampleRows = await client.query(`
+      SELECT id, tenant_id, business_name, created_at 
+      FROM public.crm_customer 
+      LIMIT 5
+    `);
+    
+    logger.info(`[${requestId}] Sample rows: ${JSON.stringify(sampleRows.rows)}`);
+    
+    // For security, add tenant isolation field in RLS policy
+    await client.query(`
+      ALTER TABLE public.crm_customer 
+      ADD COLUMN IF NOT EXISTS tenant_isolation_check UUID GENERATED ALWAYS AS (tenant_id) STORED;
+    
+      CREATE INDEX IF NOT EXISTS idx_tenant_isolation_check ON public.crm_customer(tenant_isolation_check);
+    `);
+    
+    logger.info(`[${requestId}] Added tenant isolation check field for improved security`);
+    
+  } catch (error) {
+    logger.error(`[${requestId}] Error fixing tenant data integrity:`, error);
+    // Continue with the process even if this fails
   }
 }
 

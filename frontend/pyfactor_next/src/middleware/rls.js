@@ -183,4 +183,140 @@ export const withRls = (handler) => {
       });
     }
   };
-}; 
+};
+
+/**
+ * Row-Level Security (RLS) utility functions
+ * 
+ * This module contains functions for enforcing tenant isolation and RLS.
+ */
+
+/**
+ * Verifies that the current user has access to the specified tenant
+ * 
+ * @param {Object} user - User object with Cognito attributes
+ * @param {string} tenantId - Tenant ID to verify access for
+ * @returns {boolean} - Whether the user has access to this tenant
+ */
+export function verifyTenantAccess(user, tenantId) {
+  if (!user || !tenantId) return false;
+  
+  // Get the user's tenant ID from any potential attribute
+  const userTenantId = 
+    user['custom:tenant_ID'] || 
+    user['custom:businessid'] || 
+    user['custom:business_id'] || 
+    user.tenantId || 
+    null;
+  
+  // If user has a tenant ID, it must match the requested tenant ID
+  if (userTenantId) {
+    return userTenantId === tenantId;
+  }
+  
+  // If user has no tenant ID, they don't have access to any tenant
+  return false;
+}
+
+/**
+ * Enforces Row-Level Security access policy on data objects
+ * 
+ * @param {Object} data - Data object to filter
+ * @param {string} tenantId - Tenant ID to enforce
+ * @param {string} tenantIdField - Field name in data containing tenant ID (default: 'tenantId')
+ * @returns {Object|null} - Filtered data object or null if access denied
+ */
+export function enforceRlsPolicy(data, tenantId, tenantIdField = 'tenantId') {
+  if (!data || !tenantId) return null;
+  
+  // For arrays, filter each item
+  if (Array.isArray(data)) {
+    return data.filter(item => 
+      item && 
+      item[tenantIdField] && 
+      item[tenantIdField] === tenantId
+    );
+  }
+  
+  // For objects, check if tenant ID matches
+  if (data[tenantIdField] && data[tenantIdField] !== tenantId) {
+    // Tenant ID mismatch - deny access
+    return null;
+  }
+  
+  return data;
+}
+
+/**
+ * Creates a tenant-specific key for cache storage
+ * 
+ * @param {string} baseKey - Base key name
+ * @param {string} tenantId - Tenant ID
+ * @returns {string} - Tenant-specific key
+ */
+export function getTenantCacheKey(baseKey, tenantId) {
+  if (!tenantId) return baseKey;
+  return `${tenantId}_${baseKey}`;
+}
+
+/**
+ * Clears all tenant-specific data from application cache
+ * 
+ * @param {string} tenantId - Tenant ID to clear
+ */
+export function clearTenantCache(tenantId) {
+  if (typeof window === 'undefined' || !window.__APP_CACHE || !tenantId) return;
+  
+  try {
+    // Remove all tenant-specific keys from each category
+    Object.keys(window.__APP_CACHE).forEach(category => {
+      if (typeof window.__APP_CACHE[category] === 'object') {
+        Object.keys(window.__APP_CACHE[category]).forEach(key => {
+          if (key.startsWith(`${tenantId}_`)) {
+            delete window.__APP_CACHE[category][key];
+          }
+        });
+      }
+    });
+    
+    // Clear tenant-specific object
+    if (window.__APP_CACHE.tenant && window.__APP_CACHE.tenant[tenantId]) {
+      delete window.__APP_CACHE.tenant[tenantId];
+    }
+  } catch (error) {
+    console.error('[RLS] Error clearing tenant cache:', error);
+  }
+}
+
+/**
+ * Verifies a user's subscription plan
+ * 
+ * @param {Object} user - User object with Cognito attributes
+ * @param {string} requiredPlan - Minimum plan required ('professional', 'enterprise')
+ * @returns {boolean} - Whether the user's plan meets the requirement
+ */
+export function verifySubscriptionPlan(user, requiredPlan) {
+  if (!user || !requiredPlan) return false;
+  
+  // Get the user's subscription plan
+  const userPlan = 
+    user['custom:subplan'] || 
+    user['custom:subscription_plan'] || 
+    user.subscriptionType || 
+    user.subscription_type || 
+    'free';
+  
+  // Plan hierarchy for comparison
+  const planHierarchy = {
+    'free': 0,
+    'professional': 1,
+    'enterprise': 2
+  };
+  
+  // Get numeric values for comparison
+  const userPlanValue = planHierarchy[userPlan.toLowerCase()] || 0;
+  const requiredPlanValue = planHierarchy[requiredPlan.toLowerCase()] || 0;
+  
+  // User's plan must be greater than or equal to required plan
+  return userPlanValue >= requiredPlanValue;
+} 

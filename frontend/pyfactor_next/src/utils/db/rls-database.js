@@ -76,59 +76,48 @@ async function setTenantContext(client, tenantId, options = {}) {
   }
   
   try {
-    // First ensure the parameter exists at the PostgreSQL level
-    await client.query(`
-      SELECT set_config('app.current_tenant_id', '', false);
-    `);
+    // Make sure all database parameters are cleared and reset at the start
+    await client.query(`RESET ALL`);
     
-    // Reset tenant context first to prevent any lingering values
-    await client.query(`RESET app.current_tenant_id`);
+    // Use multiple methods to ensure the parameter is properly set
     
-    // Use SET LOCAL for transaction scope to isolate between requests
+    // Method 1: Direct SET command
     await client.query(`SET LOCAL app.current_tenant_id TO '${tenantId}'`);
     
-    // Always verify the setting was correctly applied
-    const verifyResult = await client.query(`SELECT current_setting('app.current_tenant_id', true) as tenant_id`);
+    // Method 2: Use set_config function which is more reliable in some cases
+    await client.query(`SELECT set_config('app.current_tenant_id', '${tenantId}', true)`);
+    
+    // Always verify the setting was correctly applied before proceeding - this is critical
+    const verifyResult = await client.query(`SELECT current_setting('app.current_tenant_id', false) as tenant_id`);
     const currentTenantId = verifyResult.rows[0]?.tenant_id;
     
     if (debug) {
       console.log(`[${requestId}] Set tenant context for RLS: ${tenantId} (verified: ${currentTenantId || 'empty'})`);
     }
     
-    // Check if the parameter is not set or empty
-    if (!currentTenantId || currentTenantId === '') {
-      console.log(`[${requestId}] Tenant context is empty, attempting to create parameter`);
-      
-      // Try to create the parameter if it doesn't exist
-      try {
-        // Create the parameter at session level
-        await client.query(`SELECT set_config('app.current_tenant_id', '${tenantId}', false)`);
-        
-        // Verify again
-        const retryResult = await client.query(`SELECT current_setting('app.current_tenant_id', true) as tenant_id`);
-        const retryTenantId = retryResult.rows[0]?.tenant_id;
-        
-        if (retryTenantId !== tenantId) {
-          console.error(`[${requestId}] SECURITY ERROR: Tenant context verification failed after retry, expected ${tenantId} but got ${retryTenantId || 'empty'}`);
-          throw new Error(`Tenant context verification failed. Expected '${tenantId}' but got '${retryTenantId || "empty"}'`);
-        }
-        
-        console.log(`[${requestId}] Successfully created and set tenant parameter to ${retryTenantId}`);
-      } catch (innerError) {
-        console.error(`[${requestId}] Error creating tenant parameter:`, innerError);
-        throw new Error('Failed to create tenant context parameter');
-      }
-    }
     // Strict verification - tenant ID must match exactly
-    else if (currentTenantId !== tenantId) {
-      console.error(`[${requestId}] SECURITY ERROR: Tenant context verification failed, expected ${tenantId} but got ${currentTenantId || 'empty'}`);
+    if (!currentTenantId || currentTenantId !== tenantId) {
+      console.error(`[${requestId}] SECURITY ERROR: Tenant context verification failed, expected "${tenantId}" but got "${currentTenantId || 'empty'}"`);
       
-      // Immediately reset to prevent data leakage
-      await client.query(`RESET app.current_tenant_id`);
+      // Final attempt - try direct SQL parameter
+      await client.query(`
+        SELECT set_config('app.current_tenant_id', '${tenantId}', false);
+        SET LOCAL app.current_tenant_id TO '${tenantId}';
+      `);
       
-      // Throw error to prevent the query from executing with incorrect tenant context
-      throw new Error(`Tenant context verification failed. Expected '${tenantId}' but got '${currentTenantId || "empty"}'`);
+      // Verify again
+      const retryVerify = await client.query(`SELECT current_setting('app.current_tenant_id', false) as tenant_id`);
+      const retryTenantId = retryVerify.rows[0]?.tenant_id;
+      
+      if (!retryTenantId || retryTenantId !== tenantId) {
+        console.error(`[${requestId}] CRITICAL SECURITY ERROR: Tenant context could not be set after multiple attempts`);
+        throw new Error(`Tenant context verification failed after multiple attempts. Security policy prevents execution.`);
+      }
+      
+      console.log(`[${requestId}] Tenant context successfully set after retry: ${retryTenantId}`);
     }
+    
+    return true;
   } catch (error) {
     console.error(`[${requestId}] Error setting tenant context:`, error);
     throw error;
@@ -172,6 +161,16 @@ async function query(text, params = [], options = {}) {
     // Set tenant context for every query, even in transactions
     if (tenantId) {
       await setTenantContext(queryClient, tenantId, options);
+      
+      // Add extra verification before query execution - to prevent potential data leaks
+      // Check that tenant context is still correct right before executing query
+      const verifyContext = await queryClient.query(`SELECT current_setting('app.current_tenant_id', false) as tenant_id`);
+      const contextBeforeQuery = verifyContext.rows[0]?.tenant_id;
+      
+      if (!contextBeforeQuery || contextBeforeQuery !== tenantId) {
+        console.error(`[${requestId}] CRITICAL SECURITY ERROR: Tenant context changed before query execution! Expected ${tenantId}, got ${contextBeforeQuery || 'empty'}`);
+        throw new Error('Security violation: tenant context inconsistent before query execution');
+      }
     }
     
     // Execute the query with abort signal if provided
@@ -191,6 +190,18 @@ async function query(text, params = [], options = {}) {
         rowCount: result.rowCount,
         fields: result.fields?.map(f => f.name)
       });
+    }
+    
+    // For SELECT queries that might return data from other tenants, add a final safety check
+    if (tenantId && text.trim().toUpperCase().startsWith('SELECT') && result.rows.length > 0 && result.rows[0].tenant_id) {
+      // Check if any returned rows have a different tenant_id than the current tenant
+      const wrongTenantRows = result.rows.filter(row => row.tenant_id && row.tenant_id !== tenantId);
+      
+      if (wrongTenantRows.length > 0) {
+        console.error(`[${requestId}] SECURITY BREACH DETECTED: Query returned ${wrongTenantRows.length} rows with incorrect tenant IDs`);
+        console.error(`[${requestId}] Expected tenant: ${tenantId}, but found tenants: ${[...new Set(wrongTenantRows.map(r => r.tenant_id))].join(', ')}`);
+        throw new Error('Security breach: Query returned data from other tenants');
+      }
     }
     
     return result;

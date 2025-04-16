@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tenantMiddleware, extractTenantId } from './middleware/tenant-middleware';
+import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
 import { isValidUUID } from '@/utils/tenantUtils';
 
 // Public routes that should never require authentication
@@ -44,7 +45,7 @@ function isPublicPath(path) {
  * @param {Request} request - The incoming request
  * @returns {NextResponse} - The response
  */
-export function middleware(request) {
+export async function middleware(request) {
   const { pathname } = new URL(request.url);
   
   // Skip middleware for static files and API routes except for tenant-specific endpoints
@@ -63,6 +64,18 @@ export function middleware(request) {
   if (pathname === '/onboarding') {
     console.debug('[Middleware] Redirecting from /onboarding to /onboarding/business-info');
     return NextResponse.redirect(new URL('/onboarding/business-info', request.url));
+  }
+  
+  // Extract tenant information to determine if isolation check is needed
+  const tenantInfo = extractTenantId(request);
+  
+  // If this is a tenant-specific route with a valid tenant ID, enforce tenant isolation
+  if (tenantInfo.found && tenantInfo.isValid && 
+      pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//i)) {
+    console.debug(`[Middleware] Applying tenant isolation for tenant: ${tenantInfo.tenantId}`);
+    
+    // Apply RLS and tenant isolation
+    return tenantIsolationMiddleware(request);
   }
   
   // Apply tenant middleware (ensure tenant ID is in URL for required routes)

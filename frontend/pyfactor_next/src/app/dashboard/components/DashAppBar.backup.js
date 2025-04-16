@@ -32,11 +32,7 @@ import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
-import { useToast } from '@/hooks/useToast';
-import { useSession } from '@/hooks/useSession';
-import { useProfile } from '@/hooks/useProfile';
-import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
-import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { useUserProfile } from '@/contexts/UserProfileContext';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined' && !window.__APP_CACHE) {
@@ -87,7 +83,7 @@ const DashAppBar = ({
     error: profileError,
     fetchProfile,
     isCacheValid
-  } = useProfile();
+  } = useUserProfile();
   
   // Add refs to track state updates to avoid infinite loops
   const hasInitializedRef = useRef(false);
@@ -133,32 +129,17 @@ const DashAppBar = ({
     if (typeof newData === 'function') {
       setLocalUserData((prevData) => {
         const updatedData = newData(prevData);
-        
-        // Store the updated data for useEffect to handle parent update
+        // Also update parent state if callback available
         if (typeof setUserData === 'function') {
-          // Use a ref to store the data we want to pass to parent
-          // This avoids the state update during render issue
-          const dataForParent = updatedData;
-          setTimeout(() => {
-            if (isMounted.current) {
-              setUserData(dataForParent);
-            }
-          }, 0);
+          setUserData(updatedData);
         }
-        
         return updatedData;
       });
     } else {
-      // If it's an object, directly update local state
+      // If it's an object, directly update both states
       setLocalUserData(newData);
-      
-      // Use setTimeout to defer parent state update until after render
       if (typeof setUserData === 'function') {
-        setTimeout(() => {
-          if (isMounted.current) {
-            setUserData(newData);
-          }
-        }, 0);
+        setUserData(newData);
       }
     }
   }, [setUserData]);
@@ -767,8 +748,8 @@ const DashAppBar = ({
     // Return strictly data from sources, not generated values
     return businessName || 
            (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : '') || 
-           '';
-  }, [userAttributes, userData, businessName, profileData]);
+           (businessData?.business_name && businessData.business_name !== '' ? businessData.business_name : '');
+  }, [userAttributes, userData, businessName, profileData, businessData]);
 
   // Function to get the user's email from app cache, cookies, and Cognito tokens
   const getUserEmail = () => {
@@ -871,56 +852,269 @@ const DashAppBar = ({
   // Flag to track email processing
   const hasEmailBeenProcessed = useRef(false);
 
-  // Fetch user attributes from Cognito if not provided as props
+  // Effect to fetch Cognito user attributes when authenticated
   useEffect(() => {
-    const fetchAttributes = async () => {
+    // Define async function for user attributes fetch
+    async function fetchCognitoUserData() {
       try {
-        // Only attempt to fetch if we don't already have user attributes
-        if (!userAttributes && isAuthenticated) {
-          logger.info('[DashAppBar] No userAttributes prop provided, fetching from Cognito');
-          
-          // Import auth utilities
-          const { fetchUserAttributes } = await import('aws-amplify/auth');
-          
-          // Get user attributes
-          const attributes = await fetchUserAttributes();
-          
-          // Log success
-          logger.info('[DashAppBar] Successfully fetched user attributes from Cognito');
-          
-          // Set user attributes if we received valid data
-          if (attributes && Object.keys(attributes).length > 0) {
-            // Use any available name attributes to generate initials
+        logger.debug('[AppBar] Starting Cognito user attributes fetch');
+        
+        // Try to get Cognito data first if authenticated
+        if (isAuthenticated) {
+          try {
+            logger.debug('[AppBar] User is authenticated, fetching from Cognito directly');
+            
+            // Import Amplify auth functions
+            const { fetchUserAttributes } = await import('aws-amplify/auth');
+            
+            // Get user attributes directly from Cognito
+            const attributes = await fetchUserAttributes();
+            logger.debug('[AppBar] Successfully fetched Cognito attributes:', attributes);
+            
+            // Extract important profile data - enhanced to check more potential attribute names
             const firstName = 
               attributes['given_name'] || 
               attributes['custom:firstname'] || 
+              attributes['custom:first_name'] || 
+              attributes['first_name'] || 
               attributes['firstName'] || 
-              attributes['first_name'] || '';
+              attributes['name']?.split(' ')[0] || 
+              '';
               
             const lastName = 
               attributes['family_name'] || 
               attributes['custom:lastname'] || 
+              attributes['custom:last_name'] || 
+              attributes['last_name'] || 
               attributes['lastName'] || 
-              attributes['last_name'] || '';
+              (attributes['name']?.includes(' ') ? attributes['name'].split(' ').slice(1).join(' ') : '') || 
+              '';
               
             const email = attributes['email'] || '';
             
-            // Generate initials from the attributes
-            if (firstName || lastName || email) {
+            // Enhanced business name extraction - check all possible attribute names
+            const businessName = 
+              attributes['custom:businessname'] || 
+              attributes['custom:tenant_name'] || 
+              attributes['custom:business_name'] || 
+              attributes['custom:company'] || 
+              attributes['businessName'] ||
+              attributes['business_name'] ||
+              '';
+              
+            const subscriptionType = 
+              attributes['custom:subplan'] || 
+              attributes['custom:subscription_plan'] || 
+              attributes['custom:subscription'] || 
+              'free';
+            
+            // Create profile object
+            const profile = {
+              firstName,
+              lastName,
+              email,
+              businessName,
+              subscriptionType
+            };
+            
+            logger.info('[AppBar] Profile data from Cognito:', profile);
+            
+            // Use Cognito business name if available
+            if (businessName) {
+              logger.info('[AppBar] Setting business name from Cognito:', businessName);
+              setBusinessName(businessName);
+              
+              // Store in app cache for persistence
+              if (typeof window !== 'undefined') {
+                if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+                window.__APP_CACHE.tenant.businessName = businessName;
+              }
+            }
+            
+            // Generate and set user initials
+            const initials = generateInitialsFromNames(firstName, lastName, email);
+            if (initials) {
+              setUserInitials(initials);
+              
+              // Store initials in cache for persistence
+              if (typeof window !== 'undefined') {
+                if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+                window.__APP_CACHE.user.initials = initials;
+                window.__APP_CACHE.user.firstName = firstName;
+                window.__APP_CACHE.user.lastName = lastName;
+              }
+            }
+            
+            // Update profile state
+            setProfileData(prevProfile => ({
+              ...prevProfile,
+              ...profile
+            }));
+            
+            // Update userdata if callback available - use setTimeout to break update cycles
+            if (typeof setUserData === 'function' && isMounted.current) {
+              // Use setTimeout to break update cycles
+              setTimeout(() => {
+                if (isMounted.current) {
+                  updateUserData(prevData => {
+                    // Only update if needed - check field by field
+                    const needsUpdate = 
+                      prevData.businessName !== businessName ||
+                      prevData.first_name !== firstName ||
+                      prevData.firstName !== firstName ||
+                      prevData.last_name !== lastName ||
+                      prevData.lastName !== lastName ||
+                      prevData.subscription_type !== subscriptionType;
+                      
+                    if (needsUpdate) {
+                      return {
+                        ...prevData,
+                        ...profile,
+                        // Add these fields to ensure they're available for UI display
+                        businessName: businessName,
+                        first_name: firstName,
+                        firstName: firstName,
+                        last_name: lastName,
+                        lastName: lastName,
+                        subscription_type: subscriptionType
+                      };
+                    }
+                    return prevData;
+                  });
+                }
+              }, 0);
+            }
+            
+            return;
+          } catch (cognitoError) {
+            logger.error('[AppBar] Error fetching Cognito attributes:', cognitoError);
+            // Continue with fallbacks below
+          }
+        }
+        
+        // If Cognito failed or user not authenticated, try JWT token as fallback
+        try {
+          // Initialize app cache if needed
+          if (typeof window !== 'undefined') {
+            if (!window.__APP_CACHE) window.__APP_CACHE = {};
+            if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+            if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+          }
+          
+          // Try to get token from app cache first
+          let idToken = null;
+          
+          if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.idToken) {
+            idToken = window.__APP_CACHE.auth.idToken;
+            logger.debug('[AppBar] Using JWT token from app cache');
+          } else {
+            // Try to get from auth session
+            try {
+              const { fetchAuthSession } = await import('aws-amplify/auth');
+              const session = await fetchAuthSession();
+              if (session?.tokens?.idToken) {
+                idToken = session.tokens.idToken.toString();
+                // Store in app cache for future use
+                if (typeof window !== 'undefined') {
+                  window.__APP_CACHE = window.__APP_CACHE || {};
+                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  window.__APP_CACHE.auth.idToken = idToken;
+                }
+                logger.debug('[AppBar] Retrieved token from auth session');
+              }
+            } catch (sessionError) {
+              logger.warn('[AppBar] Could not retrieve token from session:', sessionError);
+            }
+          }
+          
+          if (idToken) {
+            const payload = JSON.parse(atob(idToken.split('.')[1]));
+            logger.debug('[AppBar] JWT token payload:', payload);
+            
+            // Extract data from JWT payload
+            const firstName = payload['custom:firstname'] || payload['given_name'] || '';
+            const lastName = payload['custom:lastname'] || payload['family_name'] || '';
+            const email = payload['email'] || '';
+            const businessName = payload['custom:businessname'] || payload['custom:tenant_name'] || '';
+            
+            if (email || firstName || lastName || businessName) {
+              logger.info('[AppBar] Found profile information in JWT token');
+              
+              // Set business name if available
+              if (businessName) {
+                setBusinessName(businessName);
+              }
+              
+              // Generate initials
               const initials = generateInitialsFromNames(firstName, lastName, email);
               if (initials) {
                 setUserInitials(initials);
               }
+              
+              // Update profile data
+              const profile = {
+                firstName,
+                lastName,
+                email,
+                businessName,
+                subscription_type: payload['custom:subplan'] || 'free'
+              };
+              
+              setProfileData(prevProfile => ({
+                ...prevProfile,
+                ...profile
+              }));
+              
+              // Update userData if callback available - use setTimeout to break update cycles
+              if (typeof setUserData === 'function' && isMounted.current) {
+                // Use setTimeout to break update cycles
+                setTimeout(() => {
+                  if (isMounted.current) {
+                    updateUserData(prevData => {
+                      // Only update if needed - check field by field
+                      const needsUpdate = 
+                        prevData.businessName !== businessName ||
+                        prevData.first_name !== firstName ||
+                        prevData.firstName !== firstName ||
+                        prevData.last_name !== lastName ||
+                        prevData.lastName !== lastName ||
+                        prevData.subscription_type !== subscriptionType;
+                        
+                      if (needsUpdate) {
+                        return {
+                          ...prevData,
+                          ...profile,
+                          // Add these fields to ensure they're available for UI display
+                          businessName: businessName,
+                          first_name: firstName,
+                          firstName: firstName,
+                          last_name: lastName,
+                          lastName: lastName,
+                          subscription_type: subscriptionType
+                        };
+                      }
+                      return prevData;
+                    });
+                  }
+                }, 0);
+              }
             }
           }
+        } catch (error) {
+          logger.error('[DashAppBar] Error extracting data from token:', error);
         }
-      } catch (error) {
-        logger.error('[DashAppBar] Error fetching user attributes:', error);
+      } catch (cognitoError) {
+        logger.error('[AppBar] Error fetching Cognito attributes:', cognitoError);
       }
-    };
-    
-    fetchAttributes();
-  }, [userAttributes, isAuthenticated]);
+    }
+
+    // Call the function when the effect runs
+    if (isAuthenticated) {
+      fetchCognitoUserData();
+    }
+  }, [isAuthenticated, updateUserData, generateInitialsFromNames]);
 
   // Only use tenant-specific fetch when tenant ID changes
   useEffect(() => {

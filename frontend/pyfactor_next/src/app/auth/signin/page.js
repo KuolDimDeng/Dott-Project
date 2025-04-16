@@ -6,6 +6,47 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function SignInPage() {
+  // Add this function to clear all app cache on sign-in
+  const clearAllAppCache = () => {
+    if (typeof window === 'undefined' || !window.__APP_CACHE) return;
+    
+    // Log the cache clearing
+    console.debug('[SignIn] Clearing all app cache to prevent data leakage');
+    
+    try {
+      // Clear all categories
+      Object.keys(window.__APP_CACHE).forEach(category => {
+        window.__APP_CACHE[category] = {};
+      });
+      
+      // Specifically ensure tenant data is cleared
+      window.__APP_CACHE.tenant = {};
+      window.__APP_CACHE.tenants = {};
+      
+      // Clear any legacy cache
+      localStorage.removeItem('appCache');
+      
+      console.debug('[SignIn] App cache cleared successfully');
+    } catch (error) {
+      console.warn('[SignIn] Error clearing app cache:', error);
+    }
+  };
+
+  const handleSignIn = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    
+    // Clear app cache first to prevent any potential data leakage
+    clearAllAppCache();
+    
+    try {
+      // ... rest of sign-in code ...
+    } catch (error) {
+      // ... error handling ...
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

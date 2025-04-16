@@ -1118,3 +1118,59 @@ export async function getEffectiveTenantId() {
     return null;
   }
 }
+
+// Add a method to handle network errors with retry logic
+export const handleNetworkError = async (operation, maxRetries = 3) => {
+  let retryCount = 0;
+  
+  const executeWithRetry = async () => {
+    try {
+      return await operation();
+    } catch (error) {
+      // Check if this is a network error
+      const isNetworkError = 
+        error.name === 'NetworkError' || 
+        error.message?.includes('network') || 
+        error.message?.includes('Network Error') ||
+        error.code === 'NetworkError';
+      
+      if (isNetworkError && retryCount < maxRetries) {
+        retryCount++;
+        logger.info(`[TenantUtils] Retrying operation after network error (${retryCount}/${maxRetries})`);
+        
+        // Exponential backoff 
+        const delay = Math.pow(2, retryCount) * 500;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        
+        return executeWithRetry();
+      }
+      
+      throw error;
+    }
+  };
+  
+  return executeWithRetry();
+};
+
+// Apply this to the tenant fetching function
+export const getTenantFromCognito = async () => {
+  try {
+    const userAttributes = await handleNetworkError(async () => {
+      return await fetchUserAttributes();
+    });
+    
+    let tenantId = userAttributes['custom:businessid'];
+    
+    // Log tenant ID found in Cognito with different log level based on presence
+    if (tenantId) {
+      logger.info('[TenantUtils] Found tenant ID in Cognito:', tenantId);
+    } else {
+      logger.debug('[TenantUtils] No tenant ID found in Cognito attributes');
+    }
+    
+    return tenantId || null;
+  } catch (error) {
+    logger.error('[TenantUtils] Error getting user attributes from Cognito:', error);
+    return null;
+  }
+};

@@ -7,6 +7,8 @@ import { logger } from '@/utils/logger';
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com';
+const API_DOMAIN = process.env.NEXT_PUBLIC_API_DOMAIN || 'api.example.com';
 
 // Create Amplify configuration for v6
 const amplifyConfig = {
@@ -35,7 +37,16 @@ const amplifyConfig = {
         }
         return Promise.reject(error);
       },
-      endpoints: [],
+      endpoints: [
+        {
+          name: 'api',
+          endpoint: API_URL || `https://${API_DOMAIN}`,
+          custom_header: async () => {
+            return { Authorization: `Bearer ${await getToken()}` };
+          },
+          timeout: 30000, // 30 seconds
+        },
+      ],
       customMiddleware: {
         retry: {
           maxRetries: 3,

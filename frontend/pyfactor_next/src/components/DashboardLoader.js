@@ -16,20 +16,69 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
   const pathname = usePathname();
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   const [status, setStatus] = useState(message);
+  const MAX_REDIRECT_ATTEMPTS = 5;
   
+  // Add error recovery function
+  const recoverFromError = () => {
+    // Clear any potential network errors and retry loading
+    if (typeof window !== 'undefined') {
+      console.log('[DashboardLoader] Attempting to recover from network error');
+      // Force a clean reload after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    }
+  };
+  
+  // Helper function to refresh the auth session
+  const refreshAuthSession = async () => {
+    try {
+      console.log('[DashboardLoader] Refreshing auth session');
+      // Dynamically import to support SSR
+      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const session = await fetchAuthSession({ forceRefresh: true });
+      return !!session.tokens?.accessToken;
+    } catch (error) {
+      console.error('[DashboardLoader] Error refreshing auth session:', error);
+      return false;
+    }
+  };
+
   // Helper function to set tenant ID in Cognito via API route if needed
   const setTenantAttribute = async (tenantId) => {
     try {
       console.log(`[DashboardLoader] Setting tenant ID in Cognito via API: ${tenantId}`);
-      const response = await fetch('/api/tenant/attribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId }),
-      });
+      // Add retry logic for network errors
+      let retryCount = 0;
+      const maxRetries = 3;
       
-      if (!response.ok) {
-        console.error('[DashboardLoader] Error setting tenant ID in Cognito via API');
-      }
+      const tryFetch = async () => {
+        try {
+          const response = await fetch('/api/tenant/attribute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tenantId }),
+            // Increase timeout
+            timeout: 10000
+          });
+          
+          if (!response.ok) {
+            console.error('[DashboardLoader] Error setting tenant ID in Cognito via API');
+          }
+          return response;
+        } catch (err) {
+          if (retryCount < maxRetries) {
+            retryCount++;
+            console.log(`[DashboardLoader] Retrying tenant ID set (${retryCount}/${maxRetries})`);
+            // Exponential backoff
+            await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+            return tryFetch();
+          }
+          throw err;
+        }
+      };
+      
+      await tryFetch();
     } catch (err) {
       console.error('[DashboardLoader] Failed to set tenant ID in Cognito:', err);
     }
@@ -48,6 +97,16 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     const redirectPath = getMetaContent('x-redirect-path');
     const dashboardError = getMetaContent('x-dashboard-error') === 'true';
     const tenantIdMeta = getMetaContent('x-tenant-id');
+    const refreshNeeded = getMetaContent('x-auth-refresh-needed') === 'true';
+    
+    // Check if the current path has auth parameters
+    const hasAuthParam = pathname.includes('fromAuth=true') || 
+                         pathname.includes('direct=true') || 
+                         pathname.includes('retry=');
+    
+    // Get tenant ID from current path if it's already a tenant URL
+    const tenantIdMatch = pathname.match(/^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
+    const pathTenantId = tenantIdMatch ? tenantIdMatch[1] : null;
     
     // Debug info
     console.log('[DashboardLoader] Redirect info:', { 
@@ -55,13 +114,56 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       redirectPath, 
       dashboardError,
       tenantIdMeta,
+      pathTenantId,
+      hasAuthParam,
       attempts: redirectAttempts,
       currentPath: pathname
     });
     
-    // If we're at max redirect attempts, don't try further
-    if (redirectAttempts >= 3) {
-      setStatus('Too many redirect attempts. Please try refreshing the page.');
+    // If we're already on a tenant URL with auth parameters, check auth instead of redirecting
+    // This prevents redirect loops that can happen post-login
+    if (pathTenantId && hasAuthParam && redirectAttempts > 0) {
+      console.log('[DashboardLoader] Already on tenant URL with auth params, refreshing auth session');
+      
+      // Store the tenant ID in Cognito attributes
+      setTenantAttribute(pathTenantId);
+      
+      // Refresh the auth session instead of redirecting
+      refreshAuthSession().then(success => {
+        if (success) {
+          console.log('[DashboardLoader] Auth refreshed successfully, reloading without auth params');
+          // Remove auth params from URL to show clean URL
+          const cleanPath = pathname.split('?')[0];
+          router.replace(cleanPath);
+        } else {
+          console.log('[DashboardLoader] Auth refresh failed, attempting recovery');
+          recoverFromError();
+        }
+      });
+      
+      return;
+    }
+    
+    // If we're at max redirect attempts, try to recover instead of giving up
+    if (redirectAttempts >= MAX_REDIRECT_ATTEMPTS) {
+      setStatus('Too many redirect attempts. Attempting to recover...');
+      recoverFromError();
+      return;
+    }
+    
+    // If auth refresh is needed, do that first
+    if (refreshNeeded) {
+      console.log('[DashboardLoader] Auth refresh needed, attempting session refresh');
+      refreshAuthSession().then(success => {
+        if (success) {
+          console.log('[DashboardLoader] Auth refreshed successfully');
+          // Reload the current page to apply the refreshed token
+          window.location.reload();
+        } else {
+          console.log('[DashboardLoader] Auth refresh failed, attempting recovery');
+          recoverFromError();
+        }
+      });
       return;
     }
     
@@ -73,8 +175,8 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       // Store the tenant ID in Cognito attributes
       setTenantAttribute(tenantIdMeta);
       
-      // Navigate to the tenant-specific dashboard
-      router.push(`/${tenantIdMeta}/dashboard?direct=true&fromSignIn=true`);
+      // Navigate to the tenant-specific dashboard with retry parameters
+      router.push(`/${tenantIdMeta}/dashboard?direct=true&fromAuth=true&retry=${redirectAttempts}`);
       return;
     }
     
@@ -109,10 +211,10 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
         
         // Update redirect counter and status
         setRedirectAttempts(prev => prev + 1);
-        setStatus(`Redirecting to tenant dashboard (${redirectAttempts + 1}/3)...`);
+        setStatus(`Redirecting to tenant dashboard (${redirectAttempts + 1}/${MAX_REDIRECT_ATTEMPTS})...`);
         
         // Navigate directly, with tenant ID stored in Cognito
-        router.push(finalPath);
+        router.push(`${finalPath}${finalPath.includes('?') ? '&' : '?'}retry=${redirectAttempts}`);
         return;
       }
       
@@ -122,36 +224,36 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
         console.log(`[DashboardLoader] Redirecting to: ${redirectPath}`);
         
         setRedirectAttempts(prev => prev + 1);
-        router.push(redirectPath);
+        router.push(`${redirectPath}${redirectPath.includes('?') ? '&' : '?'}retry=${redirectAttempts}`);
       }
     }
     
     // Handle dashboard errors
     if (dashboardError) {
       const errorMessage = getMetaContent('x-error-message') || 'Unknown error';
-      setStatus(`Error: ${errorMessage}`);
+      setStatus(`Error: ${errorMessage}. Attempting to recover...`);
+      // Wait a moment, then try to recover
+      setTimeout(recoverFromError, 3000);
     }
-  }, [router, redirectAttempts, message, pathname]);
-  
+  }, [router, redirectAttempts, pathname, MAX_REDIRECT_ATTEMPTS]);
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-      <div className="p-8 bg-white rounded-lg shadow-md max-w-md w-full">
-        <div className="flex items-center justify-center">
-          <svg className="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        </div>
-        
-        {redirectAttempts >= 3 && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => window.location.href = '/dashboard?fromSignIn=true&reset=true'}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Reset Navigation
-            </button>
+    <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
+      <div className="space-y-4 flex flex-col items-center">
+        <div className="w-16 h-16 border-4 border-primary-main border-t-transparent rounded-full animate-spin"></div>
+        <h2 className="text-xl font-semibold text-gray-800">{status}</h2>
+        {redirectAttempts > 0 && (
+          <div className="text-sm text-gray-600">
+            Redirect attempt: {redirectAttempts}/{MAX_REDIRECT_ATTEMPTS}
           </div>
+        )}
+        {redirectAttempts >= 3 && (
+          <button
+            onClick={recoverFromError}
+            className="mt-4 px-4 py-2 bg-primary-main text-white rounded hover:bg-primary-dark"
+          >
+            Retry Loading
+          </button>
         )}
       </div>
     </div>

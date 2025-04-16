@@ -460,6 +460,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowMyAccount,
     setShowHelpCenter,
     userData: memoizedUserData,
+    userAttributes,
     setUserData,
     drawerOpen,
     handleDrawerToggle: handleDrawerToggleWithLogging,
@@ -482,7 +483,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     tenantId: effectiveTenantId
   }), [
     anchorEl, settingsAnchorEl, openMenu, settingsMenuOpen, setAnchorEl, setSettingsAnchorEl,
-    setShowMyAccount, setShowHelpCenter, memoizedUserData, setUserData, drawerOpen, handleDrawerToggleWithLogging,
+    setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggleWithLogging,
     resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
     handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick,
     handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId

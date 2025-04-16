@@ -166,59 +166,109 @@ const getBusinessInfoFromCognito = async () => {
 // Helper function to handle submitting subscription plan selection to Cognito
 const saveSubscriptionToCognito = async (planId, billingCycle, currentTenantId) => {
   try {
-    logger.info('[SubscriptionPage] Saving subscription plan to Cognito', { 
-      planId, 
-      billingCycle, 
+    logger.info('[SubscriptionPage] Saving subscription plan to Cognito', {
+      planId,
+      billingCycle,
       tenantId: currentTenantId,
       tenantIdType: typeof currentTenantId,
-      isUUID: currentTenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentTenantId)
+      isUUID: isValidUUID(currentTenantId)
     });
     
-    // Format the data for Cognito attributes - DO NOT include tenant ID attributes here
-    // These appear to be managed/protected and can only be updated by admin
-    const userAttributes = {
-      'custom:subplan': planId,
-      'custom:subscriptioninterval': billingCycle === 'monthly' ? 'monthly' : 'annual',
-      'custom:subscriptionstatus': 'active',
-      'custom:updated_at': new Date().toISOString(),
-      'custom:onboarding': 'complete',
-      'custom:setupdone': 'true',
-      'custom:requirespayment': planId === 'free' ? 'false' : 'true',
-      'custom:acctstatus': 'active'
-    };
-    
-    // Update Cognito attributes - only write subscription-related attributes
-    await updateUserAttributes({ userAttributes });
-    
-    // Update app cache with subscription data
-    setCacheValue('subscription', { 
-      planId, 
-      billingCycle,
-      status: 'active',
-      requiresPayment: planId !== 'free'
-    }, { ttl: 3600000 }); // 1 hour
-    
-    // Store tenant ID in cache for consistent access (but not in Cognito attributes)
-    if (currentTenantId) {
-      setCacheValue('tenant_id', currentTenantId, { ttl: 86400000 * 30 }); // 30 days
+    if (!currentTenantId) {
+      logger.error('[SubscriptionPage] Cannot save subscription without tenant ID');
+      throw new Error('Missing tenant ID for subscription');
     }
     
-    // Update onboarding state in app cache
-    const onboardingStatus = {
-      businessInfoCompleted: true,
-      subscriptionCompleted: true,
-      onboardingCompleted: true,
-      setupDone: true,
-      currentStep: 'complete',
-      lastUpdated: new Date().toISOString()
+    // Import AWS Amplify Auth to update user attributes
+    const { updateUserAttributes } = await import('aws-amplify/auth');
+    
+    // Define attributes to update
+    const updateAttributes = {
+      'custom:subplan': planId,
+      'custom:subscription_plan': planId, // Set both formats for better compatibility
+      'custom:billing_cycle': billingCycle,
+      'custom:subscription_status': 'active'
     };
     
-    setCacheValue('onboarding_status', onboardingStatus, { ttl: 86400000 }); // 24 hours
+    // Call the AWS API to update user attributes
+    const result = await updateUserAttributes({
+      userAttributes: updateAttributes
+    });
     
     logger.info('[SubscriptionPage] Subscription plan saved to Cognito successfully');
-    return true;
+    
+    // Also store in local cache for backup and fast access
+    if (typeof window !== 'undefined') {
+      // Store with tenant isolation
+      if (window.__APP_CACHE) {
+        // Initialize tenant namespace if needed
+        if (!window.__APP_CACHE.tenants) {
+          window.__APP_CACHE.tenants = {};
+        }
+        if (!window.__APP_CACHE.tenants[currentTenantId]) {
+          window.__APP_CACHE.tenants[currentTenantId] = {};
+        }
+        
+        // Store subscription data in tenant namespace
+        window.__APP_CACHE.tenants[currentTenantId].subscriptionType = planId;
+        window.__APP_CACHE.tenants[currentTenantId].subscription_type = planId;
+        window.__APP_CACHE.tenants[currentTenantId].billingCycle = billingCycle;
+        
+        // Also store with tenant-prefixed keys in user category
+        if (!window.__APP_CACHE.user) {
+          window.__APP_CACHE.user = {};
+        }
+        window.__APP_CACHE.user[`${currentTenantId}_subscriptionType`] = planId;
+        window.__APP_CACHE.user[`${currentTenantId}_subscription_type`] = planId;
+        window.__APP_CACHE.user[`${currentTenantId}_billingCycle`] = billingCycle;
+      }
+      
+      // Also use traditional cache
+      setCacheValue('selectedPlan', planId, { ttl: 86400000 * 30 }); // 30 days
+      setCacheValue('billingCycle', billingCycle, { ttl: 86400000 * 30 }); // 30 days
+      
+      // Store with tenant ID for better isolation
+      setCacheValue(`${currentTenantId}_subscriptionType`, planId, { ttl: 86400000 * 30 });
+      setCacheValue(`${currentTenantId}_subscription_type`, planId, { ttl: 86400000 * 30 });
+      setCacheValue(`${currentTenantId}_billingCycle`, billingCycle, { ttl: 86400000 * 30 });
+    }
+    
+    // Make an API call to our subscription endpoint to ensure the backend is updated
+    try {
+      const apiUrl = `/api/user/subscription`;
+      const token = await getAuthToken(true); // Force refresh for latest token
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          tenantId: currentTenantId,
+          plan: planId,
+          billingCycle
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        logger.warn('[SubscriptionPage] API call to update subscription returned error:', {
+          status: response.status,
+          error: errorData
+        });
+      } else {
+        const data = await response.json();
+        logger.info('[SubscriptionPage] API call to update subscription successful:', data);
+      }
+    } catch (apiError) {
+      // Log but don't block - the Cognito update is the critical part
+      logger.warn('[SubscriptionPage] Error calling subscription API:', apiError);
+    }
+    
+    return result;
   } catch (error) {
-    logger.error('[SubscriptionPage] Failed to save subscription plan to Cognito', error);
+    logger.error('[SubscriptionPage] Error saving subscription to Cognito:', error);
     throw error;
   }
 };

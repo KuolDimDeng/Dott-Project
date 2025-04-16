@@ -30,6 +30,9 @@ export async function getServerUser(request) {
     // Configure Amplify in server environment
     Amplify.configure(amplifyConfig);
     
+    // Check if this is a request from an auth flow
+    const isFromAuthFlow = request?.headers?.get('x-from-auth-flow') === 'true';
+    
     // Get cookies from request headers instead of using cookies() directly
     let idToken = null;
     
@@ -73,6 +76,23 @@ export async function getServerUser(request) {
     
     if (!idToken) {
       console.debug('[getServerUser] No ID token found');
+      
+      // If this is part of an auth flow, check for a fallback tenant ID
+      if (isFromAuthFlow) {
+        const tenantId = request?.headers?.get('x-tenant-id');
+        if (tenantId) {
+          console.debug('[getServerUser] Auth flow detected with tenant ID from headers:', tenantId);
+          
+          // Return a minimal user object with just the tenant ID
+          // This allows tenant isolation to work during auth transitions
+          return {
+            'custom:tenant_ID': tenantId,
+            fromAuthFlow: true,
+            isMinimalUser: true
+          };
+        }
+      }
+      
       return null;
     }
     
@@ -83,6 +103,20 @@ export async function getServerUser(request) {
       
       if (!user) {
         console.debug('[getServerUser] No user found in session');
+        
+        // If this is from auth flow, provide minimal feedback
+        if (isFromAuthFlow) {
+          const tenantId = request?.headers?.get('x-tenant-id');
+          if (tenantId) {
+            console.debug('[getServerUser] Auth flow detected with tenant ID from headers:', tenantId);
+            return {
+              'custom:tenant_ID': tenantId,
+              fromAuthFlow: true,
+              isMinimalUser: true
+            };
+          }
+        }
+        
         return null;
       }
       
@@ -90,25 +124,11 @@ export async function getServerUser(request) {
       const session = await fetchAuthSession();
       const attributes = session?.tokens?.idToken?.payload || {};
       
-      // DEBUGGING: Add explicit token details to understand attributes
-      console.log('[getServerUser] Token payload keys:', Object.keys(attributes));
-      console.log('[getServerUser] Custom attributes:', Object.keys(attributes).filter(k => k.startsWith('custom:')));
-
       // Check key casing - Cognito sometimes uses different case patterns
       const keysLower = Object.keys(attributes).map(k => k.toLowerCase());
       const hasLowercaseFirstname = keysLower.includes('custom:firstname');
       const hasUppercaseFirstname = keysLower.includes('custom:firstname'.toUpperCase());
       const hasCapitalizedFirstname = keysLower.includes('Custom:Firstname'.toLowerCase());
-
-      // Check both standard lowercase and other case formats
-      console.log('[getServerUser] Key case patterns:', {
-        hasLowercaseFirstname,
-        hasUppercaseFirstname,
-        hasCapitalizedFirstname,
-        rawLowercaseValue: attributes['custom:firstname'],
-        rawUppercaseValue: attributes['CUSTOM:FIRSTNAME'],
-        rawCapitalizedValue: attributes['Custom:Firstname']
-      });
 
       // Attempt to find a match in any case format
       const findAttributeIgnoreCase = (baseKey) => {
@@ -121,17 +141,24 @@ export async function getServerUser(request) {
       const lastnameValue = findAttributeIgnoreCase('custom:lastname');
       const businessnameValue = findAttributeIgnoreCase('custom:businessname');
       const tenantIdValue = findAttributeIgnoreCase('custom:tenant_ID');
-
-      console.log('[getServerUser] Case-insensitive attribute values:', {
-        firstnameValue,
-        lastnameValue,
-        businessnameValue,
-        tenantIdValue
-      });
       
       // Verify token is valid
       if (!session?.tokens?.idToken) {
         console.warn('[getServerUser] Session tokens missing or invalid');
+        
+        // If this is from auth flow, provide minimal feedback
+        if (isFromAuthFlow) {
+          const tenantId = request?.headers?.get('x-tenant-id');
+          if (tenantId) {
+            console.debug('[getServerUser] Auth flow detected with tenant ID from headers:', tenantId);
+            return {
+              'custom:tenant_ID': tenantId,
+              fromAuthFlow: true,
+              isMinimalUser: true
+            };
+          }
+        }
+        
         return null;
       }
       
@@ -158,17 +185,6 @@ export async function getServerUser(request) {
         'custom:userrole': attributes['custom:userrole'] || 'client'
       };
       
-      console.log('[getServerUser] Enhanced user attributes:', {
-        email: enhancedUser.email,
-        first_name: enhancedUser.first_name,
-        last_name: enhancedUser.last_name,
-        given_name: enhancedUser.given_name,
-        family_name: enhancedUser.family_name,
-        custom_firstname: firstnameValue,
-        custom_lastname: lastnameValue,
-        custom_businessname: businessnameValue
-      });
-      
       // Return enhanced user
       return enhancedUser;
     } catch (authError) {
@@ -177,6 +193,21 @@ export async function getServerUser(request) {
         error: authError.message,
         code: authError.code
       });
+      
+      // If this is from auth flow and we have a network error, provide minimal authentication
+      if (isFromAuthFlow && (authError.name === 'TypeError' || authError.message?.includes('NetworkError'))) {
+        const tenantId = request?.headers?.get('x-tenant-id');
+        if (tenantId) {
+          console.debug('[getServerUser] Auth flow with network error and tenant ID from headers:', tenantId);
+          return {
+            'custom:tenant_ID': tenantId,
+            fromAuthFlow: true,
+            isMinimalUser: true,
+            networkError: true
+          };
+        }
+      }
+      
       return null;
     }
   } catch (error) {
@@ -186,6 +217,20 @@ export async function getServerUser(request) {
       code: error.code,
       name: error.name
     });
+    
+    // If this is from auth flow, provide a fallback
+    if (request?.headers?.get('x-from-auth-flow') === 'true') {
+      const tenantId = request?.headers?.get('x-tenant-id');
+      if (tenantId) {
+        console.debug('[getServerUser] General error in auth flow with tenant ID:', tenantId);
+        return {
+          'custom:tenant_ID': tenantId,
+          fromAuthFlow: true,
+          isMinimalUser: true,
+          generalError: true
+        };
+      }
+    }
     
     // Return null instead of throwing
     return null;
