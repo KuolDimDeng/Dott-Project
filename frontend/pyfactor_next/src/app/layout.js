@@ -6,6 +6,7 @@ import Providers from './providers';
 import Script from 'next/script';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -68,6 +69,7 @@ export default async function RootLayout({ children, params }) {
         <Providers>
           {children}
         </Providers>
+        <Toaster position="top-right" />
         <Script id="user-session-info" strategy="afterInteractive">
           {`
             // Use app cache functions from window global

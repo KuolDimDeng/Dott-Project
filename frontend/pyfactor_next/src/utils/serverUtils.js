@@ -14,47 +14,115 @@ export async function validateServerSession(providedTokens) {
       idToken = providedTokens.idToken;
       logger.debug('[ServerUtils] Using provided tokens');
     } else {
-      // Fall back to cookies if no tokens provided
-      // Use request() to get headers which includes cookies
-      const headersList = await headers();
-      const cookieHeader = headersList.get('cookie') || '';
+      // First try to get tokens from the request headers
+      logger.debug('[ServerUtils] Looking for tokens in request headers');
       
-      // Parse cookies from the header
-      const parseCookies = (cookieHeader) => {
-        const cookies = {};
-        cookieHeader.split(';').forEach(cookie => {
-          const parts = cookie.split('=');
-          if (parts.length >= 2) {
-            const name = parts[0].trim();
-            const value = parts.slice(1).join('=').trim();
-            cookies[name] = value;
+      try {
+        const headersList = await headers();
+        const authHeader = await headersList.get('authorization') || await headersList.get('Authorization');
+        const idTokenHeader = await headersList.get('x-id-token') || await headersList.get('X-Id-Token');
+        const tenantIdHeader = await headersList.get('x-tenant-id') || await headersList.get('X-Tenant-ID');
+        
+        // Extract tokens from Authorization header (Bearer token)
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          accessToken = authHeader.substring(7);
+          logger.debug('[ServerUtils] Found access token in Authorization header');
+        }
+        
+        // Get ID token from header
+        if (idTokenHeader) {
+          idToken = idTokenHeader;
+          logger.debug('[ServerUtils] Found ID token in X-Id-Token header');
+        }
+        
+        // Get tenant ID from header
+        if (tenantIdHeader) {
+          tenantId = tenantIdHeader;
+          logger.debug('[ServerUtils] Found tenant ID in X-Tenant-ID header');
+        }
+      } catch (headerError) {
+        logger.error('[ServerUtils] Error extracting headers:', headerError);
+      }
+
+      // Fall back to cookies if no tokens in headers
+      if (!accessToken || !idToken) {
+        logger.debug('[ServerUtils] Tokens not found in headers, checking cookies as fallback');
+        
+        try {
+          // Get cookies using the Next.js cookies() function
+          const cookieStore = await cookies();
+          const cookiesList = await cookieStore.getAll();
+          const cookieObj = {};
+          
+          // Convert cookies to a more accessible format
+          cookiesList.forEach(cookie => {
+            cookieObj[cookie.name] = cookie.value;
+          });
+          
+          // Extract values from cookies
+          accessToken = accessToken || cookieObj['accessToken'];
+          idToken = idToken || cookieObj['idToken'];
+          onboardingStep = cookieObj['onboardingStep'];
+          onboardedStatus = cookieObj['onboardedStatus'];
+          tenantId = tenantId || cookieObj['tenantId'] || cookieObj['businessid'];
+          
+          // If standard tokens not found, look for Cognito format cookies
+          if (!accessToken || !idToken) {
+            logger.debug('[ServerUtils] Standard tokens not found, checking Cognito format');
+            
+            // Get Cognito client ID from env
+            const cognitoClientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || 
+                                   process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID;
+            
+            if (cognitoClientId) {
+              // Find the LastAuthUser
+              const lastAuthUserKey = `CognitoIdentityServiceProvider.${cognitoClientId}.LastAuthUser`;
+              const lastAuthUser = cookieObj[lastAuthUserKey];
+              
+              if (lastAuthUser) {
+                logger.debug(`[ServerUtils] Found LastAuthUser: ${lastAuthUser}`);
+                
+                // Try to find access token and ID token
+                Object.keys(cookieObj).forEach(key => {
+                  if (key.includes(cognitoClientId) && key.includes(lastAuthUser)) {
+                    if (key.endsWith('.accessToken')) {
+                      accessToken = accessToken || cookieObj[key];
+                      logger.debug('[ServerUtils] Found Cognito accessToken');
+                    } else if (key.endsWith('.idToken')) {
+                      idToken = idToken || cookieObj[key];
+                      logger.debug('[ServerUtils] Found Cognito idToken');
+                    }
+                  }
+                });
+              }
+            }
           }
-        });
-        return cookies;
-      };
-      
-      const parsedCookies = parseCookies(cookieHeader);
-      
-      // Extract values from cookies
-      accessToken = parsedCookies['accessToken'];
-      idToken = parsedCookies['idToken'];
-      onboardingStep = parsedCookies['onboardingStep'];
-      onboardedStatus = parsedCookies['onboardedStatus'];
-      tenantId = parsedCookies['tenantId'];
-      
-      logger.debug('[ServerUtils] Using tokens from cookies', {
-        hasAccessToken: !!accessToken,
-        hasIdToken: !!idToken,
-        hasOnboardingStep: !!onboardingStep,
-        hasOnboardedStatus: !!onboardedStatus,
-        hasTenantId: !!tenantId,
-        cookieCount: Object.keys(parsedCookies).length,
-        cookieKeys: Object.keys(parsedCookies),
-      });
+          
+          logger.debug('[ServerUtils] Using tokens from sources', {
+            fromHeaders: {
+              hasAccessToken: !!accessToken,
+              hasIdToken: !!idToken,
+              hasTenantId: !!tenantId
+            },
+            fromCookies: {
+              hasAccessToken: !!cookieObj['accessToken'],
+              hasIdToken: !!cookieObj['idToken'],
+              hasTenantId: !!cookieObj['tenantId']
+            },
+            finalValues: {
+              hasAccessToken: !!accessToken,
+              hasIdToken: !!idToken,
+              hasTenantId: !!tenantId
+            }
+          });
+        } catch (cookieError) {
+          logger.error('[ServerUtils] Error extracting cookies:', cookieError);
+        }
+      }
     }
 
     if (!accessToken || !idToken) {
-      logger.warn('[ServerUtils] No valid session tokens found in cookies or parameters');
+      logger.warn('[ServerUtils] No valid session tokens found in headers, cookies or parameters');
       return { verified: false };
     }
 
@@ -74,6 +142,20 @@ export async function validateServerSession(providedTokens) {
       const userId = idTokenDecoded?.sub;
       const email = idTokenDecoded?.email;
       const attributes = {};
+      
+      // Extract tenant ID from ID token if not already set
+      if (!tenantId && idTokenDecoded) {
+        // Try to get tenant ID from token claims
+        const tokenTenantId = idTokenDecoded['custom:tenant_ID'] || 
+                             idTokenDecoded['custom:businessid'] || 
+                             idTokenDecoded['custom:tenantId'] || 
+                             idTokenDecoded['custom:tenant_id'];
+        
+        if (tokenTenantId) {
+          tenantId = tokenTenantId;
+          logger.debug(`[ServerUtils] Found tenant ID in token claims: ${tenantId}`);
+        }
+      }
       
       // Extract custom attributes
       if (idTokenDecoded) {
@@ -105,9 +187,16 @@ export async function validateServerSession(providedTokens) {
       };
     } catch (verifyError) {
       logger.error('[ServerUtils] Token verification failed:', verifyError);
+      // Return a structured response with tokens but failed verification flag
+      // This way, clients can still use the tokens even if verification fails
       return { 
         verified: false, 
-        error: verifyError.message 
+        error: verifyError.message,
+        tokens: { accessToken, idToken },
+        // Include partial user information from tokens to aid in debugging
+        user: {
+          attributes: {}
+        }
       };
     }
   } catch (error) {

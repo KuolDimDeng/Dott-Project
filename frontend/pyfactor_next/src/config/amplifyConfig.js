@@ -19,6 +19,29 @@ const amplifyConfig = {
         username: true,
         email: true,
         phone: false,
+      },
+      authenticationFlowType: 'USER_SRP_AUTH',
+      userPoolWebClientId: COGNITO_CLIENT_ID
+    }
+  },
+  API: {
+    REST: {
+      headers: async () => ({
+        'Content-Type': 'application/json',
+      }),
+      errorHandler: error => {
+        if (error.response && error.response.status === 401) {
+          logger.warn('[AmplifyConfig] Auth token expired, trigger refresh');
+        }
+        return Promise.reject(error);
+      },
+      endpoints: [],
+      customMiddleware: {
+        retry: {
+          maxRetries: 3,
+          retryDelay: attempt => Math.pow(2, attempt) * 1000,
+          retryableErrors: ['Network Error', 'TimeoutError', 'AbortError', 'NetworkError']
+        }
       }
     }
   }
@@ -49,5 +72,38 @@ export function reconfigureAmplify() {
   } catch (error) {
     logger.error('[AmplifyConfig] Error reconfiguring Amplify:', error);
     return false;
+  }
+}
+
+// Setup Amplify error handling and network resilience
+export function setupAmplifyResilience() {
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  
+  window.addEventListener('online', () => {
+    logger.info('[AmplifyConfig] Network connection restored');
+    reconfigureAmplify();
+  });
+  
+  window.addEventListener('offline', () => {
+    logger.warn('[AmplifyConfig] Network connection lost');
+  });
+  
+  if (navigator.onLine) {
+    logger.debug('[AmplifyConfig] Network is online, configuration should succeed');
+  } else {
+    logger.warn('[AmplifyConfig] Network is offline, waiting for connection');
+    
+    const retryInterval = setInterval(() => {
+      if (navigator.onLine) {
+        reconfigureAmplify();
+        retryCount++;
+        
+        if (retryCount >= MAX_RETRIES) {
+          clearInterval(retryInterval);
+          logger.debug('[AmplifyConfig] Max reconfiguration attempts reached');
+        }
+      }
+    }, 5000);
   }
 } 

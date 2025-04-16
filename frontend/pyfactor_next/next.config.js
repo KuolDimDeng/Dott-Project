@@ -8,10 +8,8 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: false, // Disable strict mode to reduce memory pressure
   
-  // Enable experimental pageExtensions to support custom file extensions
-  experimental: {
-    pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  },
+  // Set pageExtensions at the top level instead of in experimental
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   
   // Add API rewrites to handle CORS issues
   async rewrites() {
@@ -28,10 +26,11 @@ const nextConfig = {
         source: '/api/profile/:path*',
         destination: 'http://localhost:8000/api/profile/:path*',
       },
-      {
-        source: '/api/customers/:path*',
-        destination: 'http://localhost:8000/api/customers/:path*',
-      },
+      // DISABLED: Using Next.js API routes for customers instead of Python backend
+      // {
+      //   source: '/api/customers/:path*',
+      //   destination: 'http://localhost:8000/api/customers/:path*',
+      // },
       {
         source: '/api/products/:path*',
         destination: 'http://localhost:8000/api/products/:path*',

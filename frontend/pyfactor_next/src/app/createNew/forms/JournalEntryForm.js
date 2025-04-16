@@ -32,8 +32,8 @@ const JournalEntryForm = ({ onClose }) => {
     try {
       const response = await useApi.get('/api/profile/');
       setUserDatabase(response.data.database_name);
-      logger.log('User profile:', response.data);
-      logger.log('User database:', response.data.database_name);
+      logger.info('User profile:', response.data);
+      logger.info('User database:', response.data.database_name);
       toast.info('User profile loaded successfully');
     } catch (error) {
       logger.error('Error fetching user profile:', error);

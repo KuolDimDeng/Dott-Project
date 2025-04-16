@@ -134,57 +134,6 @@ export const legalStructures = [
   'Representative Office',
 ];
 
-
-export const gigEconomyOptions = {
-  platforms: {
-    transportation: ['Uber', 'Lyft', 'Bolt', 'DiDi', 'Free Now', 'Grab', 'Ola', 'Other'],
-    delivery: ['Uber Eats', 'DoorDash', 'Grubhub', 'Instacart', 'Postmates', 'Deliveroo', 'Glovo', 'Other'],
-    freelance: ['Upwork', 'Fiverr', 'Freelancer', 'TaskRabbit', 'Guru', 'PeoplePerHour', 'Other'],
-    hospitality: ['Airbnb', 'VRBO', 'Booking.com', 'HomeAway', 'Other'],
-    other: ['Other (please specify)']
-  },
-  paymentStructure: ['Fixed rate', 'Hourly', 'Commission-based', 'Trip-based', 'Delivery-based', 'Service fee', 'Mixed'],
-  workFrequency: ['Full-time', 'Part-time', 'Occasional', 'Seasonal']
-};
-
-
-export const truckingOptions = {
-  operationType: ['Owner-operator (independent)', 'Lease operator', 'Fleet owner', 'Company driver'],
-  truckingSegment: ['Long-haul/OTR', 'Regional', 'Local delivery', 'Specialized hauling', 'LTL', 'FTL'],
-  vehicleInfo: {
-    vehicleTypes: ['Semi/Tractor-trailer', 'Box truck', 'Pickup with trailer', 'Van', 'Specialized vehicle'],
-    ownershipStatus: ['Owned', 'Financed', 'Leased from carrier', 'Rented'],
-    fleetSize: ['1 truck', '2-5 trucks', '6-10 trucks', '11+ trucks']
-  },
-  businessStructure: {
-    operatingAuthority: ['Own MC/DOT number', 'Operating under another company'],
-    registrations: ['IFTA registered', 'IRP registered', 'Hazmat certified', 'Interstate', 'Intrastate only']
-  },
-  paymentStructure: ['Per mile', 'Percentage of load', 'Hourly', 'Per load', 'Salary plus mileage']
-};
-
-export const ecommerceOptions = {
-  salesChannels: ['Online only', 'Brick and mortar only', 'Hybrid (online & physical)'],
-  onlinePlatforms: {
-    marketplaces: ['Amazon', 'eBay', 'Etsy', 'Walmart Marketplace', 'Wish', 'Alibaba/AliExpress', 'Other'],
-    ownStore: ['Shopify', 'WooCommerce', 'BigCommerce', 'Magento', 'Squarespace', 'Wix', 'Other'],
-    socialCommerce: ['Instagram Shop', 'Facebook Marketplace', 'Pinterest Shop', 'TikTok Shop', 'Other']
-  },
-  fulfillment: ['Self-fulfilled', 'Dropshipping', 'FBA (Fulfillment by Amazon)', '3PL', 'Hybrid'],
-  productTypes: ['Physical products', 'Digital products', 'Subscription boxes', 'Services', 'Mixed'],
-  inventorySize: ['1-100 SKUs', '101-1,000 SKUs', '1,001-10,000 SKUs', '10,000+ SKUs']
-};
-
-
-export const restaurantOptions = {
-  establishmentType: ['Full-service restaurant', 'Quick-service/Fast food', 'Cafe', 'Food truck', 'Catering', 'Ghost kitchen', 'Bakery', 'Bar/Pub', 'Other'],
-  serviceTypes: ['Dine-in', 'Takeout', 'Delivery', 'Drive-thru', 'Catering'],
-  deliveryIntegrations: ['Own delivery staff', 'UberEats', 'DoorDash', 'Grubhub', 'Postmates', 'Deliveroo', 'Other'],
-  posSystem: ['Toast', 'Square', 'Clover', 'Lightspeed', 'TouchBistro', 'Aloha', 'Revel', 'Other'],
-  paymentAcceptance: ['Cash', 'Credit/Debit cards', 'Mobile payments', 'Online payments', 'Gift cards'],
-  seatingCapacity: ['1-20 seats', '21-50 seats', '51-100 seats', '101+ seats', 'No seating']
-};
-
 export const realEstateOptions = {
   businessFocus: ['Sales', 'Rentals', 'Property management', 'Development', 'Investment', 'Mixed'],
   propertyTypes: ['Residential', 'Commercial', 'Industrial', 'Land', 'Mixed'],

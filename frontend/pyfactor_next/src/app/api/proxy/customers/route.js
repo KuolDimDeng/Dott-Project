@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
+import { getSession } from '@/utils/serverSession';
 
 /**
  * Proxy API route for /api/customers to handle CORS and authentication
@@ -10,26 +11,31 @@ export async function GET(request) {
   logger.debug('[ProxyAPI] Handling customers proxy request', { requestId });
 
   try {
-    // Get tenant ID from request parameters or cookies
+    // Get tenant ID from request parameters
     const { searchParams } = new URL(request.url);
     const tenantIdParam = searchParams.get('tenant_id');
-    const database = searchParams.get('database');
     
-    // Get cookies for tenant ID if parameter not provided
-    const cookies = request.headers.get('cookie');
-    let tenantIdCookie = null;
+    // Extract the authorization header for Cognito token
+    const authHeader = request.headers.get('authorization');
     
-    if (cookies) {
-      cookies.split(';').forEach(cookie => {
-        const [name, value] = cookie.trim().split('=');
-        if (name === 'tenantId') {
-          tenantIdCookie = value;
+    // Get tenant ID from Cognito session if available
+    let tenantIdFromCognito = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const session = await getSession(request);
+        if (session?.user?.tenantId) {
+          tenantIdFromCognito = session.user.tenantId;
+          logger.debug('[ProxyAPI] Retrieved tenant ID from Cognito session', { 
+            tenantId: tenantIdFromCognito 
+          });
         }
-      });
+      } catch (authError) {
+        logger.error('[ProxyAPI] Failed to get tenant ID from Cognito', { error: authError.message });
+      }
     }
     
-    // Use the tenant ID from parameter or cookie
-    const tenantId = tenantIdParam || tenantIdCookie || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
+    // Use the tenant ID from parameter or Cognito session, fall back to default
+    const tenantId = tenantIdParam || tenantIdFromCognito || '18609ed2-1a46-4d50-bc4e-483d6e3405ff';
     
     // Generate mock customers based on tenant ID
     const mockCustomers = [

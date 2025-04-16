@@ -19,6 +19,9 @@ import DynamicComponents from '@/components/DynamicComponents';
 import tokenRefreshService from '@/utils/tokenRefresh';
 import MigrationComponent from '@/components/MigrationComponent';
 import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import AuthTokenManager from '@/components/AuthTokenManager';
+import { tokenService } from '@/services/tokenService';
+import { setupAmplifyResilience } from '@/config/amplifyConfig';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -131,6 +134,9 @@ export default function ClientLayout({ children }) {
         
         // Initialize Hub protection
         setupHubDeduplication();
+        
+        // Initialize Amplify resilience for network issues
+        setupAmplifyResilience();
         
         // Add global error handler for "render is not a function" errors
         // but prevent infinite loops by not calling the original handler for certain errors
@@ -399,266 +405,43 @@ export default function ClientLayout({ children }) {
     }
   }, [router, pathname]);
 
-  // Create stable verifySession function - no debounce to avoid promise issues
-  const verifySession = useRef(
-    async (pathname, attempt = 1) => {
-      const maxAttempts = 3;
+  // Verify session with improved token handling
+  useEffect(() => {
+    async function verifyWithTokenService() {
+      if (isPublicRoute(pathname)) {
+        logger.debug('[ClientLayout] Public route detected, skipping auth check');
+        setIsVerifying(false);
+        return;
+      }
       
       try {
-        // Check cache first with longer duration
-        const cacheKey = `${pathname}-${attempt}`;
-        if (sessionCheckCache.current.has(cacheKey)) {
-          const cachedResult = sessionCheckCache.current.get(cacheKey);
-          setIsVerifying(false);
-          return cachedResult;
-        }
-
-        logger.debug('[ClientLayout] Verifying session:', {
-          attempt,
-          maxAttempts,
-          pathname
-        });
-
-        // If hard circuit breaker is active, immediately skip all checks
-        if (typeof window !== 'undefined' && window.__HARD_CIRCUIT_BREAKER) {
-          logger.warn('[ClientLayout] Hard circuit breaker active, skipping all authentication checks');
-          setIsVerifying(false);
-          return true;
-        }
-
-        // If it's a public route, no need to verify
-        if (isPublicRoute(pathname)) {
-          logger.debug('[ClientLayout] Public route detected, skipping verification');
-          setIsVerifying(false);
-          setIsAuthenticated(false);
-          return true;
-        }
+        // Use token service instead of direct Amplify call
+        await tokenService.getTokens();
+        setIsAuthenticated(true);
         
-        // Check for onboarding and specific routes based on user preferences
-        if (pathname.includes('/onboarding') || pathname.includes('/auth/verify') || pathname === '/dashboard') {
-          const hasAccess = await checkPreferenceBasedAccess(pathname);
-          if (hasAccess) {
-            logger.debug('[ClientLayout] Allowing access based on user preferences');
-            setIsVerifying(false);
-            setIsAuthenticated(true);
-            return true;
-          }
-        }
-
-        // CIRCUIT BREAKER: Check for redirect loop detection
-        if (typeof window !== 'undefined' && window.__REDIRECT_LOOP_DETECTED) {
-          logger.warn('[ClientLayout] Redirect loop detected previously, skipping verification');
-          setIsVerifying(false);
-          return true;
-        }
-        
-        // Check URL for noredirect parameter
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          if (url.searchParams.get('noredirect') === 'true') {
-            logger.debug('[ClientLayout] noredirect parameter detected, skipping verification');
-            setIsVerifying(false);
-            return true;
-          }
-        }
-
-        // Check for token refresh rate limiting
-        const now = Date.now();
-        const timeSinceLastRefresh = now - lastRefreshTimeRef.current;
-        if (timeSinceLastRefresh < 60000) { // 1 minute cooldown
-          logger.warn('[ClientLayout] Token refresh rate limit hit, waiting');
-          setIsVerifying(false);
-          return false;
-        }
-
-        // Standard session check for other routes
-        const { tokens } = await fetchAuthSession();
-        let isValid = !!tokens?.idToken;
-
-        if (isValid && !tenantInitialized) {
+        // Initialize tenant after authentication
+        if (!tenantInitialized) {
           try {
-            // Initialize tenant if we have a valid session
+            await initializeTenant();
             await initializeTenantContext();
             setTenantInitialized(true);
-            logger.info('[ClientLayout] Tenant context initialized successfully');
-          } catch (error) {
-            logger.error('[ClientLayout] Failed to initialize tenant context:', error);
-            // Fallback to old initialization method
-            try {
-              await initializeTenant(tokens.idToken);
-              setTenantInitialized(true);
-              logger.info('[ClientLayout] Fallback tenant initialization successful');
-            } catch (fallbackError) {
-              logger.error('[ClientLayout] Fallback tenant initialization also failed:', fallbackError);
-              // Don't fail the session check if tenant init fails
-            }
+          } catch (tenantError) {
+            logger.error('[ClientLayout] Error initializing tenant:', tenantError);
           }
         }
-
-        // Cache the result with longer duration
-        sessionCheckCache.current.set(cacheKey, isValid);
-
-        // Clear cache after 15 minutes instead of 5
-        setTimeout(() => {
-          sessionCheckCache.current.delete(cacheKey);
-        }, 15 * 60 * 1000);
-
-        if (!isValid && attempt < maxAttempts && !refreshLockRef.current) {
-          // Try to refresh session
-          try {
-            refreshLockRef.current = true;
-            const refreshed = await refreshUserSession();
-            if (refreshed) {
-              // Update last refresh time
-              lastRefreshTimeRef.current = Date.now();
-              // We'll just set isValid to true and continue without recursion
-              logger.debug('[ClientLayout] Session refreshed, continuing with validation');
-              isValid = true;
-            }
-          } catch (refreshError) {
-            logger.error('[ClientLayout] Session refresh failed:', refreshError);
-          } finally {
-            refreshLockRef.current = false;
-          }
-        }
-
-        if (!isValid) {
-          logger.warn('[ClientLayout] Invalid session, redirecting to signin');
-          
-          // CIRCUIT BREAKER: Check for noredirect parameter before redirecting
-          if (typeof window !== 'undefined') {
-            const url = new URL(window.location.href);
-            if (url.searchParams.get('noredirect') === 'true') {
-              logger.warn('[ClientLayout] Redirect prevented by noredirect parameter');
-              setIsVerifying(false);
-              return false;
-            }
-            
-            // Check for redirect loop counters in app cache
-            const redirectCount = typeof window !== 'undefined' && window.__APP_CACHE?.client?.redirect_count || 0;
-            logger.debug(`[ClientLayout] Client redirect count: ${redirectCount}`);
-            
-            if (redirectCount > 3) {
-              logger.error('[ClientLayout] Too many client redirects, forcing circuit breaker');
-              
-              // Reset counter
-              if (typeof window !== 'undefined') {
-                window.__APP_CACHE = window.__APP_CACHE || {};
-                window.__APP_CACHE.client = window.__APP_CACHE.client || {};
-                window.__APP_CACHE.client.redirect_count = 0;
-              }
-              
-              // Force add noredirect parameter to prevent future redirects
-              const currentUrl = new URL(window.location.href);
-              currentUrl.searchParams.set('noredirect', 'true');
-              window.history.replaceState({}, '', currentUrl.toString());
-              setIsVerifying(false);
-              return false;
-            }
-            
-            // Increment redirect counter
-            if (typeof window !== 'undefined') {
-              window.__APP_CACHE = window.__APP_CACHE || {};
-              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
-              window.__APP_CACHE.client.redirect_count = (redirectCount + 1);
-            }
-            
-            // Reset client redirect counter
-            if (typeof window !== 'undefined') {
-              window.__APP_CACHE = window.__APP_CACHE || {};
-              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
-              window.__APP_CACHE.client.redirect_count = 0;
-            }
-            
-            // Add from and noredirect parameters to signin URL
-            const signInUrl = new URL('/auth/signin', window.location.origin);
-            signInUrl.searchParams.set('from', 'client_layout');
-            signInUrl.searchParams.set('noredirect', 'true');
-            router.replace(signInUrl.toString());
-          } else {
-            router.replace('/auth/signin');
-          }
-          
-          setIsVerifying(false);
-          return false;
-        }
-
-        logger.debug('[ClientLayout] Session check successful');
-        setIsVerifying(false);
-        return true;
       } catch (error) {
-        logger.error('[ClientLayout] Session verification failed:', {
-          error: error.message,
-          attempt,
-          pathname
-        });
+        logger.error('[ClientLayout] Auth verification error:', error);
         
-        if (attempt < maxAttempts) {
-          // No need to retry recursively as it causes issues
-          logger.debug('[ClientLayout] Session verification failed, not retrying to avoid loops');
-          setIsVerifying(false);
-          router.replace('/auth/signin');
-          return false;
+        // Redirect to sign-in for auth errors
+        if (!pathname.startsWith('/auth/')) {
+          router.push('/auth/signin?session=expired');
         }
-        
+      } finally {
         setIsVerifying(false);
-        router.replace('/auth/signin');
-        return false;
       }
     }
-  );
-
-  // Reset tenant initialization when pathname changes
-  useEffect(() => {
-    if (!isPublicRoute(pathname)) {
-      setTenantInitialized(false);
-    }
-  }, [pathname]);
-
-  // Initialize verifySession on mount and reset redirect counter on successful auth
-  useEffect(() => {
-    let mounted = true;
     
-    const verify = async () => {
-      if (pathname && verifySession.current && mounted) {
-        try {
-          // Reset redirect counter if on signin page
-          if (pathname.includes('signin') && typeof window !== 'undefined') {
-            if (typeof window !== 'undefined') {
-              window.__APP_CACHE = window.__APP_CACHE || {};
-              window.__APP_CACHE.client = window.__APP_CACHE.client || {};
-              window.__APP_CACHE.client.redirect_count = 0;
-            }
-          }
-          
-          const sessionValid = await verifySession.current(pathname);
-          if (mounted) {
-            setIsAuthenticated(sessionValid);
-            
-            // If validation successful, reset redirect counter
-            if (sessionValid && typeof window !== 'undefined') {
-              if (typeof window !== 'undefined') {
-                window.__APP_CACHE = window.__APP_CACHE || {};
-                window.__APP_CACHE.client = window.__APP_CACHE.client || {};
-                window.__APP_CACHE.client.redirect_count = 0;
-              }
-            }
-          }
-        } catch (error) {
-          logger.error('[ClientLayout] Error in session verification:', error);
-          if (mounted) {
-            setIsVerifying(false);
-            setIsAuthenticated(false);
-          }
-        }
-      }
-    };
-
-    verify();
-
-    return () => {
-      mounted = false;
-    };
+    verifyWithTokenService();
   }, [pathname]);
 
   // Initialize debug tools in development mode
@@ -683,11 +466,6 @@ export default function ClientLayout({ children }) {
     };
   }, []);
 
-  // Show loading state while verifying
-  if (isVerifying && !isPublicRoute(pathname)) {
-    return <LoadingFallback />;
-  }
-
   // Enhanced error boundary with detailed logging
   const handleError = (error, errorInfo) => {
     logger.error('[ClientLayout] Error caught by error boundary:', {
@@ -708,20 +486,22 @@ export default function ClientLayout({ children }) {
     }
   };
 
+  // Wrap the children with AuthTokenManager
+  if (isVerifying) {
+    return <LoadingFallback />;
+  }
+
   return (
-    <>
-      {/* Add MigrationComponent to migrate from cookies to Cognito */}
-      <MigrationComponent />
-      
-      {/* GlobalEventDebugger removed to fix input field issues */}
-      <AuthErrorBoundary onError={handleError}>
-        <ConfigureAmplify />
-        <LoadingFallback>
-          {children}
-          <DynamicComponents isAuthenticated={isAuthenticated} />
-          {/* React Error Debugger disabled */}
-        </LoadingFallback>
-      </AuthErrorBoundary>
-    </>
+    <AuthErrorBoundary onError={handleError}>
+      <ConfigureAmplify>
+        <AuthTokenManager>
+          <DynamicComponents>
+            <MigrationComponent />
+            {process.env.NODE_ENV === 'development' && <ReactErrorDebugger />}
+            {children}
+          </DynamicComponents>
+        </AuthTokenManager>
+      </ConfigureAmplify>
+    </AuthErrorBoundary>
   );
 }

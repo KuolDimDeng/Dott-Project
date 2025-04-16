@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { removeCacheValue } from '@/utils/appCache';
 
 export default function Error({ error, reset }) {
   useEffect(() => {
@@ -11,6 +12,24 @@ export default function Error({ error, reset }) {
     // Log the stack trace if available
     if (error?.stack) {
       console.error('[pyfactor] [Error stack]:', error.stack);
+    }
+    
+    // Clean up any relevant cache entries for error recovery
+    try {
+      // Clear any in-progress operations from the cache
+      removeCacheValue('current_operation');
+      removeCacheValue('last_error');
+      
+      // Store the current error for diagnostics
+      if (typeof window !== 'undefined' && window.__APP_CACHE) {
+        window.__APP_CACHE.last_error = {
+          message: error?.message || 'Unknown error',
+          stack: error?.stack || '',
+          timestamp: new Date().toISOString()
+        };
+      }
+    } catch (cleanupError) {
+      console.error('[pyfactor] Error during cleanup:', cleanupError);
     }
   }, [error]);
 

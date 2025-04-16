@@ -174,3 +174,106 @@ To learn more about Next.js, take a look at the following resources:
 
 - [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
 - [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+# Customer Management with In-Memory Caching
+
+This project implements customer management features with in-memory caching for improved performance. The implementation uses AWS AppSync-inspired caching with Tailwind CSS for modern UI components.
+
+## Features
+
+- **In-memory caching** for customer data to reduce API calls
+- **Automatic cache invalidation** when creating/updating/deleting customers
+- **Row-Level Security (RLS)** integration for secure data access
+- **Responsive UI** built with Tailwind CSS
+- **Optimistic UI updates** for a smooth user experience
+- **Refresh button** for manual cache invalidation
+
+## Setup
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Set environment variables:
+   ```
+   # AWS Region for AppSync (if needed)
+   NEXT_PUBLIC_AWS_REGION=us-east-1
+   
+   # Database connection (for server-side)
+   RDS_HOSTNAME=your-db-hostname
+   RDS_PORT=5432
+   RDS_DB_NAME=your-db-name
+   RDS_USERNAME=your-db-username
+   RDS_PASSWORD=your-db-password
+   ```
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Architecture
+
+### In-Memory Cache
+
+The application implements a lightweight in-memory caching system:
+
+- `appCache.js`: Simple key-value store with time-based expiration
+- `customerService.js`: Service layer that handles API calls with cache integration
+
+### API Integration
+
+- RESTful endpoints for CRUD operations
+- RLS-compatible APIs that respect tenant isolation
+
+### Components
+
+- `CustomerList`: Main component for displaying customers with search functionality
+- `CustomerForm`: Form for creating/editing customers
+- `CustomerDetails`: Detailed view of a single customer
+
+## Usage
+
+### Fetching Customers with Cache
+
+```javascript
+import CustomerService from '@/services/customerService';
+
+// Get from cache if available, otherwise fetch from API
+const customers = await CustomerService.getCustomers();
+
+// Force refresh from API
+const freshCustomers = await CustomerService.getCustomers({ forceRefresh: true });
+```
+
+### Cache Invalidation
+
+The cache is automatically invalidated in the following scenarios:
+
+1. When creating a new customer
+2. When updating an existing customer
+3. When deleting a customer
+4. After a time-based expiration (default: 5 minutes)
+
+You can also manually clear the cache:
+
+```javascript
+CustomerService.clearCache();
+```
+
+## Styling with Tailwind CSS
+
+The application uses Tailwind CSS for styling, providing:
+
+- Responsive design for all screen sizes
+- Modern UI components
+- Consistent styling across the application
+- Easy customization through configuration
+
+## Performance Considerations
+
+- Cache invalidation is handled automatically
+- TTL (Time-To-Live) prevents stale data
+- Refresh button for manual cache invalidation
+- Spinner indicators for loading states

@@ -31,6 +31,7 @@ const Drawer = ({
   handleInventoryClick,
   handleHomeClick,
   handleCRMClick,
+  handleEmployeeManagementClick,
   userData,
   resetAllStates,
   handleAddTransaction,
@@ -202,6 +203,7 @@ const Drawer = ({
             handleInventoryClick={handleInventoryClick}
             handleHomeClick={handleHomeClick}
             handleCRMClick={handleCRMClick}
+            handleEmployeeManagementClick={handleEmployeeManagementClick}
             handleDrawerClose={enhancedToggleDrawer}
             isIconOnly={!isOpen}
             handleItemClick={handleItemClickWrapper}

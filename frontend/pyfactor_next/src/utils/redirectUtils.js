@@ -285,17 +285,47 @@ export const redirectToDashboard = async (router, options = {}) => {
     // Try to get from client storage
     tenantId = getTenantId();
     
+    // Validate the tenant ID format
     if (!tenantId || !isValidUUID(tenantId)) {
-      logger.warn(`[redirectToDashboard] No valid tenant ID available for dashboard redirect from ${source}`);
+      logger.warn(`[redirectToDashboard] No valid UUID tenant ID available for dashboard redirect from ${source}`);
       
-      // If no tenant ID, redirect to error page or sign-in
-      if (force) {
-        return forceRedirect('/auth/signin?error=no_tenant_id', { 
-          source: `${source}-fallback`,
-          preserveForm: false
-        });
-      } else {
-        return router.push('/auth/signin?error=no_tenant_id');
+      // If tenant ID is not a valid UUID, we may need to fix it
+      // Check if it's using the old format with tenant_ prefix
+      if (tenantId && tenantId.startsWith('tenant_')) {
+        logger.warn(`[redirectToDashboard] Found tenant ID with incorrect format: ${tenantId}`);
+        
+        // Need to convert or get a proper tenant ID
+        try {
+          // Try to create a proper tenant ID through API
+          const response = await fetch('/api/tenant/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.tenantId && isValidUUID(data.tenantId)) {
+              logger.info(`[redirectToDashboard] Converted invalid tenant ID to valid UUID: ${data.tenantId}`);
+              tenantId = data.tenantId;
+            }
+          }
+        } catch (error) {
+          logger.error(`[redirectToDashboard] Error converting invalid tenant ID: ${error.message}`);
+        }
+      }
+      
+      // If still no valid tenant ID, redirect to error page or sign-in
+      if (!tenantId || !isValidUUID(tenantId)) {
+        if (force) {
+          return forceRedirect('/auth/signin?error=no_tenant_id', { 
+            source: `${source}-fallback`,
+            preserveForm: false
+          });
+        } else {
+          return router.push('/auth/signin?error=no_tenant_id');
+        }
       }
     }
   }

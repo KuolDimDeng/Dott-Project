@@ -4,6 +4,7 @@
  */
 import { logger } from './logger';
 import { setCacheValue, getCacheValue } from './appCache';
+import { v4 as uuidv4 } from 'uuid'; // Add import for UUID generation
 
 /**
  * Set development mode options
@@ -80,19 +81,17 @@ export const useRealDatabase = (enable = true) => {
 
 /**
  * Create a new tenant ID for development testing
- * @param {string} prefix - Optional prefix for the tenant ID
- * @returns {string} The new tenant ID
+ * @returns {string} The new tenant ID in proper UUID format
  */
-export const createNewTenantId = (prefix = 'tenant') => {
+export const createNewTenantId = () => {
   if (process.env.NODE_ENV !== 'development') {
     console.warn('Dev tools are only available in development mode');
     return null;
   }
   
-  // Generate a unique ID using current timestamp and random number
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 10000);
-  const newTenantId = `${prefix}-${timestamp}-${random}`;
+  // Generate a proper UUID instead of timestamp-based format
+  // This ensures compatibility with backend expectations and AWS RDS
+  const newTenantId = uuidv4();
   
   // Store the new tenant ID in AppCache
   setCacheValue('dev-tenant-id', newTenantId);

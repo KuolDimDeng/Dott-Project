@@ -8,7 +8,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = '__all__'
-        read_only_fields = ('id', 'accountNumber', 'created_at', 'updated_at')
+        read_only_fields = ('id', 'account_number', 'created_at', 'updated_at')
 
 class ContactSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
@@ -19,7 +19,7 @@ class ContactSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_customer_name(self, obj):
-        return obj.customer.customerName if obj.customer else None
+        return obj.customer.business_name if obj.customer else None
 
 class LeadSerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.SerializerMethodField()
@@ -42,7 +42,7 @@ class OpportunitySerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_customer_name(self, obj):
-        return obj.customer.customerName if obj.customer else None
+        return obj.customer.business_name if obj.customer else None
     
     def get_assigned_to_name(self, obj):
         return f"{obj.assigned_to.first_name} {obj.assigned_to.last_name}" if obj.assigned_to else None
@@ -56,7 +56,7 @@ class DealSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_customer_name(self, obj):
-        return obj.customer.customerName if obj.customer else None
+        return obj.customer.business_name if obj.customer else None
 
 class ActivitySerializer(serializers.ModelSerializer):
     assigned_to_name = serializers.SerializerMethodField()
@@ -75,7 +75,7 @@ class ActivitySerializer(serializers.ModelSerializer):
             return {
                 'type': 'customer',
                 'id': str(obj.customer.id),
-                'name': obj.customer.customerName
+                'name': obj.customer.business_name
             }
         elif obj.lead:
             return {
@@ -123,7 +123,7 @@ class CampaignMemberSerializer(serializers.ModelSerializer):
     
     def get_member_name(self, obj):
         if obj.customer:
-            return obj.customer.customerName
+            return obj.customer.business_name
         elif obj.lead:
             return f"{obj.lead.first_name} {obj.lead.last_name}"
         return None

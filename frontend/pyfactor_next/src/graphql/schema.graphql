@@ -1,0 +1,117 @@
+type Customer @aws_api_key {
+  id: ID!
+  customer_name: String
+  customerName: String
+  first_name: String
+  last_name: String
+  email: String
+  phone: String
+  website: String
+  notes: String
+  currency: String
+  tenant_id: String
+  billingCountry: String
+  billingState: String
+  shipToName: String
+  shippingCountry: String
+  shippingState: String
+  shippingPhone: String
+  deliveryInstructions: String
+  street: String
+  city: String
+  postcode: String
+  created_at: String
+  updated_at: String
+}
+
+type CustomerConnection {
+  items: [Customer]
+  nextToken: String
+}
+
+type Mutation {
+  createCustomer(input: CreateCustomerInput!): Customer
+  updateCustomer(input: UpdateCustomerInput!): Customer
+  deleteCustomer(id: ID!): Customer
+}
+
+type Query {
+  getCustomer(id: ID!): Customer
+  listCustomers(filter: CustomerFilterInput, limit: Int, nextToken: String): CustomerConnection
+}
+
+input CreateCustomerInput {
+  customer_name: String!
+  first_name: String
+  last_name: String
+  email: String
+  phone: String
+  website: String
+  notes: String
+  currency: String
+  billingCountry: String
+  billingState: String
+  shipToName: String
+  shippingCountry: String
+  shippingState: String
+  shippingPhone: String
+  deliveryInstructions: String
+  street: String
+  city: String
+  postcode: String
+}
+
+input UpdateCustomerInput {
+  id: ID!
+  customer_name: String
+  first_name: String
+  last_name: String
+  email: String
+  phone: String
+  website: String
+  notes: String
+  currency: String
+  billingCountry: String
+  billingState: String
+  shipToName: String
+  shippingCountry: String
+  shippingState: String
+  shippingPhone: String
+  deliveryInstructions: String
+  street: String
+  city: String
+  postcode: String
+}
+
+input CustomerFilterInput {
+  id: IDFilterInput
+  customer_name: StringFilterInput
+  email: StringFilterInput
+  phone: StringFilterInput
+}
+
+input IDFilterInput {
+  eq: ID
+  ne: ID
+  le: ID
+  lt: ID
+  ge: ID
+  gt: ID
+  contains: ID
+  notContains: ID
+  between: [ID]
+  beginsWith: ID
+}
+
+input StringFilterInput {
+  eq: String
+  ne: String
+  le: String
+  lt: String
+  ge: String
+  gt: String
+  contains: String
+  notContains: String
+  between: [String]
+  beginsWith: String
+} 

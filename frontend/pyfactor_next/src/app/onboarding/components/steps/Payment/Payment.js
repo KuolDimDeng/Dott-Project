@@ -10,6 +10,14 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 import { logger } from '@/utils/logger';
 import { useUser } from '@/hooks/useUser';
 import { useRouter } from 'next/navigation';
+import { StepContainer } from '@/app/onboarding/components/StepContainer';
+import { PaymentForm } from './PaymentForm';
+import { fetchWithCache } from '@/utils/cacheClient';
+import { 
+  ArrowPathIcon, 
+  CheckCircleIcon, 
+  ExclamationCircleIcon 
+} from '@heroicons/react/24/outline';
 
 // Import custom SVG icons to replace MUI icons
 const PublicIcon = () => (
@@ -80,7 +88,7 @@ const PaymentComponent = ({ metadata }) => {
   const { handlePaymentSuccess, handleBack, isLoading, user } =
     usePaymentForm();
   const { currentStep, isStepCompleted, getOnboardingState } = useOnboarding();
-  const { user: userData } = useUser();
+  const { user: userData, setUserAttributes } = useUser();
   const router = useRouter();
   
   // Get the updateOnboardingStatus function from the hook
@@ -127,6 +135,28 @@ const PaymentComponent = ({ metadata }) => {
   const [checkoutLoading, setCheckoutLoading] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(false);
+  
+  // Add handleRetry function
+  const handleRetry = () => {
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+    
+    // Reload subscription data or clear error state
+    try {
+      const pendingSubscription = sessionStorage.getItem('pendingSubscription');
+      if (pendingSubscription) {
+        const data = JSON.parse(pendingSubscription);
+        logger.debug('[Payment Component] Reloaded subscription data on retry', { data });
+        setSubscriptionData(data);
+      }
+    } catch (e) {
+      logger.error('[Payment Component] Error reloading data on retry:', { error: e.message });
+    } finally {
+      setTimeout(() => {
+        setCheckoutLoading(false);
+      }, 500); // Small delay for UI feedback
+    }
+  };
   
   // Load subscription data from sessionStorage - no router calls
   useEffect(() => {
@@ -194,17 +224,48 @@ const PaymentComponent = ({ metadata }) => {
   }, [checkoutError, checkoutLoading, router]);
   
   // Get subscription details from stored data or user data - ensure we're using the proper plan
-  // Prioritize session storage data over user attributes
-  const subscriptionPlan = (subscriptionData && subscriptionData.plan) ? 
-                           subscriptionData.plan.toLowerCase() : 
-                           (userData?.attributes?.['custom:subscription_plan']?.toLowerCase() || 'professional');
-                          
+  // Prioritize session storage data over user attributes, with fallbacks
+  const subscriptionPlan = (() => {
+    // First try to get plan from subscription data 
+    if (subscriptionData && typeof subscriptionData === 'object' && subscriptionData.plan) {
+      const plan = String(subscriptionData.plan).toLowerCase();
+      if (['professional', 'enterprise'].includes(plan)) {
+        return plan;
+      }
+    }
+    
+    // Then try to get from user attributes
+    const attrPlan = userData?.attributes?.['custom:subscription_plan']?.toLowerCase();
+    if (attrPlan && ['professional', 'enterprise'].includes(attrPlan)) {
+      return attrPlan;
+    }
+    
+    // Default to professional if no valid plan found
+    return 'professional';
+  })();
+  
   // Check both billing_interval and interval properties since they might be inconsistent
-  const billingCycle = subscriptionData?.billing_interval || 
-                       subscriptionData?.interval ||
-                       userData?.attributes?.['custom:billing_cycle'] || 
-                       'monthly';
-                       
+  const billingCycle = (() => {
+    // Try various paths to get billing cycle with proper validation
+    if (subscriptionData && typeof subscriptionData === 'object') {
+      if (subscriptionData.billing_interval && ['monthly', 'annual'].includes(subscriptionData.billing_interval)) {
+        return subscriptionData.billing_interval;
+      }
+      if (subscriptionData.interval && ['monthly', 'annual'].includes(subscriptionData.interval)) {
+        return subscriptionData.interval;
+      }
+    }
+    
+    // Try from user attributes
+    const attrCycle = userData?.attributes?.['custom:billing_cycle']?.toLowerCase();
+    if (attrCycle && ['monthly', 'annual'].includes(attrCycle)) {
+      return attrCycle;
+    }
+    
+    // Default to monthly
+    return 'monthly';
+  })();
+  
   const paymentMethod = subscriptionData?.payment_method || 'credit_card';
   
   // Debug subscription info
@@ -500,6 +561,76 @@ const PaymentComponent = ({ metadata }) => {
     );
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <StepContainer title={metadata.title} description={metadata.description}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-12 h-12 mb-6 text-blue-500 animate-spin">
+            <ArrowPathIcon className="w-full h-full" />
+          </div>
+          <h2 className="text-xl font-medium text-gray-800 mb-2">Processing your payment</h2>
+          <p className="text-gray-500 text-center max-w-md">
+            Please wait while we confirm your subscription details...
+          </p>
+        </div>
+      </StepContainer>
+    );
+  }
+
+  // Show success state
+  if (processingPayment) {
+    return (
+      <StepContainer title={metadata.title} description={metadata.description}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-16 h-16 mb-6 text-green-500">
+            <CheckCircleIcon className="w-full h-full" />
+          </div>
+          <h2 className="text-xl font-medium text-gray-800 mb-2">Payment Successful!</h2>
+          <p className="text-gray-500 text-center max-w-md">
+            Your {subscriptionData?.plan} plan is now active. Redirecting you to complete your setup...
+          </p>
+          <div className="mt-6">
+            <div className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full bg-blue-500 animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      </StepContainer>
+    );
+  }
+
+  // Show error state
+  if (checkoutError) {
+    return (
+      <StepContainer title={metadata.title} description={metadata.description}>
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-16 h-16 mb-6 text-red-500">
+            <ExclamationCircleIcon className="w-full h-full" />
+          </div>
+          <h2 className="text-xl font-medium text-gray-800 mb-3">Payment Error</h2>
+          <p className="text-gray-500 text-center max-w-md mb-6">
+            {checkoutError}
+          </p>
+          <div className="flex space-x-4">
+            <button 
+              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              onClick={() => router.push('/onboarding/subscription')}
+            >
+              Back to Plans
+            </button>
+            <button 
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              onClick={handleRetry}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </StepContainer>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4">
       <StepProgress steps={steps} />
@@ -521,12 +652,6 @@ const PaymentComponent = ({ metadata }) => {
             stepName="Payment"
           />
         </div>
-
-        {checkoutError && (
-          <div className="mb-6 w-full bg-red-100 dark:bg-red-900 border border-red-400 text-red-700 dark:text-red-200 px-4 py-3 rounded-lg shadow-md">
-            {checkoutError}
-          </div>
-        )}
 
         <div className="w-full mb-8 rounded-2xl overflow-hidden shadow-lg bg-white dark:bg-gray-800 transition-all duration-300">
           <div className={`p-6 relative ${
@@ -619,65 +744,15 @@ const PaymentComponent = ({ metadata }) => {
             </div>
           </div>
           
-          {/* Credit Card Form */}
-          <div className="p-6 m-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 relative before:content-[''] before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-blue-600 before:to-blue-400 animate-fadeIn">
-            <h3 className="text-lg font-medium mb-6 text-gray-900 dark:text-white">
-              Payment Details
-            </h3>
-            
-            <div className="flex items-center p-4 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
-              <CreditCardIcon />
-              <span className="ml-3 font-medium text-gray-900 dark:text-white">4242 4242 4242 4242</span>
-            </div>
-            
-            <div className="flex mb-2 space-x-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Expiry Date</label>
-                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
-                  <span className="text-gray-900 dark:text-white">12/29</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">CVC</label>
-                <div className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg">
-                  <span className="text-gray-900 dark:text-white">123</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center mt-4 text-center">
-              <LockIcon />
-              <p className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                This is a demo payment form. In production, a secure Stripe payment form would be displayed.
-              </p>
-            </div>
+          <div className="p-6">
+            <PaymentForm 
+              subscriptionData={subscriptionData}
+              onSuccess={handlePaymentSubmit}
+              onError={setCheckoutError}
+              paymentMethod={paymentMethod}
+            />
           </div>
         </div>
-
-        <div className="w-full text-center mb-4">
-          <button
-            className="min-w-[250px] py-3 px-8 text-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-lg transform transition duration-300 hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg"
-            onClick={handlePaymentSubmit}
-            disabled={isLoading || checkoutLoading}
-          >
-            {(isLoading || checkoutLoading) ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                {processingPayment ? 'Processing...' : 'Loading...'}
-              </div>
-            ) : (
-              'Complete Payment'
-            )}
-          </button>
-        </div>
-
-        <button
-          className="py-2 px-6 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          onClick={handleBack}
-          disabled={isLoading || checkoutLoading}
-        >
-          Back to Plan Selection
-        </button>
       </div>
     </div>
   );

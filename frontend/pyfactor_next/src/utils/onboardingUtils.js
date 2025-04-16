@@ -542,6 +542,61 @@ export async function updateBusinessInfo(info) {
 }
 
 /**
+ * Validates business information and formats it for update
+ * @param {Object} info - Business information to validate
+ * @returns {Promise<Object>} Formatted attributes for update
+ */
+export async function validateBusinessInfo(info) {
+  try {
+    if (!info) {
+      throw new Error('Business information is required');
+    }
+    
+    logger.debug('[OnboardingUtils] Validating business info:', {
+      hasName: !!info.businessName,
+      hasType: !!info.businessType
+    });
+    
+    // Basic validation
+    if (!info.businessName || info.businessName.trim() === '') {
+      throw new Error('Business name is required');
+    }
+    
+    if (!info.businessType || info.businessType.trim() === '') {
+      throw new Error('Business type is required');
+    }
+    
+    // Format attributes for update
+    const attributes = {
+      [PREF_KEYS.BUSINESS_NAME]: info.businessName.trim(),
+      [PREF_KEYS.BUSINESS_TYPE]: info.businessType.trim(),
+      [PREF_KEYS.ONBOARDING_STEP]: 'subscription',
+      [PREF_KEYS.ONBOARDING_STATUS]: 'in_progress',
+      'custom:business_info_done': 'TRUE',
+      'custom:updated_at': new Date().toISOString()
+    };
+    
+    // Add optional fields if provided
+    if (info.businessCountry) {
+      attributes['custom:businesscountry'] = info.businessCountry.trim();
+    }
+    
+    if (info.businessState) {
+      attributes['custom:businessstate'] = info.businessState.trim();
+    }
+    
+    if (info.legalStructure) {
+      attributes['custom:legalstructure'] = info.legalStructure.trim();
+    }
+    
+    return attributes;
+  } catch (error) {
+    logger.error('[OnboardingUtils] Business info validation failed:', error);
+    throw error;
+  }
+}
+
+/**
  * Updates subscription information in Cognito
  * @param {Object} subscription - Subscription information to update
  * @returns {Promise<boolean>} Success status
@@ -588,33 +643,16 @@ export async function updateSubscriptionInfo(subscription) {
 }
 
 /**
- * Completes the onboarding process by setting appropriate Cognito attributes
- * @returns {Promise<boolean>} Success status
+ * Validate if a string is a valid UUID
+ * @param {string} id - The ID to check
+ * @returns {boolean} - True if valid UUID
  */
-export async function completeOnboarding() {
-  try {
-    // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
-    
-    // Update Cognito attributes
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:onboarding': 'complete',
-        'custom:setupdone': 'true',
-        'custom:business_info_done': 'TRUE',
-        'custom:subscription_done': 'TRUE',
-        'custom:payment_done': 'TRUE',
-        'custom:onboardingCompletedAt': new Date().toISOString(),
-        'custom:updated_at': new Date().toISOString()
-      }
-    });
-    
-    logger.info('[onboardingUtils] Onboarding completed and set in Cognito');
-    return true;
-  } catch (error) {
-    logger.error('[onboardingUtils] Error completing onboarding in Cognito:', error);
+function isValidUUID(id) {
+  if (!id || typeof id !== 'string') {
     return false;
   }
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
 }
 
 /**
@@ -625,12 +663,16 @@ export async function getOrCreateTenantId() {
   try {
     // First try to get the tenant ID from Cognito
     const cognitoTenantId = await getTenantIdFromCognito();
-    if (cognitoTenantId) {
-      logger.debug('[onboardingUtils] Found tenant ID in Cognito:', cognitoTenantId);
+    
+    // Validate that the tenant ID is in UUID format
+    if (cognitoTenantId && isValidUUID(cognitoTenantId)) {
+      logger.debug('[onboardingUtils] Found valid tenant ID in Cognito:', cognitoTenantId);
       return cognitoTenantId;
+    } else if (cognitoTenantId) {
+      logger.warn('[onboardingUtils] Found invalid tenant ID format in Cognito:', cognitoTenantId);
     }
     
-    // If no tenant ID exists, create one via the API
+    // If no valid tenant ID exists, create one via the API
     const response = await fetch('/api/tenant/create', {
       method: 'POST',
       headers: {
@@ -647,14 +689,14 @@ export async function getOrCreateTenantId() {
     }
     
     const data = await response.json();
-    if (data && data.tenantId) {
+    if (data && data.tenantId && isValidUUID(data.tenantId)) {
       // Store the new tenant ID in Cognito
       await updateTenantIdInCognito(data.tenantId);
       logger.info('[onboardingUtils] Created and stored new tenant ID in Cognito:', data.tenantId);
       return data.tenantId;
     }
     
-    logger.error('[onboardingUtils] API returned success but no tenant ID was found:', data);
+    logger.error('[onboardingUtils] API returned invalid or missing tenant ID:', data);
     return null;
   } catch (error) {
     logger.error('[onboardingUtils] Error getting or creating tenant ID:', error);

@@ -4,6 +4,8 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import { useToast } from '@/components/Toast/ToastProvider';
 import ModernFormLayout from '@/app/components/ModernFormLayout';
+import { getCacheValue } from '@/utils/appCache';
+import { getTenantId } from '@/utils/tenantUtils';
 
 const initialState = {
   customerName: '',
@@ -24,19 +26,88 @@ const initialState = {
   street: '',
   postcode: '',
   city: '',
+  address: '',
 };
 
-const CustomerForm = ({ mode = 'create' }) => {
+// Supported modes: 'create' (new customer) or 'edit' (update existing customer)
+const CustomerForm = ({ mode = 'create', customerId, onBackToList, onCustomerCreated, onCustomerUpdated }) => {
   const router = useRouter(); // Using the Next.js 14 App Router
   const [formData, setFormData] = useState(initialState);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingCustomer, setIsLoadingCustomer] = useState(mode === 'edit');
   const toast = useToast();
   const [activeTab, setActiveTab] = useState(0);
+  const [tenantId, setTenantId] = useState(null);
 
   useEffect(() => {
-    logger.info('[CustomerForm] Component mounted');
-  }, [router]);
+    // Get tenant ID on component mount
+    const fetchTenantId = async () => {
+      try {
+        // First try to get from cache for better performance
+        let tid = getCacheValue('tenantId');
+        
+        // If not in cache, use the utility function
+        if (!tid) {
+          tid = await getTenantId();
+        }
+        
+        if (tid) {
+          setTenantId(tid);
+          logger.info('[CustomerForm] Got tenant ID:', tid);
+        } else {
+          logger.warn('[CustomerForm] No tenant ID found');
+        }
+      } catch (err) {
+        logger.error('[CustomerForm] Error getting tenant ID:', err);
+      }
+    };
+    
+    fetchTenantId();
+  }, []);
+
+  // Load customer data if we're in edit mode
+  useEffect(() => {
+    if (mode === 'edit' && customerId) {
+      const fetchCustomer = async () => {
+        setIsLoadingCustomer(true);
+        try {
+          const response = await axiosInstance.get(`/api/customers/${customerId}`);
+          const customerData = response.data;
+          logger.info('[CustomerForm] Loaded customer data for editing:', customerData);
+          
+          // Map database fields to form fields
+          setFormData({
+            ...initialState,
+            customerName: customerData.customer_name || '',
+            first_name: customerData.first_name || '',
+            last_name: customerData.last_name || '',
+            email: customerData.email || '',
+            phone: customerData.phone || '',
+            website: customerData.website || '',
+            notes: customerData.notes || '',
+            address: customerData.address || '',
+            city: customerData.city || '',
+            billingCountry: customerData.billing_country || customerData.billingCountry || '',
+            billingState: customerData.billing_state || customerData.billingState || '',
+            postcode: customerData.postcode || '',
+          });
+        } catch (error) {
+          logger.error('[CustomerForm] Error loading customer data:', error);
+          toast.error('Failed to load customer data');
+          setError('Failed to load customer data');
+        } finally {
+          setIsLoadingCustomer(false);
+        }
+      };
+      
+      fetchCustomer();
+    }
+  }, [mode, customerId, toast]);
+
+  useEffect(() => {
+    logger.info(`[CustomerForm] Component mounted in ${mode} mode`);
+  }, [router, mode]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -55,18 +126,62 @@ const CustomerForm = ({ mode = 'create' }) => {
       e.preventDefault();
       setIsLoading(true);
       setError(null);
-      logger.info('[CustomerForm] Submitting customer data:', formData);
+      
+      // The backend API uses Row Level Security (RLS) to automatically associate
+      // the customer with the correct tenant using the JWT token
+      logger.info(`[CustomerForm] Submitting customer data for RLS-secured API in ${mode} mode`);
       
       try {
-        const response = await axiosInstance.post('/api/customers/', formData);
-        logger.info('[CustomerForm] Customer created successfully:', response.data);
-        toast.success('Customer created successfully');
+        // Format customer data for the API
+        const customerData = {
+          ...formData,
+          // Format object_name to match database field if needed
+          customer_name: formData.customerName || `${formData.first_name} ${formData.last_name}`,
+          // Add tenant_id explicitly to ensure it's available in the request
+          tenant_id: tenantId
+        };
         
-        // Navigate to the dashboard or customer details
-        router.push('/dashboard/customers');
+        logger.info(`Creating customer with tenant ID: ${tenantId}`);
+        
+        let response;
+        
+        if (mode === 'edit' && customerId) {
+          // Update existing customer
+          response = await axiosInstance.put(`/api/customers/${customerId}`, customerData);
+          
+          const updatedCustomer = response.data;
+          logger.info('[CustomerForm] Customer updated successfully through RLS:', updatedCustomer);
+          toast.success('Customer updated successfully');
+          
+          // Call the callback with the updated customer data if it exists
+          if (typeof onCustomerUpdated === 'function') {
+            onCustomerUpdated(updatedCustomer);
+          } else if (typeof onCustomerCreated === 'function') {
+            // Fallback to onCustomerCreated for backward compatibility
+            onCustomerCreated(updatedCustomer);
+          } else {
+            // Legacy behavior: Navigate to the dashboard or customer details
+            router.push('/dashboard/customers');
+          }
+        } else {
+          // Create new customer
+          response = await axiosInstance.post('/api/customers', customerData);
+          
+          const newCustomer = response.data;
+          logger.info('[CustomerForm] Customer created successfully through RLS:', newCustomer);
+          toast.success('Customer created successfully');
+          
+          // Call the callback with the new customer data if it exists
+          if (typeof onCustomerCreated === 'function') {
+            onCustomerCreated(newCustomer);
+          } else {
+            // Legacy behavior: Navigate to the dashboard or customer details
+            router.push('/dashboard/customers');
+          }
+        }
       } catch (error) {
-        logger.error('[CustomerForm] Error creating customer:', error);
-        let errorMessage = 'Failed to create customer';
+        logger.error(`[CustomerForm] Error ${mode === 'edit' ? 'updating' : 'creating'} customer:`, error);
+        let errorMessage = `Failed to ${mode === 'edit' ? 'update' : 'create'} customer`;
         
         if (error.response) {
           logger.error('[CustomerForm] Error response:', error.response.status, error.response.data);
@@ -82,11 +197,15 @@ const CustomerForm = ({ mode = 'create' }) => {
         setIsLoading(false);
       }
     },
-    [formData, router, toast]
+    [formData, mode, customerId, router, toast, onCustomerCreated, onCustomerUpdated, tenantId]
   );
 
   const handleCancel = () => {
-    router.back();
+    if (onBackToList && typeof onBackToList === 'function') {
+      onBackToList();
+    } else {
+      router.back();
+    }
   };
 
   // Basic Info Tab Content
@@ -458,57 +577,76 @@ const CustomerForm = ({ mode = 'create' }) => {
   );
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
-      <div className="mb-6 bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="flex w-full">
-          {["Basic Information", "Billing & Shipping", "Address"].map((label, index) => (
-            <button
-              key={index}
-              onClick={(e) => handleTabChange(e, index)}
-              className={`flex-1 py-4 px-4 text-center font-semibold text-base ${
-                activeTab === index
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+    <ModernFormLayout title={mode === 'edit' ? "Edit Customer" : "New Customer"}>
+      {isLoadingCustomer ? (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="ml-4 text-gray-600">Loading customer data...</p>
         </div>
-      </div>
-
-      <ModernFormLayout
-        title="Create New Customer"
-        subtitle="Add a customer to your business contacts"
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        submitLabel="Save Customer"
-        footer={
-          <button
-            type="button"
-            onClick={handleCancel}
-            className="mr-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-            </svg>
-            Cancel
-          </button>
-        }
-      >
-        {error && (
-          <div className="w-full mb-6">
-            <div className="bg-red-50 text-red-700 p-4 rounded-md border border-red-200">
-              {error}
+      ) : (
+        <form onSubmit={handleSubmit} className="px-4 py-6 bg-white rounded-lg shadow-sm">
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">Error: </strong>
+              <span className="block sm:inline">{error}</span>
+            </div>
+          )}
+          
+          {/* Tabs navigation */}
+          <div className="mb-6 border-b border-gray-200">
+            <div className="flex w-full">
+              {["Basic Information", "Billing & Shipping", "Address"].map((label, index) => (
+                <button
+                  key={index}
+                  type="button" 
+                  onClick={(e) => handleTabChange(e, index)}
+                  className={`flex-1 py-4 px-4 text-center font-semibold text-base ${
+                    activeTab === index
+                      ? "border-b-2 border-blue-600 text-blue-600"
+                      : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
-        )}
-        
-        {activeTab === 0 && renderBasicInfoTab()}
-        {activeTab === 1 && renderBillingTab()}
-        {activeTab === 2 && renderAddressTab()}
-      </ModernFormLayout>
-    </div>
+          
+          {/* Tabs Content */}
+          <div className="mt-4">
+            {activeTab === 0 && renderBasicInfoTab()}
+            {activeTab === 1 && renderBillingTab()}
+            {activeTab === 2 && renderAddressTab()}
+          </div>
+          
+          {/* Form Actions */}
+          <div className="flex justify-end mt-8 space-x-4">
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="px-6 py-3 rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`px-6 py-3 rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors flex items-center ${
+                isLoading ? 'opacity-75 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoading && (
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              )}
+              {mode === 'edit' ? 'Update Customer' : 'Create Customer'}
+            </button>
+          </div>
+        </form>
+      )}
+    </ModernFormLayout>
   );
 };
 

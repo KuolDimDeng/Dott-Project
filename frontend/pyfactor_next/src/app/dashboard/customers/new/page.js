@@ -1,23 +1,26 @@
 'use client';
 
-import React from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import DashboardWrapper from '../../DashboardWrapper';
-import CustomerDetails from '@/app/dashboard/components/forms/CustomerDetails';
+import { logger } from '@/utils/logger';
 
-/**
- * Page component for creating a new customer
- */
-export default function NewCustomerPage() {
+export default function NewCustomerRedirect() {
   const router = useRouter();
 
-  const handleBackToList = () => {
-    router.push('/dashboard/customers');
-  };
+  useEffect(() => {
+    logger.info('[NewCustomerRedirect] Redirecting to new customers page structure');
+    router.replace('/dashboard/customers?tab=add');
+  }, [router]);
 
   return (
-    <DashboardWrapper>
-      <CustomerDetails newCustomer={true} onBackToList={handleBackToList} />
-    </DashboardWrapper>
+    <div className="flex items-center justify-center h-[50vh]">
+      <div className="text-center">
+        <div className="mb-4">
+          <div className="w-16 h-16 border-4 border-t-blue-500 border-b-blue-700 rounded-full animate-spin mx-auto"></div>
+        </div>
+        <h2 className="text-xl font-medium text-gray-700">Redirecting to Add Customer...</h2>
+        <p className="text-gray-500 mt-2">You'll be redirected to the new customer management page.</p>
+      </div>
+    </div>
   );
 } 

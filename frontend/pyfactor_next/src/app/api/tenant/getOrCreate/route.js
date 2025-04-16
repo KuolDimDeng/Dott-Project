@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { createDbPool } from '../db-config';
 import { getJwtFromRequest } from '@/utils/auth/authUtils';
 import { generateDeterministicTenantId, formatSchemaName } from '@/utils/tenant';
-import { updateCognitoAttribute } from '@/utils/cognito';
+import { updateCognitoAttribute, updateUserAttributesServer } from '@/utils/cognito';
+
+// Import logger for better debugging
+import { logger } from '@/utils/serverLogger';
 
 /**
  * API route to get or create a tenant for a user
@@ -14,11 +17,20 @@ export async function POST(request) {
   let pool = null;
   let client = null;
 
+  // Log environment variables for debugging AWS access
+  logger.debug(`[${requestId}] Environment variables check:`, {
+    region: process.env.AWS_REGION || process.env.NEXT_PUBLIC_COGNITO_REGION || '(not set)',
+    userPoolId: process.env.COGNITO_USER_POOL_ID || process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || '(not set)',
+    accessKeyAvailable: !!process.env.AWS_ACCESS_KEY_ID,
+    secretKeyAvailable: !!process.env.AWS_SECRET_ACCESS_KEY
+  });
+
   try {
     // Extract user information from JWT
     const jwt = await getJwtFromRequest(request);
     
     if (!jwt || !jwt.sub) {
+      console.error(`[${requestId}] No valid JWT or subject found in request`);
       return NextResponse.json({
         success: false,
         message: 'Unauthorized: No authenticated user found'
@@ -27,6 +39,22 @@ export async function POST(request) {
     
     const userId = jwt.sub;
     const userEmail = jwt.email || '';
+    
+    // Log the user ID for tracking
+    logger.info(`[${requestId}] Processing tenant request for user: ${userId.substring(0, 8)}...`);
+    
+    // Parse request body for additional parameters
+    let requestBody;
+    try {
+      requestBody = await request.json();
+    } catch (parseError) {
+      console.error(`[${requestId}] Error parsing request body:`, parseError);
+      requestBody = {};
+    }
+    
+    const providedTenantId = requestBody.tenantId;
+    const planId = requestBody.planId;
+    const billingCycle = requestBody.billingCycle;
     
     // Generate username with capitalized first letter if from email
     let userName = jwt.name || jwt.given_name;
@@ -70,11 +98,35 @@ export async function POST(request) {
         SELECT * FROM public.custom_auth_tenant WHERE id = $1
       `, [existingTenantId]);
       
-      // Update Cognito with the tenant ID if needed
+      // Update Cognito with the tenant ID and subscription information if provided
       try {
-        await updateCognitoAttribute(userId, 'custom:businessid', existingTenantId);
+        // Collect all attributes to update in one operation
+        const cognitoAttributes = {
+          'custom:tenant_ID': existingTenantId,
+          'custom:tenantId': existingTenantId,
+          'custom:businessid': existingTenantId
+        };
+        
+        // Add subscription info if provided
+        if (planId) {
+          cognitoAttributes['custom:subplan'] = planId;
+          cognitoAttributes['custom:requirespayment'] = planId === 'free' ? 'false' : 'true';
+        }
+        
+        if (billingCycle) {
+          cognitoAttributes['custom:subscriptioninterval'] = billingCycle;
+        }
+        
+        // Update onboarding status
+        cognitoAttributes['custom:onboarding'] = 'complete';
+        cognitoAttributes['custom:setupdone'] = 'true';
+        cognitoAttributes['custom:updated_at'] = new Date().toISOString();
+        
+        // Send all updates at once
+        await updateUserAttributesServer(userId, cognitoAttributes);
+        console.log(`[${requestId}] Updated Cognito attributes for existing tenant`);
       } catch (error) {
-        console.error(`[${requestId}] Error updating Cognito attribute: ${error.message}`);
+        console.error(`[${requestId}] Error updating Cognito attributes: ${error.message}`);
         // Continue anyway since we found the tenant
       }
       
@@ -90,8 +142,18 @@ export async function POST(request) {
       });
     }
     
-    // User doesn't have a tenant, generate a deterministic tenant ID
-    const tenantId = generateDeterministicTenantId(userId);
+    // User doesn't have a tenant
+    // If a tenant ID was provided in the request, use it if valid
+    // Otherwise generate a deterministic tenant ID
+    let tenantId;
+    if (providedTenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(providedTenantId)) {
+      console.log(`[${requestId}] Using provided tenant ID: ${providedTenantId}`);
+      tenantId = providedTenantId;
+    } else {
+      tenantId = generateDeterministicTenantId(userId);
+      console.log(`[${requestId}] Generated deterministic tenant ID: ${tenantId}`);
+    }
+    
     if (!tenantId) {
       await client.query('ROLLBACK');
       return NextResponse.json({
@@ -141,11 +203,60 @@ export async function POST(request) {
       ON CONFLICT (user_id) DO NOTHING
     `, [tenantId, userId]);
     
-    // Update user's Cognito attributes
+    // Update user's Cognito attributes with tenant ID and subscription info
     try {
-      await updateCognitoAttribute(userId, 'custom:businessid', tenantId);
+      // Collect all attributes to update in one operation
+      const cognitoAttributes = {
+        'custom:tenant_ID': tenantId,
+        'custom:tenantId': tenantId,
+        'custom:businessid': tenantId
+      };
+      
+      // Add subscription info if provided
+      if (planId) {
+        cognitoAttributes['custom:subplan'] = planId;
+        cognitoAttributes['custom:subscriptionstatus'] = 'active';
+        cognitoAttributes['custom:requirespayment'] = planId === 'free' ? 'false' : 'true';
+      }
+      
+      if (billingCycle) {
+        cognitoAttributes['custom:subscriptioninterval'] = billingCycle;
+      }
+      
+      // Update onboarding status
+      cognitoAttributes['custom:onboarding'] = 'complete';
+      cognitoAttributes['custom:setupdone'] = 'true';
+      cognitoAttributes['custom:updated_at'] = new Date().toISOString();
+      cognitoAttributes['custom:acctstatus'] = 'active';
+      
+      // Log the attributes we're about to update
+      logger.info(`[${requestId}] Updating Cognito attributes for user with tenant ID: ${tenantId}`);
+      logger.debug(`[${requestId}] Attributes to update:`, cognitoAttributes);
+      
+      // Directly update the key tenant attributes first
+      try {
+        // Update tenant_ID directly first
+        await updateCognitoAttribute(userId, 'custom:tenant_ID', tenantId);
+        logger.info(`[${requestId}] Successfully updated custom:tenant_ID attribute for user ${userId}`);
+        
+        // Update tenantId directly next
+        await updateCognitoAttribute(userId, 'custom:tenantId', tenantId);
+        logger.info(`[${requestId}] Successfully updated custom:tenantId attribute for user ${userId}`);
+        
+        // Update businessid directly last
+        await updateCognitoAttribute(userId, 'custom:businessid', tenantId);
+        logger.info(`[${requestId}] Successfully updated custom:businessid attribute for user ${userId}`);
+      } catch (singleUpdateError) {
+        logger.error(`[${requestId}] Error updating individual tenant attributes: ${singleUpdateError.message}`);
+        // Continue with batch update anyway
+      }
+      
+      // Send all updates at once
+      await updateUserAttributesServer(userId, cognitoAttributes);
+      logger.info(`[${requestId}] Updated all Cognito attributes for user with tenant ID: ${tenantId}`);
     } catch (error) {
-      console.error(`[${requestId}] Error updating Cognito attribute: ${error.message}`);
+      logger.error(`[${requestId}] Error updating Cognito attributes: ${error.message}`);
+      logger.error(`[${requestId}] Error details:`, error);
     }
     
     // Get updated tenant details

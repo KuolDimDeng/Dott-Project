@@ -1,7 +1,5 @@
-'use client';
-
 /**
- * Simple logger that works in both browser and server environments
+ * Unified logger that works in both browser and server environments
  * This logger provides basic logging functionality with level filtering
  */
 
@@ -16,11 +14,11 @@ const LOG_LEVELS = {
 // Default minimum log level (can be overridden)
 let minLevel = process.env.NODE_ENV === 'production' ? 'info' : 'debug';
 
-// Determine if we're running in browser or server
-const isBrowser = typeof window !== 'undefined';
-
 // Determine if we're in production or development
 const isDev = process.env.NODE_ENV !== 'production';
+
+// Determine environment at runtime
+const getIsServer = () => typeof window === 'undefined';
 
 /**
  * Logger utility for consistent logging across the application
@@ -50,11 +48,19 @@ export const logger = {
    * @param {any} data - Optional data to log
    */
   debug: (message, data) => {
-    if (isDev) {
-      if (data) {
-        console.debug(message, data);
+    if (isDev && LOG_LEVELS[minLevel] <= LOG_LEVELS.debug) {
+      if (getIsServer()) {
+        if (data !== undefined) {
+          console.debug(`[SERVER DEBUG] ${message}`, data);
+        } else {
+          console.debug(`[SERVER DEBUG] ${message}`);
+        }
       } else {
-        console.debug(message);
+        if (data !== undefined) {
+          console.debug(message, data);
+        } else {
+          console.debug(message);
+        }
       }
     }
   },
@@ -65,10 +71,20 @@ export const logger = {
    * @param {any} data - Optional data to log
    */
   info: (message, data) => {
-    if (data) {
-      console.info(message, data);
-    } else {
-      console.info(message);
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.info) {
+      if (getIsServer()) {
+        if (data !== undefined) {
+          console.info(`[SERVER INFO] ${message}`, data);
+        } else {
+          console.info(`[SERVER INFO] ${message}`);
+        }
+      } else {
+        if (data !== undefined) {
+          console.info(message, data);
+        } else {
+          console.info(message);
+        }
+      }
     }
   },
   
@@ -78,10 +94,20 @@ export const logger = {
    * @param {any} data - Optional data to log
    */
   warn: (message, data) => {
-    if (data) {
-      console.warn(message, data);
-    } else {
-      console.warn(message);
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.warn) {
+      if (getIsServer()) {
+        if (data !== undefined) {
+          console.warn(`[SERVER WARN] ${message}`, data);
+        } else {
+          console.warn(`[SERVER WARN] ${message}`);
+        }
+      } else {
+        if (data !== undefined) {
+          console.warn(message, data);
+        } else {
+          console.warn(message);
+        }
+      }
     }
   },
   
@@ -91,52 +117,25 @@ export const logger = {
    * @param {any} error - Optional error object to log
    */
   error: (message, error) => {
-    if (error) {
-      console.error(message, error);
-    } else {
-      console.error(message);
+    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.error) {
+      if (getIsServer()) {
+        if (error !== undefined) {
+          console.error(`[SERVER ERROR] ${message}`, error);
+        } else {
+          console.error(`[SERVER ERROR] ${message}`);
+        }
+      } else {
+        if (error !== undefined) {
+          console.error(message, error);
+        } else {
+          console.error(message);
+        }
+      }
     }
   }
 };
 
-// Export a server-specific logger for server components
-export const serverLogger = {
-  debug: (message, data) => {
-    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.debug) {
-      if (data !== undefined) {
-        console.debug(`[SERVER DEBUG] ${message}`, JSON.stringify(data));
-      } else {
-        console.debug(`[SERVER DEBUG] ${message}`);
-      }
-    }
-  },
-  info: (message, data) => {
-    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.info) {
-      if (data !== undefined) {
-        console.info(`[SERVER INFO] ${message}`, JSON.stringify(data));
-      } else {
-        console.info(`[SERVER INFO] ${message}`);
-      }
-    }
-  },
-  warn: (message, data) => {
-    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.warn) {
-      if (data !== undefined) {
-        console.warn(`[SERVER WARN] ${message}`, JSON.stringify(data));
-      } else {
-        console.warn(`[SERVER WARN] ${message}`);
-      }
-    }
-  },
-  error: (message, data) => {
-    if (LOG_LEVELS[minLevel] <= LOG_LEVELS.error) {
-      if (data !== undefined) {
-        console.error(`[SERVER ERROR] ${message}`, JSON.stringify(data));
-      } else {
-        console.error(`[SERVER ERROR] ${message}`);
-      }
-    }
-  }
-};
+// For backward compatibility
+export const serverLogger = logger;
 
 export default logger;

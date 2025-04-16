@@ -5,8 +5,8 @@ import axios from 'axios';
 import { logger } from '@/utils/logger';
 
 // Use the current origin as the base URL unless defined
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
-const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://localhost:8000';
+const BASE_URL = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
 
 // Create main axios instance for API calls
 const axiosInstance = axios.create({
@@ -134,7 +134,7 @@ const getCircuitBreaker = (endpoint) => {
   return circuitBreakers[key];
 };
 
-// Add circuit breaker to request interceptor
+// Request interceptor to add authorization token
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
@@ -147,26 +147,49 @@ axiosInstance.interceptors.request.use(
           const { getTenantId } = await import('@/utils/tenantUtils');
           const { fetchAuthSession } = await import('aws-amplify/auth');
           
-          // Add tenant headers for all requests
-          const tenantId = await getTenantId();
-          if (tenantId) {
+          // Use AWS AppCache for tenant ID - prioritize this over other sources
+          if (window.__APP_CACHE?.tenant?.id) {
+            const cachedTenantId = window.__APP_CACHE.tenant.id;
             config.headers = {
               ...config.headers,
-              'X-Tenant-ID': tenantId
+              'X-Tenant-ID': cachedTenantId
             };
+            logger.debug('[AxiosConfig] Using tenant ID from APP_CACHE');
+          } else {
+            // Fall back to utilities function which will try other sources
+            const tenantId = await getTenantId();
+            if (tenantId) {
+              config.headers = {
+                ...config.headers,
+                'X-Tenant-ID': tenantId
+              };
+            }
           }
           
-          // Add authorization header for authenticated requests
-          try {
-            const session = await fetchAuthSession();
-            if (session?.tokens?.idToken) {
-              config.headers.Authorization = `Bearer ${session.tokens.idToken.toString()}`;
+          // Use AWS AppCache for auth tokens if available
+          if (window.__APP_CACHE?.auth?.token) {
+            config.headers.Authorization = `Bearer ${window.__APP_CACHE.auth.token}`;
+            logger.debug('[AxiosConfig] Using auth token from APP_CACHE');
+          } else {
+            // Fall back to Amplify Auth
+            try {
+              const session = await fetchAuthSession();
+              if (session?.tokens?.idToken) {
+                config.headers.Authorization = `Bearer ${session.tokens.idToken.toString()}`;
+                config.headers['X-Id-Token'] = session.tokens.idToken.toString();
+                
+                // Save to APP_CACHE for future use
+                if (window.__APP_CACHE) {
+                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  window.__APP_CACHE.auth.token = session.tokens.idToken.toString();
+                }
+              }
+            } catch (authError) {
+              logger.warn('[AxiosConfig] Auth session error:', authError.message);
             }
-          } catch (authError) {
-            logger.warn('[axiosConfig] Auth session error:', authError.message);
           }
         } catch (importError) {
-          logger.warn('[axiosConfig] Import error in request interceptor:', importError.message);
+          logger.warn('[AxiosConfig] Import error in request interceptor:', importError.message);
         }
       }
       
@@ -175,7 +198,7 @@ axiosInstance.interceptors.request.use(
       const cb = getCircuitBreaker(url);
       
       if (!cb.canRequest()) {
-        logger.warn(`[axiosConfig] Circuit breaker open for ${url}, rejecting request`);
+        logger.warn(`[AxiosConfig] Circuit breaker open for ${url}, rejecting request`);
         return Promise.reject(new Error(`Circuit breaker open for ${url}`));
       }
       
@@ -185,7 +208,7 @@ axiosInstance.interceptors.request.use(
       
       return config;
     } catch (error) {
-      logger.error('[axiosConfig] Error in request interceptor:', error.message);
+      logger.error('[AxiosConfig] Error in request interceptor:', error.message);
       return config;
     }
   },
@@ -271,19 +294,64 @@ const useApi = axiosInstance;
 
 // Create a server-side safe axios instance that doesn't use client-side utilities
 const serverAxiosInstance = axios.create({
-  baseURL: BASE_URL,
-  timeout: 30000,
+  timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Add simpler interceptors for server-side that don't depend on client-side auth
+// Add SSL handling for development
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+  const https = require('https');
+  serverAxiosInstance.defaults.httpsAgent = new https.Agent({
+    rejectUnauthorized: false
+  });
+}
+
+// Fix proper BACKEND_URL configuration for server-side requests
+serverAxiosInstance.interceptors.request.use(
+  (config) => {
+    // Set a proper base URL for backend API requests
+    if (!config.baseURL) {
+      // Use environment variable or fallback to 127.0.0.1
+      // Always use HTTP in development to avoid SSL issues
+      const backendUrl = process.env.NODE_ENV === 'development' ? 
+        'http://127.0.0.1:8000' : 
+        (process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000');
+      
+      if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
+        console.log(`[ServerAxiosConfig] Using backend URL: ${backendUrl} for request: ${config.url}`);
+      }
+      
+      // Update the config with the correct baseURL
+      config.baseURL = backendUrl;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add simpler interceptors and error handler for connection issues
 serverAxiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle errors in server components
-    console.error('[Server] API request error:', error.message);
+    // Log connection errors in a helpful way
+    if (error.code === 'ECONNREFUSED') {
+      console.error(`[ServerAxiosConfig] Connection refused to ${error.config?.url || 'unknown URL'}`);
+      error.message = `Connection to backend server failed (${error.address}:${error.port})`;
+    } else if (error.code === 'ECONNABORTED') {
+      console.error(`[ServerAxiosConfig] Connection timeout to ${error.config?.url || 'unknown URL'}`);
+      error.message = 'Connection to backend server timed out';
+    } else if (error.code === 'EPROTO') {
+      console.error(`[ServerAxiosConfig] SSL Protocol error with ${error.config?.url || 'unknown URL'}`);
+      error.message = 'SSL Protocol error - possible mismatch between HTTP/HTTPS';
+    } else {
+      // Handle errors in server components
+      console.error('[Server] API request error:', error.message);
+    }
     return Promise.reject(error);
   }
 );

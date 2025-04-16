@@ -1,3 +1,13 @@
+/**
+ * PRIMARY DASHBOARD CONTENT FILE
+ * 
+ * IMPORTANT: This is the main DashboardContent file that should be used throughout the application.
+ * Do not create duplicates or alternative versions of this component.
+ * 
+ * It is being imported by:
+ * - /src/app/[tenantId]/dashboard/page.js
+ */
+
 'use client';
 
 import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo } from 'react';
@@ -293,9 +303,35 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowHome(true);
   }, [resetAllStates, setShowHome]);
 
-  const handleHRClick = useCallback(() => {
+  const handleHRClick = useCallback((value) => {
     resetAllStates();
-    updateState({ showHRDashboard: true });
+    console.log('HR option selected:', value);
+    
+    switch(value) {
+      case 'dashboard':
+        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
+        break;
+      case 'employees':
+        updateState({ showEmployeeManagement: true });
+        break;
+      case 'timesheets':
+        updateState({ showTimesheetManagement: true });
+        break;
+      case 'taxes':
+        updateState({ showTaxManagement: true });
+        break;
+      case 'benefits':
+        updateState({ showBenefitsManagement: true });
+        break;
+      case 'reports':
+        updateState({ showReportsManagement: true });
+        break;
+      case 'performance':
+        updateState({ showPerformanceManagement: true });
+        break;
+      default:
+        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
+    }
   }, [resetAllStates, updateState]);
 
   const handleInventoryClick = useCallback(() => {
@@ -362,6 +398,24 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log(`%c[ComponentsDashboard] Toggling drawer: ${drawerOpen ? 'OPEN' : 'CLOSED'} → ${newState ? 'OPEN' : 'CLOSED'}`, 'background: #dbeafe; color: #1e40af; padding: 2px 4px; border-radius: 2px;');
     setDrawerOpen(newState);
   }, [drawerOpen, setDrawerOpen]);
+
+  // Add the handleEmployeeManagementClick function
+  const handleEmployeeManagementClick = useCallback(() => {
+    console.log('[DashboardContent] handleEmployeeManagementClick called');
+    resetAllStates();
+    updateState({
+      showEmployeeManagement: true
+    });
+    console.log('[DashboardContent] Employee Management clicked');
+  }, [resetAllStates, updateState]);
+
+  // Add the handleCRMClick function
+  const handleCRMClick = useCallback((option) => {
+    console.log('[DashboardContent] handleCRMClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct CRM section format that RenderMainContent expects
+    setView(`crm-${option}`);
+  }, [resetAllStates, setView]);
 
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
@@ -446,11 +500,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleHRClick,
     handleInventoryClick,
     handleShowCreateOptions,
-    handleShowCreateMenu
+    handleShowCreateMenu,
+    handleEmployeeManagementClick,
+    handleCRMClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
     resetAllStates, handleHomeClick, handleHRClick, handleInventoryClick,
-    handleShowCreateOptions, handleShowCreateMenu
+    handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick
   ]);
   
   // Memoize RenderMainContent props
@@ -532,7 +588,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 const MemoizedDashboardContent = React.memo(DashboardContent);
 
 // Wrap DashboardContent with export for reuse
-export default function Dashboard({ newAccount, plan, mockData, setupStatus, userAttributes, tenantId }) {
+export default function Dashboard({ newAccount, plan, mockData, setupStatus, userAttributes, tenantId, children }) {
   return (
     <NotificationProvider>
       <ToastProvider>
@@ -545,6 +601,7 @@ export default function Dashboard({ newAccount, plan, mockData, setupStatus, use
               tenantId={tenantId}
               newAccount={newAccount}
               plan={plan}
+              customContent={children}
             />
           </ErrorBoundary>
         </Suspense>

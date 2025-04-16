@@ -5,20 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { confirmSignUp, resendSignUpCode } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { getCognitoAuth } from '@/utils/cognito';
-import { logInfo, logError, logDebug } from '@/utils/logger';
-
-// Initialize global app cache for auth
-if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-  window.__APP_CACHE.verification = window.__APP_CACHE.verification || {};
-}
-
-// Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !window.__APP_CACHE) {
-  window.__APP_CACHE = { auth: {}, user: {}, verification: {} };
-}
+import { getCacheValue, setCacheValue, removeCacheValue } from '@/utils/appCache';
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -31,45 +18,36 @@ export default function VerifyEmailPage() {
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [resendError, setResendError] = useState(null);
   const [resendSuccess, setResendSuccess] = useState(null);
-  const [verified, setVerified] = useState(false);
+  const [verificationComplete, setVerificationComplete] = useState(false);
+  const [secondsToRedirect, setSecondsToRedirect] = useState(3);
 
   useEffect(() => {
-    // Initialize app cache for auth if it doesn't exist
-    if (!window.__APP_CACHE) {
-      window.__APP_CACHE = {};
+    // Try to get email from URL parameters, then AppCache
+    const cachedEmail = getCacheValue('auth_email');
+    const emailToUse = paramEmail || cachedEmail || '';
+    
+    if (emailToUse) {
+      setEmail(emailToUse);
+      logger.debug('[VerifyEmail] Email set from params or AppCache', { 
+        source: paramEmail ? 'url' : 'AppCache',
+        email: emailToUse 
+      });
     }
-    if (!window.__APP_CACHE.auth) {
-      window.__APP_CACHE.auth = {};
-    }
+  }, [paramEmail]);
 
-    // Get email from URL query params or app cache or sessionStorage
-    const params = new URLSearchParams(window.location.search);
-    const emailFromURL = params.get('email');
-
-    if (emailFromURL) {
-      setEmail(emailFromURL);
-      // Store email in app cache
-      window.__APP_CACHE.auth.verificationEmail = emailFromURL;
-      // Fallback to sessionStorage for backward compatibility
-      sessionStorage.setItem('verificationEmail', emailFromURL);
-      console.log('Email from URL:', emailFromURL);
-    } else {
-      // Try to get email from app cache or sessionStorage
-      const cachedEmail = window.__APP_CACHE.auth.verificationEmail || sessionStorage.getItem('verificationEmail');
-      if (cachedEmail) {
-        setEmail(cachedEmail);
-        console.log('Email from cache:', cachedEmail);
-      }
+  // Handle redirect countdown after successful verification
+  useEffect(() => {
+    if (verificationComplete && secondsToRedirect > 0) {
+      const countdownInterval = setInterval(() => {
+        setSecondsToRedirect(prev => prev - 1);
+      }, 1000);
+      
+      return () => clearInterval(countdownInterval);
+    } else if (verificationComplete && secondsToRedirect === 0) {
+      router.push('/auth/signin');
     }
-
-    // Check if email is already verified from app cache
-    const isEmailVerified = window.__APP_CACHE.auth.emailVerified === true;
-    if (isEmailVerified) {
-      setVerified(true);
-    }
-  }, []);
+  }, [verificationComplete, secondsToRedirect, router]);
 
   const handleCodeChange = (e) => {
     setCode(e.target.value);
@@ -81,290 +59,323 @@ export default function VerifyEmailPage() {
     if (error) setError(null);
   };
 
-  const handleVerify = async () => {
-    setIsVerifying(true);
-    setError('');
-    setSuccessMessage('');
-
+  const handleVerify = async (e) => {
+    e.preventDefault();
+    
+    // Basic validation
     if (!email) {
-      setError('Please enter your email address.');
-      setIsVerifying(false);
+      setError('Email address is required');
       return;
-    }
-
-    if (!code) {
-      setError('Please enter your verification code.');
-      setIsVerifying(false);
-      return;
-    }
-
-    try {
-      console.log('Verifying email:', email, 'with code:', code);
-      
-      // Initialize app cache if it doesn't exist
-      if (!window.__APP_CACHE) {
-        window.__APP_CACHE = {};
-      }
-      
-      // Initialize auth section if it doesn't exist
-      if (!window.__APP_CACHE.auth) {
-        window.__APP_CACHE.auth = {};
-      }
-
-      // Check if the email is already verified in the app cache
-      if (window.__APP_CACHE.auth.emailVerified && 
-          window.__APP_CACHE.auth.verifiedEmail === email) {
-        console.log('Email already verified according to app cache');
-        setSuccessMessage('Your email has already been verified! You can now sign in.');
-        setVerified(true);
-        setIsVerifying(false);
-        return;
-      }
-
-      // Attempt to verify the email with Cognito
-      const cognitoAuth = getCognitoAuth();
-      await cognitoAuth.confirmSignUp(email, code);
-      
-      console.log('Email verification successful');
-      
-      // Set verification status in app cache
-      window.__APP_CACHE.auth.emailVerified = true;
-      window.__APP_CACHE.auth.verifiedEmail = email;
-      
-      // Fallback to sessionStorage for compatibility
-      try {
-        sessionStorage.setItem('email_verified', 'true');
-        sessionStorage.setItem('verified_email', email);
-      } catch (storageError) {
-        console.error('Error storing verification status in sessionStorage:', storageError);
-      }
-      
-      setSuccessMessage('Your email has been verified successfully! You can now sign in.');
-      setVerified(true);
-      
-    } catch (error) {
-      console.error('Error verifying email:', error);
-      
-      if (error.code === 'CodeMismatchException') {
-        setError('The verification code is incorrect. Please try again.');
-      } else if (error.code === 'ExpiredCodeException') {
-        setError('The verification code has expired. Please request a new code.');
-      } else if (error.code === 'UserNotFoundException') {
-        setError('This email address is not registered. Please sign up first.');
-      } else if (error.message?.includes('verified')) {
-        // Handle case where the email is already verified
-        setSuccessMessage('Your email is already verified. You can sign in now!');
-        setVerified(true);
-        
-        // Update verification status in app cache
-        window.__APP_CACHE.auth.emailVerified = true;
-        window.__APP_CACHE.auth.verifiedEmail = email;
-        
-        // Fallback to sessionStorage for compatibility
-        try {
-          sessionStorage.setItem('email_verified', 'true');
-          sessionStorage.setItem('verified_email', email);
-        } catch (storageError) {
-          console.error('Error storing verification status in sessionStorage:', storageError);
-        }
-      } else {
-        setError('Failed to verify your email. Please try again later.');
-      }
     }
     
-    setIsVerifying(false);
+    if (!code || code.length < 6) {
+      setError('Please enter a valid verification code');
+      return;
+    }
+    
+    setIsVerifying(true);
+    setError(null);
+    setSuccessMessage(null);
+    
+    try {
+      logger.debug('[VerifyEmail] Attempting to verify email', { email, codeLength: code.length });
+      
+      // Check if we already know the user is confirmed from AppCache
+      const verifiedEmail = getCacheValue('auth_verified_email');
+      if (verifiedEmail === email) {
+        logger.debug('[VerifyEmail] Email already verified according to AppCache');
+        
+        // Set verification flags in AppCache
+        setCacheValue('auth_just_verified', 'true');
+        setCacheValue('auth_email_verified_timestamp', Date.now());
+        
+        // Clean up verification data
+        removeCacheValue('auth_email');
+        removeCacheValue('auth_needs_verification');
+        
+        // Show success message
+        setSuccessMessage('Email already verified! Redirecting to sign in page...');
+        setVerificationComplete(true);
+        return;
+      }
+      
+      try {
+        // Verify the email with Cognito
+        const { isSignUpComplete, nextStep } = await confirmSignUp({
+          username: email,
+          confirmationCode: code
+        });
+        
+        logger.debug('[VerifyEmail] Email verification result', { 
+          isSignUpComplete, 
+          nextStep: nextStep?.signUpStep 
+        });
+        
+        if (isSignUpComplete) {
+          // Set verification flags in AppCache
+          setCacheValue('auth_verified_email', email);
+          setCacheValue('auth_just_verified', 'true');
+          setCacheValue('auth_email_verified_timestamp', Date.now());
+          
+          // Clean up verification data
+          removeCacheValue('auth_email');
+          removeCacheValue('auth_needs_verification');
+          
+          // Show success message
+          setSuccessMessage('Email verified successfully! Redirecting to sign in page...');
+          setVerificationComplete(true);
+        } else {
+          throw new Error('Email verification failed. Please try again.');
+        }
+      } catch (verifyError) {
+        // Special handling for already confirmed users
+        if (verifyError.message?.includes('User cannot be confirmed') && verifyError.message?.includes('CONFIRMED')) {
+          // User is already confirmed, this is actually a success case
+          logger.info('[VerifyEmail] User is already confirmed, treating as success');
+          
+          // Set verification flags in AppCache
+          setCacheValue('auth_verified_email', email);
+          setCacheValue('auth_just_verified', 'true');
+          setCacheValue('auth_email_verified_timestamp', Date.now());
+          
+          // Clean up verification data
+          removeCacheValue('auth_email');
+          removeCacheValue('auth_needs_verification');
+          
+          // Show success message
+          setSuccessMessage('Account already verified! Redirecting to sign in page...');
+          setVerificationComplete(true);
+          return;
+        }
+        
+        // Log and re-throw for normal error handling
+        logger.error('[VerifyEmail] Error verifying email:', verifyError);
+        throw verifyError;
+      }
+    } catch (error) {
+      logger.error('[VerifyEmail] Verification error:', error);
+      
+      // Handle different error types
+      if (error.name === 'CodeMismatchException') {
+        setError('The verification code is incorrect. Please try again.');
+      } else if (error.name === 'ExpiredCodeException') {
+        setError('The verification code has expired. Please request a new code.');
+      } else if (error.name === 'UserNotFoundException') {
+        setError('We couldn\'t find an account with this email address.');
+      } else if (error.message?.includes('network') || error.name === 'NetworkError') {
+        setError('Network error. Please check your internet connection and try again.');
+      } 
+      // Special handling for already confirmed users
+      else if (error.message?.includes('User is already confirmed')) {
+        // User is already confirmed, treat as success
+        logger.info('[VerifyEmail] User is already confirmed, redirecting to sign in');
+        
+        // Set verification flags in AppCache
+        setCacheValue('auth_verified_email', email);
+        setCacheValue('auth_just_verified', 'true');
+        setCacheValue('auth_email_verified_timestamp', Date.now());
+        
+        // Clean up verification data
+        removeCacheValue('auth_email');
+        removeCacheValue('auth_needs_verification');
+        
+        // Show success message
+        setSuccessMessage('Your account is already verified! Redirecting to sign in...');
+        setVerificationComplete(true);
+        
+        // Don't show error for this case
+        return;
+      } else {
+        setError(error.message || 'An error occurred. Please try again.');
+      }
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleResendCode = async () => {
-    setIsResending(true);
-    setResendSuccess(false);
-    setResendError('');
-
     if (!email) {
-      setResendError('Please enter an email address');
-      setIsResending(false);
+      setError('Please enter your email address to receive a new code');
       return;
     }
-
+    
+    setIsResending(true);
+    setError(null);
+    setResendSuccess(null);
+    
     try {
-      await resendSignUpCode({ username: email });
-      console.log('Code resent successfully');
+      logger.debug('[VerifyEmail] Resending verification code', { email });
       
-      // Initialize auth cache if needed
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+      // Resend the code via Cognito
+      const result = await resendSignUpCode({
+        username: email
+      });
       
-      // Store verification status in app cache
-      window.__APP_CACHE.auth.verificationCodeSent = true;
-      // For backwards compatibility, also keep sessionStorage updated
-      sessionStorage.setItem('verificationCodeSent', 'true');
+      logger.debug('[VerifyEmail] Code resent successfully', { 
+        destination: result.destination?.deliveryMedium
+      });
       
-      try {
-        // After resend, try to confirm the user via admin API if needed
-        console.log('User confirmation via admin API is now handled through server-side APIs');
-      } catch (confirmError) {
-        console.log('Could not confirm user via admin API after resend:', confirmError);
-        // Not throwing this error as it's just an additional attempt
-      }
-
-      setResendSuccess(true);
+      // Show success message
+      setResendSuccess(`A new verification code has been sent to your email`);
     } catch (error) {
-      console.error('Error resending code:', error);
-      setResendError(getErrorMessage(error) || 'Error resending verification code');
+      logger.error('[VerifyEmail] Error resending code:', error);
+      
+      // Handle different error types
+      if (error.name === 'LimitExceededException') {
+        setError('You\'ve requested too many codes. Please wait a few minutes and try again.');
+      } else if (error.name === 'UserNotFoundException') {
+        setError('We couldn\'t find an account with this email address.');
+      } else if (error.message?.includes('network') || error.name === 'NetworkError') {
+        setError('Network error. Please check your internet connection and try again.');
+      } 
+      // Special handling for already confirmed users
+      else if (error.message?.includes('User is already confirmed')) {
+        // User is already confirmed, treat as success
+        logger.info('[VerifyEmail] User is already confirmed, redirecting to sign in');
+        
+        // Set verification flags
+        setCacheValue('auth_verified_email', email);
+        setCacheValue('auth_just_verified', 'true');
+        setCacheValue('auth_email_verified_timestamp', Date.now());
+        
+        // Clean up verification data
+        removeCacheValue('auth_email');
+        removeCacheValue('auth_needs_verification');
+        
+        // Show success message
+        setSuccessMessage('Your account is already verified! Redirecting to sign in...');
+        setVerificationComplete(true);
+        
+        // Don't show error for this case
+        return;
+      } else {
+        setError(error.message || 'An error occurred. Please try again.');
+      }
+    } finally {
+      setIsResending(false);
     }
-    setIsResending(false);
   };
 
   return (
-    <div>
-      {/* Error messages */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4" role="alert">
-          <p className="text-red-700">{error}</p>
-        </div>
-      )}
-      
-      {resendError && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4" role="alert">
-          <p className="text-red-700">{resendError}</p>
-        </div>
-      )}
-      
-      {/* Success messages */}
-      {successMessage && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-          <p className="text-green-700">{successMessage}</p>
-        </div>
-      )}
-      
-      {resendSuccess && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-          <p className="text-green-700">{resendSuccess}</p>
-        </div>
-      )}
-      
-      <form onSubmit={handleVerify} className="space-y-6">
-        {/* Email field */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email address
-          </label>
-          <div className="mt-1">
-            <input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={handleEmailChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              disabled={isVerifying || isResending}
-            />
-          </div>
-        </div>
+    <div className="w-full max-w-md mx-auto">
+      <div className="bg-white shadow-md rounded-lg px-8 py-6 mb-4">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">Verify Your Email</h2>
         
-        {/* Verification code field */}
-        <div>
-          <label htmlFor="code" className="block text-sm font-medium text-gray-700">
-            Verification Code
-          </label>
-          <div className="mt-1">
-            <input
-              id="code"
-              name="code"
-              type="text"
-              autoComplete="one-time-code"
-              required
-              value={code}
-              onChange={handleCodeChange}
-              className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Enter 6-digit code"
-              disabled={isVerifying || isResending}
-            />
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-md" role="alert">
+            <p className="text-red-700">{error}</p>
           </div>
-        </div>
+        )}
         
-        {/* Verify button */}
-        <div>
-          <button
-            type="submit"
-            disabled={isVerifying || isResending}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              isVerifying || isResending ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-            }`}
-          >
-            {isVerifying ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Verifying...
-              </>
-            ) : (
-              'Verify Email'
+        {/* Success message */}
+        {successMessage && (
+          <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md">
+            <p className="text-green-700">{successMessage}</p>
+            {verificationComplete && (
+              <p className="text-green-700 mt-2">Redirecting in {secondsToRedirect} seconds...</p>
             )}
-          </button>
-        </div>
+          </div>
+        )}
         
-        {/* Resend code button */}
-        <div className="flex items-center justify-center">
-          <button
-            type="button"
-            onClick={handleResendCode}
-            disabled={isResending || isVerifying}
-            className="text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-none"
-          >
-            {isResending ? 'Sending...' : 'Didn\'t receive the code? Resend'}
-          </button>
-        </div>
+        {/* Resend success message */}
+        {resendSuccess && !successMessage && (
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-md">
+            <p className="text-blue-700">{resendSuccess}</p>
+          </div>
+        )}
         
-        {/* Back to sign in */}
-        <div className="text-sm text-center mt-4">
-          <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500">
-            Back to Sign In
-          </Link>
-        </div>
-      </form>
-      
-      {/* Development mode debug section */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-8 border-t pt-4">
-          <details className="text-xs">
-            <summary className="cursor-pointer text-gray-600 hover:text-gray-800">Debug Tools</summary>
-            <div className="mt-2 space-y-2 p-2 bg-gray-50 rounded">
+        {!verificationComplete && (
+          <form onSubmit={handleVerify} className="space-y-6">
+            {/* Email field */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email address
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={handleEmailChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                  disabled={isVerifying || isResending || verificationComplete}
+                  placeholder="your@email.com"
+                />
+              </div>
+            </div>
+            
+            {/* Verification code field */}
+            <div>
+              <label htmlFor="code" className="block text-sm font-medium text-gray-700">
+                Verification Code
+              </label>
+              <div className="mt-1 relative">
+                <input
+                  id="code"
+                  name="code"
+                  type="text"
+                  autoComplete="one-time-code"
+                  required
+                  value={code}
+                  onChange={handleCodeChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition duration-150 ease-in-out"
+                  placeholder="Enter 6-digit code"
+                  disabled={isVerifying || isResending || verificationComplete}
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Enter the 6-digit code sent to your email
+              </p>
+            </div>
+            
+            {/* Verify button */}
+            <div>
               <button
-                type="button"
-                onClick={() => {
-                  // Store verification data in app cache
-                  if (!window.__APP_CACHE) window.__APP_CACHE = {};
-                  if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
-                  window.__APP_CACHE.auth.verifiedEmail = email;
-                  window.__APP_CACHE.auth.justVerified = true;
-                  window.__APP_CACHE.auth.emailVerified = true; 
-                  window.__APP_CACHE.auth.emailVerifiedTimestamp = Date.now().toString();
-
-                  // Also keep in sessionStorage as fallback
-                  try {
-                    sessionStorage.setItem('verifiedEmail', email);
-                    sessionStorage.setItem('justVerified', 'true');
-                    sessionStorage.setItem('emailVerified', 'true');
-                    sessionStorage.setItem('emailVerifiedTimestamp', Date.now().toString());
-                  } catch (err) {
-                    console.error('Failed to store verification data in sessionStorage:', err);
-                  }
-                  setSuccessMessage('Email verification bypassed! Redirecting to sign in...');
-                  setTimeout(() => router.push('/auth/signin'), 1500);
-                }}
-                className="w-full px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                type="submit"
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white
+                  ${isVerifying 
+                    ? 'bg-blue-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                  } transition-colors duration-150`}
+                disabled={isVerifying || isResending || verificationComplete}
               >
-                Bypass Verification Process
+                {isVerifying ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Verifying...
+                  </div>
+                ) : 'Verify Email'}
               </button>
             </div>
-          </details>
-        </div>
-      )}
+            
+            {/* Resend code */}
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={handleResendCode}
+                className={`text-sm font-medium text-blue-600 hover:text-blue-500 focus:outline-none ${isResending || verificationComplete ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isResending || verificationComplete}
+              >
+                {isResending ? 'Sending...' : 'Resend verification code'}
+              </button>
+              
+              <Link 
+                href="/auth/signin" 
+                className="text-sm font-medium text-gray-600 hover:text-gray-500 transition-colors duration-150"
+              >
+                Back to sign in
+              </Link>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 } 

@@ -52,8 +52,8 @@ const AddIncomeForm = ({ onClose }) => {
     try {
       const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
-      logger.log('User profile:', response.data);
-      logger.log('User database:', response.data.database_name);
+      logger.info('User profile:', response.data);
+      logger.info('User database:', response.data.database_name);
       toast.success('User profile loaded successfully');
     } catch (error) {
       logger.error('Error fetching user profile:', error);
@@ -137,7 +137,7 @@ const AddIncomeForm = ({ onClose }) => {
 
       if (response.status === 201) {
         const data = response.data;
-        logger.log('Income record created:', data);
+        logger.info('Income record created:', data);
         toast.success('Income record created successfully');
         onClose();
       }

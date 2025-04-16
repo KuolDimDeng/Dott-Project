@@ -174,7 +174,44 @@ export const loadFloatingUI = async () => {
     return await import('@floating-ui/react');
   } catch (error) {
     console.error('Error loading Floating UI:', error);
-    return null;
+    
+    // Return a stub implementation to prevent errors when the module fails to load
+    return {
+      // Basic positioning and interaction stubs
+      useFloating: () => ({
+        x: 0, 
+        y: 0, 
+        strategy: 'fixed',
+        refs: { 
+          setReference: () => {}, 
+          setFloating: () => {} 
+        },
+        context: {},
+        placement: 'bottom',
+        middlewareData: {},
+        isPositioned: true,
+        update: async () => {}
+      }),
+      
+      // Common middleware stubs
+      offset: () => ({ name: 'offset' }),
+      flip: () => ({ name: 'flip' }),
+      shift: () => ({ name: 'shift' }),
+      arrow: () => ({ name: 'arrow' }),
+      
+      // Interaction hooks stubs
+      useHover: () => ({ isHovered: false, getReferenceProps: () => ({}) }),
+      useFocus: () => ({ isFocused: false, getReferenceProps: () => ({}) }),
+      useClick: () => ({ isClicked: false, getReferenceProps: () => ({}) }),
+      useDismiss: () => ({ getReferenceProps: () => ({}), getFloatingProps: () => ({}) }),
+      useRole: () => ({ getReferenceProps: () => ({}), getFloatingProps: () => ({}) }),
+      useInteractions: () => ({ getReferenceProps: () => ({}), getFloatingProps: () => ({}) }),
+      
+      // Composite components
+      FloatingPortal: ({ children }) => children,
+      FloatingOverlay: ({ children }) => children,
+      FloatingArrow: () => null
+    };
   }
 };
 

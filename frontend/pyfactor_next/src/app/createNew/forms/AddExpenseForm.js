@@ -32,10 +32,10 @@ const AddExpenseForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('http://localhost:8000/api/profile/');
+      const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
-      logger.log('User profile:', response.data);
-      logger.log('User database:', response.data.database_name);
+      logger.info('User profile:', response.data);
+      logger.info('User database:', response.data.database_name);
       toast.success('User profile loaded successfully');
     } catch (error) {
       logger.error('Error fetching user profile:', error);
@@ -79,7 +79,7 @@ const AddExpenseForm = ({ onClose }) => {
     }
     formData.append('database', userDatabase);
 
-    logger.log('Form data:', formData);
+    logger.info('Form data:', formData);
 
     try {
       const response = await axiosInstance.post('http://localhost:8000/api/expenses/', formData, {
@@ -90,7 +90,7 @@ const AddExpenseForm = ({ onClose }) => {
 
       if (response.status === 201) {
         const data = response.data;
-        logger.log('Expense record created:', data);
+        logger.info('Expense record created:', data);
         toast.success('Expense record created successfully');
         onClose();
       }

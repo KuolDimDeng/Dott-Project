@@ -55,83 +55,104 @@ export function useLandingPageStatus() {
             isAuthenticated: false,
             needsOnboarding: false,
             onboardingStatus: null,
-            error: 'No valid authentication tokens found'
+            error: null // Don't set an error for unauthenticated users on landing page
           });
           return;
         }
 
-        // Get current user using v6 API
-        const user = await getCurrentUser();
-        if (!user) {
-          logger.debug('[LandingStatus] No current user found, user is not authenticated');
+        // Get current user using v6 API - wrap in try/catch to handle errors gracefully
+        try {
+          const user = await getCurrentUser();
+          if (!user) {
+            logger.debug('[LandingStatus] No current user found, user is not authenticated');
+            setStatus({
+              isLoading: false,
+              isAuthenticated: false,
+              needsOnboarding: false,
+              onboardingStatus: null,
+              error: null // Don't set an error for unauthenticated users
+            });
+            return;
+          }
+
+          // Verify token is not expired
+          const tokenPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
+          if (tokenPayload.exp * 1000 < Date.now()) {
+            logger.debug('[LandingStatus] Token is expired, user is not authenticated');
+            setStatus({
+              isLoading: false,
+              isAuthenticated: false,
+              needsOnboarding: false,
+              onboardingStatus: null,
+              error: null // Don't set an error for expired tokens on landing page
+            });
+            return;
+          }
+
+          // Check onboarding status
+          const setupDone = (user.attributes?.['custom:setupdone'] || '').toLowerCase() === 'true';
+          const onboardingStatus = user.attributes?.['custom:onboarding'] || ONBOARDING_STATES.NOT_STARTED;
+
+          // Load onboarding state - wrap in try/catch to handle errors
+          try {
+            await loadOnboardingState();
+          } catch (err) {
+            logger.warn('[LandingStatus] Failed to load onboarding state:', err);
+            // Continue even if this fails - don't block the landing page
+          }
+
+          // Only refresh session if token is about to expire (within 5 minutes)
+          const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
+          if (tokenPayload.exp * 1000 < fiveMinutesFromNow) {
+            logger.debug('[LandingStatus] Token about to expire, refreshing session');
+            try {
+              await refreshSession();
+            } catch (err) {
+              logger.warn('[LandingStatus] Failed to refresh session:', err);
+              // Continue even if refresh fails
+            }
+          }
+
+          // Start polling if user is in onboarding
+          if (!setupDone) {
+            startPolling();
+          } else {
+            stopPolling();
+          }
+
+          setStatus({
+            isLoading: false,
+            isAuthenticated: true,
+            needsOnboarding: !setupDone,
+            onboardingStatus,
+            error: null
+          });
+
+          logger.debug('[LandingStatus] Status updated:', {
+            setupDone,
+            onboardingStatus,
+            isAuthenticated: true
+          });
+        } catch (userError) {
+          // Handle user fetch errors - this shouldn't block the landing page
+          logger.warn('[LandingStatus] Error getting current user:', userError);
           setStatus({
             isLoading: false,
             isAuthenticated: false,
             needsOnboarding: false,
             onboardingStatus: null,
-            error: 'No current user found'
+            error: null // Don't set an error for landing page
           });
-          return;
         }
-
-        // Verify token is not expired
-        const tokenPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
-        if (tokenPayload.exp * 1000 < Date.now()) {
-          logger.debug('[LandingStatus] Token is expired, user is not authenticated');
-          setStatus({
-            isLoading: false,
-            isAuthenticated: false,
-            needsOnboarding: false,
-            onboardingStatus: null,
-            error: 'Authentication token expired'
-          });
-          return;
-        }
-
-        // Check onboarding status
-        const setupDone = (user.attributes?.['custom:setupdone'] || '').toLowerCase() === 'true';
-        const onboardingStatus = user.attributes?.['custom:onboarding'] || ONBOARDING_STATES.NOT_STARTED;
-
-        // Load onboarding state
-        await loadOnboardingState();
-
-        // Only refresh session if token is about to expire (within 5 minutes)
-        const fiveMinutesFromNow = Date.now() + 5 * 60 * 1000;
-        if (tokenPayload.exp * 1000 < fiveMinutesFromNow) {
-          logger.debug('[LandingStatus] Token about to expire, refreshing session');
-          await refreshSession();
-        }
-
-        // Start polling if user is in onboarding
-        if (!setupDone) {
-          startPolling();
-        } else {
-          stopPolling();
-        }
-
-        setStatus({
-          isLoading: false,
-          isAuthenticated: true,
-          needsOnboarding: !setupDone,
-          onboardingStatus,
-          error: null
-        });
-
-        logger.debug('[LandingStatus] Status updated:', {
-          setupDone,
-          onboardingStatus,
-          isAuthenticated: true
-        });
-
       } catch (error) {
         logger.error('[LandingStatus] Error checking status:', error);
-        // Ensure we set isAuthenticated to false on any error
+        // Ensure we set isAuthenticated to false on any error, but don't block landing page
         setStatus({
           isLoading: false,
           isAuthenticated: false,
           needsOnboarding: false,
           onboardingStatus: null,
-          error: error.message
+          error: null // Don't set an error for landing page
         });
       }
     };

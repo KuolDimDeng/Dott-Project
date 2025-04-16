@@ -63,16 +63,54 @@ const transformCognitoAttributes = (attributes) => {
   
   // Create a function to find attributes case-insensitively
   const findAttr = (baseKey) => {
+    // Try direct match first
+    if (attributes[baseKey]) return attributes[baseKey];
+    
+    // Try case-insensitive match
     const baseLower = baseKey.toLowerCase();
     const key = Object.keys(attributes).find(k => k.toLowerCase() === baseLower);
-    return key ? attributes[key] : null;
+    if (key) return attributes[key];
+    
+    // Try with custom: prefix if doesn't have one
+    if (!baseKey.startsWith('custom:')) {
+      const withPrefix = `custom:${baseKey}`;
+      if (attributes[withPrefix]) return attributes[withPrefix];
+      
+      // Try case-insensitive with prefix
+      const prefixKey = Object.keys(attributes).find(k => k.toLowerCase() === withPrefix.toLowerCase());
+      if (prefixKey) return attributes[prefixKey];
+    }
+    
+    // Try without custom: prefix if it has one
+    if (baseKey.startsWith('custom:')) {
+      const withoutPrefix = baseKey.substring(7);
+      if (attributes[withoutPrefix]) return attributes[withoutPrefix];
+      
+      // Try case-insensitive without prefix
+      const noPrefixKey = Object.keys(attributes).find(k => k.toLowerCase() === withoutPrefix.toLowerCase());
+      if (noPrefixKey) return attributes[noPrefixKey];
+    }
+    
+    return null;
   };
   
-  // Get values using case-insensitive lookup
-  const firstname = findAttr('custom:firstname');
-  const lastname = findAttr('custom:lastname');
+  // Get values using case-insensitive lookup with alternative keys
+  const firstname = 
+    findAttr('custom:firstname') || 
+    findAttr('given_name') || 
+    findAttr('firstName') || 
+    findAttr('first_name') || 
+    (attributes.name ? attributes.name.split(' ')[0] : null);
+    
+  const lastname = 
+    findAttr('custom:lastname') || 
+    findAttr('family_name') || 
+    findAttr('lastName') || 
+    findAttr('last_name') || 
+    (attributes.name && attributes.name.includes(' ') ? attributes.name.split(' ').slice(1).join(' ') : null);
+    
   const tenantId = findAttr('custom:tenant_ID') || findAttr('custom:businessid');
-  const businessName = findAttr('custom:businessname') || findAttr('custom:tenant_name');
+  const businessName = findAttr('custom:businessname') || findAttr('custom:tenant_name') || findAttr('business_name') || findAttr('businessName');
   const businessType = findAttr('custom:businesstype');
   const role = findAttr('custom:userrole');
   const onboarding = findAttr('custom:onboarding');
@@ -84,7 +122,9 @@ const transformCognitoAttributes = (attributes) => {
     lastname,
     tenantId,
     businessName,
-    role
+    role,
+    allAttributes: Object.keys(attributes),
+    customAttributes: Object.keys(attributes).filter(k => k.startsWith('custom:'))
   });
   
   return {

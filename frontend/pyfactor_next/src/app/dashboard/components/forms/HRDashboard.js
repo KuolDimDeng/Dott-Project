@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import EmployeeManagement from './EmployeeManagement';
+// Remove the import of EmployeeManagement since this component shouldn't handle it
+// import EmployeeManagement from './EmployeeManagement';
 
 /**
  * HR Dashboard Component
@@ -18,12 +19,12 @@ function HRDashboard({ section = 'dashboard' }) {
     setActiveTab(newTab);
   };
 
-  // Tab navigation component
+  // Tab navigation component - remove employees from tabs
   const TabNavigation = () => (
     <div className="mb-6">
       <div className="border-b border-gray-200">
         <nav className="flex -mb-px space-x-8">
-          {['dashboard', 'employees', 'timesheets', 'taxes', 'benefits', 'reports'].map((tab) => (
+          {['dashboard', 'timesheets', 'taxes', 'benefits', 'reports', 'performance'].map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}
@@ -43,8 +44,7 @@ function HRDashboard({ section = 'dashboard' }) {
 
   const renderSection = () => {
     switch (activeTab) {
-      case 'employees':
-        return <EmployeeManagement />;
+      // Remove the employees case since it should be handled separately
       case 'dashboard':
         return (
           <>

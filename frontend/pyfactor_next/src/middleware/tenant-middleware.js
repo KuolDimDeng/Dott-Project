@@ -201,58 +201,96 @@ function addTenantHeader(response, tenantId) {
  * @returns {NextResponse} - The response
  */
 export function tenantMiddleware(request) {
-  try {
-    const { pathname, searchParams } = new URL(request.url);
-    
-    // Skip middleware for public routes and API routes
-    if (isPublicPath(pathname)) {
-      console.debug(`[Middleware] Skipping middleware for public path: ${pathname}`);
-      return NextResponse.next();
-    }
-
-    // If the URL includes any bypass parameters, check if we still have a tenant ID
-    // that should be used for redirection
-    const fromAuth = searchParams.get('fromAuth') === 'true';
-    const fromSignIn = searchParams.get('fromSignIn') === 'true';
-    const reset = searchParams.get('reset') === 'true';
-    
-    // Extract tenant ID from request with detailed info
-    const tenantInfo = extractTenantId(request);
-    const tenantId = tenantInfo.tenantId;
-    
-    // Continue with additional middleware logic, focusing on URL rewriting
-    // And tenant ID header injection, rather than cookie usage
-    
-    // If the path requires the tenant ID in the URL and it's not already there
-    if (requiresTenantInUrl(pathname) && !pathIncludesTenantId(pathname) && tenantId) {
-      // Redirect to include the tenant in the URL path
-      const url = new URL(`/${tenantId}${pathname}`, request.url);
-      
-      // Preserve query params
-      for (const [key, value] of searchParams.entries()) {
-        url.searchParams.set(key, value);
-      }
-      
-      console.debug(`[Middleware] Redirecting to include tenant ID in URL: ${url.pathname}`);
-      const response = NextResponse.redirect(url);
-      
-      // Add tenant ID to response headers
-      return addTenantHeader(response, tenantId);
-    }
-    
-    // For all other paths, enhance the response with tenant header if available
-    const response = NextResponse.next();
-    
-    if (tenantId) {
-      // Add tenant ID header for server components
-      return addTenantHeader(response, tenantId);
-    }
-    
-    return response;
-  } catch (error) {
-    console.error('[Middleware] Tenant middleware error:', error);
-    
-    // Return unmodified response if there's an error to prevent breaking the app
+  const url = new URL(request.url);
+  const { pathname } = url;
+  
+  // Skip tenant middleware for root/landing page and explicitly public paths
+  if (pathname === '/' || pathname === '' || pathname === '/index.html' || 
+      pathname.startsWith('/auth/') || pathname.startsWith('/static/') ||
+      pathname.startsWith('/_next/') || pathname.startsWith('/api/public/') ||
+      pathname === '/privacy' || pathname === '/terms' || pathname === '/about') {
+    // Allow these paths without tenant ID or authentication
+    console.debug(`[TenantMiddleware] Skipping for public path: ${pathname}`);
     return NextResponse.next();
   }
+
+  // Extract tenant ID from various sources
+  const tenantInfo = extractTenantId(request);
+  
+  // Check if path requires tenant ID in URL
+  if (requiresTenantInUrl(pathname)) {
+    console.debug(`[TenantMiddleware] Path ${pathname} requires tenant ID in URL`);
+    
+    // Check if path already has tenant ID
+    if (!pathIncludesTenantId(pathname)) {
+      // If path needs tenant ID but doesn't have it
+      if (tenantInfo.found && tenantInfo.isValid) {
+        // We have valid tenant ID, redirect to tenant URL
+        const redirectPath = `/${tenantInfo.tenantId}${pathname}`;
+        console.debug(`[TenantMiddleware] Redirecting to tenant path: ${redirectPath}`);
+        
+        // Include query parameters in redirect
+        if (url.search) {
+          return NextResponse.redirect(new URL(`${redirectPath}${url.search}`, request.url));
+        }
+        
+        return NextResponse.redirect(new URL(redirectPath, request.url));
+      } else if (pathname.startsWith('/dashboard')) {
+        // Special handling for dashboard without tenant ID
+        // This might happen during initial login or tenant selection
+        console.debug(`[TenantMiddleware] Dashboard access without tenant ID`);
+        
+        // Special case for dashboard without tenant - check query params
+        const direct = url.searchParams.get('direct') === 'true';
+        const fromAuth = url.searchParams.get('fromAuth') === 'true';
+        const fromSignIn = url.searchParams.get('fromSignIn') === 'true';
+        
+        if (direct || fromAuth || fromSignIn) {
+          // Allow direct dashboard access during auth/login flows
+          console.debug(`[TenantMiddleware] Allowing dashboard access (auth flow)`);
+          const response = NextResponse.next();
+          response.headers.set('x-tenant-status', 'auth-flow');
+          return response;
+        }
+        
+        // Handle temporary tenant IDs in non-standard format
+        const tempTenantId = url.searchParams.get('temp_tenant');
+        if (tempTenantId && !isValidUUID(tempTenantId)) {
+          console.warn(`[TenantMiddleware] Temporary tenant ID detected with invalid format: ${tempTenantId}`);
+          // Let it continue to dashboard where it will be converted to proper UUID
+          const response = NextResponse.next();
+          response.headers.set('x-tenant-status', 'temp-tenant');
+          return response;
+        }
+        
+        // If we get here, redirect to auth with error
+        console.debug(`[TenantMiddleware] No valid tenant ID for dashboard, redirecting to auth`);
+        return NextResponse.redirect(new URL('/auth/signin?error=missing_tenant', request.url));
+      }
+    } else {
+      // The path already has a tenant ID
+      // Extract it to validate
+      const pathTenantId = pathname.split('/')[1];
+      
+      // Validate the tenant ID format
+      if (!UUID_PATTERN.test(pathTenantId)) {
+        console.warn(`[TenantMiddleware] Invalid tenant ID format in URL: ${pathTenantId}`);
+        
+        // For invalid IDs in dashboard URL, fallback to standard dashboard
+        if (pathname.includes('/dashboard')) {
+          return NextResponse.redirect(new URL('/dashboard?error=invalid_tenant', request.url));
+        }
+      }
+    }
+  }
+  
+  // Forward the tenant ID in headers if found
+  if (tenantInfo.found) {
+    const response = NextResponse.next();
+    response.headers.set('x-tenant-id', tenantInfo.tenantId);
+    return response;
+  }
+  
+  // Allow the request to continue by default
+  return NextResponse.next();
 } 

@@ -42,7 +42,7 @@ if (typeof window !== 'undefined' && !window.__APP_CACHE) {
 const DashAppBar = ({
   drawerOpen,
   handleDrawerToggle,
-  userData,
+  userData: propUserData,
   openMenu,
   handleClick,
   handleClose,
@@ -70,6 +70,9 @@ const DashAppBar = ({
   handleCloseCreateMenu,
   setUserData, // Add setUserData to the component props
 }) => {
+  // Log that this component only uses Cognito and AppCache
+  logger.info('[DashAppBar] Component initialized - Using ONLY Cognito and AppCache for data sources (NO GRAPHQL)');
+  
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
     
@@ -81,9 +84,30 @@ const DashAppBar = ({
     fetchProfile,
     isCacheValid
   } = useUserProfile();
+  
+  // Add refs to track state updates to avoid infinite loops
+  const hasInitializedRef = useRef(false);
+  const hasSetBusinessNameRef = useRef(false);
+  const hasSetUserInitialsRef = useRef(false);
+  
+  // Track previous props to prevent unnecessary updates
+  const prevPropsRef = useRef({
+    userAttributes: null,
+    userData: null,
+    profileData: null
+  });
+  
+  // Create refs for the dropdown menu and button
+  const userMenuRef = useRef(null);
+  const profileButtonRef = useRef(null);
+  
+  // Track mounted state to prevent state updates after unmount
+  const isMounted = useRef(true);
 
   // Initialize profile data with prop if available or null
   const [profileData, setProfileData] = useState(propProfileData || null);
+  // Create local userData state that's initialized with propUserData or an empty object to prevent null
+  const [userData, setLocalUserData] = useState(propUserData || {});
   const [userInitials, setUserInitials] = useState(null);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
@@ -92,146 +116,63 @@ const DashAppBar = ({
   // Add a flag to track if we've attempted to fetch profile data
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
-  // Create a ref for the dropdown menu and button
-  const userMenuRef = useRef(null);
-  const profileButtonRef = useRef(null);
+  // Create a wrapper for setUserData to update both the parent and local state
+  // Using useCallback to avoid recreation on every render
+  const updateUserData = useCallback((newData) => {
+    // Skip updates during render
+    if (React.renderPhaseUpdaterWarning) {
+      console.warn('[DashAppBar] Attempted to update state during render');
+      return;
+    }
+    
+    // If it's a function, ensure we call it correctly
+    if (typeof newData === 'function') {
+      setLocalUserData((prevData) => {
+        const updatedData = newData(prevData);
+        // Also update parent state if callback available
+        if (typeof setUserData === 'function') {
+          setUserData(updatedData);
+        }
+        return updatedData;
+      });
+    } else {
+      // If it's an object, directly update both states
+      setLocalUserData(newData);
+      if (typeof setUserData === 'function') {
+        setUserData(newData);
+      }
+    }
+  }, [setUserData]);
   
-  // Track mounted state to prevent state updates after unmount
-  const isMounted = useRef(true);
+  // Initialize component once on mount
   useEffect(() => {
+    // Only run initialization once
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+    
+    // Set mounted flag
+    isMounted.current = true;
+    
+    // Store initial prop values for comparison
+    prevPropsRef.current = {
+      userAttributes: userAttributes || null,
+      userData: propUserData || null,
+      profileData: propProfileData || null
+    };
+    
+    logger.info('[DashAppBar] Component initialized with props', {
+      hasUserAttrs: !!userAttributes,
+      hasUserData: !!propUserData,
+      hasProfileData: !!propProfileData,
+    });
+    
+    // Cleanup function to prevent updates after unmount
     return () => {
       isMounted.current = false;
     };
-  }, []);
+  }, [userAttributes, propUserData, propProfileData]);
 
-  // Use the cached profile data if available
-  useEffect(() => {
-    if (cachedProfileData && !profileData) {
-      logger.debug('[DashAppBar] Using cached profile data');
-      setProfileData(cachedProfileData);
-      
-      // Update user data if callback is available
-      if (typeof setUserData === 'function') {
-        setUserData(cachedProfileData);
-      }
-    }
-  }, [cachedProfileData, profileData, setUserData]);
-
-  // Add useEffect to handle business name updates whenever relevant data changes
-  useEffect(() => {
-    // Update business name from all potential sources
-    const cognitoName = userAttributes?.['custom:businessname'] || user?.['custom:businessname'];
-    const userDataName = userData?.businessName || userData?.['custom:businessname'];
-    const profileDataName = profileData?.businessName;
-    const cachedName = cachedProfileData?.businessName;
-    
-    // Check if we have a valid business name from any source
-    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName;
-    
-    if (newBusinessName && newBusinessName !== '') {
-      logger.info('[DashAppBar] Setting business name from data source:', {
-        name: newBusinessName,
-        source: cognitoName ? 'cognito' : 
-                userDataName ? 'userData' : 
-                profileDataName ? 'profileData' : 
-                'cachedData'
-      });
-      
-      setBusinessName(newBusinessName);
-    }
-  }, [userData, profileData, cachedProfileData, user, userAttributes]);
-
-  // Replace the existing fetchUserProfile function with this simplified version
-  const fetchUserProfile = useCallback(async () => {
-    // Skip if we already have profile data or have already attempted to fetch
-    if (profileData || hasAttemptedFetch) {
-      return;
-    }
-    
-    setHasAttemptedFetch(true);
-    
-    // Check if we have a valid cached profile first
-    if (isCacheValid(tenantId)) {
-      logger.debug('[DashAppBar] Using valid cached profile data');
-      return;
-    }
-    
-    // Fetch the profile data using our context
-    logger.debug('[DashAppBar] Fetching user profile data for tenant:', tenantId);
-    const result = await fetchProfile(tenantId);
-    
-    // Log what attributes we actually received in the profile
-    if (result) {
-      logger.info('[DashAppBar] Received profile data with attributes:', {
-        firstName: result?.profile?.firstName,
-        lastName: result?.profile?.lastName,
-        first_name: result?.profile?.first_name,
-        last_name: result?.profile?.last_name,
-        email: result?.profile?.email,
-        businessName: result?.profile?.businessName,
-        tenantId: result?.profile?.tenantId,
-        rawProfileKeys: result?.profile ? Object.keys(result.profile) : 'no profile'
-      });
-      
-      // Set business name from profile data if available
-      if (result.profile?.businessName) {
-        setBusinessName(result.profile.businessName);
-      }
-    } else {
-      logger.warn('[DashAppBar] No profile data received from fetchProfile');
-    }
-    
-  }, [profileData, hasAttemptedFetch, isCacheValid, tenantId, fetchProfile]);
-
-  // Replace existing fetchCorrectUserDetails with a simpler version
-  const fetchCorrectUserDetails = useCallback(async () => {
-    if (!tenantId || !isAuthenticated) {
-      return;
-    }
-    
-    // Skip if we already have valid profile data
-    if (isCacheValid(tenantId)) {
-      logger.debug('[DashAppBar] Using valid cached tenant profile data');
-      
-      // Even with valid cache, still update business name if we have it from context
-      if (cachedProfileData?.businessName) {
-        setBusinessName(cachedProfileData.businessName);
-      }
-      
-      return;
-    }
-    
-    // Fetch the profile data using our context
-    logger.debug('[DashAppBar] Fetching tenant-specific profile data');
-    const result = await fetchProfile(tenantId);
-    
-    // If we got results back, update the business name
-    if (result?.profile?.businessName) {
-      logger.info('[DashAppBar] Setting business name from tenant profile:', result.profile.businessName);
-      setBusinessName(result.profile.businessName);
-      
-      // Store in app cache instead of localStorage
-      if (typeof window !== 'undefined') {
-        window.__APP_CACHE.tenant.businessName = result.profile.businessName;
-      }
-    }
-    
-  }, [tenantId, isAuthenticated, isCacheValid, fetchProfile, cachedProfileData]);
-
-  // Simplify dependencies for useEffect calls
-  useEffect(() => {
-    if (isAuthenticated && !profileData && !profileLoading && !profileError) {
-      fetchUserProfile();
-    }
-  }, [isAuthenticated, profileData, profileLoading, profileError, fetchUserProfile]);
-
-  useEffect(() => {
-    if (tenantId && isAuthenticated) {
-      fetchCorrectUserDetails();
-    }
-  }, [tenantId, isAuthenticated, fetchCorrectUserDetails]);
-
-  // Helper function to consistently generate initials from user data
+  // Find where generateInitialsFromNames is first declared (keep this one)
   const generateInitialsFromNames = useCallback(
     (firstNameValue, lastNameValue, emailValue) => {
       if (!firstNameValue && !lastNameValue && !emailValue) return '';
@@ -299,6 +240,206 @@ const DashAppBar = ({
     []
   );
 
+  // Use the cached profile data if available - only on mount
+  useEffect(() => {
+    if (cachedProfileData && !profileData && !hasInitializedRef.current) {
+      logger.debug('[DashAppBar] Using cached profile data');
+      setProfileData(cachedProfileData);
+    }
+  }, [cachedProfileData, profileData]);
+
+  // Process business name updates - use refs to track state and avoid loops
+  useEffect(() => {
+    // Skip if we've already set it and there's no change in dependencies
+    if (hasSetBusinessNameRef.current && 
+        userAttributes === prevPropsRef.current.userAttributes &&
+        userData === prevPropsRef.current.userData &&
+        profileData === prevPropsRef.current.profileData) {
+      return;
+    }
+    
+    // Update tracking refs
+    prevPropsRef.current = {
+      userAttributes: userAttributes || null,
+      userData: userData || null,
+      profileData: profileData || null
+    };
+    
+    // Set our tracking flag
+    hasSetBusinessNameRef.current = true;
+    
+    // Update business name from all potential sources
+    const cognitoName = userAttributes?.['custom:businessname'] || user?.['custom:businessname'];
+    const userDataName = userData?.businessName || userData?.['custom:businessname'];
+    const profileDataName = profileData?.businessName;
+    const cachedName = cachedProfileData?.businessName;
+    
+    // Check if we have a valid business name from any source
+    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName;
+    
+    logger.info('[DashAppBar] Business name sources:', {
+      cognitoName,
+      userDataName,
+      profileDataName,
+      cachedName,
+      current: businessName
+    });
+    
+    if (newBusinessName && newBusinessName !== '') {
+      logger.info('[DashAppBar] Setting business name from data source:', {
+        name: newBusinessName,
+        source: cognitoName ? 'cognito' : 
+                userDataName ? 'userData' : 
+                profileDataName ? 'profileData' : 
+                'cachedData'
+      });
+      
+      setBusinessName(newBusinessName);
+      
+      // Store in app cache for persistence
+      if (typeof window !== 'undefined') {
+        if (!window.__APP_CACHE) window.__APP_CACHE = {};
+        if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+        window.__APP_CACHE.tenant.businessName = newBusinessName;
+      }
+    }
+  }, [userAttributes, userData, profileData, cachedProfileData, user, businessName]);
+  
+  // Separate effect for updating parent userData - runs only when needed to avoid loops
+  useEffect(() => {
+    // Skip if we don't have a business name or setUserData function
+    if (!businessName || typeof setUserData !== 'function') return;
+    
+    // Skip if the parent data is already set with this business name
+    if (propUserData && propUserData.businessName === businessName) return;
+    
+    // We need to use setTimeout to break the update cycle
+    const timerId = setTimeout(() => {
+      updateUserData(prevData => {
+        // Only update if value is different to prevent loops
+        if (prevData.businessName !== businessName) {
+          return {
+            ...prevData,
+            businessName: businessName
+          };
+        }
+        return prevData;
+      });
+    }, 0);
+    
+    return () => clearTimeout(timerId);
+  }, [businessName, setUserData, updateUserData, propUserData]);
+
+  // Replace the existing fetchUserProfile function with this simplified version
+  const fetchUserProfile = useCallback(async () => {
+    // Skip if we already have profile data or have already attempted to fetch
+    if (profileData || hasAttemptedFetch) {
+      return;
+    }
+    
+    setHasAttemptedFetch(true);
+    
+    logger.debug('[DashAppBar] Fetching user profile using Cognito & AppCache only');
+    // Check if we have a valid cached profile first
+    if (isCacheValid(tenantId)) {
+      logger.debug('[DashAppBar] Using valid cached profile data');
+      return;
+    }
+    
+    // Fetch the profile data using our context
+    logger.debug('[DashAppBar] Fetching user profile data for tenant:', tenantId);
+    const result = await fetchProfile(tenantId);
+    
+    // Log what attributes we actually received in the profile
+    if (result) {
+      logger.info('[DashAppBar] Received profile data with attributes:', {
+        firstName: result?.profile?.firstName,
+        lastName: result?.profile?.lastName,
+        first_name: result?.profile?.first_name,
+        last_name: result?.profile?.last_name,
+        email: result?.profile?.email,
+        businessName: result?.profile?.businessName,
+        tenantId: result?.profile?.tenantId,
+        rawProfileKeys: result?.profile ? Object.keys(result.profile) : 'no profile'
+      });
+      
+      // Set business name from profile data if available
+      if (result.profile?.businessName) {
+        setBusinessName(result.profile.businessName);
+      }
+    } else {
+      logger.warn('[DashAppBar] No profile data received from fetchProfile');
+    }
+    
+  }, [profileData, hasAttemptedFetch, isCacheValid, tenantId, fetchProfile]);
+
+  // Replace existing fetchCorrectUserDetails with a simpler version
+  const fetchCorrectUserDetails = useCallback(async () => {
+    if (!tenantId || !isAuthenticated) {
+      return;
+    }
+    
+    try {
+      logger.debug('[AppBar] Starting direct Cognito fetch for tenant', tenantId);
+      
+      // Import Amplify auth functions
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      
+      // Get user attributes directly from Cognito
+      const attributes = await fetchUserAttributes();
+      logger.info('[AppBar] Fetched Cognito attributes for tenant details:', {
+        tenantId,
+        businessName: attributes['custom:businessname'] || attributes['custom:tenant_name'],
+        firstName: attributes['custom:firstname'] || attributes['given_name'],
+        lastName: attributes['custom:lastname'] || attributes['family_name']
+      });
+      
+      // Extract business name from attributes
+      const businessName = attributes['custom:businessname'] || attributes['custom:tenant_name'] || '';
+      
+      // Set business name if available
+      if (businessName && businessName.trim() !== '') {
+        logger.info('[AppBar] Setting business name from Cognito:', businessName);
+        setBusinessName(businessName);
+      }
+      
+      // Generate and set user initials
+      const firstName = attributes['custom:firstname'] || attributes['given_name'] || '';
+      const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
+      const email = attributes['email'] || '';
+      
+      const initials = generateInitialsFromNames(firstName, lastName, email);
+      if (initials) {
+        setUserInitials(initials);
+      }
+      
+      // Update cache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+        window.__APP_CACHE.tenant.businessName = businessName;
+        window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+        window.__APP_CACHE.user.initials = initials;
+      }
+      
+    } catch (error) {
+      logger.error('[AppBar] Error fetching tenant-specific details:', error);
+      
+      // Try fallback to cached profile data
+      if (isCacheValid && cachedProfileData?.businessName) {
+        setBusinessName(cachedProfileData.businessName);
+      }
+    }
+  }, [tenantId, isAuthenticated, generateInitialsFromNames, isCacheValid, cachedProfileData]);
+
+  // Simplify dependencies for useEffect calls
+  useEffect(() => {
+    if (isAuthenticated && tenantId) {
+      // Fetch tenant-specific details when tenant ID is available
+      fetchCorrectUserDetails();
+    }
+  }, [isAuthenticated, tenantId, fetchCorrectUserDetails]);
+
   // Update initials whenever user data changes
   useEffect(() => {
     if (userData) {
@@ -312,7 +453,32 @@ const DashAppBar = ({
         // Try case insensitive lookup
         const baseLower = baseKey.toLowerCase();
         const key = Object.keys(obj).find(k => k.toLowerCase() === baseLower);
-        return key ? obj[key] : null;
+        if (key) return obj[key];
+        
+        // Try with custom: prefix variations
+        if (!baseKey.startsWith('custom:') && !baseLower.startsWith('custom:')) {
+          // Try with custom: prefix
+          const withPrefix = `custom:${baseKey}`;
+          if (obj[withPrefix]) return obj[withPrefix];
+          
+          // Try case insensitive with prefix
+          const prefixLower = withPrefix.toLowerCase();
+          const prefixKey = Object.keys(obj).find(k => k.toLowerCase() === prefixLower);
+          return prefixKey ? obj[prefixKey] : null;
+        }
+        
+        // Try without custom: prefix if it has one
+        if (baseKey.startsWith('custom:')) {
+          const withoutPrefix = baseKey.substring(7);
+          if (obj[withoutPrefix]) return obj[withoutPrefix];
+          
+          // Try case insensitive without prefix
+          const noPrefixLower = withoutPrefix.toLowerCase();
+          const noPrefixKey = Object.keys(obj).find(k => k.toLowerCase() === noPrefixLower);
+          return noPrefixKey ? obj[noPrefixKey] : null;
+        }
+        
+        return null;
       };
       
       // Get name components using case-insensitive lookups
@@ -351,7 +517,8 @@ const DashAppBar = ({
         lastName: findAttr(userData, 'lastName'),
         family_name: findAttr(userData, 'family_name'),
         custom_lastname: findAttr(userData, 'custom:lastname'),
-        businessNameValue
+        businessNameValue,
+        allKeys: Object.keys(userData)
       });
 
       // Always try to get both initials when possible
@@ -362,6 +529,15 @@ const DashAppBar = ({
           { firstName, lastName, initials }
         );
         setUserInitials(initials);
+        
+        // Store in app cache for persistence
+        if (typeof window !== 'undefined') {
+          if (!window.__APP_CACHE) window.__APP_CACHE = {};
+          if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+          window.__APP_CACHE.user.initials = initials;
+          window.__APP_CACHE.user.firstName = firstName;
+          window.__APP_CACHE.user.lastName = lastName;
+        }
       } else if (firstName && email) {
         // Try to get second initial from email if available (e.g., first.last@domain.com)
         if (email.includes('@')) {
@@ -456,22 +632,7 @@ const DashAppBar = ({
         const initials = generateInitialsFromNames(firstName, lastName, email);
         if (initials) {
           logger.info('[AppBar] Setting initials from userData using helper:', {
-            firstName,
-            lastName,
-            email,
-            initials,
-          });
-          setUserInitials(initials);
-        }
-      } else {
-        // Fall back to the helper function for complex cases
-        const initials = generateInitialsFromNames(firstName, lastName, email);
-        if (initials) {
-          logger.info('[AppBar] Setting initials from userData using helper:', {
-            firstName,
-            lastName,
-            email,
-            initials,
+            initials
           });
           setUserInitials(initials);
         }
@@ -655,7 +816,7 @@ const DashAppBar = ({
         tenantId: null,
         firstName: '',
         lastName: '',
-        businessName: 'My Business'
+        businessName: ''
       };
     }
   };
@@ -1001,33 +1162,21 @@ const DashAppBar = ({
       const profileDataName = 
         profileData?.businessName ||
         (profileData?.userData ? findAttr(profileData.userData, 'businessName') : null);
-        
-      const generatedFromFirstName = 
-        userData?.firstName ? `${userData.firstName}'s Business` : 
-        userData?.first_name ? `${userData.first_name}'s Business` : 
-        userData?.given_name ? `${userData.given_name}'s Business` : null;
-        
-      const generatedFromEmail = 
-        userData?.email ? `${userData.email.split('@')[0]}'s Business` : null;
-        
+      
       // Log all potential sources to help with debugging
       logger.debug('[AppBar] Business name sources:', {
         cognitoName,
         stateValue,
         userDataName,
-        profileDataName,
-        generatedFromFirstName,
-        generatedFromEmail
+        profileDataName
       });
       
-      // Return the first valid business name (prioritized order)
+      // Return the first valid business name (prioritized order) - no generated names
       return cognitoName || 
              stateValue || 
              userDataName || 
              profileDataName || 
-             generatedFromFirstName || 
-             generatedFromEmail || 
-             '';  // Return empty string instead of 'My Business'
+             '';  // Return empty string
     };
 
     return {
@@ -1110,7 +1259,6 @@ const DashAppBar = ({
       if (userAttributes['custom:businessname'] && 
           userAttributes['custom:businessname'] !== 'undefined' && 
           userAttributes['custom:businessname'] !== 'null' &&
-          userAttributes['custom:businessname'] &&
           userAttributes['custom:businessname'] !== '') {
         return userAttributes['custom:businessname'];
       }
@@ -1122,24 +1270,7 @@ const DashAppBar = ({
         return userAttributes['custom:tenant_name'];
       }
       
-      // Generate business name from Cognito user attributes if available
-      const firstName = userAttributes['given_name'] || userAttributes['custom:firstname'] || '';
-      const lastName = userAttributes['family_name'] || userAttributes['custom:lastname'] || '';
-      const email = userAttributes['email'] || '';
-      
-      if (firstName && lastName) {
-        return `${firstName} ${lastName}'s Business`;
-      } else if (firstName) {
-        return `${firstName}'s Business`;
-      } else if (lastName) {
-        return `${lastName}'s Business`;
-      } else if (email) {
-        // Extract username from email
-        const username = email.split('@')[0];
-        if (username && username !== 'undefined') {
-          return `${username}'s Business`;
-        }
-      }
+      // No longer generate business names with suffixes - only use actual Cognito data
     }
     
     // Check app cache
@@ -1158,9 +1289,9 @@ const DashAppBar = ({
       }
     }
     
-    // Final fallbacks for API/state-based data
+    // Return strictly data from sources, not generated values
     return businessName || 
-           (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : null) || 
+           (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : '') || 
            (businessData?.business_name && businessData.business_name !== '' ? businessData.business_name : '');
   }, [userAttributes, userData, businessName, profileData, businessData]);
 
@@ -1228,20 +1359,42 @@ const DashAppBar = ({
     return null;
   };
 
-  // Update email in userData when component mounts
+  // Update email in userData when component mounts - refactored to prevent state updates during render
   useEffect(() => {
+    if (!isMounted.current || hasEmailBeenProcessed.current) return;
+    
+    // Set our processing flag
+    hasEmailBeenProcessed.current = true;
+    
+    // Check if we have an email
     const realEmail = getUserEmail();
-    if (realEmail && setUserData) { // Check if setUserData is available
+    
+    // Store it for later update
+    if (realEmail) {
       logger.info('[AppBar] Found real email from auth sources:', realEmail);
-      setUserData(prevData => ({
-        ...prevData,
-        email: realEmail
-      }));
-    } else if (realEmail) {
-      // Log that we found an email but can't update userData
-      logger.info('[AppBar] Found real email but setUserData not provided:', realEmail);
+      
+      // Use setTimeout to break the update cycle and avoid React warnings
+      const timerId = setTimeout(() => {
+        if (isMounted.current && typeof updateUserData === 'function') {
+          // Only update if email is different than current
+          updateUserData(prevData => {
+            if (prevData.email !== realEmail) {
+              return {
+                ...prevData,
+                email: realEmail
+              };
+            }
+            return prevData;
+          });
+        }
+      }, 0);
+      
+      return () => clearTimeout(timerId);
     }
-  }, []);
+  }, [updateUserData]);
+  
+  // Flag to track email processing
+  const hasEmailBeenProcessed = useRef(false);
 
   // Effect to fetch Cognito user attributes when authenticated
   useEffect(() => {
@@ -1262,12 +1415,42 @@ const DashAppBar = ({
             const attributes = await fetchUserAttributes();
             logger.debug('[AppBar] Successfully fetched Cognito attributes:', attributes);
             
-            // Extract important profile data
-            const firstName = attributes['custom:firstname'] || attributes['given_name'] || '';
-            const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
+            // Extract important profile data - enhanced to check more potential attribute names
+            const firstName = 
+              attributes['given_name'] || 
+              attributes['custom:firstname'] || 
+              attributes['custom:first_name'] || 
+              attributes['first_name'] || 
+              attributes['firstName'] || 
+              attributes['name']?.split(' ')[0] || 
+              '';
+              
+            const lastName = 
+              attributes['family_name'] || 
+              attributes['custom:lastname'] || 
+              attributes['custom:last_name'] || 
+              attributes['last_name'] || 
+              attributes['lastName'] || 
+              (attributes['name']?.includes(' ') ? attributes['name'].split(' ').slice(1).join(' ') : '') || 
+              '';
+              
             const email = attributes['email'] || '';
-            const businessName = attributes['custom:businessname'] || attributes['custom:tenant_name'] || '';
-            const subscriptionType = attributes['custom:subplan'] || attributes['custom:subscription_plan'] || 'free';
+            
+            // Enhanced business name extraction - check all possible attribute names
+            const businessName = 
+              attributes['custom:businessname'] || 
+              attributes['custom:tenant_name'] || 
+              attributes['custom:business_name'] || 
+              attributes['custom:company'] || 
+              attributes['businessName'] ||
+              attributes['business_name'] ||
+              '';
+              
+            const subscriptionType = 
+              attributes['custom:subplan'] || 
+              attributes['custom:subscription_plan'] || 
+              attributes['custom:subscription'] || 
+              'free';
             
             // Create profile object
             const profile = {
@@ -1284,12 +1467,28 @@ const DashAppBar = ({
             if (businessName) {
               logger.info('[AppBar] Setting business name from Cognito:', businessName);
               setBusinessName(businessName);
+              
+              // Store in app cache for persistence
+              if (typeof window !== 'undefined') {
+                if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+                window.__APP_CACHE.tenant.businessName = businessName;
+              }
             }
             
             // Generate and set user initials
             const initials = generateInitialsFromNames(firstName, lastName, email);
             if (initials) {
               setUserInitials(initials);
+              
+              // Store initials in cache for persistence
+              if (typeof window !== 'undefined') {
+                if (!window.__APP_CACHE) window.__APP_CACHE = {};
+                if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+                window.__APP_CACHE.user.initials = initials;
+                window.__APP_CACHE.user.firstName = firstName;
+                window.__APP_CACHE.user.lastName = lastName;
+              }
             }
             
             // Update profile state
@@ -1298,12 +1497,38 @@ const DashAppBar = ({
               ...profile
             }));
             
-            // Update userdata if callback available
-            if (typeof setUserData === 'function') {
-              setUserData(prevData => ({
-                ...prevData,
-                ...profile
-              }));
+            // Update userdata if callback available - use setTimeout to break update cycles
+            if (typeof setUserData === 'function' && isMounted.current) {
+              // Use setTimeout to break update cycles
+              setTimeout(() => {
+                if (isMounted.current) {
+                  updateUserData(prevData => {
+                    // Only update if needed - check field by field
+                    const needsUpdate = 
+                      prevData.businessName !== businessName ||
+                      prevData.first_name !== firstName ||
+                      prevData.firstName !== firstName ||
+                      prevData.last_name !== lastName ||
+                      prevData.lastName !== lastName ||
+                      prevData.subscription_type !== subscriptionType;
+                      
+                    if (needsUpdate) {
+                      return {
+                        ...prevData,
+                        ...profile,
+                        // Add these fields to ensure they're available for UI display
+                        businessName: businessName,
+                        first_name: firstName,
+                        firstName: firstName,
+                        last_name: lastName,
+                        lastName: lastName,
+                        subscription_type: subscriptionType
+                      };
+                    }
+                    return prevData;
+                  });
+                }
+              }, 0);
             }
             
             return;
@@ -1351,18 +1576,97 @@ const DashAppBar = ({
           if (idToken) {
             const payload = JSON.parse(atob(idToken.split('.')[1]));
             logger.debug('[AppBar] JWT token payload:', payload);
-            // ... existing code ...
+            
+            // Extract data from JWT payload
+            const firstName = payload['custom:firstname'] || payload['given_name'] || '';
+            const lastName = payload['custom:lastname'] || payload['family_name'] || '';
+            const email = payload['email'] || '';
+            const businessName = payload['custom:businessname'] || payload['custom:tenant_name'] || '';
+            
+            if (email || firstName || lastName || businessName) {
+              logger.info('[AppBar] Found profile information in JWT token');
+              
+              // Set business name if available
+              if (businessName) {
+                setBusinessName(businessName);
+              }
+              
+              // Generate initials
+              const initials = generateInitialsFromNames(firstName, lastName, email);
+              if (initials) {
+                setUserInitials(initials);
+              }
+              
+              // Update profile data
+              const profile = {
+                firstName,
+                lastName,
+                email,
+                businessName,
+                subscription_type: payload['custom:subplan'] || 'free'
+              };
+              
+              setProfileData(prevProfile => ({
+                ...prevProfile,
+                ...profile
+              }));
+              
+              // Update userData if callback available - use setTimeout to break update cycles
+              if (typeof setUserData === 'function' && isMounted.current) {
+                // Use setTimeout to break update cycles
+                setTimeout(() => {
+                  if (isMounted.current) {
+                    updateUserData(prevData => {
+                      // Only update if needed - check field by field
+                      const needsUpdate = 
+                        prevData.businessName !== businessName ||
+                        prevData.first_name !== firstName ||
+                        prevData.firstName !== firstName ||
+                        prevData.last_name !== lastName ||
+                        prevData.lastName !== lastName ||
+                        prevData.subscription_type !== subscriptionType;
+                        
+                      if (needsUpdate) {
+                        return {
+                          ...prevData,
+                          ...profile,
+                          // Add these fields to ensure they're available for UI display
+                          businessName: businessName,
+                          first_name: firstName,
+                          firstName: firstName,
+                          last_name: lastName,
+                          lastName: lastName,
+                          subscription_type: subscriptionType
+                        };
+                      }
+                      return prevData;
+                    });
+                  }
+                }, 0);
+              }
+            }
           }
         } catch (error) {
-          logger.error('[DashAppBar] Error updating business name in Cognito:', error);
-          return false;
+          logger.error('[DashAppBar] Error extracting data from token:', error);
         }
       } catch (cognitoError) {
         logger.error('[AppBar] Error fetching Cognito attributes:', cognitoError);
-        // Continue with fallbacks below
       }
     }
-  }, [isAuthenticated, setUserData, generateInitialsFromNames]);
+
+    // Call the function when the effect runs
+    if (isAuthenticated) {
+      fetchCognitoUserData();
+    }
+  }, [isAuthenticated, updateUserData, generateInitialsFromNames]);
+
+  // Only use tenant-specific fetch when tenant ID changes
+  useEffect(() => {
+    if (isAuthenticated && tenantId) {
+      // Fetch tenant-specific details when tenant ID is available
+      fetchCorrectUserDetails();
+    }
+  }, [isAuthenticated, tenantId, fetchCorrectUserDetails]);
 
   // Function to get user initials from JWT token
   const getInitialsFromJwtToken = async () => {
@@ -1399,9 +1703,36 @@ const DashAppBar = ({
 
       const payload = JSON.parse(atob(idToken.split('.')[1]));
       logger.debug('[AppBar] Found JWT token payload for initials:', payload);
-      // ... existing code ...
+      
+      // Check for first name and last name in ALL possible attribute formats
+      const firstName = 
+        payload['given_name'] || 
+        payload['custom:firstname'] || 
+        payload['custom:first_name'] || 
+        payload['first_name'] || 
+        payload['firstName'] || 
+        payload['name']?.split(' ')[0] || 
+        '';
+      
+      const lastName = 
+        payload['family_name'] || 
+        payload['custom:lastname'] || 
+        payload['custom:last_name'] || 
+        payload['last_name'] || 
+        payload['lastName'] || 
+        (payload['name']?.includes(' ') ? payload['name'].split(' ').slice(1).join(' ') : '') || 
+        '';
+        
+      const email = payload['email'] || '';
+      
+      const initials = generateInitialsFromNames(firstName, lastName, email);
+      if (initials) {
+        logger.info('[AppBar] Setting initials from JWT token:', { firstName, lastName, initials });
+        setUserInitials(initials);
+        return initials;
+      }
     } catch (error) {
-      logger.warn('[AppBar] Error accessing auth session:', error);
+      logger.warn('[AppBar] Error extracting initials from JWT token:', error);
       return null;
     }
   };
@@ -1433,45 +1764,43 @@ const DashAppBar = ({
             {/* Existing controls */}
             <div className="flex items-center h-full ml-auto">
               {/* Business name and Subscription type display */}
-              {userData && (
-                <div className="flex items-center">
-                  {/* Business name */}
-                  <div className="text-white hidden md:flex items-center mr-3">
-                    <span className="font-semibold">{effectiveBusinessName}</span>
-                    <span className="mx-2 h-4 w-px bg-white/30"></span>
-                  </div>
-                  
-                  <div
-                    onClick={handleSubscriptionClick}
-                    className={`flex items-center px-3 py-1.5 cursor-pointer text-white rounded hover:shadow-md transition-shadow ${
-                      userData.subscription_type === 'professional'
-                        ? 'bg-purple-600'
-                        : userData.subscription_type === 'enterprise'
-                          ? 'bg-indigo-600'
-                          : 'bg-blue-600'
-                    }`}
-                  >
-                    {/* Display business name on mobile inside the subscription button */}
-                    <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                      {effectiveBusinessName}:
-                    </span>
-                    <span className="whitespace-nowrap text-xs inline-block">
-                      {userData.subscription_type ? getSubscriptionLabel(userData.subscription_type) : 'Free Plan'}
-                    </span>
-                    {(!userData.subscription_type || userData.subscription_type === 'free') && (
-                      <button
-                        className="ml-2 text-xs py-0.5 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleSubscriptionClick();
-                        }}
-                      >
-                        Upgrade
-                      </button>
-                    )}
-                  </div>
+              <div className="flex items-center">
+                {/* Business name - make it visible on all screen sizes and add fallback display */}
+                <div className="text-white flex items-center mr-3">
+                  <span className="font-semibold">{businessName || effectiveBusinessName || userAttributes?.['custom:businessname'] || userData?.businessName || ''}</span>
+                  <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
-              )}
+                
+                <div
+                  onClick={handleSubscriptionClick}
+                  className={`flex items-center px-3 py-1.5 cursor-pointer text-white rounded hover:shadow-md transition-shadow ${
+                    userData?.subscription_type === 'professional'
+                      ? 'bg-purple-600'
+                      : userData?.subscription_type === 'enterprise'
+                        ? 'bg-indigo-600'
+                        : 'bg-blue-600'
+                  }`}
+                >
+                  {/* Display business name on mobile inside the subscription button */}
+                  <span className="whitespace-nowrap text-xs md:hidden mr-1">
+                    {effectiveBusinessName ? `${effectiveBusinessName}:` : ''}
+                  </span>
+                  <span className="whitespace-nowrap text-xs inline-block">
+                    {userData?.subscription_type ? getSubscriptionLabel(userData.subscription_type) : 'Free Plan'}
+                  </span>
+                  {(!userData?.subscription_type || userData?.subscription_type === 'free') && (
+                    <button
+                      className="ml-2 text-xs py-0.5 px-2 text-white bg-purple-600 hover:bg-purple-700 rounded"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSubscriptionClick();
+                      }}
+                    >
+                      Upgrade
+                    </button>
+                  )}
+                </div>
+              </div>
 
               {/* Shopify connection indicator */}
               {isShopifyConnected && (
@@ -1566,7 +1895,11 @@ const DashAppBar = ({
                 className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
-                  {userInitials || 'U'}
+                  {userInitials || (userAttributes && generateInitialsFromNames(
+                    userAttributes['given_name'] || userAttributes['custom:firstname'] || userAttributes['firstName'] || userAttributes['first_name'] || '',
+                    userAttributes['family_name'] || userAttributes['custom:lastname'] || userAttributes['lastName'] || userAttributes['last_name'] || '',
+                    userAttributes['email'] || ''
+                  )) || '?'}
                 </div>
               </button>
             </div>
@@ -1591,29 +1924,40 @@ const DashAppBar = ({
               <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                 <div className="flex items-center mb-2">
                   <div className="w-10 h-10 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-base font-medium mr-3">
-                    {userInitials || 'U'}
+                    {userInitials || (userAttributes && generateInitialsFromNames(
+                      userAttributes['given_name'] || userAttributes['custom:firstname'] || userAttributes['firstName'] || userAttributes['first_name'] || '',
+                      userAttributes['family_name'] || userAttributes['custom:lastname'] || userAttributes['lastName'] || userAttributes['last_name'] || '',
+                      userAttributes['email'] || ''
+                    )) || '?'}
                   </div>
                   <div>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">
-                        {userAttributes?.['custom:firstname'] && userAttributes?.['custom:lastname'] ? 
+                        {userAttributes?.['given_name'] && userAttributes?.['family_name'] ? 
+                          `${userAttributes['given_name']} ${userAttributes['family_name']}` : 
+                        userAttributes?.['custom:firstname'] && userAttributes?.['custom:lastname'] ? 
                           `${userAttributes['custom:firstname']} ${userAttributes['custom:lastname']}` : 
-                        userAttributes?.['custom:firstname'] ? 
-                          userAttributes['custom:firstname'] :
-                        userAttributes?.['given_name'] && userAttributes?.['family_name'] ? 
-                          `${userAttributes['given_name']} ${userAttributes['family_name']}` :
+                        userAttributes?.['firstName'] && userAttributes?.['lastName'] ? 
+                          `${userAttributes['firstName']} ${userAttributes['lastName']}` :
                         userData?.name || 
+                        (userData?.firstName && userData?.lastName) ? 
+                          `${userData.firstName} ${userData.lastName}` :
                         (userData?.first_name && userData?.last_name) ? 
                           `${userData.first_name} ${userData.last_name}` : 
+                        userData?.firstName || 
                         userData?.first_name || 
                         userData?.email?.split('@')[0] || 
                         'Guest'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {userAttributes?.email || userData?.email}
+                        {userAttributes?.email || userData?.email || ''}
                       </span>
                     </div>
                   </div>
+                </div>
+                <div className="text-xs text-gray-600 mt-1">
+                  <span className="font-semibold">Business: </span>
+                  <span>{userAttributes?.['custom:businessname'] || userData?.businessName || businessName || effectiveBusinessName || ''}</span>
                 </div>
               </div>
 

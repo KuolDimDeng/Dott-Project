@@ -2,6 +2,42 @@ import { NextResponse } from 'next/server';
 import { tenantMiddleware, extractTenantId } from './middleware/tenant-middleware';
 import { isValidUUID } from '@/utils/tenantUtils';
 
+// Public routes that should never require authentication
+const PUBLIC_ROUTES = [
+  '/',
+  '/index',
+  '/home',
+  '/about',
+  '/privacy',
+  '/terms',
+  '/auth/signin',
+  '/auth/signup',
+  '/api/public',
+  '/api/health',  // Allow health checks without auth
+  '/api/log',     // Allow logging without auth
+  '/api/me',      // Allow user status checks without auth
+  '/static',      // Allow access to static files
+  '/favicon.ico', // Allow favicon access 
+  '/robots.txt'   // Allow robots.txt access
+];
+
+/**
+ * Check if a path is public
+ * @param {string} path - Path to check
+ * @returns {boolean} - True if path is public
+ */
+function isPublicPath(path) {
+  // Handle root path specially
+  if (path === '/' || path === '' || path === '/index.html') {
+    return true;
+  }
+  
+  return PUBLIC_ROUTES.some(route => 
+    path === route || 
+    (path.startsWith(route + '/') && route !== '/')
+  );
+}
+
 /**
  * Main middleware function that combines all middleware layers
  * 
@@ -14,6 +50,12 @@ export function middleware(request) {
   // Skip middleware for static files and API routes except for tenant-specific endpoints
   if ((pathname.startsWith('/_next/') || pathname.includes('.')) &&
       !pathname.startsWith('/api/tenant/')) {
+    return NextResponse.next();
+  }
+  
+  // Skip middleware for public routes
+  if (isPublicPath(pathname)) {
+    console.debug(`[Middleware] Skipping middleware for public path: ${pathname}`);
     return NextResponse.next();
   }
   

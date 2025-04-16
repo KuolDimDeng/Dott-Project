@@ -10,27 +10,31 @@ from django.core.validators import MinValueValidator
 from decimal import Decimal
 from django.contrib.auth import get_user_model
 from pyfactor.logging_config import get_logger
+from django.db.models import Sum
+from django.apps import apps
+
+
 
 logger = get_logger()
 
 class Customer(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    customerName = models.CharField(max_length=255, blank=True, null=True)
+    business_name = models.CharField(max_length=255, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
     last_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
-    accountNumber = models.CharField(max_length=6, unique=True, editable=False)
+    account_number = models.CharField(max_length=6, unique=True, editable=False)
     website = models.URLField(blank=True, null=True)
     notes = models.TextField(blank=True, null=True)
     currency = models.CharField(max_length=3, blank=True, null=True)
-    billingCountry = models.CharField(max_length=100, blank=True, null=True)
-    billingState = models.CharField(max_length=100, blank=True, null=True)
-    shipToName = models.CharField(max_length=255, blank=True, null=True)
-    shippingCountry = models.CharField(max_length=100, blank=True, null=True)
-    shippingState = models.CharField(max_length=100, blank=True, null=True)
-    shippingPhone = models.CharField(max_length=20, blank=True, null=True)
-    deliveryInstructions = models.TextField(blank=True, null=True)
+    billing_country = models.CharField(max_length=100, blank=True, null=True)
+    billing_state = models.CharField(max_length=100, blank=True, null=True)
+    ship_to_name = models.CharField(max_length=255, blank=True, null=True)
+    shipping_country = models.CharField(max_length=100, blank=True, null=True)
+    shipping_state = models.CharField(max_length=100, blank=True, null=True)
+    shipping_phone = models.CharField(max_length=20, blank=True, null=True)
+    delivery_instructions = models.TextField(blank=True, null=True)
     street = models.CharField(max_length=255, blank=True, null=True)
     postcode = models.CharField(max_length=20, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
@@ -38,29 +42,37 @@ class Customer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
-        if not self.accountNumber:
+        if not self.account_number:
             uuid_numbers = re.sub('[^0-9]', '', str(self.id))
-            self.accountNumber = (uuid_numbers[:5] + '00000')[:5]
+            self.account_number = (uuid_numbers[:5] + '00000')[:5]
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.customerName} (Account: {self.accountNumber})"
+        return f"{self.business_name} (Account: {self.account_number})"
     
     @staticmethod
     def generate_account_number():
         while True:
             uuid_numbers = re.sub('[^0-9]', '', str(uuid.uuid4()))
             account_number = (uuid_numbers[:5] + '00000')[:5]
-            if not Customer.objects.filter(accountNumber=account_number).exists():
+            if not Customer.objects.filter(account_number=account_number).exists():
                 return account_number
             # If it exists, generate a new one with a random suffix
             random_suffix = ''.join(random.choices('0123456789', k=2))
             account_number = (uuid_numbers[:3] + random_suffix + '00000')[:5]
-            if not Customer.objects.filter(accountNumber=account_number).exists():
+            if not Customer.objects.filter(account_number=account_number).exists():
                 return account_number
             
     def total_income(self):
-        return sum(invoice.totalAmount for invoice in self.invoices.all())
+        """Calculate the total income from all invoices for this customer.
+        The 'invoices' relation is defined in the Invoice model with related_name='invoices'
+        """
+        # Get the Invoice model dynamically
+        Invoice = apps.get_model('sales', 'Invoice')
+        
+        # Query all invoices for this customer and sum their totalAmount
+        total = Invoice.objects.filter(customer=self).aggregate(Sum('totalAmount'))
+        return total['totalAmount__sum'] or 0
 
 class Contact(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -77,7 +89,7 @@ class Contact(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} - {self.customer.customerName}"
+        return f"{self.first_name} {self.last_name} - {self.customer.business_name}"
 
 class Lead(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -127,7 +139,7 @@ class Opportunity(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - {self.customer.customerName}"
+        return f"{self.name} - {self.customer.business_name}"
 
 class Deal(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -149,7 +161,7 @@ class Deal(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - {self.customer.customerName}"
+        return f"{self.name} - {self.customer.business_name}"
 
 class Activity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -76,7 +76,34 @@ const PurchaseOrderManagement = enhancedLazy(() => import('./forms/PurchaseOrder
 const ExpensesManagement = enhancedLazy(() => import('./forms/ExpensesManagement.js'), 'Expenses Management');
 const PurchaseReturnsManagement = enhancedLazy(() => import('./forms/PurchaseReturnsManagement.js'), 'Purchase Returns Management');
 const ProcurementManagement = enhancedLazy(() => import('./forms/ProcurementManagement.js'), 'Procurement Management');
-const EmployeeManagement = enhancedLazy(() => import('./forms/EmployeeManagement.js'), 'Employee Management');
+const EmployeeManagement = enhancedLazy(() => {
+  console.log('[RenderMainContent] Attempting to load EmployeeManagement component');
+  return import('./forms/EmployeeManagement.js')
+    .then(module => {
+      console.log('[RenderMainContent] EmployeeManagement component loaded successfully', module);
+      return module;
+    })
+    .catch(err => {
+      console.error('[RenderMainContent] Error loading EmployeeManagement component:', err);
+      return { 
+        default: () => (
+          <div className="p-4">
+            <h1 className="text-xl font-semibold mb-2">Employee Management</h1>
+            <p className="mb-4">Manage your employees</p>
+            <div className="bg-red-100 p-3 rounded">
+              <p>Error: {err.message}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        ) 
+      };
+    });
+}, 'Employee Management');
 const PayrollManagement = enhancedLazy(() => import('./forms/PayrollManagement.js'), 'Payroll Management');
 const TimesheetManagement = enhancedLazy(() => import('./forms/TimesheetManagement.js'), 'Timesheet Management');
 const ChartOfAccountsManagement = enhancedLazy(() => import('./forms/ChartOfAccountsManagement.js'), 'Chart of Accounts Management');
@@ -131,7 +158,7 @@ const Home = enhancedLazy(() => import('./Home'), 'Home');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
 const TaxManagement = enhancedLazy(() => import('./forms/TaxManagement.js'), 'Tax Management');
 const BenefitsManagement = enhancedLazy(() => import('./forms/BenefitsManagement.js'), 'Benefits Management');
-const ReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'Reports Management');
+const HRReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'HR Reports Management');
 const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
 
 // Add lazy loading for Transport components
@@ -141,6 +168,7 @@ const VehicleManagement = enhancedLazy(() => import('./transport/VehicleManageme
 // CRM Components
 const CRMDashboard = enhancedLazy(() => import('./crm/CRMDashboard'), 'CRM Dashboard');
 const ContactsManagement = enhancedLazy(() => import('./crm/ContactsManagement'), 'Contacts Management');
+const CustomersManagement = enhancedLazy(() => import('./crm/CustomersManagement'), 'Customers Management');
 const LeadsManagement = enhancedLazy(() => import('./crm/LeadsManagement'), 'Leads Management');
 const OpportunitiesManagement = enhancedLazy(() => import('./crm/OpportunitiesManagement'), 'Opportunities Management');
 const DealsManagement = enhancedLazy(() => import('./crm/DealsManagement'), 'Deals Management');
@@ -163,7 +191,36 @@ class LazyLoadErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error('LazyLoad Error caught by boundary:', error, errorInfo);
+    console.error('[LazyLoadErrorBoundary] Error caught by boundary:', error);
+    console.error('[LazyLoadErrorBoundary] Component stack:', errorInfo.componentStack);
+    
+    // Additional debugging info
+    if (error.message) {
+      console.error('[LazyLoadErrorBoundary] Error message:', error.message);
+    }
+    
+    if (error.stack) {
+      console.error('[LazyLoadErrorBoundary] Error stack:', error.stack);
+    }
+    
+    console.error('[LazyLoadErrorBoundary] Props:', this.props);
+    
+    // Log to back-end error tracking system if available
+    try {
+      // Log to console for now, could be replaced with a proper error logging service
+      const errorDetails = {
+        error: {
+          message: error.message,
+          stack: error.stack,
+        },
+        componentStack: errorInfo.componentStack,
+        location: window.location.href,
+        timestamp: new Date().toISOString()
+      };
+      console.error('[LazyLoadErrorBoundary] Detailed error:', JSON.stringify(errorDetails, null, 2));
+    } catch (e) {
+      console.error('[LazyLoadErrorBoundary] Error while logging error details:', e);
+    }
   }
 
   render() {
@@ -243,48 +300,18 @@ const RenderMainContent = React.memo(function RenderMainContent({
   showEmployeeManagement,
   showPayrollManagement,
   showTimesheetManagement,
-  showChartOfAccounts,
-  showJournalEntryManagement,
-  showGeneralLedgerManagement,
-  showAccountReconManagement,
-  showMonthEndManagement,
-  showFinancialStatements,
-  showFixedAssetManagement,
-  showBudgetManagement,
-  showCostAccountingManagement,
-  showIntercompanyManagement,
-  showAuditTrailManagement,
-  showProfitAndLossReport,
-  showBalanceSheetReport,
-  showCashFlowReport,
-  showIncomeByCustomer,
-  showAgedReceivables,
-  showAgedPayables,
-  showAccountBalances,
-  showTrialBalances,
-  showProfitAndLossAnalysis,
-  showBalanceSheetAnalysis,
-  showCashFlowAnalysis,
-  showBudgetVsActualAnalysis,
-  showSalesAnalysis,
-  showExpenseAnalysis,
-  showKPIDashboard,
-  showDeviceSettings,
+  showTaxManagement,
+  showBenefitsManagement,
+  showReportsManagement,
+  showPerformanceManagement,
   selectedSettingsOption,
-  showHelpCenter,
   showMyAccount,
-  showPrivacyPolicy,
+  showHelpCenter,
+  showDeviceSettings,
   showTermsAndConditions,
-  showDownloadTransactions,
-  showConnectBank,
-  showPayrollTransactions,
-  showBankRecon,
-  showPayrollReport,
-  showBankReport,
-  showInventoryItems,
-  showBankTransactions,
-  showInventoryManagement,
+  showPrivacyPolicy,
   showHome,
+  showKPIDashboard,
   // CRM view states
   view,
   // Tenant status props
@@ -294,7 +321,9 @@ const RenderMainContent = React.memo(function RenderMainContent({
   // Drawer state props
   drawerOpen,
   drawerWidth,
-  iconOnlyWidth
+  iconOnlyWidth,
+  // Custom Content prop
+  customContent
 }) {
   // State to track drawer state
   const [isDrawerOpen, setIsDrawerOpen] = useState(drawerOpen);
@@ -351,15 +380,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
         logCacheRef.current.lastLogTime = now;
         
         // Create a simplified props representation for comparison
-        const keyProps = { view, tenantId, showMyAccount, showHelpCenter };
+        const keyProps = { view, tenantId };
         const prevKeyProps = prevPropsRef.current;
         
         // Check if key props have changed
         const propsChanged = !prevKeyProps || 
           prevKeyProps.view !== view || 
-          prevKeyProps.tenantId !== tenantId ||
-          prevKeyProps.showMyAccount !== showMyAccount ||
-          prevKeyProps.showHelpCenter !== showHelpCenter;
+          prevKeyProps.tenantId !== tenantId;
         
         // Update previous props reference
         prevPropsRef.current = keyProps;
@@ -374,7 +401,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
     }
-  }, [view, tenantId, showMyAccount, showHelpCenter, userData]);
+  }, [view, tenantId, userData]);
   
   // Memoize the handlers to prevent re-renders
   const handleTabChange = useCallback((event, newValue) => {
@@ -451,6 +478,33 @@ const RenderMainContent = React.memo(function RenderMainContent({
 
   // Memoize the content renderer to prevent unnecessary re-renders
   const renderContent = useMemo(() => {
+    // Check for custom content first
+    if (customContent) {
+      return (
+        <WrapperComponent>
+          {customContent}
+        </WrapperComponent>
+      );
+    }
+
+    // Then proceed with the existing logic
+    if (tenantStatus === 'error' && tenantError) {
+      return (
+        <WrapperComponent>
+          <div className="p-6 max-w-4xl mx-auto bg-red-50 rounded-lg border border-red-200 text-red-800">
+            <h2 className="text-xl font-semibold mb-3">Tenant Error</h2>
+            <p className="mb-4">{tenantError}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </WrapperComponent>
+      );
+    }
+    
     // If tenant status is pending or error, we still allow access to settings and help
     const isTenantStatusOk = !tenantStatus || tenantStatus === 'success';
     const isSettingsOrHelp = showMyAccount || showHelpCenter || 
@@ -493,33 +547,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
       );
     }
     
-    if (tenantStatus === 'error' || tenantStatus === 'invalid_tenant') {
-      return (
-        <WrapperComponent>
-          <div className="flex flex-col items-center justify-center h-[70vh] text-center max-w-[600px] mx-auto">
-            <svg className="w-16 h-16 text-yellow-500 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <h5 className="text-xl font-medium mb-2">
-              Account Setup Issue
-            </h5>
-            <p className="mb-3">
-              We're having trouble setting up your account data. Some features may be unavailable at this time.
-            </p>
-            <p className="text-sm text-gray-500 mb-4">
-              {tenantError || "Please try refreshing the page or contact support if this issue persists."}
-            </p>
-            <button 
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              onClick={() => window.location.reload()}
-            >
-              Refresh Page
-            </button>
-          </div>
-        </WrapperComponent>
-      );
-    }
-    
     // Continue with the normal content if tenant status is good
     // CRM view handling
     if (view && view.startsWith('crm-')) {
@@ -528,6 +555,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           <SuspenseWithErrorBoundary>
             {view === 'crm-dashboard' && <CRMDashboard />}
             {view === 'crm-contacts' && <ContactsManagement />}
+            {view === 'crm-customers' && <CustomersManagement />}
             {view === 'crm-leads' && <LeadsManagement />}
             {view === 'crm-opportunities' && <OpportunitiesManagement />}
             {view === 'crm-deals' && <DealsManagement />}
@@ -634,8 +662,71 @@ const RenderMainContent = React.memo(function RenderMainContent({
     let ActiveComponent = null;
     let componentProps = {};
 
+    console.log('[RenderMainContent] Checking component to render:', { 
+      showEmployeeManagement,
+      showHRDashboard,
+      hrSection,
+      view
+    });
+
     if (showEmployeeManagement) {
-      ActiveComponent = EmployeeManagement;
+      console.log('[RenderMainContent] EmployeeManagement component should render now', { 
+        showEmployeeManagement,
+        showHRDashboard,
+        hrSection,
+        ActiveComponent: 'EmployeeManagement'
+      });
+      
+      try {
+        console.log('[RenderMainContent] About to return EmployeeManagement render result');
+        
+        return (
+          <WrapperComponent>
+            <SuspenseWithErrorBoundary fallback={
+              <div className="p-4">
+                <h1 className="text-xl font-semibold mb-2">Employee Management</h1>
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              </div>
+            }>
+              <div className="p-2">
+                <h1 className="text-2xl font-bold mb-4">Employee Management</h1>
+                <EmployeeManagement />
+              </div>
+            </SuspenseWithErrorBoundary>
+          </WrapperComponent>
+        );
+      } catch (error) {
+        console.error('[RenderMainContent] Error rendering EmployeeManagement:', error);
+        return (
+          <WrapperComponent>
+            <div className="p-4">
+              <h1 className="text-xl font-semibold mb-2">Employee Management</h1>
+              <p className="mb-4">Manage your employees</p>
+              <div className="bg-red-100 p-3 rounded">
+                <p>Error loading employee management component: {error.message}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Reload Page
+                </button>
+              </div>
+            </div>
+          </WrapperComponent>
+        );
+      }
+    } else if (showTimesheetManagement) {
+      ActiveComponent = TimesheetManagement;
+    } else if (showTaxManagement) {
+      ActiveComponent = TaxManagement;
+    } else if (showBenefitsManagement) {
+      ActiveComponent = BenefitsManagement;
+    } else if (showReportsManagement) {
+      ActiveComponent = HRReportsManagement;
+    } else if (showPerformanceManagement) {
+      ActiveComponent = PerformanceManagement;
     } else if (showHRDashboard) {
       ActiveComponent = HRDashboard;
       componentProps = { section: hrSection };
@@ -830,6 +921,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showMainDashboard,
     userData,
     tenantId,
+    // HR section dependencies
+    showHRDashboard,
+    showEmployeeManagement,
+    showTimesheetManagement,
+    showTaxManagement,
+    showBenefitsManagement,
+    showReportsManagement,
+    showPerformanceManagement,
     // Rendering decision variables
     renderSettingsTabs,
     // Other critical dependencies

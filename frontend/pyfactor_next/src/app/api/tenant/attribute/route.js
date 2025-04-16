@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getUserAttributesFromCognito, updateTenantIdInCognito } from '@/utils/serverTenantUtils';
-import { serverLogger as logger } from '@/utils/logger';
+import { serverLogger } from '@/utils/logger';
 
 /**
  * POST route to set the tenant ID in Cognito
@@ -17,13 +17,13 @@ export async function POST(request) {
     const success = await updateTenantIdInCognito(tenantId);
     
     if (!success) {
-      logger.error('[tenant/api] Failed to update tenant ID in Cognito');
+      serverLogger.error('[tenant/api] Failed to update tenant ID in Cognito');
       return NextResponse.json({ error: 'Failed to set tenant ID' }, { status: 500 });
     }
     
     return NextResponse.json({ success: true });
   } catch (error) {
-    logger.error('[tenant/api] Error setting tenant ID:', error.message);
+    serverLogger.error('[tenant/api] Error setting tenant ID:', error.message);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -41,7 +41,7 @@ export async function GET() {
                      
     return NextResponse.json({ tenantId });
   } catch (error) {
-    logger.error('[tenant/api] Error getting tenant ID:', error.message);
+    serverLogger.error('[tenant/api] Error getting tenant ID:', error.message);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 } 

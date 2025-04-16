@@ -42,8 +42,8 @@ function extractCognitoAttributes(cookieHeader) {
     const customAttributes = Object.keys(decodedToken).filter(key => key.startsWith('custom:'));
     logger.debug('[API] Extracted Cognito token custom attributes:', {
       customKeys: customAttributes,
-      firstname: decodedToken['custom:firstname'],
-      lastname: decodedToken['custom:lastname'],
+      firstname: decodedToken['custom:firstname'] || decodedToken['given_name'] || decodedToken['firstName'] || decodedToken['first_name'],
+      lastname: decodedToken['custom:lastname'] || decodedToken['family_name'] || decodedToken['lastName'] || decodedToken['last_name'],
       businessname: decodedToken['custom:businessname'],
       tenant_ID: decodedToken['custom:tenant_ID']
     });
@@ -53,12 +53,42 @@ function extractCognitoAttributes(cookieHeader) {
       sub: decodedToken.sub,
       email: decodedToken.email,
       email_verified: decodedToken.email_verified,
-      firstName: decodedToken['custom:firstname'] || decodedToken.given_name || '',
-      lastName: decodedToken['custom:lastname'] || decodedToken.family_name || '',
-      first_name: decodedToken['custom:firstname'] || decodedToken.given_name || '',
-      last_name: decodedToken['custom:lastname'] || decodedToken.family_name || '',
-      given_name: decodedToken['custom:firstname'] || decodedToken.given_name || '',
-      family_name: decodedToken['custom:lastname'] || decodedToken.family_name || '',
+      firstName: 
+        decodedToken['given_name'] || 
+        decodedToken['custom:firstname'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      lastName: 
+        decodedToken['family_name'] || 
+        decodedToken['custom:lastname'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
+      first_name: 
+        decodedToken['given_name'] || 
+        decodedToken['custom:firstname'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      last_name: 
+        decodedToken['family_name'] || 
+        decodedToken['custom:lastname'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
+      given_name: 
+        decodedToken['given_name'] || 
+        decodedToken['custom:firstname'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      family_name: 
+        decodedToken['family_name'] || 
+        decodedToken['custom:lastname'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
       businessName: decodedToken['custom:businessname'] || decodedToken['custom:tenant_name'] || '',
       tenantId: decodedToken['custom:tenant_ID'] || decodedToken['custom:businessid'] || '',
       role: decodedToken['custom:userrole'] || 'client',
@@ -101,8 +131,8 @@ async function fetchCognitoUserData(token) {
       allKeys,
       customKeys,
       hasEmail: !!decodedToken.email,
-      hasFirstname: !!decodedToken['custom:firstname'],
-      hasLastname: !!decodedToken['custom:lastname'],
+      hasFirstname: !!decodedToken['custom:firstname'] || !!decodedToken['given_name'] || !!decodedToken['firstName'] || !!decodedToken['first_name'],
+      hasLastname: !!decodedToken['custom:lastname'] || !!decodedToken['family_name'] || !!decodedToken['lastName'] || !!decodedToken['last_name'],
       hasBusinessName: !!decodedToken['custom:businessname'],
       // Check for different cases
       upperCaseFirstname: decodedToken['CUSTOM:FIRSTNAME'],
@@ -115,8 +145,8 @@ async function fetchCognitoUserData(token) {
     // Add debug logging to see what attributes are available
     logger.debug('[API] Decoded token attributes:', {
       keys: Object.keys(decodedToken).filter(k => k.startsWith('custom:')),
-      firstname: decodedToken['custom:firstname'],
-      lastname: decodedToken['custom:lastname'],
+      firstname: decodedToken['custom:firstname'] || decodedToken['given_name'] || decodedToken['firstName'] || decodedToken['first_name'],
+      lastname: decodedToken['custom:lastname'] || decodedToken['family_name'] || decodedToken['lastName'] || decodedToken['last_name'],
       businessname: decodedToken['custom:businessname'],
       email: decodedToken.email
     });
@@ -125,12 +155,42 @@ async function fetchCognitoUserData(token) {
       sub: decodedToken.sub,
       email: decodedToken.email,
       email_verified: decodedToken.email_verified,
-      given_name: decodedToken['custom:firstname'] || decodedToken.given_name || '',
-      family_name: decodedToken['custom:lastname'] || decodedToken.family_name || '',
-      first_name: decodedToken['custom:firstname'] || decodedToken.given_name || '',
-      last_name: decodedToken['custom:lastname'] || decodedToken.family_name || '',
-      'custom:firstname': decodedToken['custom:firstname'] || '',
-      'custom:lastname': decodedToken['custom:lastname'] || '',
+      given_name: 
+        decodedToken['given_name'] || 
+        decodedToken['custom:firstname'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      family_name: 
+        decodedToken['family_name'] || 
+        decodedToken['custom:lastname'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
+      first_name: 
+        decodedToken['given_name'] || 
+        decodedToken['custom:firstname'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      last_name: 
+        decodedToken['family_name'] || 
+        decodedToken['custom:lastname'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
+      'custom:firstname': 
+        decodedToken['custom:firstname'] || 
+        decodedToken['given_name'] || 
+        decodedToken['firstName'] || 
+        decodedToken['first_name'] || 
+        (decodedToken['name']?.split(' ')[0] || ''),
+      'custom:lastname': 
+        decodedToken['custom:lastname'] || 
+        decodedToken['family_name'] || 
+        decodedToken['lastName'] || 
+        decodedToken['last_name'] || 
+        (decodedToken['name']?.includes(' ') ? decodedToken['name'].split(' ').slice(1).join(' ') : ''),
       'custom:businessname': decodedToken['custom:businessname'] || '',
       'custom:businesstype': decodedToken['custom:businesstype'] || '',
       'custom:subplan': decodedToken['custom:subplan'] || 'free',

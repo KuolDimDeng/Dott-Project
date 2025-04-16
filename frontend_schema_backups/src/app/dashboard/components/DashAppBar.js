@@ -1868,7 +1868,7 @@ const DashAppBar = ({
                         return email.charAt(0).toUpperCase();
                       }
                       
-                      return 'U';
+                      return ' ';
                     })()}
                 </div>
               </button>

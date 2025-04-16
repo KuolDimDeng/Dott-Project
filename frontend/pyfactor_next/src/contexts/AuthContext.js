@@ -137,6 +137,14 @@ export function AuthProvider({ children }) {
       // Get current path to determine if we're in dashboard
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const isInDashboard = isDashboardRoute(currentPath);
+      
+      // Skip auth check for public routes
+      if (isPublicRoute(currentPath)) {
+        logger.debug(`[Auth] Skipping auth check for public route: ${currentPath}`);
+        setState(createStateSetter(false, false, false, null, null));
+        refreshingRef.current = false;
+        return;
+      }
 
       // Get current session with minimal error handling
       let tokens;
@@ -167,11 +175,33 @@ export function AuthProvider({ children }) {
         if (!tokens?.idToken) {
           setState(createStateSetter(false, false, false, null, null));
           refreshingRef.current = false;
+          
+          // Only redirect for non-public routes
+          if (!isPublicRoute(currentPath)) {
+            logger.debug(`[Auth] No valid session found, redirecting to sign-in from: ${currentPath}`);
+            router.push('/auth/signin');
+          } else {
+            logger.debug(`[Auth] No valid session found but on public route, continuing: ${currentPath}`);
+          }
           return;
         }
       } catch (sessionError) {
         setState(createStateSetter(false, false, false, null, null));
         refreshingRef.current = false;
+        
+        // Only redirect for non-public routes
+        if (!isPublicRoute(currentPath)) {
+          logger.debug(`[Auth] Session error, redirecting to sign-in from: ${currentPath}`);
+          // Only set session expired param if there was likely a previous session
+          const hadPreviousSession = sessionError.message?.includes('expired') || 
+                                    sessionError.code === 'NotAuthorizedException';
+          const redirectUrl = hadPreviousSession ? 
+                            '/auth/signin?session=expired' : 
+                            '/auth/signin';
+          router.push(redirectUrl);
+        } else {
+          logger.debug(`[Auth] Session error but on public route, continuing: ${currentPath}`);
+        }
         return;
       }
 
@@ -220,6 +250,15 @@ export function AuthProvider({ children }) {
             minimalUser,
             { tokens: minimalTokens }
           ));
+          
+          // Store that the user had a valid session for expiration detection later
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('had_auth_session', 'true');
+            } catch (e) {
+              // Ignore sessionStorage errors
+            }
+          }
 
           // Handle onboarding redirect if needed - but only for non-dashboard routes
           // For dashboard routes, we want to use Cognito's authority for user state

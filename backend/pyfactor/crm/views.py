@@ -25,9 +25,9 @@ class CustomerViewSet(viewsets.ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['billingCountry', 'billingState', 'city']
-    search_fields = ['customerName', 'first_name', 'last_name', 'email', 'phone', 'accountNumber']
-    ordering_fields = ['customerName', 'created_at', 'updated_at']
+    filterset_fields = ['billing_country', 'billing_state', 'city']
+    search_fields = ['business_name', 'first_name', 'last_name', 'email', 'phone', 'account_number']
+    ordering_fields = ['business_name', 'created_at', 'updated_at']
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -99,7 +99,7 @@ class LeadViewSet(viewsets.ModelViewSet):
         
         # Create a new customer from the lead
         customer = Customer.objects.create(
-            customerName=lead.company_name,
+            business_name=lead.company_name,
             first_name=lead.first_name,
             last_name=lead.last_name,
             email=lead.email,
@@ -143,7 +143,7 @@ class OpportunityViewSet(viewsets.ModelViewSet):
     serializer_class = OpportunitySerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['customer', 'stage', 'assigned_to']
-    search_fields = ['name', 'customer__customerName']
+    search_fields = ['name', 'customer__business_name']
     ordering_fields = ['name', 'amount', 'probability', 'expected_close_date', 'created_at']
     
     def get_serializer_class(self):
@@ -178,7 +178,7 @@ class DealViewSet(viewsets.ModelViewSet):
     serializer_class = DealSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['customer', 'status']
-    search_fields = ['name', 'customer__customerName']
+    search_fields = ['name', 'customer__business_name']
     ordering_fields = ['name', 'amount', 'start_date', 'end_date', 'created_at']
     
     def get_serializer_class(self):
@@ -276,5 +276,5 @@ class CampaignMemberViewSet(viewsets.ModelViewSet):
     serializer_class = CampaignMemberSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['campaign', 'status', 'customer', 'lead']
-    search_fields = ['campaign__name', 'customer__customerName', 'lead__first_name', 'lead__last_name']
+    search_fields = ['campaign__name', 'customer__business_name', 'lead__first_name', 'lead__last_name']
     ordering_fields = ['created_at', 'status']

@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useStore } from '@/store/authStore';
+import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
+import { appCache } from '@/utils/awsAppCache';
+import { fetchAuthSession } from 'aws-amplify/auth';
 import { Dialog } from '@headlessui/react';
 import { 
   AddIcon, 
@@ -14,73 +16,104 @@ import {
 } from '@/app/components/icons';
 
 const ContactsManagement = () => {
+  const router = useRouter();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalContacts, setTotalContacts] = useState(0);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
-  const token = useStore((state) => state.token);
+  const [showContactDetails, setShowContactDetails] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
 
   useEffect(() => {
     const fetchContacts = async () => {
-      setLoading(true);
       try {
-        const response = await fetch(`/api/crm/contacts/?page=${page + 1}&limit=${rowsPerPage}&search=${searchTerm}`, {
-          headers: { Authorization: `Bearer ${token}` }
+        setLoading(true);
+        
+        // Try to get data from AppCache first
+        const cacheKey = `crm_contacts_${searchTerm}_${page}_${limit}`;
+        const cachedContacts = await appCache.get(cacheKey);
+        
+        if (cachedContacts) {
+          const parsedData = JSON.parse(cachedContacts);
+          setContacts(parsedData.results || []);
+          setTotalPages(parsedData.total_pages || 1);
+          setLoading(false);
+          
+          // Refresh data in background
+          fetchAndUpdateContacts();
+          return;
+        }
+        
+        await fetchAndUpdateContacts();
+      } catch (err) {
+        logger.error("Error fetching contacts:", err);
+        setError("Failed to load contacts. Please try again later.");
+        setLoading(false);
+      }
+    };
+    
+    const fetchAndUpdateContacts = async () => {
+      try {
+        // Get auth token from Cognito
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString() || '';
+        
+        // Build query params
+        const queryParams = new URLSearchParams({
+          page,
+          limit,
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          setContacts(data.results || []);
-          setTotalContacts(data.count || 0);
-        } else {
-          logger.error('Failed to fetch contacts');
-          // Show mock data for demonstration
-          const mockContacts = [
-            { id: '1', first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com', phone: '555-1234', job_title: 'CEO', customer_name: 'ABC Corp', is_primary: true },
-            { id: '2', first_name: 'Jane', last_name: 'Smith', email: 'jane.smith@example.com', phone: '555-2345', job_title: 'CTO', customer_name: 'XYZ Inc', is_primary: false },
-            { id: '3', first_name: 'Robert', last_name: 'Johnson', email: 'robert.j@example.com', phone: '555-3456', job_title: 'Sales Manager', customer_name: 'Acme Ltd', is_primary: true },
-            { id: '4', first_name: 'Sarah', last_name: 'Williams', email: 'sarah.w@example.com', phone: '555-4567', job_title: 'Marketing Director', customer_name: 'Best Co', is_primary: false },
-            { id: '5', first_name: 'Michael', last_name: 'Brown', email: 'michael.b@example.com', phone: '555-5678', job_title: 'CFO', customer_name: 'Global Enterprises', is_primary: true },
-          ];
-          setContacts(mockContacts);
-          setTotalContacts(mockContacts.length);
+        if (searchTerm) {
+          queryParams.append('search', searchTerm);
         }
-      } catch (error) {
-        logger.error('Error fetching contacts:', error);
-        // Show mock data for demonstration
-        const mockContacts = [
-          { id: '1', first_name: 'John', last_name: 'Doe', email: 'john.doe@example.com', phone: '555-1234', job_title: 'CEO', customer_name: 'ABC Corp', is_primary: true },
-          { id: '2', first_name: 'Jane', last_name: 'Smith', email: 'jane.smith@example.com', phone: '555-2345', job_title: 'CTO', customer_name: 'XYZ Inc', is_primary: false },
-          { id: '3', first_name: 'Robert', last_name: 'Johnson', email: 'robert.j@example.com', phone: '555-3456', job_title: 'Sales Manager', customer_name: 'Acme Ltd', is_primary: true },
-          { id: '4', first_name: 'Sarah', last_name: 'Williams', email: 'sarah.w@example.com', phone: '555-4567', job_title: 'Marketing Director', customer_name: 'Best Co', is_primary: false },
-          { id: '5', first_name: 'Michael', last_name: 'Brown', email: 'michael.b@example.com', phone: '555-5678', job_title: 'CFO', customer_name: 'Global Enterprises', is_primary: true },
-        ];
-        setContacts(mockContacts);
-        setTotalContacts(mockContacts.length);
-      } finally {
+        
+        // Fetch contacts from API
+        const response = await fetch(`/api/crm/contacts/?${queryParams.toString()}`, {
+          headers: { 
+            Authorization: `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API returned status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Store in AppCache for future quick access
+        const cacheKey = `crm_contacts_${searchTerm}_${page}_${limit}`;
+        await appCache.set(cacheKey, JSON.stringify(data), { expires: 60 * 5 }); // 5 minutes cache
+        
+        setContacts(data.results || []);
+        setTotalPages(data.total_pages || 1);
+        setLoading(false);
+      } catch (err) {
+        logger.error("Error updating contacts:", err);
+        setError("Failed to update contacts. Please try again later.");
         setLoading(false);
       }
     };
     
     fetchContacts();
-  }, [page, rowsPerPage, searchTerm, token]);
+  }, [page, limit, searchTerm]);
 
   const handleChangePage = (newPage) => {
     setPage(newPage);
   };
 
   const handleChangeRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
+    setLimit(parseInt(event.target.value, 10));
+    setPage(1);
   };
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
-    setPage(0);
+    setPage(1);
   };
 
   const handleDeleteClick = (contact) => {
@@ -92,6 +125,9 @@ const ContactsManagement = () => {
     if (!selectedContact) return;
     
     try {
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString() || '';
+      
       const response = await fetch(`/api/crm/contacts/${selectedContact.id}/`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -100,7 +136,7 @@ const ContactsManagement = () => {
       if (response.ok) {
         // Remove deleted contact from the list
         setContacts(contacts.filter(c => c.id !== selectedContact.id));
-        setTotalContacts(totalContacts - 1);
+        setTotalPages(totalPages - 1);
       } else {
         logger.error('Failed to delete contact');
       }
@@ -126,27 +162,27 @@ const ContactsManagement = () => {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+    <div className="p-6 bg-gray-50">
+      <h1 className="text-2xl font-bold text-black mb-4">
         Contact Management
       </h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-sm font-medium text-black">
             Total Contacts
           </h2>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-            {totalContacts}
+          <p className="text-3xl font-bold text-black mt-2">
+            {totalPages * limit}
           </p>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-sm font-medium text-black">
             Primary Contacts
           </h2>
-          <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+          <p className="text-3xl font-bold text-black mt-2">
             {contacts.filter(c => c.is_primary).length}
           </p>
         </div>
@@ -161,7 +197,7 @@ const ContactsManagement = () => {
           <input
             type="text"
             placeholder="Search Contacts"
-            className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white text-black focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
             value={searchTerm}
             onChange={handleSearch}
           />
@@ -169,7 +205,7 @@ const ContactsManagement = () => {
         
         <div className="flex space-x-2">
           <button 
-            className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
           >
             <FilterListIcon className="h-5 w-5 mr-2" />
             Filter
@@ -184,51 +220,68 @@ const ContactsManagement = () => {
       </div>
       
       {/* Contacts Table */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-100">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Name</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Email</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Phone</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Job Title</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Company</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Primary</th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Email</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Phone</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Job Title</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Company</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Primary</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white divide-y divide-gray-200">
               {contacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{`${contact.first_name} ${contact.last_name}`}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{contact.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{contact.phone}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{contact.job_title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{contact.customer_name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{contact.is_primary ? 'Yes' : 'No'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-2">
-                      <button 
-                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100" 
-                        title="View"
-                      >
-                        <VisibilityIcon className="h-5 w-5" />
-                      </button>
-                      <button 
-                        className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-100" 
-                        title="Edit"
-                      >
-                        <EditIcon className="h-5 w-5" />
-                      </button>
-                      <button 
-                        className="text-gray-500 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400" 
-                        onClick={() => handleDeleteClick(contact)}
-                        title="Delete"
-                      >
-                        <DeleteIcon className="h-5 w-5" />
-                      </button>
+                <tr key={contact.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-black">{contact.first_name} {contact.last_name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-black">{contact.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-black">{contact.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-black">{contact.job_title}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-black">{contact.customer_name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-black">
+                      {contact.is_primary ? (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                          No
+                        </span>
+                      )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      <VisibilityIcon className="h-5 w-5" />
+                    </button>
+                    <button 
+                      className="text-green-600 hover:text-green-900 mr-3"
+                    >
+                      <EditIcon className="h-5 w-5" />
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteClick(contact)}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      <DeleteIcon className="h-5 w-5" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -237,26 +290,26 @@ const ContactsManagement = () => {
         </div>
         
         {/* Pagination */}
-        <div className="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+        <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
           <div className="flex-1 flex justify-between sm:hidden">
             <button
               onClick={() => handleChangePage(page - 1)}
-              disabled={page === 0}
-              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
-                page === 0 
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500' 
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              disabled={page === 1}
+              className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                page === 1 
+                  ? 'bg-gray-100 text-gray-400' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
               Previous
             </button>
             <button
               onClick={() => handleChangePage(page + 1)}
-              disabled={page >= Math.ceil(totalContacts / rowsPerPage) - 1}
-              className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
-                page >= Math.ceil(totalContacts / rowsPerPage) - 1
-                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+              disabled={page === totalPages}
+              className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                page === totalPages
+                  ? 'bg-gray-100 text-gray-400'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
               Next
@@ -264,19 +317,19 @@ const ContactsManagement = () => {
           </div>
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                Showing <span className="font-medium">{page * rowsPerPage + 1}</span> to{' '}
+              <p className="text-sm text-gray-700">
+                Showing <span className="font-medium">{page * limit - limit + 1}</span> to{' '}
                 <span className="font-medium">
-                  {Math.min((page + 1) * rowsPerPage, totalContacts)}
+                  {Math.min((page * limit), totalPages * limit)}
                 </span>{' '}
-                of <span className="font-medium">{totalContacts}</span> results
+                of <span className="font-medium">{totalPages * limit}</span> results
               </p>
             </div>
             <div>
               <select
-                value={rowsPerPage}
+                value={limit}
                 onChange={handleChangeRowsPerPage}
-                className="mr-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md py-1 px-2 text-sm"
+                className="mr-4 border border-gray-300 rounded-md py-1 px-2 text-gray-700"
               >
                 {[5, 10, 25].map((value) => (
                   <option key={value} value={value}>
@@ -287,11 +340,11 @@ const ContactsManagement = () => {
               <nav className="inline-flex rounded-md shadow-sm" aria-label="Pagination">
                 <button
                   onClick={() => handleChangePage(page - 1)}
-                  disabled={page === 0}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
-                    page === 0
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  disabled={page === 1}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium ${
+                    page === 1
+                      ? 'bg-gray-100 text-gray-400'
+                      : 'bg-white text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">Previous</span>
@@ -299,14 +352,14 @@ const ContactsManagement = () => {
                     <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 </button>
-                {[...Array(Math.min(5, Math.ceil(totalContacts / rowsPerPage))).keys()].map((_, i) => {
+                {[...Array(Math.min(5, Math.ceil(totalPages))).keys()].map((_, i) => {
                   // If we have more than 5 pages, show the first 3, the current one, and the last one
-                  let pageNumber = i;
-                  if (Math.ceil(totalContacts / rowsPerPage) > 5) {
+                  let pageNumber = i + 1;
+                  if (totalPages > 5) {
                     if (page < 3) {
-                      pageNumber = i;
-                    } else if (page >= Math.ceil(totalContacts / rowsPerPage) - 3) {
-                      pageNumber = Math.ceil(totalContacts / rowsPerPage) - 5 + i;
+                      pageNumber = i + 1;
+                    } else if (page >= totalPages - 2) {
+                      pageNumber = totalPages - 4 + i;
                     } else {
                       pageNumber = page - 2 + i;
                     }
@@ -316,23 +369,23 @@ const ContactsManagement = () => {
                     <button
                       key={pageNumber}
                       onClick={() => handleChangePage(pageNumber)}
-                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium ${
                         page === pageNumber
-                          ? 'z-10 bg-blue-50 dark:bg-blue-900 border-blue-500 dark:border-blue-400 text-blue-600 dark:text-blue-300'
-                          : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'bg-white text-gray-500 hover:bg-gray-50'
                       }`}
                     >
-                      {pageNumber + 1}
+                      {pageNumber}
                     </button>
                   );
                 })}
                 <button
                   onClick={() => handleChangePage(page + 1)}
-                  disabled={page >= Math.ceil(totalContacts / rowsPerPage) - 1}
-                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
-                    page >= Math.ceil(totalContacts / rowsPerPage) - 1
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                      : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  disabled={page === totalPages}
+                  className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 text-sm font-medium ${
+                    page === totalPages
+                      ? 'bg-gray-100 text-gray-400'
+                      : 'bg-white text-gray-500 hover:bg-gray-50'
                   }`}
                 >
                   <span className="sr-only">Next</span>
@@ -355,22 +408,20 @@ const ContactsManagement = () => {
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
         
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white dark:bg-gray-800 p-6 shadow-xl">
-            <Dialog.Title className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          <Dialog.Panel className="mx-auto max-w-md rounded-lg bg-white p-6 shadow-xl">
+            <Dialog.Title className="text-lg font-medium text-black mb-4">
               Delete Contact
             </Dialog.Title>
             <div className="mt-2">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Are you sure you want to delete the contact 
-                {selectedContact && ` "${selectedContact.first_name} ${selectedContact.last_name}"`}? 
-                This action cannot be undone.
+              <p className="text-sm text-black">
+                Are you sure you want to delete this contact? This action cannot be undone.
               </p>
             </div>
 
             <div className="mt-6 flex justify-end space-x-3">
               <button
                 onClick={handleDeleteCancel}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="px-4 py-2 border border-gray-300 rounded-md text-black bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
               </button>

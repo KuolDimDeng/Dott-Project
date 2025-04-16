@@ -1,521 +1,398 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import useOnboardingStore from '@/store/onboardingStore';
-import {
-  businessTypes,
-  legalStructures
-} from '@/app/utils/businessData';
+import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from 'aws-amplify/auth';
+import { authenticatedRoute } from '@/components/AuthenticatedRoute';
 import { logger } from '@/utils/logger';
-import { onboardingService } from '@/services/onboardingService';
-import { updateUserAttributes } from '@/config/amplifyUnified';
-import { fetchAuthSession } from 'aws-amplify/auth';
-import countryList from 'react-select-country-list';
-import { Box, Container, Paper, Typography, TextField, Button, Alert, CircularProgress, Select, FormControl } from '@/components/ui/TailwindComponents';
-import { setAuthCookies } from '@/utils/cookieManager';
-import { 
-  COGNITO_ATTRIBUTES,
-  COOKIE_NAMES, 
-  STORAGE_KEYS,
-  ONBOARDING_STATUS,
-  ONBOARDING_STEPS,
-  ONBOARDING_STATES
-} from '@/constants/onboarding';
-import { safeUpdateUserAttributes, mockUpdateUserAttributes } from '@/utils/safeAttributes';
-import { safeParseJson, safeParseJsonText } from '@/utils/redirectUtils';
-import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
-import { ErrorBoundary } from '@/components/ErrorBoundary/ErrorBoundary';
+import { setCache, getCache } from '@/utils/cacheClient';
+import LoadingScreen from '@/components/LoadingScreen';
+import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { countries } from 'countries-list';
 
-// Create a safe version of useToast
-const useSafeToast = () => {
-  try {
-    const { useToast } = require('@/components/Toast/ToastProvider');
-    return useToast();
-  } catch (error) {
-    return {
-      success: (message) => console.log('[Toast Success]', message),
-      error: (message) => console.error('[Toast Error]', message),
-      info: (message) => console.info('[Toast Info]', message),
-      warning: (message) => console.warn('[Toast Warning]', message),
-    };
-  }
-};
-
-// Business info form component
-function BusinessInfoForm() {
+const BusinessInfoPage = () => {
   const router = useRouter();
-  const toast = useSafeToast();
-  const { updateOnboardingStep, STEPS } = useOnboardingProgress();
-  const [formData, setFormData] = useState({
-    businessName: '',
-    businessType: '',
-    country: '',
-    legalStructure: '',
-    dateFounded: new Date().toISOString().split('T')[0],
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
-  const [localBusinessInfo, setLocalBusinessInfo] = useState(null);
-  const [apiRetryExhausted, setApiRetryExhausted] = useState(false);
-  
-  // Options for form
-  const countries = useMemo(() => countryList().getData(), []);
-  const businessTypeOptions = useMemo(() => businessTypes.map(type => ({ value: type, label: type })), []);
-  const legalStructureOptions = useMemo(() => legalStructures.map(structure => ({ value: structure, label: structure })), []);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [businessInfo, setBusinessInfo] = useState({
+    legal_name: '',
+    business_type: '',
+    legal_structure: '',
+    country: 'United States',
+    founded_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
+  });
+  const [userId, setUserId] = useState(null);
 
-  // Set a timeout to show form even if API never responds
+  // Get current user on mount
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        logger.warn('[BusinessInfo] Loading timeout reached, showing form anyway');
-        setLoadingTimeout(true);
-        setLoading(false);
+    const getUserId = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUserId(currentUser.userId);
+      } catch (error) {
+        logger.error('[BusinessInfoPage] Error getting current user:', error);
       }
-    }, 5000); // 5 second timeout
+    };
+    getUserId();
+  }, []);
 
-    return () => clearTimeout(timeout);
-  }, [loading]);
+  // Check if required fields are filled
+  const isValid = useMemo(() => {
+    const requiredFields = ['legal_name', 'business_type', 'legal_structure', 'country'];
+    return requiredFields.every(field => businessInfo[field]?.trim());
+  }, [businessInfo]);
 
+  // Convert countries-list object to array for dropdown
+  const countryOptions = useMemo(() => {
+    return Object.entries(countries).map(([code, country]) => ({
+      value: country.name,
+      label: country.name,
+      code: code // Store the country code as well
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
+
+  // Format businessTypes for dropdown
+  const businessTypeOptions = useMemo(() => {
+    return businessTypes.map(type => ({
+      value: type,
+      label: type
+    }));
+  }, []);
+
+  // Format legalStructures for dropdown
+  const legalStructureOptions = useMemo(() => {
+    return legalStructures.map(structure => ({
+      value: structure,
+      label: structure
+    }));
+  }, []);
+
+  // Fetch business info on component mount
   useEffect(() => {
-    // Fetch business info
-    async function fetchBusinessInfo() {
+    const fetchBusinessInfo = async () => {
       try {
         setLoading(true);
         
-        // Check local storage first as a fallback
-        try {
-          const storedInfo = localStorage.getItem('businessInfo');
-          if (storedInfo) {
-            const parsedInfo = JSON.parse(storedInfo);
-            logger.debug('[BusinessInfo] Loaded backup data from localStorage');
-            setFormData(prev => ({
-              ...prev,
-              ...parsedInfo
-            }));
-          }
-        } catch (e) {
-          // Ignore localStorage errors
-        }
-
-        // Add retry logic for fetching
-        let response = null;
-        let maxRetries = 2; // Reduce retries to make page load faster
-        let retryCount = 0;
-        let fetchError = null;
-
-        while (retryCount <= maxRetries) {
-          try {
-            // Add timestamp to prevent caching
-            response = await fetch(`/api/onboarding/business-info?t=${Date.now()}-${retryCount}`, {
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            });
-            
-            // If response is received (even with error status), break the retry loop
-            break;
-          } catch (error) {
-            fetchError = error;
-            retryCount++;
-            
-            logger.warn(`[BusinessInfo] API fetch attempt ${retryCount} failed:`, error);
-            
-            if (retryCount <= maxRetries) {
-              // Wait before retrying (shorter delay to make page load faster)
-              const delay = 800 * Math.pow(1.5, retryCount - 1);
-              logger.debug(`[BusinessInfo] Retrying in ${delay}ms...`);
-              await new Promise(resolve => setTimeout(resolve, delay));
-            } else {
-              // All retries exhausted
-              setApiRetryExhausted(true);
-            }
-          }
-        }
-
-        // If all retries failed or loading timeout was reached, continue with default empty data
-        // This ensures new users can still fill out the form even if API is down
-        if ((!response && apiRetryExhausted) || loadingTimeout) {
-          logger.error('[BusinessInfo] API fetch failed or timed out, proceeding with empty form');
-          setLoading(false);
-          return;
-        }
-
-        if (!response) {
-          throw fetchError || new Error('Failed to fetch business info after multiple attempts');
-        }
+        // Try to get from app cache first
+        const cachedData = getCache('business_info');
         
-        // Check for token expiration or auth errors
-        if (response.status === 401 || response.status === 403) {
-          // Continue with empty form for new users
-          logger.info('[BusinessInfo] Authentication error but continuing for new users');
-          setLoading(false);
-          return;
-        }
-        
-        // For server errors, we'll just use the data we have from localStorage
-        if (response.status >= 500) {
-          logger.warn('[BusinessInfo] Server error when fetching business info:', response.status);
-          toast.warning('Unable to load your saved information. Please fill out the form again or try refreshing the page.');
-          setLoading(false);
-          return;
-        }
-        
-        if (!response.ok) {
-          logger.warn(`[BusinessInfo] API response not OK: ${response.status}`);
-          setLoading(false);
-          return;
-        }
-        
-        // Use the safe parse utility
-        const data = await safeParseJson(response, {
-          context: 'BusinessInfo_Fetch',
-          defaultValue: { businessInfo: {} },
-          throwOnHtml: false
-        });
-        
-        setLocalBusinessInfo(data);
-        
-        // Pre-populate form with received data
-        if (data && data.businessInfo) {
-          setFormData(prev => ({
-            businessName: data.businessInfo.businessName || prev.businessName,
-            businessType: data.businessInfo.businessType || prev.businessType,
-            country: data.businessInfo.country || prev.country,
-            legalStructure: data.businessInfo.legalStructure || prev.legalStructure,
-            dateFounded: data.businessInfo.dateFounded || prev.dateFounded
+        if (cachedData) {
+          logger.debug('[BusinessInfoPage] Using cached business info', { cachedData });
+          setBusinessInfo(prevState => ({
+            ...prevState,
+            ...cachedData
           }));
+        } else {
+          // Fallback to Cognito attributes
+          try {
+            logger.debug('[BusinessInfoPage] Fetching business info from Cognito');
+            const attributes = await fetchUserAttributes();
+            
+            const cognitoData = {
+              legal_name: attributes['custom:businessname'] || '',
+              business_type: attributes['custom:businesstype'] || '',
+              legal_structure: attributes['custom:legalstructure'] || '',
+              country: attributes['custom:businesscountry'] || 'United States',
+              founded_date: attributes['custom:datefounded'] || new Date().toISOString().split('T')[0]
+            };
+            
+            // Store in app cache for quick access
+            setCache('business_info', cognitoData, { ttl: 3600000 }); // 1 hour
+            
+            setBusinessInfo(prevState => ({
+              ...prevState,
+              ...cognitoData
+            }));
+            
+            logger.debug('[BusinessInfoPage] Business info loaded from Cognito', { cognitoData });
+          } catch (cognitoError) {
+            logger.error('[BusinessInfoPage] Failed to fetch business info from Cognito', cognitoError);
+            // Keep default values already set in state
+          }
         }
-      } catch (err) {
-        logger.error('[BusinessInfo] Error fetching business info:', err);
-        // Don't block the form on fetch errors
+      } catch (error) {
+        logger.error('[BusinessInfoPage] Failed to fetch business info', error);
+        setError('Failed to load business information. Please try again.');
       } finally {
         setLoading(false);
       }
-    }
+    };
 
     fetchBusinessInfo();
-  }, [router, toast, apiRetryExhausted, loadingTimeout]);
+  }, []);
 
+  // Handle field changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
-    // Save to localStorage as a backup
-    try {
-      const updatedData = { ...formData, [name]: value };
-      localStorage.setItem('businessInfo', JSON.stringify(updatedData));
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-  };
-  
-  const handleSelectChange = (name, selectedOption) => {
-    setFormData(prev => ({ ...prev, [name]: selectedOption.value }));
-    
-    // Save to localStorage as a backup
-    try {
-      const updatedData = { ...formData, [name]: selectedOption.value };
-      localStorage.setItem('businessInfo', JSON.stringify(updatedData));
-    } catch (e) {
-      // Ignore localStorage errors
-    }
+    setBusinessInfo(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
   };
 
-  const validateBusinessInfo = (data) => {
-    // Required fields
-    if (!data.businessName) return { valid: false, message: 'Business name is required' };
-    if (!data.businessType) return { valid: false, message: 'Business type is required' };
-    if (!data.country) return { valid: false, message: 'Country is required' };
-    if (!data.legalStructure) return { valid: false, message: 'Legal structure is required' };
-    
-    return { valid: true }; // No errors
-  };
-
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!isValid) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    
+    setError(null);
     setSubmitting(true);
     
     try {
-      logger.debug('[BusinessInfo] Form submitted, sending data:', formData);
-      console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Form submitted:`, formData);
+      logger.debug('[BusinessInfoPage] Saving business info to Cognito and AppCache', businessInfo);
       
-      // Save to localStorage as a backup before submitting
-      try {
-        localStorage.setItem('businessInfo', JSON.stringify(formData));
-        localStorage.setItem('businessInfoSubmitted', 'true');
-        document.cookie = `businessInfoSubmitted=true;path=/;max-age=${60*60*24*7}`;
-      } catch (e) {
-        // Ignore localStorage errors
-      }
+      // Get the country code for the selected country
+      const selectedCountry = countryOptions.find(option => option.value === businessInfo.country);
+      const countryCode = selectedCountry?.code || 'US'; // Default to US if not found
       
-      // Try submitting to API
-      let apiSuccess = false;
-      let apiAttempts = 0;
-      const maxApiAttempts = 2;
+      // Generate a business ID that is exactly 36 characters
+      const timestamp = Date.now().toString();
+      const randomString = Math.random().toString(36).substring(2, 10);
+      const paddedId = `bus_${timestamp}_${randomString}`.padEnd(36, '0').substring(0, 36);
       
-      while (!apiSuccess && apiAttempts < maxApiAttempts) {
-        try {
-          const response = await fetch('/api/onboarding/business-info', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(formData),
-          });
-          
-          // Check for redirect responses that might indicate session timeout
-          if ([302, 307, 308].includes(response.status)) {
-            logger.warn('[BusinessInfo] Received redirect response from API, redirecting to login');
-            toast.warning('Your session has expired. Redirecting to login...');
-            window.location.href = '/login?redirect=/onboarding/business-info';
-            return;
-          }
-
-          if (response.ok) {
-            apiSuccess = true;
-          } else {
-            apiAttempts++;
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        } catch (error) {
-          apiAttempts++;
-          logger.error(`[BusinessInfo] API submission attempt ${apiAttempts} failed:`, error);
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-      }
+      // Format the data for Cognito attributes
+      const userAttributes = {
+        'custom:businessname': businessInfo.legal_name,
+        'custom:businesstype': businessInfo.business_type,
+        'custom:legalstructure': businessInfo.legal_structure,
+        'custom:businesscountry': countryCode, // Use the country code (2-3 chars) instead of full name
+        'custom:datefounded': businessInfo.founded_date,
+        'custom:businessid': paddedId, // Ensure it's exactly 36 chars
+        'custom:onboarding': 'subscription', // Track progress in onboarding flow
+        'custom:updated_at': new Date().toISOString(),
+        'custom:setupdone': 'false', // Setup isn't done until onboarding is complete
+        'custom:attrversion': '1.0.0' // Ensure at least 5 characters
+      };
       
-      // Update Cognito attributes regardless of API success
-      try {
-        // Import the Amplify function to update attributes
-        const { updateUserAttributes } = await import('aws-amplify/auth');
-        
-        // Prepare the attributes to update
-        const cognitoAttributes = {
-          'custom:businessname': formData.businessName,
-          'custom:businesstype': formData.businessType,
-          'custom:businesscountry': formData.country,
-          'custom:legalstructure': formData.legalStructure,
-          'custom:datefounded': formData.dateFounded || new Date().toISOString().split('T')[0],
-          'custom:onboarding': 'business_info',
-          'custom:updated_at': new Date().toISOString()
+      // Update Cognito attributes directly
+      await updateUserAttributes({
+        userAttributes
+      });
+      
+      logger.debug('[BusinessInfoPage] Business info saved to Cognito successfully');
+      
+      // Save business ID in app cache
+      setCache('businessId', paddedId, { ttl: 86400000 * 30 }); // 30 days
+      
+      // Store the complete business info object in cache with the updated fields
+      const updatedBusinessInfo = {
+        ...businessInfo,
+        business_id: paddedId,
+        country_code: countryCode
+      };
+      
+      // Update app cache with new data
+      setCache('business_info', updatedBusinessInfo, { ttl: 3600000 }); // 1 hour
+      
+      // Cache user attributes if we have a userId
+      if (userId) {
+        const userSpecificInfo = {
+          businessId: paddedId,
+          businessName: businessInfo.legal_name,
+          businessType: businessInfo.business_type,
+          legalStructure: businessInfo.legal_structure,
+          countryCode: countryCode,
+          foundedDate: businessInfo.founded_date
         };
         
-        // Log the update attempt
-        console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Updating Cognito attributes:`, cognitoAttributes);
-        logger.info('[BusinessInfo] Updating Cognito attributes:', {
-          attributes: Object.keys(cognitoAttributes)
-        });
-        
-        // Make the update
-        await updateUserAttributes({
-          userAttributes: cognitoAttributes
-        });
-        
-        console.log(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Cognito update successful`);
-        logger.info('[BusinessInfo] Successfully updated Cognito attributes');
-      } catch (cognitoError) {
-        console.error(`[DEBUG][${new Date().toISOString()}] BUSINESS INFO FORM - Cognito update failed:`, cognitoError);
-        logger.error('[BusinessInfo] Failed to update Cognito attributes:', cognitoError);
-        // Continue with the flow even if attribute update fails
+        setCache(`user_${userId}_businessInfo`, userSpecificInfo, { ttl: 86400000 }); // 24 hours
       }
       
-      // Whether API call succeeded or not, continue to next step
-      // This allows users to progress even when API is having issues
-      logger.info(`[BusinessInfo] Proceeding to next step (API success: ${apiSuccess})`);
+      // Update onboarding state in app cache
+      const onboardingStatus = {
+        businessInfoCompleted: true,
+        currentStep: 'subscription',
+        lastUpdated: new Date().toISOString()
+      };
       
-      // Update onboarding progress
-      if (typeof updateOnboardingStep === 'function') {
-        updateOnboardingStep(STEPS.SUBSCRIPTION);
-      }
+      setCache('onboarding_status', onboardingStatus, { ttl: 86400000 }); // 24 hours
       
-      // Explicit timeout to ensure async state updates complete
-      setTimeout(() => {
-        // Navigate to the next step
-        router.push('/onboarding/subscription');
-      }, 500);
-      
+      logger.debug('[BusinessInfoPage] Business info updated successfully, redirecting to subscription page');
+      router.push('/onboarding/subscription');
     } catch (error) {
-      logger.error('[BusinessInfo] Error submitting form:', error);
-      setFormError('There was a problem submitting your information. Please try again.');
-      toast.error('There was a problem submitting your information. Please try again.');
+      logger.error('[BusinessInfoPage] Failed to update business info', error);
+      setError('Failed to save business information. Please try again.');
+    } finally {
       setSubmitting(false);
     }
   };
 
-  function generateUUID(seed) {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
-    });
-  }
-
-  const onFormSubmit = (e) => {
-    e.preventDefault();
-    const validation = validateBusinessInfo(formData);
-    
-    if (!validation.valid) {
-      setFormError(validation.message);
-      toast.error(validation.message);
-      return;
-    }
-    
-    setFormError('');
-    handleSubmit(e);
-  };
-
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <CircularProgress color="primary" />
-      </div>
-    );
+    return <LoadingScreen message="Loading your business information..." />;
   }
 
-  // The form UI component and the rest of the code remains the same...
   return (
-    <Container maxWidth="md" className="pt-8 pb-12">
-      <Paper className="px-6 py-6 shadow-md rounded-lg">
-        <Typography variant="h5" className="mb-4 font-semibold">Business Information</Typography>
-        
-        {formError && (
-          <Alert severity="error" className="mb-4">{formError}</Alert>
-        )}
-        
-        <form onSubmit={onFormSubmit} className="space-y-6">
-          <TextField
-            fullWidth
-            label="Business Name"
-            name="businessName"
-            value={formData.businessName}
-            onChange={handleChange}
-            required
-            helperText="Enter the legal name of your business"
-          />
-          
-          <FormControl fullWidth>
-            <label htmlFor="business-type-label">Business Type</label>
-            <Select
-              id="business-type-label"
-              name="businessType"
-              value={formData.businessType}
-              onChange={handleChange}
-              required
-            >
-              {businessTypeOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <FormControl fullWidth>
-            <label htmlFor="country-label">Country</label>
-            <Select
-              id="country-label"
-              name="country"
-              value={formData.country}
-              onChange={handleChange}
-              required
-            >
-              {countries.map(country => (
-                <option key={country.value} value={country.value}>
-                  {country.label}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <FormControl fullWidth>
-            <label htmlFor="legal-structure-label">Legal Structure</label>
-            <Select
-              id="legal-structure-label"
-              name="legalStructure"
-              value={formData.legalStructure}
-              onChange={handleChange}
-              required
-            >
-              {legalStructureOptions.map(option => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
-          </FormControl>
-          
-          <TextField
-            fullWidth
-            label="Date Founded"
-            name="dateFounded"
-            type="date"
-            value={formData.dateFounded}
-            onChange={handleChange}
-          />
-          
-          <div className="flex justify-end pt-4">
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <div className="flex items-center">
-                  <CircularProgress size={20} color="inherit" className="mr-2" />
-                  Processing...
-                </div>
-              ) : (
-                'Continue'
-              )}
-            </Button>
-          </div>
-        </form>
-      </Paper>
-    </Container>
-  );
-}
-
-// Main component with error boundary
-export default function BusinessInfoPage() {
-  return (
-    <ErrorBoundary 
-      componentName="BusinessInfoForm"
-      FallbackComponent={({ error, resetErrorBoundary }) => (
-        <Container maxWidth="md" className="pt-8 pb-12">
-          <Paper className="px-6 py-6 shadow-md rounded-lg bg-red-50">
-            <Typography variant="h5" className="mb-4 font-semibold text-red-700">
-              Error Loading Business Information
-            </Typography>
-            <Typography className="mb-4 text-red-700">
-              {error?.message || "An error occurred while loading this page."}
-            </Typography>
-            <div className="flex space-x-4">
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => window.location.href = '/onboarding'}
-              >
-                Back to Onboarding
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={resetErrorBoundary}
-              >
-                Try Again
-              </Button>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+          <div className="p-6 sm:p-8">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Business Information</h1>
+              <p className="mt-2 text-gray-600">
+                Please provide your business details to continue.
+              </p>
             </div>
-          </Paper>
-        </Container>
-      )}
-    >
-      <BusinessInfoForm />
-    </ErrorBoundary>
+            
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">Business Details</h2>
+                <div className="space-y-4">
+                  {/* Business Name */}
+                  <div>
+                    <label htmlFor="legal_name" className="block text-sm font-medium text-gray-700 mb-1">
+                      Business Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="legal_name"
+                      name="legal_name"
+                      value={businessInfo.legal_name}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    />
+                  </div>
+                  
+                  {/* Business Type */}
+                  <div>
+                    <label htmlFor="business_type" className="block text-sm font-medium text-gray-700 mb-1">
+                      Business Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="business_type"
+                      name="business_type"
+                      value={businessInfo.business_type}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    >
+                      <option value="">Select Business Type</option>
+                      {businessTypeOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Legal Structure */}
+                  <div>
+                    <label htmlFor="legal_structure" className="block text-sm font-medium text-gray-700 mb-1">
+                      Legal Structure <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="legal_structure"
+                      name="legal_structure"
+                      value={businessInfo.legal_structure}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    >
+                      <option value="">Select Legal Structure</option>
+                      {legalStructureOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Country */}
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                      Country <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="country"
+                      name="country"
+                      value={businessInfo.country}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      required
+                    >
+                      <option value="">Select Country</option>
+                      {countryOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  {/* Founded Date */}
+                  <div>
+                    <label htmlFor="founded_date" className="block text-sm font-medium text-gray-700 mb-1">
+                      Date Founded
+                    </label>
+                    <input
+                      type="date"
+                      id="founded_date"
+                      name="founded_date"
+                      value={businessInfo.founded_date}
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-between pt-6">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors shadow-sm"
+                >
+                  Back
+                </button>
+                
+                <button
+                  type="submit"
+                  disabled={submitting || !isValid}
+                  className={`px-6 py-3 rounded-lg shadow-sm transition-colors ${
+                    isValid
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {submitting ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </div>
+                  ) : (
+                    'Continue'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-}
+};
+
+export default authenticatedRoute(BusinessInfoPage);

@@ -4,6 +4,15 @@ import { axiosInstance } from '@/lib/axiosConfig';
 import { logger } from '@/utils/logger';
 import InvoiceDetails from './InvoiceDetails';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { 
+  TextField, 
+  Button, 
+  Grid, 
+  Box, 
+  Paper, 
+  Typography, 
+  Link
+} from '@/components/ui/TailwindComponents';
 
 const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustomer = false }) => {
   const [customer, setCustomer] = useState(null);
@@ -17,12 +26,14 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
   const [isEditing, setIsEditing] = useState(newCustomer);
   const [editedCustomer, setEditedCustomer] = useState(newCustomer ? {
     customerName: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
-    address: '',
+    street: '',
     city: '',
     state: '',
-    postalCode: '',
+    postcode: '',
     country: '',
     notes: ''
   } : null);
@@ -32,8 +43,8 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
     try {
       const response = await axiosInstance.get('/api/profile/');
       setUserDatabase(response.data.database_name);
-      logger.log('User profile:', response.data);
-      logger.log('User database:', response.data.database_name);
+      logger.info('User profile:', response.data);
+      logger.info('User database:', response.data.database_name);
     } catch (error) {
       logger.error('Error fetching user profile:', error);
       setError('Failed to load user profile');
@@ -69,6 +80,20 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
   useEffect(() => {
     if (customerId && userDatabase && !newCustomer) {
       fetchCustomer();
+    } else if (newCustomer) {
+      setEditedCustomer({
+        customerName: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        street: '',
+        city: '',
+        state: '',
+        postcode: '',
+        country: '',
+        notes: ''
+      });
     }
   }, [customerId, userDatabase, fetchCustomer, newCustomer]);
 
@@ -118,9 +143,21 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
   };
 
   const handleCancelEdit = () => {
-    logger.info('Cancel edit customer:', customer.id);
+    logger.info('Cancel edit customer:', customer?.id);
     setIsEditing(false);
-    setEditedCustomer(null);
+    setEditedCustomer(newCustomer ? {
+      customerName: '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      street: '',
+      city: '',
+      state: '',
+      postcode: '',
+      country: '',
+      notes: ''
+    } : null);
   };
 
   const handleSaveEdit = async () => {
@@ -200,31 +237,36 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
   const renderDetailsTab = () => {
     const handleInputChange = (event) => {
       const { name, value } = event.target;
-      setEditedCustomer({ ...editedCustomer, [name]: value });
+      setEditedCustomer(prev => ({ ...(prev || {}), [name]: value }));
     };
 
     if (newCustomer) {
       return (
-        <Grid container spacing={2}>
-          <Grid item xs={12}>
-            <Paper sx={{ p: 2 }}>
-              <Typography variant="h6" gutterBottom>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="col-span-1">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-medium text-gray-800 mb-4">
                 Create New Customer
-              </Typography>
-              <TextField
-                fullWidth
-                label="Customer Name"
-                name="customerName"
-                value={editedCustomer.customerName || ''}
-                onChange={handleInputChange}
-                margin="normal"
-                required
-              />
+              </h2>
+              <div className="mb-4">
+                <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Business Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="customerName"
+                  name="customerName"
+                  value={(editedCustomer?.customerName || '')}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  required
+                />
+              </div>
               <TextField
                 fullWidth
                 label="First Name"
                 name="first_name"
-                value={editedCustomer.first_name || ''}
+                value={editedCustomer?.first_name || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -232,7 +274,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Last Name"
                 name="last_name"
-                value={editedCustomer.last_name || ''}
+                value={editedCustomer?.last_name || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -240,7 +282,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Email"
                 name="email"
-                value={editedCustomer.email || ''}
+                value={editedCustomer?.email || ''}
                 onChange={handleInputChange}
                 margin="normal"
                 required
@@ -249,7 +291,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Phone"
                 name="phone"
-                value={editedCustomer.phone || ''}
+                value={editedCustomer?.phone || ''}
                 onChange={handleInputChange}
                 margin="normal"
                 required
@@ -258,7 +300,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Street"
                 name="street"
-                value={editedCustomer.street || ''}
+                value={editedCustomer?.street || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -266,7 +308,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="City"
                 name="city"
-                value={editedCustomer.city || ''}
+                value={editedCustomer?.city || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -274,7 +316,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="State"
                 name="state"
-                value={editedCustomer.state || ''}
+                value={editedCustomer?.state || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -282,7 +324,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Postcode"
                 name="postcode"
-                value={editedCustomer.postcode || ''}
+                value={editedCustomer?.postcode || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
@@ -290,11 +332,11 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 fullWidth
                 label="Country"
                 name="country"
-                value={editedCustomer.country || ''}
+                value={editedCustomer?.country || ''}
                 onChange={handleInputChange}
                 margin="normal"
               />
-              <Box mt={2}>
+              <div className="mt-4">
                 <Button 
                   variant="contained" 
                   color="primary" 
@@ -303,78 +345,113 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                 >
                   {isLoading ? 'Creating...' : 'Create Customer'}
                 </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary" 
-                  onClick={onBackToList} 
-                  sx={{ ml: 2 }}
-                >
-                  Cancel
-                </Button>
-              </Box>
+              </div>
               {error && (
-                <Box mt={2}>
-                  <Typography color="error">{error}</Typography>
-                </Box>
+                <p className="text-red-600 mt-2">{error}</p>
               )}
-            </Paper>
-          </Grid>
-        </Grid>
+            </div>
+          </div>
+        </div>
       );
     }
 
     return (
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="col-span-1">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
               Basic Information
-            </Typography>
-            <TextField
-              fullWidth
-              label="Customer Name"
-              name="customerName"
-              value={isEditing ? editedCustomer.customerName || '' : customer.customerName || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="First Name"
-              name="first_name"
-              value={isEditing ? editedCustomer.first_name || '' : customer.first_name || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Last Name"
-              name="last_name"
-              value={isEditing ? editedCustomer.last_name || '' : customer.last_name || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Email"
-              name="email"
-              value={isEditing ? editedCustomer.email || '' : customer.email || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Phone"
-              name="phone"
-              value={isEditing ? editedCustomer.phone || '' : customer.phone || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
+            </h2>
+            <div className="mb-4">
+              <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-1">
+                Business Name
+              </label>
+              <input
+                type="text"
+                id="customerName"
+                name="customerName"
+                value={isEditing ? editedCustomer.customerName || '' : customer.customerName || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                value={isEditing ? editedCustomer.first_name || '' : customer.first_name || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                value={isEditing ? editedCustomer.last_name || '' : customer.last_name || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={isEditing ? editedCustomer.email || '' : customer.email || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={isEditing ? editedCustomer.phone || '' : customer.phone || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
             <TextField
               fullWidth
               label="Account Number"
@@ -407,155 +484,250 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
               margin="normal"
               InputProps={{ readOnly: !isEditing }}
             />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+          </div>
+        </div>
+        <div className="col-span-1">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
               Billing Address
-            </Typography>
-            <TextField
-              fullWidth
-              label="Street"
-              name="street"
-              value={isEditing ? editedCustomer.street || '' : customer.street || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="City"
-              name="city"
-              value={isEditing ? editedCustomer.city || '' : customer.city || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="State"
-              name="billingState"
-              value={isEditing ? editedCustomer.billingState || '' : customer.billingState || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Postcode"
-              name="postcode"
-              value={isEditing ? editedCustomer.postcode || '' : customer.postcode || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Country"
-              name="billingCountry"
-              value={
-                isEditing ? editedCustomer.billingCountry || '' : customer.billingCountry || ''
-              }
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+            </h2>
+            <div className="mb-4">
+              <label htmlFor="street" className="block text-sm font-medium text-gray-700 mb-1">
+                Street <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="street"
+                name="street"
+                value={isEditing ? editedCustomer.street || '' : customer.street || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                City <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="city"
+                name="city"
+                value={isEditing ? editedCustomer.city || '' : customer.city || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="billingState" className="block text-sm font-medium text-gray-700 mb-1">
+                State <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="billingState"
+                name="billingState"
+                value={isEditing ? editedCustomer.billingState || '' : customer.billingState || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="postcode" className="block text-sm font-medium text-gray-700 mb-1">
+                Postcode <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="postcode"
+                name="postcode"
+                value={isEditing ? editedCustomer.postcode || '' : customer.postcode || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="billingCountry" className="block text-sm font-medium text-gray-700 mb-1">
+                Country <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="billingCountry"
+                name="billingCountry"
+                value={
+                  isEditing ? editedCustomer.billingCountry || '' : customer.billingCountry || ''
+                }
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="col-span-1">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
               Shipping Information
-            </Typography>
-            <TextField
-              fullWidth
-              label="Ship To Name"
-              name="shipToName"
-              value={isEditing ? editedCustomer.shipToName || '' : customer.shipToName || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Shipping Country"
-              name="shippingCountry"
-              value={
-                isEditing ? editedCustomer.shippingCountry || '' : customer.shippingCountry || ''
-              }
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Shipping State"
-              name="shippingState"
-              value={isEditing ? editedCustomer.shippingState || '' : customer.shippingState || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Shipping Phone"
-              name="shippingPhone"
-              value={isEditing ? editedCustomer.shippingPhone || '' : customer.shippingPhone || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              InputProps={{ readOnly: !isEditing }}
-            />
-            <TextField
-              fullWidth
-              label="Delivery Instructions"
-              name="deliveryInstructions"
-              value={
-                isEditing
-                  ? editedCustomer.deliveryInstructions || ''
-                  : customer.deliveryInstructions || ''
-              }
-              onChange={handleInputChange}
-              margin="normal"
-              multiline
-              rows={3}
-              InputProps={{ readOnly: !isEditing }}
-            />
-          </Paper>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Paper sx={{ p: 2 }}>
-            <Typography variant="h6" gutterBottom>
+            </h2>
+            <div className="mb-4">
+              <label htmlFor="shipToName" className="block text-sm font-medium text-gray-700 mb-1">
+                Ship To Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="shipToName"
+                name="shipToName"
+                value={isEditing ? editedCustomer.shipToName || '' : customer.shipToName || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="shippingCountry" className="block text-sm font-medium text-gray-700 mb-1">
+                Shipping Country <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="shippingCountry"
+                name="shippingCountry"
+                value={
+                  isEditing ? editedCustomer.shippingCountry || '' : customer.shippingCountry || ''
+                }
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="shippingState" className="block text-sm font-medium text-gray-700 mb-1">
+                Shipping State <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="shippingState"
+                name="shippingState"
+                value={isEditing ? editedCustomer.shippingState || '' : customer.shippingState || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="shippingPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                Shipping Phone <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="tel"
+                id="shippingPhone"
+                name="shippingPhone"
+                value={isEditing ? editedCustomer.shippingPhone || '' : customer.shippingPhone || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                readOnly={!isEditing}
+              />
+            </div>
+            <div className="mb-4">
+              <label htmlFor="deliveryInstructions" className="block text-sm font-medium text-gray-700 mb-1">
+                Delivery Instructions
+              </label>
+              <textarea
+                id="deliveryInstructions"
+                name="deliveryInstructions"
+                value={
+                  isEditing
+                    ? editedCustomer.deliveryInstructions || ''
+                    : customer.deliveryInstructions || ''
+                }
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                rows="3"
+                readOnly={!isEditing}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="col-span-1">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h2 className="text-lg font-medium text-gray-800 mb-4">
               Additional Information
-            </Typography>
-            <TextField
-              fullWidth
-              label="Notes"
-              name="notes"
-              value={isEditing ? editedCustomer.notes || '' : customer.notes || ''}
-              onChange={handleInputChange}
-              margin="normal"
-              multiline
-              rows={4}
-              InputProps={{ readOnly: !isEditing }}
-            />
+            </h2>
+            <div className="mb-4">
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                value={isEditing ? editedCustomer.notes || '' : customer.notes || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
+                  !isEditing 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
+                }`}
+                rows="4"
+                readOnly={!isEditing}
+              />
+            </div>
             <TextField
               fullWidth
               label="Created At"
-              value={new Date(customer.created_at).toLocaleString()}
+              value={customer?.created_at ? new Date(customer.created_at).toLocaleString() : ''}
               margin="normal"
               InputProps={{ readOnly: true }}
             />
             <TextField
               fullWidth
               label="Updated At"
-              value={new Date(customer.updated_at).toLocaleString()}
+              value={customer?.updated_at ? new Date(customer.updated_at).toLocaleString() : ''}
               margin="normal"
               InputProps={{ readOnly: true }}
             />
-          </Paper>
-        </Grid>
-      </Grid>
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -736,94 +908,98 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
           Back to Customer List
         </button>
         <h1 className="text-2xl font-bold mb-4">
-          Customer Details
+          {newCustomer ? 'Create New Customer' : 'Customer Details'}
         </h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <div className="flex items-center mb-4">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-medium text-gray-800">
-                Basic Information
-              </h2>
-              {!isEditing && (
-                <button 
-                  onClick={handleEdit}
-                  className="ml-auto text-blue-600 hover:text-blue-800 focus:outline-none"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+        
+        {!newCustomer && customer && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow">
+              <div className="flex items-center mb-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mr-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                </button>
-              )}
-            </div>
-            <div className="space-y-2">
-              <p className="text-gray-700">
-                <span className="font-medium">Name:</span> {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Email:</span> {customer.email}
-              </p>
-              <p className="text-gray-700">
-                <span className="font-medium">Phone:</span> {customer.phone}
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Actions</h2>
-            <div className="flex space-x-3">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSaveEdit}
-                    className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    Save
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    className="flex items-center px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
+                </div>
+                <h2 className="text-lg font-medium text-gray-800">
+                  Basic Information
+                </h2>
+                {!isEditing && (
+                  <button 
                     onClick={handleEdit}
-                    className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    className="ml-auto text-blue-600 hover:text-blue-800 focus:outline-none"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Edit
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex items-center px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    Delete
-                  </button>
-                </>
-              )}
+                )}
+              </div>
+              <div className="space-y-2">
+                <p className="text-gray-700">
+                  <span className="font-medium">Business Name:</span> {customer?.customerName || `${customer?.first_name || ''} ${customer?.last_name || ''}`}
+                </p>
+                <p className="text-gray-700">
+                  <span className="font-medium">Email:</span> {customer?.email}
+                </p>
+                <p className="text-gray-700">
+                  <span className="font-medium">Phone:</span> {customer?.phone}
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h2 className="text-lg font-medium text-gray-800 mb-4">Actions</h2>
+              <div className="flex space-x-3">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={handleSaveEdit}
+                      className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="flex items-center px-4 py-2 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleEdit}
+                      className="flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className="flex items-center px-4 py-2 border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
+        )}
+        
+        {!newCustomer && (
+          <div className="border-b border-gray-200 mb-6">
             <nav className="flex -mb-px">
               <button 
                 onClick={(e) => handleTabChange(e, 0)} 
@@ -857,7 +1033,7 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
               </button>
             </nav>
           </div>
-        </div>
+        )}
         
         <div className="mt-4">
           {isLoading ? (
@@ -944,9 +1120,9 @@ const CustomerDetails = ({ customerId, onBackToList, onInvoiceSelect, newCustome
                       <p className="text-sm text-gray-500">
                         Are you sure you want to delete this customer?
                         <br />
-                        Name: {customer?.customerName || `${customer?.first_name} ${customer?.last_name}`}
+                        Business Name: {customer?.customerName || `${customer?.first_name || ''} ${customer?.last_name || ''}`}
                         <br />
-                        Email: {customer?.email}
+                        Email: {customer?.email || ''}
                       </p>
                     </div>
                   </div>

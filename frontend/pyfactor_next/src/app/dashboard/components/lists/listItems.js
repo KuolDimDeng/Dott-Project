@@ -129,6 +129,7 @@ const MainListItems = ({
   handleCRMClick,
   handleTransportClick,
   handleHRClick,
+  handleEmployeeManagementClick,
   handleShowCreateOptions,
   handleShowCreateMenu,
   handleDrawerClose,
@@ -268,6 +269,7 @@ const MainListItems = ({
       label: 'CRM',
       subItems: [
         { label: 'Dashboard', onClick: handleCRMClick, value: 'dashboard' },
+        { label: 'Customers', onClick: handleCRMClick, value: 'customers' },
         { label: 'Contacts', onClick: handleCRMClick, value: 'contacts' },
         { label: 'Leads', onClick: handleCRMClick, value: 'leads' },
         { label: 'Opportunities', onClick: handleCRMClick, value: 'opportunities' },
@@ -368,11 +370,24 @@ const MainListItems = ({
       label: 'HR',
       subItems: [
         { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard' },
-        { label: 'Employees', onClick: handleHRClick, value: 'employees' },
+        { 
+          label: 'Employees', 
+          onClick: (event) => {
+            console.log('[listItems] Employees menu item clicked');
+            // Debugging helper to see what's happening
+            if (typeof handleEmployeeManagementClick !== 'function') {
+              console.error('[listItems] handleEmployeeManagementClick is not a function', handleEmployeeManagementClick);
+            } else {
+              console.log('[listItems] Calling handleEmployeeManagementClick()');
+              handleEmployeeManagementClick();
+            }
+          }
+        },
         { label: 'Timesheets', onClick: handleHRClick, value: 'timesheets' },
         { label: 'Taxes', onClick: handleHRClick, value: 'taxes' },
         { label: 'Benefits', onClick: handleHRClick, value: 'benefits' },
         { label: 'Reports', onClick: handleHRClick, value: 'reports' },
+        { label: 'Performance', onClick: handleHRClick, value: 'performance' },
       ],
     },
     {

@@ -22,7 +22,7 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
   const [attributesChecked, setAttributesChecked] = useState(false);
   const [tenantId, setTenantId] = useState(propTenantId);
   
-  // Get tenant ID from URL parameters if not provided in props
+  // Get tenant ID from URL parameters or session, but don't modify the URL
   useEffect(() => {
     // If tenantId is already in props, use it
     if (propTenantId) {
@@ -30,13 +30,38 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
       return;
     }
     
-    // Otherwise check URL search params
-    const params = new URLSearchParams(window.location.search);
-    const urlTenantId = params.get('tenantId');
+    // Get tenant ID from cookie or session if available
+    // Don't modify URL or read from URL params
+    const getCachedTenantId = () => {
+      // Check cookie
+      const cookies = document.cookie.split(';');
+      let cookieTenantId = null;
+      
+      for (let cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'tenantId') {
+          cookieTenantId = value;
+          break;
+        }
+      }
+      
+      if (cookieTenantId) {
+        return cookieTenantId;
+      }
+      
+      // Check localStorage/sessionStorage if permitted
+      try {
+        return localStorage.getItem('tenantId') || sessionStorage.getItem('tenantId');
+      } catch (e) {
+        return null;
+      }
+    };
     
-    if (urlTenantId) {
-      console.log(`[DashboardWrapper] Found tenant ID in URL params: ${urlTenantId}`);
-      setTenantId(urlTenantId);
+    const cachedTenantId = getCachedTenantId();
+    
+    if (cachedTenantId) {
+      logger.info(`[DashboardWrapper] Using tenant ID from cache: ${cachedTenantId}`);
+      setTenantId(cachedTenantId);
     }
   }, [propTenantId]);
 
@@ -82,7 +107,9 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
           tenantId={tenantId} 
           newAccount={newAccount}
           plan={plan}
-        />
+        >
+          {children}
+        </Dashboard>
       </main>
     </div>
   );

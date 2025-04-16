@@ -157,66 +157,58 @@ export async function getTenantId() {
 }
 
 /**
- * Get the tenant ID from Cognito user attributes
- * 
- * @returns {Promise<string|null>} The tenant ID or null if not found
+ * Get tenant ID from Cognito attributes
+ * Handles various attribute names for backward compatibility
+ * @returns {Promise<string|null>} Tenant ID or null if not found
  */
 export async function getTenantIdFromCognito() {
+  // Check AppCache first for performance
+  if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
+    const cachedTenantId = window.__APP_CACHE.tenant.id;
+    logger.debug(`[TenantUtils] Using cached tenant ID: ${cachedTenantId}`);
+    return cachedTenantId;
+  }
+  
   try {
-    logger.debug('[TenantUtils] Getting tenant ID from Cognito');
+    // Import fetchUserAttributes dynamically to avoid SSR issues
+    const { fetchUserAttributes } = await import('aws-amplify/auth');
     
-    // Check if we're on a sign-in or authentication page to avoid unnecessary errors
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      const isAuthPage = path.includes('/auth/signin') || 
-                         path.includes('/auth/signup') || 
-                         path.includes('/auth/verify') ||
-                         path.includes('/auth/reset-password');
+    try {
+      // Get user attributes from Cognito
+      const attributes = await fetchUserAttributes();
       
-      if (isAuthPage) {
-        logger.debug('[TenantUtils] On auth page, skipping Cognito tenant fetch');
-        return null;
+      // Check different attribute names that could contain tenant ID
+      // custom:tenant_ID (uppercase) is the primary source of truth
+      const tenantId = attributes['custom:tenant_ID'] || 
+                      attributes['custom:tenant_id'] || 
+                      attributes['custom:businessid'] || 
+                      attributes['custom:tenantId'] ||
+                      attributes['custom:business_id'];
+      
+      if (tenantId) {
+        logger.debug(`[TenantUtils] Found tenant ID in Cognito: ${tenantId}`);
+        
+        // Store in AppCache for future use
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+          window.__APP_CACHE.tenant.id = tenantId;
+          window.__APP_CACHE.tenant.source = 'cognito';
+        }
+        
+        return tenantId;
       }
+      
+      logger.debug('[TenantUtils] No tenant ID found in Cognito attributes');
+      return null;
+    } catch (error) {
+      // Only log as debug since this is commonly called during initialization
+      // and may fail if user is not authenticated yet
+      logger.debug('[TenantUtils] Error getting user attributes from Cognito:', error);
+      return null;
     }
-    
-    // Fetch user attributes from Cognito
-    const userAttributes = await fetchUserAttributes();
-    
-    // Check multiple possible attribute names (for backward compatibility)
-    const tenantId = 
-      userAttributes[PREF_KEYS.TENANT_ID] || 
-      userAttributes['custom:tenant_id'] || 
-      userAttributes['custom:tenantId'] || 
-      userAttributes['custom:businessid'];
-    
-    if (tenantId) {
-      // Store in AppCache for better performance
-      setCacheValue(TENANT_ID_CACHE_KEY, tenantId, { ttl: TENANT_ID_TTL });
-      logger.debug('[TenantUtils] Got tenant ID from Cognito and cached it');
-      return tenantId;
-    }
-    
-    logger.debug('[TenantUtils] No tenant ID found in Cognito');
-    return null;
   } catch (error) {
-    // Suppress authentication errors on auth-related pages
-    if (typeof window !== 'undefined') {
-      const path = window.location.pathname;
-      const isAuthPage = path.includes('/auth/signin') || 
-                         path.includes('/auth/signup') || 
-                         path.includes('/auth/verify') ||
-                         path.includes('/auth/reset-password');
-      
-      if (isAuthPage && (
-          error.name === 'UserUnAuthenticatedException' || 
-          error.message?.includes('User needs to be authenticated')
-        )) {
-        logger.debug('[TenantUtils] User not authenticated on auth page (expected)');
-        return null;
-      }
-    }
-    
-    logger.error('[TenantUtils] Error getting tenant ID from Cognito:', error);
+    logger.debug('[TenantUtils] Error importing AWS Amplify:', error);
     return null;
   }
 }
@@ -256,58 +248,92 @@ export async function setTenantId(tenantId) {
  * @returns {Promise<boolean>} True if successful
  */
 export async function updateTenantIdInCognito(tenantId) {
-  try {
-    logger.debug(`[TenantUtils] Updating tenant ID in Cognito: ${tenantId}`);
-    
-    // First try the server API approach which can handle permissions correctly
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second delay between retries
+  
+  const attemptUpdate = async () => {
     try {
-      const response = await fetch('/api/tenant/attribute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId }),
+      logger.debug(`[TenantUtils] Updating tenant ID in Cognito: ${tenantId}`);
+      
+      if (!tenantId || !isValidUUID(tenantId)) {
+        logger.warn('[TenantUtils] Attempted to update with invalid tenant ID', { tenantId });
+        return false;
+      }
+      
+      // Use Amplify Auth API directly instead of potentially unreliable fetch
+      await updateUserAttributes({
+        userAttributes: {
+          'custom:tenant_id': tenantId,
+          'custom:tenant_ID': tenantId,
+          'custom:businessid': tenantId,
+          'custom:updated_at': new Date().toISOString()
+        }
       });
       
-      if (response.ok) {
-        logger.debug('[TenantUtils] Tenant ID updated via API');
-        // Update AppCache for immediate use in the current session
-        setCacheValue(TENANT_ID_CACHE_KEY, tenantId, { ttl: TENANT_ID_TTL });
-        return true;
-      } else {
-        logger.warn('[TenantUtils] API update failed, falling back to client-side approach');
+      logger.info('[TenantUtils] Successfully updated tenant ID in Cognito');
+      return true;
+    } catch (error) {
+      // Handle session errors with retry and token refresh attempt
+      if (error.name === 'NotAuthorizedException' || 
+          error.message?.includes('token') || 
+          error.name === 'UserUnAuthenticatedException') {
+        
+        logger.warn(`[TenantUtils] Auth error updating tenant ID (attempt ${retryCount + 1}/${MAX_RETRIES})`, { error: error.message });
+        
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          
+          // Try to refresh the session before retrying
+          try {
+            const { Auth } = await import('aws-amplify');
+            logger.debug('[TenantUtils] Refreshing session before retrying update');
+            await Auth.currentSession({ bypassCache: true });
+          } catch (refreshError) {
+            logger.warn('[TenantUtils] Error refreshing session', { error: refreshError.message });
+            // Continue with retry even if refresh fails
+          }
+          
+          // Add exponential backoff
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, retryCount - 1)));
+          
+          // Retry the update
+          return await attemptUpdate();
+        }
       }
-    } catch (apiError) {
-      logger.warn('[TenantUtils] API error, falling back to client-side approach:', apiError);
-    }
-    
-    // Fallback: Try user preferences utility which might have permission
-    try {
-      const successPref = await saveUserPreference(PREF_KEYS.TENANT_ID, tenantId);
-      if (successPref) {
-        logger.debug('[TenantUtils] Tenant ID updated via user preferences');
-        return true;
-      }
-    } catch (prefError) {
-      logger.warn('[TenantUtils] User preference update failed:', prefError);
-    }
-    
-    // Final fallback: Try direct Cognito update for backward compatibility
-    // Note: This might fail if the app client doesn't have write permissions
-    try {
-      const userAttributes = {
-        'custom:tenant_ID': tenantId,  // Use uppercase ID consistently
-      };
       
-      await updateUserAttributes({ userAttributes });
-      logger.debug('[TenantUtils] Tenant ID updated in Cognito via direct update');
-      return true;
-    } catch (cognitoError) {
-      // This is expected to fail in some environments where permissions aren't set
-      logger.warn('[TenantUtils] Direct Cognito update failed, store in AppCache only');
-      // Still cache the value for this session
-      setCacheValue(TENANT_ID_CACHE_KEY, tenantId, { ttl: TENANT_ID_TTL });
-      // Return true since we've cached the value which is the main goal
-      return true;
+      // Handle network errors with retry
+      if (error.name === 'NetworkError' || 
+          error instanceof DOMException ||
+          error.message?.includes('Network') ||
+          error.message?.includes('aborted')) {
+        
+        logger.warn(`[TenantUtils] Network error updating tenant ID (attempt ${retryCount + 1}/${MAX_RETRIES})`, { error: error.message });
+        
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          
+          // Add exponential backoff
+          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, retryCount - 1)));
+          
+          // Retry the update
+          return await attemptUpdate();
+        }
+      }
+      
+      // Log detailed error for debugging
+      logger.error('[TenantUtils] Failed to update tenant ID in Cognito after retries', {
+        error: error.message,
+        name: error.name,
+        code: error.code
+      });
+      
+      throw error;
     }
+  };
+  
+  try {
+    return await attemptUpdate();
   } catch (error) {
     logger.error('[TenantUtils] Error updating tenant ID in Cognito:', error);
     return false;

@@ -85,23 +85,23 @@ export const serviceApi = {
 // Specific API methods for customers
 export const customerApi = {
   async getAll(params = {}) {
-    return apiClient.get('/api/crm/customers', params);
+    return apiClient.get('/api/customers', params);
   },
   
   async getById(id, params = {}) {
-    return apiClient.get(`/api/crm/customers/${id}`, params);
+    return apiClient.get(`/api/customers/${id}`, params);
   },
   
   async create(data, params = {}) {
-    return apiClient.post('/api/crm/customers', data, params);
+    return apiClient.post('/api/customers', data, params);
   },
   
   async update(id, data, params = {}) {
-    return apiClient.put(`/api/crm/customers/${id}`, data, params);
+    return apiClient.put(`/api/customers/${id}`, data, params);
   },
   
   async delete(id, params = {}) {
-    return apiClient.delete(`/api/crm/customers/${id}`, params);
+    return apiClient.delete(`/api/customers/${id}`, params);
   }
 };
 

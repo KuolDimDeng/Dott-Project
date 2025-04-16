@@ -4,6 +4,9 @@
 import { logger } from './logger';
 // Remove static import of server components
 // import { cookies, headers } from 'next/headers';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { serverLogger } from '@/utils/logger';
 
 /**
  * Check if code is running on server side
@@ -145,4 +148,69 @@ export async function clearTokens() {
     logger.error('[TokenUtils] Error clearing tokens:', error);
     return false;
   }
+}
+
+// JWT Secret from environment or generate a random one
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex');
+
+/**
+ * Generate a verification token for a new employee
+ * 
+ * @param {object} payload - Data to include in the token
+ * @param {string} payload.email - Employee email
+ * @param {string} payload.userId - Cognito user ID
+ * @param {string} payload.tenantId - Tenant ID
+ * @param {number} expiresIn - Token expiration time in seconds (default: 7 days)
+ * @returns {string} Signed JWT token
+ */
+export function generateVerificationToken(payload, expiresIn = 7 * 24 * 60 * 60) {
+  if (!payload || !payload.email || !payload.userId) {
+    throw new Error('Missing required payload fields: email, userId');
+  }
+  
+  try {
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn });
+    return token;
+  } catch (error) {
+    serverLogger.error('Error generating verification token:', error);
+    throw new Error('Failed to generate verification token');
+  }
+}
+
+/**
+ * Verify and decode a token
+ * 
+ * @param {string} token - JWT token to verify
+ * @returns {object|null} Decoded token payload or null if invalid
+ */
+export function verifyToken(token) {
+  if (!token) {
+    return null;
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded;
+  } catch (error) {
+    serverLogger.error('Error verifying token:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate a verification URL for email confirmation
+ * 
+ * @param {string} token - Verification token
+ * @param {string} baseUrl - Base URL of the application
+ * @returns {string} Full verification URL
+ */
+export function generateVerificationUrl(token, baseUrl) {
+  if (!token) {
+    throw new Error('Token is required');
+  }
+  
+  const url = new URL('/auth/verify-employee', baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+  url.searchParams.set('token', token);
+  
+  return url.toString();
 } 

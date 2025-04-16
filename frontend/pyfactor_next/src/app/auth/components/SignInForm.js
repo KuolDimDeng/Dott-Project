@@ -7,6 +7,7 @@ import { signIn as amplifySignIn } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
 import { ensureUserCreatedAt } from '@/utils/authUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import ReactivationDialog from './ReactivationDialog';
 import { checkDisabledAccount } from '@/lib/account-reactivation';
 
@@ -18,34 +19,84 @@ if (typeof window !== 'undefined') {
 
 export default function SignInForm() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ username: '', password: '' });
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({ username: '', password: '', rememberMe: false });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [redirectAttempts, setRedirectAttempts] = useState(0);
   const [showReactivation, setShowReactivation] = useState(false);
   const [emailForReactivation, setEmailForReactivation] = useState('');
 
+  // Check for session expired parameter in URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionStatus = urlParams.get('session');
+      
+      if (sessionStatus === 'expired') {
+        // Check if we previously had a valid session using AppCache
+        const hadPreviousSession = getCacheValue('auth_had_session') === true;
+        
+        if (hadPreviousSession) {
+          setErrors({ general: 'Your session has expired. Please sign in again to continue.' });
+        }
+        
+        // Remove the parameter from URL without refreshing the page
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
+  }, []);
+
   // Clear errors when input changes
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    setError(null);
+    const { name, value, type, checked } = e.target;
+    const fieldValue = type === 'checkbox' ? checked : value;
+    
+    setFormData(prev => ({ ...prev, [name]: fieldValue }));
+    
+    // Clear errors for this field
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.username.trim()) {
+      newErrors.username = 'Email is required';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate form
+    if (!validateForm()) {
+      return;
+    }
+    
     // Clear previous states
-    setError(null);
+    setErrors({});
     setSuccessMessage(null);
-    setIsLoading(true);
-    setRedirectAttempts(0);
+    setIsSubmitting(true);
     
     try {
       logger.debug('[SignInForm] Starting sign-in process', { 
         username: formData.username,
-        hasPassword: !!formData.password
+        hasPassword: !!formData.password,
+        rememberMe: formData.rememberMe
       });
       
       // Development mode bypass for easier testing
@@ -69,6 +120,9 @@ export default function SignInForm() {
         nextStep: authResult.nextStep?.signInStep
       });
       
+      // Store auth session flag in AppCache
+      setCacheValue('auth_had_session', true);
+      
       // Ensure the user has custom:created_at set
       try {
         await ensureUserCreatedAt();
@@ -90,19 +144,9 @@ export default function SignInForm() {
             logger.debug('[SignInForm] User needs to confirm signup');
             setSuccessMessage('Please verify your email before signing in. Redirecting...');
             
-            // Store email for verification page
-            if (typeof window !== 'undefined') {
-              window.__APP_CACHE.auth.email = formData.username;
-              window.__APP_CACHE.auth.needsVerification = true;
-              
-              // Set these in sessionStorage as minimal fallback for cross-page data
-              try {
-                sessionStorage.setItem('pyfactor_email', formData.username);
-                sessionStorage.setItem('needs_verification', 'true');
-              } catch (e) {
-                // Ignore sessionStorage errors
-              }
-            }
+            // Store email for verification page using AppCache
+            setCacheValue('auth_email', formData.username);
+            setCacheValue('auth_needs_verification', true);
             
             // Redirect to verification page
             setTimeout(() => {
@@ -118,6 +162,9 @@ export default function SignInForm() {
               // Import needed only in handler to avoid SSR issues
               const { fetchUserAttributes, updateUserAttributes } = await import('@/config/amplifyUnified');
               const userAttributes = await fetchUserAttributes();
+              
+              // Store user attributes in AppCache for better performance
+              setCacheValue('user_attributes', userAttributes, { ttl: 3600000 }); // 1 hour cache
               
               // Log raw onboarding status value before conversion
               logger.info('[SignInForm] Raw onboarding status:', {
@@ -350,14 +397,14 @@ export default function SignInForm() {
               }
             } catch (redirectError) {
               logger.error('[SignInForm] Error during redirection:', redirectError);
-              setError('An error occurred after authentication. Please try refreshing the page.');
-              setIsLoading(false);
+              setErrors({ general: 'An error occurred after authentication. Please try refreshing the page.' });
+              setIsSubmitting(false);
             }
           } else {
             // Handle other authentication steps if needed
             logger.warn('[SignInForm] Unhandled authentication step:', authResult.nextStep?.signInStep);
-            setError('Authentication requires additional steps. Please contact support.');
-            setIsLoading(false);
+            setErrors({ general: 'Authentication requires additional steps. Please contact support.' });
+            setIsSubmitting(false);
           }
         } else {
           // No next step but signed in - unusual state
@@ -367,11 +414,49 @@ export default function SignInForm() {
       } else {
         // Not signed in
         logger.error('[SignInForm] Authentication failed:', authResult);
-        setError('Authentication failed. Please check your email and password.');
-        setIsLoading(false);
+        setErrors({ general: 'Authentication failed. Please check your email and password.' });
+        setIsSubmitting(false);
       }
     } catch (error) {
       console.error('[SignInForm] Error:', error);
+      
+      // Handle UserAlreadyAuthenticatedException - show message with sign out option
+      if (error.name === 'UserAlreadyAuthenticatedException') {
+        logger.info('[SignInForm] User is already authenticated, showing sign out option');
+        setErrors({ general: (
+          <div>
+            <p>Another user is already signed in.</p>
+            <button 
+              onClick={async () => {
+                try {
+                  setIsSubmitting(true);
+                  setErrors({});
+                  setSuccessMessage('Signing out previous user...');
+                  
+                  // Import signOut function from amplifyUnified
+                  const { signOut } = await import('@/config/amplifyUnified');
+                  
+                  // Sign out the current user
+                  await signOut({ global: true });
+                  
+                  logger.info('[SignInForm] Successfully signed out previous user');
+                  setSuccessMessage('Previous user signed out. You can now sign in with your account.');
+                  setIsSubmitting(false);
+                } catch (signOutError) {
+                  logger.error('[SignInForm] Error signing out previous user:', signOutError);
+                  setErrors({ general: 'Could not sign out the previous user. Please try again or clear your browser cookies.' });
+                  setIsSubmitting(false);
+                }
+              }}
+              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
+            >
+              Sign Out Current User
+            </button>
+          </div>
+        ) });
+        setIsSubmitting(false);
+        return;
+      }
       
       // Check for specific error that indicates disabled user
       if (error.name === 'UserNotConfirmedException' || 
@@ -395,7 +480,7 @@ export default function SignInForm() {
       
       // Handle other errors
       if (error.name === 'UserNotConfirmedException') {
-        setError('Your account email has not been verified. Please check your email for verification instructions.');
+        setErrors({ general: 'Your account email has not been verified. Please check your email for verification instructions.' });
         if (typeof window !== 'undefined') {
           window.__APP_CACHE.auth.email = formData.username;
           window.__APP_CACHE.auth.needsVerification = true;
@@ -409,18 +494,18 @@ export default function SignInForm() {
           }
         }
       } else if (error.name === 'NotAuthorizedException') {
-        setError('Incorrect username or password. Please try again.');
+        setErrors({ general: 'Incorrect username or password. Please try again.' });
       } else if (error.name === 'UserNotFoundException') {
-        setError('No account found with this email. Please check your email or sign up.');
+        setErrors({ general: 'No account found with this email. Please check your email or sign up.' });
       } else if (error.name === 'PasswordResetRequiredException') {
-        setError('Password reset required. Please use the "Forgot password" option.');
+        setErrors({ general: 'Password reset required. Please use the "Forgot password" option.' });
       } else if (error.name === 'TooManyRequestsException') {
-        setError('Too many login attempts. Please try again later.');
+        setErrors({ general: 'Too many login attempts. Please try again later.' });
       } else {
-        setError(`Login failed: ${error.message || 'Unknown error'}`);
+        setErrors({ general: `Login failed: ${error.message || 'Unknown error'}` });
       }
       
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -430,19 +515,25 @@ export default function SignInForm() {
   }, []);
 
   return (
-    <>
-      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-md w-full mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">Sign In</h2>
         
-        {error && (
+        {errors.general && (
           <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
-            {error}
-            {error.includes('verification') && (
-              <div className="mt-2">
-                <Link href={`/auth/verify-email?email=${encodeURIComponent(formData.username)}`} className="text-blue-600 underline">
-                  Go to verification page
-                </Link>
-              </div>
+            {typeof errors.general === 'string' ? (
+              <>
+                {errors.general}
+                {errors.general.includes('verification') && (
+                  <div className="mt-2">
+                    <Link href={`/auth/verify-email?email=${encodeURIComponent(formData.username)}`} className="text-blue-600 underline">
+                      Go to verification page
+                    </Link>
+                  </div>
+                )}
+              </>
+            ) : (
+              errors.general
             )}
           </div>
         )}
@@ -453,89 +544,97 @@ export default function SignInForm() {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-gray-700 font-medium mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-              autoComplete="email"
-            />
-          </div>
-          
-          <div className="mb-6">
-            <div className="flex justify-between items-center mb-1">
-              <label htmlFor="password" className="block text-gray-700 font-medium">
-                Password
-              </label>
-              <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
-                Forgot password?
-              </Link>
-            </div>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          
-          <button
-            type="submit"
-            className={`w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing In...' : 'Sign In'}
-          </button>
-        </form>
-        
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Account deactivated?{' '}
-            <button
-              type="button"
-              onClick={() => {
-                if (formData.username) {
-                  setEmailForReactivation(formData.username);
-                  setShowReactivation(true);
-                } else {
-                  alert('Please enter your email address first');
-                }
-              }}
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Reactivate it here
-            </button>
-          </p>
+        <div className="mb-4">
+          <label htmlFor="username" className="block text-gray-700 font-medium mb-1">
+            Email
+          </label>
+          <input
+            type="email"
+            id="username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.username ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            } rounded focus:outline-none`}
+            required
+            autoComplete="email"
+          />
+          {errors.username && (
+            <p className="mt-2 text-sm text-red-600 animate-fadeIn" role="alert">{errors.username}</p>
+          )}
         </div>
-      </div>
+        
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-1">
+            <label htmlFor="password" className="block text-gray-700 font-medium">
+              Password
+            </label>
+            <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
+              Forgot password?
+            </Link>
+          </div>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={`w-full px-3 py-2 border ${
+              errors.password ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            } rounded focus:outline-none`}
+            required
+            autoComplete="current-password"
+          />
+          {errors.password && (
+            <p className="mt-2 text-sm text-red-600 animate-fadeIn" role="alert">{errors.password}</p>
+          )}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              id="rememberMe"
+              name="rememberMe"
+              type="checkbox"
+              checked={formData.rememberMe}
+              onChange={handleChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition duration-150 ease-in-out"
+            />
+            <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+              Remember me
+            </label>
+          </div>
+        </div>
+        
+        <button
+          type="submit"
+          className={`w-full py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Signing In...' : 'Sign In'}
+        </button>
+      </form>
       
-      {/* Reactivation Dialog */}
-      {showReactivation && (
-        <ReactivationDialog
-          email={emailForReactivation}
-          onClose={() => setShowReactivation(false)}
-          onSuccess={() => {
-            setShowReactivation(false);
-            router.push('/dashboard');
-          }}
-          onError={(message) => {
-            setShowReactivation(false);
-            setError(message || 'Error reactivating account');
-          }}
-        />
-      )}
-    </>
+      <div className="text-center mt-4">
+        <p className="text-sm text-gray-600">
+          Account deactivated?{' '}
+          <button
+            type="button"
+            onClick={() => {
+              if (formData.username) {
+                setEmailForReactivation(formData.username);
+                setShowReactivation(true);
+              } else {
+                alert('Please enter your email address first');
+              }
+            }}
+            className="font-medium text-blue-600 hover:text-blue-500"
+          >
+            Reactivate it here
+          </button>
+        </p>
+      </div>
+    </div>
   );
 }
