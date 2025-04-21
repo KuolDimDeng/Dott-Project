@@ -91,7 +91,7 @@ export async function POST(request) {
     }
     
     // App URL for success/cancel redirects
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000';
     
     // Create Stripe checkout session
     const stripeSession = await stripe.checkout.sessions.create({

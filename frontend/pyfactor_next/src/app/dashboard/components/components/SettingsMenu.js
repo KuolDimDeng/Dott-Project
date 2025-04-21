@@ -42,6 +42,7 @@ const SettingsMenu = ({
 
   // Menu options array
   const options = [
+    'Settings',
     'Profile Settings',
     'Business Settings',
     'Accounting Settings',

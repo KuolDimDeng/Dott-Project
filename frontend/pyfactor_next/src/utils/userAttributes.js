@@ -1,5 +1,6 @@
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
+import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 export const ONBOARDING_STATES = {
   NOT_STARTED: 'not_started',
@@ -131,8 +132,8 @@ export async function setUserAttributes(attributes) {
       attributes: Object.keys(formattedAttributes)
     });
 
-    // Update user attributes using v6 API
-    await updateUserAttributes({
+    // Update user attributes using resilient implementation
+    await resilientUpdateUserAttributes({
       userAttributes: formattedAttributes
     });
 

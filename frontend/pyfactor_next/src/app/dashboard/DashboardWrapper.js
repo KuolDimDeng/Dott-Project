@@ -10,6 +10,10 @@ import { updateUserAttributes, fetchUserAttributes } from 'aws-amplify/auth';
 import { COGNITO_ATTRIBUTES } from '@/constants/onboarding';
 import { storeTenantId, isValidUUID } from '@/utils/tenantUtils';
 
+// Import HttpsConfig component
+import HttpsConfig from '@/components/HttpsConfig';
+import HttpsDebugger from '@/components/HttpsDebugger';
+
 /**
  * DashboardWrapper
  * 
@@ -22,6 +26,25 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
   const [attributesChecked, setAttributesChecked] = useState(false);
   const [tenantId, setTenantId] = useState(propTenantId);
   
+  // Add key state to force children unmount/remount when navigation happens
+  const [contentKey, setContentKey] = useState('initial');
+  const navigationCountRef = useRef(0);
+  
+  // Listen for navigation events to force remount of children when needed
+  useEffect(() => {
+    const handleRouteChange = () => {
+      navigationCountRef.current += 1;
+      setContentKey(`navigation-${navigationCountRef.current}`);
+    };
+    
+    // Listen for Next.js route changes
+    router.events?.on('routeChangeComplete', handleRouteChange);
+    
+    return () => {
+      router.events?.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [router]);
+
   // Get tenant ID from URL parameters or session, but don't modify the URL
   useEffect(() => {
     // If tenantId is already in props, use it
@@ -103,7 +126,9 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
 
       {/* Main content */}
       <main className="flex-1">
+        <HttpsDebugger />
         <Dashboard 
+          key={contentKey}
           tenantId={tenantId} 
           newAccount={newAccount}
           plan={plan}
@@ -111,6 +136,9 @@ export default function DashboardWrapper({ children, newAccount, plan, tenantId:
           {children}
         </Dashboard>
       </main>
+      
+      {/* HTTPS Configuration component - debug purposes only */}
+      <HttpsConfig />
     </div>
   );
 }

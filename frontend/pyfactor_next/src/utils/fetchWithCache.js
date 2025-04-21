@@ -1,6 +1,9 @@
-import { API } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
 import { logger } from './logger';
 import { getCache, setCache } from './cacheClient';
+
+// Create an API client
+const apiClient = generateClient();
 
 /**
  * Utility function for making API calls with caching support
@@ -41,17 +44,14 @@ export const fetchWithCache = async (endpoint, options = {}) => {
 
     logger.debug('[fetchWithCache] Making API request', { endpoint, method });
 
-    // Prepare request options
-    const requestOptions = {
+    // Make the API request
+    const response = await apiClient.get(endpoint, {
       headers: {
         'Content-Type': 'application/json',
         ...customHeaders,
       },
       body: body ? JSON.stringify(body) : undefined,
-    };
-
-    // Make the API request
-    const response = await API.fetch(endpoint, method, requestOptions);
+    });
 
     // Cache the response for GET requests
     if (method === 'GET') {

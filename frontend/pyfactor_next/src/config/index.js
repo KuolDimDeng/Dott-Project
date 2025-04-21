@@ -18,7 +18,7 @@ const deepFreeze = (obj) => {
 
 export const APP_CONFIG = {
   api: {
-    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://127.0.0.1:8000',
+    baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://127.0.0.1:8000',
     endpoints: {
       auth: {
         profile: '/api/profile/',
@@ -66,7 +66,7 @@ export const APP_CONFIG = {
     logo: '/static/images/Pyfactor.png',
     version: '1.0.0',
     env: process.env.NODE_ENV,
-    url: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+    url: process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000',
     plans: {
       validPlans: ['Basic', 'Professional'],
       validBillingCycles: ['monthly', 'annual'],

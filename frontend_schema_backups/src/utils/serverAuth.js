@@ -99,7 +99,7 @@ export async function getServerUser(request) {
       'custom:onboarding': payload['custom:onboarding'] || 'NOT_STARTED',
       'custom:businessName': payload['custom:businessName'] || '',
       'custom:businessType': payload['custom:businessType'] || '',
-      'custom:tenant_id': payload['custom:tenant_id'] || '',
+      'custom:tenant_ID': payload['custom:tenant_ID'] || '',
     };
     
     return user;

@@ -273,7 +273,7 @@ export function useAuth() {
         'custom:subscriptioninterval': 'monthly',
         'custom:subscriptionstatus': 'active',
         'custom:verified': 'true',
-        'custom:tenant_id': userData.tenantId,
+        'custom:tenant_ID': userData.tenantId,
         'custom:setup': 'true',
         'custom:account_status': 'ACTIVE',
       };

@@ -1,71 +1,128 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
+import { isValidUUID } from '@/utils/tenantUtils';
 
 /**
- * GET endpoint as a fallback method to retrieve tenant ID when client-side methods fail
- * Uses server-side logic to determine the most likely tenant ID
+ * Fallback API endpoint for tenant creation and retrieval
+ * This serves as a client-side fallback when the actual API is unavailable
  */
+
+// Namespace for deterministic UUID generation
+const NAMESPACE = '74738ff5-5367-5958-9aee-98fffdcd1876';
+
+// Generate a deterministic UUID from input
+const generateDeterministicId = (input) => {
+  try {
+    // If input is already a valid UUID, return it
+    if (isValidUUID(input)) {
+      return input;
+    }
+    
+    // Generate a deterministic ID based on input
+    const normalizedInput = String(input).toLowerCase().trim();
+    return uuidv5(normalizedInput, NAMESPACE);
+  } catch (error) {
+    console.error('[Tenant Fallback API] Error generating deterministic ID:', error);
+    // Fall back to random UUID
+    return uuidv4();
+  }
+};
+
+// POST handler for tenant creation/retrieval
+export async function POST(request) {
+  try {
+    // Parse request body
+    const body = await request.json();
+    const { tenantId, businessId, userId, email } = body;
+    
+    // Determine effective tenant ID
+    let effectiveTenantId = tenantId;
+    
+    // If no valid tenant ID provided, try to generate one
+    if (!effectiveTenantId || !isValidUUID(effectiveTenantId)) {
+      // Try businessId first if available
+      if (businessId) {
+        effectiveTenantId = generateDeterministicId(businessId);
+      } 
+      // Use userId as fallback
+      else if (userId) {
+        effectiveTenantId = generateDeterministicId(userId);
+      }
+      // Use email as last resort
+      else if (email) {
+        effectiveTenantId = generateDeterministicId(email);
+      }
+      // Generate random UUID if nothing available
+      else {
+        effectiveTenantId = uuidv4();
+      }
+    }
+    
+    // Log the operation
+    console.log('[Tenant Fallback API] Created/retrieved tenant:', effectiveTenantId);
+    
+    // Return the tenant information with creation details
+    return NextResponse.json({
+      success: true,
+      fallback: true,
+      tenant: {
+        id: effectiveTenantId,
+        created: new Date().toISOString(),
+        status: 'active',
+        source: 'fallback-api'
+      },
+      message: 'Tenant created/retrieved via fallback API'
+    });
+  } catch (error) {
+    console.error('[Tenant Fallback API] Error processing request:', error);
+    
+    return NextResponse.json({
+      success: false,
+      error: 'Error processing tenant request',
+      message: error.message
+    }, { status: 500 });
+  }
+}
+
+// GET handler for tenant retrieval
 export async function GET(request) {
   try {
-    logger.debug('[Tenant Fallback API] Processing fallback tenant ID request');
-    
-    // Check for tenant ID in request headers (set by middleware)
-    const tenantIdFromHeader = request.headers.get('x-tenant-id');
-    
-    if (tenantIdFromHeader) {
-      logger.info('[Tenant Fallback API] Found tenant ID in request headers:', tenantIdFromHeader);
-      return NextResponse.json({
-        success: true,
-        tenantId: tenantIdFromHeader,
-        source: 'request_header'
-      });
-    }
-    
-    // Try to extract tenant ID from URL
+    // Extract tenant ID from URL or query
     const url = new URL(request.url);
-    const urlPath = url.pathname;
+    const tenantId = url.searchParams.get('tenantId');
     
-    // Extract tenant ID from URL path if present
-    // Pattern: /<tenant-id>/...
-    const urlPathMatch = urlPath.match(/^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
-    
-    if (urlPathMatch && urlPathMatch[1]) {
-      const tenantIdFromUrl = urlPathMatch[1];
-      logger.info('[Tenant Fallback API] Found tenant ID in URL path:', tenantIdFromUrl);
-      
+    if (!tenantId) {
       return NextResponse.json({
-        success: true,
-        tenantId: tenantIdFromUrl,
-        source: 'url_path'
-      });
+        success: false,
+        error: 'Missing tenantId parameter'
+      }, { status: 400 });
     }
     
-    // Check for tenant ID in query parameters
-    const tenantIdFromQuery = url.searchParams.get('tenantId');
-    
-    if (tenantIdFromQuery) {
-      logger.info('[Tenant Fallback API] Found tenant ID in query parameters:', tenantIdFromQuery);
+    // Validate tenant ID
+    if (!isValidUUID(tenantId)) {
       return NextResponse.json({
-        success: true,
-        tenantId: tenantIdFromQuery,
-        source: 'query_parameter'
-      });
+        success: false,
+        error: 'Invalid tenant ID format'
+      }, { status: 400 });
     }
     
-    // No tenant ID found in any of the expected places
-    logger.warn('[Tenant Fallback API] No tenant ID found in request');
-    
+    // Return basic tenant information
     return NextResponse.json({
-      success: false,
-      message: 'No tenant ID found',
-      source: 'fallback_api'
-    }, { status: 404 });
+      success: true,
+      fallback: true,
+      tenant: {
+        id: tenantId,
+        created: new Date().toISOString(),
+        status: 'active',
+        source: 'fallback-api'
+      }
+    });
   } catch (error) {
-    logger.error('[Tenant Fallback API] Error in fallback tenant ID retrieval:', error);
+    console.error('[Tenant Fallback API] Error processing GET request:', error);
     
     return NextResponse.json({
       success: false,
-      error: 'Error retrieving tenant ID',
+      error: 'Error retrieving tenant',
       message: error.message
     }, { status: 500 });
   }

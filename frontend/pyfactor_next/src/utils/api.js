@@ -1,18 +1,54 @@
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
-import tokenRefreshService from '@/utils/tokenRefresh';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Gets authentication headers from Cognito
+ * @returns {Promise<Object>} Object containing auth headers
+ */
 async function getAuthHeaders() {
   try {
-    const { tokens } = await fetchAuthSession();
-    if (!tokens?.idToken) {
-      throw new Error('No valid session');
+    // Try to get session from Cognito first
+    let idToken = null;
+    let accessToken = null;
+    
+    try {
+      const session = await fetchAuthSession();
+      if (session?.tokens?.idToken) {
+        idToken = session.tokens.idToken.toString();
+        accessToken = session.tokens.accessToken.toString();
+        
+        // Update AppCache with fresh tokens
+        if (typeof window !== 'undefined') {
+          setCacheValue('idToken', idToken);
+          setCacheValue('accessToken', accessToken);
+          setCacheValue('tokenTimestamp', Date.now().toString());
+        }
+      }
+    } catch (cognitoError) {
+      logger.warn('[API] Failed to get auth session from Cognito:', cognitoError);
+      // Fall back to AppCache if Cognito fails
+    }
+    
+    // If Cognito failed, try to get tokens from AppCache
+    if (!idToken && typeof window !== 'undefined') {
+      idToken = getCacheValue('idToken');
+      accessToken = getCacheValue('accessToken');
+      
+      if (idToken) {
+        logger.debug('[API] Using cached auth tokens');
+      }
+    }
+    
+    // If we still don't have a token, authentication has failed
+    if (!idToken) {
+      throw new Error('No valid ID token in session or cache');
     }
 
     return {
-      'Authorization': `Bearer ${tokens.idToken}`,
+      'Authorization': `Bearer ${idToken}`,
       'Content-Type': 'application/json'
     };
   } catch (error) {
@@ -21,85 +57,97 @@ async function getAuthHeaders() {
   }
 }
 
-export async function apiRequest(endpoint, options = {}) {
+/**
+ * Enhanced fetch function that automatically includes Cognito auth tokens
+ * @param {string} url - The URL to fetch
+ * @param {Object} options - Fetch options
+ * @returns {Promise<Response>} Fetch response
+ */
+export async function fetchWithAuth(url, options = {}) {
   try {
-    const headers = await getAuthHeaders();
+    // Get authentication headers from Cognito or AppCache
+    const authHeaders = await getAuthHeaders();
     
-    // Use fetchWithTokenRefresh to handle token refreshing
-    const response = await tokenRefreshService.fetchWithTokenRefresh(`${API_BASE_URL}${endpoint}`, {
+    // Merge provided headers with auth headers
+    const headers = {
+      ...authHeaders,
+      ...(options.headers || {})
+    };
+
+    // Execute the fetch with auth headers
+    const response = await fetch(url, {
       ...options,
-      headers: {
-        ...headers,
-        ...options.headers
-      },
-      credentials: 'include'
+      headers,
+      // Important: DO NOT include credentials option to avoid cookies
     });
 
-    // Handle 401 Unauthorized
+    // Handle 401 errors by throwing a specific error
     if (response.status === 401) {
-      throw new Error('Unauthorized');
+      const error = new Error('Authentication failed');
+      error.status = 401;
+      throw error;
     }
 
-    // Handle 403 Forbidden
-    if (response.status === 403) {
-      throw new Error('Forbidden');
-    }
-
-    // Handle other non-200 responses
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || `Request failed with status ${response.status}`);
-    }
-
-    return response.json();
+    return response;
   } catch (error) {
-    logger.error('[API] Request failed:', {
-      endpoint,
-      error: error.message
-    });
+    logger.error('[API] Fetch error:', { url, error: error.message });
     throw error;
   }
 }
 
-export const api = {
-  get: async (endpoint, options = {}) => {
-    return apiRequest(endpoint, {
-      ...options,
-      method: 'GET'
-    });
-  },
+/**
+ * GET request with authentication
+ * @param {string} url - API endpoint URL
+ * @returns {Promise<any>} Response data
+ */
+export async function get(url) {
+  const response = await fetchWithAuth(url);
+  return response.json();
+}
 
-  post: async (endpoint, data, options = {}) => {
-    return apiRequest(endpoint, {
-      ...options,
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
+/**
+ * POST request with authentication
+ * @param {string} url - API endpoint URL
+ * @param {Object} data - Data to send
+ * @returns {Promise<any>} Response data
+ */
+export async function post(url, data) {
+  const response = await fetchWithAuth(url, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return response.json();
+}
 
-  put: async (endpoint, data, options = {}) => {
-    return apiRequest(endpoint, {
-      ...options,
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  },
+/**
+ * PUT request with authentication
+ * @param {string} url - API endpoint URL
+ * @param {Object} data - Data to send
+ * @returns {Promise<any>} Response data
+ */
+export async function put(url, data) {
+  const response = await fetchWithAuth(url, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+  return response.json();
+}
 
-  patch: async (endpoint, data, options = {}) => {
-    return apiRequest(endpoint, {
-      ...options,
-      method: 'PATCH',
-      body: JSON.stringify(data)
-    });
-  },
+/**
+ * DELETE request with authentication
+ * @param {string} url - API endpoint URL
+ * @returns {Promise<any>} Response data
+ */
+export async function del(url) {
+  const response = await fetchWithAuth(url, {
+    method: 'DELETE',
+  });
+  return response.json();
+}
 
-  delete: async (endpoint, options = {}) => {
-    return apiRequest(endpoint, {
-      ...options,
-      method: 'DELETE'
-    });
-  }
-};
+// Export as a namespace for ease of use
+const api = { get, post, put, delete: del };
+export default api;
 
 // Retry mechanism for API requests
 export async function retryRequest(fn, retries = 3, delay = 1000) {

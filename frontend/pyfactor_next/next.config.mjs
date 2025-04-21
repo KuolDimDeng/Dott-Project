@@ -82,7 +82,7 @@ const nextConfig = {
       // All other API routes redirect to backend
       {
         source: '/api/:path*',
-        destination: 'http://127.0.0.1:8000/api/:path*'
+        destination: 'https://127.0.0.1:8000/api/:path*'
       }
     ];
   }

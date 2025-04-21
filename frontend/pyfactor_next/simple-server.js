@@ -23,7 +23,7 @@ async function startServer() {
     // Start listening on port 3000
     server.listen(3000, (err) => {
       if (err) throw err;
-      console.log('> Ready on http://localhost:3000');
+      console.log('> Ready on https://localhost:3000');
     });
   } catch (error) {
     console.error('Error starting server:', error);

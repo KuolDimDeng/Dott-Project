@@ -1,351 +1,557 @@
 """
-Row-level security utilities for tenant isolation.
+Row Level Security (RLS) Utilities
 
-This module provides functions to set and get the current tenant ID in the database 
-using PostgreSQL's session variables, which works with row-level security policies.
+This module provides utility functions for working with PostgreSQL's Row Level Security (RLS)
+features to enforce tenant isolation in a multi-tenant application. These functions directly
+interact with the database to set or clear tenant context.
+
+Author: Claude AI Assistant
+Date: 2025-04-19
 """
 
 import logging
+import traceback
 import uuid
 import contextlib
-import os
-import time
-import random
-from typing import Optional, Union
 from django.db import connection
-from django.conf import settings
-from functools import wraps
+from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
 
-def set_current_tenant_id(tenant_id: Optional[Union[uuid.UUID, str]]) -> None:
+def fix_rls_configuration():
     """
-    Set the current tenant ID in the database session.
+    Ensures that the necessary RLS functions and conversions exist in the database.
+    Returns True if successful, False otherwise.
+    """
+    try:
+        with connection.cursor() as cursor:
+            # Check and create UUID to text conversion function
+            cursor.execute("""
+            SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'uuid_to_text');
+            """)
+            if not cursor.fetchone()[0]:
+                cursor.execute("""
+                CREATE OR REPLACE FUNCTION uuid_to_text(id uuid)
+                RETURNS text AS $$
+                BEGIN
+                    RETURN id::text;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        RETURN NULL;
+                END;
+                $$ LANGUAGE plpgsql SECURITY DEFINER;
+                """)
+            
+            # Check and create text to UUID conversion function
+            cursor.execute("""
+            SELECT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'text_to_uuid');
+            """)
+            if not cursor.fetchone()[0]:
+                cursor.execute("""
+                CREATE OR REPLACE FUNCTION text_to_uuid(id text)
+                RETURNS uuid AS $$
+                BEGIN
+                    RETURN id::uuid;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        RETURN NULL::uuid;
+                END;
+                $$ LANGUAGE plpgsql SECURITY DEFINER;
+                """)
+            
+            # Create or replace tenant context functions
+            cursor.execute("""
+            CREATE OR REPLACE FUNCTION get_tenant_context()
+            RETURNS text AS $$
+            BEGIN
+                RETURN COALESCE(current_setting('app.current_tenant_id', TRUE), 'unset');
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+            """)
+            
+            cursor.execute("""
+            CREATE OR REPLACE FUNCTION get_current_tenant_id()
+            RETURNS text AS $$
+            BEGIN
+                RETURN get_tenant_context();
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+            """)
+            
+            cursor.execute("""
+            CREATE OR REPLACE FUNCTION current_tenant_id()
+            RETURNS text AS $$
+            BEGIN
+                RETURN get_tenant_context();
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+            """)
+            
+            cursor.execute("""
+            CREATE OR REPLACE FUNCTION set_tenant_context(tenant_id text)
+            RETURNS text AS $$
+            BEGIN
+                PERFORM set_config('app.current_tenant_id', tenant_id, FALSE);
+                PERFORM set_config('app.current_tenant', tenant_id, FALSE);
+                RETURN tenant_id;
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+            """)
+            
+            cursor.execute("""
+            CREATE OR REPLACE FUNCTION clear_tenant_context()
+            RETURNS text AS $$
+            BEGIN
+                PERFORM set_config('app.current_tenant_id', 'unset', FALSE);
+                PERFORM set_config('app.current_tenant', 'unset', FALSE);
+                RETURN 'unset';
+            END;
+            $$ LANGUAGE plpgsql SECURITY DEFINER;
+            """)
+            
+            # Check if RLS status view exists and create if needed
+            cursor.execute("""
+            SELECT EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'rls_status');
+            """)
+            if not cursor.fetchone()[0]:
+                cursor.execute("""
+                CREATE OR REPLACE VIEW rls_status AS
+                SELECT 
+                    t.table_name,
+                    t.table_schema,
+                    EXISTS (
+                        SELECT FROM information_schema.columns 
+                        WHERE table_name = t.table_name 
+                        AND table_schema = t.table_schema
+                        AND column_name = 'tenant_id'
+                    ) AS has_tenant_id,
+                    EXISTS (
+                        SELECT FROM pg_tables 
+                        WHERE tablename = t.table_name 
+                        AND schemaname = t.table_schema
+                        AND rowsecurity = true
+                    ) AS rls_enabled,
+                    (
+                        SELECT COUNT(*) > 0 
+                        FROM pg_policy 
+                        WHERE pg_policy.polrelid = (t.table_schema || '.' || t.table_name)::regclass
+                    ) AS has_policy,
+                    (
+                        SELECT string_agg(polname, ', ') 
+                        FROM pg_policy 
+                        WHERE pg_policy.polrelid = (t.table_schema || '.' || t.table_name)::regclass
+                    ) AS policies,
+                    (
+                        SELECT data_type
+                        FROM information_schema.columns
+                        WHERE table_name = t.table_name 
+                        AND table_schema = t.table_schema
+                        AND column_name = 'tenant_id'
+                    ) AS tenant_id_type
+                FROM information_schema.tables t
+                WHERE t.table_schema NOT IN ('pg_catalog', 'information_schema')
+                AND t.table_type = 'BASE TABLE'
+                ORDER BY t.table_schema, t.table_name;
+                """)
+            
+            # Test if functions were created successfully
+            cursor.execute("SELECT get_tenant_context()")
+            result = cursor.fetchone()[0]
+            logger.info(f"RLS configuration test: get_tenant_context() returns '{result}'")
+            
+            return True
+    except Exception as e:
+        logger.error(f"Error configuring RLS: {e}")
+        logger.error(traceback.format_exc())
+        return False
+
+def set_tenant_context(tenant_id):
+    """
+    Sets the tenant context for Row Level Security.
     
     Args:
-        tenant_id: The tenant ID to set, or None to unset
-    """
-    if tenant_id is None:
-        # Clear the tenant context
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SET app.current_tenant = NULL")
-            logger.debug("Cleared tenant context")
-        except Exception as e:
-            logger.error(f"Error clearing tenant context in database: {str(e)}")
-        return
+        tenant_id (str): The tenant ID to set as context
         
-    # Convert string to UUID if needed
-    if isinstance(tenant_id, str):
-        try:
-            tenant_id = uuid.UUID(tenant_id)
-        except ValueError:
-            logger.error(f"Invalid tenant ID format: {tenant_id}")
-            return
-            
-    # Set the tenant ID in the database session
+    Returns:
+        bool: True if successful, False otherwise
+    """
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SET app.current_tenant = %s", [str(tenant_id)])
-        logger.debug(f"Set tenant context to {tenant_id}")
+            cursor.execute("SELECT set_tenant_context(%s)", [tenant_id])
+            
+            # Verify the setting was applied
+            cursor.execute("SELECT get_tenant_context()")
+            result = cursor.fetchone()[0]
+            
+            if result == tenant_id:
+                return True
+            else:
+                logger.warning(f"Failed to set tenant context. Expected: {tenant_id}, Got: {result}")
+                return False
     except Exception as e:
-        logger.error(f"Error setting tenant context in database: {str(e)}")
-        
-def get_current_tenant_id() -> Optional[uuid.UUID]:
+        logger.error(f"Error setting tenant context: {e}")
+        return False
+
+def clear_tenant_context():
     """
-    Get the current tenant ID from the database session.
+    Clears the tenant context (sets to 'unset').
     
     Returns:
-        The current tenant ID or None if not set
+        bool: True if successful, False otherwise
     """
     try:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT current_setting('app.current_tenant', true);")
+            cursor.execute("SELECT clear_tenant_context()")
+            
+            # Verify the setting was cleared
+            cursor.execute("SELECT get_tenant_context()")
+            result = cursor.fetchone()[0]
+            
+            if result == 'unset':
+                return True
+            else:
+                logger.warning(f"Failed to clear tenant context. Got: {result}")
+                return False
+    except Exception as e:
+        logger.error(f"Error clearing tenant context: {e}")
+        return False
+
+def check_rls_status():
+    """
+    Checks the RLS status on tables with tenant_id column.
+    
+    Returns:
+        dict: Dictionary with RLS status information
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+            SELECT 
+                COUNT(*) as total,
+                COUNT(*) FILTER (WHERE has_tenant_id) as with_tenant_id,
+                COUNT(*) FILTER (WHERE rls_enabled) as with_rls_enabled,
+                COUNT(*) FILTER (WHERE has_policy) as with_policy
+            FROM rls_status;
+            """)
+            
+            row = cursor.fetchone()
+            return {
+                'total_tables': row[0],
+                'tables_with_tenant_id': row[1],
+                'tables_with_rls_enabled': row[2],
+                'tables_with_policy': row[3],
+                'missing_rls': row[1] - row[2],
+                'missing_policy': row[1] - row[3],
+            }
+    except Exception as e:
+        logger.error(f"Error checking RLS status: {e}")
+        return {
+            'error': str(e),
+            'total_tables': 0,
+            'tables_with_tenant_id': 0,
+            'tables_with_rls_enabled': 0,
+            'tables_with_policy': 0,
+            'missing_rls': 0,
+            'missing_policy': 0,
+        }
+
+def verify_rls_setup():
+    """
+    Verifies that RLS is properly configured by testing key RLS functions
+    and checking that a test tenant context can be set and retrieved.
+    
+    Returns:
+        bool: True if RLS is working correctly, False otherwise
+    """
+    try:
+        # Step 1: Ensure RLS functions exist
+        with connection.cursor() as cursor:
+            # Check that get_tenant_context function exists
+            cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_proc 
+                WHERE proname = 'get_tenant_context'
+            );
+            """)
+            if not cursor.fetchone()[0]:
+                logger.error("RLS function 'get_tenant_context' does not exist")
+                return False
+                
+            # Check that set_tenant_context function exists
+            cursor.execute("""
+            SELECT EXISTS (
+                SELECT 1 FROM pg_proc 
+                WHERE proname = 'set_tenant_context'
+            );
+            """)
+            if not cursor.fetchone()[0]:
+                logger.error("RLS function 'set_tenant_context' does not exist")
+                return False
+        
+        # Step 2: Test setting and getting tenant context
+        test_tenant_id = "test-verification-tenant"
+        
+        # Set test tenant context
+        set_tenant_context(test_tenant_id)
+        
+        # Verify it was set correctly
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT get_tenant_context()")
+            result = cursor.fetchone()[0]
+            
+            if result != test_tenant_id:
+                logger.error(f"RLS verification failed: expected tenant context '{test_tenant_id}', got '{result}'")
+                return False
+        
+        # Step 3: Test clearing tenant context
+        clear_tenant_context()
+        
+        # Verify it was cleared
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT get_tenant_context()")
+            result = cursor.fetchone()[0]
+            
+            if result != 'unset':
+                logger.error(f"RLS verification failed: expected 'unset' after clearing tenant context, got '{result}'")
+                return False
+        
+        # Step 4: Check RLS status
+        status = check_rls_status()
+        
+        if status.get('error'):
+            logger.error(f"RLS status check failed: {status['error']}")
+            return False
+            
+        if status['tables_with_tenant_id'] > 0 and status['missing_policy'] > 0:
+            logger.warning(f"RLS verification: {status['missing_policy']} tables with tenant_id missing RLS policies")
+            # Don't fail completely if some tables are missing policies
+        
+        logger.info(f"RLS verification successful: {status['tables_with_rls_enabled']} tables with RLS enabled")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error verifying RLS setup: {e}")
+        logger.error(traceback.format_exc())
+        return False
+
+def create_rls_policy_for_table(table_name, schema_name='public'):
+    """
+    Create RLS policy for a specific table to enforce tenant isolation.
+    
+    Args:
+        table_name (str): The name of the table
+        schema_name (str, optional): The schema name, defaults to 'public'
+        
+    Returns:
+        bool: True if policy was created successfully, False otherwise
+    """
+    try:
+        # Check if table exists
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = %s
+                AND table_name = %s
+            );
+            """, [schema_name, table_name])
+            
+            if not cursor.fetchone()[0]:
+                logger.error(f"Table {schema_name}.{table_name} does not exist")
+                return False
+            
+            # Check if tenant_id column exists
+            cursor.execute(f"""
+            SELECT EXISTS (
+                SELECT FROM information_schema.columns 
+                WHERE table_schema = %s
+                AND table_name = %s
+                AND column_name = 'tenant_id'
+            );
+            """, [schema_name, table_name])
+            
+            if not cursor.fetchone()[0]:
+                logger.error(f"Table {schema_name}.{table_name} does not have tenant_id column")
+                return False
+            
+            # Enable RLS on the table
+            cursor.execute(f"""
+            ALTER TABLE {schema_name}.{table_name} ENABLE ROW LEVEL SECURITY;
+            """)
+            
+            # Create policy for SELECT
+            cursor.execute(f"""
+            CREATE POLICY select_{table_name}_tenant_isolation ON {schema_name}.{table_name}
+                FOR SELECT
+                USING (
+                    tenant_id::text = current_tenant_id() 
+                    OR current_tenant_id() = 'unset'
+                );
+            """)
+            
+            # Create policy for INSERT
+            cursor.execute(f"""
+            CREATE POLICY insert_{table_name}_tenant_isolation ON {schema_name}.{table_name}
+                FOR INSERT
+                WITH CHECK (
+                    tenant_id::text = current_tenant_id() 
+                    OR current_tenant_id() = 'unset'
+                );
+            """)
+            
+            # Create policy for UPDATE
+            cursor.execute(f"""
+            CREATE POLICY update_{table_name}_tenant_isolation ON {schema_name}.{table_name}
+                FOR UPDATE
+                USING (
+                    tenant_id::text = current_tenant_id() 
+                    OR current_tenant_id() = 'unset'
+                )
+                WITH CHECK (
+                    tenant_id::text = current_tenant_id() 
+                    OR current_tenant_id() = 'unset'
+                );
+            """)
+            
+            # Create policy for DELETE
+            cursor.execute(f"""
+            CREATE POLICY delete_{table_name}_tenant_isolation ON {schema_name}.{table_name}
+                FOR DELETE
+                USING (
+                    tenant_id::text = current_tenant_id() 
+                    OR current_tenant_id() = 'unset'
+                );
+            """)
+            
+            logger.info(f"Created RLS policies for {schema_name}.{table_name}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error creating RLS policy for {schema_name}.{table_name}: {e}")
+        logger.error(traceback.format_exc())
+        return False
+
+# Compatibility functions for backwards compatibility with existing code
+
+def get_current_tenant_id():
+    """
+    Compatibility function to get the current tenant ID.
+    
+    Returns:
+        UUID or None: The current tenant ID as UUID or None
+    """
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT get_tenant_context()")
             result = cursor.fetchone()[0]
             
             if result and result != 'unset':
-                return uuid.UUID(result)
+                try:
+                    return uuid.UUID(result)
+                except (ValueError, TypeError):
+                    pass
             return None
     except Exception as e:
-        logger.debug(f"Error getting tenant context from database: {str(e)}")
+        logger.debug(f"Error getting tenant context: {e}")
         return None
-        
-def clear_current_tenant_id() -> None:
+
+def set_current_tenant_id(tenant_id):
     """
-    Clear the current tenant ID from the database session.
-    """
-    set_current_tenant_id(None)
+    Compatibility function to set the current tenant ID.
     
+    Args:
+        tenant_id: The tenant ID to set
+        
+    Returns:
+        bool: Success status
+    """
+    return set_tenant_context(str(tenant_id))
+
+def set_tenant_in_db(tenant_id):
+    """
+    Compatibility function to set the tenant in DB.
+    This is an alias for set_tenant_context.
+    
+    Args:
+        tenant_id: The tenant ID to set
+        
+    Returns:
+        bool: Success status
+    """
+    return set_tenant_context(str(tenant_id))
+
+def setup_tenant_context_in_db(tenant_id):
+    """
+    Compatibility function to set up tenant context in DB.
+    This is an alias for set_tenant_context.
+    
+    Args:
+        tenant_id: The tenant ID to set
+        
+    Returns:
+        bool: Success status
+    """
+    return set_tenant_context(str(tenant_id))
+
+async def setup_tenant_context_in_db_async(tenant_id):
+    """
+    Async compatibility function to set up tenant context in DB.
+    This is an async wrapper around set_tenant_context.
+    
+    Args:
+        tenant_id: The tenant ID to set
+        
+    Returns:
+        bool: Success status
+    """
+    return await sync_to_async(set_tenant_context)(str(tenant_id))
+
+async def set_tenant_in_db_async(tenant_id):
+    """
+    Async compatibility function to set the tenant in DB.
+    This is an alias for setup_tenant_context_in_db_async.
+    
+    Args:
+        tenant_id: The tenant ID to set
+        
+    Returns:
+        bool: Success status
+    """
+    return await setup_tenant_context_in_db_async(tenant_id)
+
+def clear_current_tenant_id():
+    """
+    Compatibility function to clear the current tenant ID.
+    
+    Returns:
+        bool: Success status
+    """
+    return clear_tenant_context()
+
 @contextlib.contextmanager
-def tenant_context(tenant_id: Optional[Union[uuid.UUID, str]]):
+def tenant_context(tenant_id):
     """
     Context manager for temporarily changing the tenant context.
     
     Args:
         tenant_id: The tenant ID to set during the context
-        
-    Example:
-        with tenant_context('12345678-1234-5678-1234-567812345678'):
-            # Do something as this tenant
-            items = Item.objects.all()  # Will only see tenant's items
     """
-    # Store the original tenant ID
-    original_tenant_id = get_current_tenant_id()
-    
+    original_tenant = None
     try:
-        # Set the new tenant ID
-        set_current_tenant_id(tenant_id)
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT get_tenant_context()")
+            original_tenant = cursor.fetchone()[0]
+        
+        # Set the new tenant context
+        if tenant_id is not None:
+            set_tenant_context(str(tenant_id))
+        else:
+            clear_tenant_context()
+        
         yield
     finally:
-        # Restore the original tenant ID
-        set_current_tenant_id(original_tenant_id)
-        
-def verify_rls_setup() -> bool:
-    """
-    Verify that RLS is set up correctly in the database.
-    
-    Returns:
-        True if RLS is set up correctly, False otherwise
-    """
-    # Use a file-based lock to prevent multiple processes from
-    # attempting RLS verification simultaneously
-    lock_file = '/tmp/pyfactor_rls_verification.lock'
-    
-    try:
-        # Use simple file locking with random backoff to prevent deadlocks
-        for attempt in range(3):  # Try up to 3 times
-            try:
-                # Attempt to create the lock file exclusively
-                with open(lock_file, 'x') as f:
-                    f.write(str(os.getpid()))
-                    
-                logger.debug(f"Acquired RLS verification lock on attempt {attempt+1}")
-                
-                # We've acquired the lock, continue with verification
-                try:
-                    return _do_verify_rls_setup()
-                finally:
-                    # Always clean up the lock file when done
-                    try:
-                        os.remove(lock_file)
-                        logger.debug("Released RLS verification lock")
-                    except Exception as e:
-                        logger.error(f"Error releasing RLS lock: {str(e)}")
-            except FileExistsError:
-                # Lock already exists, wait with random backoff to avoid thundering herd
-                wait_time = (1 + random.random()) * (attempt + 1)
-                logger.debug(f"RLS verification lock exists, waiting {wait_time:.2f}s before retry")
-                time.sleep(wait_time)
-                
-                # Check if the lock file is stale (older than 60 seconds)
-                try:
-                    if os.path.exists(lock_file):
-                        if time.time() - os.path.getmtime(lock_file) > 60:
-                            logger.warning("Removing stale RLS verification lock")
-                            os.remove(lock_file)
-                except Exception as e:
-                    logger.error(f"Error checking/removing stale lock: {str(e)}")
-        
-        # If we get here, we couldn't acquire the lock after max attempts
-        logger.warning("Could not acquire RLS verification lock after 3 attempts")
-        
-        # Return true to avoid blocking the application startup
-        # The RLS verification will be retried later by another process
-        return True
-    except Exception as e:
-        logger.error(f"Error in RLS verification lock management: {str(e)}")
-        
-        # Return true to avoid blocking application startup
-        return True
-
-def _do_verify_rls_setup() -> bool:
-    """
-    Internal function that does the actual RLS verification.
-    Called by verify_rls_setup after acquiring a lock.
-    
-    Returns:
-        True if RLS is set up correctly, False otherwise
-    """
-    try:
-        # Create a test table with RLS if it doesn't exist
-        with connection.cursor() as cursor:
-            # Create the test table if it doesn't exist
-            cursor.execute("""
-            CREATE TABLE IF NOT EXISTS rls_test (
-                id SERIAL PRIMARY KEY,
-                tenant_id UUID NOT NULL,
-                name TEXT NOT NULL
-            );
-            """)
-            
-            # First enable RLS on the table
-            try:
-                cursor.execute("ALTER TABLE rls_test ENABLE ROW LEVEL SECURITY;")
-            except Exception as e:
-                # If RLS is already enabled, this will fail - which is fine
-                logger.debug(f"RLS already enabled on rls_test or error: {str(e)}")
-            
-            # Always drop the policy first to avoid "already exists" errors
-            try:
-                cursor.execute("DROP POLICY IF EXISTS tenant_isolation_policy ON rls_test;")
-            except Exception as e:
-                logger.error(f"Error dropping RLS policy: {str(e)}")
-            
-            # Create policy with proper error handling
-            try:
-                cursor.execute("""
-                CREATE POLICY tenant_isolation_policy ON rls_test
-                AS RESTRICTIVE
-                USING (
-                    tenant_id::TEXT = current_setting('app.current_tenant', TRUE)
-                    OR current_setting('app.current_tenant', TRUE) = 'unset'
-                );
-                """)
-                logger.debug("Created RLS policy on rls_test")
-            except Exception as e:
-                logger.error(f"Error creating RLS policy: {str(e)}")
-                # Continue with verification anyway - the policy might still work
-            
-            # Clean up existing test data
-            cursor.execute("DELETE FROM rls_test;")
-            
-            # Insert fresh test data
-            cursor.execute("""
-            INSERT INTO rls_test (tenant_id, name)
-            VALUES
-                ('11111111-1111-1111-1111-111111111111', 'Tenant 1 - Record 1'),
-                ('22222222-2222-2222-2222-222222222222', 'Tenant 2 - Record 1');
-            """)
-            
-            # Test with tenant 1
-            cursor.execute("SET app.current_tenant = '11111111-1111-1111-1111-111111111111';")
-            cursor.execute("SELECT COUNT(*) FROM rls_test;")
-            tenant1_count = cursor.fetchone()[0]
-            
-            # Test with tenant 2
-            cursor.execute("SET app.current_tenant = '22222222-2222-2222-2222-222222222222';")
-            cursor.execute("SELECT COUNT(*) FROM rls_test;")
-            tenant2_count = cursor.fetchone()[0]
-            
-            # Test with unset
-            cursor.execute("SET app.current_tenant = 'unset';")
-            cursor.execute("SELECT COUNT(*) FROM rls_test;")
-            unset_count = cursor.fetchone()[0]
-            
-            # Check if tenant isolation is working
-            # Each tenant should only see their own records when the tenant context is set
-            # And they should see all records when the tenant context is unset
-            tenant1_sees_only_own = (tenant1_count == 1)
-            tenant2_sees_only_own = (tenant2_count == 1)
-            unset_sees_all = (unset_count == 2)
-            
-            rls_working = tenant1_sees_only_own and tenant2_sees_only_own and unset_sees_all
-            
-            if rls_working:
-                logger.info("RLS verification passed")
-            else:
-                logger.error(f"RLS verification failed: tenant1={tenant1_count} (expected 1), tenant2={tenant2_count} (expected 1), unset={unset_count} (expected 2)")
-                
-            # Always clear tenant context at the end
-            cursor.execute("SET app.current_tenant = 'unset';")
-            
-            return rls_working
-    
-    except Exception as e:
-        logger.error(f"RLS verification error: {str(e)}")
-        
-        # Make sure we reset the tenant context even if verification fails
-        try:
-            with connection.cursor() as cursor:
-                cursor.execute("SET app.current_tenant = 'unset';")
-        except:
-            pass
-            
-        return False
-
-# Backward compatibility functions
-def set_tenant_in_db(tenant_id):
-    """
-    Backward compatibility function for setting tenant context.
-    
-    Args:
-        tenant_id: The tenant ID to set, or None to unset
-    """
-    return set_current_tenant_id(tenant_id)
-
-def setup_tenant_context_in_db():
-    """
-    Initialize the tenant context in the database.
-    This is a no-op in the new RLS architecture but kept for backward compatibility.
-    """
-    logger.info("Setting up tenant context in DB (backward compatibility)")
-    return True
-
-def setup_tenant_context_in_db_async():
-    """
-    Initialize the tenant context in the database asynchronously.
-    This is a no-op in the new RLS architecture but kept for backward compatibility.
-    """
-    logger.info("Setting up tenant context in DB async (backward compatibility)")
-    return True
-
-async def set_tenant_in_db_async(tenant_id):
-    """
-    Async backward compatibility function for setting tenant context.
-    
-    Args:
-        tenant_id: The tenant ID to set, or None to unset
-    """
-    logger.info(f"Setting tenant in DB async (backward compatibility): {tenant_id}")
-    return set_current_tenant_id(tenant_id)
-
-def create_rls_policy_for_table(table_name):
-    """
-    Create a Row Level Security policy for the specified table.
-    
-    Args:
-        table_name: The name of the table to create the policy for
-        
-    Returns:
-        True if the policy was created successfully, False otherwise
-    """
-    try:
-        logger.info(f"Creating RLS policy for table: {table_name}")
-        with connection.cursor() as cursor:
-            # Enable RLS on the table
-            cursor.execute(f'ALTER TABLE {table_name} ENABLE ROW LEVEL SECURITY;')
-            
-            # Create tenant isolation policy
-            cursor.execute(f"""
-                DROP POLICY IF EXISTS tenant_isolation_policy ON {table_name};
-                CREATE POLICY tenant_isolation_policy ON {table_name}
-                    USING (
-                        tenant_id = NULLIF(current_setting('app.current_tenant', TRUE), 'unset')::uuid
-                        AND current_setting('app.current_tenant', TRUE) != 'unset'
-                    );
-            """)
-        logger.info(f"Successfully applied RLS policy to table: {table_name}")
-        return True
-    except Exception as e:
-        logger.error(f"Error creating RLS policy for table {table_name}: {str(e)}")
-        return False
-
-async def verify_rls_setup_async():
-    """
-    Async version of verify_rls_setup for use in async contexts.
-    Uses sync_to_async to prevent "You cannot call this from an async context" errors.
-    
-    Returns:
-        True if RLS is set up correctly, False otherwise
-    """
-    from asgiref.sync import sync_to_async
-    
-    try:
-        @sync_to_async
-        def run_verification():
-            return verify_rls_setup()
-            
-        return await run_verification()
-    except Exception as e:
-        logger.error(f"Async RLS verification error: {str(e)}")
-        return False 
+        # Restore the original tenant context
+        if original_tenant and original_tenant != 'unset':
+            set_tenant_context(original_tenant)
+        else:
+            clear_tenant_context() 

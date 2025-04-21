@@ -29,7 +29,13 @@ export default function TenantInitializer({ tenantId }) {
         setTenantId(tenantId);
         
         // Store tenant info in local storage
-        storeTenantInfo(tenantId);
+        storeTenantInfo({ 
+          tenantId: tenantId,
+          metadata: {
+            source: 'TenantInitializer',
+            timestamp: new Date().toISOString()
+          }
+        });
         
         // Update Cognito custom attributes directly
         try {

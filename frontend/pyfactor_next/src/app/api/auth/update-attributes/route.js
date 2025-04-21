@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { resilientUpdateUserAttributes } from '@/utils/amplifyResiliency';
 
 /**
  * API route to update Cognito user attributes
@@ -42,17 +43,14 @@ export async function POST(request) {
     });
     
     try {
-      // Dynamically import Amplify auth
-      const { updateUserAttributes } = await import('aws-amplify/auth');
-      
       // Add timestamp for tracking
       const userAttributes = {
         ...attributes,
         'custom:updated_at': new Date().toISOString()
       };
       
-      // Update user attributes in Cognito
-      await updateUserAttributes({ userAttributes });
+      // Update user attributes using resilient implementation
+      await resilientUpdateUserAttributes({ userAttributes });
       
       logger.info('[API] Successfully updated Cognito attributes:', {
         attributes: Object.keys(userAttributes)

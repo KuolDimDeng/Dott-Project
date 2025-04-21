@@ -87,7 +87,7 @@ export default function DashboardPage() {
                 },
                 body: JSON.stringify({
                   tempTenantId: tempTenantId,
-                  businessName: userAttributes['custom:businessname'] || 'My Business',
+                  businessName: userAttributes['custom:businessname'] || '',
                   businessType: userAttributes['custom:businesstype'] || 'Other'
                 }),
               });

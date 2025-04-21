@@ -40,7 +40,7 @@ Replace the placeholder values with your actual Stripe API keys.
    ```
 3. Start forwarding events to your local webhook endpoint:
    ```
-   stripe listen --forward-to http://localhost:3000/api/payments/webhook
+   stripe listen --forward-to https://localhost:3000/api/payments/webhook
    ```
 4. The CLI will output a webhook signing secret. Copy this value to your `.env.local` file:
    ```

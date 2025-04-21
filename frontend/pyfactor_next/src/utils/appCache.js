@@ -5,7 +5,7 @@
  * instead of cookies and localStorage for data persistence.
  */
 
-import { Auth } from 'aws-amplify';
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 
 // Initialize app cache if in browser environment
 if (typeof window !== 'undefined') {

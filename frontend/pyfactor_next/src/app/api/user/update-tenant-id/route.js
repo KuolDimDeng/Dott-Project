@@ -80,7 +80,7 @@ export async function POST(request) {
     try {
       // Also update onboarding status if this is from onboarding
       const attributes = {
-        'custom:tenant_id': tenantId,
+        'custom:tenant_ID': tenantId,
         'custom:businessid': tenantId,
         'custom:updated_at': new Date().toISOString()
       };

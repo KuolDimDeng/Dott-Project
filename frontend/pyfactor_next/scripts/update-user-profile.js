@@ -85,7 +85,7 @@ async function updateUserProfile() {
     req.on('error', (error) => {
       console.error('❌ Request error:', error.message);
       if (error.code === 'ECONNREFUSED') {
-        console.log("Make sure your Next.js application is running on http://localhost:3000");
+        console.log("Make sure your Next.js application is running on https://localhost:3000");
       }
       rl.close();
     });

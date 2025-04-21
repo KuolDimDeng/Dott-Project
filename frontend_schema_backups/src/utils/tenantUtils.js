@@ -42,7 +42,7 @@ export function getTenantFromToken(token) {
     const decoded = jwtDecode(token);
     
     // Check various possible locations for tenant ID
-    return decoded['custom:tenant_id'] || 
+    return decoded['custom:tenant_ID'] || 
            decoded['custom:tenantId'] || 
            decoded['custom:businessid'] || 
            decoded.tenantId || 

@@ -8,6 +8,7 @@ import { logger } from '@/utils/logger';
 import { forceRedirect, storeRedirectDebugInfo, safeParseJson } from '@/utils/redirectUtils';
 import ErrorBoundary from '@/components/ErrorBoundary/ErrorBoundary';
 import { setCacheValue } from '@/utils/appCache';
+import { retryLoadScript } from '@/utils/networkMonitor';
 
 const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   // Use either open or isOpen prop for backward compatibility
@@ -22,8 +23,9 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [isRedirectingToStripe, setIsRedirectingToStripe] = useState(false);
   const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   
-  // Load Stripe script when component mounts
+  // Load Stripe script when component mounts using our enhanced script loader
   useEffect(() => {
     // Skip if already loaded
     if (window.Stripe || document.getElementById('stripe-js')) {
@@ -31,36 +33,44 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       return;
     }
     
-    const script = document.createElement('script');
-    script.id = 'stripe-js';
-    script.src = 'https://js.stripe.com/v3/';
-    script.async = true;
+    // Use the enhanced retry script loader
+    const stripeUrl = 'https://js.stripe.com/v3/';
     
-    script.onload = () => {
-      logger.debug('Stripe script loaded successfully');
-      setStripeLoaded(true);
-    };
-    
-    script.onerror = () => {
-      logger.error('Failed to load Stripe script');
-      // Try again after a brief delay
-      setTimeout(() => {
-        if (!window.Stripe) {
-          document.body.removeChild(script);
-          document.body.appendChild(script);
+    const loadStripe = async () => {
+      try {
+        // Set loading state
+        setLoadAttempts(prev => prev + 1);
+        
+        // Log the attempt
+        logger.info(`[SubscriptionPopup] Loading Stripe script (attempt ${loadAttempts + 1})`);
+        
+        // Use our enhanced utility with retry logic
+        await retryLoadScript(stripeUrl, {
+          maxRetries: 5,
+          baseDelay: 1000,
+          maxDelay: 3000
+        });
+        
+        logger.debug('[SubscriptionPopup] Stripe script loaded successfully');
+        setStripeLoaded(true);
+      } catch (error) {
+        logger.error('[SubscriptionPopup] Failed to load Stripe script after multiple attempts:', error);
+        
+        // Only retry manually if we're under a reasonable threshold
+        if (loadAttempts < 3) {
+          logger.info(`[SubscriptionPopup] Will attempt to load Stripe again in 2 seconds`);
+          setTimeout(loadStripe, 2000);
+        } else {
+          // Give up and show error to user
+          notifyError('Failed to load payment system. Please refresh the page and try again.');
         }
-      }, 1000);
-    };
-    
-    document.body.appendChild(script);
-    
-    return () => {
-      // Cleanup only if component unmounts during loading
-      if (document.body.contains(script) && !window.Stripe) {
-        document.body.removeChild(script);
       }
     };
-  }, []);
+    
+    // Start loading
+    loadStripe();
+    
+  }, [loadAttempts, notifyError]);
   
   // Reset selected plan when popup opens
   useEffect(() => {
@@ -69,8 +79,13 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       setSelectedPlan((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
       setIsSubmitting(false);
       setIsRedirectingToStripe(false);
+      
+      // Ensure Stripe is loaded when the popup is opened
+      if (!stripeLoaded && !window.Stripe && loadAttempts === 0) {
+        setLoadAttempts(prev => prev + 1); // This will trigger the useEffect to load Stripe
+      }
     }
-  }, [showPopup, userData]);
+  }, [showPopup, userData, stripeLoaded, loadAttempts]);
   
   // Get plan color using the utility function
   const getPlanColor = (planId) => {
@@ -158,10 +173,25 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
     try {
       // Wait for Stripe to be loaded if necessary
       if (!window.Stripe) {
+        logger.info('[SubscriptionPopup] Stripe not loaded yet, waiting...');
+        
         let attempts = 0;
         while (!window.Stripe && attempts < 50) {
           await new Promise(resolve => setTimeout(resolve, 100));
           attempts++;
+          
+          // Every 10 attempts, try to reload the script
+          if (attempts % 10 === 0 && !window.Stripe) {
+            logger.warn(`[SubscriptionPopup] Stripe still not loaded after ${attempts} checks, attempting to reload`);
+            try {
+              await retryLoadScript('https://js.stripe.com/v3/', {
+                maxRetries: 3,
+                baseDelay: 500
+              });
+            } catch (reloadError) {
+              logger.error('[SubscriptionPopup] Failed to reload Stripe script:', reloadError);
+            }
+          }
         }
         
         if (!window.Stripe) {
@@ -173,7 +203,18 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       const stripePublicKey = process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || 'pk_test_51ODoxjC4RUQfzaQvAwu25BEEGxbIWy1S2aFBnpUwPDj11NB5HrxgR1aOLJW5UCEsXfShcbxnjv6fzXmRQO8tFHnK00wTFhG7Rx';
       
       logger.debug('Initializing Stripe with key:', stripePublicKey);
-      const stripe = window.Stripe(stripePublicKey);
+      
+      // Initialize Stripe with cookie options to fix partitioned cookie warnings
+      const stripe = window.Stripe(stripePublicKey, {
+        betas: ['partitioned_cookies_beta_1'],
+        cookieOptions: {
+          secure: true,
+          sameSite: 'none',
+          partitioned: true
+        }
+      });
+      
+      logger.debug('[SubscriptionPopup] Initialized Stripe with partitioned cookie support');
       
       // Store debug information for redirection
       storeRedirectDebugInfo({
@@ -218,6 +259,24 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       }
     } catch (error) {
       logger.error('Error redirecting to Stripe:', error);
+      
+      // Add fallback mechanism when Stripe can't be loaded
+      if (!window.Stripe) {
+        logger.warn('[SubscriptionPopup] Using emergency redirect to Stripe since Stripe.js failed to load');
+        try {
+          // Store session ID in local storage for recovery
+          localStorage.setItem('stripe_pending_session', sessionId);
+          localStorage.setItem('stripe_redirect_time', Date.now());
+          
+          // Direct redirect to Stripe checkout URL
+          const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionId}`;
+          window.location.href = checkoutUrl;
+          return;
+        } catch (emergencyError) {
+          logger.error('[SubscriptionPopup] Emergency redirect failed:', emergencyError);
+        }
+      }
+      
       throw error;
     }
   };

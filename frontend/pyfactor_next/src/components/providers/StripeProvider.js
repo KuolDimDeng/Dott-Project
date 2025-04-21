@@ -17,7 +17,17 @@ export const getStripe = () => {
       throw new Error('Missing Stripe publishable key');
     }
     
-    stripePromise = loadStripe(publishableKey);
+    // Initialize Stripe with cookie options to fix partitioned cookie warnings
+    stripePromise = loadStripe(publishableKey, {
+      betas: ['partitioned_cookies_beta_1'],
+      cookieOptions: {
+        secure: true,
+        sameSite: 'none',
+        partitioned: true
+      }
+    });
+    
+    logger.debug('[StripeProvider] Initialized Stripe with partitioned cookie support');
   }
   
   return stripePromise;

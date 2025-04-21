@@ -14,7 +14,7 @@ export async function GET(request) {
     const userAttributes = await fetchUserAttributes();
     
     // Check for tenant ID in the attributes
-    const tenantId = userAttributes['custom:tenant_id'] || 
+    const tenantId = userAttributes['custom:tenant_ID'] || 
                     userAttributes['custom:businessid'] || 
                     userAttributes['custom:tenantId'] || 
                     null;
@@ -73,7 +73,7 @@ export async function POST(request) {
     // Update the tenant ID in Cognito attributes
     await updateUserAttributes({
       userAttributes: {
-        'custom:tenant_id': tenantId,
+        'custom:tenant_ID': tenantId,
         'custom:businessid': tenantId, // For backward compatibility
         'custom:updated_at': new Date().toISOString()
       }

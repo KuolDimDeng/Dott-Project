@@ -48,20 +48,34 @@ class Command(BaseCommand):
         # Set up database first
         self.stdout.write("Setting up RLS in database...")
         
-        # Create app.current_tenant_id parameter if it doesn't exist
+        # Create app.current_tenant parameter if it doesn't exist
         with connection.cursor() as cursor:
             if dry_run:
                 self.stdout.write(self.style.SQL_KEYWORD(
-                    "-- SQL to create app.current_tenant_id parameter (would be executed if not dry run)"
+                    "-- SQL to create app parameters (would be executed if not dry run)"
                 ))
                 self.stdout.write('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
-                self.stdout.write('ALTER DATABASE current_database() SET "app.current_tenant_id" = \'unset\';')
+                self.stdout.write('CREATE OR REPLACE FUNCTION set_config_with_empty(param text, value text) RETURNS text AS $$')
+                self.stdout.write('BEGIN')
+                self.stdout.write('    RETURN set_config(param, COALESCE(value, \'\'), false);')
+                self.stdout.write('END;')
+                self.stdout.write('$$ LANGUAGE plpgsql;')
+                self.stdout.write('ALTER DATABASE current_database() SET "app.current_tenant" = \'\';')
             else:
                 # Create UUID extension if it doesn't exist
                 cursor.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
                 
+                # Create function to handle NULL values when setting config
+                cursor.execute('''
+                CREATE OR REPLACE FUNCTION set_config_with_empty(param text, value text) RETURNS text AS $$
+                BEGIN
+                    RETURN set_config(param, COALESCE(value, ''), false);
+                END;
+                $$ LANGUAGE plpgsql;
+                ''')
+                
                 # Set up database parameter for tenant context
-                cursor.execute('ALTER DATABASE current_database() SET "app.current_tenant_id" = \'unset\';')
+                cursor.execute('ALTER DATABASE current_database() SET "app.current_tenant" = \'\';')
                 
                 self.stdout.write(self.style.SUCCESS("✓ Database parameters configured"))
         
@@ -179,7 +193,7 @@ class Command(BaseCommand):
                 if cursor.fetchone()[0]:
                     return False
             
-            # Create policy SQL
+            # Create policy SQL - updated to handle empty strings
             sql_commands = [
                 f"ALTER TABLE {schema}.{table_name} ENABLE ROW LEVEL SECURITY;",
                 f"DROP POLICY IF EXISTS tenant_isolation_policy ON {schema}.{table_name};",
@@ -187,8 +201,8 @@ class Command(BaseCommand):
                 CREATE POLICY tenant_isolation_policy ON {schema}.{table_name}
                 AS RESTRICTIVE
                 USING (
-                    (tenant_id::TEXT = NULLIF(current_setting('app.current_tenant_id', TRUE), 'unset'))
-                    OR current_setting('app.current_tenant_id', TRUE) = 'unset'
+                    (tenant_id::TEXT = current_setting('app.current_tenant', TRUE))
+                    OR current_setting('app.current_tenant', TRUE) = ''
                 );
                 """
             ]

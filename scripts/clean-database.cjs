@@ -124,26 +124,57 @@ rl.question(`\n${RED}Type "RESET DATABASE" to confirm this operation: ${RESET}`,
       }
     }
     
-    // STEP 6: Set up RLS policy functions and triggers
-    console.log('Setting up RLS policy functions...');
+    // STEP 6: Set up RLS tenant context parameter
+    console.log('Setting up tenant context parameter...');
+    try {
+      // Create database parameter for tenant isolation - use empty string instead of 'unset'
+      await client.query(`ALTER DATABASE ${dbConfig.database} SET app.current_tenant = '';`);
+    } catch (error) {
+      console.error(`Error setting database parameter: ${error.message}`);
+    }
     
-    // Create the RLS policy function
+    // STEP 7: Create proper RLS functions
+    console.log('Creating RLS tenant context functions...');
     await client.query(`
-      CREATE OR REPLACE FUNCTION public.tenant_isolation_policy(tenant_id text)
-      RETURNS boolean AS $$
+      -- Create function to set tenant context
+      CREATE OR REPLACE FUNCTION set_tenant_context(tenant_id TEXT)
+      RETURNS VOID AS $$
       BEGIN
-        -- If no tenant ID is set, block access
-        IF current_setting('app.current_tenant_id', TRUE) IS NULL THEN
-          RETURN FALSE;
-        END IF;
-        
-        -- Check if the requested tenant matches the current tenant
-        RETURN tenant_id = current_setting('app.current_tenant_id', TRUE);
+        -- Use SET for session level parameter
+        EXECUTE 'SET app.current_tenant = ' || quote_literal(COALESCE(tenant_id, ''));
+      END;
+      $$ LANGUAGE plpgsql;
+      
+      -- Create function to get tenant context with proper typing
+      CREATE OR REPLACE FUNCTION get_tenant_context()
+      RETURNS TEXT AS $$
+      DECLARE
+        tenant_value TEXT;
+      BEGIN
+        -- Try to get parameter value with fallback to empty string
+        BEGIN
+          EXECUTE 'SELECT current_setting(''app.current_tenant'', true)' INTO tenant_value;
+          RETURN COALESCE(tenant_value, '');
+        EXCEPTION WHEN OTHERS THEN
+          -- Auto-initialize parameter if it doesn't exist
+          PERFORM set_tenant_context('');
+          RETURN '';
+        END;
       END;
       $$ LANGUAGE plpgsql;
     `);
     
-    // Create tables that will need RLS
+    // Test the tenant context functions 
+    console.log('Testing tenant context functions...');
+    try {
+      const result = await client.query('SELECT get_tenant_context()');
+      const contextValue = result.rows[0].get_tenant_context;
+      console.log(`Current tenant context: "${contextValue}"`);
+    } catch (error) {
+      console.error(`Error testing tenant context: ${error.message}`);
+    }
+    
+    // STEP 8: Create tables that will need RLS
     console.log('Creating base tables with RLS...');
     
     // Create custom_auth_tenant table with schema_name as nullable
@@ -186,26 +217,76 @@ rl.question(`\n${RED}Type "RESET DATABASE" to confirm this operation: ${RESET}`,
     await client.query(`ALTER TABLE public.custom_auth_tenant ENABLE ROW LEVEL SECURITY;`);
     await client.query(`ALTER TABLE public.tenant_users ENABLE ROW LEVEL SECURITY;`);
     
-    // Create RLS policies
+    // Create RLS policies with proper tenant context function
     console.log('Creating RLS policies...');
     await client.query(`
       CREATE POLICY tenant_isolation_policy ON public.custom_auth_tenant
-        USING (tenant_isolation_policy(id));
+        USING (
+          id::TEXT = get_tenant_context()
+          OR get_tenant_context() = ''
+        );
     `);
     
     await client.query(`
       CREATE POLICY tenant_isolation_policy ON public.tenant_users
-        USING (tenant_isolation_policy(tenant_id));
+        USING (
+          tenant_id::TEXT = get_tenant_context()
+          OR get_tenant_context() = ''
+        );
     `);
-
-    // Create database parameter for tenant isolation
-    console.log('Setting up database tenant context parameter...');
-    try {
-      await client.query(`ALTER DATABASE ${dbConfig.database} SET app.current_tenant_id = 'unset';`);
-    } catch (error) {
-      console.error(`Error setting database parameter: ${error.message}`);
-    }
     
+    // Create RLS test table
+    console.log('Creating RLS test table...');
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS public.rls_test (
+        id SERIAL PRIMARY KEY,
+        tenant_id TEXT,
+        value TEXT
+      );
+      
+      ALTER TABLE public.rls_test ENABLE ROW LEVEL SECURITY;
+      
+      CREATE POLICY rls_test_tenant_isolation ON public.rls_test
+        USING (
+          tenant_id::TEXT = get_tenant_context()
+          OR get_tenant_context() = ''
+        );
+        
+      -- Insert test data
+      INSERT INTO public.rls_test (tenant_id, value) VALUES ('tenant1', 'data1');
+      INSERT INTO public.rls_test (tenant_id, value) VALUES ('tenant2', 'data2');
+      INSERT INTO public.rls_test (tenant_id, value) VALUES (NULL, 'data3');
+    `);
+    
+    // Test RLS with different tenant contexts
+    console.log('Testing RLS policies...');
+    try {
+      // Test with tenant1
+      await client.query("SELECT set_tenant_context('tenant1')");
+      const tenant1Result = await client.query("SELECT COUNT(*) FROM public.rls_test");
+      const tenant1Count = tenant1Result.rows[0].count;
+      
+      // Test with tenant2
+      await client.query("SELECT set_tenant_context('tenant2')");
+      const tenant2Result = await client.query("SELECT COUNT(*) FROM public.rls_test");
+      const tenant2Count = tenant2Result.rows[0].count;
+      
+      // Test with empty tenant
+      await client.query("SELECT set_tenant_context('')");
+      const emptyResult = await client.query("SELECT COUNT(*) FROM public.rls_test");
+      const emptyCount = emptyResult.rows[0].count;
+      
+      console.log(`RLS policy test results: tenant1=${tenant1Count}, tenant2=${tenant2Count}, empty=${emptyCount}`);
+      
+      if (tenant1Count == 1 && tenant2Count == 1 && emptyCount == 3) {
+        console.log(`${GREEN}RLS policy test passed! Tenant isolation is working correctly.${RESET}`);
+      } else {
+        console.log(`${RED}RLS policy test failed. Tenant isolation is not working as expected.${RESET}`);
+      }
+    } catch (error) {
+      console.error(`Error testing RLS policies: ${error.message}`);
+    }
+
     console.log(`\n${GREEN}Database reset completed successfully!${RESET}`);
     console.log(`\n${YELLOW}IMPORTANT: This script has only created the basic tenant tables.${RESET}`);
     console.log(`\n${YELLOW}You need to run Django migrations to recreate the remaining tables (${RED}99 tables${YELLOW} in total).${RESET}`);

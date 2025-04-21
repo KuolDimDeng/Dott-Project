@@ -1,0 +1,70 @@
+{
+  "20250419_fix_cognito_network_errors": {
+    "executed": "2025-04-19T21:53:37.164Z",
+    "version": "1.0",
+    "purpose": "Fix Cognito authentication issues and network errors",
+    "changedFiles": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/config/amplifyUnified.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/utils/networkMonitor.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/middleware.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/AuthInitializer.js"
+    ]
+  },
+  "20250419_enhance_amplify_resiliency": {
+    "executed": "2025-04-19T21:53:37.244Z",
+    "version": "1.0",
+    "purpose": "Enhance Amplify resiliency module with better error handling",
+    "changedFiles": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/utils/amplifyResiliency.js"
+    ]
+  },
+  "scripts": [
+    {
+      "id": "AUTH-001",
+      "name": "Authentication Fix for Employee Management",
+      "description": "Fixes authentication issues in the Employee Management page",
+      "script_path": "fix_auth_issues.js",
+      "version": "1.0.0",
+      "date_created": "2025-04-20",
+      "date_executed": "2025-04-20",
+      "status": "completed",
+      "issues_fixed": [
+        "Missing auth token in APP_CACHE",
+        "Syntax error in DashboardLoader.js",
+        "Token refresh not working properly"
+      ],
+      "affected_files": [
+        "src/components/DashboardLoader.js",
+        "src/utils/refreshUserSession.js",
+        "src/utils/authUtils.js"
+      ]
+    },
+    {
+      "id": "AUTH-FIX-2025-06-01",
+      "name": "Auth and Session Management Fix",
+      "path": "auth_session_fix.js",
+      "version": "v1.0",
+      "execution_date": "2025-04-20T14:48:53.880Z",
+      "status": "completed",
+      "description": "Fixes authentication and session management issues"
+    },
+    {
+      "id": "AUTH-FIX-2025-06-01-SM",
+      "name": "Source Map Fix",
+      "path": "source_map_fix.js",
+      "version": "v1.0",
+      "execution_date": "2025-04-20T14:48:53.880Z",
+      "status": "ready",
+      "description": "Fixes source map configuration for better debugging"
+    },
+    {
+      "id": "EMP-FIX-2025-06-01",
+      "name": "Employee Management Session Fix",
+      "path": "employee_session_fix.js",
+      "version": "v1.0",
+      "execution_date": "2025-04-20T14:50:18.960Z",
+      "status": "completed",
+      "description": "Fixes session handling in the Employee Management component"
+    }
+  ]
+}

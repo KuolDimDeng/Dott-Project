@@ -215,6 +215,19 @@ export async function POST(request) {
     // Generate a UUID for the product
     const productId = uuidv4();
     
+    // Validate and process supplier_id if provided
+    let supplierId = null;
+    if (requestData.supplier_id) {
+      // Check if supplier_id is a valid UUID
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestData.supplier_id);
+      
+      if (isValidUUID) {
+        supplierId = requestData.supplier_id;
+      } else {
+        logger.warn(`[${requestId}] Invalid supplier_id format: ${requestData.supplier_id}, converting to null`);
+      }
+    }
+    
     // Create product with transaction to ensure consistency
     const newProduct = await db.transaction(async (client, options) => {
       // Insert the new product using RLS-aware query
@@ -231,10 +244,11 @@ export async function POST(request) {
           reorder_level, 
           for_sale, 
           for_rent,
+          supplier_id,
           created_at,
           updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         RETURNING *
       `;
       
@@ -249,7 +263,8 @@ export async function POST(request) {
         parseInt(requestData.stock_quantity || requestData.stockQuantity) || 0,
         parseInt(requestData.reorder_level || requestData.reorderLevel) || 0,
         requestData.for_sale === true || requestData.forSale === true,
-        requestData.for_rent === true || requestData.forRent === true
+        requestData.for_rent === true || requestData.forRent === true,
+        supplierId // Use the validated supplier_id
       ];
       
       logger.info(`[${requestId}] Executing product insert with tenant context: ${tenantId}`);

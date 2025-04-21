@@ -374,10 +374,27 @@ async function initializeRLS(options = {}) {
           reorder_level INTEGER DEFAULT 0,
           for_sale BOOLEAN DEFAULT TRUE,
           for_rent BOOLEAN DEFAULT FALSE,
+          supplier_id UUID,
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
           is_active BOOLEAN DEFAULT TRUE
         );
+      `);
+      
+      // Check if supplier_id column exists, add it if it doesn't
+      await client.query(`
+        DO $$
+        BEGIN
+          -- Check if the supplier_id column exists
+          IF NOT EXISTS (
+            SELECT 1 FROM information_schema.columns 
+            WHERE table_name = 'inventory_product' AND column_name = 'supplier_id'
+          ) THEN
+            -- Add the supplier_id column if it doesn't exist
+            ALTER TABLE public.inventory_product ADD COLUMN supplier_id UUID;
+          END IF;
+        END;
+        $$;
       `);
       
       // Create the sales_product table if it doesn't exist
@@ -475,9 +492,9 @@ async function initializeRLS(options = {}) {
 }
 
 /**
- * Ensure inventory_product table exists with RLS
+ * Ensure inventory_product table exists with RLS and has the required schema
  * @param {Object} options - Options
- * @returns {Promise<boolean>} Whether the table was created
+ * @returns {Promise<boolean>} Whether the table was created or updated
  */
 async function ensureInventoryProductTable(options = {}) {
   const debug = options.debug || false;
@@ -490,6 +507,88 @@ async function ensureInventoryProductTable(options = {}) {
     
     // Initialize RLS and create the table if it doesn't exist
     await initializeRLS({ debug, requestId });
+    
+    // Verify schema and make any necessary updates
+    const client = await getClient();
+    
+    try {
+      // Check if supplier_id column exists
+      const columnCheck = await client.query(`
+        SELECT column_name, data_type 
+        FROM information_schema.columns 
+        WHERE table_name = 'inventory_product' AND column_name = 'supplier_id'
+      `);
+      
+      // If supplier_id column doesn't exist or has wrong type, add/modify it
+      if (columnCheck.rows.length === 0) {
+        if (debug) {
+          console.log(`[${requestId}] Adding missing supplier_id column to inventory_product table`);
+        }
+        
+        await client.query(`
+          ALTER TABLE public.inventory_product 
+          ADD COLUMN supplier_id UUID
+        `);
+      } else if (columnCheck.rows[0].data_type !== 'uuid') {
+        // If column exists but is wrong type (varchar -> uuid), update it
+        if (debug) {
+          console.log(`[${requestId}] Updating supplier_id column type in inventory_product table`);
+        }
+        
+        // First, check if column has data to preserve
+        const dataCheck = await client.query(`
+          SELECT COUNT(*) FROM public.inventory_product 
+          WHERE supplier_id IS NOT NULL AND supplier_id != ''
+        `);
+        
+        if (parseInt(dataCheck.rows[0].count) > 0) {
+          // Data exists, need to preserve it during conversion
+          console.log(`[${requestId}] Data found in supplier_id column, preserving during type conversion`);
+          
+          // Create temporary column
+          await client.query(`
+            ALTER TABLE public.inventory_product 
+            ADD COLUMN supplier_id_new UUID
+          `);
+          
+          // Copy valid UUIDs, ignore invalid ones
+          await client.query(`
+            UPDATE public.inventory_product 
+            SET supplier_id_new = supplier_id::uuid 
+            WHERE supplier_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+          `);
+          
+          // Drop old column
+          await client.query(`
+            ALTER TABLE public.inventory_product 
+            DROP COLUMN supplier_id
+          `);
+          
+          // Rename new column
+          await client.query(`
+            ALTER TABLE public.inventory_product 
+            RENAME COLUMN supplier_id_new TO supplier_id
+          `);
+        } else {
+          // No data to preserve, just drop and re-add
+          await client.query(`
+            ALTER TABLE public.inventory_product 
+            DROP COLUMN supplier_id
+          `);
+          
+          await client.query(`
+            ALTER TABLE public.inventory_product 
+            ADD COLUMN supplier_id UUID
+          `);
+        }
+      }
+      
+      if (debug) {
+        console.log(`[${requestId}] inventory_product table schema verified and updated if needed`);
+      }
+    } finally {
+      client.release();
+    }
     
     if (debug) {
       console.log(`[${requestId}] inventory_product table verified`);

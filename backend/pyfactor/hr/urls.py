@@ -25,4 +25,7 @@ urlpatterns = [
     # Preboarding Form URLs
     path('preboarding-forms/', views.preboarding_form_list, name='preboarding-form-list'),
     path('preboarding-forms/<int:pk>/', views.preboarding_form_detail, name='preboarding-form-detail'),
+    
+    # Health check endpoint (public)
+    path('health/', views.health_check, name='hr-health-check'),
 ]

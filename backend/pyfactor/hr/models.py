@@ -90,8 +90,13 @@ class Employee(AbstractUser):
     TAX_STATUS_CHOICES = [
         ('S', 'Single'),
         ('M', 'Married Filing Jointly'),
-        ('S', 'Married Filing Separately'),
+        ('MS', 'Married Filing Separately'),
         ('H', 'Head of Household'),
+    ]
+    
+    COMPENSATION_TYPE_CHOICES = [
+        ('SALARY', 'Salary (Yearly)'),
+        ('WAGE', 'Wage (Hourly)'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -118,6 +123,7 @@ class Employee(AbstractUser):
     email = models.EmailField(unique=True, blank=False, null=False, default='')
     phone_number = PhoneNumberField(null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
+    compensation_type = models.CharField(max_length=10, choices=COMPENSATION_TYPE_CHOICES, default='SALARY')
     salary = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     emergency_contact_name = models.CharField(max_length=100, blank=True, null=True)
     emergency_contact_phone = models.CharField(max_length=20, blank=True, null=True)
@@ -161,7 +167,7 @@ class Employee(AbstractUser):
     ssn_last_four = models.CharField(max_length=4, blank=True, null=True)
     bank_account_last_four = models.CharField(max_length=4, blank=True, null=True)
     
-    tax_filing_status = models.CharField(max_length=1, choices=TAX_STATUS_CHOICES, blank=True, null=True)
+    tax_filing_status = models.CharField(max_length=2, choices=TAX_STATUS_CHOICES, blank=True, null=True)
     job_title = models.CharField(max_length=100, blank=True, null=True)
     probation = models.BooleanField(default=True)
     probation_end_date = models.DateField(null=True, blank=True)

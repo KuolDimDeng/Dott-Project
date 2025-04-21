@@ -1,0 +1,12 @@
+{
+  "name": "cognito-auth-fix",
+  "version": "1.0.0",
+  "description": "Fix for Cognito authentication session issues",
+  "main": "Version0001_fix_cognito_session_auth.js",
+  "type": "module",
+  "scripts": {
+    "fix": "node Version0001_fix_cognito_session_auth.js"
+  },
+  "author": "",
+  "license": "ISC"
+} 

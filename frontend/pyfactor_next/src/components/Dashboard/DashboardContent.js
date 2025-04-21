@@ -10,7 +10,7 @@
 
 'use client';
 
-import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo, useRef } from 'react';
 import useClientEffect from '@/hooks/useClientEffect';
 import { useStore } from '@/store/authStore';
 import { Box, Container, Typography, Alert, Button } from '@/components/ui/TailwindComponents';
@@ -53,9 +53,11 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const [profileData, setProfileData] = useState(null);
   const [actualSetupStatus, setActualSetupStatus] = useState(setupStatus || 'pending');
   // Add ref for main content
-  const mainContentRef = React.useRef(null);
+  const mainContentRef = useRef(null);
   // Add state for window width
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+  // Add navigationKey state to track navigation changes
+  const [navigationKey, setNavigationKey] = useState(`initial-${Date.now()}`);
 
   // Initialize user data with userAttributes from props if available
   const [initialUserData] = useState(() => {
@@ -118,6 +120,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // HR section visibility
     showHRDashboard: false,
     showEmployeeManagement: false,
+    showTaxManagement: false,
     hrSection: 'dashboard',
     
     // Form visibility
@@ -164,7 +167,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     });
   }, []);
   
-  // Memoize commonly used callbacks
+  // Memoize commonly used callbacks with optimized equality checks
   const setAnchorEl = useCallback((value) => {
     if (value === uiState.anchorEl) return; // Skip update if unchanged
     updateState({ anchorEl: value });
@@ -233,31 +236,34 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     if (value === uiState.showCreateMenu) return; // Skip update if unchanged
     updateState({ showCreateMenu: value });
   }, [updateState, uiState.showCreateMenu]);
-  
-  // Simplified reset state function with equality check to prevent unnecessary updates
+
+  // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
-    // Reset all view states to false except for the ones we want to keep
-    const resetState = {
-      showKPIDashboard: false,
-      showMainDashboard: false,
-      showHome: false,
-      showInventoryItems: false,
-      showInventoryManagement: false,
-      showForm: false,
-      formOption: null,
-      // Keep other state values
-      anchorEl: null,
-      settingsAnchorEl: null,
-      showHRDashboard: false,
-      showEmployeeManagement: false,
-      hrSection: 'dashboard',
-      showMyAccount: false,
-      showHelpCenter: false,
-      showCreateMenu: false,
-    };
+    console.log('[DashboardContent] Resetting all view states');
+    // Reset specific view states
+    setShowMainDashboard(false);
+    setShowHome(false);
+    setShowForm(false);
+    setShowMyAccount(false);
+    setShowHelpCenter(false);
     
-    updateState(resetState);
-  }, [updateState]);
+    // Reset any view-specific state
+    setFormOption('');
+    setSelectedSettingsOption(null);
+    
+    // Use updateState for batch update of other states
+    updateState({
+      view: null,
+      showKPIDashboard: false,
+      showUserProfileSettings: false,
+      showEmployeeManagement: false,
+      showHRDashboard: false,
+      showTaxManagement: false  // Explicitly reset Tax Management
+    });
+    
+    console.log('[DashboardContent] All view states have been reset');
+  }, [setShowMainDashboard, setShowHome, setShowForm, setShowMyAccount, setShowHelpCenter, 
+      setFormOption, setSelectedSettingsOption, updateState]);
 
   const drawerWidth = 260; // Match the increased width in Drawer.js
   const iconOnlyWidth = 60; // Width when showing only icons
@@ -303,41 +309,83 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     setShowHome(true);
   }, [resetAllStates, setShowHome]);
 
-  const handleHRClick = useCallback((value) => {
+  const handleHRClick = useCallback((section) => {
+    console.log('[DashboardContent] HR section selected:', section);
+    // Hide other sections
     resetAllStates();
-    console.log('HR option selected:', value);
     
-    switch(value) {
-      case 'dashboard':
-        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
-        break;
-      case 'employees':
-        updateState({ showEmployeeManagement: true });
-        break;
-      case 'timesheets':
-        updateState({ showTimesheetManagement: true });
-        break;
-      case 'taxes':
-        updateState({ showTaxManagement: true });
-        break;
-      case 'benefits':
-        updateState({ showBenefitsManagement: true });
-        break;
-      case 'reports':
-        updateState({ showReportsManagement: true });
-        break;
-      case 'performance':
-        updateState({ showPerformanceManagement: true });
-        break;
-      default:
-        updateState({ showHRDashboard: true, hrSection: 'dashboard' });
+    if (section === 'taxes') {
+      // Show tax management component
+      console.log('[DashboardContent] Setting showTaxManagement to true for section:', section);
+      updateState({
+        showTaxManagement: true,
+        hrSection: section
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showTaxManagement: true, 
+        hrSection: section 
+      });
+    } else {
+      // Show other HR components
+      updateState({
+        showHRDashboard: section === 'dashboard',
+        showEmployeeManagement: section === 'employees',
+        showTimesheetManagement: section === 'timesheets',
+        showBenefitsManagement: section === 'benefits',
+        showReportsManagement: section === 'reports',
+        showPerformanceManagement: section === 'performance',
+        hrSection: section || 'dashboard'
+      });
     }
   }, [resetAllStates, updateState]);
 
-  const handleInventoryClick = useCallback(() => {
+  const handleInventoryClick = useCallback((value) => {
     resetAllStates();
-    updateState({ showInventoryManagement: true });
-  }, [resetAllStates, updateState]);
+    console.log('[DashboardContent] Inventory option selected:', value);
+    
+    // For the products view, redirect to our new unified inventory page
+    if (value === 'items') {
+      window.location.href = '/inventory';
+      return;
+    }
+    
+    switch(value) {
+      case 'inventorydashboard':
+        updateState({ view: 'inventory-dashboard' });
+        break;
+      case 'stock-adjustments':
+        updateState({ view: 'inventory-stock-adjustments' });
+        break;
+      case 'locations':
+        updateState({ view: 'inventory-locations' });
+        break;
+      case 'suppliers':
+        console.log('[DashboardContent] Setting view to inventory-suppliers');
+        updateState({ view: 'inventory-suppliers' });
+        // Force a rerender by adding a timestamp to the view
+        setTimeout(() => {
+          if (view === 'inventory-suppliers') {
+            console.log('[DashboardContent] Refreshing inventory-suppliers view');
+            updateState({ view: '' });
+            setTimeout(() => {
+              updateState({ view: 'inventory-suppliers' });
+            }, 50);
+          }
+        }, 100);
+        break;
+      case 'transactions':
+        updateState({ view: 'inventory-transactions' });
+        break;
+      case 'reports':
+        updateState({ view: 'inventory-reports' });
+        break;
+      default:
+        // If no specific option is selected, show the inventory management page
+        updateState({ showInventoryManagement: true });
+    }
+  }, [resetAllStates, updateState, view]);
 
   const handleShowCreateOptions = useCallback((option) => {
     if (option === selectedOption && showCreateOptions) return; // Skip if no change
@@ -359,16 +407,39 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [handleCloseCreateMenu, handleShowCreateOptions]);
 
   const handleUserProfileClick = useCallback(() => {
-    resetAllStates();
     setShowMyAccount(true);
+    setShowHelpCenter(false);
+    setSelectedSettingsOption(null);
     handleClose();
-  }, [resetAllStates, setShowMyAccount, handleClose]);
+  }, [setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, handleClose]);
 
   const handleSettingsClick = useCallback(() => {
-    resetAllStates();
-    setSelectedSettingsOption('general');
-    handleClose();
-  }, [resetAllStates, setSelectedSettingsOption, handleClose]);
+    console.log('[DashboardContent] Settings button clicked - Starting Settings navigation');
+    try {
+      // Reset all other states first
+      resetAllStates();
+      
+      // Set the necessary states to show the Settings view
+      setShowMyAccount(false);
+      setShowHelpCenter(false);
+      
+      // Set the selected settings option to 'Settings'
+      console.log('[DashboardContent] Setting selectedSettingsOption to "Settings"');
+      setSelectedSettingsOption('Settings');
+      
+      // Force a re-render with a new navigation key
+      const newNavKey = `settings-${Date.now()}`;
+      console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+      setNavigationKey(newNavKey);
+      
+      // Close the menu
+      handleClose();
+      
+      console.log('[DashboardContent] Settings navigation completed');
+    } catch (error) {
+      console.error('[DashboardContent] Error in handleSettingsClick:', error);
+    }
+  }, [resetAllStates, setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, setNavigationKey, handleClose]);
 
   const handleHelpClick = useCallback(() => {
     setShowHelpCenter(true);
@@ -392,22 +463,33 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     router.push('/');
   }, [logout, router]);
 
-  // Enhanced handleDrawerToggle with logging
+  // Handle drawer toggle with improved memory management
+  const handleDrawerToggle = useCallback(() => {
+    // Toggle the drawer state
+    setDrawerOpen(prev => !prev);
+  }, [setDrawerOpen]);
+  
+  // Add logging to help debug issues
   const handleDrawerToggleWithLogging = useCallback(() => {
-    const newState = !drawerOpen;
-    console.log(`%c[ComponentsDashboard] Toggling drawer: ${drawerOpen ? 'OPEN' : 'CLOSED'} → ${newState ? 'OPEN' : 'CLOSED'}`, 'background: #dbeafe; color: #1e40af; padding: 2px 4px; border-radius: 2px;');
-    setDrawerOpen(newState);
-  }, [drawerOpen, setDrawerOpen]);
+    console.log('[DashboardContent] Toggling drawer');
+    handleDrawerToggle();
+  }, [handleDrawerToggle]);
 
-  // Add the handleEmployeeManagementClick function
+  // Handle specific click for employee management for direct access
   const handleEmployeeManagementClick = useCallback(() => {
-    console.log('[DashboardContent] handleEmployeeManagementClick called');
+    console.log('[DashboardContent] Employee Management directly clicked');
     resetAllStates();
     updateState({
-      showEmployeeManagement: true
+      showHome: false,
+      showKPIDashboard: false,
+      showMainDashboard: false,
+      showInventoryItems: false,
+      showInventoryManagement: false,
+      showHRDashboard: false,
+      showEmployeeManagement: true,
+      hrSection: 'employees'
     });
-    console.log('[DashboardContent] Employee Management clicked');
-  }, [resetAllStates, updateState]);
+  }, [updateState, resetAllStates]);
 
   // Add the handleCRMClick function
   const handleCRMClick = useCallback((option) => {
@@ -416,6 +498,24 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     // Set view to the correct CRM section format that RenderMainContent expects
     setView(`crm-${option}`);
   }, [resetAllStates, setView]);
+
+  // Add the handleBillingClick function
+  const handleBillingClick = useCallback((option) => {
+    console.log('[DashboardContent] handleBillingClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct billing section
+    setView(option || 'invoices');
+  }, [resetAllStates, setView]);
+
+  // Add the handleTaxesClick function
+  const handleTaxesClick = useCallback((option) => {
+    console.log('[DashboardContent] handleTaxesClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct taxes section
+    updateState({
+      view: `taxes-${option}`
+    });
+  }, [resetAllStates, updateState]);
 
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
@@ -493,7 +593,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const drawerProps = useMemo(() => ({
     drawerOpen,
     handleDrawerToggle: handleDrawerToggleWithLogging,
-    width: drawerWidth,
+    width: drawerOpen ? drawerWidth : iconOnlyWidth,
     handleDrawerItemClick,
     userData: memoizedUserData,
     resetAllStates,
@@ -503,11 +603,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleShowCreateOptions,
     handleShowCreateMenu,
     handleEmployeeManagementClick,
-    handleCRMClick
+    handleCRMClick,
+    handleBillingClick,
+    handleTaxesClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
     resetAllStates, handleHomeClick, handleHRClick, handleInventoryClick,
-    handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick
+    handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
+    handleBillingClick, handleTaxesClick
   ]);
   
   // Memoize RenderMainContent props
@@ -523,6 +626,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showHRDashboard,
     hrSection,
     showEmployeeManagement,
+    showTaxManagement: uiState.showTaxManagement,
     setShowKPIDashboard,
     setShowMainDashboard,
     setSelectedReport: (selectedOption) => updateState({ selectedOption }),
@@ -531,6 +635,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     tenantId: effectiveTenantId,
     showCreateOptions,
     selectedOption,
+    selectedSettingsOption,
+    navigationKey,
     showProductManagement: view === 'inventory-products',
     showServiceManagement: view === 'services',
     showInvoiceManagement: view === 'invoices',
@@ -539,6 +645,48 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showCustomerList: view === 'customers',
     showVendorManagement: view === 'vendors',
     showTransactionForm: view === 'transactions',
+    showChartOfAccounts: view === 'chart-of-accounts',
+    showJournalEntryManagement: view === 'journal-entries',
+    showGeneralLedgerManagement: view === 'general-ledger',
+    showAccountReconManagement: view === 'account-reconciliation',
+    showMonthEndManagement: view === 'month-end',
+    showFinancialStatements: view === 'financial-statements',
+    showFixedAssetManagement: view === 'fixed-assets',
+    showBudgetManagement: view === 'budget',
+    showCostAccountingManagement: view === 'cost-accounting',
+    showIntercompanyManagement: view === 'intercompany',
+    showAuditTrailManagement: view === 'audit-trail',
+    showProfitAndLossReport: view === 'profit-loss-report',
+    showBalanceSheetReport: view === 'balance-sheet-report',
+    showCashFlowReport: view === 'cash-flow-report',
+    showIncomeByCustomer: view === 'income-by-customer',
+    showAgedReceivables: view === 'aged-receivables',
+    showAgedPayables: view === 'aged-payables',
+    showAccountBalances: view === 'account-balances',
+    showTrialBalances: view === 'trial-balances',
+    showProfitAndLossAnalysis: view === 'profit-loss-analysis',
+    showBalanceSheetAnalysis: view === 'balance-sheet-analysis',
+    showCashFlowAnalysis: view === 'cash-flow-analysis',
+    showBudgetVsActualAnalysis: view === 'budget-vs-actual',
+    showSalesAnalysis: view === 'sales-analysis',
+    showExpenseAnalysis: view === 'expense-analysis',
+    showInventoryManagement: view === 'inventory',
+    showProcurementManagement: view === 'procurement',
+    showPurchaseOrderManagement: view === 'purchase-orders',
+    showExpensesManagement: view === 'expenses',
+    showPurchaseReturnManagement: view === 'purchase-returns',
+    showReports: view === 'reports',
+    showAnalysisPage: view === 'analysis',
+    showBankingDashboard: view === 'banking',
+    showPayrollDashboard: view === 'payroll',
+    showPayrollTransactions: view === 'payroll-transactions',
+    showBankRecon: view === 'bank-reconciliation',
+    showPayrollReport: view === 'payroll-report',
+    showBankReport: view === 'bank-report',
+    showBankTransactions: view === 'bank-transactions',
+    showDownloadTransactions: view === 'download-transactions',
+    showConnectBank: view === 'connect-bank',
+    showInventoryItems: view === 'inventory-items',
     handleCreateCustomer: () => console.log('Create customer flow'),
     showMyAccount,
     showHelpCenter
@@ -546,8 +694,38 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     view, memoizedUserData, showKPIDashboard, showMainDashboard, showHome, setView,
     showForm, formOption, showHRDashboard, hrSection, showEmployeeManagement,
     setShowKPIDashboard, setShowMainDashboard, updateState, customContent, mockData,
-    effectiveTenantId, showCreateOptions, selectedOption, showMyAccount, showHelpCenter
+    effectiveTenantId, showCreateOptions, selectedOption, showMyAccount, showHelpCenter,
+    navigationKey, selectedSettingsOption,
+    // We already have view listed above, but it's critical for all the conditional flags
+    // that depend on it like showDownloadTransactions: view === 'download-transactions'
   ]);
+
+  // Listen for menu navigation events
+  useEffect(() => {
+    const handleMenuNavigation = (event) => {
+      const { item, navigationKey: newKey } = event.detail;
+      console.log(`[DashboardContent] Menu navigation event received: ${item}, key: ${newKey}`);
+      
+      // Update navigation key to force remounting of components
+      setNavigationKey(newKey);
+      
+      // Clean up any previous component state
+      if (item) {
+        setView(item);
+      }
+      
+      // Reset scroll position for the main content area
+      if (mainContentRef.current) {
+        mainContentRef.current.scrollTop = 0;
+      }
+    };
+    
+    window.addEventListener('menuNavigation', handleMenuNavigation);
+    
+    return () => {
+      window.removeEventListener('menuNavigation', handleMenuNavigation);
+    };
+  }, [setView, setNavigationKey]);
 
   return (
     <ErrorBoundary>
@@ -572,9 +750,14 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
                   transition: 'all 300ms ease-in-out',
                   zIndex: '0'
                 }}
+                key={`content-container-${navigationKey}`}
               >
                 <Suspense fallback={<LoadingComponent />}>
-                  <RenderMainContent {...mainContentProps} />
+                  <RenderMainContent 
+                    {...mainContentProps} 
+                    navigationKey={navigationKey}
+                    selectedSettingsOption={selectedSettingsOption} 
+                  />
                 </Suspense>
               </div>
             </div>

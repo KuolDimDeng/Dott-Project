@@ -45,7 +45,7 @@ export function useSafeSearchParams() {
               try {
                 const { fetchUserAttributes } = await import('aws-amplify/auth');
                 const userAttributes = await fetchUserAttributes();
-                const cognitoTenantId = userAttributes['custom:tenant_id'] || userAttributes['custom:businessid'];
+                const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
                 
                 if (cognitoTenantId) {
                   urlParams.tenantId = cognitoTenantId;
@@ -156,7 +156,7 @@ export async function getServerSideTenantId(req) {
       const user = await getCurrentUser();
       if (user) {
         const userAttributes = await fetchUserAttributes();
-        const cognitoTenantId = userAttributes['custom:tenant_id'] || userAttributes['custom:businessid'];
+        const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
         if (cognitoTenantId) {
           return cognitoTenantId;
         }

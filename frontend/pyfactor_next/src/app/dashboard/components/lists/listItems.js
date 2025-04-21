@@ -13,7 +13,7 @@
  * Any changes require explicit approval from the project owner.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 
 // SVG Icons for menu items
@@ -111,6 +111,20 @@ const NavIcons = {
   )
 };
 
+// Helper icons for the inventory menu items (replacing MUI icons)
+const InventoryIcons = {
+  Dashboard: (props) => (
+    <svg className={props.className || "w-5 h-5"} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+    </svg>
+  ),
+  People: (props) => (
+    <svg className={props.className || "w-5 h-5"} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+    </svg>
+  )
+};
+
 const MENU_WIDTH = 258; // Increased to match the drawer width (260px, leaving 2px for borders)
 
 const MainListItems = ({
@@ -133,6 +147,7 @@ const MainListItems = ({
   handleShowCreateOptions,
   handleShowCreateMenu,
   handleDrawerClose,
+  handleBillingClick = () => console.log('Billing clicked (default handler)'),
   isIconOnly = false,
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
@@ -143,6 +158,8 @@ const MainListItems = ({
   const [hoveredItem, setHoveredItem] = useState(null);
   const [hoveredCreateOption, setHoveredCreateOption] = useState(null);
   const isMobile = useRef(window.innerWidth < 640);
+  const [activeItem, setActiveItem] = useState(null);
+  const [openTooltip, setOpenTooltip] = useState(null);
 
   // Check if we're on mobile/small screens
   useEffect(() => {
@@ -196,40 +213,73 @@ const MainListItems = ({
     }, 100);
   };
 
-  // Helper to close drawer on mobile after navigation
-  const handleItemClick = (callback, param) => () => {
-    // If in icon-only mode, expand drawer first instead of calling the callback
-    if (isIconOnly && handleDrawerClose) {
-      handleDrawerClose();
-      return;
+  const handleItemClick = useCallback((item, e) => {
+    setOpenTooltip && setOpenTooltip(null);
+    if (e) e.stopPropagation();
+    
+    // Reset any active component state before navigating
+    setActiveItem && setActiveItem(item);
+    
+    // Standardize the item key for routing
+    const routeKey = item.toLowerCase().replace(/\s+/g, '-');
+    
+    // Create a unique navigation key to force component unmounting/remounting
+    const navigationKey = `nav-${Date.now()}`;
+    try {
+      window.sessionStorage.setItem('lastNavKey', navigationKey);
+    } catch (error) {
+      console.warn('[listItems] Error setting navigation key in sessionStorage:', error);
     }
     
-    // Handle string-based navigation if using handleDrawerItemClick
-    if (typeof callback === 'string' && handleDrawerClose) {
-      // Close the drawer on mobile
-      if (isMobile.current) {
-        handleDrawerClose();
+    // Create consistent event payload 
+    const payload = { 
+      item: routeKey, 
+      navigationKey,
+      // Include original item name for debugging
+      originalItem: item
+    };
+    
+    // Dispatch a custom event for navigation - both formats for compatibility
+    window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+    window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+    
+    console.log(`[listItems] Navigating to ${item} (${routeKey}) with key ${navigationKey}`);
+    
+    // Cleanup previous state before navigating
+    try {
+      if (item.toLowerCase().includes('inventory')) {
+        window.sessionStorage.removeItem('inventoryState');
+        window.sessionStorage.removeItem('inventoryFilters');
+      } else if (item.toLowerCase().includes('billing') || item.toLowerCase().includes('invoice')) {
+        window.sessionStorage.removeItem('billingState');
+        window.sessionStorage.removeItem('invoiceFilters');
       }
-      return;
+    } catch (error) {
+      console.warn('[listItems] Error cleaning up previous state:', error);
     }
     
-    // Call the original callback with its parameter if provided
-    if (param !== undefined) {
-      callback(param);
-    } else if (callback) {
-      callback();
+    // Handle different menu options
+    if (item === 'inventory' || item === 'Inventory') {
+      handleInventoryClick && handleInventoryClick('inventorydashboard');
+    } else if (item === 'billing' || item === 'Billing') {
+      handleBillingClick && handleBillingClick('invoices'); 
+    } else if ((item === 'Dashboard' || item === 'dashboard') && handleMainDashboardClick) {
+      handleMainDashboardClick();
+    } else if ((item === 'Sales' || item === 'sales') && handleSalesClick) {
+      handleSalesClick('dashboard');
+    } else if ((item === 'CRM' || item === 'crm') && handleCRMClick) {
+      handleCRMClick('dashboard');
     }
-    
-    // Don't close the drawer for Create New options
-    if (callback === handleShowCreateOptions || callback === handleShowCreateMenu) {
-      return;
-    }
-    
-    // Close the drawer on mobile screens after navigation
-    if (isMobile.current && handleDrawerClose) {
-      handleDrawerClose();
-    }
-  };
+    // Add other handlers as needed
+  }, [
+    setOpenTooltip, 
+    setActiveItem, 
+    handleInventoryClick, 
+    handleBillingClick, 
+    handleMainDashboardClick,
+    handleSalesClick,
+    handleCRMClick
+  ]);
 
   const handleMouseEnter = (menuName) => {
     setHoveredItem(menuName);
@@ -250,6 +300,17 @@ const MainListItems = ({
       icon: <NavIcons.Dashboard className="w-5 h-5" />,
       label: 'Dashboard',
       onClick: handleMainDashboardClick,
+    },
+    {
+      icon: <NavIcons.Wallet className="w-5 h-5" />,
+      label: 'Billing',
+      subItems: [
+        { label: 'Invoices', onClick: handleBillingClick, value: 'invoices' },
+        { label: 'Payments', onClick: handleBillingClick, value: 'payments' },
+        { label: 'Subscriptions', onClick: handleBillingClick, value: 'subscriptions' },
+        { label: 'Payment Methods', onClick: handleBillingClick, value: 'payment-methods' },
+        { label: 'Reports', onClick: handleBillingClick, value: 'reports' },
+      ],
     },
     {
       icon: <NavIcons.Sales className="w-5 h-5" />,
@@ -372,14 +433,24 @@ const MainListItems = ({
         { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard' },
         { 
           label: 'Employees', 
-          onClick: (event) => {
+          onClick: () => {
             console.log('[listItems] Employees menu item clicked');
-            // Debugging helper to see what's happening
-            if (typeof handleEmployeeManagementClick !== 'function') {
-              console.error('[listItems] handleEmployeeManagementClick is not a function', handleEmployeeManagementClick);
-            } else {
-              console.log('[listItems] Calling handleEmployeeManagementClick()');
+            // Dispatch a standardized navigation event
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'employees', 
+              navigationKey
+            };
+            
+            // Dispatch navigation events for all listeners
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            
+            // Call the handler directly if it exists
+            if (typeof handleEmployeeManagementClick === 'function') {
               handleEmployeeManagementClick();
+            } else if (typeof handleHRClick === 'function') {
+              // Fallback to handleHRClick with employees section
+              handleHRClick('employees');
             }
           }
         },
@@ -549,8 +620,16 @@ const MainListItems = ({
     },
   ];
 
+  // Create a Tailwind CSS based collapsible menu component to replace MUI Collapse
+  const CollapsibleMenu = ({ isOpen, children }) => (
+    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-96' : 'max-h-0'}`}>
+      {children}
+    </div>
+  );
+
+  // Render the sub-menu using Tailwind instead of MUI components
   const renderSubMenu = (items, parentMenu) => (
-    <div className={`overflow-hidden transition-all duration-300 ease-in-out ${openMenu === parentMenu ? 'max-h-96' : 'max-h-0'}`}>
+    <CollapsibleMenu isOpen={openMenu === parentMenu}>
       <ul className="pl-10 mt-1">
         {items.map((item, index) => (
           <li key={index}>
@@ -564,10 +643,18 @@ const MainListItems = ({
                   handleMenuToggle(item.label);
                 } else if (item.onClick && item.value) {
                   // For handlers that take a value parameter
-                  handleItemClick(item.onClick, item.value)(event);
+                  if (typeof item.onClick === 'function') {
+                    item.onClick(item.value);
+                  }
+                  // Also update our active item state
+                  setActiveItem && setActiveItem(`${parentMenu}-${item.value}`);
                 } else if (item.onClick) {
                   // For handlers without parameters
-                  handleItemClick(item.onClick)(event);
+                  if (typeof item.onClick === 'function') {
+                    item.onClick();
+                  }
+                  // Also update our active item state
+                  setActiveItem && setActiveItem(item.label);
                 }
               }}
               onMouseEnter={() => handleMouseEnter(`${parentMenu}-${item.value}`)}
@@ -578,8 +665,44 @@ const MainListItems = ({
           </li>
         ))}
       </ul>
-    </div>
+    </CollapsibleMenu>
   );
+
+  // Listen for navigation events from other components
+  useEffect(() => {
+    const handleNavigationChange = (event) => {
+      const { item, navigationKey } = event.detail;
+      
+      // Update active item if one is provided
+      if (item && setActiveItem) {
+        console.log(`[listItems] Navigation change detected for ${item}, updating active item`);
+        setActiveItem(item);
+      }
+    };
+    
+    window.addEventListener('navigationChange', handleNavigationChange);
+    
+    return () => {
+      window.removeEventListener('navigationChange', handleNavigationChange);
+    };
+  }, [setActiveItem]);
+  
+  // Listen for drawer state changes to reset menu state when drawer closes
+  useEffect(() => {
+    const handleDrawerStateChange = () => {
+      // Close any open menus when drawer state changes
+      if (isIconOnly) {
+        setOpenMenu('');
+        setHoveredItem(null);
+      }
+    };
+    
+    window.addEventListener('drawerStateChanged', handleDrawerStateChange);
+    
+    return () => {
+      window.removeEventListener('drawerStateChanged', handleDrawerStateChange);
+    };
+  }, [isIconOnly]);
 
   return (
     <div className="relative">
@@ -643,7 +766,7 @@ const MainListItems = ({
                       } else if (item.subItems) {
                         handleMenuToggle(item.label);
                       } else if (item.onClick) {
-                        handleItemClick(item.onClick)(event);
+                        handleItemClick(item.label, event);
                       }
                     }}
                     onMouseEnter={() => handleMouseEnter(item.label)}

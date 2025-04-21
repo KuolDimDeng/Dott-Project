@@ -66,8 +66,8 @@ export async function POST(request) {
       response.cookies.set('setupCompleted', setupDone ? 'true' : 'false', cookieOptions);
       
       // Set tenant ID if available
-      if (userAttributes['custom:tenant_id']) {
-        response.cookies.set('tenantId', userAttributes['custom:tenant_id'], cookieOptions);
+      if (userAttributes['custom:tenant_ID']) {
+        response.cookies.set('tenantId', userAttributes['custom:tenant_ID'], cookieOptions);
       }
       
       logger.debug('[API Auth Callback] Set onboarding cookies for status:', {

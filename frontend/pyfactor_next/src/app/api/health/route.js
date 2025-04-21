@@ -1,21 +1,26 @@
 import { NextResponse } from 'next/server';
 
+/**
+ * Simple health check endpoint to verify the frontend application is running
+ * This helps avoid 404 errors when the network monitor checks API health
+ */
 export async function GET() {
-  try {
-    console.log('[API Health] Health check request received');
-    
-    // Return a basic health response
-    return NextResponse.json({
-      status: 'ok',
-      service: 'pyfactor-api',
-      timestamp: new Date().toISOString(),
-      environment: process.env.NODE_ENV || 'development'
-    });
-  } catch (error) {
-    console.error('[API Health] Error during health check:', error);
-    return NextResponse.json({
-      status: 'error',
-      message: error.message
-    }, { status: 500 });
-  }
+  return NextResponse.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  }, { status: 200 });
+}
+
+/**
+ * Handle HEAD requests used by the health check system
+ */
+export async function HEAD() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, max-age=0'
+    }
+  });
 } 

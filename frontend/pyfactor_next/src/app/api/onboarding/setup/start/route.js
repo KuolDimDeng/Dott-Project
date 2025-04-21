@@ -29,7 +29,7 @@ export async function POST(request) {
     const userId = user.userId;
 
     // Forward request to backend to start schema setup
-    const backendApiUrl = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
+    const backendApiUrl = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     
     // Log user information for debugging
     logger.debug('[SetupStart] User information:', {

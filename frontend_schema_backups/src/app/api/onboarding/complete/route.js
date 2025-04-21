@@ -19,7 +19,7 @@ export async function POST(request) {
     }
     
     // Get the backend API URL from environment variables
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
     const endpoint = `/api/onboarding/complete/`;
     const requestUrl = `${backendUrl}${endpoint}`;
     

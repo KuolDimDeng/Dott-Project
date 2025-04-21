@@ -50,7 +50,7 @@ export default function SignUp() {
           <Link href="/">
             <Image 
               className="h-12 w-auto"
-              src="/logo.png"
+              src="/static/images/PyfactorLandingpage.png"
               alt="Logo"
               width={48}
               height={48}

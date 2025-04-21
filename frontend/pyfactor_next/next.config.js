@@ -1,57 +1,48 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const fs = require('fs');
+
+const isDev = process.env.NODE_ENV === 'development';
+const isHttps = process.env.HTTPS === 'true';
+
+// Log HTTPS settings for debugging
+console.log(`[NextJS Config] HTTPS settings - env.HTTPS: ${process.env.HTTPS}, isHttps: ${isHttps}`);
+console.log(`[NextJS Config] SSL files - CRT: ${process.env.SSL_CRT_FILE}, KEY: ${process.env.SSL_KEY_FILE}`);
+
+// HTTPS configuration moved to package.json script instead of next.config.js
+// The dev:https script should include --experimental-https which is how Next.js 13+ handles HTTPS
 
 // Config focused on stability and compatibility
 const nextConfig = {
   // Basic Next.js settings
-  poweredByHeader: false,
-  reactStrictMode: false, // Disable strict mode to reduce memory pressure
+  reactStrictMode: true,
+  swcMinify: true,
   
   // Set pageExtensions at the top level instead of in experimental
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   
-  // Add API rewrites to handle CORS issues
+  // Environment variables available on the client side
+  env: {
+    BACKEND_API_URL: process.env.BACKEND_API_URL || 'https://localhost:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://localhost:8000',
+    USE_DATABASE: process.env.USE_DATABASE === 'true',
+    MOCK_DATA_DISABLED: process.env.MOCK_DATA_DISABLED === 'true',
+    PROD_MODE: process.env.PROD_MODE === 'true',
+    HTTPS_ENABLED: true // Force HTTPS to true since we're using SSL
+  },
+  
+  // Handle API routes that should be proxied to the backend
   async rewrites() {
-    return [
-      // NOTE: Tenant-specific rewrites have been removed in favor of using Next.js App Router's
-      // built-in dynamic route functionality with the [tenantId] directory
-      // Proxy requests to localhost:8000
+    const rewrites = [
       {
-        source: '/backend/:path*',
-        destination: 'http://localhost:8000/:path*',
+        source: '/api/:path*',
+        destination: 'https://localhost:8000/api/:path*', // Proxy to Django backend over HTTPS
+        basePath: false,
       },
-      // Proxy requests to Python API server
-      {
-        source: '/api/profile/:path*',
-        destination: 'http://localhost:8000/api/profile/:path*',
-      },
-      // DISABLED: Using Next.js API routes for customers instead of Python backend
-      // {
-      //   source: '/api/customers/:path*',
-      //   destination: 'http://localhost:8000/api/customers/:path*',
-      // },
-      {
-        source: '/api/products/:path*',
-        destination: 'http://localhost:8000/api/products/:path*',
-      },
-      {
-        source: '/api/services/:path*',
-        destination: 'http://localhost:8000/api/services/:path*',
-      },
-      {
-        source: '/api/invoices/:path*',
-        destination: 'http://localhost:8000/api/invoices/:path*',
-      },
-      {
-        source: '/api/vendors/:path*',
-        destination: 'http://localhost:8000/api/vendors/:path*',
-      },
-      {
-        source: '/api/bills/:path*',
-        destination: 'http://localhost:8000/api/bills/:path*',
-      }
     ];
+    console.log(`[NextJS Config] Setting up API proxy rewrites to: https://localhost:8000/api/`);
+    return rewrites;
   },
   
   // Webpack config focusing on pure CommonJS for stability
@@ -99,12 +90,49 @@ const nextConfig = {
       crypto: false,
     };
 
+    // Add SVG support
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+
     return config;
   },
   
+  // Add HTTPS configuration to httpAgentOptions
+  httpAgentOptions: {
+    keepAlive: true,
+    // Always allow self-signed certificates since we're using them locally
+    rejectUnauthorized: false
+  },
+  
+  // Update image optimization configuration
   images: {
-    domains: ['localhost', '127.0.0.1'],
+    // Disable image optimization completely
+    unoptimized: true,
+    
+    // Allow SVGs
+    dangerouslyAllowSVG: true,
+    
+    // Set content security policy
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    
+    // Remote image domains
+    domains: [
+      'localhost',
+      '127.0.0.1',
+      'via.placeholder.com',
+      'picsum.photos',
+      'images.unsplash.com',
+    ],
+  },
+  experimental: {
+    serverActions: true,
   },
 };
 
 module.exports = nextConfig;
+
+module.exports = {
+  productionBrowserSourceMaps: true
+};

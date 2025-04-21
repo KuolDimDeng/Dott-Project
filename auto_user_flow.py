@@ -57,10 +57,10 @@ if os.getenv('AWS_SECRET_ACCESS_KEY') == 'placeholder_aws_secret':
     logger.warning("Removed placeholder AWS Secret Access Key")
 
 # Backend API configuration
-BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+BACKEND_URL = os.getenv('BACKEND_URL', 'https://localhost:8000')
 
 # Frontend configuration 
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://localhost:3000')
 
 class UserFlowAutomation:
     def __init__(self):

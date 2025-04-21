@@ -47,8 +47,8 @@ This document provides step-by-step instructions for setting up Apple Sign-In wi
 2. Find your app client (the ID should match `COGNITO_CLIENT_ID` in your environment variables)
 3. Under **Enabled Identity Providers**, make sure **Apple** is checked
 4. Ensure that **Cognito User Pool** is also checked (for email/password login)
-5. Under **Callback URL(s)**, add or verify `http://localhost:3000/auth/callback` for local development, and your production callback URL if needed
-6. Under **Sign out URL(s)**, add or verify `http://localhost:3000` for local development, and your production sign-out URL if needed
+5. Under **Callback URL(s)**, add or verify `https://localhost:3000/auth/callback` for local development, and your production callback URL if needed
+6. Under **Sign out URL(s)**, add or verify `https://localhost:3000` for local development, and your production sign-out URL if needed
 7. Under **OAuth 2.0**, select the following:
    - **Allowed OAuth Flows**: Authorization code grant
    - **Allowed OAuth Scopes**: email, openid, profile

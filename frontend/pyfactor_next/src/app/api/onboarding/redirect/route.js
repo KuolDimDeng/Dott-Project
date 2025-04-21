@@ -14,7 +14,7 @@ export async function POST(request) {
     const redirectUrl = formData.get('redirectUrl') || '/onboarding/subscription';
     
     // Create a new URL object to add parameters
-    const url = new URL(redirectUrl, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    const url = new URL(redirectUrl, process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000');
     
     // Add all form data as query parameters
     for (const [key, value] of formData.entries()) {
@@ -74,7 +74,7 @@ export async function POST(request) {
     console.error('[API] Error in redirect handler:', error);
     
     // In case of error, redirect to subscription page anyway as fallback
-    const fallbackUrl = new URL('/onboarding/subscription', process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+    const fallbackUrl = new URL('/onboarding/subscription', process.env.NEXT_PUBLIC_APP_URL || 'https://localhost:3000');
     fallbackUrl.searchParams.set('error', 'redirect_failed');
     fallbackUrl.searchParams.set('ts', Date.now().toString());
     

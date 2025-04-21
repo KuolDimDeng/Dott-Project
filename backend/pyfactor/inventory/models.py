@@ -43,15 +43,33 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-class Supplier(models.Model):
+class Supplier(TenantAwareModel):
+    """
+    Supplier model for inventory suppliers.
+    This model is tenant-aware and will be filtered by the current tenant.
+    """
     name = models.CharField(max_length=255)
     contact_person = models.CharField(max_length=255, blank=True, null=True)
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
-
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    # Add all_objects manager to access all suppliers across tenants if needed
+    all_objects = models.Manager()
+    
     def __str__(self):
         return self.name
+        
+    class Meta:
+        db_table = 'inventory_supplier'
+        indexes = [
+            models.Index(fields=['tenant_id', 'name']),
+        ]
 
 class Location(models.Model):
     name = models.CharField(max_length=100)
@@ -172,6 +190,7 @@ class Product(TenantAwareModel):
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     cost = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     quantity = models.IntegerField(default=0)
+    supplier = models.ForeignKey('Supplier', on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)

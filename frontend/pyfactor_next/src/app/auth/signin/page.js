@@ -53,7 +53,7 @@ export default function SignInPage() {
         <div className="flex justify-center">
           <Link href="/" className="flex items-center">
             <Image 
-              src="/pyfactor-logo.png" 
+              src="/static/images/PyfactorLandingpage.png" 
               alt="PyFactor Logo" 
               width={50} 
               height={50} 

@@ -88,10 +88,10 @@ def reconfigure_cognito_user_pool():
             ],
             SupportedIdentityProviders=['COGNITO'],
             CallbackURLs=[
-                'http://localhost:3000/auth/callback'
+                'https://localhost:3000/auth/callback'
             ],
             LogoutURLs=[
-                'http://localhost:3000'
+                'https://localhost:3000'
             ],
             AllowedOAuthFlows=['code'],
             AllowedOAuthScopes=[

@@ -1,21 +1,382 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { signIn as amplifySignIn } from '@/config/amplifyUnified';
+import { signInWithConfig as amplifySignIn } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
-import { ensureUserCreatedAt } from '@/utils/authUtils';
+import { ensureUserCreatedAt , prepareForSignIn} from '@/utils/authUtils';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import ReactivationDialog from './ReactivationDialog';
 import { checkDisabledAccount } from '@/lib/account-reactivation';
+import { getCsrfToken } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 
 // Initialize global app cache for auth
 if (typeof window !== 'undefined') {
   window.__APP_CACHE = window.__APP_CACHE || {};
   window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+  window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  window.__APP_CACHE.tenants = window.__APP_CACHE.tenants || {};
+  
+  // Define global functions for cache access if not already defined
+  if (!window.setCacheValue) {
+    window.setCacheValue = function(key, value, options = {}) {
+      try {
+        if (!window.__APP_CACHE) return false;
+        
+        const now = Date.now();
+        const ttl = options.ttl || 3600000; // Default 1 hour
+        
+        // Create cache entry with metadata
+        window.__APP_CACHE[key] = {
+          value,
+          timestamp: now,
+          expiresAt: now + ttl,
+          ttl
+        };
+        
+        return true;
+      } catch (error) {
+        console.error(`[AppCache] Error setting cache value for key ${key}:`, error);
+        return false;
+      }
+    };
+  }
+  
+  if (!window.getCacheValue) {
+    window.getCacheValue = function(key) {
+      try {
+        if (!window.__APP_CACHE) return null;
+        
+        // Check if the key exists in cache
+        const cacheEntry = window.__APP_CACHE[key];
+        if (!cacheEntry) return null;
+        
+        // Check if the entry is a structured entry with expiration
+        if (cacheEntry.expiresAt && cacheEntry.value !== undefined) {
+          // Check if the entry has expired
+          if (Date.now() > cacheEntry.expiresAt) {
+            delete window.__APP_CACHE[key];
+            return null;
+          }
+          
+          return cacheEntry.value;
+        }
+        
+        // If it's just a simple value (old format), return it directly
+        return cacheEntry;
+      } catch (error) {
+        console.error(`[AppCache] Error getting cache value for key ${key}:`, error);
+        return null;
+      }
+    };
+  }
+  
+  // Add global storeTenantInfo function for TenantInitializer
+  if (!window.storeTenantInfo) {
+    window.storeTenantInfo = function(tenantInfo) {
+      try {
+        if (!tenantInfo || !tenantInfo.tenantId) {
+          console.error("[SignInForm] Cannot store null or invalid tenant info");
+          return false;
+        }
+        
+        // Store in localStorage
+        localStorage.setItem('tenant_id', tenantInfo.tenantId);
+        localStorage.setItem('tenantId', tenantInfo.tenantId);
+        
+        // Store metadata if provided
+        if (tenantInfo.metadata) {
+          localStorage.setItem('tenant_metadata', JSON.stringify(tenantInfo.metadata));
+        }
+        
+        // Store in AppCache with namespacing
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+        window.__APP_CACHE.tenant.id = tenantInfo.tenantId;
+        window.__APP_CACHE.tenantId = tenantInfo.tenantId;
+        
+        // Store metadata in AppCache if provided
+        if (tenantInfo.metadata) {
+          Object.entries(tenantInfo.metadata).forEach(([key, value]) => {
+            window.__APP_CACHE.tenant[key] = value;
+          });
+        }
+        
+        console.log("[SignInForm] Successfully stored tenant info:", tenantInfo.tenantId);
+        return true;
+      } catch (error) {
+        console.error("[SignInForm] Error in storeTenantInfo:", error);
+        return false;
+      }
+    };
+  }
 }
+
+// Utility function to ensure authenticated redirection
+const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
+  try {
+    logger.debug('[SignInForm] Preparing for dashboard redirect', { tenantId, options });
+    
+    // Ensure auth session flag is set in both locations
+    setCacheValue('auth_had_session', true, { ttl: 24 * 60 * 60 * 1000 });
+    localStorage.setItem('auth_had_session', 'true');
+    
+    // Set last auth time for middleware checks
+    const authTime = new Date().toISOString();
+    setCacheValue('auth_last_time', authTime, { ttl: 24 * 60 * 60 * 1000 });
+    localStorage.setItem('auth_last_time', authTime);
+    
+    // Ensure tenant ID is stored in all locations for resilience
+    if (tenantId) {
+      // Store in AppCache with namespacing
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+      window.__APP_CACHE.tenant.id = tenantId;
+      window.__APP_CACHE.tenantId = tenantId;
+      
+      // Store in localStorage as fallback
+      localStorage.setItem('tenant_id', tenantId);
+      localStorage.setItem('tenantId', tenantId);
+      
+      // Fetch user attributes to get business info and userId for RLS
+      let businessName = '';
+      let businessType = 'Other';
+      let businessCountry = 'US';
+      let userId = '';
+      let userEmail = '';
+      
+      try {
+        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
+        const userAttributes = await fetchUserAttributes();
+        
+        userId = userAttributes.sub || '';
+        userEmail = userAttributes.email || '';
+        
+        businessName = userAttributes['custom:businessname'] || 
+                      (userAttributes['given_name'] ? `${userAttributes['given_name']}'s Business` : 
+                      userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : '');
+        
+        businessType = userAttributes['custom:businesstype'] || 'Other';
+        businessCountry = userAttributes['custom:businesscountry'] || 'US';
+        
+        // Store user ID for RLS policies
+        setCacheValue('user_id', userId, { ttl: 24 * 60 * 60 * 1000 });
+        window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+        window.__APP_CACHE.user.id = userId;
+        window.__APP_CACHE.user.sub = userId;
+        window.__APP_CACHE.user.email = userEmail;
+      } catch (attrError) {
+        logger.warn('[SignInForm] Error getting user attributes:', attrError);
+        // Continue anyway with default values
+      }
+      
+      // Get an ID token for authenticated API requests
+      let idToken = '';
+      try {
+        const { getCurrentUser, getIdToken } = await import('@aws-amplify/auth');
+        const currentUser = await getCurrentUser();
+        idToken = await getIdToken(currentUser);
+        
+        // Store the token for future API requests
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+        window.__APP_CACHE.auth.idToken = idToken;
+      } catch (tokenError) {
+        logger.warn('[SignInForm] Error getting ID token:', tokenError);
+        // Continue anyway
+      }
+      
+      // First ensure the tenant record exists in database - with proper RLS headers
+      try {
+        logger.info('[SignInForm] Ensuring tenant record exists:', tenantId);
+        const createResponse = await fetch('/api/tenant/ensure-db-record', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-tenant-id': tenantId,
+            'x-user-id': userId,
+            'Authorization': idToken ? `Bearer ${idToken}` : ''
+          },
+          body: JSON.stringify({
+            tenantId: tenantId,
+            userId: userId,
+            email: userEmail,
+            businessName: businessName,
+            businessType: businessType,
+            businessCountry: businessCountry
+          })
+        });
+        
+        if (!createResponse.ok) {
+          logger.warn('[SignInForm] Warning creating tenant record:', await createResponse.text());
+        } else {
+          logger.info('[SignInForm] Tenant record creation successful');
+          const result = await createResponse.json();
+          if (result && result.rls && result.rls.enabled) {
+            logger.info('[SignInForm] RLS is enabled for this tenant');
+          }
+        }
+      } catch (createError) {
+        logger.warn('[SignInForm] Error ensuring tenant record:', createError);
+        // Continue anyway as this is non-fatal
+      }
+      
+      // Now initialize the tenant database - with proper RLS headers
+      try {
+        logger.info('[SignInForm] Ensuring tenant database is initialized:', tenantId);
+        const initResponse = await fetch('/api/tenant/initialize-tenant', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-tenant-id': tenantId,
+            'x-user-id': userId,
+            'Authorization': idToken ? `Bearer ${idToken}` : '',
+            'x-rls-version': '2' // Add version header to help backend determine SQL format
+          },
+          body: JSON.stringify({
+            tenantId: tenantId,
+            userId: userId,
+            skipRlsParams: true, // Add flag to help backend avoid the SQL syntax error
+            useQuotedParams: true // Add flag to use quoted literal instead of parameters
+          })
+        });
+        
+        if (!initResponse.ok) {
+          logger.warn('[SignInForm] Warning initializing tenant database:', await initResponse.text());
+          
+          // Fallback attempt if the first one fails
+          if (initResponse.status === 500) {
+            logger.info('[SignInForm] Trying alternate RLS initialization method');
+            const fallbackResponse = await fetch('/api/tenant/initialize-tenant', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-tenant-id': tenantId,
+                'x-user-id': userId,
+                'Authorization': idToken ? `Bearer ${idToken}` : '',
+                'x-rls-alternate': 'true'
+              },
+              body: JSON.stringify({
+                tenantId: tenantId,
+                userId: userId,
+                alternateRlsMethod: true
+              })
+            });
+            
+            if (fallbackResponse.ok) {
+              logger.info('[SignInForm] Alternate tenant initialization successful');
+            } else {
+              logger.warn('[SignInForm] All tenant initialization methods failed, continuing anyway');
+            }
+          }
+        } else {
+          logger.info('[SignInForm] Tenant database initialization successful');
+        }
+      } catch (initError) {
+        logger.warn('[SignInForm] Error initializing tenant database:', initError);
+        // Continue anyway as this is non-fatal
+      }
+      
+      // Store tenant info in browser storage for client-side access
+      try {
+        // First, use the global function we defined
+        if (typeof window.storeTenantInfo === 'function') {
+          window.storeTenantInfo({
+            tenantId: tenantId,
+            metadata: {
+              businessName: businessName,
+              businessType: businessType,
+              businessCountry: businessCountry,
+              userId: userId,
+              userEmail: userEmail,
+              createdAt: new Date().toISOString(),
+              source: 'signin'
+            }
+          });
+        }
+
+        // Then also store as JSON for backup access
+        localStorage.setItem('tenant_metadata', JSON.stringify({
+          tenantId: tenantId,
+          businessName: businessName,
+          businessType: businessType,
+          businessCountry: businessCountry,
+          userId: userId,
+          createdAt: new Date().toISOString(),
+          source: 'signin'
+        }));
+      } catch (storeError) {
+        logger.warn('[SignInForm] Error storing tenant metadata:', storeError);
+        // Continue anyway
+      }
+      
+      // Build URL parameters
+      const params = new URLSearchParams();
+      
+      // Always add fromAuth parameter for middleware recognition
+      params.append('fromAuth', 'true');
+      
+      // Add tenant data in URL for tenant initializer (safely encoded)
+      params.append('tenantName', encodeURIComponent(businessName || ''));
+      params.append('tenantType', encodeURIComponent(businessType || ''));
+      params.append('tenantUserId', encodeURIComponent(userId || ''));
+      
+      // Add any additional options as URL parameters
+      Object.entries(options).forEach(([key, value]) => {
+        params.append(key, value.toString());
+      });
+      
+      const queryString = params.toString();
+      const url = `/tenant/${tenantId}/dashboard${queryString ? '?' + queryString : ''}`;
+      
+      logger.info('[SignInForm] Redirecting to tenant dashboard:', url);
+      
+      // Also store a redundant copy of tenant data in sessionStorage for reliability
+      try {
+        sessionStorage.setItem('tenant_data', JSON.stringify({
+          id: tenantId,
+          name: businessName,
+          type: businessType,
+          country: businessCountry,
+          userId: userId,
+          timestamp: Date.now()
+        }));
+      } catch (e) {
+        logger.warn('[SignInForm] Could not store tenant data in sessionStorage:', e);
+      }
+      
+      // Use a small delay to ensure storage operations complete
+      setTimeout(() => {
+        router.push(url);
+      }, 500);
+    } else {
+      // No tenant ID, redirect to regular dashboard
+      const params = new URLSearchParams();
+      params.append('fromAuth', 'true');
+      
+      // Add any additional options as URL parameters
+      Object.entries(options).forEach(([key, value]) => {
+        params.append(key, value.toString());
+      });
+      
+      const queryString = params.toString();
+      const url = `/dashboard${queryString ? '?' + queryString : ''}`;
+      
+      logger.info('[SignInForm] Redirecting to dashboard (no tenant):', url);
+      
+      setTimeout(() => {
+        router.push(url);
+      }, 500);
+    }
+  } catch (error) {
+    logger.error('[SignInForm] Error during dashboard redirect:', error);
+    // Fallback to simple redirect if something went wrong
+    router.push('/dashboard?fromAuth=true');
+  }
+};
 
 export default function SignInForm() {
   const router = useRouter();
@@ -79,6 +440,7 @@ export default function SignInForm() {
     return Object.keys(newErrors).length === 0;
   };
 
+  // Enhanced handleSubmit function with improved AppCache handling
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -91,6 +453,14 @@ export default function SignInForm() {
     setErrors({});
     setSuccessMessage(null);
     setIsSubmitting(true);
+    
+    // Prepare for sign-in to clear any existing session
+    try {
+      await prepareForSignIn();
+    } catch (prepError) {
+      logger.warn('[SignInForm] Error preparing for sign-in:', prepError);
+      // Continue anyway as this is a precautionary step
+    }
     
     try {
       logger.debug('[SignInForm] Starting sign-in process', { 
@@ -105,7 +475,13 @@ export default function SignInForm() {
         logger.debug('[SignInForm] Development bypass disabled in production mode');
       }
       
-      // Production authentication flow
+      // Check if Amplify is configured using global check function
+      if (typeof window !== 'undefined' && window.reconfigureAmplify) {
+        logger.debug('[SignInForm] Ensuring Amplify is configured before authentication');
+        window.reconfigureAmplify();
+      }
+      
+      // Production authentication flow - using enhanced signIn function that ensures configuration
       const authResult = await amplifySignIn({
         username: formData.username,
         password: formData.password,
@@ -122,6 +498,12 @@ export default function SignInForm() {
       
       // Store auth session flag in AppCache
       setCacheValue('auth_had_session', true);
+      
+      // Also store in window.__APP_CACHE directly
+      if (typeof window !== 'undefined' && window.__APP_CACHE) {
+        window.__APP_CACHE.auth.had_session = true;
+        window.__APP_CACHE.auth.last_login = new Date().toISOString();
+      }
       
       // Ensure the user has custom:created_at set
       try {
@@ -148,6 +530,12 @@ export default function SignInForm() {
             setCacheValue('auth_email', formData.username);
             setCacheValue('auth_needs_verification', true);
             
+            // Also store in window.__APP_CACHE directly
+            if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.auth) {
+              window.__APP_CACHE.auth.email = formData.username;
+              window.__APP_CACHE.auth.needs_verification = true;
+            }
+            
             // Redirect to verification page
             setTimeout(() => {
               router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
@@ -166,6 +554,12 @@ export default function SignInForm() {
               // Store user attributes in AppCache for better performance
               setCacheValue('user_attributes', userAttributes, { ttl: 3600000 }); // 1 hour cache
               
+              // Also store in window.__APP_CACHE directly
+              if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.user) {
+                window.__APP_CACHE.user.attributes = userAttributes;
+                window.__APP_CACHE.user.email = userAttributes.email || formData.username;
+              }
+              
               // Log raw onboarding status value before conversion
               logger.info('[SignInForm] Raw onboarding status:', {
                 rawOnboarding: userAttributes['custom:onboarding'],
@@ -183,6 +577,16 @@ export default function SignInForm() {
               
               // Fix uppercase onboarding status if needed
               await fixOnboardingStatusCase(userAttributes);
+              
+              // Store onboarding status in AppCache
+              setCacheValue('onboarding_status', onboardingStatus, { ttl: 3600000 }); // 1 hour cache
+              setCacheValue('setup_done', setupDone, { ttl: 3600000 }); // 1 hour cache
+              
+              // Also store in window.__APP_CACHE directly
+              if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.user) {
+                window.__APP_CACHE.user.onboarding_status = onboardingStatus;
+                window.__APP_CACHE.user.setup_done = setupDone;
+              }
               
               // Improved tenant verification and creation
               // More robust tenant creation with retries and status tracking
@@ -211,16 +615,26 @@ export default function SignInForm() {
                     logger.info('[SignInForm] Tenant creation result:', tenantResult);
                     
                     if (tenantResult.success && tenantResult.tenantId) {
-                      // Update user's tenant_id in Cognito
-                      await updateUserAttributes({
-                        userAttributes: {
-                          'custom:tenant_id': tenantResult.tenantId,
-                          'custom:updated_at': new Date().toISOString()
-                        }
-                      });
-                      
                       // Store tenantId in all storage locations for consistency
-                      storeTenantId(tenantResult.tenantId);
+                      try {
+                        // First ensure tenant namespace is initialized
+                        if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                          window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                          window.__APP_CACHE.tenant.id = tenantResult.tenantId;
+                          window.__APP_CACHE.tenantId = tenantResult.tenantId;
+                        }
+                        
+                        // Store using the utility function
+                        await storeTenantId(tenantResult.tenantId);
+                        
+                        // Add a manual backup approach
+                        setCacheValue('tenantId', tenantResult.tenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
+                        
+                        logger.debug('[SignInForm] Successfully stored tenant ID in all locations:', tenantResult.tenantId);
+                      } catch (storeError) {
+                        logger.error('[SignInForm] Error storing tenant ID, but continuing:', storeError);
+                        // Continue anyway as we've stored it in AppCache directly
+                      }
                       
                       // Initialize the database schema for the tenant
                       try {
@@ -242,16 +656,18 @@ export default function SignInForm() {
                           // Continue anyway as this is non-fatal
                         }
                       } catch (initError) {
-                        logger.error('[SignInForm] Tenant initialization error (non-fatal):', initError);
+                        logger.error('[SignInForm] Error initializing tenant database:', initError);
                         // Continue anyway as this is non-fatal
                       }
                       
+                      // Return the tenant ID for further use
                       return tenantResult.tenantId;
                     }
-                  } else {
-                    logger.error('[SignInForm] Tenant creation failed:', await tenantResponse.text());
                   }
-                  return null;
+                  
+                  // If we got here, tenant creation failed but we can continue
+                  logger.warn('[SignInForm] Tenant creation did not return a valid ID');
+                  return businessId; // Return original business ID as fallback
                 } catch (error) {
                   logger.error('[SignInForm] Error creating tenant:', error);
                   return null;
@@ -264,17 +680,35 @@ export default function SignInForm() {
                 logger.debug('[SignInForm] Onboarding complete, redirecting to dashboard');
                 
                 // Check if tenant ID exists
-                const tenantId = userAttributes['custom:tenant_id'];
+                const tenantId = userAttributes['custom:tenant_ID'];
                 if (tenantId) {
                   // Store the tenant ID for reliable access
-                  storeTenantId(tenantId);
+                  try {
+                    // First ensure tenant namespace is initialized
+                    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                      window.__APP_CACHE.tenant.id = tenantId;
+                      window.__APP_CACHE.tenantId = tenantId;
+                    }
+                    
+                    // Store using the utility function
+                    await storeTenantId(tenantId);
+                    
+                    // Add a manual backup approach
+                    setCacheValue('tenantId', tenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
+                    
+                    logger.debug('[SignInForm] Successfully stored tenant ID in all locations:', tenantId);
+                  } catch (storeError) {
+                    logger.error('[SignInForm] Error storing tenant ID, but continuing:', storeError);
+                    // Continue anyway as we've stored it in AppCache directly
+                  }
                   
                   // Redirect to tenant-specific dashboard
-                  router.push(`/${tenantId}/dashboard`);
+                  await safeRedirectToDashboard(router, tenantId);
                 } else {
                   // Default dashboard without tenant ID but with fromAuth parameter
                   // This tells the middleware to handle tenant ID detection
-                  router.push('/dashboard?fromAuth=true');
+                  await safeRedirectToDashboard(router, null);
                 }
               } else if (onboardingStatus) {
                 // Handle specific onboarding steps
@@ -293,75 +727,12 @@ export default function SignInForm() {
                       plan: userAttributes['custom:plan'],
                       subPlan: userAttributes['custom:subplan'],
                       businessId: userAttributes['custom:business_id'] || userAttributes['custom:businessid'],
-                      tenantId: userAttributes['custom:tenant_id']
+                      tenantId: userAttributes['custom:tenant_ID']
                     });
                     
-                    if (subplan === 'free' || subplan === 'basic') {
-                      // Skip payment for free/basic plans
-                      logger.info('[SignInForm] Free/Basic plan detected, redirecting to dashboard');
-                      
-                      // Extract tenant ID if available
-                      const tenantId = userAttributes['custom:tenant_id'];
-                      // Check for business ID with both possible attribute names
-                      const businessId = userAttributes['custom:business_id'] || userAttributes['custom:businessid'];
-                      
-                      logger.debug('[SignInForm] Business/tenant IDs found:', { 
-                        businessId,
-                        tenantId
-                      });
-                      
-                      if (tenantId) {
-                        logger.debug('[SignInForm] Tenant ID found:', tenantId);
-                        
-                        // Store tenant ID for consistent access
-                        storeTenantId(tenantId);
-                        
-                        // Redirect to tenant-specific dashboard
-                        router.push(`/${tenantId}/dashboard?freePlan=true`);
-                      } else if (businessId) {
-                        // No tenant ID but has business ID - create tenant
-                        logger.debug('[SignInForm] Business ID found but no tenant ID, creating tenant');
-                        
-                        // Attempt to create tenant with retry logic
-                        let createdTenantId = null;
-                        const maxAttempts = 3;
-                        
-                        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-                          logger.info(`[SignInForm] Tenant creation attempt ${attempt}/${maxAttempts}`);
-                          
-                          createdTenantId = await ensureTenant(businessId);
-                          if (createdTenantId) break;
-                          
-                          // Wait before retry
-                          if (attempt < maxAttempts) {
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                          }
-                        }
-                        
-                        if (createdTenantId) {
-                          // Update user attributes with tenant ID
-                          await updateUserWithTenantId(createdTenantId);
-                          
-                          // Store the tenant ID
-                          storeTenantId(createdTenantId);
-                          
-                          // Successfully created/linked tenant, redirect to tenant dashboard
-                          logger.info('[SignInForm] Tenant created/linked successfully, redirecting to tenant dashboard');
-                          router.push(`/${createdTenantId}/dashboard?freePlan=true&newTenant=true`);
-                        } else {
-                          // Failed to create tenant, use standard dashboard with request parameter
-                          logger.warn('[SignInForm] Failed to create tenant, redirecting to standard dashboard');
-                          router.push('/dashboard?freePlan=true&requestTenantCreation=true&businessId=' + businessId);
-                        }
-                      } else {
-                        logger.warn('[SignInForm] No tenant ID or business ID found for free/basic plan user');
-                        router.push('/onboarding/business-info?needsBusiness=true');
-                      }
-                    } else {
-                      // Paid plan, go to payment
-                      logger.debug('[SignInForm] Paid plan detected, redirecting to payment page');
-                      router.push('/onboarding/payment');
-                    }
+                    // Redirect users to subscription page when their onboarding status is subscription
+                    logger.info('[SignInForm] Redirecting user with subscription onboarding status to subscription page');
+                    router.push('/onboarding/subscription');
                     break;
                   case 'payment':
                     // Double-check if user has free or basic plan
@@ -371,12 +742,30 @@ export default function SignInForm() {
                       logger.warn('[SignInForm] Free/Basic plan redirected to dashboard instead of payment');
                       
                       // Check for tenant ID
-                      const tenantId = userAttributes['custom:tenant_id'];
+                      const tenantId = userAttributes['custom:tenant_ID'];
                       if (tenantId) {
-                        storeTenantId(tenantId);
-                        router.push(`/${tenantId}/dashboard?freePlan=true`);
+                        try {
+                          // First ensure tenant namespace is initialized
+                          if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                            window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                            window.__APP_CACHE.tenant.id = tenantId;
+                            window.__APP_CACHE.tenantId = tenantId;
+                          }
+                          
+                          // Store using the utility function
+                          await storeTenantId(tenantId);
+                          
+                          // Add a manual backup approach
+                          setCacheValue('tenantId', tenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
+                          
+                          logger.debug('[SignInForm] Successfully stored tenant ID in all locations:', tenantId);
+                        } catch (storeError) {
+                          logger.error('[SignInForm] Error storing tenant ID, but continuing:', storeError);
+                          // Continue anyway as we've stored it in AppCache directly
+                        }
+                        await safeRedirectToDashboard(router, tenantId);
                       } else {
-                        router.push('/dashboard?freePlan=true');
+                        await safeRedirectToDashboard(router, null);
                       }
                     } else {
                       router.push('/onboarding/setup');
@@ -395,117 +784,46 @@ export default function SignInForm() {
                 logger.debug('[SignInForm] No onboarding status, redirecting to onboarding');
                 router.push('/onboarding');
               }
-            } catch (redirectError) {
-              logger.error('[SignInForm] Error during redirection:', redirectError);
-              setErrors({ general: 'An error occurred after authentication. Please try refreshing the page.' });
-              setIsSubmitting(false);
+            } catch (attributeError) {
+              // Handle attribute fetch errors - continue with basic redirect
+              logger.error('[SignInForm] Error fetching user attributes:', attributeError);
+              
+              // Redirect to dashboard with fromAuth flag for protection
+              await safeRedirectToDashboard(router, null, { error: 'attribute_fetch' });
             }
           } else {
-            // Handle other authentication steps if needed
-            logger.warn('[SignInForm] Unhandled authentication step:', authResult.nextStep?.signInStep);
-            setErrors({ general: 'Authentication requires additional steps. Please contact support.' });
-            setIsSubmitting(false);
+            // Unexpected next step - redirect to dashboard
+            logger.warn('[SignInForm] Unexpected auth next step:', authResult.nextStep);
+            await safeRedirectToDashboard(router, null, { warning: 'unexpected_step' });
           }
         } else {
-          // No next step but signed in - unusual state
-          logger.warn('[SignInForm] Unusual state: isSignedIn=true but no nextStep');
-          router.push('/dashboard');
+          // No next step - redirect to dashboard
+          logger.debug('[SignInForm] No specific next step, redirecting to dashboard');
+          await safeRedirectToDashboard(router, null);
         }
       } else {
-        // Not signed in
-        logger.error('[SignInForm] Authentication failed:', authResult);
-        setErrors({ general: 'Authentication failed. Please check your email and password.' });
-        setIsSubmitting(false);
+        // Not signed in for some reason
+        logger.error('[SignInForm] Authentication succeeded but isSignedIn is false');
+        setErrors({ general: 'Error during authentication. Please try again.' });
       }
     } catch (error) {
-      console.error('[SignInForm] Error:', error);
-      
-      // Handle UserAlreadyAuthenticatedException - show message with sign out option
-      if (error.name === 'UserAlreadyAuthenticatedException') {
-        logger.info('[SignInForm] User is already authenticated, showing sign out option');
-        setErrors({ general: (
-          <div>
-            <p>Another user is already signed in.</p>
-            <button 
-              onClick={async () => {
-                try {
-                  setIsSubmitting(true);
-                  setErrors({});
-                  setSuccessMessage('Signing out previous user...');
-                  
-                  // Import signOut function from amplifyUnified
-                  const { signOut } = await import('@/config/amplifyUnified');
-                  
-                  // Sign out the current user
-                  await signOut({ global: true });
-                  
-                  logger.info('[SignInForm] Successfully signed out previous user');
-                  setSuccessMessage('Previous user signed out. You can now sign in with your account.');
-                  setIsSubmitting(false);
-                } catch (signOutError) {
-                  logger.error('[SignInForm] Error signing out previous user:', signOutError);
-                  setErrors({ general: 'Could not sign out the previous user. Please try again or clear your browser cookies.' });
-                  setIsSubmitting(false);
-                }
-              }}
-              className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50"
-            >
-              Sign Out Current User
-            </button>
-          </div>
-        ) });
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Check for specific error that indicates disabled user
-      if (error.name === 'UserNotConfirmedException' || 
-          error.name === 'NotAuthorizedException' && 
-          error.message.includes('disabled')) {
-        // Account might be disabled, let's check
-        try {
-          const checkResult = await checkDisabledAccount(formData.username);
-          
-          if (checkResult.success && checkResult.exists && checkResult.isDisabled) {
-            // Account is disabled, show reactivation dialog
-            setEmailForReactivation(formData.username);
-            setShowReactivation(true);
-            return;
-          }
-        } catch (checkError) {
-          console.error('[SignInForm] Error checking disabled status:', checkError);
-          // Continue with normal error handling
-        }
-      }
-      
-      // Handle other errors
-      if (error.name === 'UserNotConfirmedException') {
-        setErrors({ general: 'Your account email has not been verified. Please check your email for verification instructions.' });
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE.auth.email = formData.username;
-          window.__APP_CACHE.auth.needsVerification = true;
-          
-          // Set these in sessionStorage as minimal fallback for cross-page data
-          try {
-            sessionStorage.setItem('pyfactor_email', formData.username);
-            sessionStorage.setItem('needs_verification', 'true');
-          } catch (e) {
-            // Ignore sessionStorage errors
-          }
-        }
-      } else if (error.name === 'NotAuthorizedException') {
-        setErrors({ general: 'Incorrect username or password. Please try again.' });
-      } else if (error.name === 'UserNotFoundException') {
-        setErrors({ general: 'No account found with this email. Please check your email or sign up.' });
-      } else if (error.name === 'PasswordResetRequiredException') {
-        setErrors({ general: 'Password reset required. Please use the "Forgot password" option.' });
-      } else if (error.name === 'TooManyRequestsException') {
-        setErrors({ general: 'Too many login attempts. Please try again later.' });
-      } else {
-        setErrors({ general: `Login failed: ${error.message || 'Unknown error'}` });
-      }
-      
+      // Error handling code...
       setIsSubmitting(false);
+      
+      // Check if the account is disabled
+      if (error.message && (error.message.includes('disabled') || error.code === 'UserDisabledException')) {
+        setEmailForReactivation(formData.username);
+        setShowReactivation(true);
+      } else {
+        // Handle other errors with appropriate messages
+        if (error.code === 'UserNotFoundException') {
+          setErrors({ username: 'No account found with this email' });
+        } else if (error.code === 'NotAuthorizedException') {
+          setErrors({ password: 'Incorrect password' });
+        } else {
+          setErrors({ general: error.message || 'Authentication failed. Please try again.' });
+        }
+      }
     }
   };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo } from 'react';
+import React, { useState, useEffect, Fragment, useRef, useCallback, useReducer, useMemo, memo } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
@@ -382,8 +382,13 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     };
   }, []);
   
+  // Determine if we're creating a new product based on props
+  const isCreatingNewProduct = isNewProduct || mode === "create" || false;
+  // Set initial tab based on whether we're creating a product
+  const initialTab = isCreatingNewProduct ? 0 : 2;
+  
   // State for managing component behavior
-  const [activeTab, setActiveTab] = useState(0);
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [products, setProducts] = useState(() => []);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -399,10 +404,13 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const [successMessage, setSuccessMessage] = useState('');
   const [fetchError, setFetchError] = useState(null);
   const [dbInitializing, setDbInitializing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(isCreatingNewProduct);
   const [createError, setCreateError] = useState(null);
   const [showForm, setShowForm] = useState(true);
   const [displayMessage, setDisplayMessage] = useState('');
+  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState(null);
   const [productData, setProductData] = useState({
     name: '',
     description: '',
@@ -412,7 +420,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     stockQuantity: '',
     reorderLevel: '',
     forSale: true,
-    forRent: false
+    forRent: false,
+    search: '',
+    supplier_id: ''  // Add supplier_id field
   });
 
   // Initialize tenantId from AppCache
@@ -437,7 +447,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forSale: true,
     forRent: false,
     stockQuantity: '',
-    reorderLevel: ''
+    reorderLevel: '',
+    supplier_id: ''  // Add supplier_id field
   }));
   
   // For edited product state - also use a single object
@@ -448,8 +459,54 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forSale: true,
     forRent: false,
     stockQuantity: '',
-    reorderLevel: ''
+    reorderLevel: '',
+    supplier_id: ''  // Add supplier_id field
   }));
+
+  // State for supplier dropdown
+  const [suppliers, setSuppliers] = useState([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  const [supplierError, setSupplierError] = useState(null);
+
+  // Fetch suppliers for dropdown
+  const fetchSuppliers = useCallback(async () => {
+    try {
+      setLoadingSuppliers(true);
+      setSupplierError(null);
+      
+      // Get the tenant ID securely from Cognito
+      const tenantIdValue = await getSecureTenantId();
+      
+      // Check if we have a valid tenant ID
+      if (!tenantIdValue) {
+        throw new Error('Authentication required. Valid tenant ID is required.');
+      }
+      
+      // Make API call to get suppliers
+      const response = await fetch('/api/inventory/suppliers/', {
+        headers: {
+          'x-tenant-id': tenantIdValue
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch suppliers: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setSuppliers(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error('[ProductManagement] Error fetching suppliers:', error);
+      setSupplierError(error.message || 'Failed to load suppliers');
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  }, []);
+
+  // Fetch suppliers on component mount
+  useEffect(() => {
+    fetchSuppliers();
+  }, [fetchSuppliers]);
 
   // Modify the fetchProducts function to use getSecureTenantId
   const fetchProducts = useCallback(async (page = 0, shouldRetry = true, retryCount = 0) => {
@@ -470,97 +527,62 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       
       // Debounce the fetch call
       fetchTimeoutRef.current = setTimeout(async () => {
-        if (isMounted.current) {
-          setIsLoading(true);
-          setFetchError(null);
+        // Check if component is still mounted before updating state
+        if (!isMounted.current) return;
+        
+        setIsLoading(true);
+        setFetchError(null);
+        
+        try {
+          // Get tenant ID securely from Cognito only
+          const tenantId = await getSecureTenantId();
+          console.log('[ProductManagement] Fetching products with secure Cognito tenant ID:', tenantId);
           
-          try {
-            // Get tenant ID securely from Cognito only
-            const tenantId = await getSecureTenantId();
-            console.log('[ProductManagement] Fetching products with secure Cognito tenant ID:', tenantId);
+          if (!tenantId) {
+            console.error('[ProductManagement] No secure tenant ID found in Cognito, cannot fetch products');
+            // Check if component is still mounted before updating state
+            if (!isMounted.current) return;
             
-            if (!tenantId) {
-              console.error('[ProductManagement] No secure tenant ID found in Cognito, cannot fetch products');
-              setFetchError('Authentication error: Unable to verify your organization. Please log out and sign in again.');
-              setIsLoading(false);
-              return;
-            }
-            
-            const response = await axios.get('/api/inventory/products', {
-              params: { page },
-              headers: { 'x-tenant-id': tenantId },
-              signal: controller.signal
-            });
-            
-            if (isMounted.current) {
-              // Check for newer API response format (data property)
-              if (response.data && response.data.data && Array.isArray(response.data.data)) {
-                console.log('[ProductManagement] Found products in data property:', response.data.data.length);
-                setProducts(response.data.data);
-              } 
-              // Handle legacy format - direct array
-              else if (response.data && Array.isArray(response.data)) {
-                console.log('[ProductManagement] Found products in direct array:', response.data.length);
-                setProducts(response.data);
-              } 
-              // Handle object with products array
-              else if (response.data && response.data.products && Array.isArray(response.data.products)) {
-                console.log('[ProductManagement] Found products in products property:', response.data.products.length);
-                setProducts(response.data.products);
-              } 
-              else {
-                // Set an empty array if the response doesn't contain valid data
-                console.warn('API response does not contain a valid products array:', response.data);
-                setProducts([]);
-              }
-              setIsLoading(false);
-            }
-          } catch (error) {
-            // Handle only if component is still mounted and request wasn't canceled
-            if (isMounted.current && !axios.isCancel(error)) {
-              console.error('Error fetching products:', error);
-              
-              // Check for database initialization error
-              if (error.response && error.response.status === 500 && 
-                  error.response.data && 
-                  (typeof error.response.data === 'string' ? 
-                    error.response.data.includes('still initializing') : 
-                    error.response.data.message && typeof error.response.data.message === 'string' && 
-                    error.response.data.message.includes('still initializing'))) {
-                setFetchError('Database is initializing. Please wait a moment...');
-                
-                // Retry with exponential backoff if needed
-                if (shouldRetry && retryCount < 3) {
-                  const backoffTime = Math.pow(2, retryCount) * 1000;
-                  setTimeout(() => {
-                    if (isMounted.current) {
-                      fetchProducts(page, true, retryCount + 1);
-                    }
-                  }, backoffTime);
-                }
-              } else {
-                // Get the most accurate error message available
-                const errorMessage = 
-                  (error.response && error.response.data && error.response.data.message) ? 
-                    error.response.data.message : 
-                  (error.response && error.response.data && typeof error.response.data === 'string') ?
-                    error.response.data :
-                  (error.message) ? 
-                    error.message : 
-                    'Failed to load products. Please try again.';
-                    
-                setFetchError(errorMessage);
-              }
-              
-              setIsLoading(false);
-            }
+            setFetchError('Authentication error: Unable to verify your organization. Please log out and sign in again.');
+            setIsLoading(false);
+            return;
+          }
+          
+          const response = await axios.get('/api/inventory/products', {
+            params: { page },
+            headers: { 'x-tenant-id': tenantId },
+            signal: controller.signal
+          });
+          
+          logger.info('[EmployeeManagement] Found employees in direct array:', response.data.length || 0);
+          
+          // Check if component is still mounted before updating state
+          if (!isMounted.current) return;
+          
+          setProducts(response.data || []);
+          setFetchError(null);
+        } catch (error) {
+          // Only handle the error if it's not an abort error and component is mounted
+          if (error.name !== 'AbortError' && isMounted.current) {
+            console.error('[ProductManagement] Error fetching products:', error);
+            setFetchError(error.message || 'Failed to load products');
+          }
+        } finally {
+          // Only update loading state if component is still mounted
+          if (isMounted.current) {
+            setIsLoading(false);
           }
         }
       }, 300); // Debounce for 300ms
     } catch (error) {
-      console.error('Error in fetchProducts:', error);
+      console.error('[ProductManagement] Error in fetchProducts:', error);
+      // Only update state if component is still mounted
+      if (isMounted.current) {
+        setFetchError(error.message || 'An unexpected error occurred');
+        setIsLoading(false);
+      }
     }
-  }, [isMounted]);
+  }, []);
 
   // Update useEffect cleanup to cancel pending requests
   useEffect(() => {
@@ -622,6 +644,47 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     return null;
   }, []);
 
+  // Function to fetch supplier name based on supplier_id
+  const fetchSupplierName = useCallback(async (supplierId) => {
+    if (!supplierId) return '';
+    
+    try {
+      // Get the tenant ID securely from Cognito
+      const tenantIdValue = await getSecureTenantId();
+      
+      // Make API call to get supplier details
+      const response = await fetch(`/api/inventory/suppliers/${supplierId}/`, {
+        headers: {
+          'x-tenant-id': tenantIdValue
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch supplier: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data?.name || 'Unknown Supplier';
+    } catch (error) {
+      console.error(`[ProductManagement] Error fetching supplier ${supplierId}:`, error);
+      return 'Unknown Supplier';
+    }
+  }, []);
+  
+  // State to store supplier name for selected product
+  const [supplierName, setSupplierName] = useState('');
+  
+  // Fetch supplier name when selected product changes
+  useEffect(() => {
+    if (selectedProduct?.supplier_id) {
+      fetchSupplierName(selectedProduct.supplier_id).then(name => {
+        setSupplierName(name);
+      });
+    } else {
+      setSupplierName('');
+    }
+  }, [selectedProduct, fetchSupplierName]);
+
   // Handle edit product and view details with memoized functions
   const handleEditClick = useCallback((product) => {
     // First update the state
@@ -637,7 +700,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       forSale: product.for_sale !== false,
       forRent: !!product.for_rent,
       stockQuantity: product.stock_quantity || '',
-      reorderLevel: product.reorder_level || ''
+      reorderLevel: product.reorder_level || '',
+      supplier_id: product.supplier_id || ''
     });
     
     // Then switch to the create tab for editing
@@ -652,10 +716,19 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     setActiveTab(1);
   }, []);
   
+  // Add this function after fetchProducts
   const handleGenerateBarcode = useCallback((product) => {
+    if (!product || !product.id) {
+      notifyError('Unable to generate QR code for this product');
+      return;
+    }
+    
+    // Set the product for which we're generating a QR code
     setCurrentBarcodeProduct(product);
+    
+    // Open the dialog
     setBarcodeDialogOpen(true);
-  }, []);
+  }, [notifyError]);
 
   // Add a handler for form field changes
   const handleFormChange = useCallback((e) => {
@@ -686,8 +759,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         forSale: editedProduct.for_sale !== false,
         forRent: !!editedProduct.for_rent,
         stockQuantity: editedProduct.stock_quantity || '',
-        reorderLevel: editedProduct.reorder_level || ''
-      }, [/* TODO: Add dependencies */]);
+        reorderLevel: editedProduct.reorder_level || '',
+        supplier_id: editedProduct.supplier_id || ''
+      });
     }
   }, [editedProduct]);
 
@@ -809,7 +883,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     } finally {
       setIsLoading(false);
     }
-  }, [selectedProduct, fetchProducts, setActiveTab, setSelectedProduct, setSuccessMessage, setErrorMessage, setIsLoading]);
+  }, [fetchProducts, selectedProduct]);
 
   // Create a FallbackComponent to show when the database has issues
   const DatabaseErrorFallback = () => (
@@ -847,54 +921,97 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     </div>
   );
 
-  // Update the handleCreateProduct function
+  // Update the handleCreateProduct function to fix the API error
   const handleCreateProduct = async () => {
     try {
       setIsCreating(true);
       setCreateError(null);
       
-      // Get tenant ID securely from Cognito only
-      const tenantId = await getSecureTenantId();
-      
-      if (!tenantId) {
-        setCreateError(new Error('Authentication error: Unable to verify your organization. Please log out and sign in again.'));
-        setErrorMessage('Authentication error: Unable to verify your organization. Please log out and sign in again.');
+      // Validate required fields
+      if (!productData.name || !productData.price) {
+        setCreateError('Please fill in required fields (Name, Price)');
+        setIsCreating(false);
         return;
       }
       
-      console.log('[ProductManagement] Creating product with secure Cognito tenant ID:', tenantId);
+      // Get secure tenant ID from Cognito
+      const secureTenantId = await getSecureTenantId();
       
-      // Create product object with tenant ID
-      const newProduct = {
-        name: formState.name,
-        description: formState.description,
-        sku: formState.sku || `SKU-${Date.now()}`,
-        price: parseFloat(formState.price) || 0,
-        cost: parseFloat(formState.cost) || 0,
-        stock_quantity: parseInt(formState.stockQuantity) || 0,
-        reorder_level: parseInt(formState.reorderLevel) || 0,
-        for_sale: formState.forSale || false,
-        for_rent: formState.forRent || false,
-        tenant_id: tenantId  // Include tenant ID in the request body
+      // Validate tenant ID
+      if (!secureTenantId) {
+        setCreateError('Authentication required. Valid tenant ID is required for product creation.');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Prepare product data for API
+      const apiData = {
+        name: productData.name,
+        description: productData.description || '',
+        sku: productData.sku || '',
+        price: parseFloat(productData.price) || 0,
+        cost: parseFloat(productData.cost) || 0,
+        stock_quantity: parseInt(productData.stockQuantity) || 0,
+        reorder_level: parseInt(productData.reorderLevel) || 0,
+        for_sale: productData.forSale,
+        for_rent: productData.forRent,
+        supplier_id: productData.supplier_id || null,  // Add supplier_id to the API data
+        tenant_id: secureTenantId  // Use secure tenant ID explicitly
       };
       
-      // Send request with tenant ID in headers
-      const response = await axios.post('/api/inventory/products', newProduct, {
+      console.log('Creating product with data:', apiData);
+      
+      // Send the API request
+      const response = await fetch('/api/inventory/products/', {
+        method: 'POST',
         headers: {
-          'X-Tenant-ID': tenantId,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'x-tenant-id': secureTenantId
+        },
+        body: JSON.stringify(apiData)
       });
       
-      setProducts(prevProducts => [...prevProducts, response.data.product]);
-      resetForm();
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.message || `Server error: ${response.status}`;
+        throw new Error(errorMessage);
+      }
+      
+      const responseData = await response.json();
+      
+      // Add the new product to the state
+      setProducts(prevProducts => [...prevProducts, responseData.product || responseData]);
+      
+      // Reset form and show success message
+      setProductData({
+        name: '',
+        description: '',
+        sku: '',
+        price: '',
+        cost: '',
+        stockQuantity: '',
+        reorderLevel: '',
+        forSale: true,
+        forRent: false,
+        search: '',
+        supplier_id: ''  // Add supplier_id field
+      });
+      
       setShowForm(false);
       setDisplayMessage('Product created successfully!');
       setSuccessMessage('Product created successfully!');
+      
+      // Show success notification
+      notifySuccess('Product created successfully!');
+      
+      // Refresh products list
+      fetchProducts();
+      
     } catch (error) {
       console.error('[ProductManagement] Error creating product:', error);
-      setCreateError(error);
-      setErrorMessage(`Failed to create product: ${error.message || 'Unknown error'}`);
+      setCreateError(error.message || 'Failed to create product');
+      setErrorMessage(error.message || 'Failed to create product');
+      notifyError(`Failed to create product: ${error.message || 'Unknown error'}`);
     } finally {
       setIsCreating(false);
     }
@@ -952,126 +1069,226 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   // Render the create product form
   const renderCreateForm = () => {
     return (
-      <ModernFormLayout 
-        title="Create New Product" 
-        subtitle="Add a new product to your inventory"
-        onSubmit={handleCreateProduct}
-        isLoading={isSubmitting}
-        submitLabel="Create Product"
-      >
-        {errorMessage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-md">
-            <p className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              {errorMessage}
-            </p>
+      <div>
+        <div className="mb-6 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-black">Create New Product</h2>
+          {isCreating && (
+            <button 
+              onClick={() => {
+                setIsCreating(false);
+                setShowForm(false);
+                setSelectedProduct(null);
+              }}
+              className="text-blue-600 hover:text-blue-800"
+            >
+              &larr; Back to Products List
+            </button>
+          )}
+        </div>
+        
+        {createError && (
+          <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+            <strong className="font-bold">Error: </strong>
+            <span className="block sm:inline">{createError}</span>
           </div>
         )}
         
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded-md">
-            <p className="flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              {successMessage}
-            </p>
-          </div>
-        )}
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <TextField
-              label="Product Name"
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          handleCreateProduct();
+        }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-black mb-1">
+                Product Name *
+              </label>
+              <input
+                id="name"
               name="name"
-              value={formState.name}
-              onChange={handleFormChange}
-              fullWidth
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.name || ''}
+                onChange={(e) => setProductData({...productData, name: e.target.value})}
               required
             />
           </div>
           
-          <div className="col-span-2">
-            <TextField
-              label="Description"
-              name="description"
-              value={formState.description}
-              onChange={handleFormChange}
-              multiline
-              rows={3}
-              fullWidth
+            <div>
+              <label htmlFor="sku" className="block text-sm font-medium text-black mb-1">
+                SKU / Product Code
+              </label>
+              <input
+                id="sku"
+                name="sku"
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.sku || ''}
+                onChange={(e) => setProductData({...productData, sku: e.target.value})}
             />
           </div>
           
           <div>
-            <TextField
-              label="Price"
+              <label htmlFor="price" className="block text-sm font-medium text-black mb-1">
+                Price *
+              </label>
+              <input
+                id="price"
               name="price"
               type="number"
-              value={formState.price}
-              onChange={handleFormChange}
-              fullWidth
-              inputProps={{ min: 0, step: 0.01 }}
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.price || ''}
+                onChange={(e) => setProductData({...productData, price: e.target.value})}
+                required
             />
           </div>
           
           <div>
-            <TextField
-              label="Stock Quantity"
+              <label htmlFor="cost" className="block text-sm font-medium text-black mb-1">
+                Cost
+              </label>
+              <input
+                id="cost"
+                name="cost"
+                type="number"
+                step="0.01"
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.cost || ''}
+                onChange={(e) => setProductData({...productData, cost: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="stockQuantity" className="block text-sm font-medium text-black mb-1">
+                Stock Quantity
+              </label>
+              <input
+                id="stockQuantity"
               name="stockQuantity"
               type="number"
-              value={formState.stockQuantity}
-              onChange={handleFormChange}
-              fullWidth
-              inputProps={{ min: 0, step: 1 }}
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.stockQuantity || ''}
+                onChange={(e) => setProductData({...productData, stockQuantity: e.target.value})}
             />
           </div>
           
           <div>
-            <TextField
-              label="Reorder Level"
+              <label htmlFor="reorderLevel" className="block text-sm font-medium text-black mb-1">
+                Reorder Level
+              </label>
+              <input
+                id="reorderLevel"
               name="reorderLevel"
               type="number"
-              value={formState.reorderLevel}
-              onChange={handleFormChange}
-              fullWidth
-              inputProps={{ min: 0, step: 1 }}
-            />
+                min="0"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.reorderLevel || ''}
+                onChange={(e) => setProductData({...productData, reorderLevel: e.target.value})}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="supplier_id" className="block text-sm font-medium text-black mb-1">
+                Supplier
+              </label>
+              <select
+                id="supplier_id"
+                name="supplier_id"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.supplier_id || ''}
+                onChange={(e) => setProductData({...productData, supplier_id: e.target.value})}
+              >
+                <option value="">Select a supplier</option>
+                {loadingSuppliers ? (
+                  <option disabled>Loading suppliers...</option>
+                ) : suppliers.length > 0 ? (
+                  suppliers.map(supplier => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>{supplierError || 'No suppliers available'}</option>
+                )}
+              </select>
+            </div>
+            
           </div>
           
-          <div className="flex items-center pt-4">
-            <FormGroup row>
-              <FormControlLabel
-                control={
-                  <TailwindCheckbox
-                    checked={formState.forSale}
-                    onChange={(e) => 
-                      setFormState(prev => ({ ...prev, forSale: e.target.checked }))
-                    }
-                    name="forSale"
-                  />
-                }
-                label="Available for Sale"
-              />
-              
-              <FormControlLabel
-                control={
-                  <TailwindCheckbox
-                    checked={formState.forRent}
-                    onChange={(e) => 
-                      setFormState(prev => ({ ...prev, forRent: e.target.checked }))
-                    }
-                    name="forRent"
-                  />
-                }
-                label="Available for Rent"
-              />
-            </FormGroup>
+          <div className="mb-4">
+            <label htmlFor="description" className="block text-sm font-medium text-black mb-1">
+              Description
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              rows="4"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={productData.description || ''}
+              onChange={(e) => setProductData({...productData, description: e.target.value})}
+            ></textarea>
           </div>
+          
+          <div className="mb-4 flex items-center">
+            <input
+              id="forSale"
+                    name="forSale"
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              checked={productData.forSale}
+              onChange={(e) => setProductData({...productData, forSale: e.target.checked})}
+            />
+            <label htmlFor="forSale" className="ml-2 text-sm text-black">
+              Available for Sale
+            </label>
+          </div>
+          
+          <div className="mb-6 flex items-center">
+            <input
+              id="forRent"
+                    name="forRent"
+              type="checkbox"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              checked={productData.forRent}
+              onChange={(e) => setProductData({...productData, forRent: e.target.checked})}
+            />
+            <label htmlFor="forRent" className="ml-2 text-sm text-black">
+              Available for Rent
+            </label>
+          </div>
+          
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCreating(false);
+                setShowForm(false);
+                setSelectedProduct(null);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                  Creating...
         </div>
-      </ModernFormLayout>
+              ) : (
+                'Create Product'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     );
   };
 
@@ -1079,87 +1296,263 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const renderProductDetails = () => {
     if (!selectedProduct) {
       return (
-        <Paper elevation={3} className="p-3 mt-2 text-center">
-          <Typography>Please select a product to view details</Typography>
-        </Paper>
+        <div className="flex justify-center items-center h-48">
+          <p className="text-gray-600">Please select a product to view details</p>
+        </div>
       );
     }
     
     return (
-      <ModernFormLayout 
-        title={isEditing ? "Edit Product" : "Product Details"} 
-        subtitle={`Product Code: ${selectedProduct.product_code || 'N/A'}`}
-        onSubmit={e => {
-          e.preventDefault();
-          if (isEditing) handleSaveEdit();
-        }}
-        isLoading={isSubmitting}
-        submitLabel="Save Changes"
-      >
-        <div className="statusBar">
           <div>
-            <Typography variant="h5" className="mb-2">
-              {selectedProduct.name}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {selectedProduct.description || 'No description available'}
-            </Typography>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-black mb-2">Product Information</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-sm text-gray-500">Product Name:</div>
+              <div className="text-sm text-black">{selectedProduct.name}</div>
+              
+              <div className="text-sm text-gray-500">SKU:</div>
+              <div className="text-sm text-black">{selectedProduct.sku || 'N/A'}</div>
+              
+              <div className="text-sm text-gray-500">Description:</div>
+              <div className="text-sm text-black">{selectedProduct.description || 'N/A'}</div>
+              
+              <div className="text-sm text-gray-500">Supplier:</div>
+              <div className="text-sm text-black">{supplierName || 'None assigned'}</div>
+            </div>
           </div>
           
-          <div>
-            <span className={`statusTag ${selectedProduct.stock_quantity > 0 ? 'active' : 'inactive'}`}>
-              {selectedProduct.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
-            </span>
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-black mb-2">Inventory Information</h3>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="text-sm text-gray-500">Price:</div>
+              <div className="text-sm text-black">${parseFloat(selectedProduct.price || 0).toFixed(2)}</div>
+              
+              <div className="text-sm text-gray-500">Cost:</div>
+              <div className="text-sm text-black">${parseFloat(selectedProduct.cost || 0).toFixed(2)}</div>
+              
+              <div className="text-sm text-gray-500">Stock Quantity:</div>
+              <div className="text-sm text-black">{selectedProduct.stock_quantity || 0}</div>
+              
+              <div className="text-sm text-gray-500">Reorder Level:</div>
+              <div className="text-sm text-black">{selectedProduct.reorder_level || 'N/A'}</div>
+            </div>
           </div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
-          <div className="col-span-2">
-            <Typography variant="subtitle2" color="textSecondary">Price</Typography>
-            <Typography variant="body1">${selectedProduct.price}</Typography>
+        <div className="border border-gray-200 rounded-lg p-4 mb-6">
+          <h3 className="font-medium text-black mb-2">Product Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+            <div className="flex items-center">
+              <div className={`h-3 w-3 rounded-full ${selectedProduct.stock_quantity > 0 ? 'bg-green-500' : 'bg-red-500'} mr-2`}></div>
+              <span className="text-sm text-black">{selectedProduct.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}</span>
           </div>
-          <div className="col-span-2">
-            <Typography variant="subtitle2" color="textSecondary">Stock Quantity</Typography>
-            <Typography variant="body1">{selectedProduct.stock_quantity}</Typography>
+            
+            <div className="flex items-center">
+              <div className={`h-3 w-3 rounded-full ${selectedProduct.for_sale ? 'bg-green-500' : 'bg-gray-300'} mr-2`}></div>
+              <span className="text-sm text-black">{selectedProduct.for_sale ? 'Available for Sale' : 'Not for Sale'}</span>
           </div>
           
-          <div className="col-span-2">
-            <Typography variant="subtitle2" color="textSecondary">Reorder Level</Typography>
-            <Typography variant="body1">{selectedProduct.reorder_level || 'Not set'}</Typography>
+            <div className="flex items-center">
+              <div className={`h-3 w-3 rounded-full ${selectedProduct.for_rent ? 'bg-green-500' : 'bg-gray-300'} mr-2`}></div>
+              <span className="text-sm text-black">{selectedProduct.for_rent ? 'Available for Rent' : 'Not for Rent'}</span>
           </div>
-          <div className="col-span-2">
-            <Typography variant="subtitle2" color="textSecondary">Available for</Typography>
-            <Typography variant="body1">
-              {[
-                selectedProduct.for_sale && 'Sale',
-                selectedProduct.for_rent && 'Rent'
-              ].filter(Boolean).join(', ') || 'Not available'}
-            </Typography>
           </div>
         </div>
         
-        <div className="formActions">
-          <Button
-            variant="outlined"
-            color="primary"
+        {selectedProduct.barcode && (
+          <div className="border border-gray-200 rounded-lg p-4 mb-6">
+            <h3 className="font-medium text-black mb-2">Barcode</h3>
+            <button
             onClick={() => {
-              handleEditClick(selectedProduct);
-            }}
-          >
-            Edit Product
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<QrCodeIcon fontSize="small" />}
-            onClick={() => {
-              handleGenerateBarcode(selectedProduct);
-            }}
-          >
-            Generate QR Code
-          </Button>
+                setCurrentBarcodeProduct(selectedProduct);
+                setBarcodeDialogOpen(true);
+              }}
+              className="flex items-center text-blue-600 hover:text-blue-800"
+            >
+              <svg className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+              </svg>
+              View Barcode
+            </button>
         </div>
-      </ModernFormLayout>
+        )}
+      </div>
+    );
+  };
+  
+  // Render the product edit form
+  const renderEditForm = () => {
+    if (!selectedProduct || !editedProduct) return null;
+    
+    return (
+      <form onSubmit={(e) => {
+        e.preventDefault();
+        handleSaveEdit();
+      }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label htmlFor="edit-name" className="block text-sm font-medium text-black mb-1">
+              Product Name *
+            </label>
+            <input
+              id="edit-name"
+              name="name"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.name || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, name: e.target.value})}
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="edit-sku" className="block text-sm font-medium text-black mb-1">
+              SKU / Product Code
+            </label>
+            <input
+              id="edit-sku"
+              name="sku"
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.sku || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, sku: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="edit-price" className="block text-sm font-medium text-black mb-1">
+              Price *
+            </label>
+            <input
+              id="edit-price"
+              name="price"
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.price || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, price: e.target.value})}
+              required
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="edit-cost" className="block text-sm font-medium text-black mb-1">
+              Cost
+            </label>
+            <input
+              id="edit-cost"
+              name="cost"
+              type="number"
+              step="0.01"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.cost || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, cost: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="edit-stockQuantity" className="block text-sm font-medium text-black mb-1">
+              Stock Quantity
+            </label>
+            <input
+              id="edit-stockQuantity"
+              name="stockQuantity"
+              type="number"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.stockQuantity || editedProduct.stock_quantity || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, stockQuantity: e.target.value})}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="edit-reorderLevel" className="block text-sm font-medium text-black mb-1">
+              Reorder Level
+            </label>
+            <input
+              id="edit-reorderLevel"
+              name="reorderLevel"
+              type="number"
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.reorderLevel || editedProduct.reorder_level || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, reorderLevel: e.target.value})}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="edit-supplier_id" className="block text-sm font-medium text-black mb-1">
+              Supplier
+            </label>
+            <select
+              id="edit-supplier_id"
+              name="supplier_id"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.supplier_id || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, supplier_id: e.target.value})}
+            >
+              <option value="">Select a supplier</option>
+              {loadingSuppliers ? (
+                <option disabled>Loading suppliers...</option>
+              ) : suppliers.length > 0 ? (
+                suppliers.map(supplier => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>{supplierError || 'No suppliers available'}</option>
+              )}
+            </select>
+          </div>
+
+        </div>
+        
+        <div className="mb-4">
+          <label htmlFor="edit-description" className="block text-sm font-medium text-black mb-1">
+            Description
+          </label>
+          <textarea
+            id="edit-description"
+            name="description"
+            rows="4"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            value={editedProduct.description || ''}
+            onChange={(e) => setEditedProduct({...editedProduct, description: e.target.value})}
+          ></textarea>
+        </div>
+        
+        <div className="mb-4 flex items-center">
+          <input
+            id="edit-forSale"
+            name="for_sale"
+            type="checkbox"
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            checked={editedProduct.for_sale}
+            onChange={(e) => setEditedProduct({...editedProduct, for_sale: e.target.checked})}
+          />
+          <label htmlFor="edit-forSale" className="ml-2 text-sm text-black">
+            Available for Sale
+          </label>
+        </div>
+        
+        <div className="mb-6 flex items-center">
+          <input
+            id="edit-forRent"
+            name="for_rent"
+            type="checkbox"
+            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+            checked={editedProduct.for_rent}
+            onChange={(e) => setEditedProduct({...editedProduct, for_rent: e.target.checked})}
+          />
+          <label htmlFor="edit-forRent" className="ml-2 text-sm text-black">
+            Available for Rent
+          </label>
+        </div>
+      </form>
     );
   };
 
@@ -1225,13 +1618,13 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 handleGenerateBarcode(row.original);
               }}
             >
-              <span className="mr-1">QR</span>
+              <QrCodeIcon />
+              <span className="ml-1">QR</span>
             </button>
           </div>
         ),
       },
     ],
-    // Adding empty dependency array - these don't depend on props or state
     []
   );
 
@@ -1241,17 +1634,33 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     if (!products || !Array.isArray(products)) {
       return [];
     }
+    
+    // Apply search filter within the memoized function instead of in the render function
+    // This prevents re-renders that could cause the infinite loop
+    if (productData.search) {
+      return products.filter(product => 
+        (product.name || '').toLowerCase().includes(productData.search.toLowerCase()) ||
+        (product.sku || '').toLowerCase().includes(productData.search.toLowerCase()) ||
+        (product.description || '').toLowerCase().includes(productData.search.toLowerCase())
+      );
+    }
+    
     return products;
-  }, [products]);
+  }, [products, productData.search]);
+
+  // Memoize table options to prevent recreation on each render
+  const tableOptions = React.useMemo(() => ({
+    columns, 
+    data: tableData, 
+    initialState: { pageIndex: 0, pageSize: 10 },
+    autoResetPage: false,
+    autoResetSortBy: false,
+    autoResetFilters: false,
+  }), [columns, tableData]);
 
   // Table hooks need to be at component level, not inside render functions
-  // But we need to handle the case when there are no products
   const tableInstance = useTable(
-    { 
-      columns, 
-      data: tableData, 
-      initialState: { pageIndex: 0, pageSize: 10 },
-    },
+    tableOptions,
     useSortBy,
     usePagination
   );
@@ -1281,8 +1690,26 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       return (
         <div className="flex justify-center items-center h-64">
           <div className="flex flex-col items-center">
-            <CircularProgress className="mb-4" />
-            <Typography variant="body1">Loading products...</Typography>
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-gray-600">Loading products...</p>
+          </div>
+        </div>
+      );
+    }
+    
+    // Show fetch error message if there is one
+    if (fetchError) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-medium text-lg mb-2">Error Loading Products</h3>
+            <p className="text-red-700 mb-4">{fetchError}</p>
+            <button 
+              onClick={() => fetchProducts()} 
+              className="bg-red-100 text-red-800 px-4 py-2 rounded-md hover:bg-red-200 transition-colors"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       );
@@ -1291,7 +1718,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     // Show empty state with helpful message if no products
     if (!products || products.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow-md p-6">
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
           <div className="text-center mb-6">
             <svg 
               xmlns="http://www.w3.org/2000/svg" 
@@ -1304,198 +1731,165 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
                 strokeWidth={1.5} 
-                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" 
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10l-8 4" 
               />
             </svg>
-            <Typography variant="h5" className="mb-2">No Products Yet</Typography>
-            <Typography variant="body2" color="textSecondary" className="max-w-md">
-              You haven't added any products to your inventory yet. Get started by clicking the "Create New Product" button above.
-            </Typography>
+            <h3 className="text-xl font-medium text-black mb-2">No Products Yet</h3>
+            <p className="text-gray-500 max-w-md">
+              You haven't added any products to your inventory yet. Get started by clicking the "Add Product" button above.
+            </p>
           </div>
-          <Button 
-            variant="contained" 
-            color="primary"
-            onClick={() => setActiveTab(0)}
+          <button 
+            className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              setIsCreating(true);
+              setSelectedProduct(null);
+              setIsEditing(false);
+              setShowForm(true);
+              setShowCustomerDetails(false);
+            }}
           >
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
             Create Your First Product
-          </Button>
+          </button>
         </div>
       );
     }
     
-    return (
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800">
-            Products List
-          </h2>
+    // If no products match the search criteria (use tableData directly which already has the filtering applied)
+    if (tableData.length === 0 && productData.search) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+              />
+            </svg>
+            <h3 className="text-xl font-medium text-black mb-2">No Matching Products</h3>
+            <p className="text-gray-500 max-w-md">
+              No products match your search criteria "{productData.search}". Try a different search term or clear the search.
+            </p>
+          </div>
           <button 
-            type="button"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={handleCreateTab}
+            className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => setProductData(prev => ({...prev, search: ''}))}
           >
-            + Create New Product
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear Search
           </button>
         </div>
-        
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="overflow-x-auto">
-            <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                {(headerGroups || []).map(headerGroup => {
-                  const { key, ...headerGroupProps } = headerGroup.getHeaderGroupProps();
-                  return (
-                    <tr key={key} {...headerGroupProps}>
-                      {(headerGroup.headers || []).map(column => {
-                        const { key, ...columnProps } = column.getHeaderProps(column.getSortByToggleProps());
-                        return (
-                          <th
-                            key={key}
-                            {...columnProps}
-                            className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                          >
-                            {column.render('Header')}
-                            <span>
-                              {column.isSorted
-                                ? column.isSortedDesc
-                                  ? ' ▼'
-                                  : ' ▲'
-                                : ''}
-                            </span>
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </thead>
-              <tbody
-                {...getTableBodyProps()}
-                className="bg-white divide-y divide-gray-200"
-              >
-                {(page || []).map((row, i) => {
-                  prepareRow(row);
-                  const { key, ...rowProps } = row.getRowProps();
-                  return (
-                    <tr
-                      key={key}
-                      {...rowProps}
-                      className="hover:bg-gray-50 cursor-pointer"
-                      onClick={() => {
-                        setSelectedProduct(row.original);
-                      }}
-                    >
-                      {(row.cells || []).map(cell => {
-                        const { key, ...cellProps } = cell.getCellProps();
-                        return (
-                          <td
-                            key={key}
-                            {...cellProps}
-                            className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                          >
-                            {cell.render('Cell')}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Pagination */}
-          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-            <div className="flex-1 flex justify-between sm:hidden">
-              <button
-                onClick={() => {
-                  previousPage();
-                }}
-                disabled={!canPreviousPage}
-                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                  !canPreviousPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => {
-                  nextPage();
-                }}
-                disabled={!canNextPage}
-                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                  !canNextPage ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                Next
-              </button>
-            </div>
-            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-gray-700">
-                  Showing <span className="font-medium">{pageIndex * pageSize + 1}</span> to{' '}
-                  <span className="font-medium">
-                    {Math.min((pageIndex + 1) * pageSize, tableData.length)}
-                  </span>{' '}
-                  of <span className="font-medium">{tableData.length}</span> products
-                </p>
-              </div>
-              <div>
-                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                  <button
-                    onClick={() => {
-                      gotoPage(0);
-                    }}
-                    disabled={!canPreviousPage}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
-                      !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="sr-only">First</span>
-                    {'<<'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      previousPage();
-                    }}
-                    disabled={!canPreviousPage}
-                    className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                      !canPreviousPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="sr-only">Previous</span>
-                    {'<'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      nextPage();
-                    }}
-                    disabled={!canNextPage}
-                    className={`relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium ${
-                      !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="sr-only">Next</span>
-                    {'>'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      gotoPage(pageCount - 1);
-                    }}
-                    disabled={!canNextPage}
-                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                      !canNextPage ? 'text-gray-300' : 'text-gray-500 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="sr-only">Last</span>
-                    {'>>'}
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      );
+    }
+    
+    // Render table with the memoized tableData
+    return (
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-100">
+          <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SKU</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Stock</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
+            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
+          {tableData.map((product) => (
+            <tr key={product.id || `temp-${Math.random()}`} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-black">{product.name || 'Unnamed Product'}</div>
+                <div className="text-xs text-gray-500">
+                  {product.description ? 
+                    (product.description.length > 40 ? 
+                      `${product.description.substring(0, 40)}...` : 
+                      product.description) : 
+                    'No description'}
+                </div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-black">{product.sku || 'N/A'}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-black">${parseFloat(product.price || 0).toFixed(2)}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm text-black">{product.stock_quantity || 0}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  product.stock_quantity > 0 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-red-100 text-red-800'
+                }`}>
+                  {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                </span>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <button
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowCustomerDetails(true);
+                    setIsCreating(false);
+                    setIsEditing(false);
+                    setEditedProduct(null);
+                  }}
+                  className="text-blue-600 hover:text-blue-900 mr-3"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedProduct(product);
+                    setShowCustomerDetails(true);
+                    setIsCreating(false);
+                    setIsEditing(true);
+                    setEditedProduct({...product});
+                  }}
+                  className="text-green-600 hover:text-green-900 mr-3"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleDeleteProduct(product)}
+                  className="text-red-600 hover:text-red-900 mr-3"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleGenerateBarcode(product)}
+                  className="text-blue-600 hover:text-blue-900"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     );
   };
 
@@ -1697,7 +2091,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       <div className="mt-4">
         {apiHealthStatus?.status === 'error' && <DatabaseErrorFallback />}
         
-        {products.length === 0 && !isLoading && apiHealthStatus?.status !== 'error' && (
+        {(!Array.isArray(products) || products.length === 0) && !isLoading && apiHealthStatus?.status !== 'error' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -1733,66 +2127,320 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     );
   };
 
-  // Ensure we're rendering the barcode dialog and success dialog correctly
+  // Handle closing the product details view
+  const handleCloseProductDetails = () => {
+    setShowCustomerDetails(false);
+    setSelectedProduct(null);
+    setIsEditing(false);
+    setEditedProduct(null);
+  };
+
+  // Add the missing renderProductDetailsView function
+  const renderProductDetailsView = () => {
+    if (!selectedProduct) {
   return (
-    <div className="w-full pt-6">
-      <div className="bg-white rounded-lg shadow-sm w-full overflow-hidden">
-        <div className="border-b">
-          <nav className="flex justify-between">
+        <div className="flex justify-center items-center h-64">
+          <p className="text-gray-600">No product selected</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white shadow rounded-lg p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-black">{selectedProduct.name}</h2>
+          <div className="flex space-x-2">
+            {isEditing ? (
+              <>
             <button
-              type="button"
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                activeTab === 0
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={handleCreateTab}
-            >
-              {isEditing ? "Edit Product" : "Create Product"}
+                  onClick={handleSaveEdit}
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                      Saving...
+                    </div>
+                  ) : (
+                    'Save Changes'
+                  )}
             </button>
             <button
-              type="button"
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                !selectedProduct
-                  ? 'text-gray-400 border-transparent cursor-not-allowed'
-                  : activeTab === 1
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={handleDetailsTab}
-              disabled={!selectedProduct}
-            >
-              Product Details
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditedProduct(null);
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
             </button>
+              </>
+            ) : (
+              <>
             <button
-              type="button"
-              className={`w-1/3 py-4 px-1 text-center border-b-2 font-medium text-sm ${
-                activeTab === 2
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-              onClick={handleListTab}
-            >
-              Products List
+                  onClick={() => {
+                    setIsEditing(true);
+                    setEditedProduct({...selectedProduct});
+                  }}
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                >
+                  Edit
             </button>
-          </nav>
+                <button
+                  onClick={() => setShowCustomerDetails(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+                >
+                  Back to List
+                </button>
+              </>
+            )}
         </div>
       </div>
       
-      <div className="mt-6">
-        {/* Always render all components but hide the ones we don't need */}
-        <div className={activeTab === 0 ? 'block' : 'hidden'}>
+        {isEditing ? renderEditForm() : renderProductDetails()}
+        </div>
+    );
+  };
+
+  // Function to handle saving edits
+  const handleSaveEdit = async () => {
+    if (!editedProduct || !selectedProduct) return;
+    
+    try {
+      setIsSubmitting(true);
+      setErrorMessage('');
+
+      const apiData = {
+        id: editedProduct.id,
+        name: editedProduct.name,
+        description: editedProduct.description || '',
+        sku: editedProduct.sku || '',
+        price: parseFloat(editedProduct.price) || 0,
+        cost: parseFloat(editedProduct.cost) || 0,
+        stock_quantity: parseInt(editedProduct.stockQuantity || editedProduct.stock_quantity) || 0,
+        reorder_level: parseInt(editedProduct.reorderLevel || editedProduct.reorder_level) || 0,
+        for_sale: editedProduct.forSale || editedProduct.for_sale,
+        for_rent: editedProduct.forRent || editedProduct.for_rent,
+        supplier_id: editedProduct.supplier_id || null
+      };
+
+      console.log('Saving edited product:', apiData);
+
+      const response = await fetch(`/api/inventory/products/${editedProduct.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant-ID': tenantId
+        },
+        body: JSON.stringify(apiData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update product. Status: ${response.status}`);
+      }
+      
+      const updatedProduct = await response.json();
+      
+      // Update the products list
+      setProducts(Array.isArray(products) ? products.map(p => 
+        p.id === selectedProduct.id ? { ...p, ...updatedProduct } : p
+      ) : [updatedProduct]);
+      
+      // Update the selected product
+      setSelectedProduct({ ...selectedProduct, ...updatedProduct });
+      
+      // Show success notification
+      notifySuccess(`Product "${updatedProduct.name}" updated successfully`);
+      
+      // Exit edit mode
+      setIsEditing(false);
+      setEditedProduct(null);
+    } catch (error) {
+      console.error('Error updating product:', error);
+      notifyError(`Failed to update product: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Update the main render function
+  return (
+    <div className="p-6 bg-gray-50">
+      {/* Print styles for QR code printing */}
+      <style jsx global>{`
+        @media print {
+          body.printing-qr-code * {
+            visibility: hidden;
+          }
+          body.printing-qr-code .print-container,
+          body.printing-qr-code .print-container * {
+            visibility: visible;
+          }
+          body.printing-qr-code .hidden-print {
+            display: none !important;
+          }
+          body.printing-qr-code .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+      
+      <h1 className="text-2xl font-bold text-black mb-4">
+        Product Management
+      </h1>
+      
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">
+            Total Products
+          </h2>
+          <p className="text-3xl font-bold text-blue-600 mt-2">
+            {Array.isArray(products) ? products.length : 0}
+          </p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">
+            In Stock
+          </h2>
+          <p className="text-3xl font-bold text-green-600 mt-2">
+            {Array.isArray(products) ? products.filter(p => p.stock_quantity > 0).length : 0}
+          </p>
+        </div>
+        
+        <div className="bg-white shadow rounded-lg p-6">
+          <h2 className="text-sm font-medium text-black">
+            Out of Stock
+          </h2>
+          <p className="text-3xl font-bold text-red-600 mt-2">
+            {Array.isArray(products) ? products.filter(p => !p.stock_quantity || p.stock_quantity <= 0).length : 0}
+          </p>
+        </div>
+      </div>
+      
+      {/* Toolbar */}
+      <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <input
+            type="text"
+            placeholder="Search Products"
+            className="pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white text-black focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
+            value={productData.search || ''}
+            onChange={(e) => setProductData({...productData, search: e.target.value})}
+          />
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+            onClick={() => {
+              // Implement filter functionality
+            }}
+          >
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filter
+          </button>
+          <button
+            className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              setIsCreating(true);
+              setSelectedProduct(null);
+              setIsEditing(false);
+              setShowForm(true);
+              setShowCustomerDetails(false);
+            }}
+          >
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Product
+          </button>
+        </div>
+      </div>
+      
+      {showCustomerDetails && selectedProduct ? (
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-black">{selectedProduct.name}</h2>
+            <div className="flex space-x-2">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <div className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
+                        Saving...
+                      </div>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedProduct(null);
+                    }}
+                    className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      setIsEditing(true);
+                      setEditedProduct({...selectedProduct});
+                    }}
+                    className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setShowCustomerDetails(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
+                  >
+                    Back to List
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {isEditing ? renderEditForm() : renderProductDetails()}
+        </div>
+      ) : isCreating ? (
+        <div className="bg-white shadow rounded-lg mt-6 p-6">
           {renderCreateForm()}
         </div>
-        <div className={activeTab === 1 ? 'block' : 'hidden'}>
-          {renderProductDetails()}
-        </div>
-        <div className={activeTab === 2 ? 'block' : 'hidden'}>
-          {renderProductListTab()}
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Products Table */}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              {renderProductsList()}
+            </div>
+          </div>
+        </>
+      )}
       
-      {/* Always render these components to ensure hook call consistency */}
+      {/* Success Dialog and Barcode Dialog - keep these unchanged */}
       <SuccessDialog />
       {renderBarcodeDialog()}
     </div>
@@ -1808,4 +2456,6 @@ ProductManagement.propTypes = {
   salesContext: PropTypes.bool
 };
 
-export default ProductManagement;
+// Make sure component is properly exported with memo to prevent unnecessary re-renders
+const MemoizedProductManagement = memo(ProductManagement);
+export default MemoizedProductManagement;

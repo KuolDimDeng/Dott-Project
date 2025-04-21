@@ -56,7 +56,7 @@ ATTEMPTS=0
 SERVER_READY=false
 
 while [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-    if curl -s http://localhost:3000 > /dev/null; then
+    if curl -sk https://localhost:3000 > /dev/null; then
         SERVER_READY=true
         break
     fi
@@ -72,10 +72,10 @@ if [ "$SERVER_READY" = true ]; then
     echo -e "${BLUE}Opening Firefox in private mode...${NC}"
     if [[ "$OSTYPE" == "darwin"* ]]; then
         # macOS
-        open -a Firefox --args -private-window "http://localhost:3000"
+        open -a Firefox --args -private-window "https://localhost:3000"
     else
         # Linux
-        firefox --private-window "http://localhost:3000" &
+        firefox --private-window "https://localhost:3000" &
     fi
     
     echo -e "${GREEN}✓ Setup complete! Firefox should open shortly${NC}"
@@ -88,5 +88,4 @@ else
     echo -e "${YELLOW}Starting server without opening browser...${NC}"
     # If the background process failed, run in foreground
     npm run dev
-    # pnpm run dev  # If using pnpm
 fi 

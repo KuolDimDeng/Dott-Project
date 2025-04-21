@@ -44,7 +44,7 @@ For development with memory debugging and heap inspection:
 pnpm run dev-debug
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [https://localhost:3000](https://localhost:3000) with your browser to see the result.
 
 ## Memory Management
 

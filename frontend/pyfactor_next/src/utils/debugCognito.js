@@ -3,6 +3,7 @@
  */
 import { logger } from './logger';
 import { updateUserAttributes, fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';
+import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 /**
  * Debug function to test updating Cognito attributes directly
@@ -16,83 +17,70 @@ export async function testUpdateAttributes() {
     const currentAttributes = await fetchUserAttributes();
     logger.info('[DebugCognito] Current attributes:', currentAttributes);
     
-    // Try update with userAttributes format (Amplify v6 format)
+    // Try update with resilient implementation first
     try {
-      logger.info('[DebugCognito] Attempting update with userAttributes format');
-      const result = await updateUserAttributes({
+      logger.info('[DebugCognito] Attempting update with resilient implementation');
+      const result = await resilientUpdateUserAttributes({
         userAttributes: {
           'custom:onboarding': 'COMPLETE',
           'custom:setupdone': 'true',
-          'custom:attrversion': 'v1.0.1'
+          'custom:attrversion': 'v1.0.2'
         }
       });
       
-      logger.info('[DebugCognito] Update successful with userAttributes format:', result);
+      logger.info('[DebugCognito] Update successful with resilient implementation:', result);
       return true;
-    } catch (error) {
-      logger.error('[DebugCognito] Update failed with userAttributes format:', {
-        message: error.message,
-        name: error.name,
-        code: error.code
+    } catch (resilientError) {
+      logger.error('[DebugCognito] Update failed with resilient implementation:', {
+        message: resilientError.message,
+        name: resilientError.name,
+        code: resilientError.code
       });
       
-      // Try alternative format
+      // Try standard userAttributes format (Amplify v6 format)
       try {
-        logger.info('[DebugCognito] Attempting update with legacy format');
-        await updateUserAttributes({
-          'custom:onboarding': 'COMPLETE',
-          'custom:setupdone': 'true',
-          'custom:attrversion': 'v1.0.1'
+        logger.info('[DebugCognito] Falling back to standard userAttributes format');
+        const result = await updateUserAttributes({
+          userAttributes: {
+            'custom:onboarding': 'COMPLETE',
+            'custom:setupdone': 'true',
+            'custom:attrversion': 'v1.0.1'
+          }
         });
         
-        logger.info('[DebugCognito] Update successful with legacy format');
+        logger.info('[DebugCognito] Update successful with standard format:', result);
         return true;
-      } catch (legacyError) {
-        logger.error('[DebugCognito] Update failed with legacy format:', {
-          message: legacyError.message,
-          name: legacyError.name,
-          code: legacyError.code
+      } catch (error) {
+        logger.error('[DebugCognito] Update failed with standard format:', {
+          message: error.message,
+          name: error.name,
+          code: error.code
         });
+        
+        // Try alternative format
+        try {
+          logger.info('[DebugCognito] Attempting update with legacy format');
+          await updateUserAttributes({
+            'custom:onboarding': 'COMPLETE',
+            'custom:setupdone': 'true',
+            'custom:attrversion': 'v1.0.1'
+          });
+          
+          logger.info('[DebugCognito] Update successful with legacy format');
+          return true;
+        } catch (legacyError) {
+          logger.error('[DebugCognito] Update failed with legacy format:', {
+            message: legacyError.message,
+            name: legacyError.name,
+            code: legacyError.code
+          });
+        }
       }
-    }
-    
-    // Try the server-side update API as fallback
-    logger.info('[DebugCognito] Attempting update via API endpoint');
-    const { tokens } = await fetchAuthSession();
-    
-    if (!tokens) {
-      logger.error('[DebugCognito] No auth session available for API call');
-      return false;
-    }
-    
-    const response = await fetch('/api/onboarding/fix-attributes', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${tokens.idToken.toString()}`
-      }
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      logger.info('[DebugCognito] API update successful:', result);
-      
-      // Verify the update
-      const updatedAttributes = await fetchUserAttributes();
-      logger.info('[DebugCognito] Updated attributes:', updatedAttributes);
-      
-      return true;
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      logger.error('[DebugCognito] API update failed:', {
-        status: response.status,
-        data: errorData
-      });
     }
     
     return false;
   } catch (error) {
-    logger.error('[DebugCognito] Unhandled error in testUpdateAttributes:', error);
+    logger.error('[DebugCognito] Test attribute update failed completely:', error);
     return false;
   }
 }

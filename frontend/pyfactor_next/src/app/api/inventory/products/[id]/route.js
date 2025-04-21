@@ -182,6 +182,112 @@ export async function PATCH(request, { params }) {
 }
 
 /**
+ * PUT handler for updating a specific product by ID
+ * @param {Request} request 
+ * @param {Object} params - Contains the route parameters
+ * @returns {Promise<NextResponse>}
+ */
+export async function PUT(request, { params }) {
+  const { id } = params;
+  const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  
+  logger.info(`[${requestId}] PUT /api/inventory/products/${id} - Start processing request`);
+  
+  try {
+    // Get request body
+    const productData = await request.json();
+    logger.debug(`[${requestId}] Product PUT data for ID: ${id}:`, productData);
+    
+    // Extract tenant info from request
+    const tenantInfo = await extractTenantId(request);
+    const finalTenantId = tenantInfo.tenantId || tenantInfo.businessId || tenantInfo.tokenTenantId;
+    
+    if (!finalTenantId) {
+      logger.error(`[${requestId}] No tenant ID found in request`);
+      return NextResponse.json(
+        { error: 'Tenant ID is required' }, 
+        { status: 400 }
+      );
+    }
+    
+    logger.info(`[${requestId}] Updating product ${id} for tenant: ${finalTenantId}`);
+    
+    // Import the RLS database utility
+    const db = await import('@/utils/db/rls-database');
+    
+    // Update using tenant context for RLS
+    const result = await db.transaction(async (client) => {
+      // Update the product with tenant ID context for RLS
+      const updateQuery = `
+        UPDATE public.inventory_product 
+        SET 
+          name = $1,
+          description = $2,
+          sku = $3,
+          price = $4,
+          cost = $5,
+          stock_quantity = $6,
+          reorder_level = $7,
+          for_sale = $8,
+          for_rent = $9,
+          supplier_id = $10,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $11
+        RETURNING *
+      `;
+      
+      const params = [
+        productData.name,
+        productData.description || '',
+        productData.sku || '',
+        parseFloat(productData.price) || 0,
+        parseFloat(productData.cost) || 0,
+        parseInt(productData.stock_quantity) || 0,
+        parseInt(productData.reorder_level) || 0,
+        productData.for_sale === true,
+        productData.for_rent === true,
+        productData.supplier_id || null,
+        id
+      ];
+      
+      logger.debug(`[${requestId}] Executing product update with tenant context: ${finalTenantId}`);
+      
+      const result = await client.query(updateQuery, params);
+      return result;
+    }, {
+      debug: true,
+      requestId,
+      tenantId: finalTenantId // Set the tenant context for RLS
+    });
+    
+    if (result.rowCount === 0) {
+      logger.warn(`[${requestId}] Product ${id} not found or not owned by tenant ${finalTenantId}`);
+      return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+    
+    logger.info(`[${requestId}] Product ${id} updated successfully for tenant ${finalTenantId}`);
+    
+    return NextResponse.json({
+      success: true,
+      product: result.rows[0],
+      message: 'Product updated successfully'
+    });
+    
+  } catch (error) {
+    logger.error(`[${requestId}] Error updating product ${id}: ${error.message}`, error);
+    
+    return NextResponse.json(
+      {
+        error: 'Failed to update product',
+        message: error.message,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }, 
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * DELETE handler for removing a specific product by ID
  * @param {Request} request 
  * @param {Object} params - Contains the route parameters

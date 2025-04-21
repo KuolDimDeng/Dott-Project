@@ -103,7 +103,7 @@ sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages')
 SHOPIFY_API_KEY = os.getenv('SHOPIFY_API_KEY')
 SHOPIFY_API_SECRET = os.getenv('SHOPIFY_API_SECRET')
 SHOPIFY_SHOP_URL = os.getenv('SHOPIFY_SHOP_URL')
-APP_URL = 'http://127.0.0.1:8000'  # or whatever your app's URL is
+APP_URL = 'https://127.0.0.1:8000'  # or whatever your app's URL is
 
 SHOPIFY_API_VERSION = '2023-07'  # or whatever the latest version is
 DEFAULT_USER_ID = 1  # or whatever default value you want to use
@@ -122,7 +122,7 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-FRONTEND_URL = 'http://localhost:3000'  # Adjust this to your actual frontend URL
+FRONTEND_URL = 'https://localhost:3000'  # Adjust this to your actual frontend URL
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -150,12 +150,22 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # CORS and CSRF configuration
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_ALL_ORIGINS = True  # For development only
+CORS_ALLOW_ALL_ORIGINS = False  # Disable this to use specific origins list
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    # Local development
+    'https://localhost:3000',
+    'https://127.0.0.1:3000',
+    # Backend URLs
+    'https://localhost:8000',
+    'https://127.0.0.1:8000',
+    # Production
+    'https://pyfactor.ai',
+    'https://*.pyfactor.ai',
 ]
+
+# Set to False to use the allowed origins list instead
+CORS_ORIGIN_ALLOW_ALL = False
 
 APPEND_SLASH = True  # Enable automatic slash appending to fix URL routing issues
 
@@ -187,15 +197,16 @@ CORS_ALLOW_HEADERS = [
     'x-request-version',
     'x-id-token',
     'x-user-id',
-    'x-tenant-id',  # Add tenant ID header
-    'x-schema-name',  # Add schema name header
+    'x-tenant-id',  # Lowercase tenant ID header
+    'X-Tenant-ID',  # Uppercase tenant ID header
+    'X-TENANT-ID',  # All caps tenant ID header
+    'x-schema-name',  # Lowercase schema name header
+    'X-Schema-Name',  # Uppercase schema name header
+    'X-SCHEMA-NAME',  # All caps schema name header
     'access-control-allow-origin',
     'access-control-allow-headers',
     'access-control-allow-methods'
 ]
-
-# Add CORS_ORIGIN_ALLOW_ALL for development
-CORS_ORIGIN_ALLOW_ALL = True
 
 CORS_EXPOSE_HEADERS = [
     'access-token',
@@ -227,14 +238,11 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:8000",  # Add this
-    "http://127.0.0.1:8000"   # Add this
+    "https://localhost:3000",
+    "https://127.0.0.1:3000",
+    "https://localhost:8000",  # Add HTTPS backend
+    "https://127.0.0.1:8000"   # Add HTTPS backend
 ]
-
-DJANGO_ALLOWED_HOSTS='localhost,127.0.0.1'
-
 
 # Authentication settings for dj-rest-auth and allauth
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
@@ -270,8 +278,8 @@ SOCIALACCOUNT_PROVIDERS = {
     }
 }
 
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'http' if DEBUG else 'https'
-FRONTEND_URL = 'http://localhost:3000'  # Your React app URL
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = 'https'  # Always use HTTPS
+FRONTEND_URL = 'https://localhost:3000'  # Your React app URL
 OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 
 AUTHENTICATION_BACKENDS = [
@@ -647,6 +655,7 @@ logging.config.dictConfig(LOGGING)
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'custom_auth.cors.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -655,13 +664,14 @@ MIDDLEWARE = [
     'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'custom_auth.middleware.RowLevelSecurityMiddleware',  # Add RLS middleware
+    'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
     'onboarding.middleware.SchemaNameMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'custom_auth.middleware.RequestIDMiddleware',
     'custom_auth.middleware.TenantMiddleware',
     'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
-    'onboarding.middleware.OnboardingSessionMiddleware',
+    # Temporarily disable until we fix the async compatibility issue
+    # 'onboarding.middleware.OnboardingSessionMiddleware',
 ]
 
 # Maximum number of database connections allowed

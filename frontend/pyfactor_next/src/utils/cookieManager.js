@@ -113,11 +113,11 @@ export const setOnboardingAttributes = async (attributes) => {
     });
     
     // Store tenant ID if available
-    const tenantId = attributes['custom:tenant_id'] || attributes.tenantId;
+    const tenantId = attributes['custom:tenant_ID'] || attributes.tenantId;
     if (tenantId) {
       await updateUserAttributes({
         userAttributes: {
-          'custom:tenant_id': tenantId,
+          'custom:tenant_ID': tenantId,
           'custom:tenant_ID': tenantId, // Uppercase version for consistency
           'custom:businessid': tenantId // Legacy attribute
         }

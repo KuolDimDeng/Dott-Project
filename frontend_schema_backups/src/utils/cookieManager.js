@@ -105,7 +105,7 @@ export const setOnboardingCookies = (attributes, ttl = null) => {
     setCacheValue('setup_completed', setupDone ? 'true' : 'false', { ttl: cacheTTL });
     
     // Store tenant ID if available
-    const tenantId = attributes['custom:tenant_id'] || attributes.tenantId;
+    const tenantId = attributes['custom:tenant_ID'] || attributes.tenantId;
     if (tenantId) {
       setCacheValue('tenantId', tenantId, { ttl: cacheTTL });
     }

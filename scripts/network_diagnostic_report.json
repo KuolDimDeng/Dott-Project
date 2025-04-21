@@ -1,0 +1,21 @@
+{
+  "timestamp": "2025-04-19T19:50:40.806Z",
+  "environment": {
+    "frontend": "https://localhost:3000",
+    "backend": "https://127.0.0.1:8000",
+    "certificates": true,
+    "corsConfigured": true,
+    "amplifyConfigured": true
+  },
+  "connectivity": {
+    "backendHttpsAccessible": false,
+    "frontendHttpsAccessible": true
+  },
+  "errors": {
+    "networkErrors": 1,
+    "corsErrors": 0,
+    "authErrors": 0,
+    "sslErrors": 0,
+    "redirectLoops": 0
+  }
+}

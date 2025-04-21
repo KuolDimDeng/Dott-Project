@@ -469,9 +469,28 @@ export async function clearAllAuthData() {
   try {
     logger.debug('[authUtils] Clearing all authentication data');
     
-    // Import required functions
-    const { signOut } = await import('aws-amplify/auth');
+    // Import required functions - use dynamic imports to avoid SSR issues
+    // Using signOut imported at the top of the file
+const { /* signOut already imported */ } = await import('aws-amplify/auth');
+    const { Amplify } = await import('aws-amplify');
     const { clearCache, removeCacheValue } = await import('@/utils/appCache');
+    
+    // Force reconfigure Amplify before sign out to ensure it's in a valid state
+    try {
+      // Get current configuration
+      const currentConfig = Amplify.getConfig();
+      const hasAuth = !!(currentConfig && currentConfig.Auth?.Cognito?.userPoolId);
+      
+      // Reconfigure if needed
+      if (!hasAuth) {
+        logger.info('[authUtils] Amplify not properly configured before sign out, reconfiguring...');
+        const { configureAmplify } = await import('@/config/amplifyUnified');
+        configureAmplify(true); // Force reconfiguration
+      }
+    } catch (configError) {
+      logger.warn('[authUtils] Error checking Amplify configuration:', configError);
+      // Continue with cleanup even if reconfiguration fails
+    }
     
     // 1. Try to sign out with Amplify API first
     try {
@@ -609,3 +628,121 @@ export default {
   parseJwt,
   getAuth
 }; 
+/**
+ * Ensures the authentication token is properly stored in APP_CACHE
+ * This is a utility function to fix issues with token access
+ * 
+ * @returns {Promise<boolean>} True if token was found or stored, false otherwise
+ */
+
+
+/**
+ * Completely refreshes the authentication state by signing out and clearing all data
+ * This is a nuclear option to fix authentication state issues
+ * 
+ * @returns {Promise<boolean>} True if the operation succeeded
+ */
+export async function refreshAuthenticationState() {
+  try {
+    logger.debug('[authUtils] Completely refreshing authentication state');
+    
+    // First clear all auth data which includes sign out
+    await clearAllAuthData();
+    
+    // Wait a moment for everything to settle
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Then reconfigure Amplify
+    const { configureAmplify } = await import('@/config/amplifyUnified');
+    const success = configureAmplify(true); // Force reconfiguration
+    
+    logger.info('[authUtils] Authentication state completely refreshed, result:', success);
+    return success;
+  } catch (error) {
+    logger.error('[authUtils] Error refreshing authentication state:', error);
+    return false;
+  }
+}
+
+/**
+ * Ensures the user is properly signed out and Amplify is ready for a new sign-in
+ * This helps fix "UserAlreadyAuthenticatedException" errors
+ * 
+ * @returns {Promise<boolean>} True if successfully prepared for sign-in
+ */
+export async function prepareForSignIn() {
+  try {
+    logger.debug('[authUtils] Preparing for sign-in');
+    
+    try {
+      // Check if user is already signed in
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      
+      if (user) {
+        logger.info('[authUtils] User already signed in, signing out before new sign-in');
+        await clearAllAuthData();
+      }
+    } catch (error) {
+      // If we get an error other than "not authenticated", sign out to be safe
+      if (!error.message?.includes('not authenticated')) {
+        logger.warn('[authUtils] Error checking current user, clearing auth state to be safe:', error);
+        await clearAllAuthData();
+      }
+    }
+    
+    // Ensure Amplify is properly configured
+    const { configureAmplify } = await import('@/config/amplifyUnified');
+    configureAmplify(true);
+    
+    logger.info('[authUtils] Successfully prepared for sign-in');
+    return true;
+  } catch (error) {
+    logger.error('[authUtils] Error preparing for sign-in:', error);
+    return false;
+  }
+}
+
+export async function ensureAuthTokenInCache() {
+  try {
+    if (typeof window === 'undefined') return false;
+    
+    // Check if we already have the token in APP_CACHE
+    if (window.__APP_CACHE?.auth?.token) {
+      return true;
+    }
+    
+    logger.debug('[authUtils] No auth token found in APP_CACHE, attempting to fetch from session');
+    
+    // Try to get the token from session
+    try {
+      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const session = await fetchAuthSession({ forceRefresh: true });
+      
+      if (session?.tokens?.idToken) {
+        // Initialize APP_CACHE if needed
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+        
+        // Store token in multiple places for maximum compatibility
+        const idToken = session.tokens.idToken.toString();
+        window.__APP_CACHE.auth.token = idToken;
+        window.__APP_CACHE.auth.idToken = idToken;
+        
+        if (session.tokens.accessToken) {
+          window.__APP_CACHE.auth.accessToken = session.tokens.accessToken.toString();
+        }
+        
+        logger.info('[authUtils] Successfully retrieved and stored auth token in APP_CACHE');
+        return true;
+      }
+    } catch (error) {
+      logger.error('[authUtils] Error fetching auth session:', error);
+    }
+    
+    return false;
+  } catch (error) {
+    logger.error('[authUtils] Error in ensureAuthTokenInCache:', error);
+    return false;
+  }
+}

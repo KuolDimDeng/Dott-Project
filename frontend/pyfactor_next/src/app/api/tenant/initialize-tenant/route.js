@@ -9,6 +9,7 @@ import { createDbPool } from '@/app/api/tenant/db-config';
 export async function POST(request) {
   let pool = null;
   let connection = null;
+  let poolClosed = false;
   
   try {
     // Parse request body with better error handling
@@ -134,9 +135,7 @@ export async function POST(request) {
         }
         
         // Set tenant context for this connection
-        await connection.query(`
-          SET app.current_tenant_id = $1;
-        `, [tenantId]);
+        await connection.query(`SET app.current_tenant_id = '${tenantId}';`);
         
         logger.info('[InitializeTenant] Set tenant context for connection');
         
@@ -256,12 +255,14 @@ export async function POST(request) {
     }, { status: 500 });
   } finally {
     // Close pool if opened
-    if (pool) {
-      try {
-        await pool.end();
-      } catch (poolError) {
-        logger.error('[InitializeTenant] Error closing pool:', poolError);
-      }
+  if (pool && !poolClosed) {
+    try {
+      await pool.end();
+      poolClosed = true;
+      logger.debug('[InitializeTenant] Database connection pool closed');
+    } catch (poolError) {
+      logger.error('[InitializeTenant] Error closing pool:', poolError);
     }
+  }
   }
 } 

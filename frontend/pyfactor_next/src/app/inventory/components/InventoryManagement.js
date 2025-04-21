@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import InventoryItemList from './InventoryItemList';
+import SupplierList from './SupplierList';
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -19,7 +20,6 @@ function TabPanel(props) {
 
 // Placeholder components for other tabs
 const CategoryList = () => <p className="text-gray-700">Category List (To be implemented)</p>;
-const SupplierList = () => <p className="text-gray-700">Supplier List (To be implemented)</p>;
 const LocationList = () => <p className="text-gray-700">Location List (To be implemented)</p>;
 const TransactionList = () => <p className="text-gray-700">Transaction List (To be implemented)</p>;
 

@@ -56,7 +56,7 @@ class OnboardingFlowTester:
     def __init__(self, email, password, debug=False):
         self.email = email
         self.password = password
-        self.base_url = "http://127.0.0.1:8000/api"
+        self.base_url = "https://127.0.0.1:8000/api"
         self.token = None
         self.user = None
         self.tenant = None

@@ -5,7 +5,7 @@ import TenantInitializer from './TenantInitializer';
 export default async function TenantLayout({ children, params }) {
   try {
     // Get the tenant ID from params (properly awaited for Next.js 15+)
-    const tenantId = params?.tenantId;
+    const { tenantId } = await params;
     
     // If we don't have a tenant ID in the URL, redirect to home
     if (!tenantId) {

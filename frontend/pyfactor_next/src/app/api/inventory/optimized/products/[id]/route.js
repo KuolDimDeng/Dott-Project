@@ -10,9 +10,10 @@ import { getAccessToken } from '@/utils/authUtils';
  */
 export async function GET(request, { params }) {
   try {
-    // Get product ID from route params
-    const productId = params.id;
-    if (!productId) {
+    // Get product ID from route params (properly awaited for Next.js 15+)
+    const { id } = await params;
+    
+    if (!id) {
       return NextResponse.json(
         { error: 'Product ID is required' },
         { status: 400 }
@@ -38,7 +39,7 @@ export async function GET(request, { params }) {
     }
     
     // Call backend API with proper headers
-    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/inventory/optimized/products/${productId}/`;
+    const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/inventory/optimized/products/${id}/`;
     
     const response = await fetch(backendUrl, {
       method: 'GET',

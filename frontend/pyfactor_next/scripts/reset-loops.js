@@ -127,7 +127,7 @@ function resetAllLoopState() {
   }
 
   console.log('✨ Redirect loop state cleared!');
-  console.log('➡️ Please navigate to: http://localhost:3000/auth/signin?noloop=true');
+  console.log('➡️ Please navigate to: https://localhost:3000/auth/signin?noloop=true');
   
   return '✅ State reset complete - navigate to /auth/signin?noloop=true';
 }
@@ -178,7 +178,7 @@ function resetAllLoopState() {
 4. Then call the function by typing:
    resetAllLoopState()
    
-5. Navigate to: http://localhost:3000/auth/signin?noloop=true
+5. Navigate to: https://localhost:3000/auth/signin?noloop=true
 
 ===============================================
 `);

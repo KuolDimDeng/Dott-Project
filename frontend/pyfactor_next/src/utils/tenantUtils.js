@@ -2,9 +2,11 @@
 
 import { usePathname, useParams, useSearchParams } from 'next/navigation';
 import { logger } from './logger';
-import { updateUserAttributes, fetchUserAttributes } from 'aws-amplify/auth';
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
+import { updateUserAttributes, fetchUserAttributes, getCurrentUser } from 'aws-amplify/auth';
+import { setCacheValue, getCacheValue, removeCacheValue } from '@/utils/appCache';
 import { saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
+import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
+import { resilientUpdateUserAttributes, resilientFetchUserAttributes } from '@/utils/amplifyResiliency';
 
 /**
  * Custom hook to get the tenant ID from various sources
@@ -51,26 +53,116 @@ export function getServerTenantId(headers) {
 
 /**
  * Tenant utility functions
- * 
- * Provides helper functions for working with tenant IDs
+ * These utilities handle tenant ID validation, generation, and conversion
  */
 
-// UUID regex pattern for matching tenant IDs
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Fixed namespace for deterministic UUID generation
+// This ensures the same input always produces the same UUID
+const UUID_NAMESPACE = '9f452fc7-a9c3-4850-8b62-bc2fa3efa73d';
 
 /**
- * Validate if string is a valid UUID
- * This function is compatible with both client and server
- * 
- * @param {string} id - The ID to check
- * @returns {boolean} - True if the ID is a valid UUID
+ * Check if a string is a valid UUID
+ * @param {string} id String to check
+ * @returns {boolean} True if valid UUID
  */
 export function isValidUUID(id) {
-  if (!id || typeof id !== 'string') {
-    return false;
+  if (!id) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
+/**
+ * Generate a deterministic tenant ID from a seed value (usually user ID)
+ * @param {string} seed Seed value to generate UUID from
+ * @returns {string} Deterministic UUID
+ */
+export function generateDeterministicTenantId(seed) {
+  try {
+    // If seed is already a valid UUID, return it
+    if (isValidUUID(seed)) {
+      console.log("[TenantUtils] Seed is already a valid UUID, using as is:", seed);
+      return seed;
+    }
+
+    // First normalize the seed
+    const normalizedSeed = seed.toString().toLowerCase().trim();
+    
+    // Create a namespace UUID for consistent generation
+    const NAMESPACE = '74738ff5-5367-5958-9aee-98fffdcd1876';
+    
+    // Use UUID v5 (SHA-1 based) for deterministic generation
+    const deterministicId = uuidv5(normalizedSeed, NAMESPACE);
+    
+    return deterministicId;
+  } catch (error) {
+    console.error("[TenantUtils] Error generating deterministic UUID:", error);
+    // Fallback to v4 (random) as a last resort
+    return uuidv4();
+  }
+}
+
+/**
+ * Generate a valid schema name from a tenant ID
+ * @param {string} tenantId Tenant ID to convert
+ * @returns {string} Valid schema name
+ */
+export function generateSchemaName(tenantId) {
+  if (!tenantId) return null;
+  
+  // Remove hyphens and convert to lowercase
+  const cleanId = tenantId.replace(/-/g, '').toLowerCase();
+  
+  // Add 'tenant_' prefix
+  return `tenant_${cleanId.substring(0, 20)}`;
+}
+
+/**
+ * Convert a non-UUID tenant ID to a valid UUID
+ * @param {string} tenantId Potential non-UUID tenant ID
+ * @returns {string} Valid UUID
+ */
+export function convertToValidTenantId(tenantId) {
+  if (!tenantId) return null;
+  
+  // If already a valid UUID, return as is
+  if (isValidUUID(tenantId)) {
+    return tenantId;
   }
   
-  return UUID_PATTERN.test(id);
+  // Convert to deterministic UUID
+  return generateDeterministicTenantId(tenantId);
+}
+
+/**
+ * Format display name for a tenant ID
+ * @param {string} tenantId Tenant ID
+ * @returns {string} Shortened display form
+ */
+export function formatTenantIdForDisplay(tenantId) {
+  if (!tenantId) return 'unknown';
+  
+  if (tenantId.length > 13) {
+    return `${tenantId.substring(0, 6)}...${tenantId.substring(tenantId.length - 6)}`;
+  }
+  
+  return tenantId;
+}
+
+/**
+ * Generate a fallback tenant ID if all else fails
+ * @param {string} userId Optional user ID for deterministic generation
+ * @returns {string} Valid UUID
+ */
+export function generateFallbackTenantId(userId) {
+  if (userId) {
+    try {
+      return generateDeterministicTenantId(userId);
+    } catch (error) {
+      console.error('Error generating deterministic tenant ID:', error);
+    }
+  }
+  
+  // Generate random UUID as last resort
+  return uuidv4();
 }
 
 /**
@@ -98,14 +190,15 @@ export async function storeTenantId(tenantId) {
       source
     });
     
+    // Store in AppCache for redundancy
+    setCacheValue('tenantId', tenantId);
+    
     // Update Cognito with tenant ID
     try {
-      const { updateUserAttributes } = await import('aws-amplify/auth');
-      
-      await updateUserAttributes({
+      // Use resilient implementation that handles retries and timeouts
+      await resilientUpdateUserAttributes({
         userAttributes: {
           'custom:tenant_ID': tenantId,
-          'custom:tenant_id': tenantId,
           'custom:businessid': tenantId,
           'custom:updated_at': new Date().toISOString()
         }
@@ -157,86 +250,80 @@ export async function getTenantId() {
 }
 
 /**
- * Get tenant ID from Cognito attributes
- * Handles various attribute names for backward compatibility
- * @returns {Promise<string|null>} Tenant ID or null if not found
+ * Gets the tenant ID from Cognito or null if not found
+ * @returns {Promise<string|null>} Tenant ID or null
  */
 export async function getTenantIdFromCognito() {
-  // Check AppCache first for performance
-  if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
-    const cachedTenantId = window.__APP_CACHE.tenant.id;
-    logger.debug(`[TenantUtils] Using cached tenant ID: ${cachedTenantId}`);
-    return cachedTenantId;
-  }
-  
   try {
-    // Import fetchUserAttributes dynamically to avoid SSR issues
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { resilientFetchUserAttributes } = await import('@/utils/amplifyResiliency');
+    const attributes = await resilientFetchUserAttributes(fetchUserAttributes);
     
-    try {
-      // Get user attributes from Cognito
-      const attributes = await fetchUserAttributes();
-      
-      // Check different attribute names that could contain tenant ID
-      // custom:tenant_ID (uppercase) is the primary source of truth
-      const tenantId = attributes['custom:tenant_ID'] || 
-                      attributes['custom:tenant_id'] || 
-                      attributes['custom:businessid'] || 
-                      attributes['custom:tenantId'] ||
-                      attributes['custom:business_id'];
-      
-      if (tenantId) {
-        logger.debug(`[TenantUtils] Found tenant ID in Cognito: ${tenantId}`);
-        
-        // Store in AppCache for future use
-        if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-          window.__APP_CACHE.tenant.id = tenantId;
-          window.__APP_CACHE.tenant.source = 'cognito';
-        }
-        
-        return tenantId;
-      }
-      
-      logger.debug('[TenantUtils] No tenant ID found in Cognito attributes');
-      return null;
-    } catch (error) {
-      // Only log as debug since this is commonly called during initialization
-      // and may fail if user is not authenticated yet
-      logger.debug('[TenantUtils] Error getting user attributes from Cognito:', error);
-      return null;
+    // Try to get tenant ID from different attribute keys
+    const tenantId = attributes ? (
+      attributes['custom:tenant_ID'] ||
+      attributes['custom:tenantId'] ||
+      attributes['custom:businessid']
+    ) : null;
+    
+    if (tenantId && isValidUUID(tenantId)) {
+      logger.debug('[TenantUtils] Found tenant ID in Cognito:', tenantId);
+      return tenantId;
     }
+    
+    logger.debug('[TenantUtils] No tenant ID found in Cognito attributes');
+    return null;
   } catch (error) {
-    logger.debug('[TenantUtils] Error importing AWS Amplify:', error);
+    logger.debug('[TenantUtils] Error getting user attributes from Cognito:', error);
     return null;
   }
 }
 
 /**
- * Set the tenant ID in Cognito and AppCache
- * 
- * @param {string} tenantId - The tenant ID to set
- * @returns {Promise<boolean>} True if successful
+ * Sets the tenant ID for the current user, updating both storage and Cognito attributes
+ * @param {string} tenantId The tenant ID to set
+ * @returns {Promise<boolean>} Whether the operation was successful
  */
 export async function setTenantId(tenantId) {
   try {
     if (!tenantId) {
-      logger.warn('[TenantUtils] Attempted to set empty tenant ID');
+      logger.error('[TenantUtils] Cannot set null or empty tenant ID');
       return false;
     }
     
-    logger.debug(`[TenantUtils] Setting tenant ID: ${tenantId}`);
+    // Format and validate the tenant ID
+    const formattedTenantId = formatTenantId(tenantId);
+    if (!isValidTenantId(formattedTenantId)) {
+      logger.error('[TenantUtils] Invalid tenant ID format:', tenantId);
+      return false;
+    }
     
-    // Set in AppCache for immediate use
-    setCacheValue(TENANT_ID_CACHE_KEY, tenantId, { ttl: TENANT_ID_TTL });
+    logger.info('[TenantUtils] Setting tenant ID:', formattedTenantId);
     
-    // Also update in Cognito for persistence
-    await updateTenantIdInCognito(tenantId);
+    // Update local storage
+    setTenantIdStorage(formattedTenantId);
     
-    return true;
+    // Update Cognito attributes with resilient implementation
+    try {
+      await resilientUpdateUserAttributes({
+        userAttributes: {
+          'custom:tenant_ID': formattedTenantId,
+          'custom:tenantId': formattedTenantId,
+          'custom:businessid': formattedTenantId,
+          'custom:updated_at': new Date().toISOString()
+        }
+      });
+      
+      logger.info('[TenantUtils] Successfully updated Cognito attributes with tenant ID');
+      return true;
+    } catch (cognitoError) {
+      logger.error('[TenantUtils] Error updating Cognito attributes with tenant ID:', cognitoError);
+      
+      // Even if Cognito update fails, we still set the ID in storage
+      // This provides fallback in case of Cognito service issues
+      return false;
+    }
   } catch (error) {
-    logger.error('[TenantUtils] Error setting tenant ID:', error);
+    logger.error('[TenantUtils] Error in setTenantId:', error);
     return false;
   }
 }
@@ -248,96 +335,39 @@ export async function setTenantId(tenantId) {
  * @returns {Promise<boolean>} True if successful
  */
 export async function updateTenantIdInCognito(tenantId) {
-  let retryCount = 0;
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second delay between retries
+  if (!tenantId) {
+    console.error("[TenantUtils] Cannot update Cognito with null or empty tenantId");
+    return { success: false };
+  }
+
+  // Always ensure we're dealing with a valid UUID before updating Cognito
+  const validatedTenantId = isValidUUID(tenantId) 
+    ? tenantId 
+    : generateDeterministicTenantId(tenantId);
+  
+  console.log(`[TenantUtils] Updating Cognito with tenant ID: ${validatedTenantId}`);
   
   const attemptUpdate = async () => {
     try {
-      logger.debug(`[TenantUtils] Updating tenant ID in Cognito: ${tenantId}`);
-      
-      if (!tenantId || !isValidUUID(tenantId)) {
-        logger.warn('[TenantUtils] Attempted to update with invalid tenant ID', { tenantId });
-        return false;
-      }
-      
-      // Use Amplify Auth API directly instead of potentially unreliable fetch
+      // Get the current user
+      const user = await getCurrentUser();
+      // Update the attributes
       await updateUserAttributes({
         userAttributes: {
-          'custom:tenant_id': tenantId,
           'custom:tenant_ID': tenantId,
-          'custom:businessid': tenantId,
-          'custom:updated_at': new Date().toISOString()
+          'custom:tenant_id': tenantId,
         }
       });
       
-      logger.info('[TenantUtils] Successfully updated tenant ID in Cognito');
+      logger.info('[tenantUtils] Updated Cognito attributes with tenant ID:', tenantId);
       return true;
-    } catch (error) {
-      // Handle session errors with retry and token refresh attempt
-      if (error.name === 'NotAuthorizedException' || 
-          error.message?.includes('token') || 
-          error.name === 'UserUnAuthenticatedException') {
-        
-        logger.warn(`[TenantUtils] Auth error updating tenant ID (attempt ${retryCount + 1}/${MAX_RETRIES})`, { error: error.message });
-        
-        if (retryCount < MAX_RETRIES) {
-          retryCount++;
-          
-          // Try to refresh the session before retrying
-          try {
-            const { Auth } = await import('aws-amplify');
-            logger.debug('[TenantUtils] Refreshing session before retrying update');
-            await Auth.currentSession({ bypassCache: true });
-          } catch (refreshError) {
-            logger.warn('[TenantUtils] Error refreshing session', { error: refreshError.message });
-            // Continue with retry even if refresh fails
-          }
-          
-          // Add exponential backoff
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, retryCount - 1)));
-          
-          // Retry the update
-          return await attemptUpdate();
-        }
-      }
-      
-      // Handle network errors with retry
-      if (error.name === 'NetworkError' || 
-          error instanceof DOMException ||
-          error.message?.includes('Network') ||
-          error.message?.includes('aborted')) {
-        
-        logger.warn(`[TenantUtils] Network error updating tenant ID (attempt ${retryCount + 1}/${MAX_RETRIES})`, { error: error.message });
-        
-        if (retryCount < MAX_RETRIES) {
-          retryCount++;
-          
-          // Add exponential backoff
-          await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * Math.pow(2, retryCount - 1)));
-          
-          // Retry the update
-          return await attemptUpdate();
-        }
-      }
-      
-      // Log detailed error for debugging
-      logger.error('[TenantUtils] Failed to update tenant ID in Cognito after retries', {
-        error: error.message,
-        name: error.name,
-        code: error.code
-      });
-      
-      throw error;
+    } catch (e) {
+      logger.warn('[tenantUtils] Failed to update Cognito with tenant ID:', e);
+      return false;
     }
   };
   
-  try {
-    return await attemptUpdate();
-  } catch (error) {
-    logger.error('[TenantUtils] Error updating tenant ID in Cognito:', error);
-    return false;
-  }
+  return handleNetworkError(attemptUpdate, 3);
 }
 
 /**
@@ -382,32 +412,6 @@ export function formatSchemaName(tenantId) {
   
   // Replace hyphens with underscores for database schema compatibility
   return `tenant_${tenantId.replace(/-/g, '_')}`;
-}
-
-/**
- * Generate a deterministic tenant ID based on user ID
- * 
- * @param {string} userId - The user ID
- * @returns {string} - The generated tenant ID
- */
-export function generateDeterministicTenantId(userId) {
-  if (!userId) return null;
-  
-  // This is a simplified implementation
-  // In a real system, this would use crypto libraries for proper UUID generation
-  const hash = Array.from(userId).reduce((acc, char) => {
-    return (acc * 31 + char.charCodeAt(0)) & 0xFFFFFFFF;
-  }, 0).toString(16).padStart(8, '0');
-  
-  const parts = [
-    hash.slice(0, 8),
-    hash.slice(0, 4),
-    '5' + hash.slice(0, 3), // Version 5 UUID
-    ((parseInt(hash.slice(0, 4), 16) & 0x3FFF) | 0x8000).toString(16), // Variant 1 UUID
-    userId.slice(0, 12).padEnd(12, '0')
-  ];
-  
-  return parts.join('-');
 }
 
 /**
@@ -509,75 +513,119 @@ export function validateTenantIdFormat(tenantId) {
 
 /**
  * Store tenant information in Cognito user attributes
- * @param {Object} tenantInfo - The tenant info to store
+ * @param {Object|string} tenantInfo - The tenant info to store or tenant ID
  * @returns {Promise<boolean>} Success status
  */
 export async function storeTenantInfo(tenantInfo) {
-  if (!tenantInfo || typeof window === 'undefined') return false;
-  
-  try {
-    // Prepare tenant data for Cognito attributes
-    const attributes = {};
-    
-    // Store basic tenant info
-    if (tenantInfo.id) {
-      attributes['custom:tenant_ID'] = tenantInfo.id;
-      attributes['custom:tenant_id'] = tenantInfo.id;
-      attributes['custom:businessid'] = tenantInfo.id;
-    }
-    
-    if (tenantInfo.name) {
-      attributes['custom:tenant_name'] = tenantInfo.name;
-      
-      // Also use as business name if not already set
-      if (!tenantInfo.businessName) {
-        attributes['custom:businessname'] = tenantInfo.name;
-      }
-    }
-    
-    if (tenantInfo.businessName) {
-      attributes['custom:businessname'] = tenantInfo.businessName;
-    }
-    
-    if (tenantInfo.businessType) {
-      attributes['custom:businesstype'] = tenantInfo.businessType;
-    }
-    
-    if (tenantInfo.status) {
-      attributes['custom:tenant_status'] = tenantInfo.status;
-    }
-    
-    // Store nested data as JSON string if needed
-    if (Object.keys(tenantInfo).length > 5) {
-      // Store limited data as JSON in a custom attribute
-      const jsonData = JSON.stringify({
-        id: tenantInfo.id,
-        name: tenantInfo.name,
-        created: tenantInfo.created || new Date().toISOString(),
-        status: tenantInfo.status || 'active'
-      });
-      attributes['custom:tenant_data'] = jsonData;
-    }
-    
-    // Update Cognito with tenant info
-    const { updateUserAttributes } = await import('aws-amplify/auth');
-    await updateUserAttributes({
-      userAttributes: {
-        ...attributes,
-        'custom:updated_at': new Date().toISOString()
+  // Allow passing just the tenant ID as a string for backward compatibility
+  if (typeof tenantInfo === 'string') {
+    console.warn("[TenantUtils] Deprecated: Passing tenantId as string to storeTenantInfo - please update code to pass an object");
+    // Use a local function to avoid recursion
+    return storeTenantInfoInternal({
+      tenantId: tenantInfo,
+      metadata: {
+        source: 'string-fallback',
+        timestamp: new Date().toISOString()
       }
     });
+  }
+
+  return storeTenantInfoInternal(tenantInfo);
+}
+
+/**
+ * Internal implementation for storing tenant info
+ * @private
+ */
+async function storeTenantInfoInternal(tenantInfo) {
+  if (!tenantInfo || !tenantInfo.tenantId) {
+    console.error("[TenantUtils] Cannot store null or invalid tenant info");
+    return false;
+  }
+
+  try {
+    // Always mark subscription as completed to help with fallback recovery
+    localStorage.setItem('subscription_completed', 'true');
     
-    logger.debug('[tenantUtils] Tenant info stored in Cognito');
+    // Store tenantId in localStorage
+    localStorage.setItem('tenant_id', tenantInfo.tenantId);
     
-    // If tenantInfo contains ID, also ensure it's stored as primary tenant ID
-    if (tenantInfo.id) {
-      await storeTenantId(tenantInfo.id);
+    // Calculate TTL if provided
+    let expiryTime = null;
+    if (tenantInfo.ttl) {
+      expiryTime = Date.now() + tenantInfo.ttl;
+      localStorage.setItem('tenant_id_expiry', expiryTime);
+    }
+    
+    // Store additional metadata if provided
+    if (tenantInfo.metadata) {
+      localStorage.setItem('tenant_metadata', JSON.stringify(tenantInfo.metadata));
+    }
+    
+    console.log("[TenantUtils] Tenant info stored successfully in local storage");
+    
+    // Try to update IndexedDB if available
+    try {
+      // Open the database
+      const dbPromise = indexedDB.open('tenant_db', 1);
+      
+      dbPromise.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains('tenant_store')) {
+          db.createObjectStore('tenant_store', { keyPath: 'id' });
+        }
+      };
+      
+      dbPromise.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction(['tenant_store'], 'readwrite');
+        const store = transaction.objectStore('tenant_store');
+        
+        // Store the tenant info with an ID and timestamp
+        store.put({
+          id: 'current_tenant',
+          tenantId: tenantInfo.tenantId,
+          metadata: tenantInfo.metadata || {},
+          expiry: expiryTime,
+          updatedAt: Date.now()
+        });
+        
+        transaction.oncomplete = () => {
+          console.log("[TenantUtils] Tenant info also stored in IndexedDB");
+        };
+        
+        transaction.onerror = (error) => {
+          console.error("[TenantUtils] Error storing in IndexedDB:", error);
+          // Already saved in localStorage, so still consider it a success
+        };
+      };
+      
+      dbPromise.onerror = (error) => {
+        console.error("[TenantUtils] Error opening IndexedDB:", error);
+        // Already saved in localStorage, so still consider it a success
+      };
+    } catch (dbError) {
+      console.error("[TenantUtils] Error with IndexedDB operations:", dbError);
+      // Already saved in localStorage, so still consider it a success
+    }
+    
+    // Also ensure it's stored in the window.__APP_CACHE
+    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+      window.__APP_CACHE.tenant.id = tenantInfo.tenantId;
+      window.__APP_CACHE.tenantId = tenantInfo.tenantId;
+      
+      // Store metadata in AppCache if provided
+      if (tenantInfo.metadata) {
+        Object.entries(tenantInfo.metadata).forEach(([key, value]) => {
+          window.__APP_CACHE.tenant[key] = value;
+        });
+      }
     }
     
     return true;
   } catch (error) {
-    logger.error('[tenantUtils] Error storing tenant info in Cognito:', error);
+    console.error("[TenantUtils] Error storing tenant info:", error);
     return false;
   }
 }
@@ -1122,34 +1170,55 @@ export async function getEffectiveTenantId() {
 // Add a method to handle network errors with retry logic
 export const handleNetworkError = async (operation, maxRetries = 3) => {
   let retryCount = 0;
+  let lastError = null;
   
-  const executeWithRetry = async () => {
-    try {
-      return await operation();
-    } catch (error) {
-      // Check if this is a network error
-      const isNetworkError = 
-        error.name === 'NetworkError' || 
-        error.message?.includes('network') || 
-        error.message?.includes('Network Error') ||
-        error.code === 'NetworkError';
-      
-      if (isNetworkError && retryCount < maxRetries) {
-        retryCount++;
-        logger.info(`[TenantUtils] Retrying operation after network error (${retryCount}/${maxRetries})`);
-        
-        // Exponential backoff 
-        const delay = Math.pow(2, retryCount) * 500;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        return executeWithRetry();
-      }
-      
-      throw error;
-    }
+  const exponentialBackoff = (attempt) => {
+    const delay = Math.min(100 * Math.pow(2, attempt), 10000); // Cap at 10 seconds
+    const jitter = Math.random() * 300; // Add up to 300ms of jitter
+    return delay + jitter;
   };
   
-  return executeWithRetry();
+  const executeWithRetry = async () => {
+    while (retryCount < maxRetries) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error;
+        retryCount++;
+        
+        // Log the retry attempt
+        console.warn(`[TenantUtils] Operation failed (attempt ${retryCount}/${maxRetries}):`, 
+          error.message || error);
+        
+        // If we've hit max retries, throw the last error
+        if (retryCount >= maxRetries) {
+          throw error;
+        }
+        
+        // Wait with exponential backoff before retrying
+        const backoffTime = exponentialBackoff(retryCount);
+        console.log(`[TenantUtils] Retrying in ${Math.round(backoffTime)}ms...`);
+        await new Promise(resolve => setTimeout(resolve, backoffTime));
+      }
+    }
+    
+    // This should never be reached due to the throw above
+    throw lastError || new Error('Maximum retries exceeded');
+  };
+  
+  try {
+    return await executeWithRetry();
+  } catch (finalError) {
+    // Create a fallback response as a last resort
+    console.error("[TenantUtils] All retries failed:", finalError);
+    
+    return {
+      success: false,
+      error: finalError.message || 'Operation failed after multiple retries',
+      retries: retryCount,
+      fallback: true
+    };
+  }
 };
 
 // Apply this to the tenant fetching function

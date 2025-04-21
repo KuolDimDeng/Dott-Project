@@ -38,7 +38,7 @@ export async function GET(request) {
       try {
         const tokenPayload = await verifyToken(user.token);
         if (tokenPayload) {
-          tenantIdFromToken = tokenPayload['custom:businessid'] || tokenPayload['custom:tenant_id'];
+          tenantIdFromToken = tokenPayload['custom:businessid'] || tokenPayload['custom:tenant_ID'];
           if (tenantIdFromToken) {
             logger.debug('Found tenant ID in token claims:', tenantIdFromToken);
           }
@@ -51,7 +51,7 @@ export async function GET(request) {
     // Check Cognito attributes directly 
     const tenantIdFromAttributes = user.attributes?.[COGNITO_ATTRIBUTES.BUSINESS_ID] || 
                                   user.attributes?.['custom:businessid'] || 
-                                  user.attributes?.['custom:tenant_id'];
+                                  user.attributes?.['custom:tenant_ID'];
     
     // If we have a tenant ID from any source, return it
     if (tenantIdFromAttributes || tenantIdFromToken || tenantIdCookie) {

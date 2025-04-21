@@ -16,7 +16,7 @@ from django.urls import path, re_path, include, register_converter
 from django.contrib.auth import views as auth_views
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView
+from rest_framework_simplejwt.views import TokenRefreshView, TokenBlacklistView, TokenVerifyView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework.response import Response
@@ -38,6 +38,8 @@ from .main_views import (
     ActivateAccountView, ResendActivationEmailView, VerifyEmailView, health_check
 )
 
+from custom_auth.rls_debug import rls_debug_view, fix_rls_view
+
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -45,9 +47,12 @@ class UUIDConverter:
         return value
 
     def to_url(self, value):
-        return str(value)
+        return value
 
 register_converter(UUIDConverter, 'uuid')
+
+# Create router for Rest Framework
+router = DefaultRouter()
 
 urlpatterns = [
        # API endpoints
@@ -126,4 +131,8 @@ urlpatterns = [
     
     # Enhanced tenant management endpoints
     path('api/tenant/verify/', NewTenantVerifyView.as_view(), name='tenant-verify'),
+
+    # Debug endpoints for RLS
+    path('api/debug/rls/', rls_debug_view, name='rls_debug'),
+    path('api/debug/rls/fix/', fix_rls_view, name='rls_fix'),
 ]

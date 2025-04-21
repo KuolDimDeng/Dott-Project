@@ -240,6 +240,7 @@ class OnboardingSessionMiddleware(MiddlewareMixin):
     def __init__(self, get_response=None):
         self.get_response = get_response
         self.onboarding_paths = ['/api/onboarding', '/onboarding']
+        self.async_mode = False
         
     def process_request(self, request):
         """Process incoming request to set up onboarding session"""
@@ -317,3 +318,11 @@ class OnboardingSessionMiddleware(MiddlewareMixin):
                 logger.error(f"Error syncing session data to database: {str(e)}")
                 
         return response
+        
+    async def __call__(self, scope, receive, send):
+        """ASGI entry point for async compatibility"""
+        # Handle async requests
+        if self.async_mode:
+            return await super().__call__(scope, receive, send)
+        # Fall back to sync processing
+        return await sync_to_async(lambda s, r, rec, snd: super().__call__(r))(self, scope, receive, send)

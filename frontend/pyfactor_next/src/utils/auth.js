@@ -67,7 +67,7 @@ const getRefreshedAccessToken = async () => {
  */
 const getApiBaseUrl = () => {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+    return process.env.NEXT_PUBLIC_API_URL || 'https://localhost:3000';
   }
   
   // Get the current origin (protocol + hostname + port)

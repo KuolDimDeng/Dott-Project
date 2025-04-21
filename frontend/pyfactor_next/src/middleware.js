@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { tenantMiddleware, extractTenantId } from './middleware/tenant-middleware';
 import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
 import { isValidUUID } from '@/utils/tenantUtils';
+import { resetCognitoCircuit, getCognitoCircuitState } from './utils/networkMonitor';
 
 // Public routes that should never require authentication
 const PUBLIC_ROUTES = [
@@ -40,6 +41,23 @@ function isPublicPath(path) {
 }
 
 /**
+ * Reset circuit breaker for critical paths
+ * @param {string} pathname - Current URL pathname
+ * @returns {boolean} - Whether the circuit breaker was reset
+ */
+function resetCircuitBreakerForCriticalPath(pathname) {
+  if (pathname.includes('/auth/') || pathname === '/' || pathname.includes('/dashboard')) {
+    const currentState = getCognitoCircuitState();
+    if (currentState !== 'CLOSED') {
+      resetCognitoCircuit('CLOSED');
+      console.info('[Middleware] Reset circuit breaker for critical path:', pathname);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Main middleware function that combines all middleware layers
  * 
  * @param {Request} request - The incoming request
@@ -47,6 +65,9 @@ function isPublicPath(path) {
  */
 export async function middleware(request) {
   const { pathname } = new URL(request.url);
+  
+  // Reset circuit breaker for important paths
+  resetCircuitBreakerForCriticalPath(pathname);
   
   // Skip middleware for static files and API routes except for tenant-specific endpoints
   if ((pathname.startsWith('/_next/') || pathname.includes('.')) &&
@@ -81,8 +102,7 @@ export async function middleware(request) {
   // Apply tenant middleware (ensure tenant ID is in URL for required routes)
   return tenantMiddleware(request);
 }
-  
-// Configure which paths the middleware applies to
+
 export const config = {
   matcher: [
     // Match all paths except for static resources

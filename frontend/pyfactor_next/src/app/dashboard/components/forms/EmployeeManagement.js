@@ -1,121 +1,403 @@
 'use client';
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, Fragment, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { axiosInstance, backendHrApiInstance, resetCircuitBreakers } from '@/lib/axiosConfig';
 import { countries } from 'countries-list';
 import { format, parseISO } from 'date-fns';
 import EmployeePermissions from './EmployeePermissions';
-import { refreshUserSession } from '@/utils/refreshUserSession';
+import { refreshUserSession, ensureAuthProvider } from '@/utils/refreshUserSession';
+import { Dialog, Transition } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
+import { useTable, usePagination, useSortBy } from 'react-table';
+import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+// Import the API utilities
+import api from '@/utils/api';
+import { logger } from '@/utils/logger';
+import { employeeApi } from '@/utils/apiClient';
+import { invalidateCache } from '@/utils/apiHelpers';
+import { verifyBackendConnection } from '@/lib/axiosConfig';
+import BackendConnectionCheck from '../BackendConnectionCheck';
 
-// Employee form component (defined outside the parent component)
-const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleInputChange, loading, setNewEmployee, setShowAddForm, setShowEditForm }) => {
+// UI Components - similar to ProductManagement.js
+const Typography = ({ variant, component, className, color, children, gutterBottom, ...props }) => {
+  let baseClasses = '';
+  
+  // Handle variants
+  if (variant === 'h4' || (component === 'h1' && !variant)) {
+    baseClasses = 'text-2xl font-bold';
+  } else if (variant === 'h5') {
+    baseClasses = 'text-xl font-semibold';
+  } else if (variant === 'h6') {
+    baseClasses = 'text-lg font-medium';
+  } else if (variant === 'subtitle1' || variant === 'subtitle2') {
+    baseClasses = 'text-sm font-medium';
+  } else if (variant === 'body1') {
+    baseClasses = 'text-base';
+  } else if (variant === 'body2') {
+    baseClasses = 'text-sm';
+  }
+  
+  // Handle colors
+  if (color === 'textSecondary') {
+    baseClasses += ' text-gray-500';
+  } else if (color === 'primary') {
+    baseClasses += ' text-blue-600';
+  } else if (color === 'error') {
+    baseClasses += ' text-red-600';
+  }
+  
+  // Handle gutterBottom
+  if (gutterBottom) {
+    baseClasses += ' mb-2';
+  }
+  
+  const Tag = component || 'p';
+  
   return (
-    <form onSubmit={onSubmit} className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 className="text-xl font-semibold mb-4">{isEdit ? 'Edit Employee' : 'Add New Employee'}</h2>
+    <Tag className={`${baseClasses} ${className || ''}`} {...props}>
+      {children}
+    </Tag>
+  );
+};
+
+const Alert = ({ severity, className, children }) => {
+  let bgColor = 'bg-blue-50';
+  let borderColor = 'border-blue-400';
+  let textColor = 'text-blue-800';
+  
+  if (severity === 'error') {
+    bgColor = 'bg-red-50';
+    borderColor = 'border-red-400';
+    textColor = 'text-red-800';
+  } else if (severity === 'warning') {
+    bgColor = 'bg-yellow-50';
+    borderColor = 'border-yellow-400';
+    textColor = 'text-yellow-800';
+  } else if (severity === 'success') {
+    bgColor = 'bg-green-50';
+    borderColor = 'border-green-400';
+    textColor = 'text-green-800';
+  } else if (severity === 'info') {
+    bgColor = 'bg-blue-50';
+    borderColor = 'border-blue-400';
+    textColor = 'text-blue-800';
+  }
+  
+  return (
+    <div className={`p-4 mb-4 ${bgColor} border-l-4 ${borderColor} ${textColor} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const Paper = ({ elevation, className, children }) => {
+  const shadowClass = elevation === 3 ? 'shadow-md' : 'shadow-sm';
+  
+  return (
+    <div className={`bg-white rounded-lg ${shadowClass} ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const Button = ({ variant, color, size, onClick, disabled, type, className, startIcon, children }) => {
+  let baseClasses = 'inline-flex items-center justify-center rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2';
+  
+  // Size classes
+  if (size === 'small') {
+    baseClasses += ' px-2.5 py-1.5 text-xs';
+  } else if (size === 'large') {
+    baseClasses += ' px-6 py-3 text-base';
+  } else {
+    baseClasses += ' px-4 py-2 text-sm'; // Medium (default)
+  }
+  
+  // Variant and color classes
+  if (variant === 'contained') {
+    if (color === 'primary') {
+      baseClasses += ' bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' bg-purple-600 text-white hover:bg-purple-700 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' bg-red-600 text-white hover:bg-red-700 focus:ring-red-500';
+    } else if (color === 'info') {
+      baseClasses += ' bg-sky-600 text-white hover:bg-sky-700 focus:ring-sky-500';
+    } else {
+      baseClasses += ' bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500';
+    }
+  } else if (variant === 'outlined') {
+    if (color === 'primary') {
+      baseClasses += ' border border-blue-500 text-blue-700 hover:bg-blue-50 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' border border-purple-500 text-purple-700 hover:bg-purple-50 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' border border-red-500 text-red-700 hover:bg-red-50 focus:ring-red-500';
+    } else if (color === 'info') {
+      baseClasses += ' border border-sky-500 text-sky-700 hover:bg-sky-50 focus:ring-sky-500';
+    } else {
+      baseClasses += ' border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500';
+    }
+  } else {
+    // Text variant
+    if (color === 'primary') {
+      baseClasses += ' text-blue-700 hover:bg-blue-50 focus:ring-blue-500';
+    } else if (color === 'secondary') {
+      baseClasses += ' text-purple-700 hover:bg-purple-50 focus:ring-purple-500';
+    } else if (color === 'error') {
+      baseClasses += ' text-red-700 hover:bg-red-50 focus:ring-red-500';
+    } else {
+      baseClasses += ' text-gray-700 hover:bg-gray-50 focus:ring-gray-500';
+    }
+  }
+  
+  // Disabled state
+  if (disabled) {
+    baseClasses = baseClasses.replace(/hover:[^ ]*/g, '');
+    baseClasses += ' opacity-50 cursor-not-allowed';
+  }
+  
+  return (
+    <button
+      type={type || 'button'}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
+      className={`${baseClasses} ${className || ''}`}
+    >
+      {startIcon && <span className="mr-2">{startIcon}</span>}
+      {children}
+    </button>
+  );
+};
+
+const TextField = ({ label, fullWidth, multiline, rows, value, onChange, required, placeholder, name, type, inputProps, variant, className, onClick, autoComplete }) => {
+  const width = fullWidth ? 'w-full' : '';
+  
+  return (
+    <div className={`mb-4 ${width} ${className || ''}`}>
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}{required && <span className="text-red-500 ml-1">*</span>}</label>}
+      {multiline ? (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          onClick={onClick}
+          placeholder={placeholder}
+          rows={rows || 3}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+        />
+      ) : (
+          <input
+          type={type || 'text'}
+          name={name}
+          value={value}
+          onChange={onChange}
+          onClick={onClick}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          {...inputProps}
+        />
+      )}
+    </div>
+  );
+};
+
+const CircularProgress = ({ size, color, className }) => {
+  const sizeClass = size === 'small' ? 'h-4 w-4' : 'h-6 w-6';
+  const colorClass = color === 'inherit' ? 'text-current' : 'text-blue-600';
+  
+  return (
+    <svg className={`animate-spin ${sizeClass} ${colorClass} ${className || ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+  );
+};
+
+const DialogTitle = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 border-b border-gray-200 ${className || ''}`}>
+      <h3 className="text-lg font-medium text-gray-900">{children}</h3>
+    </div>
+  );
+};
+
+const DialogContent = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const DialogActions = ({ className, children }) => {
+  return (
+    <div className={`px-6 py-4 border-t border-gray-200 flex justify-end space-x-2 ${className || ''}`}>
+      {children}
+    </div>
+  );
+};
+
+const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, submitLabel }) => {
+  return (
+    <form onSubmit={onSubmit} className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600">
+        <h2 className="text-xl font-semibold text-white mb-1">{title}</h2>
+        {subtitle && <p className="text-blue-100 text-sm">{subtitle}</p>}
+      </div>
+      
+      <div className="p-6">
+        {children}
+      </div>
+      
+      <div className="px-6 py-4 bg-gray-50 flex justify-end space-x-2">
+        <Button 
+          variant="outlined" 
+          color="primary"
+          type="button"
+          className="w-24"
+          onClick={() => window.history.back()}
+        >
+          Cancel
+        </Button>
+        
+        <Button
+          variant="contained"
+          color="primary"
+          type="submit"
+          className="w-24"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <CircularProgress size="small" color="inherit" className="mr-2" />
+          ) : null}
+          {submitLabel || 'Save'}
+        </Button>
+      </div>
+    </form>
+  );
+};
+
+// Employee form component with validation
+const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleInputChange, isLoading, setNewEmployee, setShowAddForm, setShowEditForm }) => {
+  return (
+    <ModernFormLayout 
+      title={isEdit ? "Edit Employee" : "Add New Employee"}
+      subtitle={isEdit ? "Update employee information" : "Add a new employee to your organization"}
+      onSubmit={onSubmit}
+      onCancel={() => {
+        isEdit ? setShowEditForm(false) : setShowAddForm(false);
+      }}
+      isSubmitting={isLoading}
+      submitLabel={isEdit ? "Update Employee" : "Add Employee"}
+    >
+      {!isEdit && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+          <p className="text-sm text-blue-700">
+            <span className="font-medium">Note:</span> User invitation functionality has been moved to the User Management section in Settings.
+          </p>
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-          <input
-            type="text"
+        <TextField
+          label="First Name"
             name="first_name"
             value={newEmployee.first_name}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
             required
-            autoComplete="off"
-          />
-        </div>
+          fullWidth
+        />
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Middle Name</label>
-          <input
-            type="text"
+        <TextField
+          label="Middle Name"
             name="middle_name"
             value={newEmployee.middle_name}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
-            autoComplete="off"
-          />
-        </div>
+          fullWidth
+        />
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-          <input
-            type="text"
+        <TextField
+          label="Last Name"
             name="last_name"
             value={newEmployee.last_name}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
             required
-            autoComplete="off"
+          fullWidth
           />
-        </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-          <input
+        <TextField
+          label="Email"
             type="email"
             name="email"
             value={newEmployee.email}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
             required
-            autoComplete="off"
+          fullWidth
           />
-        </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-          <input
+        <TextField
+          label="Phone Number"
             type="tel"
             name="phone_number"
             value={newEmployee.phone_number}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
-            autoComplete="off"
-          />
-        </div>
+          fullWidth
+        />
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
-          <input
-            type="text"
+        <TextField
+          label="Job Title"
             name="job_title"
             value={newEmployee.job_title}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
             required
-            autoComplete="off"
-          />
-        </div>
+          fullWidth
+        />
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-          <input
-            type="text"
+        <TextField
+          label="Department"
             name="department"
             value={newEmployee.department}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
-            autoComplete="off"
+          fullWidth
           />
-        </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Salary/Wage</label>
-          <input
+          <label className="block text-sm font-medium text-gray-700 mb-1">Compensation Type</label>
+          <select
+            name="compensation_type"
+            value={newEmployee.compensation_type}
+            onChange={handleInputChange}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          >
+            <option value="SALARY">Salary (Yearly)</option>
+            <option value="WAGE">Wage (Hourly)</option>
+          </select>
+        </div>
+        
+        {newEmployee.compensation_type === 'SALARY' ? (
+          <TextField
+            label="Annual Salary"
             type="number"
             name="salary"
             value={newEmployee.salary}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
-            min="0"
-            step="0.01"
-            autoComplete="off"
+            fullWidth
+            inputProps={{ min: "0", step: "0.01" }}
           />
-        </div>
+        ) : (
+          <TextField
+            label="Hourly Wage"
+            type="number"
+            name="wage_per_hour"
+            value={newEmployee.wage_per_hour}
+            onChange={handleInputChange}
+            fullWidth
+            inputProps={{ min: "0", step: "0.01" }}
+          />
+        )}
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -123,29 +405,21 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
             name="role"
             value={newEmployee.role}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
-            {/* 
-              Role values will be mapped to 4-6 char values in cognito.js:
-              - EMPLOYEE -> EMPL
-              - ADMIN -> ADMN
-              - OWNER -> OWNR
-            */}
             <option value="EMPLOYEE">Employee</option>
             <option value="ADMIN">Administrator</option>
           </select>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date Joined</label>
-          <input
+        <TextField
+          label="Date Joined"
             type="date"
             name="date_joined"
             value={newEmployee.date_joined}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
+          fullWidth
           />
-        </div>
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
@@ -153,7 +427,7 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
             name="employment_type"
             value={newEmployee.employment_type}
             onChange={handleInputChange}
-            className="w-full p-2 border border-gray-300 rounded-md"
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
           >
             <option value="FT">Full-time</option>
             <option value="PT">Part-time</option>
@@ -161,38 +435,40 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
         </div>
       </div>
       
-      {!isEdit && (
-        <div className="mb-4">
-          <label className="flex items-center">
-            <input
-              type="checkbox"
-              name="invite_to_onboard"
-              checked={newEmployee.invite_to_onboard}
-              onChange={(e) => setNewEmployee(prev => ({ ...prev, invite_to_onboard: e.target.checked }))}
-              className="mr-2"
-            />
-            <span className="text-sm text-gray-700">Send invitation email with temporary password</span>
-          </label>
-        </div>
-      )}
-      
-      <div className="flex justify-end gap-2">
-        <button 
-          type="button" 
-          onClick={() => isEdit ? setShowEditForm(false) : setShowAddForm(false)}
-          className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
-        >
-          Cancel
-        </button>
-        <button 
-          type="submit" 
-          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? 'Saving...' : (isEdit ? 'Update Employee' : 'Create Employee')}
-        </button>
+      {newEmployee.compensation_type === 'WAGE' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <TextField
+            label="Hours Per Day"
+            type="number"
+            name="hours_per_day"
+            value={newEmployee.hours_per_day}
+            onChange={handleInputChange}
+            fullWidth
+            inputProps={{ min: "0", max: "24", step: "0.5" }}
+          />
+          
+          <TextField
+            label="Days Per Week"
+            type="number"
+            name="days_per_week"
+            value={newEmployee.days_per_week}
+            onChange={handleInputChange}
+            fullWidth
+            inputProps={{ min: "1", max: "7", step: "1" }}
+          />
+          
+          <TextField
+            label="Overtime Rate"
+            type="number"
+            name="overtime_rate"
+            value={newEmployee.overtime_rate}
+            onChange={handleInputChange}
+            fullWidth
+            inputProps={{ min: "0", step: "0.01" }}
+          />
       </div>
-    </form>
+      )}
+    </ModernFormLayout>
   );
 };
 
@@ -204,7 +480,97 @@ const EmployeeForm = memo(EmployeeFormComponent);
  * Handles CRUD operations for employees
  */
 const EmployeeManagement = () => {
+
+  // Function to handle login redirection on session expiration
+  const redirectToLogin = () => {
+    const currentPath = window.location.pathname + window.location.search;
+    window.location.href = `/login?expired=true&redirect=${encodeURIComponent(currentPath)}`;
+  };
+
+  // Function to manually refresh the user session
+  const refreshSession = async () => {
+    try {
+      setLoading(true);
+      logger.info('[EmployeeManagement] Attempting to refresh user session manually');
+      
+      // Ensure auth provider is set
+      ensureAuthProvider();
+      
+      // Try multiple approaches to refresh the session
+      
+      // 1. First try the standard refresh mechanism
+      let refreshed = await refreshUserSession();
+      
+      // 2. If that fails, try to get current user as a fallback
+      if (!refreshed) {
+        try {
+          const { getCurrentUser, fetchAuthSession } = await import('aws-amplify/auth');
+          const currentUser = await getCurrentUser();
+          if (currentUser) {
+            // Get a fresh auth session
+            const session = await fetchAuthSession({ forceRefresh: true });
+            if (session?.tokens) {
+              logger.info('[EmployeeManagement] Successfully refreshed session via fetchAuthSession');
+              refreshed = true;
+              
+              // Store tokens in app cache for other components to access
+              if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                window.__APP_CACHE.auth.token = session.tokens.idToken?.toString();
+                window.__APP_CACHE.auth.provider = 'cognito';
+              }
+            }
+          }
+        } catch (getUserError) {
+          logger.error('[EmployeeManagement] Error in getCurrentUser fallback:', getUserError);
+        }
+      }
+      
+      if (refreshed) {
+        setError(null);
+        toast.success('Session refreshed successfully');
+        fetchEmployees(); // Retry fetching data
+      } else {
+        setError('Failed to refresh session. Please log in again.');
+        // Redirect to login after a short delay
+        setTimeout(() => {
+          redirectToLogin();
+        }, 2000);
+      }
+    } catch (error) {
+      logger.error('[EmployeeManagement] Error refreshing session:', error);
+      setError('Failed to refresh session. Please log in again.');
+      // Redirect to login after a short delay
+      setTimeout(() => {
+        redirectToLogin();
+      }, 2000);
+    } finally {
+      setLoading(false);
+    }
+  };
   const router = useRouter();
+  const notifySuccess = (message) => toast.success(message);
+  const notifyError = (message) => toast.error(message);
+  const notifyInfo = (message) => toast.loading(message);
+  const notifyWarning = (message) => toast.error(message, { icon: '⚠️' });
+  
+  // Add isMounted ref to track component mounting status
+  const isMounted = useRef(true);
+  // Add refs for tracking network requests and timeouts
+  const fetchRequestRef = useRef(null);
+  const fetchTimeoutRef = useRef(null);
+  
+  // Effect to track component mount status
+  useEffect(() => {
+    // Set to true on mount (though it's already initialized as true)
+    isMounted.current = true;
+    // Cleanup function sets to false when component unmounts
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+  
+  // State for managing component behavior
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -213,31 +579,57 @@ const EmployeeManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [showEmployeeDetails, setShowEmployeeDetails] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [submitError, setSubmitError] = useState(null); // Add missing submitError state
   const [isAuthenticated, setIsAuthenticated] = useState(true); // Assume authenticated initially
+  
+  // Add state to track if we should show the connection checker
+  const [showConnectionChecker, setShowConnectionChecker] = useState(false);
+  
+  // Initialize tenantId from AppCache
+  const getTenantId = () => {
+    try {
+      return typeof window !== 'undefined' ? 
+        getCacheValue('tenantId') || getCacheValue('businessid') || 'default' :
+        'default';
+    } catch (e) {
+      console.error('Error accessing AppCache for tenantId:', e);
+      return 'default';
+    }
+  };
+  
+  const [tenantId, setTenantId] = useState(getTenantId());
 
-  // New employee form state
-  const [newEmployee, setNewEmployee] = useState({
+  // Define the initial state for a new employee
+  const initialEmployeeState = {
     first_name: '',
-    middle_name: '',
     last_name: '',
     email: '',
-    phone_number: '',
-    job_title: '',
-    department: '',
-    salary: '',
-    role: 'EMPLOYEE', // Will be mapped to 'EMPL' in cognito.js
-    date_joined: new Date().toISOString().split('T')[0],
-    dob: '',
-    gender: '',
-    marital_status: '',
-    country: 'USA',
-    street: '',
+    phone: '',
+    address: '',
     city: '',
-    postcode: '',
-    employment_type: 'FT',
-    invite_to_onboard: true,
-  });
+    state: '',
+    zip_code: '',
+    country: 'US',
+    role: '',
+    department: '',
+    hire_date: new Date().toISOString().split('T')[0],
+    salary: '',
+    employment_status: 'ACTIVE',
+    employee_type: 'FULL_TIME',
+    security_number_type: 'SSN',
+    security_number: '',
+    invite_to_onboard: false
+  };
+
+  // Use the initialEmployeeState for the newEmployee state
+  const [newEmployee, setNewEmployee] = useState(initialEmployeeState);
 
   const countryList = Object.entries(countries).map(([code, country]) => ({
     code,
@@ -249,929 +641,814 @@ const EmployeeManagement = () => {
       case 'US':
         return 'SSN';
       case 'UK':
+      case 'GB':
         return 'NIN';
       case 'CA':
         return 'SIN';
-      // Add more countries and their respective security number types
+      case 'AU':
+        return 'TFN';
+      case 'NZ':
+        return 'IRD';
       default:
-        return 'Other';
+        return 'Tax ID';
     }
   };
 
-  // Fetch employees function that doesn't depend on handleAuthError
-  const fetchEmployeesData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Add a custom header to help with debugging
-      const response = await fetch('/api/hr/employees', {
-        headers: {
-          'X-Client-Side-Request': 'true'
-        }
-      });
-      
-      if (!response.ok) {
-        // Handle different HTTP error codes gracefully
-        if (response.status === 404) {
-          setEmployees([]);
-          setError('No employees found. You can add your first employee below.');
-          return false;
-        } else if (response.status === 401 || response.status === 403) {
-          // Will be handled by the caller
-          throw new Error(`Authentication error: ${response.status}`);
-        } else {
-          // Get error details from response if possible
-          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-          
-          // Specifically check for SSL error patterns
-          if (errorData.code === 'EPROTO' || 
-              (errorData.details && errorData.details.includes('SSL')) ||
-              (errorData.details && errorData.details.includes('EPROTO'))) {
-            console.error('SSL Protocol Error:', errorData);
-            setError('SSL connection error. This is typically a development environment issue.');
-            
-            // In development, show mock employees
-            if (process.env.NODE_ENV === 'development') {
-              const mockEmployees = generateMockEmployees();
-              setEmployees(mockEmployees);
-              console.log('Using mock employees data due to SSL error');
-              return true;
-            }
-            return false;
-          }
-          
-          console.error('API Error:', errorData);
-          setEmployees([]);
-          setError(`Unable to load employees: ${errorData.details || errorData.error || response.status}`);
-          return false;
-        }
-      } else {
-        let data = await response.json();
-        
-        // Check if the data contains the is_mock flag
-        const isMockData = Array.isArray(data) && data.length > 0 && data[0].is_mock === true;
-        if (isMockData) {
-          console.log('Server returned mock employee data');
-          // Show a subtle indication that this is mock data
-          setError('Note: Using mock employee data for demonstration purposes');
-        }
-        
-        // Properly handle empty data - API might return empty array, null, or empty object
-        if (!data || 
-            (Array.isArray(data) && data.length === 0) || 
-            (typeof data === 'object' && Object.keys(data).length === 0)) {
-          // This is a normal empty result - show friendly message
-          setEmployees([]);
-          setError('No employees found. Get started by adding your first employee!');
-          return true;
-        } else if (Array.isArray(data)) {
-          // We have employee data
-          setEmployees(data);
-          // Don't override the mock data message if it was set
-          if (!isMockData) {
-            setError(null);
-          }
-          return true;
-        } else {
-          // Unexpected response format
-          console.error('Unexpected API response format:', data);
-          setEmployees([]);
-          setError('Received unexpected data format from server. Please try again later.');
-          return false;
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching employees:', err);
-      // Check if this is an auth error
-      if (err.message && (err.message.includes('401') || err.message.includes('Authentication error'))) {
-        throw err; // Let the caller handle auth errors
-      }
-      
-      // Check for SSL or network errors
-      if (err.message && 
-          (err.message.includes('SSL') || 
-           err.message.includes('EPROTO') || 
-           err.message.includes('Failed to fetch'))) {
-        console.error('Network or SSL error:', err.message);
-        setError('Network connection error. This may be due to SSL configuration issues.');
-        
-        // In development, show mock employees
-        if (process.env.NODE_ENV === 'development') {
-          const mockEmployees = generateMockEmployees();
-          setEmployees(mockEmployees);
-          console.log('Using mock employees data due to connection error');
-          return true;
-        }
-      } else {
-        // Handle other errors with user-friendly message
-        setError('Unable to load employees at this time. Try refreshing the page.');
-        setEmployees([]);
-      }
-      return false;
-    } finally {
-      setLoading(false);
+  // Normalize employee data to ensure all required fields exist
+  const normalizeEmployeeData = (employees) => {
+    // Validate that employees is an array
+    if (!employees || !Array.isArray(employees)) {
+      logger.warn('[EmployeeManagement] Invalid employees data received:', employees);
+      return [];
     }
-  }, []);
 
-  // Handle authentication errors consistently - doesn't call fetchEmployees
-  const handleAuthError = useCallback(async () => {
-    setIsAuthenticated(false);
-    setError('Authentication error. Please wait while we try to refresh your session...');
+    logger.debug(`[EmployeeManagement] Normalizing ${employees.length} employees`);
     
-    try {
-      // Try to refresh the session automatically
-      const result = await refreshUserSession();
-      if (result && result.tokens) {
-        setIsAuthenticated(true);
-        setError(null);
-        return true;
-      }
-    } catch (refreshError) {
-      console.error('Failed to refresh session:', refreshError);
+    // Log the first few employees for debugging
+    if (employees.length > 0) {
+      logger.debug('[EmployeeManagement] Sample employee data:', 
+        employees.slice(0, Math.min(3, employees.length)).map(e => ({
+          id: e.id,
+          first_name: e.first_name,
+          last_name: e.last_name,
+          email: e.email
+        }))
+      );
     }
-    
-    // If refresh failed, show error message
-    setError('Your session has expired. Please log in again to continue.');
-    // In development mode, we'll still show mock data
-    if (process.env.NODE_ENV === 'development') {
-      setEmployees(generateMockEmployees());
-    } else {
-      setEmployees([]);
-    }
-    return false;
-  }, []);
 
-  // Higher-level function that coordinates fetch and auth handling
-  const fetchEmployees = useCallback(async () => {
-    try {
-      await fetchEmployeesData();
-    } catch (err) {
-      if (err.message && (err.message.includes('401') || err.message.includes('Authentication error'))) {
-        // Handle auth errors
-        await handleAuthError();
-      } else {
-        // Rethrow other errors
-        throw err;
+    return employees.map(employee => {
+      if (!employee || typeof employee !== 'object') {
+        logger.warn('[EmployeeManagement] Invalid employee record:', employee);
+        return {}; // Return empty object to avoid breaking the UI
       }
-    }
-  }, [fetchEmployeesData, handleAuthError]);
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [fetchEmployees]);
-
-  // Generate mock employees for development
-  const generateMockEmployees = () => {
-    return [
-      {
-        id: uuidv4(),
-        employee_number: 'EMP-000001',
-        first_name: 'John',
-        last_name: 'Doe',
-        email: 'john.doe@example.com',
-        job_title: 'Software Engineer',
-        department: 'Engineering',
-        salary: 85000,
-        date_joined: '2022-01-15',
-        active: true,
-        role: 'EMPLOYEE'
-      },
-      {
-        id: uuidv4(),
-        employee_number: 'EMP-000002',
-        first_name: 'Jane',
-        last_name: 'Smith',
-        email: 'jane.smith@example.com',
-        job_title: 'Product Manager',
-        department: 'Product',
-        salary: 95000,
-        date_joined: '2022-02-01',
-        active: true,
-        role: 'ADMIN'
-      },
-      {
-        id: uuidv4(),
-        employee_number: 'EMP-000003',
-        first_name: 'Michael',
-        last_name: 'Johnson',
-        email: 'michael.johnson@example.com',
-        job_title: 'Marketing Specialist',
-        department: 'Marketing',
-        salary: 75000,
-        date_joined: '2022-03-15',
-        active: true,
-        role: 'EMPLOYEE'
-      }
-    ];
-  };
-
-  // Handle form input changes
-  const handleInputChange = useCallback((e) => {
-    const { name, value } = e.target;
-    
-    // Use a function-based state update to avoid dependencies on newEmployee
-    setNewEmployee(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  }, [setNewEmployee]);
-
-  // Handle employee creation
-  const handleCreateEmployee = async (e) => {
-    e.preventDefault();
-    
-    // Basic validation
-    if (!newEmployee.first_name || !newEmployee.last_name || !newEmployee.email || !newEmployee.job_title) {
-      setNotification({
-        show: true,
-        message: 'Please fill in all required fields',
-        type: 'error'
-      });
-      return;
-    }
-    
-    if (!isAuthenticated && process.env.NODE_ENV !== 'development') {
-      setNotification({
-        show: true,
-        message: 'You need to log in to create employees',
-        type: 'error'
-      });
-      return;
-    }
-    
-    setLoading(true);
-    try {
-      // Create employee API call with improved error handling
-      const response = await fetch('/api/hr/employees', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Client-Side-Request': 'true'
-        },
-        body: JSON.stringify(newEmployee)
-      });
-      
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          handleAuthError();
-          throw new Error('Authentication failed');
-        }
-        
-        // Try to get error details from the response
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.details || errorData.error || `Failed to create employee (Status: ${response.status})`);
-      }
-      
-      const employeeCreationResponse = await response.json();
-      
-      // Continue with the invitation step if employee creation was successful
-      // If invite_to_onboard is checked, create a user account and send invitation email
-      if (newEmployee.invite_to_onboard) {
-        try {
-          // Note: Employee inherits the owner's tenant ID from the server session
-          const inviteResponse = await fetch('/api/hr/employees/invite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: newEmployee.email,
-              firstName: newEmployee.first_name,
-              lastName: newEmployee.last_name,
-              role: newEmployee.role,
-              // Get company name from environment variables
-              companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company Name' 
-            })
-          });
-          
-          if (!inviteResponse.ok) {
-            const errorText = await inviteResponse.text();
-            console.error('Failed to send invitation email:', errorText);
-            
-            // Try to parse the error as JSON
-            let errorDetails;
-            try {
-              errorDetails = JSON.parse(errorText);
-            } catch (e) {
-              errorDetails = { error: 'Unknown error', details: errorText };
-            }
-            
-            // Check if it's a "user already exists" error
-            if (errorDetails.details && errorDetails.details.includes('already exists')) {
-              setNotification({
-                show: true,
-                message: 'This email address already has an account. Please use a different email or try resetting their password.',
-                type: 'warning'
-              });
-            } else {
-              // Continue with employee creation even if invitation fails with other errors
-              setNotification({
-                show: true,
-                message: 'Employee created successfully, but invitation email could not be sent',
-                type: 'warning'
-              });
-            }
-          } else {
-            const inviteData = await inviteResponse.json();
-            console.log('Invitation response:', inviteData);
-            
-            // Check if the user already existed
-            if (inviteData.userExists) {
-              // Show a message that we're resending the invitation to an existing user
-              setNotification({
-                show: true,
-                message: inviteData.verificationUrl 
-                  ? (
-                    <div>
-                      <p>This email already has an account. A new verification link has been generated.</p>
-                      <p className="mt-2">Share this verification link with the employee:</p>
-                      <div className="mt-2 p-2 bg-gray-100 rounded-md break-all">
-                        <a 
-                          href={inviteData.verificationUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline break-all"
-                        >
-                          {inviteData.verificationUrl}
-                        </a>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(inviteData.verificationUrl);
-                          alert('Verification link copied to clipboard!');
-                        }}
-                        className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                      >
-                        Copy Link
-                      </button>
-                    </div>
-                  )
-                  : 'A new invitation has been sent to the existing employee account.',
-                type: 'info'
-              });
-            } else if (inviteData.verificationUrl) {
-              // Check if we got a verification URL (development mode without SES)
-              setNotification({
-                show: true,
-                message: (
-                  <div>
-                    <p>Employee created successfully. Email sending is disabled in development.</p>
-                    <p className="mt-2">Share this verification link with the employee:</p>
-                    <div className="mt-2 p-2 bg-gray-100 rounded-md break-all">
-                      <a 
-                        href={inviteData.verificationUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline break-all"
-                      >
-                        {inviteData.verificationUrl}
-                      </a>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        navigator.clipboard.writeText(inviteData.verificationUrl);
-                        alert('Verification link copied to clipboard!');
-                      }}
-                      className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                    >
-                      Copy Link
-                    </button>
-                  </div>
-                ),
-                type: 'info'
-              });
-            } else {
-              setNotification({
-                show: true,
-                message: 'Employee created successfully and invitation email sent',
-                type: 'success'
-              });
-            }
-          }
-        } catch (inviteError) {
-          console.error('Error sending invitation:', inviteError);
-          setNotification({
-            show: true,
-            message: 'Employee created successfully, but invitation email could not be sent',
-            type: 'warning'
-          });
-        }
-      } else {
-        // No invitation needed
-        setNotification({
-          show: true,
-          message: 'Employee created successfully',
-          type: 'success'
-        });
-      }
-      
-      // Add the new employee to the local state
-      const newEmployeeWithId = {
-        ...newEmployee,
-        id: employeeCreationResponse.id || uuidv4(),
-        employee_number: employeeCreationResponse.employee_number || `EMP-${String(employees.length + 1).padStart(6, '0')}`,
-        active: true
-      };
-      
-      setEmployees(prev => [...prev, newEmployeeWithId]);
-      setShowAddForm(false);
-      
-      // Reset the form
-      setNewEmployee({
+      // Create a sanitized copy of the employee object with default values for missing fields
+      const sanitizedEmployee = { 
+        id: employee.id || '',
         first_name: '',
-        middle_name: '',
         last_name: '',
         email: '',
         phone_number: '',
         job_title: '',
         department: '',
-        salary: '',
-        role: 'EMPLOYEE',
+        compensation_type: 'SALARY',
+        salary: 0,
+        wage_per_hour: 0,
+        hours_per_day: 8,
+        days_per_week: 5,
+        overtime_rate: 1.5,
+        active: true,
+        employment_type: 'FULL_TIME',
+        employment_status: 'ACTIVE',
         date_joined: new Date().toISOString().split('T')[0],
-        dob: '',
-        gender: '',
-        marital_status: '',
-        country: 'USA',
-        street: '',
-        city: '',
-        postcode: '',
-        employment_type: 'FT',
-        invite_to_onboard: true,
-      });
-    } catch (err) {
-      console.error('Error creating employee:', err);
-      if (err.message === 'Authentication failed') {
-        // Already handled by handleAuthError
+        role: 'EMPLOYEE',
+        ...employee  // Spread the employee object to override defaults
+      };
+      
+      // Sanitize string fields with type checking
+      sanitizedEmployee.first_name = typeof sanitizedEmployee.first_name === 'string' 
+        ? sanitizedEmployee.first_name.trim().slice(0, 100) 
+        : String(sanitizedEmployee.first_name || '').trim().slice(0, 100);
+      
+      sanitizedEmployee.middle_name = typeof sanitizedEmployee.middle_name === 'string' 
+        ? sanitizedEmployee.middle_name.trim().slice(0, 100) 
+        : String(sanitizedEmployee.middle_name || '').trim().slice(0, 100);
+      
+      sanitizedEmployee.last_name = typeof sanitizedEmployee.last_name === 'string' 
+        ? sanitizedEmployee.last_name.trim().slice(0, 100) 
+        : String(sanitizedEmployee.last_name || '').trim().slice(0, 100);
+      
+      // Email validation and sanitization
+      sanitizedEmployee.email = typeof sanitizedEmployee.email === 'string' 
+        ? sanitizedEmployee.email.trim().toLowerCase().slice(0, 255) 
+        : String(sanitizedEmployee.email || '').trim().toLowerCase().slice(0, 255);
+      
+      // Phone number sanitization (remove non-numeric characters)
+      sanitizedEmployee.phone_number = typeof sanitizedEmployee.phone_number === 'string' 
+        ? sanitizedEmployee.phone_number.replace(/[^\d+\-() ]/g, '').trim().slice(0, 20) 
+        : String(sanitizedEmployee.phone_number || '').replace(/[^\d+\-() ]/g, '').trim().slice(0, 20);
+      
+      // Job title sanitization
+      sanitizedEmployee.job_title = typeof sanitizedEmployee.job_title === 'string' 
+        ? sanitizedEmployee.job_title.trim().slice(0, 100) 
+        : String(sanitizedEmployee.job_title || '').trim().slice(0, 100);
+      
+      // Department sanitization
+      sanitizedEmployee.department = typeof sanitizedEmployee.department === 'string' 
+        ? sanitizedEmployee.department.trim().slice(0, 100) 
+        : String(sanitizedEmployee.department || '').trim().slice(0, 100);
+
+      // For backward compatibility, infer compensation type if it doesn't exist
+      if (!sanitizedEmployee.compensation_type) {
+        // Convert salary to number for comparison
+        const salaryValue = parseFloat(sanitizedEmployee.salary || 0);
+        sanitizedEmployee.compensation_type = salaryValue > 0 ? 'SALARY' : 'WAGE';
+      }
+      
+      // Set default values for wage-related fields if they don't exist and ensure numeric values
+      if (sanitizedEmployee.compensation_type === 'WAGE') {
+        // Convert string values to numbers for wage-related fields
+        sanitizedEmployee.wage_per_hour = parseFloat(sanitizedEmployee.wage_per_hour || 0);
+        sanitizedEmployee.hours_per_day = parseFloat(sanitizedEmployee.hours_per_day || 8);
+        sanitizedEmployee.days_per_week = parseFloat(sanitizedEmployee.days_per_week || 5);
+        sanitizedEmployee.overtime_rate = parseFloat(sanitizedEmployee.overtime_rate || 1.5);
       } else {
-        setNotification({
-          show: true,
-          message: 'Failed to create employee',
-          type: 'error'
+        // Ensure salary has a default value if not present and convert to number
+        sanitizedEmployee.salary = parseFloat(sanitizedEmployee.salary || 0);
+      }
+      
+      // Ensure boolean fields are actually booleans
+      sanitizedEmployee.active = sanitizedEmployee.active === true || 
+                              sanitizedEmployee.active === 'true' || 
+                              sanitizedEmployee.active === 1 || 
+                              sanitizedEmployee.active === '1';
+      
+      // Normalize role to uppercase and handle common variations
+      if (sanitizedEmployee.role) {
+        const role = String(sanitizedEmployee.role).toUpperCase();
+        if (['ADMIN', 'ADMN', 'ADMINISTRATOR'].includes(role)) {
+          sanitizedEmployee.role = 'ADMIN';
+        } else if (['OWNER', 'OWNR'].includes(role)) {
+          sanitizedEmployee.role = 'OWNER';
+        } else {
+          sanitizedEmployee.role = 'EMPLOYEE';
+        }
+      } else {
+        sanitizedEmployee.role = 'EMPLOYEE';
+      }
+      
+      // Validate date fields (ensure they're in ISO format)
+      if (sanitizedEmployee.date_joined) {
+        try {
+          // Check if date is valid by attempting to parse it
+          const dateCheck = new Date(sanitizedEmployee.date_joined);
+          if (isNaN(dateCheck.getTime())) {
+            logger.warn('[EmployeeManagement] Invalid date_joined:', sanitizedEmployee.date_joined);
+            sanitizedEmployee.date_joined = new Date().toISOString().split('T')[0]; // Default to today
+          } else {
+            // Format date consistently
+            sanitizedEmployee.date_joined = dateCheck.toISOString().split('T')[0];
+          }
+        } catch (error) {
+          logger.warn('[EmployeeManagement] Error parsing date_joined:', error);
+          sanitizedEmployee.date_joined = new Date().toISOString().split('T')[0]; // Default to today
+        }
+      } else {
+        sanitizedEmployee.date_joined = new Date().toISOString().split('T')[0];
+      }
+
+      // Ensure employment_type is normalized
+      if (sanitizedEmployee.employment_type) {
+        const empType = String(sanitizedEmployee.employment_type).toUpperCase();
+        if (['FT', 'FULL', 'FULL-TIME', 'FULL_TIME', 'FULLTIME'].includes(empType)) {
+          sanitizedEmployee.employment_type = 'FULL_TIME';
+        } else if (['PT', 'PART', 'PART-TIME', 'PART_TIME', 'PARTTIME'].includes(empType)) {
+          sanitizedEmployee.employment_type = 'PART_TIME';
+        } else {
+          sanitizedEmployee.employment_type = 'FULL_TIME'; // Default
+        }
+      } else {
+        sanitizedEmployee.employment_type = 'FULL_TIME'; // Default
+      }
+      
+      // Log sanitized data for debugging newly created employee
+      if (sanitizedEmployee.id === '3659') {
+        logger.debug('[EmployeeManagement] Found and processed employee 3659:', {
+          id: sanitizedEmployee.id,
+          name: `${sanitizedEmployee.first_name} ${sanitizedEmployee.last_name}`,
+          email: sanitizedEmployee.email
         });
       }
-    } finally {
-      setLoading(false);
-    }
+      
+      return sanitizedEmployee;
+    });
   };
 
-  // Handle employee update
-  const handleUpdateEmployee = async (e) => {
-    e.preventDefault();
-    
-    if (!selectedEmployee) return;
-    
-    if (!isAuthenticated && process.env.NODE_ENV !== 'development') {
-      setNotification({
-        show: true,
-        message: 'You need to log in to update employees',
-        type: 'error'
-      });
+  const fetchEmployeesData = async (tenantId) => {
+    if (!tenantId) {
+      logger.error('[EmployeeManagement] Cannot fetch employees: No tenant ID provided');
+      setError('No tenant ID available. Please try refreshing the page.');
+      setLoading(false);
       return;
     }
-    
-    setLoading(true);
-    try {
-      // In a real implementation, this would call the API
-      if (process.env.NODE_ENV !== 'development') {
-        const response = await fetch(`/api/hr/employees/${selectedEmployee.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newEmployee)
-        });
+
+    // Check for auth token first
+    let authToken = window?.__APP_CACHE?.auth?.token;
+    if (!authToken) {
+      logger.warn('[EmployeeManagement] No auth token found in APP_CACHE before fetching employees');
+      
+      // Try to get token directly from Amplify before failing
+      try {
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
         
-        if (!response.ok) {
-          if (response.status === 401 || response.status === 403) {
-            handleAuthError();
-            throw new Error('Authentication failed');
+        if (session?.tokens?.idToken) {
+          authToken = session.tokens.idToken.toString();
+          logger.info('[EmployeeManagement] Successfully retrieved auth token directly from Amplify');
+          
+          // Store token in APP_CACHE for future use
+          if (typeof window !== 'undefined') {
+            window.__APP_CACHE = window.__APP_CACHE || {};
+            window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+            window.__APP_CACHE.auth.token = authToken;
           }
-          throw new Error('Failed to update employee');
-        }
-      }
-      
-      // Simulate API call for development
-      setEmployees(prev => 
-        prev.map(emp => 
-          emp.id === selectedEmployee.id ? { ...emp, ...newEmployee } : emp
-        )
-      );
-      
-      setShowEditForm(false);
-      setSelectedEmployee(null);
-      
-      setNotification({
-        show: true,
-        message: 'Employee updated successfully',
-        type: 'success'
-      });
-    } catch (err) {
-      console.error('Error updating employee:', err);
-      if (err.message === 'Authentication failed') {
-        // Already handled by handleAuthError
-      } else {
-        setNotification({
-          show: true,
-          message: 'Failed to update employee',
-          type: 'error'
-        });
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle employee deletion
-  const handleDeleteEmployee = async (employeeId) => {
-    if (!window.confirm('Are you sure you want to delete this employee?')) return;
-    
-    setLoading(true);
-    try {
-      // In a real implementation, this would call the API
-      // const response = await fetch(`/api/hr/employees/${employeeId}`, {
-      //   method: 'DELETE'
-      // });
-      // if (!response.ok) throw new Error('Failed to delete employee');
-      
-      // Simulate API call for development
-      setEmployees(prev => prev.filter(emp => emp.id !== employeeId));
-      
-      setNotification({
-        show: true,
-        message: 'Employee deleted successfully',
-        type: 'success'
-      });
-    } catch (err) {
-      console.error('Error deleting employee:', err);
-      setNotification({
-        show: true,
-        message: 'Failed to delete employee',
-        type: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle editing an employee
-  const handleEditEmployee = (employee) => {
-    setSelectedEmployee(employee);
-    setNewEmployee({
-      first_name: employee.first_name || '',
-      middle_name: employee.middle_name || '',
-      last_name: employee.last_name || '',
-      email: employee.email || '',
-      phone_number: employee.phone_number || '',
-      job_title: employee.job_title || '',
-      department: employee.department || '',
-      salary: employee.salary || '',
-      role: employee.role || 'EMPLOYEE',
-      date_joined: employee.date_joined || new Date().toISOString().split('T')[0],
-      dob: employee.dob || '',
-      gender: employee.gender || '',
-      marital_status: employee.marital_status || '',
-      country: employee.country || 'USA',
-      street: employee.street || '',
-      city: employee.city || '',
-      postcode: employee.postcode || '',
-      employment_type: employee.employment_type || 'FT',
-    });
-    setShowEditForm(true);
-  };
-
-  // Handle resending an invitation email to an employee
-  const handleResendInvitation = async (employee) => {
-    if (!employee || !employee.email) return;
-    
-    setLoading(true);
-    try {
-      const inviteResponse = await fetch('/api/hr/employees/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: employee.email,
-          firstName: employee.first_name,
-          lastName: employee.last_name,
-          role: employee.role || 'EMPLOYEE',
-          companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company Name'
-        })
-      });
-      
-      if (!inviteResponse.ok) {
-        const errorText = await inviteResponse.text();
-        console.error('Failed to send invitation email:', errorText);
-        setNotification({
-          show: true,
-          message: 'Failed to send invitation email',
-          type: 'error'
-        });
-      } else {
-        const inviteData = await inviteResponse.json();
-        console.log('Invitation response:', inviteData);
-        
-        if (inviteData.verificationUrl) {
-          // Show the verification URL in development mode
-          setNotification({
-            show: true,
-            message: (
-              <div>
-                <p>Invitation email is disabled in development environment.</p>
-                <p className="mt-2">Share this verification link with the employee:</p>
-                <div className="mt-2 p-2 bg-gray-100 rounded-md break-all">
-                  <a 
-                    href={inviteData.verificationUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline break-all"
-                  >
-                    {inviteData.verificationUrl}
-                  </a>
-                </div>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(inviteData.verificationUrl);
-                    alert('Verification link copied to clipboard!');
-                  }}
-                  className="mt-2 px-3 py-1 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Copy Link
-                </button>
-              </div>
-            ),
-            type: 'info'
-          });
         } else {
-          setNotification({
-            show: true,
-            message: 'Invitation email sent successfully',
-            type: 'success'
-          });
+          logger.error('[EmployeeManagement] No token available in Amplify session');
+          setError('Authentication required. Please log in to view employees.');
+          setLoading(false);
+          
+          // Try to refresh the session
+          const refreshResult = await refreshUserSession();
+          if (!refreshResult) {
+            logger.error('[EmployeeManagement] Session refresh failed - no token available');
+            return;
+          }
+          // If refresh succeeded, get the token again
+          authToken = window?.__APP_CACHE?.auth?.token;
+          if (!authToken) {
+            logger.error('[EmployeeManagement] Still no token after refresh');
+            return;
+          }
         }
+      } catch (error) {
+        logger.error('[EmployeeManagement] Error getting auth token from Amplify:', error);
+        setError('Authentication required. Please log in to view employees.');
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Error sending invitation:', error);
-      setNotification({
-        show: true,
-        message: 'Failed to send invitation email',
-        type: 'error'
-      });
-    } finally {
-      setLoading(false);
     }
-  };
 
-  // Reset notification after display
-  useEffect(() => {
-    if (notification.show) {
-      const timer = setTimeout(() => {
-        setNotification({ ...notification, show: false });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
+    // Log token information (partially masked for security)
+    const tokenPreview = authToken.substring(0, 10) + '...' + authToken.substring(authToken.length - 5);
+    logger.debug(`[EmployeeManagement] Using auth token for fetch: ${tokenPreview}`);
 
-  // Redirect to login if not authenticated
-  const redirectToLogin = () => {
-    router.push('/login');
-  };
-
-  // Add a function to refresh the session manually
-  const refreshSession = async () => {
-    setLoading(true);
+    logger.info(`[EmployeeManagement] Fetching employees with tenant ID: ${tenantId}`);
+    
     try {
-      const refreshed = await handleAuthError();
-      if (refreshed) {
-        await fetchEmployeesData();
+      // Reset the circuit breaker for employees endpoint before trying
+      resetCircuitBreakers('/employees');
+      
+      setLoading(true);
+      setError(null);
+      
+      // Clear any existing timeout
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+        fetchTimeoutRef.current = null;
       }
+      
+      // Clear any existing abort controller
+      if (fetchRequestRef.current) {
+        try {
+          fetchRequestRef.current.abort();
+        } catch (e) {
+          // Ignore abort errors
+        }
+        fetchRequestRef.current = null;
+      }
+      
+      // Create new abort controller
+      const abortController = new AbortController();
+      fetchRequestRef.current = abortController;
+      
+      // Set a timeout to actually make the API call
+      fetchTimeoutRef.current = setTimeout(async () => {
+        try {
+          // Use the employeeApi with retry capabilities
+          const response = await employeeApi.getAll({
+            bypassCache: true, // Always get fresh data
+            _t: Date.now(), // Add timestamp to prevent caching
+            signal: abortController.signal,
+            retry: 2, // Enable up to 2 retries
+            timeout: 10000 // Set a reasonable timeout
+          });
+          
+          if (!isMounted.current) return;
+          
+          if (Array.isArray(response)) {
+            logger.debug(`[EmployeeManagement] Received ${response.length} employees from API`);
+            setEmployees(normalizeEmployeeData(response));
+          } else if (response && Array.isArray(response.data)) {
+            logger.debug(`[EmployeeManagement] Received ${response.data.length} employees from API (in data property)`);
+            setEmployees(normalizeEmployeeData(response.data));
+          } else {
+            logger.warn('[EmployeeManagement] Unexpected response format from employeeApi.getAll:', response);
+            setEmployees([]);
+          }
+          
+          setLoading(false);
+          setShowConnectionChecker(false); // Hide connection checker on success
+        } catch (error) {
+          if (!isMounted.current) return;
+          
+          // Don't treat aborted requests as errors when component unmounts
+          if (error.name === 'AbortError' || error.message?.includes('aborted')) {
+            logger.info('[EmployeeManagement] Request aborted');
+            return;
+          }
+          
+          logger.error('[EmployeeManagement] Error fetching employees:', error);
+          setLoading(false);
+          
+          // Handle auth errors directly here
+          if (error.response?.status === 401 || 
+              (error.message && (error.message.includes('401') || 
+                                error.message.includes('Unauthorized') || 
+                                error.message.includes('Authentication')))) {
+            logger.warn('[EmployeeManagement] Auth error detected in fetchEmployeesData');
+            // Call handleAuthError but don't retry immediately to prevent loops
+            const refreshSuccessful = await handleAuthError();
+            if (!refreshSuccessful) {
+              setError('Your session has expired. Please log in again to view employees.');
+            }
+            return;
+          }
+          
+          setError('Failed to fetch employees. Please try again later.');
+          
+          // Show connection checker for circuit breaker or network errors
+          if (error.message && (error.message.includes('Circuit breaker') || 
+                               error.message.includes('Network Error') || 
+                               error.message.includes('timeout') ||
+                               error.message.includes('aborted'))) {
+            setShowConnectionChecker(true);
+          }
+        } finally {
+          // Clear references to avoid memory leaks
+          if (isMounted.current) {
+            fetchTimeoutRef.current = null;
+            fetchRequestRef.current = null;
+          }
+        }
+      }, 100); // Small delay to avoid redundant API calls
     } catch (error) {
-      console.error('Error refreshing session:', error);
-    } finally {
+      if (!isMounted.current) return;
+      
+      logger.error('[EmployeeManagement] Error in fetchEmployeesData:', error);
       setLoading(false);
+      setError('Failed to fetch employees. Please try again later.');
     }
   };
 
-  return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Employee Management</h1>
-        <button 
-          onClick={() => setShowAddForm(true)}
-          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          Add New Employee
-        </button>
-      </div>
+  // Define the fetchEmployees function that's being called in the useEffect
+  const fetchEmployees = async () => {
+    try {
+      // First reset any circuit breaker issues
+      resetCircuitBreakers('/employees');
       
-      {/* Notification */}
-      {notification.show && (
-        <div className={`fixed bottom-4 left-4 rounded-md p-4 max-w-md shadow-lg ${
-          notification.type === 'success' ? 'bg-green-50 border-l-4 border-green-500' : 
-          notification.type === 'error' ? 'bg-red-50 border-l-4 border-red-500' :
-          notification.type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-500' :
-          'bg-blue-50 border-l-4 border-blue-500'
-        }`}>
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              {notification.type === 'success' ? (
-                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              ) : notification.type === 'error' ? (
-                <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              ) : notification.type === 'warning' ? (
-                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              )}
-            </div>
-            <div className="ml-3">
-              <div className={`text-sm font-medium ${
-                notification.type === 'success' ? 'text-green-700' : 
-                notification.type === 'error' ? 'text-red-700' :
-                notification.type === 'warning' ? 'text-yellow-700' :
-                'text-blue-700'
-              }`}>
-                {typeof notification.message === 'string' ? notification.message : (
-                  <div className="notification-content">{notification.message}</div>
-                )}
+      // Ensure auth provider is set
+      ensureAuthProvider();
+      
+      // Get current tenant ID
+      const currentTenantId = getTenantId();
+      
+      // Check if token is available before trying to fetch
+      const token = window?.__APP_CACHE?.auth?.token;
+      
+      if (!token) {
+        logger.info('[EmployeeManagement] No token found, attempting to refresh session');
+        
+        // Try to refresh token
+        const refreshed = await refreshUserSession();
+        if (!refreshed) {
+          logger.error('[EmployeeManagement] Session refresh failed - setting auth error');
+          setError('Your session has expired. Please log in again to view employees.');
+          setIsAuthenticated(false);
+          setShowConnectionChecker(false);
+          setLoading(false);
+          return;
+        }
+        logger.info('[EmployeeManagement] Session refreshed successfully');
+      }
+      
+      // Now fetch the data
+      await fetchEmployeesData(currentTenantId);
+    } catch (error) {
+      setLoading(false);
+      logger.error('[EmployeeManagement] Error in fetchEmployees:', error);
+      
+      // Handle authentication errors specifically
+      if (error?.response?.status === 401 || 
+          (error?.message && (error?.message.includes('401') || 
+                            error?.message.includes('Unauthorized') || 
+                            error?.message.includes('Authentication')))) {
+        setError('Authentication failed. Please log in again.');
+        setIsAuthenticated(false);
+      } else {
+        setError('Failed to fetch employees. Please try again later.');
+      }
+    }
+  };
+
+  // Just use a single useEffect for fetching employees on mount
+  useEffect(() => {
+    // Create an async function inside the effect to call our async fetchEmployees
+    const loadEmployees = async () => {
+      try {
+        // Ensure AUTH_CACHE provider is set before doing anything else
+        ensureAuthProvider();
+        
+        // Check session status before fetching data
+        const checkSessionStatus = async () => {
+          try {
+            // Import and use getCurrentUser to verify session
+            const { getCurrentUser } = await import('aws-amplify/auth');
+            await getCurrentUser();
+            setIsAuthenticated(true);
+            fetchEmployees();
+          } catch (error) {
+            logger.error('[EmployeeManagement] Session check failed:', error);
+            setIsAuthenticated(false);
+            setError('Your session appears to be invalid. Please refresh your session or log in again.');
+          }
+        };
+        
+        await checkSessionStatus();
+      } catch (error) {
+        logger.error('[EmployeeManagement] Error loading employees:', error);
+        notifyError('Failed to load employees. Please refresh the page.');
+      }
+    };
+    
+    // Call the async function
+    loadEmployees();
+    
+    // Cleanup function
+    return () => {
+      // Any cleanup needed
+    };
+  }, []);  // Remove fetchEmployeesData from dependencies to avoid loops
+
+  // Handle when the connection is restored
+  const handleConnectionRestored = async () => {
+    try {
+      setShowConnectionChecker(false);
+      await fetchEmployees();
+      notifySuccess('Connection restored successfully!');
+    } catch (error) {
+      logger.error('[EmployeeManagement] Error in handleConnectionRestored:', error);
+      notifyError('Failed to fetch data after connection restored.');
+    }
+  };
+
+  // React Table columns definition
+  const columns = React.useMemo(
+    () => [
+      {
+        Header: 'Name',
+        accessor: (row) => `${row.first_name} ${row.last_name}`,
+        Cell: ({ row }) => (
+          <div>
+            <div className="text-sm font-medium text-black">{`${row.original.first_name} ${row.original.last_name}`}</div>
+            <div className="text-xs text-gray-500">{row.original.job_title || 'No title'}</div>
+          </div>
+        )
+      },
+      {
+        Header: 'Email',
+        accessor: 'email',
+        Cell: ({ value }) => (
+          <div className="text-sm text-black">{value}</div>
+        )
+      },
+      {
+        Header: 'Department',
+        accessor: 'department',
+        Cell: ({ value }) => (
+          <div className="text-sm text-black">{value || 'N/A'}</div>
+        )
+      },
+      {
+        Header: 'Compensation',
+        accessor: 'compensation_type',
+        Cell: ({ row }) => {
+          const { compensation_type, salary, wage_per_hour } = row.original;
+          return (
+            <div>
+              <div className="text-sm font-medium text-black">
+                {compensation_type === 'SALARY' ? 'Salary' : 'Hourly Wage'}
+              </div>
+              <div className="text-xs text-gray-500">
+                {compensation_type === 'SALARY' 
+                  ? `$${parseFloat(salary || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/year`
+                  : `$${parseFloat(wage_per_hour || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hour`
+                }
               </div>
             </div>
-            <div className="ml-auto pl-3">
-              <div className="-mx-1.5 -my-1.5">
+          );
+        }
+      },
+      {
+        Header: 'Employment',
+        accessor: 'employment_type',
+        Cell: ({ value }) => (
+          <div className="text-sm text-black">
+            {value === 'FT' ? 'Full-time' : 'Part-time'}
+            </div>
+        )
+      },
+      {
+        Header: 'Status',
+        accessor: 'active',
+        Cell: ({ value }) => (
+          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+            value ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {value ? 'Active' : 'Inactive'}
+          </span>
+        )
+      },
+      {
+        Header: '',
+        id: 'actions',
+        Cell: ({ row }) => (
+          <div className="text-right flex justify-end">
                 <button
-                  onClick={() => setNotification({ ...notification, show: false })}
-                  className={`inline-flex rounded-md p-1.5 ${
-                    notification.type === 'success' ? 'text-green-500 hover:bg-green-100' : 
-                    notification.type === 'error' ? 'text-red-500 hover:bg-red-100' :
-                    notification.type === 'warning' ? 'text-yellow-500 hover:bg-yellow-100' :
-                    'text-blue-500 hover:bg-blue-100'
-                  }`}
-                >
-                  <span className="sr-only">Dismiss</span>
-                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              onClick={() => {
+                setSelectedEmployee(row.original);
+                setShowEmployeeDetails(true);
+                setIsCreating(false);
+                setIsEditing(false);
+              }}
+              className="text-blue-600 hover:text-blue-900 mr-3"
+              title="View"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleEditEmployee(row.original)}
+              className="text-green-600 hover:text-green-900 mr-3"
+              title="Edit"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleDeleteEmployee(row.original.id)}
+              className="text-red-600 hover:text-red-900"
+              title="Delete"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
               </div>
-            </div>
+        )
+      }
+    ],
+    []
+  );
+
+  // Memoize employees data to avoid recreating on each render
+  const tableData = React.useMemo(() => {
+    // Ensure employees is always an array, even if it's null or undefined
+    if (!employees || !Array.isArray(employees)) {
+      return [];
+    }
+    return employees;
+  }, [employees]);
+
+  // Filter employees based on search query
+  const filteredEmployees = useMemo(() => {
+    if (!employees || employees.length === 0) return [];
+    if (!searchQuery.trim()) return employees;
+    
+    const query = searchQuery.toLowerCase().trim();
+    return employees.filter(employee => {
+      return (
+        (employee.first_name && employee.first_name.toLowerCase().includes(query)) ||
+        (employee.last_name && employee.last_name.toLowerCase().includes(query)) ||
+        (employee.email && employee.email.toLowerCase().includes(query)) ||
+        (employee.department && employee.department.toLowerCase().includes(query)) ||
+        (employee.job_title && employee.job_title.toLowerCase().includes(query))
+      );
+    });
+  }, [employees, searchQuery]);
+
+  // Table hooks need to be at component level, not inside render functions
+  const tableInstance = useTable(
+    { 
+      columns, 
+      data: filteredEmployees, 
+      initialState: { pageIndex: 0, pageSize: 10 },
+    },
+    useSortBy,
+    usePagination
+  );
+
+  // Get all the table props we need
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    page,
+    prepareRow,
+    canPreviousPage,
+    canNextPage,
+    pageOptions,
+    pageCount,
+    gotoPage,
+    nextPage,
+    previousPage,
+    setPageSize,
+    state: { pageIndex, pageSize },
+  } = tableInstance;
+
+  // Render the employees list based on search query
+  const renderEmployeesList = () => {
+    // Show loading state
+    if (loading && !employees.length) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+            <p className="mt-4 text-gray-600">Loading employees...</p>
           </div>
         </div>
-      )}
-      
-      {/* Add Employee Form */}
-      {showAddForm && (
-        <EmployeeForm 
-          onSubmit={handleCreateEmployee}
-          newEmployee={newEmployee}
-          handleInputChange={handleInputChange}
-          loading={loading}
-          setNewEmployee={setNewEmployee}
-          setShowAddForm={setShowAddForm}
-          setShowEditForm={setShowEditForm}
-        />
-      )}
-      
-      {/* Edit Employee Form */}
-      {showEditForm && (
-        <EmployeeForm 
-          isEdit={true} 
-          onSubmit={handleUpdateEmployee}
-          newEmployee={newEmployee}
-          handleInputChange={handleInputChange}
-          loading={loading}
-          setNewEmployee={setNewEmployee}
-          setShowAddForm={setShowAddForm}
-          setShowEditForm={setShowEditForm}
-        />
-      )}
-      
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="flex">
-          <input
-            type="text"
-            placeholder="Search employees..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-grow p-2 border border-gray-300 rounded-l-md"
-          />
+      );
+    }
+
+    // Show fetch error message if there is one
+    if (fetchError || error) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-red-800 font-medium text-lg mb-2">Error Loading Employees</h3>
+            <p className="text-red-700 mb-4">{fetchError || error}</p>
           <button 
-            onClick={() => console.log('Search:', searchQuery)}
-            className="px-4 py-2 text-white bg-blue-600 rounded-r-md hover:bg-blue-700"
+              onClick={() => fetchEmployeesData(tenantId)} 
+              className="bg-red-100 text-red-800 px-4 py-2 rounded-md hover:bg-red-200 transition-colors"
           >
-            Search
+              Try Again
           </button>
         </div>
       </div>
-      
-      {/* Employees Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {loading && !employees.length ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p>Loading employees...</p>
-          </div>
-        ) : error ? (
-          <div className="p-8 text-center">
-            <div className="mb-4 text-amber-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-gray-600 mb-4">{error}</p>
-            {error.includes('session has expired') ? (
-              <button 
-                onClick={redirectToLogin}
-                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 mr-2"
-              >
-                Log In Again
-              </button>
-            ) : error.includes('Authentication error') ? (
-              <button 
-                onClick={refreshSession}
-                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 mr-2"
-              >
-                Refresh Session
-              </button>
-            ) : (
-              <button 
-                onClick={fetchEmployees}
-                className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                Retry
-              </button>
-            )}
-          </div>
-        ) : employees.length === 0 ? (
-          <div className="p-8 text-center">
-            <div className="mb-4 text-blue-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-            </div>
-            <p className="text-gray-600 mb-4">No employees found. Add your first employee to get started!</p>
-            <button 
-              onClick={() => setShowAddForm(true)}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
+      );
+    }
+
+    // Show empty state with helpful message if no employees
+    if (!employees || employees.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
             >
-              Add Employee
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" 
+              />
+              </svg>
+            <h3 className="text-xl font-medium text-black mb-2">No Employees Yet</h3>
+            <p className="text-gray-500 max-w-md">
+              You haven't added any employees to your organization yet. Get started by clicking the "Add Employee" button above.
+            </p>
+            </div>
+              <button 
+            className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              setShowAddForm(true);
+              setIsCreating(false);
+              setIsEditing(false);
+              setShowEmployeeDetails(false);
+              setSelectedEmployee(null);
+            }}
+          >
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Add Employee
+              </button>
+          </div>
+      );
+    }
+    
+    // If no employees match the search criteria
+    if (filteredEmployees.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg p-6">
+          <div className="text-center mb-6">
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-16 w-16 text-gray-300 mx-auto mb-4" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={1.5} 
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" 
+              />
+              </svg>
+            <h3 className="text-xl font-medium text-black mb-2">No Matching Employees</h3>
+            <p className="text-gray-500 max-w-md">
+              No employees match your search criteria "{searchQuery}". Try a different search term or clear the search.
+            </p>
+            </div>
+            <button 
+            className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            onClick={() => setSearchQuery('')}
+            >
+            <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Clear Search
             </button>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
+      );
+    }
+
+    // Render the employee table
+    return (
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Employee
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Role
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Department
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Contact
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {employees.map((employee) => (
-                  <tr key={employee.id}>
+            {filteredEmployees.map(employee => (
+              <tr 
+                key={employee.id} 
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => {
+                  setSelectedEmployee(employee);
+                  setShowEmployeeDetails(true);
+                }}
+              >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                        {employee.first_name?.[0]}{employee.last_name?.[0]}
+                      </div>
+                    </div>
+                    <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {`${employee.first_name} ${employee.last_name}`}
+                        {employee.first_name} {employee.last_name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {employee.job_title || 'No Title'}
+                      </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{employee.email}</div>
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    employee.role === 'ADMIN' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {employee.role === 'ADMIN' ? 'Administrator' : employee.role === 'MANAGER' ? 'Manager' : 'Employee'}
+                  </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{employee.job_title}</div>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {employee.department || 'Not Assigned'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{employee.department}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${employee.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        {employee.active ? 'Active' : 'Inactive'}
-                      </span>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <div>{employee.email}</div>
+                  <div>{employee.phone_number || 'No Phone'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button
-                        onClick={() => handleEditEmployee(employee)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditEmployee(employee);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900 mr-3"
                       >
                         Edit
                       </button>
                       <button
-                        onClick={() => handleResendInvitation(employee)}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                      >
-                        Invite
-                      </button>
-                      <button
-                        onClick={() => handleDeleteEmployee(employee.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteEmployee(employee.id);
+                    }}
                         className="text-red-600 hover:text-red-900"
                       >
                         Delete
@@ -1182,8 +1459,583 @@ const EmployeeManagement = () => {
               </tbody>
             </table>
           </div>
-        )}
+    );
+  };
+
+  // Employee details dialog component
+  const renderEmployeeDetailsDialog = () => {
+    if (!selectedEmployee) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
+          <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 z-10">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium">
+                {selectedEmployee.first_name} {selectedEmployee.last_name}
+              </h3>
+              <button
+                onClick={handleCloseEmployeeDetails}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          
+          <div className="px-6 py-4">
+            <div className="flex flex-wrap mb-6">
+              <div className="mb-4 w-full md:w-1/3 pr-4">
+                <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg">
+                  <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-xl font-bold mb-2">
+                    {selectedEmployee.first_name?.[0]}{selectedEmployee.last_name?.[0]}
+                  </div>
+                  <h4 className="text-lg font-semibold">
+                    {selectedEmployee.first_name} {selectedEmployee.middle_name ? selectedEmployee.middle_name[0] + '. ' : ''}{selectedEmployee.last_name}
+                  </h4>
+                  <p className="text-sm text-gray-500">
+                    {selectedEmployee.job_title || 'No Title'}
+                  </p>
+                  
+                  <div className="mt-4 w-full flex flex-col space-y-2">
+                    <button
+                      onClick={() => handleEditEmployee(selectedEmployee)}
+                      className="flex items-center justify-center w-full px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      Edit Employee
+                    </button>
+                    
+                    <button
+                      onClick={() => handleDeleteEmployee(selectedEmployee.id)}
+                      className="flex items-center justify-center w-full px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 hover:border-red-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete Employee
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div className="mb-4 w-full md:w-2/3">
+                <div className="space-y-3">
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Email</span>
+                    <span className="block mt-1">{selectedEmployee.email}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Phone</span>
+                    <span className="block mt-1">{selectedEmployee.phone_number || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Job Title</span>
+                    <span className="block mt-1">{selectedEmployee.job_title || 'Not assigned'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Department</span>
+                    <span className="block mt-1">{selectedEmployee.department || 'Not assigned'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Role</span>
+                    <span className="block mt-1">
+                      {selectedEmployee.role === 'ADMIN' || selectedEmployee.role === 'ADMN' 
+                        ? 'Administrator' 
+                        : selectedEmployee.role === 'OWNER' || selectedEmployee.role === 'OWNR'
+                          ? 'Owner'
+                          : 'Employee'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Employment Type</span>
+                    <span className="block mt-1">
+                      {selectedEmployee.employment_type === 'FT' ? 'Full-time' : 'Part-time'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Date Joined</span>
+                    <span className="block mt-1">
+                      {selectedEmployee.date_joined ? format(new Date(selectedEmployee.date_joined), 'MMMM d, yyyy') : 'Not provided'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Gender</span>
+                    <span className="block mt-1">{selectedEmployee.gender || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Marital Status</span>
+                    <span className="block mt-1">{selectedEmployee.marital_status || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Country</span>
+                    <span className="block mt-1">{selectedEmployee.country || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Street</span>
+                    <span className="block mt-1">{selectedEmployee.street || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">City</span>
+                    <span className="block mt-1">{selectedEmployee.city || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Postcode</span>
+                    <span className="block mt-1">{selectedEmployee.postcode || 'Not provided'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+    );
+  };
+
+  // Handle resending an invitation email to an employee - Functionality removed
+  const handleResendInvitation = async (employee) => {
+    // This functionality has been moved to the Settings Management page
+    notifyInfo("User invitation functionality has been moved to Settings page");
+    
+    // After a brief delay, dismiss the notification and let the user know where to find the feature
+    setTimeout(() => {
+      toast.dismiss();
+      notifySuccess("Please use the User Management section in Settings to invite users");
+    }, 2000);
+  };
+
+  // Add this function to the EmployeeManagement component
+  const resetCircuitBreaker = useCallback(() => {
+    try {
+      // Reset the circuit breakers for the employees endpoint
+      resetCircuitBreakers('/employees');
+      logger.info('[EmployeeManagement] Reset circuit breaker for /employees endpoint');
+      notifySuccess('Connection reset successful. Trying again...');
+      
+      // Fetch data after reset with a slight delay
+      setTimeout(() => {
+        fetchEmployeesData(true, 0, true);
+      }, 500);
+    } catch (error) {
+      logger.error('[EmployeeManagement] Error resetting circuit breaker:', error);
+      notifyError('Failed to reset connection. Please refresh the page.');
+    }
+  }, [fetchEmployeesData]);
+
+  // Handle creating a new employee
+  const handleCreateEmployee = async (e) => {
+    e.preventDefault();
+    try {
+      setIsCreating(true);
+      setSubmitError(null);
+      
+      // Get current tenant ID
+      const currentTenantId = getTenantId();
+      
+      // Validate required fields
+      if (!newEmployee.first_name || !newEmployee.last_name || !newEmployee.email) {
+        setSubmitError('First name, last name, and email are required');
+        setIsCreating(false);
+        return;
+      }
+      
+      // Try to refresh the user session first to ensure we have valid credentials
+      await refreshUserSession();
+      
+      // Call API to create employee
+      const response = await employeeApi.create(newEmployee);
+      
+      if (response && (response.id || response.success)) {
+        // Successfully created
+        setEmployees([...employees, response]);
+        setNewEmployee(initialEmployeeState);
+        setShowAddForm(false);
+        notifySuccess('Employee created successfully!');
+        
+        // Refresh the employee list
+        fetchEmployees();
+      } else if (response && response.message) {
+        // Handle specific error message from the API
+        setSubmitError(response.message);
+        
+        // If authentication error, try to refresh session
+        if (response.status === 401 || response.message.includes('Authentication')) {
+          notifyWarning('Session expired. Attempting to refresh...');
+          const refreshed = await refreshUserSession();
+          if (refreshed) {
+            notifyInfo('Session refreshed. Please try again.');
+          } else {
+            notifyError('Failed to refresh session. Please log in again.');
+            setTimeout(() => redirectToLogin(), 2000);
+          }
+        }
+      } else {
+        setSubmitError('Failed to create employee. Please try again.');
+      }
+    } catch (error) {
+      logger.error('[EmployeeManagement] Error creating employee:', error);
+      
+      // Handle authentication errors
+      if (error.message && error.message.includes('Authentication')) {
+        setSubmitError('Authentication failed. Refreshing your session...');
+        try {
+          const refreshed = await refreshUserSession();
+          if (refreshed) {
+            setSubmitError('Session refreshed. Please try creating the employee again.');
+          } else {
+            setSubmitError('Failed to refresh session. Please log in again.');
+            setTimeout(() => redirectToLogin(), 2000);
+          }
+        } catch (refreshError) {
+          setSubmitError('Failed to refresh session. Please log in again.');
+          setTimeout(() => redirectToLogin(), 2000);
+        }
+      } else {
+        setSubmitError(error.message || 'An unexpected error occurred while creating the employee');
+      }
+    } finally {
+      setIsCreating(false);
+    }
+  };
+  
+  // Handle editing an existing employee
+  const handleEditEmployee = (employee) => {
+    setNewEmployee(employee);
+    setSelectedEmployee(employee);
+    setIsEditing(true);
+    setShowEditForm(true);
+    setShowEmployeeDetails(false);
+  };
+  
+  // Handle updating an employee
+  const handleUpdateEmployee = async (e) => {
+    e.preventDefault();
+    try {
+      setIsSubmitting(true);
+      setSubmitError(null);
+      
+      // Get current tenant ID
+      const currentTenantId = getTenantId();
+      
+      // Validate required fields
+      if (!newEmployee.first_name || !newEmployee.last_name || !newEmployee.email) {
+        setSubmitError('First name, last name, and email are required');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Call API to update employee
+      const response = await employeeApi.update(newEmployee.id, newEmployee);
+      
+      if (response && response.id) {
+        // Successfully updated
+        setEmployees(employees.map(emp => emp.id === newEmployee.id ? response : emp));
+        setNewEmployee(initialEmployeeState);
+        setShowEditForm(false);
+        notifySuccess('Employee updated successfully!');
+        
+        // Refresh the employee list
+        fetchEmployees();
+      } else {
+        setSubmitError('Failed to update employee. Please try again.');
+      }
+    } catch (error) {
+      logger.error('[EmployeeManagement] Error updating employee:', error);
+      setSubmitError(error.message || 'An unexpected error occurred while updating the employee');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  // Handle deleting an employee
+  const handleDeleteEmployee = async (employeeId) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      try {
+        setLoading(true);
+        
+        // Get current tenant ID
+        const currentTenantId = getTenantId();
+        
+        // Call API to delete employee
+        const response = await employeeApi.delete(employeeId);
+        
+        // Most delete operations return a 204 or success message
+        // Remove from local state regardless of response
+        setEmployees(employees.filter(emp => emp.id !== employeeId));
+        notifySuccess('Employee deleted successfully!');
+        
+      } catch (error) {
+        logger.error('[EmployeeManagement] Error deleting employee:', error);
+        notifyError(error.message || 'An unexpected error occurred while deleting the employee');
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  // Handle input changes in the form
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    
+    // Handle checkbox inputs differently
+    if (type === 'checkbox') {
+      setNewEmployee({
+        ...newEmployee,
+        [name]: checked
+      });
+    } 
+    // Handle country change to update security number type
+    else if (name === 'country') {
+      setNewEmployee({
+        ...newEmployee,
+        [name]: value,
+        security_number_type: getSecurityNumberType(value)
+      });
+    }
+    // Handle all other input types
+    else {
+      setNewEmployee({
+        ...newEmployee,
+        [name]: value
+      });
+    }
+  };
+
+  return (
+    <div>
+      {/* Authentication Status Handler */}
+      {!isAuthenticated && (
+        <div className="mb-6">
+          <Alert severity="error">
+            <div className="mb-2">
+              <Typography variant="h6" component="h2">
+                Authentication Required
+              </Typography>
+              <Typography variant="body1">
+                Your session has expired or is invalid. Please refresh your session to continue.
+              </Typography>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={refreshSession}
+                disabled={loading}
+                startIcon={
+                  loading ? (
+                    <CircularProgress size="small" color="inherit" />
+                  ) : (
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  )
+                }
+              >
+                Refresh Session
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={redirectToLogin}
+              >
+                Log In Again
+              </Button>
+            </div>
+          </Alert>
+        </div>
+      )}
+
+      {/* Page Header */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <Typography variant="h4" component="h1" className="mb-4 sm:mb-0">
+            Employee Management
+          </Typography>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => {
+                setShowAddForm(true);
+                setIsCreating(false);
+                setIsEditing(false);
+                setShowEmployeeDetails(false);
+                setSelectedEmployee(null);
+              }}
+              startIcon={
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              }
+            >
+              Add Employee
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Connection Status Component */}
+      {showConnectionChecker && (
+        <BackendConnectionCheck
+          onConnectionRestored={handleConnectionRestored}
+          onClose={() => setShowConnectionChecker(false)}
+        />
+      )}
+      
+      {/* Success Messages */}
+      {successMessage && (
+        <Alert severity="success" className="mb-4">
+          {successMessage}
+        </Alert>
+      )}
+      
+      {/* Fetch Errors */}
+      {fetchError && (
+        <div className="mb-4">
+          <Alert severity="error">
+            <div className="mb-2">
+              <Typography variant="body1">
+                {fetchError}
+              </Typography>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button 
+                variant="contained" 
+                color="primary" 
+                size="small" 
+                onClick={fetchEmployees} 
+                startIcon={
+                  loading ? <CircularProgress size="small" color="inherit" /> : 
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                }
+              >
+                Retry Connection
+              </Button>
+              {fetchError.includes('Circuit breaker') && (
+                <Button
+                  variant="contained"
+                  color="error"
+                  size="small"
+                  onClick={resetCircuitBreaker}
+                  startIcon={
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  }
+                >
+                  Reset Circuit Breaker
+                </Button>
+              )}
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                onClick={() => setShowConnectionChecker(true)}
+              >
+                Advanced Troubleshooting
+              </Button>
+            </div>
+          </Alert>
+        </div>
+      )}
+      
+      {/* Error Alerts in the main UI, for non-fetch errors */}
+      {error && !fetchError && (
+        <Alert severity="error" className="mb-4">
+          {error}
+          {error.includes('session has expired') ? (
+            <Button
+              variant="text" 
+              color="error" 
+              size="small"
+              onClick={redirectToLogin}
+              className="ml-2"
+            >
+              Log In Again
+            </Button>
+          ) : error.includes('Authentication error') ? (
+            <Button
+              variant="text" 
+              color="primary"
+              size="small"
+              onClick={refreshSession}
+              className="ml-2"
+            >
+              Refresh Session
+            </Button>
+          ) : null}
+        </Alert>
+      )}
+      
+      {/* Employee Form Dialogs */}
+      {showAddForm && !showEmployeeDetails && (
+        <EmployeeForm 
+          onSubmit={handleCreateEmployee}
+          newEmployee={newEmployee}
+          handleInputChange={handleInputChange}
+          isLoading={isCreating}
+          setNewEmployee={setNewEmployee}
+          setShowAddForm={setShowAddForm}
+          setShowEditForm={setShowEditForm}
+        />
+      )}
+      
+      {showEditForm && !showEmployeeDetails && (
+        <EmployeeForm 
+          isEdit={true} 
+          onSubmit={handleUpdateEmployee}
+          newEmployee={newEmployee}
+          handleInputChange={handleInputChange}
+          isLoading={isSubmitting}
+          setNewEmployee={setNewEmployee}
+          setShowAddForm={setShowAddForm}
+          setShowEditForm={setShowEditForm}
+        />
+      )}
+      
+      {/* Main Content */}
+      <Paper elevation={3} className="overflow-hidden mb-6">
+        {/* Search Bar */}
+        <div className="p-4 border-b border-gray-200">
+          <div className="relative rounded-md shadow-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search employees by name, email, title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-3 py-2 border-gray-300 rounded-md"
+            />
+            {searchQuery && (
+              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Employees List */}
+        <div>
+          {renderEmployeesList()}
+        </div>
+      </Paper>
     </div>
   );
 };

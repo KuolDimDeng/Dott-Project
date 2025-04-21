@@ -1,0 +1,24 @@
+{
+  "scripts": [
+    {
+      "id": "AUTH-001",
+      "name": "Authentication Fix for Employee Management Backend",
+      "description": "Fixes authentication issues in the employee API endpoints",
+      "script_path": "fix_auth_issues.py",
+      "version": "1.0.0",
+      "date_created": "2025-04-20",
+      "date_executed": "2025-04-20",
+      "status": "completed",
+      "issues_fixed": [
+        "Inconsistent token extraction",
+        "Poor error handling for authentication failures",
+        "Missing tenant isolation in employee endpoints"
+      ],
+      "affected_files": [
+        "api/middleware/auth.py",
+        "api/routes/employees.py",
+        "api/utils/auth.py"
+      ]
+    }
+  ]
+} 

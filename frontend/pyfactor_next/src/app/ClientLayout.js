@@ -22,6 +22,7 @@ import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 import AuthTokenManager from '@/components/AuthTokenManager';
 import { tokenService } from '@/services/tokenService';
 import { setupAmplifyResilience } from '@/config/amplifyConfig';
+import { initNetworkResilience } from '@/utils/networkMonitor';
 // Removed GlobalEventDebugger - was causing input field issues
 
 // Dynamically import the ReactErrorDebugger to avoid SSR issues
@@ -137,6 +138,9 @@ export default function ClientLayout({ children }) {
         
         // Initialize Amplify resilience for network issues
         setupAmplifyResilience();
+        
+        // Initialize enhanced network resilience features
+        initNetworkResilience();
         
         // Add global error handler for "render is not a function" errors
         // but prevent infinite loops by not calling the original handler for certain errors

@@ -35,8 +35,8 @@ async function getAuthHeaders(retryCount = 0) {
     // Add tenant ID from token claims if available
     try {
       const payload = JSON.parse(atob(tokens.idToken.split('.')[1]));
-      if (payload['custom:tenant_id']) {
-        headers['X-Tenant-ID'] = payload['custom:tenant_id'];
+      if (payload['custom:tenant_ID']) {
+        headers['X-Tenant-ID'] = payload['custom:tenant_ID'];
       }
     } catch (e) {
       logger.warn('[OnboardingAPI] Failed to parse token claims:', e);

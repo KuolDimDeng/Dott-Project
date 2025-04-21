@@ -26,18 +26,23 @@ class CorsMiddleware:
 
     def _add_cors_headers(self, response, request):
         """Add CORS headers to response"""
-        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
-        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        origin = request.headers.get('Origin', '*')
+        # If CORS_ORIGIN_ALLOW_ALL is True in settings, use '*' for any origin
+        # Otherwise, use the specific origin from the request
+        response["Access-Control-Allow-Origin"] = origin
+        response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD"
         response["Access-Control-Allow-Headers"] = (
             "accept, accept-encoding, authorization, content-type, dnt, origin, user-agent, "
             "x-csrftoken, x-requested-with, x-request-id, cache-control, pragma, "
             "x-onboarding-step, x-debug-step, x-current-step, x-request-version, "
-            "x-id-token, x-user-id"
+            "x-id-token, x-user-id, x-tenant-id, X-Tenant-ID, X-TENANT-ID, x-schema-name, X-Schema-Name, "
+            "access-control-allow-origin, access-control-allow-headers, access-control-allow-methods"
         )
         response["Access-Control-Allow-Credentials"] = "true"
         response["Access-Control-Max-Age"] = "86400"  # 24 hours
         response["Access-Control-Expose-Headers"] = (
             "access-token, refresh-token, content-type, authorization, "
-            "cache-control, last-modified, etag, x-debug-step, x-current-step"
+            "cache-control, last-modified, etag, x-debug-step, x-current-step, "
+            "x-tenant-id, X-Tenant-ID, x-schema-name, X-Schema-Name"
         )
         return response

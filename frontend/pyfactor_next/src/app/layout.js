@@ -1,5 +1,7 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import '../lib/amplifyConfig'; // Import Amplify config early
+// Add reconfiguration script for Amplify
+import { configureAmplify } from '@/config/amplifyUnified';
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
 import Providers from './providers';
@@ -7,6 +9,11 @@ import Script from 'next/script';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
+import TenantRecoveryWrapper from '@/components/TenantRecoveryWrapper';
+import AuthInitializer from '@/components/AuthInitializer';
+import ClientSideScripts from '@/components/ClientSideScripts';
+// DO NOT directly import scripts here as they will run in server context
+// Scripts will be loaded via next/script in the component
 
 const inter = Inter({ subsets: ['latin'] });
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -55,20 +62,49 @@ export default async function RootLayout({ children, params }) {
             // Load AWS Amplify configuration from environment variables
             window.aws_config = {
               Auth: {
-                region: '${process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_COGNITO_REGION || 'us-east-1'}',
-                userPoolId: '${process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6'}',
-                userPoolWebClientId: '${process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b'}',
-                authenticationFlowType: 'USER_SRP_AUTH'
+                Cognito: {
+                  region: '${process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_COGNITO_REGION || 'us-east-1'}',
+                  userPoolId: '${process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6'}',
+                  userPoolClientId: '${process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b'}',
+                  loginWith: {
+                    email: true,
+                    username: true
+                  }
+                }
               }
             };
             console.log('[Layout] AWS Config initialized:', window.aws_config);
+            
+            // Add reconfiguration function for auth operations
+            window.ensureAmplifyAuth = function() {
+              if (window.reconfigureAmplify) {
+                console.log('[Layout] Ensuring Amplify auth configuration');
+                return window.reconfigureAmplify();
+              }
+              return false;
+            };
+            
+            // Initialize AppCache structure for dashboard redirect fix
+            if (!window.__APP_CACHE) {
+              window.__APP_CACHE = { 
+                auth: { provider: 'cognito', initialized: true }, 
+                user: {}, 
+                tenant: {},
+                tenants: {}
+              };
+              console.log('[Layout] AppCache initialized for dashboard redirect fix');
+            }
           `
         }} />
       </head>
       <body className={inter.className}>
-        <Providers>
-          {children}
-        </Providers>
+        <AuthInitializer />
+        <ClientSideScripts />
+        <TenantRecoveryWrapper showRecoveryState={true}>
+          <Providers>
+            {children}
+          </Providers>
+        </TenantRecoveryWrapper>
         <Toaster position="top-right" />
         <Script id="user-session-info" strategy="afterInteractive">
           {`
@@ -98,6 +134,70 @@ export default async function RootLayout({ children, params }) {
             }
           `}
         </Script>
+        
+        {/* HTTPS Configuration Script - Accept self-signed certificates */}
+        <Script id="https-config" strategy="afterInteractive">
+          {`
+            // Reset circuit breakers and configure HTTPS
+            try {
+              // Detect HTTPS mode
+              const isHttps = window.location.protocol === 'https:';
+              if (isHttps) {
+                console.log('[Layout] HTTPS detected, configuring for self-signed certificates');
+                
+                // Set a flag to let components know we're using HTTPS
+                window.__HTTPS_ENABLED = true;
+                
+                // Reset circuit breakers that may have been triggered when switching protocols
+                if (window.__resetCircuitBreakers) {
+                  window.__resetCircuitBreakers();
+                  console.log('[Layout] Circuit breakers reset for HTTPS mode');
+                }
+                
+                // Add ability to force reset circuit breakers when needed
+                window.resetCircuitBreakers = function() {
+                  if (window.__resetCircuitBreakers) {
+                    window.__resetCircuitBreakers();
+                    console.log('[Layout] Circuit breakers manually reset');
+                    return true;
+                  }
+                  return false;
+                };
+              }
+            } catch (e) {
+              console.error('Error configuring HTTPS:', e);
+            }
+          `}
+        </Script>
+        
+        {/* Dashboard redirect fix script initialization */}
+        <Script id="dashboard-redirect-fix" strategy="beforeInteractive">
+          {`
+            // Ensure script is loaded early for dashboard redirects
+            if (typeof window !== 'undefined' && !window.__APP_CACHE) {
+              window.__APP_CACHE = { 
+                auth: { provider: 'cognito', initialized: true }, 
+                user: {}, 
+                tenant: {},
+                tenants: {}
+              };
+              console.log('[Layout] AppCache initialized for dashboard redirect fix (beforeInteractive)');
+            }
+          `}
+        </Script>
+        
+        {/* Load fix scripts directly in the browser */}
+        <Script 
+          id="dashboard-redirect-fix-script" 
+          src="/scripts/Version0001_fix_dashboard_redirect_appCache.js"
+          strategy="afterInteractive"
+        />
+        
+        <Script 
+          id="cognito-attributes-fix-script" 
+          src="/scripts/Version0002_fix_cognito_attributes_permissions.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

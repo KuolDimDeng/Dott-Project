@@ -6,13 +6,41 @@ import { redirect } from 'next/navigation';
 import { serverLogger } from '@/utils/serverLogger';
 import DashboardLoader from '@/components/DashboardLoader';
 import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
-import dynamic from 'next/dynamic';
 
-// Import the custom DashboardContent component
-const CustomDashboardContent = dynamic(
-  () => import('./components/DashboardContent'),
-  { ssr: false, loading: () => <DashboardLoader message="Loading your custom dashboard..." /> }
-);
+// Import the static version of the dashboard content
+// This is now located in the component directory
+// DO NOT use dynamic imports here to avoid chunk loading errors
+const CustomDashboardContent = () => {
+  // This is a server component that will render the client component when needed
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            // Fallback recovery script
+            window.addEventListener('error', function(e) {
+              // Only handle chunk loading errors
+              if (e && e.message && e.message.includes('ChunkLoadError')) {
+                console.error('Caught chunk load error, trying to recover...');
+                // Allow a small delay for any in-progress requests to finish
+                setTimeout(() => {
+                  // Force reload the page to get a fresh copy of the JS files
+                  window.location.reload();
+                }, 1000);
+              }
+            });
+          `,
+        }}
+      />
+      <div className="dashboard-content-wrapper">
+        {/* This import will be handled on the client side */}
+        <div id="dashboard-content-mount-point">
+          <DashboardLoader message="Preparing dashboard..." />
+        </div>
+      </div>
+    </>
+  );
+};
 
 /**
  * Dashboard Page Component

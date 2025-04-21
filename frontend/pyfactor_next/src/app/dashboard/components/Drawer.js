@@ -31,6 +31,7 @@ const Drawer = ({
   handleInventoryClick,
   handleHomeClick,
   handleCRMClick,
+  handleBillingClick = () => console.log('Billing option selected'),
   handleEmployeeManagementClick,
   userData,
   resetAllStates,
@@ -48,17 +49,53 @@ const Drawer = ({
   // Determine drawer toggle handler using either handleDrawerToggle or onClose
   const toggleDrawer = handleDrawerToggle || onClose || (() => {});
   
-  // For handleDrawerItemClick compatibility
+  // Logic for handling item clicks with proper cleanup
   const handleItemClickWrapper = (callback, param) => {
+    // Create a unified function to handle navigation state updates
+    const updateNavigationState = (item) => {
+      try {
+        const navigationKey = `nav-${Date.now()}`;
+        sessionStorage.setItem('lastNavKey', navigationKey);
+        
+        // Create a standardized navigation event payload
+        const payload = {
+          navigationKey,
+          item: typeof item === 'string' ? item : (typeof param === 'string' ? param : 'unknown')
+        };
+        
+        console.log(`[Drawer] Dispatching navigation change for "${payload.item}" with key ${navigationKey}`);
+        
+        // Dispatch navigation event for component remounting
+        window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
+        
+        // Also dispatch menuNavigation event for main content area
+        window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+      } catch (e) {
+        console.warn('[Drawer] Error updating navigation state:', e);
+      }
+    };
+    
+    // For compatibility with both callback patterns
     if (handleDrawerItemClick && typeof callback === 'string') {
-      // If using the new API with handleDrawerItemClick
-      return () => handleDrawerItemClick(callback);
-    } else {
-      // Use the traditional approach
+      // Handle the string-based navigation
       return () => {
+        updateNavigationState(callback);
+        handleDrawerItemClick(callback);
+        
+        // Close drawer on mobile
+        if (window.innerWidth < 640) {
+          toggleDrawer();
+        }
+      };
+    } else {
+      // Handle function-based navigation
+      return () => {
+        // If param is available, use it as the item identifier
         if (param !== undefined) {
+          updateNavigationState(param);
           callback(param);
         } else if (callback) {
+          updateNavigationState('menu-item');
           callback();
         }
         
@@ -203,6 +240,7 @@ const Drawer = ({
             handleInventoryClick={handleInventoryClick}
             handleHomeClick={handleHomeClick}
             handleCRMClick={handleCRMClick}
+            handleBillingClick={handleBillingClick}
             handleEmployeeManagementClick={handleEmployeeManagementClick}
             handleDrawerClose={enhancedToggleDrawer}
             isIconOnly={!isOpen}

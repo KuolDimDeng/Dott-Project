@@ -294,7 +294,20 @@ const DashAppBar = ({
     const cachedName = cachedProfileData?.businessName;
     
     // Check if we have a valid business name from any source
-    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName;
+    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName || '';
+    
+    // Log the source of the business name for debugging
+    if (cognitoName) {
+      logger.info('[DashAppBar] Setting business name from data source:', { name: cognitoName, source: 'cognito' });
+    } else if (userDataName) {
+      logger.info('[DashAppBar] Setting business name from data source:', { name: userDataName, source: 'userData' });
+    } else if (profileDataName) {
+      logger.info('[DashAppBar] Setting business name from data source:', { name: profileDataName, source: 'profileData' });
+    } else if (cachedName) {
+      logger.info('[DashAppBar] Setting business name from data source:', { name: cachedName, source: 'cachedData' });
+    } else {
+      logger.warn('[DashAppBar] No business name found in any data source, using default');
+    }
     
     logger.info('[DashAppBar] Business name sources:', {
       cognitoName,
@@ -880,10 +893,10 @@ const DashAppBar = ({
           logger.info('[DashAppBar] No userAttributes prop provided, fetching from Cognito');
           
           // Import auth utilities
-          const { fetchUserAttributes } = await import('aws-amplify/auth');
-          
+            const { fetchUserAttributes } = await import('aws-amplify/auth');
+            
           // Get user attributes
-          const attributes = await fetchUserAttributes();
+            const attributes = await fetchUserAttributes();
           
           // Log success
           logger.info('[DashAppBar] Successfully fetched user attributes from Cognito');
@@ -907,9 +920,9 @@ const DashAppBar = ({
             
             // Generate initials from the attributes
             if (firstName || lastName || email) {
-              const initials = generateInitialsFromNames(firstName, lastName, email);
-              if (initials) {
-                setUserInitials(initials);
+            const initials = generateInitialsFromNames(firstName, lastName, email);
+            if (initials) {
+              setUserInitials(initials);
               }
             }
           }
@@ -1238,7 +1251,15 @@ const DashAppBar = ({
               </div>
               <div
                 className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
-                onClick={handleSettingsClick}
+                onClick={(e) => {
+                  console.log('[DashAppBar] Settings menu item clicked');
+                  if (typeof handleSettingsClick === 'function') {
+                    handleSettingsClick();
+                  } else {
+                    console.error('[DashAppBar] handleSettingsClick is not a function', handleSettingsClick);
+                    handleClose(); // Fallback to just closing the menu if handleSettingsClick is not available
+                  }
+                }}
               >
                 <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>

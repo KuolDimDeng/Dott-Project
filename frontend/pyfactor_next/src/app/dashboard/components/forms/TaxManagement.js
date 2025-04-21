@@ -1,98 +1,604 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+import { taxApi, employeeApi } from '@/utils/apiClient';
+import { logger } from '@/utils/logger';
+import { getSecureTenantId } from '@/utils/tenantUtils';
 
 /**
  * Tax Management Component for HR
  * Handles employee tax forms, withholdings, and compliance reporting
  */
 const TaxManagement = () => {
+  // State hooks
+  const [activeTab, setActiveTab] = useState('employee-select');
   const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [taxForms, setTaxForms] = useState([]);
+  const [states, setStates] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [formFile, setFormFile] = useState(null);
+  const [showAddForm, setShowAddForm] = useState(false);
   
-  return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">HR Tax Management</h1>
+  // Form data state
+  const [formData, setFormData] = useState({
+    form_type: 'W4',
+    tax_year: new Date().getFullYear(),
+    filing_status: 'single',
+    employee_id: '',
+    state_code: '',
+    is_verified: false,
+    submission_date: new Date().toISOString().split('T')[0],
+  });
+
+  // Toast notifications
+  const notifySuccess = (message) => toast.success(message);
+  const notifyError = (message) => toast.error(message);
+
+  // Fetch employees on component mount
+  useEffect(() => {
+    fetchEmployees();
+    fetchStates();
+  }, []);
+
+  // Fetch employees from API
+  const fetchEmployees = async () => {
+    setLoading(true);
+    try {
+      const tenantId = getSecureTenantId();
+      const response = await employeeApi.getAll({ tenant: tenantId, q: searchQuery });
       
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="text-center py-8">
-          <svg className="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <h2 className="mt-4 text-lg font-medium text-gray-900">Tax Management</h2>
-          <p className="mt-2 text-gray-600 text-sm">
-            Manage employee tax forms, withholdings, and compliance reporting. <br />
-            This feature will be available soon.
-          </p>
-          <button 
-            className="mt-4 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none"
-            disabled
+      if (response.data) {
+        setEmployees(response.data);
+      } else {
+        setEmployees([]);
+      }
+    } catch (error) {
+      logger.error('Error fetching employees:', error);
+      notifyError('Failed to fetch employees');
+      setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch available states 
+  const fetchStates = async () => {
+    try {
+      const tenantId = getSecureTenantId();
+      const response = await taxApi.getStates({ tenant: tenantId });
+      
+      if (response.data) {
+        setStates(response.data);
+      } else {
+        setStates([]);
+      }
+    } catch (error) {
+      logger.error('Error fetching states:', error);
+      notifyError('Failed to fetch states');
+      setStates([]);
+    }
+  };
+
+  // Fetch tax forms for selected employee
+  const fetchTaxForms = async (employeeId) => {
+    setLoading(true);
+    try {
+      const tenantId = getSecureTenantId();
+      const response = await taxApi.getFormsByEmployee(employeeId, { tenant: tenantId });
+      
+      if (response.data) {
+        setTaxForms(response.data);
+      } else {
+        setTaxForms([]);
+      }
+    } catch (error) {
+      logger.error('Error fetching tax forms:', error);
+      notifyError('Failed to fetch tax forms');
+      setTaxForms([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle employee selection
+  const handleEmployeeSelect = (employee) => {
+    setSelectedEmployee(employee);
+    setFormData({
+      ...formData,
+      employee_id: employee.id
+    });
+    fetchTaxForms(employee.id);
+    setActiveTab('tax-forms');
+  };
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle search submission
+  const handleSearch = () => {
+    fetchEmployees();
+  };
+
+  // Handle form input change
+  const handleFormChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === 'checkbox' ? checked : value
+    });
+  };
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    setFormFile(e.target.files[0]);
+  };
+
+  // Handle form submission
+  const handleSubmitForm = async (e) => {
+    e.preventDefault();
+    
+    if (!formData.employee_id) {
+      notifyError('Please select an employee');
+      return;
+    }
+    
+    if (!formData.form_type || !formData.tax_year) {
+      notifyError('Please fill out all required fields');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const tenantId = getSecureTenantId();
+      const formDataToSend = new FormData();
+      
+      // Append form data
+      Object.keys(formData).forEach(key => {
+        formDataToSend.append(key, formData[key]);
+      });
+      
+      // Append tenant ID
+      formDataToSend.append('tenant', tenantId);
+      
+      // Append file if exists
+      if (formFile) {
+        formDataToSend.append('file', formFile);
+      }
+      
+      await taxApi.createForm(formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      });
+      
+      notifySuccess('Tax form added successfully');
+      fetchTaxForms(formData.employee_id);
+      setShowAddForm(false);
+      resetForm();
+    } catch (error) {
+      logger.error('Error submitting tax form:', error);
+      notifyError('Failed to submit tax form');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle form deletion
+  const handleDeleteForm = async (formId) => {
+    if (!window.confirm('Are you sure you want to delete this tax form?')) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await taxApi.deleteForm(formId);
+      notifySuccess('Tax form deleted successfully');
+      fetchTaxForms(selectedEmployee.id);
+    } catch (error) {
+      logger.error('Error deleting tax form:', error);
+      notifyError('Failed to delete tax form');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle form verification
+  const handleVerifyForm = async (formId) => {
+    setLoading(true);
+    try {
+      await taxApi.verifyForm(formId);
+      notifySuccess('Tax form verified successfully');
+      fetchTaxForms(selectedEmployee.id);
+    } catch (error) {
+      logger.error('Error verifying tax form:', error);
+      notifyError('Failed to verify tax form');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle form download
+  const handleDownloadForm = async (formId, formType, taxYear) => {
+    try {
+      const response = await taxApi.downloadForm(formId);
+      
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${formType}_${taxYear}_${selectedEmployee.last_name}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      logger.error('Error downloading tax form:', error);
+      notifyError('Failed to download tax form');
+    }
+  };
+
+  // Reset form data
+  const resetForm = () => {
+    setFormData({
+      form_type: 'W4',
+      tax_year: new Date().getFullYear(),
+      filing_status: 'single',
+      employee_id: selectedEmployee ? selectedEmployee.id : '',
+      state_code: '',
+      is_verified: false,
+      submission_date: new Date().toISOString().split('T')[0],
+    });
+    setFormFile(null);
+  };
+
+  // Employee selection component
+  const renderEmployeeSelection = () => (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h2 className="text-xl font-semibold mb-4">Select Employee</h2>
+      
+      {/* Search bar */}
+      <div className="mb-6 flex">
+        <input
+          type="text"
+          placeholder="Search employees..."
+          className="flex-grow px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <button
+          className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          onClick={handleSearch}
+          disabled={loading}
+        >
+          {loading ? 'Searching...' : 'Search'}
+        </button>
+      </div>
+      
+      {/* Employees list */}
+      <div className="border rounded-md overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {employees.length > 0 ? (
+              employees.map((employee) => (
+                <tr key={employee.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{employee.first_name} {employee.last_name}</div>
+                    <div className="text-sm text-gray-500">{employee.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {employee.employee_number}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {employee.job_title || 'Not specified'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                      onClick={() => handleEmployeeSelect(employee)}
+                    >
+                      Select
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500">
+                  {loading ? 'Loading employees...' : 'No employees found'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  // Tax forms management component
+  const renderTaxForms = () => (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-semibold">Tax Forms for {selectedEmployee.first_name} {selectedEmployee.last_name}</h2>
+          <p className="text-sm text-gray-500 mt-1">Employee ID: {selectedEmployee.employee_number}</p>
+        </div>
+        <div className="flex gap-3">
+          <button
+            className="px-4 py-2 bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+            onClick={() => setActiveTab('employee-select')}
           >
-            Coming Soon
+            Back to Employees
+          </button>
+          <button
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            onClick={() => setShowAddForm(true)}
+          >
+            Add Tax Form
           </button>
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-3">Tax Management Features</h2>
-          <ul className="space-y-2 text-gray-600">
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Manage tax withholding forms (W-4, state withholding)
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Track tax filing statuses and exemptions
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Generate year-end tax forms (W-2, 1099)
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-blue-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Calculate and report payroll taxes
-            </li>
-          </ul>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold mb-3">Compliance</h2>
-          <ul className="space-y-2 text-gray-600">
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Stay compliant with federal, state, and local tax laws
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Automatic tax rate updates for accurate withholding
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Automated filing deadline reminders
-            </li>
-            <li className="flex items-center">
-              <svg className="h-5 w-5 text-green-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              Audit-ready tax records and documentation
-            </li>
-          </ul>
-        </div>
+      {/* Tax forms list */}
+      <div className="border rounded-md overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Year</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Filing Status</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">State</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verified</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {taxForms.length > 0 ? (
+              taxForms.map((form) => (
+                <tr key={form.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {form.form_type}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {form.tax_year}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {form.filing_status}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {form.state_code || 'Federal'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${form.is_verified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {form.is_verified ? 'Verified' : 'Not Verified'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    {form.file && (
+                      <button 
+                        className="text-indigo-600 hover:text-indigo-900 mr-3"
+                        onClick={() => handleDownloadForm(form.id, form.form_type, form.tax_year)}
+                      >
+                        Download
+                      </button>
+                    )}
+                    {!form.is_verified && (
+                      <button 
+                        className="text-green-600 hover:text-green-900 mr-3"
+                        onClick={() => handleVerifyForm(form.id)}
+                      >
+                        Verify
+                      </button>
+                    )}
+                    <button 
+                      className="text-red-600 hover:text-red-900"
+                      onClick={() => handleDeleteForm(form.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                  {loading ? 'Loading tax forms...' : 'No tax forms found for this employee'}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
+      
+      {/* Add form dialog */}
+      {showAddForm && (
+        <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            
+            {/* Modal panel */}
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+              <form onSubmit={handleSubmitForm}>
+                <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4" id="modal-title">
+                        Add Tax Form
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Form Type <span className="text-red-500">*</span>
+                          </label>
+                          <select
+                            name="form_type"
+                            value={formData.form_type}
+                            onChange={handleFormChange}
+                            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            required
+                          >
+                            <option value="W2">W-2 Wage and Tax Statement</option>
+                            <option value="W4">W-4 Employee Withholding Certificate</option>
+                            <option value="1099">1099-MISC Miscellaneous Income</option>
+                            <option value="1095C">1095-C Employer-Provided Health Insurance</option>
+                            <option value="940">Form 940 Federal Unemployment Tax</option>
+                            <option value="941">Form 941 Quarterly Federal Tax Return</option>
+                            <option value="STATE_WH">State Withholding Form</option>
+                            <option value="OTHER">Other Tax Form</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Tax Year <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="tax_year"
+                            value={formData.tax_year}
+                            onChange={handleFormChange}
+                            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                            required
+                            min="2020"
+                            max="2050"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Filing Status
+                          </label>
+                          <select
+                            name="filing_status"
+                            value={formData.filing_status}
+                            onChange={handleFormChange}
+                            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          >
+                            <option value="single">Single</option>
+                            <option value="married_joint">Married Filing Jointly</option>
+                            <option value="married_separate">Married Filing Separately</option>
+                            <option value="head_household">Head of Household</option>
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            State (if applicable)
+                          </label>
+                          <select
+                            name="state_code"
+                            value={formData.state_code}
+                            onChange={handleFormChange}
+                            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          >
+                            <option value="">Federal (No State)</option>
+                            {states.map(state => (
+                              <option key={state.code} value={state.code}>
+                                {state.name} ({state.code})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Form File
+                          </label>
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.png"
+                            onChange={handleFileChange}
+                            className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                          />
+                          <p className="mt-1 text-xs text-gray-500">
+                            Accepted formats: PDF, JPG, PNG
+                          </p>
+                        </div>
+                        
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            name="is_verified"
+                            checked={formData.is_verified}
+                            onChange={handleFormChange}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label className="ml-2 block text-sm text-gray-900">
+                            Mark as verified
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                  <button
+                    type="submit"
+                    className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
+                    disabled={loading}
+                  >
+                    {loading ? 'Submitting...' : 'Add Form'}
+                  </button>
+                  <button
+                    type="button"
+                    className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    onClick={() => setShowAddForm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Main loading overlay
+  const LoadingOverlay = () => (
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-4 rounded-lg shadow-lg flex items-center space-x-3">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        <p>Loading...</p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="p-4">
+      {loading && <LoadingOverlay />}
+      
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Tax Management</h1>
+        <p className="text-gray-600">Manage employee tax information and forms</p>
+      </div>
+      
+      {activeTab === 'employee-select' ? (
+        renderEmployeeSelection()
+      ) : activeTab === 'tax-forms' && selectedEmployee ? (
+        renderTaxForms()
+      ) : (
+        <div className="bg-white rounded-lg shadow-md p-6 text-center">
+          <p>Please select an option to continue</p>
+        </div>
+      )}
     </div>
   );
 };

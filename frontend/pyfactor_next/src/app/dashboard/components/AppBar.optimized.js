@@ -644,7 +644,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
                   data.profile.businessName ||
                   data.profile.business_name ||
                   locallyStoredName ||
-                  (userData?.firstName ? `${userData.firstName}'s Business` : 'My Business'),
+                  (userData?.firstName ? `${userData.firstName}'s Business` : ''),
                 subscription_type:
                   data.profile.subscription_type ||
                   data.profile.subscriptionType ||
@@ -709,7 +709,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
               ...(prevData || {}),
               business_name: locallyStoredName || 
                 (userData?.firstName ? `${userData.firstName}'s Business` : 
-                 email ? `${email.split('@')[0]}'s Business` : 'My Business'),
+                 email ? `${email.split('@')[0]}'s Business` : ''),
               subscription_type: userData?.subscription_type || 'free',
               userData: {
                 ...(prevData?.userData || {}),
@@ -745,7 +745,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           profile.businessName ||
           profile.businessname ||
           (userData?.firstName ? `${userData.firstName}'s Business` : 
-           userData?.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business');
+           userData?.email ? `${userData.email.split('@')[0]}'s Business` : '');
         const subscriptionType =
           profile.subscriptionPlan || profile.subplan || 'free';
         const accountStatus =
@@ -902,7 +902,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
               business_name:
                 cookieBusinessName || storageBusinessName || 
                 (userData?.firstName ? `${userData.firstName}'s Business` : 
-                 userData?.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
+                 userData?.email ? `${userData.email.split('@')[0]}'s Business` : ''),
               subscription_type: userData?.subscription_type || 'free',
               userData: {
                 ...(prevData?.userData || {}),
@@ -1551,7 +1551,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
             (typeof window !== 'undefined' &&
               getCacheValue('businessName')) ||
             (userData?.firstName ? `${userData.firstName}'s Business` : 
-             userData?.email ? `${userData.email.split('@')[0]}'s Business` : 'My Business'),
+             userData?.email ? `${userData.email.split('@')[0]}'s Business` : ''),
 
       subscription_type:
         isValidProfileData && profileData?.subscription_type

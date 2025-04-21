@@ -1,7 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+
+const REFRESH_COOLDOWN_MS = 15000; // 15 seconds between refreshes
+const RECOVERY_COOLDOWN_MS = 10000; // 10 seconds between recovery attempts
 
 /**
  * Dashboard Loader Component
@@ -14,33 +17,138 @@ import { useRouter, usePathname } from 'next/navigation';
 export default function DashboardLoader({ message = 'Loading your dashboard...' }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [redirectAttempts, setRedirectAttempts] = useState(0);
   const [status, setStatus] = useState(message);
+  const [errorDetails, setErrorDetails] = useState(null);
   const MAX_REDIRECT_ATTEMPTS = 5;
   
-  // Add error recovery function
-  const recoverFromError = () => {
+  // Refs to track operations and prevent duplicates
+  const operationsRef = useRef({
+    refreshInProgress: false,
+    lastRefreshTime: 0,
+    recoveryInProgress: false,
+    lastRecoveryTime: 0,
+    redirectInProgress: false
+  });
+  
+  // Check if we're on cooldown for session refresh
+  const isRefreshOnCooldown = useCallback(() => {
+    const now = Date.now();
+    const sinceLastRefresh = now - operationsRef.current.lastRefreshTime;
+    
+    if (sinceLastRefresh < REFRESH_COOLDOWN_MS) {
+      console.log(`[DashboardLoader] Auth refresh on cooldown (${Math.round(sinceLastRefresh / 1000)}s elapsed of ${REFRESH_COOLDOWN_MS / 1000}s cooldown)`);
+      return true;
+    }
+    
+    return false;
+  }, []);
+  
+  // Check if we're on cooldown for recovery attempts
+  const isRecoveryOnCooldown = useCallback(() => {
+    const now = Date.now();
+    const sinceLastRecovery = now - operationsRef.current.lastRecoveryTime;
+    
+    if (sinceLastRecovery < RECOVERY_COOLDOWN_MS) {
+      console.log(`[DashboardLoader] Recovery on cooldown (${Math.round(sinceLastRecovery / 1000)}s elapsed of ${RECOVERY_COOLDOWN_MS / 1000}s cooldown)`);
+      return true;
+    }
+    
+    return false;
+  }, []);
+  
+  // Add error recovery function with cooldown
+  const recoverFromError = useCallback(() => {
+    // Check for cooldown and in-progress recovery
+    if (isRecoveryOnCooldown() || operationsRef.current.recoveryInProgress) {
+      console.log('[DashboardLoader] Recovery already in progress or on cooldown, skipping');
+      return;
+    }
+    
+    // Set recovery flags
+    operationsRef.current.recoveryInProgress = true;
+    operationsRef.current.lastRecoveryTime = Date.now();
+    
     // Clear any potential network errors and retry loading
     if (typeof window !== 'undefined') {
       console.log('[DashboardLoader] Attempting to recover from network error');
+      
+      // Check for specific error types
+      if (errorDetails?.type === 'ChunkLoadError' || 
+          errorDetails?.message?.includes('Loading chunk') ||
+          errorDetails?.message?.includes('Failed to fetch')) {
+        console.log('[DashboardLoader] Clearing cache for chunk/network error');
+        
+        // Unregister service workers
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => registration.unregister());
+          }).catch(err => {
+            console.error('[DashboardLoader] Error unregistering service workers:', err);
+          });
+        }
+        
+        // Clear caches
+        if ('caches' in window) {
+          caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => caches.delete(cacheName));
+          }).catch(err => {
+            console.error('[DashboardLoader] Error clearing cache:', err);
+          });
+        }
+      }
+      
       // Force a clean reload after a short delay
       setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+        // Add cache-busting parameters
+        const url = new URL(window.location);
+        url.searchParams.set('cb', Date.now());
+        url.searchParams.set('recovery', 'true');
+        window.location.href = url.toString();
+        
+        // Reset flag if for some reason the redirect didn't happen
+        setTimeout(() => {
+          operationsRef.current.recoveryInProgress = false;
+        }, 5000);
+      }, 1500);
     }
-  };
+  }, [errorDetails, isRecoveryOnCooldown]);
   
-  // Helper function to refresh the auth session
+  // Helper function to refresh the auth session with cooldown
   const refreshAuthSession = async () => {
+    // Check for cooldown and in-progress refresh
+    if (isRefreshOnCooldown() || operationsRef.current.refreshInProgress) {
+      console.log('[DashboardLoader] Auth refresh already in progress or on cooldown, skipping');
+      return false;
+    }
+    
+    // Set refresh flags
+    operationsRef.current.refreshInProgress = true;
+    operationsRef.current.lastRefreshTime = Date.now();
+    
     try {
       console.log('[DashboardLoader] Refreshing auth session');
       // Dynamically import to support SSR
       const { fetchAuthSession } = await import('aws-amplify/auth');
       const session = await fetchAuthSession({ forceRefresh: true });
+      
+      // Store the tokens in APP_CACHE for resilience
+      if (typeof window !== 'undefined' && session.tokens?.accessToken) {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+        window.__APP_CACHE.auth.accessToken = session.tokens.accessToken.toString();
+        window.__APP_CACHE.auth.idToken = session.tokens.idToken.toString();
+        window.__APP_CACHE.auth.refreshed = Date.now();
+      }
+      
       return !!session.tokens?.accessToken;
     } catch (error) {
       console.error('[DashboardLoader] Error refreshing auth session:', error);
       return false;
+    } finally {
+      // Reset refresh flag
+      operationsRef.current.refreshInProgress = false;
     }
   };
 
@@ -51,6 +159,13 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       // Add retry logic for network errors
       let retryCount = 0;
       const maxRetries = 3;
+      
+      // Store tenant ID in APP_CACHE immediately for resilience
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE = window.__APP_CACHE || {};
+        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+        window.__APP_CACHE.tenant.id = tenantId;
+      }
       
       const tryFetch = async () => {
         try {
@@ -65,6 +180,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
           if (!response.ok) {
             console.error('[DashboardLoader] Error setting tenant ID in Cognito via API');
           }
+          
           return response;
         } catch (err) {
           if (retryCount < maxRetries) {
@@ -84,8 +200,128 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     }
   };
   
+  
+  // Monitor for chunk loading errors
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    // Get recovery parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Clear recovery attempts counter if this isn't a recovery attempt
+    if (!urlParams.get('recovery')) {
+      if (window.__APP_CACHE) {
+        window.__APP_CACHE.recoveryAttempts = 0;
+      }
+    } else {
+      // This is a recovery attempt
+      console.log('[DashboardLoader] This is a recovery attempt, ensuring clean state');
+      
+      // Clear any pending operations
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.operations = {};
+      
+      // Track the number of sequential recovery attempts
+      const attemptParam = urlParams.get('attempt');
+      if (attemptParam) {
+        const attemptCount = parseInt(attemptParam, 10);
+        window.__APP_CACHE.recoveryAttempts = attemptCount;
+        
+        // If too many attempts, try clearing more aggressive caches
+        if (attemptCount > 3) {
+          console.log('[DashboardLoader] Multiple recovery attempts detected, trying more aggressive cleanup');
+          
+          // Try to reset auth state if needed
+          try {
+            if (window.indexedDB) {
+              // Clear any Amplify-related IndexedDB databases
+              const dbNames = ['amplify-datastore-storage', 'aws.amplify.storage'];
+              dbNames.forEach(dbName => {
+                try {
+                  window.indexedDB.deleteDatabase(dbName);
+                  console.log('[DashboardLoader] Deleted database: ' + dbName);
+                } catch (e) {
+                  // Ignore errors
+                }
+              });
+            }
+          } catch (e) {
+            // Ignore errors during cleanup
+          }
+        }
+      }
+    }
+    
+    const handleChunkError = (event) => {
+      // Only proceed if we're not already in recovery
+      if (operationsRef.current.recoveryInProgress) {
+        return;
+      }
+      
+      // Handle both string messages and error objects
+      const message = event.message || (event.error && event.error.message) || '';
+      
+      // Only handle chunk load errors and network errors
+      if (message && (
+          message.includes('ChunkLoadError') || 
+          message.includes('Loading chunk') || 
+          message.includes('Failed to fetch') ||
+          message.includes('NetworkError') ||
+          message.includes('Network Error')
+      )) {
+        console.error('[DashboardLoader] Detected loading error:', message);
+        
+        // Add detailed error info
+        setErrorDetails({
+          type: message.includes('ChunkLoadError') ? 'ChunkLoadError' : 'NetworkError',
+          message: message,
+          timestamp: Date.now()
+        });
+        
+        setStatus('Error loading dashboard components. Attempting recovery...');
+        
+        // Record in APP_CACHE for resilience
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.lastError = {
+            type: message.includes('ChunkLoadError') ? 'ChunkLoadError' : 'NetworkError',
+            message: message,
+            timestamp: Date.now()
+          };
+        }
+        
+        // Automatically trigger recovery for severe errors
+        if ((message.includes('ChunkLoadError') || 
+             message.includes('NetworkError') || 
+             message.includes('Network Error')) && 
+            !isRecoveryOnCooldown()) {
+          recoverFromError();
+        }
+      }
+    };
+    
+    // Handle both unhandled errors and rejections
+    window.addEventListener('error', handleChunkError);
+    window.addEventListener('unhandledrejection', (event) => {
+      if (event.reason && event.reason.message) {
+        handleChunkError({ message: event.reason.message });
+      }
+    });
+    
+    // Cleanup function
+    return () => {
+      window.removeEventListener('error', handleChunkError);
+      window.removeEventListener('unhandledrejection', handleChunkError);
+    };
+  }, [recoverFromError, isRecoveryOnCooldown, searchParams]);
+  
   // Handle redirections from meta tags
   useEffect(() => {
+    // Skip if redirect is already in progress
+    if (operationsRef.current.redirectInProgress) {
+      return;
+    }
+    
     // Safely get meta tag content
     const getMetaContent = (name) => {
       const meta = document.querySelector(`meta[http-equiv="${name}"]`);
@@ -117,143 +353,95 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       pathTenantId,
       hasAuthParam,
       attempts: redirectAttempts,
-      currentPath: pathname
+      currentPath: pathname,
+      errorDetails
     });
     
-    // If we're already on a tenant URL with auth parameters, check auth instead of redirecting
-    // This prevents redirect loops that can happen post-login
-    if (pathTenantId && hasAuthParam && redirectAttempts > 0) {
-      console.log('[DashboardLoader] Already on tenant URL with auth params, refreshing auth session');
-      
-      // Store the tenant ID in Cognito attributes
-      setTenantAttribute(pathTenantId);
-      
-      // Refresh the auth session instead of redirecting
-      refreshAuthSession().then(success => {
-        if (success) {
-          console.log('[DashboardLoader] Auth refreshed successfully, reloading without auth params');
-          // Remove auth params from URL to show clean URL
-          const cleanPath = pathname.split('?')[0];
-          router.replace(cleanPath);
-        } else {
-          console.log('[DashboardLoader] Auth refresh failed, attempting recovery');
+    // If we have an error, try to recover
+    if (errorDetails) {
+      // Wait a moment before trying recovery to avoid immediate loops
+      const errorTimer = setTimeout(() => {
+        if (!isRecoveryOnCooldown()) {
           recoverFromError();
         }
+      }, 2000);
+      return () => clearTimeout(errorTimer);
+    }
+    
+    // Handle auth refresh if needed
+    if (refreshNeeded && !operationsRef.current.refreshInProgress && !isRefreshOnCooldown()) {
+      refreshAuthSession().catch(err => {
+        console.error('[DashboardLoader] Auth refresh error:', err);
       });
+    }
+    
+    // Handle redirects with throttling
+    if (shouldRedirect && redirectPath && redirectAttempts < MAX_REDIRECT_ATTEMPTS) {
+      operationsRef.current.redirectInProgress = true;
       
-      return;
-    }
-    
-    // If we're at max redirect attempts, try to recover instead of giving up
-    if (redirectAttempts >= MAX_REDIRECT_ATTEMPTS) {
-      setStatus('Too many redirect attempts. Attempting to recover...');
-      recoverFromError();
-      return;
-    }
-    
-    // If auth refresh is needed, do that first
-    if (refreshNeeded) {
-      console.log('[DashboardLoader] Auth refresh needed, attempting session refresh');
-      refreshAuthSession().then(success => {
-        if (success) {
-          console.log('[DashboardLoader] Auth refreshed successfully');
-          // Reload the current page to apply the refreshed token
-          window.location.reload();
-        } else {
-          console.log('[DashboardLoader] Auth refresh failed, attempting recovery');
-          recoverFromError();
+      setRedirectAttempts(prev => prev + 1);
+      const delay = Math.min(redirectAttempts * 500, 2000); // Graduated delay based on attempts
+      
+      console.log(`[DashboardLoader] Redirecting to ${redirectPath} in ${delay}ms (attempt ${redirectAttempts + 1})`);
+      
+      setTimeout(() => {
+        try {
+          router.push(redirectPath);
+          
+          // Reset redirect flag after timeout
+          setTimeout(() => {
+            operationsRef.current.redirectInProgress = false;
+          }, 5000);
+        } catch (err) {
+          console.error('[DashboardLoader] Redirect error:', err);
+          operationsRef.current.redirectInProgress = false;
         }
-      });
+      }, delay);
+      
       return;
     }
     
-    // Handle tenant ID in meta tag for /dashboard path
-    if (tenantIdMeta && pathname === '/dashboard') {
-      console.log(`[DashboardLoader] Found tenant ID in meta, redirecting directly to tenant URL`);
-      setStatus(`Redirecting to tenant dashboard...`);
+    // Handle tenant ID from meta tag - store it in APP_CACHE for resilience immediately
+    if (tenantIdMeta && typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+      window.__APP_CACHE.tenant.id = tenantIdMeta;
       
-      // Store the tenant ID in Cognito attributes
-      setTenantAttribute(tenantIdMeta);
-      
-      // Navigate to the tenant-specific dashboard with retry parameters
-      router.push(`/${tenantIdMeta}/dashboard?direct=true&fromAuth=true&retry=${redirectAttempts}`);
-      return;
-    }
-    
-    // Check if we should perform a redirect
-    if (shouldRedirect && redirectPath) {
-      // Check if we're already at the target path to avoid redirect loops
-      if (redirectPath.split('?')[0] === pathname) {
-        console.log('[DashboardLoader] Already at target path, not redirecting');
-        return;
-      }
-      
-      // Extract tenant ID from redirect path
-      let tenantId = null;
-      const tenantMatch = redirectPath.match(/^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
-      
-      if (tenantMatch && tenantMatch[1]) {
-        tenantId = tenantMatch[1];
-        
-        // Store the tenant ID in Cognito attributes
-        setTenantAttribute(tenantId);
-      }
-      
-      // If we have a tenant ID but it's not in the path, modify the path
-      if (tenantId && !tenantMatch && redirectPath.startsWith('/dashboard')) {
-        const finalPath = `/${tenantId}${redirectPath}`;
-        
-        // Avoid redirect loops
-        if (finalPath === pathname) {
-          console.log('[DashboardLoader] Detected redirect loop, not redirecting');
-          return;
-        }
-        
-        // Update redirect counter and status
-        setRedirectAttempts(prev => prev + 1);
-        setStatus(`Redirecting to tenant dashboard (${redirectAttempts + 1}/${MAX_REDIRECT_ATTEMPTS})...`);
-        
-        // Navigate directly, with tenant ID stored in Cognito
-        router.push(`${finalPath}${finalPath.includes('?') ? '&' : '?'}retry=${redirectAttempts}`);
-        return;
-      }
-      
-      // Handle regular redirects
-      if (redirectPath !== pathname) {
-        setStatus(`Redirecting to ${redirectPath}...`);
-        console.log(`[DashboardLoader] Redirecting to: ${redirectPath}`);
-        
-        setRedirectAttempts(prev => prev + 1);
-        router.push(`${redirectPath}${redirectPath.includes('?') ? '&' : '?'}retry=${redirectAttempts}`);
+      // If we already have a tenant ID in the path, don't redirect
+      if (!pathTenantId) {
+        // Only redirect if we have a tenant ID and no auth params
+        setTenantAttribute(tenantIdMeta).catch(err => {
+          console.error('[DashboardLoader] Error setting tenant attribute:', err);
+        });
       }
     }
-    
-    // Handle dashboard errors
-    if (dashboardError) {
-      const errorMessage = getMetaContent('x-error-message') || 'Unknown error';
-      setStatus(`Error: ${errorMessage}. Attempting to recover...`);
-      // Wait a moment, then try to recover
-      setTimeout(recoverFromError, 3000);
-    }
-  }, [router, redirectAttempts, pathname, MAX_REDIRECT_ATTEMPTS]);
-
+  }, [
+    pathname, 
+    redirectAttempts, 
+    router, 
+    errorDetails, 
+    recoverFromError, 
+    isRefreshOnCooldown, 
+    isRecoveryOnCooldown,
+    setTenantAttribute
+  ]);
+  
+  // Return the loader UI
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
-      <div className="space-y-4 flex flex-col items-center">
-        <div className="w-16 h-16 border-4 border-primary-main border-t-transparent rounded-full animate-spin"></div>
-        <h2 className="text-xl font-semibold text-gray-800">{status}</h2>
-        {redirectAttempts > 0 && (
-          <div className="text-sm text-gray-600">
-            Redirect attempt: {redirectAttempts}/{MAX_REDIRECT_ATTEMPTS}
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-100 bg-opacity-70 backdrop-blur-sm">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mx-4 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4" />
+        
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {status}
+        </h3>
+        
+        {errorDetails && (
+          <div className="mt-3 bg-red-50 p-3 rounded-md">
+            <p className="text-red-700 text-sm">
+              Error loading dashboard components. Attempting to recover...
+            </p>
           </div>
-        )}
-        {redirectAttempts >= 3 && (
-          <button
-            onClick={recoverFromError}
-            className="mt-4 px-4 py-2 bg-primary-main text-white rounded hover:bg-primary-dark"
-          >
-            Retry Loading
-          </button>
         )}
       </div>
     </div>

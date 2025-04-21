@@ -7,7 +7,7 @@ import { getTokens, storeTokens, areTokensExpired } from '@/utils/tokenManager';
 // Increase token refresh interval from default
 const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
 // Increase loading timeout to prevent premature session loading failure
-const LOADING_TIMEOUT = 10000; // 10 seconds instead of 5
+const LOADING_TIMEOUT = 20000; // Increased from 10s to 20s // 10 seconds instead of 5
 // Maximum number of consecutive refresh failures before entering cooldown
 const MAX_REFRESH_FAILURES = 5;
 // Cooldown period after exceeding max failures (milliseconds)
@@ -15,7 +15,7 @@ const REFRESH_COOLDOWN = 60000; // 1 minute
 // Log throttling for session messages
 const LOG_THROTTLE_INTERVAL = 10000; // 10 seconds
 // Minimum time between refresh attempts (milliseconds)
-const MIN_REFRESH_INTERVAL = 30000; // 30 seconds
+const MIN_REFRESH_INTERVAL = 20000; // Reduced from 30s to 20s for more responsive refreshes // 30 seconds
 // Global session log cache to prevent duplicate logs
 const sessionLogCache = new Map();
 // Track last successful refresh globally (unix timestamp)
@@ -124,25 +124,40 @@ export function useSession() {
     }
     
     // Set a timeout to clear loading state after LOADING_TIMEOUT regardless of session result
-    loadingTimeoutRef.current = setTimeout(() => {
-      setIsLoading(false);
-      
-      if (shouldLogSessionMessage('[useSession] Loading timeout reached')) {
-        logger.warn('[useSession] Loading timeout reached, forcing loading state to false');
-      }
-      
-      // Try to get attributes from Cognito as fallback
-      getUserAttributesFromCognito().then(attributes => {
-        if (attributes) {
-          if (shouldLogSessionMessage('[useSession] Using Cognito attributes fallback after timeout')) {
-            logger.info('[useSession] Session loading timed out, but Cognito attributes found. Using as fallback.');
-          }
-          setSession({ userAttributes: attributes });
+      loadingTimeoutRef.current = setTimeout(() => {
+        if (!isMounted.current) return;
+        
+        setIsLoading(false);
+        
+        if (shouldLogSessionMessage('[useSession] Loading timeout reached')) {
+          logger.warn('[useSession] Global loading timeout reached, forcing loading state to false');
         }
-      }).catch(err => {
-        logger.warn('[useSession] Failed to get fallback attributes after timeout:', err);
-      });
-    }, LOADING_TIMEOUT);
+        
+        // Try to get attributes from Cognito as fallback
+        getUserAttributesFromCognito().then(attributes => {
+          if (!isMounted.current) return;
+          
+          if (attributes) {
+            if (shouldLogSessionMessage('[useSession] Using Cognito attributes fallback after timeout')) {
+              logger.info('[useSession] Loading timed out with no session. Using Cognito attributes fallback.');
+            }
+            // Use cached tokens if available, otherwise create minimal session
+            const cachedTokens = getTokens();
+            setSession({ 
+              tokens: cachedTokens || {},
+              userAttributes: attributes,
+              isPartial: true // Flag to indicate this is a partial session
+            });
+            
+            // Set a flag to indicate we had to use a fallback
+            if (typeof window !== 'undefined') {
+              window.__sessionUsedFallback = true;
+            }
+          }
+        }).catch(err => {
+          logger.warn('[useSession] Failed to get fallback attributes after timeout:', err);
+        });
+      }, LOADING_TIMEOUT);
     
     // Check if we're in cooldown period due to too many failures
     if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES) {
@@ -268,7 +283,7 @@ export function useSession() {
             email: userAttributes.email,
             firstName: userAttributes.given_name,
             lastName: userAttributes.family_name,
-            tenantId: userAttributes['custom:tenant_id'] || userAttributes['custom:businessid']
+            tenantId: userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid']
           }, { ttl: 86400000 }); // 24 hours
           
           if (shouldLogSessionMessage('[useSession] Session refreshed successfully')) {

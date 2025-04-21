@@ -147,7 +147,7 @@ export async function GET(request) {
     });
     
     // Determine the target backend URL
-    const backendApiUrl = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
+    const backendApiUrl = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     let statusUrl = `${backendApiUrl}/api/onboarding/setup/status/?ts=${timestamp}`;
     
     // Add retry information to the request

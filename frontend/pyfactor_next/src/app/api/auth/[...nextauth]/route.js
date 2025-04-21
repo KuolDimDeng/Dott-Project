@@ -68,11 +68,34 @@ export const authOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Add custom values to the session
-      session.accessToken = token.accessToken;
-      session.refreshToken = token.refreshToken;
-      session.userId = token.userId;
-      return session;
+      try {
+        // Ensure we only add properties that can be serialized to JSON
+        session.accessToken = token.accessToken || null;
+        session.refreshToken = token.refreshToken || null;
+        session.userId = token.userId || null;
+        
+        // Make sure session.user exists and has expected properties
+        if (!session.user) {
+          session.user = {
+            name: token.name || 'User',
+            email: token.email || null,
+          };
+        }
+        
+        // Remove any properties that might cause issues with serialization
+        const cleanSession = JSON.parse(JSON.stringify(session));
+        return cleanSession;
+      } catch (error) {
+        logger.error('Error in session callback:', error);
+        // Return a minimal valid session
+        return {
+          expires: session.expires,
+          user: { 
+            name: 'User',
+            email: token.email || null
+          }
+        };
+      }
     },
   },
   pages: {
@@ -86,6 +109,21 @@ export const authOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET || 'replace-with-secure-secret',
   debug: process.env.NODE_ENV !== 'production',
+  
+  // Add enhanced error handling for next-auth
+  logger: {
+    error: (code, metadata) => {
+      logger.error(`[NextAuth][Error][${code}]`, metadata);
+    },
+    warn: (code) => {
+      logger.warn(`[NextAuth][Warning][${code}]`);
+    },
+    debug: (code, metadata) => {
+      if (process.env.NODE_ENV !== 'production') {
+        logger.debug(`[NextAuth][Debug][${code}]`, metadata);
+      }
+    },
+  },
 };
 
 // Export handler function

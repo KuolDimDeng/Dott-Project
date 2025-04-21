@@ -16,6 +16,9 @@ import cls from '@/utils/cls';
 import styles from '@/styles/DashboardClient.module.css';
 import { useSafeSearchParams } from '@/utils/searchParamsUtils';
 
+// Import HttpsConfig component for HTTPS support
+import HttpsConfig from '@/components/HttpsConfig';
+
 // Dynamically import DatabaseAdmin component to avoid loading it until needed
 const DatabaseAdmin = dynamic(() => import('@/components/DatabaseAdmin'), {
   loading: () => <div>Loading database tools...</div>,

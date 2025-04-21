@@ -27,7 +27,7 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
     const response = await serverAxiosInstance.get(`${API_URL}/api/hr/employees/?q=${query}`, {
       headers: {
         'Authorization': `Bearer ${session.tokens.accessToken}`,
@@ -69,7 +69,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
     const response = await serverAxiosInstance.post(`${API_URL}/api/hr/employees/create/`, body, {
       headers: {
         'Authorization': `Bearer ${session.tokens.accessToken}`,

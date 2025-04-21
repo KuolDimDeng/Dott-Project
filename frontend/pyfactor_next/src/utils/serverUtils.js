@@ -3,10 +3,38 @@ import { cookies, headers } from 'next/headers';
 import { logger } from './serverLogger';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
 
+/**
+ * Parse JWT token without verification
+ * @param {string} token - JWT token
+ * @returns {Object|null} Parsed token payload or null if invalid
+ */
+function parseJwt(token) {
+  try {
+    if (!token) return null;
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    logger.error('[ServerUtils] Error parsing JWT:', e);
+    return null;
+  }
+}
+
+/**
+ * Validate server-side session by checking tokens from various sources
+ * @param {Object} providedTokens - Optional tokens to use instead of extracting from request
+ * @returns {Object} Session object with verification status and tokens
+ */
 export async function validateServerSession(providedTokens) {
   try {
     let accessToken, idToken;
-    let onboardingStep, onboardedStatus, tenantId;
+    let tenantId;
     
     if (providedTokens?.accessToken && providedTokens?.idToken) {
       // Use provided tokens if available
@@ -14,166 +42,76 @@ export async function validateServerSession(providedTokens) {
       idToken = providedTokens.idToken;
       logger.debug('[ServerUtils] Using provided tokens');
     } else {
-      // First try to get tokens from the request headers
-      logger.debug('[ServerUtils] Looking for tokens in request headers');
+      // Try to get tokens from Authorization header
+      const headersList = await headers();
+      const authorization = headersList.get('Authorization');
       
-      try {
-        const headersList = await headers();
-        const authHeader = await headersList.get('authorization') || await headersList.get('Authorization');
-        const idTokenHeader = await headersList.get('x-id-token') || await headersList.get('X-Id-Token');
-        const tenantIdHeader = await headersList.get('x-tenant-id') || await headersList.get('X-Tenant-ID');
-        
-        // Extract tokens from Authorization header (Bearer token)
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-          accessToken = authHeader.substring(7);
-          logger.debug('[ServerUtils] Found access token in Authorization header');
-        }
-        
-        // Get ID token from header
-        if (idTokenHeader) {
-          idToken = idTokenHeader;
-          logger.debug('[ServerUtils] Found ID token in X-Id-Token header');
-        }
-        
-        // Get tenant ID from header
-        if (tenantIdHeader) {
-          tenantId = tenantIdHeader;
-          logger.debug('[ServerUtils] Found tenant ID in X-Tenant-ID header');
-        }
-      } catch (headerError) {
-        logger.error('[ServerUtils] Error extracting headers:', headerError);
+      // Extract token from Authorization header
+      if (authorization && authorization.startsWith('Bearer ')) {
+        idToken = authorization.substring(7);
+        accessToken = idToken; // Use same token as both for simplicity
+        logger.debug('[ServerUtils] Using token from Authorization header');
       }
-
-      // Fall back to cookies if no tokens in headers
-      if (!accessToken || !idToken) {
-        logger.debug('[ServerUtils] Tokens not found in headers, checking cookies as fallback');
+      
+      // If not found in headers, fall back to cookies
+      if (!idToken) {
+        // Get cookies using Next.js cookies API
+        const cookieStore = await cookies();
+        idToken = cookieStore.get('idToken')?.value;
+        accessToken = cookieStore.get('accessToken')?.value;
         
-        try {
-          // Get cookies using the Next.js cookies() function
-          const cookieStore = await cookies();
-          const cookiesList = await cookieStore.getAll();
-          const cookieObj = {};
-          
-          // Convert cookies to a more accessible format
-          cookiesList.forEach(cookie => {
-            cookieObj[cookie.name] = cookie.value;
-          });
-          
-          // Extract values from cookies
-          accessToken = accessToken || cookieObj['accessToken'];
-          idToken = idToken || cookieObj['idToken'];
-          onboardingStep = cookieObj['onboardingStep'];
-          onboardedStatus = cookieObj['onboardedStatus'];
-          tenantId = tenantId || cookieObj['tenantId'] || cookieObj['businessid'];
-          
-          // If standard tokens not found, look for Cognito format cookies
-          if (!accessToken || !idToken) {
-            logger.debug('[ServerUtils] Standard tokens not found, checking Cognito format');
-            
-            // Get Cognito client ID from env
-            const cognitoClientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || 
-                                   process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID;
-            
-            if (cognitoClientId) {
-              // Find the LastAuthUser
-              const lastAuthUserKey = `CognitoIdentityServiceProvider.${cognitoClientId}.LastAuthUser`;
-              const lastAuthUser = cookieObj[lastAuthUserKey];
-              
-              if (lastAuthUser) {
-                logger.debug(`[ServerUtils] Found LastAuthUser: ${lastAuthUser}`);
-                
-                // Try to find access token and ID token
-                Object.keys(cookieObj).forEach(key => {
-                  if (key.includes(cognitoClientId) && key.includes(lastAuthUser)) {
-                    if (key.endsWith('.accessToken')) {
-                      accessToken = accessToken || cookieObj[key];
-                      logger.debug('[ServerUtils] Found Cognito accessToken');
-                    } else if (key.endsWith('.idToken')) {
-                      idToken = idToken || cookieObj[key];
-                      logger.debug('[ServerUtils] Found Cognito idToken');
-                    }
-                  }
-                });
-              }
-            }
-          }
-          
-          logger.debug('[ServerUtils] Using tokens from sources', {
-            fromHeaders: {
-              hasAccessToken: !!accessToken,
-              hasIdToken: !!idToken,
-              hasTenantId: !!tenantId
-            },
-            fromCookies: {
-              hasAccessToken: !!cookieObj['accessToken'],
-              hasIdToken: !!cookieObj['idToken'],
-              hasTenantId: !!cookieObj['tenantId']
-            },
-            finalValues: {
-              hasAccessToken: !!accessToken,
-              hasIdToken: !!idToken,
-              hasTenantId: !!tenantId
-            }
-          });
-        } catch (cookieError) {
-          logger.error('[ServerUtils] Error extracting cookies:', cookieError);
+        // If tokens found in cookies, use them
+        if (idToken) {
+          logger.debug('[ServerUtils] Using tokens from cookies');
         }
       }
     }
 
-    if (!accessToken || !idToken) {
-      logger.warn('[ServerUtils] No valid session tokens found in headers, cookies or parameters');
+    // Return early if no tokens were found
+    if (!idToken) {
+      logger.warn('[ServerUtils] No valid session tokens found');
       return { verified: false };
     }
 
-    // Verify tokens
-    const verifier = CognitoJwtVerifier.create({
-      userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
-      tokenUse: 'access',
-      clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
+    // Decode ID token to extract user information (without verification)
+    const idTokenDecoded = parseJwt(idToken);
+    if (!idTokenDecoded) {
+      logger.warn('[ServerUtils] Failed to decode ID token');
+      return { 
+        verified: false,
+        error: 'Invalid token format' 
+      };
+    }
+    
+    // Extract user information from decoded token
+    const userId = idTokenDecoded.sub;
+    const email = idTokenDecoded.email;
+    const attributes = {};
+    
+    // Extract custom attributes
+    Object.keys(idTokenDecoded).forEach(key => {
+      if (key.startsWith('custom:')) {
+        attributes[key] = idTokenDecoded[key];
+      }
     });
-
-    try {
-      const verifiedToken = await verifier.verify(accessToken);
-      logger.debug('[ServerUtils] Token verified successfully');
-      
-      // Extract user information from ID token
-      const idTokenDecoded = parseJwt(idToken);
-      const userId = idTokenDecoded?.sub;
-      const email = idTokenDecoded?.email;
-      const attributes = {};
-      
-      // Extract tenant ID from ID token if not already set
-      if (!tenantId && idTokenDecoded) {
-        // Try to get tenant ID from token claims
-        const tokenTenantId = idTokenDecoded['custom:tenant_ID'] || 
-                             idTokenDecoded['custom:businessid'] || 
-                             idTokenDecoded['custom:tenantId'] || 
-                             idTokenDecoded['custom:tenant_id'];
-        
-        if (tokenTenantId) {
-          tenantId = tokenTenantId;
-          logger.debug(`[ServerUtils] Found tenant ID in token claims: ${tenantId}`);
-        }
-      }
-      
-      // Extract custom attributes
-      if (idTokenDecoded) {
-        Object.keys(idTokenDecoded).forEach(key => {
-          if (key.startsWith('custom:')) {
-            attributes[key] = idTokenDecoded[key];
-          }
-        });
-      }
-      
+    
+    // Extract tenant ID from token claims
+    tenantId = idTokenDecoded['custom:tenant_ID'] || 
+              idTokenDecoded['custom:businessid'] || 
+              idTokenDecoded['custom:tenantId'] || 
+              idTokenDecoded['custom:tenant_id'];
+    
+    // Skip token verification in development mode if configured
+    if (process.env.SKIP_TOKEN_VERIFICATION === 'true' && process.env.NODE_ENV === 'development') {
+      logger.warn('[ServerUtils] Skipping token verification in development mode');
       return {
         verified: true,
-        username: verifiedToken.username || verifiedToken.sub,
-        sub: verifiedToken.sub,
+        username: idTokenDecoded.username || idTokenDecoded.sub,
+        sub: idTokenDecoded.sub,
         userId: userId,
         email: email,
         tokens: {
-          accessToken,
+          accessToken: accessToken || idToken,
           idToken
         },
         user: {
@@ -181,22 +119,58 @@ export async function validateServerSession(providedTokens) {
           email: email,
           attributes: attributes || {}
         },
-        onboardingStep,
-        onboardedStatus,
+        tenantId
+      };
+    }
+    
+    // Verify tokens in production
+    try {
+      // Create JWT verifier
+      const verifier = CognitoJwtVerifier.create({
+        userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
+        tokenUse: 'id', // Verify as ID token
+        clientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
+      });
+      
+      // Verify the token
+      await verifier.verify(idToken);
+      logger.debug('[ServerUtils] Token verified successfully');
+      
+      // Return verified session
+      return {
+        verified: true,
+        username: idTokenDecoded.username || idTokenDecoded.sub,
+        sub: idTokenDecoded.sub,
+        userId: userId,
+        email: email,
+        tokens: {
+          accessToken: accessToken || idToken,
+          idToken
+        },
+        user: {
+          userId: userId,
+          email: email,
+          attributes: attributes || {}
+        },
         tenantId
       };
     } catch (verifyError) {
       logger.error('[ServerUtils] Token verification failed:', verifyError);
-      // Return a structured response with tokens but failed verification flag
-      // This way, clients can still use the tokens even if verification fails
+      
+      // Return partial session with verification failure flag
       return { 
         verified: false, 
         error: verifyError.message,
-        tokens: { accessToken, idToken },
-        // Include partial user information from tokens to aid in debugging
+        tokens: { 
+          accessToken: accessToken || idToken,
+          idToken 
+        },
         user: {
-          attributes: {}
-        }
+          userId: userId,
+          email: email,
+          attributes: attributes || {}
+        },
+        tenantId
       };
     }
   } catch (error) {
@@ -205,20 +179,6 @@ export async function validateServerSession(providedTokens) {
       verified: false, 
       error: error.message 
     };
-  }
-}
-
-// Helper function to parse JWT token without validation
-function parseJwt(token) {
-  try {
-    if (!token) return null;
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = Buffer.from(base64, 'base64').toString('utf8');
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    logger.error('[ServerUtils] Failed to parse JWT token:', e);
-    return null;
   }
 }
 

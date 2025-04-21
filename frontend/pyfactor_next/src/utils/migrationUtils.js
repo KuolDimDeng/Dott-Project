@@ -1,7 +1,8 @@
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
-import { Auth } from 'aws-amplify';
+import { getCurrentUser, fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
 import { removeCacheValue, setCacheValue } from './appCache';
+import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 /**
  * Utility functions to help migrate from cookie/localStorage to Cognito attributes
@@ -397,41 +398,32 @@ export async function clearLegacyStorage() {
 }
 
 /**
- * Gets current Cognito user attributes or null if not authenticated
+ * Gets user attributes from Cognito
+ * @returns {Promise<Object>} User attributes
  */
 export async function getUserAttributes() {
   try {
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
     return await fetchUserAttributes();
   } catch (error) {
-    logger.warn('[migrationUtils] Unable to get user attributes:', error);
-    return null;
+    logger.error('[Migration] Failed to get user attributes', error);
+    throw error;
   }
 }
 
 /**
- * Updates user attributes in Cognito
- * @param {Object} attributes - Attributes to update
- * @returns {Promise<boolean>} Success status
+ * Updates Cognito attributes for the current user
+ * @param {Object} attributes The attributes to update
+ * @returns {Promise<Object>} Result of the update
  */
 export async function updateCognitoAttributes(attributes) {
-  if (!attributes || Object.keys(attributes).length === 0) {
-    return false;
-  }
-  
   try {
-    const { updateUserAttributes } = await import('aws-amplify/auth');
-    
-    await updateUserAttributes({
-      userAttributes: {
-        ...attributes,
-        'custom:updated_at': new Date().toISOString()
-      }
+    logger.debug('[Migration] Updating Cognito attributes using resilient implementation');
+    const result = await resilientUpdateUserAttributes({
+      userAttributes: attributes
     });
-    
-    return true;
+    return result;
   } catch (error) {
-    logger.error('[migrationUtils] Error updating Cognito attributes:', error);
-    return false;
+    logger.error('[Migration] Failed to update Cognito attributes', error);
+    throw error;
   }
 } 

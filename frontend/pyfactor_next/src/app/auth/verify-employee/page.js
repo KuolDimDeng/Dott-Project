@@ -140,7 +140,7 @@ export default function VerifyEmployeePage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <Image 
-            src="/pyfactor-logo.png" 
+            src="/static/images/PyfactorLandingpage.png" 
             alt="PyFactor Logo" 
             width={50} 
             height={50} 

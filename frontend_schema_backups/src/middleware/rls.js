@@ -14,8 +14,8 @@ export const getTenantId = (user, request) => {
     return user.tenant_id;
   }
   
-  if (user && user['custom:tenant_id']) {
-    return user['custom:tenant_id'];
+  if (user && user['custom:tenant_ID']) {
+    return user['custom:tenant_ID'];
   }
   
   if (user && user.sub) {

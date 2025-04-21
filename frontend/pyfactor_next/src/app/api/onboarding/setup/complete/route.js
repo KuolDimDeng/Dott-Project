@@ -46,7 +46,7 @@ async function verifyToken(token, requestId) {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       'X-Request-ID': requestId,
-      'Origin': 'http://localhost:3000'
+      'Origin': 'https://localhost:3000'
     };
 
     // Try POST first
@@ -91,7 +91,7 @@ async function checkBackendHealth(requestId) {
       method: 'GET',
       headers: {
         'X-Request-ID': requestId,
-        'Origin': 'http://localhost:3000'
+        'Origin': 'https://localhost:3000'
       },
       cache: 'no-store'
     });

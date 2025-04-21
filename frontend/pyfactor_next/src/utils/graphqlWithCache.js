@@ -1,6 +1,9 @@
-import { API, graphqlOperation } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/api';
 import { getCache, setCache } from './cacheClient';
 import { logger } from './logger';
+
+// Create an API client
+const client = generateClient();
 
 /**
  * Execute a GraphQL query with in-memory caching
@@ -38,7 +41,10 @@ export const graphqlQueryWithCache = async (query, variables = {}, options = {})
     logger.debug('[graphqlQueryWithCache] Executing GraphQL query', { query: queryString });
     
     // Execute the query
-    const response = await API.graphql(graphqlOperation(query, variables));
+    const response = await client.graphql({
+      query,
+      variables
+    });
     
     // Store in cache
     setCache(cacheKey, response, { ttl: cacheTTL });
@@ -68,7 +74,10 @@ export const graphqlMutation = async (mutation, variables = {}) => {
     logger.debug('[graphqlMutation] Executing GraphQL mutation', { mutation: mutationString });
     
     // Execute the mutation
-    const response = await API.graphql(graphqlOperation(mutation, variables));
+    const response = await client.graphql({
+      query: mutation,
+      variables
+    });
     
     return response;
   } catch (error) {

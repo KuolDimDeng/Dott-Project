@@ -62,7 +62,7 @@ export async function POST(request) {
     }
     
     // Extract business info from request body
-    const businessName = body.businessName || 'My Business';
+    const businessName = body.businessName || '';
     const businessType = body.businessType || 'Other';
     const country = body.country || 'US';
     

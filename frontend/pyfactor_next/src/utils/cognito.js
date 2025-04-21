@@ -472,6 +472,97 @@ function getCognitoAuth() {
   };
 }
 
+/**
+ * Get current user attributes directly from Cognito
+ * @returns {Promise<Object>} User attributes or empty object if not authenticated
+ */
+export const getUserAttributes = async () => {
+  if (typeof window === 'undefined') {
+    // Server-side: Try to load dynamically
+    try {
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      if (!user) return {};
+      
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      return await fetchUserAttributes();
+    } catch (error) {
+      logger.error('[Cognito] Server-side fetchUserAttributes error:', error);
+      return {};
+    }
+  } else {
+    // Client-side: Use standard import approach
+    try {
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      return await fetchUserAttributes();
+    } catch (error) {
+      // Check if it's a not authenticated error
+      if (error.name === 'NotAuthorizedException' || 
+          error.message?.includes('not authenticated') ||
+          error.message?.includes('No current user')) {
+        logger.debug('[Cognito] User not authenticated');
+        return {};
+      }
+      
+      logger.error('[Cognito] fetchUserAttributes error:', error);
+      return {};
+    }
+  }
+};
+
+/**
+ * Get the current user from Cognito
+ * @returns {Promise<Object|null>} User object or null if not authenticated
+ */
+export const getCurrentUser = async () => {
+  try {
+    if (typeof window === 'undefined') {
+      // Server-side
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      
+      if (!user) return null;
+      
+      // Get additional attributes
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const attributes = await fetchUserAttributes();
+      
+      return {
+        userId: user.userId,
+        username: user.username,
+        attributes
+      };
+    } else {
+      // Client-side
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      
+      if (!user) return null;
+      
+      // Get additional attributes
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const attributes = await fetchUserAttributes();
+      
+      return {
+        userId: user.userId,
+        username: user.username,
+        attributes
+      };
+    }
+  } catch (error) {
+    // Check if it's a not authenticated error
+    if (error.name === 'NotAuthorizedException' || 
+        error.message?.includes('not authenticated') ||
+        error.message?.includes('No current user')) {
+      logger.debug('[Cognito] User not authenticated');
+      return null;
+    }
+    
+    logger.error('[Cognito] getCurrentUser error:', error);
+    return null;
+  }
+};
+
 export {
   updateCognitoAttribute,
   updateUserAttributesServer,

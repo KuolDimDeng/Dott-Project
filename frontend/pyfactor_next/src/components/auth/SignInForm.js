@@ -307,13 +307,9 @@ const [state, dispatch] = useReducer(reducer, initialState);
           shouldSkipPayment: skipPaymentPlans.includes(plan)
         });
         
-        // Free and basic plans skip payment and go straight to setup
-        if (isFreeOrBasicPlan) {
-          return 'setup';
-        }
-        
-        // Paid plans go to payment
-        return isPaidPlan ? 'payment' : 'setup';
+        // Always redirect to subscription page for onboarding status 'subscription'
+        logger.debug('[SignInForm] Redirecting user with subscription onboarding status to subscription page');
+        return 'subscription';
       },
       'payment': 'setup',
       'setup': 'dashboard', // Should transition to dashboard if setup is done

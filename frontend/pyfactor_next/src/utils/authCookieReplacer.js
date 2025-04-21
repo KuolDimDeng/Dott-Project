@@ -2,6 +2,7 @@
  * Utilities to replace cookie-based auth functionality with Cognito-based alternatives
  */
 import { logger } from '@/utils/logger';
+import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 /**
  * Gets authentication tokens directly from Cognito session
@@ -173,7 +174,7 @@ export async function getCurrentUser() {
       email: attributes.email,
       firstName: attributes.given_name || attributes.name?.split(' ')[0] || '',
       lastName: attributes.family_name || (attributes.name?.split(' ').slice(1).join(' ')) || '',
-      tenantId: attributes['custom:tenant_id'] || attributes['custom:businessid'] || '',
+      tenantId: attributes['custom:tenant_ID'] || attributes['custom:businessid'] || '',
       businessName: attributes['custom:businessname'] || '',
       businessType: attributes['custom:businesstype'] || '',
       onboardingComplete: attributes['custom:onboarding'] === 'complete' || attributes['custom:setupdone'] === 'true'
@@ -213,11 +214,8 @@ export async function updateUserAttributes(attributes) {
   }
   
   try {
-    // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
-    
-    // Update attributes
-    await updateUserAttributes({
+    // Update attributes using resilient implementation
+    await resilientUpdateUserAttributes({
       userAttributes: {
         ...attributes,
         'custom:updated_at': new Date().toISOString()

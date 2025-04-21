@@ -71,7 +71,7 @@ export async function POST(request) {
         }
         
         if (tenantId) {
-          userAttributes['custom:tenant_id'] = tenantId;
+          userAttributes['custom:tenant_ID'] = tenantId;
           userAttributes['custom:businessid'] = tenantId;
         }
         
@@ -156,7 +156,7 @@ export async function POST(request) {
       cognitoOnboardingStatus = decodedToken['custom:onboarding'];
       cognitoSetupDone = (decodedToken['custom:setupdone'] || '').toLowerCase() === 'true';
       cognitoSubPlan = (decodedToken['custom:subplan'] || decodedToken['custom:subscription_plan'] || '').toLowerCase();
-      cognitoTenantId = decodedToken['custom:tenant_id'] || decodedToken['custom:businessid'];
+      cognitoTenantId = decodedToken['custom:tenant_ID'] || decodedToken['custom:businessid'];
       
       logger.debug('[API] Extracted attributes from token:', { 
         cognitoOnboardingStatus,

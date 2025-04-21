@@ -42,7 +42,7 @@ function startCleanSession() {
     window.location.href = signInUrl.toString();
   } catch (err) {
     console.error('❌ Failed to navigate:', err);
-    console.log('Please manually navigate to: /auth/signin?noloop=true');
+    console.log('Please manually navigate to: https://localhost:3000/auth/signin?noloop=true');
   }
 
   return 'Starting clean session...';
@@ -69,12 +69,12 @@ This will:
 - Navigate to the sign-in page with the circuit breaker enabled
 
 Or, manually navigate to:
-http://localhost:3000/auth/signin?noloop=true
+https://localhost:3000/auth/signin?noloop=true
 
 After signing in, use these URLs for navigation:
-- Business Info: http://localhost:3000/onboarding/business-info?noloop=true
-- Subscription: http://localhost:3000/onboarding/subscription?noloop=true
-- Dashboard: http://localhost:3000/dashboard?noloop=true
+- Business Info: https://localhost:3000/onboarding/business-info?noloop=true
+- Subscription: https://localhost:3000/onboarding/subscription?noloop=true
+- Dashboard: https://localhost:3000/dashboard?noloop=true
 
 ========================================
 `);
@@ -83,5 +83,5 @@ After signing in, use these URLs for navigation:
 if (typeof window === 'undefined') {
   console.log('Run your development server with:');
   console.log('  ./reset-and-run.sh');
-  console.log('Then open http://localhost:3000/auth/signin?noloop=true in your browser');
+  console.log('Then open https://localhost:3000/auth/signin?noloop=true in your browser');
 } 

@@ -75,6 +75,9 @@ export async function POST(request) {
     // Start transaction
     await client.query('BEGIN');
     
+    // Set unset tenant context to bypass RLS for tenant management operations
+    await client.query("SELECT set_config('app.current_tenant_id', 'unset', false)");
+    
     // Get advisory lock to prevent race conditions
     // Use a hash of the user ID as the lock key
     const lockKey = BigInt(`0x${Buffer.from(userId).toString('hex')}`) % 2147483647n;
@@ -103,7 +106,6 @@ export async function POST(request) {
         // Collect all attributes to update in one operation
         const cognitoAttributes = {
           'custom:tenant_ID': existingTenantId,
-          'custom:tenantId': existingTenantId,
           'custom:businessid': existingTenantId
         };
         
@@ -191,7 +193,7 @@ export async function POST(request) {
         ON CONFLICT (id) DO NOTHING
       `, [tenantId, tenantName, userId, schemaName]);
       
-      // Create schema for tenant
+      // Create schema for tenant (for backward compatibility) - not actually used with RLS
       await client.query(`CREATE SCHEMA IF NOT EXISTS "${schemaName}"`);
     }
     
@@ -200,7 +202,7 @@ export async function POST(request) {
     await client.query(`
       INSERT INTO public.tenant_users (tenant_id, user_id, role, created_at)
       VALUES ($1, $2, 'owner', NOW())
-      ON CONFLICT (user_id) DO NOTHING
+      ON CONFLICT (user_id) DO UPDATE SET tenant_id = $1, updated_at = NOW()
     `, [tenantId, userId]);
     
     // Update user's Cognito attributes with tenant ID and subscription info
@@ -208,7 +210,6 @@ export async function POST(request) {
       // Collect all attributes to update in one operation
       const cognitoAttributes = {
         'custom:tenant_ID': tenantId,
-        'custom:tenantId': tenantId,
         'custom:businessid': tenantId
       };
       
@@ -233,68 +234,49 @@ export async function POST(request) {
       logger.info(`[${requestId}] Updating Cognito attributes for user with tenant ID: ${tenantId}`);
       logger.debug(`[${requestId}] Attributes to update:`, cognitoAttributes);
       
-      // Directly update the key tenant attributes first
-      try {
-        // Update tenant_ID directly first
-        await updateCognitoAttribute(userId, 'custom:tenant_ID', tenantId);
-        logger.info(`[${requestId}] Successfully updated custom:tenant_ID attribute for user ${userId}`);
-        
-        // Update tenantId directly next
-        await updateCognitoAttribute(userId, 'custom:tenantId', tenantId);
-        logger.info(`[${requestId}] Successfully updated custom:tenantId attribute for user ${userId}`);
-        
-        // Update businessid directly last
-        await updateCognitoAttribute(userId, 'custom:businessid', tenantId);
-        logger.info(`[${requestId}] Successfully updated custom:businessid attribute for user ${userId}`);
-      } catch (singleUpdateError) {
-        logger.error(`[${requestId}] Error updating individual tenant attributes: ${singleUpdateError.message}`);
-        // Continue with batch update anyway
-      }
-      
       // Send all updates at once
       await updateUserAttributesServer(userId, cognitoAttributes);
       logger.info(`[${requestId}] Updated all Cognito attributes for user with tenant ID: ${tenantId}`);
     } catch (error) {
       logger.error(`[${requestId}] Error updating Cognito attributes: ${error.message}`);
-      logger.error(`[${requestId}] Error details:`, error);
+      // Continue with the tenant creation process
     }
     
-    // Get updated tenant details
-    const tenantDetailsResult = await client.query(`
-      SELECT * FROM public.custom_auth_tenant WHERE id = $1
-    `, [tenantId]);
-    
-    // Commit transaction
+    // Commit the transaction
     await client.query('COMMIT');
     
     return NextResponse.json({
       success: true,
       tenantId,
-      tenant: tenantDetailsResult.rows[0],
-      message: tenantExists ? 'Associated user with existing tenant' : 'Created new tenant',
+      message: tenantExists ? 'Associated tenant with user' : 'Created new tenant',
       isNew: !tenantExists
     });
     
   } catch (error) {
-    // Rollback transaction in case of error
+    // Log error details for debugging
+    console.error(`[${requestId}] Error processing tenant request:`, error);
+    logger.error(`[${requestId}] Error processing tenant request:`, {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Rollback transaction if it was started
     if (client) {
       try {
         await client.query('ROLLBACK');
       } catch (rollbackError) {
-        console.error(`[${requestId}] Error during rollback: ${rollbackError.message}`);
+        console.error(`[${requestId}] Error rolling back transaction:`, rollbackError);
       }
     }
     
-    console.error(`[${requestId}] Error getting/creating tenant: ${error.message}`, error);
-    
     return NextResponse.json({
       success: false,
-      message: `Failed to get/create tenant: ${error.message}`
+      message: `Error processing tenant request: ${error.message}`,
+      error: error.message
     }, { status: 500 });
-    
   } finally {
-    // Release database resources
+    // Release client and close pool
     if (client) client.release();
-    if (pool) await pool.end();
+    // Don't close the pool as it may be reused
   }
 } 

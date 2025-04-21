@@ -37,7 +37,7 @@ export async function GET(request) {
       }
       
       // Extract tenant ID from user attributes
-      const tenantId = user.attributes?.['custom:tenant_id'] || 
+      const tenantId = user.attributes?.['custom:tenant_ID'] || 
                         user.attributes?.['custom:tenantId'] || 
                         user.attributes?.['tenant_id'];
       

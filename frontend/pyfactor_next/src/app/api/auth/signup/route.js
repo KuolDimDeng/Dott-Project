@@ -254,7 +254,7 @@ export async function POST(request) {
     }
 
     // Forward request to backend to create user (only if not bypassing signup)
-    const backendUrl = process.env.BACKEND_API_URL || 'http://127.0.0.1:8000';
+    const backendUrl = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     try {
       // Include auth headers only if they exist
       const headers = {

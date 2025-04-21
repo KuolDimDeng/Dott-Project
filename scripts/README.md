@@ -58,3 +58,83 @@ python scripts/initialize_database_tables.py dott_new
 1. Run the remove_all_tenants.py script to remove all tenants
 2. Confirm by typing 'DELETE ALL TENANTS' when prompted
 3. All tenant data will be removed, but the database structure remains intact
+
+## Maintenance Scripts
+
+- `clean-database.cjs` - Cleans up database entries for development
+- `delete-tenant.sh` - Deletes a tenant and all related resources
+- `delete-tenant.js` - JavaScript version of the tenant deletion script
+- `delete-tenant.cjs` - CommonJS version of the tenant deletion script
+- `reset-database.sh` - Resets the database to a clean state
+- `setup-tenant-dashboard.js` - Sets up the tenant dashboard components
+- `20250419_chunk_error_recovery.js` - Enhances dashboard resilience with improved chunk loading error recovery
+- `20240425_network_connectivity_diagnosis.js` - Diagnoses and fixes network connectivity issues between frontend and backend
+- `20240425_fix_axios_tenant_header.js` - Ensures proper tenant ID headers are included in all axios requests
+- `backend/pyfactor/scripts/20240425_fix_cors_headers.py` - Updates Django CORS settings to allow the X-Tenant-ID header
+
+## Usage Instructions
+
+### Chunk Error Recovery
+
+The `20250419_chunk_error_recovery.mjs` script enhances the dashboard's resilience by implementing robust error handling for chunk loading errors and network issues. These improvements help ensure the dashboard loads correctly after authentication, even when network conditions are suboptimal.
+
+Usage:
+```bash
+node scripts/20250419_chunk_error_recovery.mjs
+```
+
+To restore from backups (if needed):
+```bash
+node scripts/20250419_chunk_error_recovery.mjs --restore
+```
+
+Note: This script uses the `.mjs` extension because it's written using ES modules syntax, which is required for projects with `"type": "module"` in package.json.
+
+Key features:
+- Enhanced chunk loading error detection and recovery
+- Improved service worker and cache management
+- URL-based recovery tracking to prevent infinite reload loops
+- Better error handling in the Providers component
+
+### Network Connectivity Diagnosis
+
+The `20240425_network_connectivity_diagnosis.js` script diagnoses and fixes network connectivity issues between the frontend and backend applications, particularly for HTTPS configurations.
+
+Usage:
+```bash
+node scripts/20240425_network_connectivity_diagnosis.js
+```
+
+To analyze a specific browser console log file:
+```bash
+node scripts/20240425_network_connectivity_diagnosis.js path/to/console-log.txt
+```
+
+Key features:
+- Verifies SSL certificate configuration and validity
+- Tests connectivity to both frontend and backend servers
+- Analyzes browser console output for common error patterns
+- Checks CORS configuration on the backend
+- Verifies Amplify configuration
+- Automatically applies common fixes for network issues
+
+### CORS and Tenant ID Header Fix
+
+The following scripts fix CORS issues related to the `X-Tenant-ID` header:
+
+1. **Django CORS Headers Update Script**:
+   ```bash
+   cd backend/pyfactor
+   python scripts/20240425_fix_cors_headers.py
+   ```
+
+2. **Axios Tenant ID Header Fix Script**:
+   ```bash
+   node scripts/20240425_fix_axios_tenant_header.js
+   ```
+
+Key features:
+- Updates `CORS_ALLOW_HEADERS` in Django settings to include 'x-tenant-id'
+- Ensures proper tenant ID header configuration in axios interceptors
+- Fixes circuit breaker resets during error recovery
+- Creates backups of all modified files

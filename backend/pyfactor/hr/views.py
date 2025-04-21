@@ -18,6 +18,7 @@ from django.db.models import Q
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid
+from datetime import datetime
 
 from pyfactor.logging_config import get_logger
 
@@ -296,3 +297,62 @@ def preboarding_form_detail(request, pk):
     elif request.method == 'DELETE':
         preboarding_form.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@api_view(['GET', 'OPTIONS', 'HEAD'])
+def health_check(request):
+    """Health check endpoint for the HR module that doesn't require tenant ID or authentication"""
+    from rest_framework.permissions import AllowAny
+    from rest_framework.response import Response
+    from rest_framework import status
+    from datetime import datetime
+    
+    # Respond to preflight requests
+    if request.method == 'OPTIONS':
+        response = Response()
+        # Always allow any origin for the health check endpoint
+        origin = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Origin"] = origin
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token"
+        )
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Max-Age"] = "86400"
+        return response
+    
+    # Handle HEAD requests
+    if request.method == 'HEAD':
+        response = Response(status=status.HTTP_200_OK)
+        origin = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Origin"] = origin
+        response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+        response["Access-Control-Allow-Credentials"] = "true"
+        return response
+
+    # Create explicit response with CORS headers
+    response = Response({
+        "status": "healthy",
+        "module": "hr",
+        "timestamp": datetime.now().isoformat(),
+        "auth_required": False,
+        "tenant_id": getattr(request, 'tenant_id', None)
+    }, status=status.HTTP_200_OK)
+    
+    # Add CORS headers
+    origin = request.headers.get('Origin', '*')
+    response["Access-Control-Allow-Origin"] = origin
+    response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
+    response["Access-Control-Allow-Headers"] = (
+        "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, "
+        "access-control-allow-headers, Access-Control-Allow-Headers, "
+        "access-control-allow-origin, Access-Control-Allow-Origin, "
+        "access-control-allow-methods, Access-Control-Allow-Methods, "
+        "x-request-id, cache-control, x-user-id, x-id-token"
+    )
+    response["Access-Control-Allow-Credentials"] = "true"
+    
+    return response

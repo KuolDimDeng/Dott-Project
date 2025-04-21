@@ -209,7 +209,7 @@ export function generateVerificationUrl(token, baseUrl) {
     throw new Error('Token is required');
   }
   
-  const url = new URL('/auth/verify-employee', baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
+  const url = new URL('/auth/verify-employee', baseUrl || process.env.NEXT_PUBLIC_BASE_URL || 'https://localhost:3000');
   url.searchParams.set('token', token);
   
   return url.toString();

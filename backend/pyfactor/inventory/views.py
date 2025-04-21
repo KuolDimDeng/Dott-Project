@@ -114,9 +114,88 @@ class CategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 class SupplierViewSet(viewsets.ModelViewSet):
-    queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
+    queryset = Supplier.objects.all()
+    
+    def get_queryset(self):
+        """
+        Get queryset with proper tenant context and optimized queries
+        """
+        import logging
+        import time
+        logger = logging.getLogger(__name__)
+        
+        start_time = time.time()
+        
+        try:
+            # Log tenant information if available
+            tenant = getattr(self.request, 'tenant', None)
+            if tenant:
+                logger.debug(f"Request has tenant: {tenant.id} (Status: {tenant.database_status})")
+            else:
+                logger.debug("No tenant found in request")
+            
+            # Get optimized connection for the current schema
+            from django.db import connection
+            from pyfactor.db_routers import TenantSchemaRouter
+            
+            # Clear connection cache to ensure clean state
+            TenantSchemaRouter.clear_connection_cache()
+            
+            # Get optimized connection for tenant schema
+            if tenant:
+                TenantSchemaRouter.get_connection_for_schema(tenant.id)
+            
+            # Use the optimized manager to get suppliers for this tenant
+            if tenant:
+                queryset = Supplier.objects.filter(tenant_id=tenant.id)
+                logger.debug(f"Using optimized queryset for tenant: {tenant.id}")
+            else:
+                # Fall back to regular queryset
+                queryset = Supplier.objects.all()
+                logger.debug("Using regular queryset (no tenant)")
+            
+            logger.debug(f"Supplier queryset fetched in {time.time() - start_time:.4f}s")
+            return queryset
+            
+        except Exception as e:
+            logger.error(f"Error getting supplier queryset: {str(e)}", exc_info=True)
+            # Return empty queryset on error
+            return Supplier.objects.none()
+        finally:
+            # Reset connection cache
+            TenantSchemaRouter.clear_connection_cache()
+    
+    def list(self, request, *args, **kwargs):
+        """Override list method to add better error handling"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error listing suppliers: {str(e)}", exc_info=True)
+            
+            # Provide more specific error messages based on the exception type
+            if "timeout" in str(e).lower():
+                return Response(
+                    {"error": "Database operation timed out. Please try again."},
+                    status=status.HTTP_504_GATEWAY_TIMEOUT
+                )
+            else:
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+    
+    def perform_create(self, serializer):
+        """Override to ensure tenant_id is set correctly"""
+        tenant = getattr(self.request, 'tenant', None)
+        if tenant:
+            serializer.save(tenant_id=tenant.id)
+        else:
+            serializer.save()
 
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()

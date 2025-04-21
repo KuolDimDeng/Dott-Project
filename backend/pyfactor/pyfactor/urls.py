@@ -31,8 +31,7 @@ api_patterns = [
     
     # Business operations with proper async handling
     path('inventory/', include(('inventory.urls', 'inventory'), namespace='inventory')),
-    # Temporarily commented out to break circular dependency
-    # path('hr/', include(('hr.urls', 'hr'), namespace='hr')),
+    path('hr/', include(('hr.urls', 'hr'), namespace='hr')),
     path('sales/', include(('sales.urls', 'sales'), namespace='sales')),
     path('purchases/', include(('purchases.urls', 'purchases'), namespace='purchases')),
     path('taxes/', include(('taxes.urls', 'taxes'), namespace='taxes')),

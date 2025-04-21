@@ -14,38 +14,49 @@ import { redirectToDashboard } from '@/utils/redirectUtils';
  * appropriate page in the dashboard.
  */
 export default function TenantCatchAllPage({ params }) {
-  // Unwrap params Promise using React.use()
-  const unwrappedParams = React.use(params);
-  const { tenantId, slug } = unwrappedParams;
+  // Access params via React hooks instead of directly
   const router = useRouter();
   
+  // Use the params object safely inside the useEffect hook
+  // where React state updates are permitted
   useEffect(() => {
-    // Log the tenant ID and slug
-    logger.info(`[TenantCatchAllPage] Tenant ID: ${tenantId}, Slug: ${slug.join('/')}`);
+    // Extract the params within the effect
+    const tenantId = params?.tenantId;
+    const slug = params?.slug || [];
     
-    if (!tenantId) {
-      logger.error('[TenantCatchAllPage] No tenant ID provided in URL path');
-      redirectToDashboard(router, { source: 'tenant-catchall-no-id' });
-      return;
+    try {
+      // Log the tenant ID and slug
+      logger.info(`[TenantCatchAllPage] Tenant ID: ${tenantId}, Slug: ${Array.isArray(slug) ? slug.join('/') : slug}`);
+      
+      if (!tenantId) {
+        logger.error('[TenantCatchAllPage] No tenant ID provided in URL path');
+        redirectToDashboard(router, { source: 'tenant-catchall-no-id' });
+        return;
+      }
+      
+      if (!isValidUUID(tenantId)) {
+        logger.error(`[TenantCatchAllPage] Invalid tenant ID format: ${tenantId}`);
+        redirectToDashboard(router, { source: 'tenant-catchall-invalid-id' });
+        return;
+      }
+      
+      // Store the tenant ID in client storage
+      storeTenantId(tenantId);
+      
+      // Redirect to the tenant-specific dashboard with the section as a query parameter
+      const slugPath = Array.isArray(slug) ? slug.join('/') : slug;
+      const queryParams = { section: slugPath };
+      redirectToDashboard(router, { 
+        tenantId: tenantId, 
+        queryParams,
+        source: 'tenant-catchall-redirect' 
+      });
+    } catch (error) {
+      logger.error('[TenantCatchAllPage] Error processing tenant route:', error);
+      // Fallback to dashboard on error
+      redirectToDashboard(router, { source: 'tenant-catchall-error' });
     }
-    
-    if (!isValidUUID(tenantId)) {
-      logger.error(`[TenantCatchAllPage] Invalid tenant ID format: ${tenantId}`);
-      redirectToDashboard(router, { source: 'tenant-catchall-invalid-id' });
-      return;
-    }
-    
-    // Store the tenant ID in client storage
-    storeTenantId(tenantId);
-    
-    // Redirect to the tenant-specific dashboard with the section as a query parameter
-    const queryParams = { section: slug.join('/') };
-    redirectToDashboard(router, { 
-      tenantId: tenantId, 
-      queryParams,
-      source: 'tenant-catchall-redirect' 
-    });
-  }, [tenantId, slug, router]);
+  }, [router, params]); // Add params as a dependency
   
   return (
     <div className="flex items-center justify-center min-h-screen">

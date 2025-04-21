@@ -20,7 +20,7 @@ const testConfirmUser = async () => {
   try {
     console.log(`Testing confirm-user API with email: ${testEmail}`);
     
-    const response = await axios.post('http://localhost:3000/api/admin/confirm-user', {
+    const response = await axios.post('https://localhost:3000/api/admin/confirm-user', {
       email: testEmail
     }, {
       // Set a longer timeout

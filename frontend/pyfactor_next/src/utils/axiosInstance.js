@@ -30,20 +30,72 @@ const axiosInstance = axios.create({
   }
 });
 
-// Request interceptor to add authorization token
+// Improved tenant and token handling using only AppCache or direct Cognito
+const getTenantAndTokenInfo = async () => {
+  let token = null;
+  let tenantId = null;
+  
+  if (typeof window !== 'undefined') {
+    // Ensure APP_CACHE is initialized
+    window.__APP_CACHE = window.__APP_CACHE || {};
+    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+    window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+    
+    // Try to get token from APP_CACHE
+    token = window.__APP_CACHE.auth.idToken;
+    
+    // Try to get tenant ID from APP_CACHE
+    tenantId = window.__APP_CACHE.tenant.id || window.__APP_CACHE.tenant.tenantId || window.__APP_CACHE.businessid;
+    
+    // If we don't have a token or tenantId yet, try to get directly from Cognito
+    if (!token || !tenantId) {
+      try {
+        // Dynamic import to avoid server-side errors
+        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const session = await fetchAuthSession();
+        
+        if (session?.tokens?.idToken) {
+          token = session.tokens.idToken.toString();
+          
+          // Store in AppCache for future use
+          window.__APP_CACHE.auth.idToken = token;
+          
+          // Extract tenant ID from token payload
+          try {
+            const payload = JSON.parse(
+              Buffer.from(token.split('.')[1], 'base64').toString()
+            );
+            
+            tenantId = payload['custom:businessid'] || 
+                      payload['custom:tenant_ID'] || 
+                      payload['custom:tenantId'];
+            
+            if (tenantId) {
+              window.__APP_CACHE.tenant.id = tenantId;
+            }
+          } catch (e) {
+            console.warn('[Axios] Error extracting tenant ID from token:', e);
+          }
+        }
+      } catch (e) {
+        console.warn('[Axios] Error getting session from Cognito:', e);
+      }
+    }
+  }
+  
+  return { token, tenantId };
+};
+
+// Update the request interceptor to use the improved function
 axiosInstance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const isInternal = isInternalApiPath(config.url);
     
     // Set the baseURL dynamically based on the URL path
-    // For internal API routes, use relative paths to hit Next.js API routes
-    // For external APIs, use the configured external API base URL
     if (isInternal) {
-      // The URL already starts with /api/ so we don't need to modify it
-      // Just ensure we're not adding any baseURL that might duplicate it
       config.baseURL = '';
       
-      // Additional check to remove duplicate /api/ in the URL
+      // Clean up duplicate /api/ in URLs
       if (config.url.startsWith('/api/api/')) {
         console.log(`[Axios] Fixing duplicate API path: ${config.url}`);
         config.url = config.url.replace('/api/api/', '/api/');
@@ -54,49 +106,53 @@ axiosInstance.interceptors.request.use(
         config.url = `/api${config.url.startsWith('/') ? config.url : '/' + config.url}`;
       }
       
-      // Check again for potential duplicates that might have been added by other middleware
+      // Check again for potential duplicates
       if (config.url.startsWith('/api/api/')) {
         console.log(`[Axios] Fixing duplicate API path: ${config.url}`);
         config.url = config.url.replace('/api/api/', '/api/');
       }
-      
-      // Use the configured API URL for direct API calls (if needed)
-      // config.baseURL = process.env.NEXT_PUBLIC_API_URL || '';
     }
     
-    // Add auth token from APP_CACHE if available, fallback to localStorage
-    let token = null;
-    if (typeof window !== 'undefined') {
-      // Initialize APP_CACHE if needed
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-      
-      token = window.__APP_CACHE.auth.token;
-    }
+    // Get authentication and tenant information
+    const { token, tenantId } = await getTenantAndTokenInfo();
     
+    // Add auth token if available
     if (token) {
       config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Add tenant ID from APP_CACHE if available, fallback to localStorage
-    let tenantId = null;
-    if (typeof window !== 'undefined') {
-      // Initialize APP_CACHE tenant section if needed
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-      
-      tenantId = window.__APP_CACHE.tenant.id;
-    }
-    
+    // Add tenant ID if available
     if (tenantId) {
       config.headers = config.headers || {};
       config.headers['x-tenant-id'] = tenantId;
+      config.headers['X-Tenant-ID'] = tenantId; // Add both cases for compatibility
+      
+      // Add to query params as well for maximum compatibility
+      config.params = config.params || {};
+      if (!config.params.tenantId && !config.params.tenant_id) {
+        config.params.tenantId = tenantId;
+      }
+      
+      // Add schema prefix if it's an HR endpoint
+      if (config.url.includes('/api/hr/') && !config.params.schema) {
+        config.params.schema = `tenant_${tenantId.replace(/-/g, '_')}`;
+      }
     }
     
     // Add request ID for tracing
     config.headers = config.headers || {};
     config.headers['x-request-id'] = generateRequestId();
+    
+    // Add signal for request cancellation handling
+    const controller = new AbortController();
+    config.signal = controller.signal;
+    config.__abortController = controller;
+    
+    // Increase timeout for HR endpoints
+    if (config.url.includes('/api/hr/')) {
+      config.timeout = 120000; // Increase timeout to 2 minutes for HR endpoints
+    }
     
     return config;
   },
