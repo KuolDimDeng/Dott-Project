@@ -1,0 +1,45 @@
+# Script Registry
+
+This file tracks all scripts in the scripts directory, their purpose, and execution status.
+
+## Frontend Scripts
+
+| Script Name | Purpose | Author | Date | Status | Last Execution |
+|-------------|---------|--------|------|--------|----------------|
+| Version0001_fix_tax_management_renderer.js | Fix Tax Management component rendering when "Taxes" is selected from HR menu | Admin | 2023-05-20 | Failed - Syntax Error | 2025-04-23 |
+| Version0001_fix_tax_management_renderer_fixed.js | Fix Tax Management component rendering when "Taxes" is selected from HR menu (improved version) | Admin | 2023-05-20 | Failed - Corrupted File | 2025-04-23 |
+| fix_RenderMainContent.js | Emergency recovery script to restore the corrupted RenderMainContent.js file from backup | Admin | 2025-04-23 | Executed Successfully | 2025-04-23 |
+| Version0002_fix_tax_management_manual.js | Manually fix the Tax Management component rendering in RenderMainContent.js | Admin | 2025-04-23 | Failed - Syntax Error | 2025-04-23 |
+| Version0003_fix_tax_management_component.js | Precisely fix the Tax Management component rendering with improved pattern matching | Admin | 2025-04-23 | Executed Successfully | 2025-04-23 |
+
+## Instructions for Execution
+
+1. Navigate to the scripts directory: `cd /Users/kuoldeng/projectx/scripts`
+2. Run the script: `node <script_name>.js`
+3. After execution, update the Status and Last Execution columns in this registry
+
+## Notes on Script Design
+
+- All scripts should include a version number in the filename
+- Scripts should create backups before modifying files
+- Scripts should have comprehensive documentation within the file
+- Scripts should log all operations they perform
+- Scripts should have error handling to prevent partial/broken changes
+
+| Script | Date | Status | Description |
+|--------|------|--------|-------------|
+| Version0001_remove_mock_data_from_apiClient.mjs | 2025-04-22 | Completed | Removed mock data functionality from employeeApi in apiClient.js |
+
+| Version0001_remove_mock_hr_api_route.mjs | 2025-04-22 | Completed | Removed mock HR API route |
+
+| Version0001_remove_mock_data_from_EmployeeManagement.mjs | 2025-04-22 | Completed | Removed mock data functionality from EmployeeManagement component |
+
+| Version0001_fix_employee_mock_mode_reference.mjs | 2025-04-23 | Completed | Fixed useMockMode reference error in EmployeeManagement.js by replacing localStorage with AppCache |
+
+| Version0002_fix_dashboard_auth_provider_reference.mjs | 2025-04-23 | Completed | Fixed ensureAuthProvider reference error in DashboardContent.js by adding missing import |
+
+| Version0003_fix_backend_connection_checker.mjs | 2025-04-23 | Completed | Fixed backend connection checker in axiosConfig.js to handle errors properly |
+
+| Version0004_fix_cors_employee_api.mjs | 2025-04-23 | Completed | Fixed CORS and authentication issues in HR API requests |
+
+| Version0005_fix_cors_employee_api_business_id.mjs | 2025-04-23 | Completed | Fixed X-Business-ID header handling for HR API requests |

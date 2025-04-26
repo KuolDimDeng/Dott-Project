@@ -221,7 +221,7 @@ class MigrationMonitor:
             ])
         
         headers = [
-            'Schema', 'Tables', 'Total Rows', 'Size', 'Owner', 
+            'Schema', 'Tables', 'Total Rows', 'Size', 'owner', 
             'DB Status', 'Setup Status', 'Onboarding Status', 'Connections'
         ]
         

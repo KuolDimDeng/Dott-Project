@@ -265,9 +265,8 @@ class Subscription(models.Model):
 
 class BusinessMember(models.Model):
     ROLE_CHOICES = [
-        ('OWNER', 'Business Owner'),
-        ('ADMIN', 'Administrator'),
-        ('EMPLOYEE', 'Employee')
+        ('owner', 'Business Owner'),
+        ('employee', 'employee')
     ]
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='business_memberships')
@@ -447,3 +446,24 @@ class UserProfile(models.Model):
             'country': str(self.country),
             'created_at': self.created_at.isoformat() if self.created_at else None,
         }
+
+class UserMenuPrivilege(models.Model):
+    """
+    Model for storing user menu item access privileges.
+    Links to a BusinessMember to define which menu items a specific user can access.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    business_member = models.OneToOneField(BusinessMember, on_delete=models.CASCADE, related_name='menu_privileges')
+    menu_items = models.JSONField(default=list, help_text="List of menu items the user has access to")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_privileges')
+    
+    class Meta:
+        db_table = 'users_menu_privilege'
+        indexes = [
+            models.Index(fields=['business_member']),
+        ]
+    
+    def __str__(self):
+        return f"Menu privileges for {self.business_member}"

@@ -96,6 +96,10 @@ class User(AbstractUser):
     # Additional fields
     cognito_sub = models.CharField(max_length=255, null=True, blank=True)
     phone_number = models.CharField(max_length=20, null=True, blank=True)
+    business_id = models.UUIDField(null=True, blank=True)
+    
+    # Add role field with default value
+    role = models.CharField(max_length=50, default='owner')
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []

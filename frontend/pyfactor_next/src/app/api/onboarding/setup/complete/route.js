@@ -50,14 +50,14 @@ async function verifyToken(token, requestId) {
     };
 
     // Try POST first
-    let response = await fetch('http://localhost:8000/api/token/verify/', {
+    let response = await fetch('https://127.0.0.1:8000/api/token/verify/', {
       method: 'POST',
       headers,
       body: JSON.stringify({ token })
     });
 
     if (response.status === 405) { // Method not allowed, try GET
-      response = await fetch('http://localhost:8000/api/token/verify/', {
+      response = await fetch('https://127.0.0.1:8000/api/token/verify/', {
         method: 'GET',
         headers
       });
@@ -87,7 +87,7 @@ async function verifyToken(token, requestId) {
 // Check backend health
 async function checkBackendHealth(requestId) {
   try {
-    const response = await fetch('http://localhost:8000/health/', {
+    const response = await fetch('https://127.0.0.1:8000/health/', {
       method: 'GET',
       headers: {
         'X-Request-ID': requestId,

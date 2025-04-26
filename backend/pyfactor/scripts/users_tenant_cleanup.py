@@ -110,9 +110,9 @@ def remove_tenant_for_user(user_id=None, email=None, remove_schema=True):
             user.is_onboarded = False
             user.save(update_fields=['is_onboarded'])
             
-            # Update role to 'OWNER' since we're resetting
-            user.role = 'OWNER'
-            user.occupation = 'OWNER'
+            # Update role to 'owner' since we're resetting
+            user.role = 'owner'
+            user.occupation = 'owner'
             user.save(update_fields=['role', 'occupation'])
             
             # Get onboarding progress and update
@@ -186,8 +186,8 @@ def remove_all_tenants(remove_schema=True, confirm=True):
                 for user in users:
                     user.tenant = None
                     user.is_onboarded = False
-                    user.role = 'OWNER'
-                    user.occupation = 'OWNER'
+                    user.role = 'owner'
+                    user.occupation = 'owner'
                     user.save(update_fields=['tenant', 'is_onboarded', 'role', 'occupation'])
                     logger.info(f"Removed tenant association for user: {user.email}")
                     

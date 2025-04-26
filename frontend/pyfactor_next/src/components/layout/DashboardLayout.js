@@ -27,7 +27,7 @@ async function updateCompletionAttributes() {
         userAttributes: {
           'custom:setupdone': 'true',
           'custom:onboarding': 'complete',
-          'custom:userrole': 'OWNER',
+          'custom:userrole': 'owner',
           'custom:updated_at': new Date().toISOString()
         }
       });
@@ -46,7 +46,7 @@ async function updateCompletionAttributes() {
           attributes: {
             'custom:setupdone': 'true',
             'custom:onboarding': 'complete',
-            'custom:userrole': 'OWNER',
+            'custom:userrole': 'owner',
             'custom:updated_at': new Date().toISOString()
           },
           forceUpdate: true

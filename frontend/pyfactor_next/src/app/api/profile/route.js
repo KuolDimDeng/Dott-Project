@@ -98,7 +98,7 @@ export async function GET(request) {
         is_onboarded: true,
         onboarding_status: 'complete',
         business_name: 'Demo Business',
-        role: 'OWNER',
+        role: 'owner',
         subscription_plan: 'FREE',
         tenant_id: tenant?.id || 'mock-tenant-id'
       };
@@ -175,7 +175,7 @@ export async function GET(request) {
       is_onboarded: true,
       onboarding_status: 'complete',
       business_name: 'Fallback Business',
-      role: 'OWNER',
+      role: 'owner',
       subscription_plan: 'FREE',
       tenant_id: tenantId || 'fallback-tenant-id',
       _error: 'Generated from fallback due to server error'

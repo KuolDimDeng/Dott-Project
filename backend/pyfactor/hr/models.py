@@ -8,7 +8,9 @@ from phonenumber_field.modelfields import PhoneNumberField
 from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 def get_current_datetime():
     return timezone.now()
@@ -34,6 +36,9 @@ class Employee(AbstractUser):
         related_name='employee_set',
         related_query_name='employee'
     )
+
+    # Add user field to link to User model
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee_profile')
 
     EMPLOYMENT_TYPE_CHOICES = [
         ('FT', 'Full-time'),
@@ -112,13 +117,13 @@ class Employee(AbstractUser):
     postcode = models.CharField(max_length=20, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     country = models.CharField(max_length=100, default='USA')
-    date_joined = models.DateField(default=get_current_datetime)
+    date_joined = models.DateField(default=timezone.now)
     last_work_date = models.DateField(null=True, blank=True)
     active = models.BooleanField(default=True)
     role = models.CharField(max_length=20, choices=[
-        ('ADMIN', 'Administrator'),
-        ('EMPLOYEE', 'Employee')
-    ], default='EMPLOYEE')
+        ('employee', 'employee'),
+        ('user', 'user')
+    ], default='employee')
     site_access_privileges = models.JSONField(default=list)
     email = models.EmailField(unique=True, blank=False, null=False, default='')
     phone_number = PhoneNumberField(null=True, blank=True)
@@ -183,7 +188,10 @@ class Employee(AbstractUser):
     #         null=True,
     #         blank=True
     #     )
-    business_id = models.UUIDField(null=True, blank=True)  # Store the UUID of the business
+    business_id = models.UUIDField(null=True, blank=True)
+    ID_verified = models.BooleanField(default=False)
+    areManager = models.BooleanField(default=False)
+    supervising = models.ManyToManyField('self', related_name='supervised_by', blank=True, symmetrical=False)  # Store the UUID of the business
     password_setup_token = models.CharField(max_length=100, null=True, blank=True)
 
     def save(self, *args, **kwargs):

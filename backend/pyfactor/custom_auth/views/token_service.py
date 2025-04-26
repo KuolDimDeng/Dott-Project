@@ -23,11 +23,12 @@ class TokenService:
         else:
             max_age = settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds()
         
-        # Use secure cookies in production
-        secure = not settings.DEBUG
+        # Always use secure cookies for HTTPS URLs
+        secure = True
         
-        # Use Lax SameSite to allow for social auth redirects
-        samesite = 'Lax'
+        # Use SameSite=None for cross-origin requests in HTTPS
+        # This allows cookies to be sent during redirects and cross-origin requests
+        samesite = 'None'
         
         # Set httpOnly cookie
         response.set_cookie(
@@ -39,7 +40,7 @@ class TokenService:
             samesite=samesite
         )
         
-        logger.debug(f"Set {token_type} cookie with max_age={max_age}")
+        logger.debug(f"Set {token_type} cookie with max_age={max_age}, secure={secure}, samesite={samesite}")
         return response
     
     @staticmethod
@@ -62,7 +63,7 @@ class TokenService:
         ]
         
         for cookie_name in auth_cookies:
-            response.delete_cookie(cookie_name)
+            response.delete_cookie(cookie_name, samesite='None', secure=True)
             
         logger.debug("Cleared all auth cookies")
         return response 

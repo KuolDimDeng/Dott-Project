@@ -117,6 +117,91 @@ if (typeof window !== 'undefined') {
 }
 
 // Utility function to ensure authenticated redirection
+// Helper function to get tenant ID from various sources
+const getTenantIdFromSources = async () => {
+  try {
+    // Try to get from cache first
+    if (typeof window !== 'undefined') {
+      // Check APP_CACHE
+      if (window.__APP_CACHE && window.__APP_CACHE.tenant && window.__APP_CACHE.tenant.id) {
+        logger.debug('[SignInForm] Found tenant ID in APP_CACHE:', window.__APP_CACHE.tenant.id);
+        return window.__APP_CACHE.tenant.id;
+      }
+      
+      // Check sessionStorage
+      try {
+        const sessionTenantId = sessionStorage.getItem('tenant_id');
+        if (sessionTenantId) {
+          logger.debug('[SignInForm] Found tenant ID in sessionStorage:', sessionTenantId);
+          return sessionTenantId;
+        }
+      } catch (storageError) {
+        // Ignore storage access errors
+      }
+    }
+    
+    // Try to get from URL path
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const match = pathname.match(/\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/dashboard/i);
+      if (match && match[1]) {
+        logger.debug('[SignInForm] Found tenant ID in URL path:', match[1]);
+        return match[1];
+      }
+    }
+    
+    // Try to get from Cognito
+    try {
+      const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
+      const currentUser = await getCurrentUser();
+      
+      if (currentUser) {
+        const userAttributes = await fetchUserAttributes();
+        
+        // Check all possible tenant ID attribute names
+        const tenantId = userAttributes?.['custom:tenantId'] || 
+                         userAttributes?.['custom:tenant_id'] || 
+                         userAttributes?.['custom:tenant_ID'] ||
+                         userAttributes?.['tenantId'];
+                         
+        if (tenantId) {
+          logger.debug('[SignInForm] Found tenant ID in Cognito attributes:', tenantId);
+          return tenantId;
+        }
+      }
+    } catch (e) {
+      logger.warn('[SignInForm] Error getting tenant ID from Cognito:', e);
+    }
+    
+    // Try to get from auth session
+    try {
+      const { fetchAuthSession } = await import('@/config/amplifyUnified');
+      const session = await fetchAuthSession();
+      
+      if (session && session.tokens) {
+        const claims = session.tokens.idToken?.payload || {};
+        const tenantId = claims['custom:tenantId'] || 
+                         claims['custom:tenant_id'] || 
+                         claims['custom:tenant_ID'] ||
+                         claims['tenantId'];
+                         
+        if (tenantId) {
+          logger.debug('[SignInForm] Found tenant ID in auth session claims:', tenantId);
+          return tenantId;
+        }
+      }
+    } catch (sessionError) {
+      logger.warn('[SignInForm] Error getting tenant ID from auth session:', sessionError);
+    }
+    
+    logger.warn('[SignInForm] Could not find tenant ID from any source');
+    return null;
+  } catch (error) {
+    logger.warn('[SignInForm] Error getting tenant ID from sources:', error);
+    return null;
+  }
+};
+
 const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
   try {
     logger.debug('[SignInForm] Preparing for dashboard redirect', { tenantId, options });
@@ -129,6 +214,9 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
     const authTime = new Date().toISOString();
     setCacheValue('auth_last_time', authTime, { ttl: 24 * 60 * 60 * 1000 });
     localStorage.setItem('auth_last_time', authTime);
+    
+    // Log the tenant ID for debugging
+    logger.info('[SignInForm] Redirecting with tenant ID:', tenantId);
     
     // Ensure tenant ID is stored in all locations for resilience
     if (tenantId) {
@@ -576,7 +664,24 @@ export default function SignInForm() {
               });
               
               // Fix uppercase onboarding status if needed
-              await fixOnboardingStatusCase(userAttributes);
+              // Fix uppercase onboarding status if needed
+              if (userAttributes && userAttributes['custom:onboarding']) {
+                const fixedStatus = fixOnboardingStatusCase(userAttributes['custom:onboarding']);
+                if (fixedStatus !== userAttributes['custom:onboarding']) {
+                  try {
+                    // Only update if there's a change needed
+                    await updateUserAttributes({
+                      'custom:onboarding': fixedStatus
+                    });
+                    userAttributes['custom:onboarding'] = fixedStatus;
+                  } catch (attrUpdateError) {
+                    // Log error but continue with sign-in process
+                    logger.warn('[SignInForm] Error updating onboarding status case:', attrUpdateError);
+                    // Still use the fixed status in memory
+                    userAttributes['custom:onboarding'] = fixedStatus;
+                  }
+                }
+              }
               
               // Store onboarding status in AppCache
               setCacheValue('onboarding_status', onboardingStatus, { ttl: 3600000 }); // 1 hour cache
@@ -708,7 +813,9 @@ export default function SignInForm() {
                 } else {
                   // Default dashboard without tenant ID but with fromAuth parameter
                   // This tells the middleware to handle tenant ID detection
-                  await safeRedirectToDashboard(router, null);
+                  // Try to get tenant ID from available sources before redirecting
+          const resolvedTenantId = await getTenantIdFromSources();
+          await safeRedirectToDashboard(router, resolvedTenantId);
                 }
               } else if (onboardingStatus) {
                 // Handle specific onboarding steps
@@ -765,7 +872,9 @@ export default function SignInForm() {
                         }
                         await safeRedirectToDashboard(router, tenantId);
                       } else {
-                        await safeRedirectToDashboard(router, null);
+                        // Try to get tenant ID from available sources before redirecting
+          const resolvedTenantId = await getTenantIdFromSources();
+          await safeRedirectToDashboard(router, resolvedTenantId);
                       }
                     } else {
                       router.push('/onboarding/setup');
@@ -789,17 +898,23 @@ export default function SignInForm() {
               logger.error('[SignInForm] Error fetching user attributes:', attributeError);
               
               // Redirect to dashboard with fromAuth flag for protection
-              await safeRedirectToDashboard(router, null, { error: 'attribute_fetch' });
+              // Try to get tenant ID from available sources before redirecting
+              const resolvedTenantId = await getTenantIdFromSources();
+              await safeRedirectToDashboard(router, resolvedTenantId, { error: 'attribute_fetch' });
             }
           } else {
             // Unexpected next step - redirect to dashboard
             logger.warn('[SignInForm] Unexpected auth next step:', authResult.nextStep);
-            await safeRedirectToDashboard(router, null, { warning: 'unexpected_step' });
+            // Try to get tenant ID from available sources before redirecting
+            const resolvedTenantId = await getTenantIdFromSources();
+            await safeRedirectToDashboard(router, resolvedTenantId, { warning: 'unexpected_step' });
           }
         } else {
           // No next step - redirect to dashboard
           logger.debug('[SignInForm] No specific next step, redirecting to dashboard');
-          await safeRedirectToDashboard(router, null);
+          // Try to get tenant ID from available sources before redirecting
+          const resolvedTenantId = await getTenantIdFromSources();
+          await safeRedirectToDashboard(router, resolvedTenantId);
         }
       } else {
         // Not signed in for some reason

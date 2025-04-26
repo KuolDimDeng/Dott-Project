@@ -2,8 +2,8 @@
 
 from django.http import JsonResponse
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm
 from .serializers import (
@@ -19,289 +19,26 @@ from django.core.mail import send_mail
 from django.conf import settings
 import uuid
 from datetime import datetime
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 from pyfactor.logging_config import get_logger
 
 logger = get_logger()
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def employee_list(request):
-    """Get list of employees with role-based filtering"""
-    user_role = request.user.role
-    if user_role == 'ADMIN':
-        employees = Employee.objects.all()
-    else:
-        employees = Employee.objects.filter(business_id=request.user.business_id)
-    
-    serializer = EmployeeSerializer(employees, many=True)
-    return Response(serializer.data)
+# Custom throttle classes with higher limits
+class HealthCheckRateThrottle(AnonRateThrottle):
+    rate = '120/minute'  # Higher rate for health checks
 
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def create_employee(request):
-    """Create a new employee and send invitation email"""
-    if request.user.role != 'ADMIN':
-        return Response(
-            {"error": "Only administrators can create employees"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    serializer = EmployeeSerializer(data=request.data)
-    if serializer.is_valid():
-        employee = serializer.save()
-        
-        # Generate a unique token for password setup
-        token = str(uuid.uuid4())
-        employee.password_setup_token = token
-        employee.save()
-
-        # Send invitation email
-        subject = 'Welcome to Our Platform - Set Up Your Account'
-        message = f"""
-        Hello {employee.first_name},
-
-        You have been invited to join our platform. Please click the link below to set up your account:
-
-        {settings.FRONTEND_URL}/setup-password?token={token}
-
-        Best regards,
-        Your Team
-        """
-        
-        try:
-            send_mail(
-                subject,
-                message,
-                settings.DEFAULT_FROM_EMAIL,
-                [employee.email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            # Log the error but don't fail the request
-            print(f"Error sending email: {str(e)}")
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def employee_detail(request, pk):
-    """Get, update or delete an employee"""
-    employee = get_object_or_404(Employee, pk=pk)
-    
-    # Check permissions
-    if request.user.role != 'ADMIN' and request.user.business_id != employee.business_id:
-        return Response(
-            {"error": "You don't have permission to access this employee"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    if request.method == 'GET':
-        serializer = EmployeeSerializer(employee)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        serializer = EmployeeSerializer(employee, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method == 'DELETE':
-        if request.user.role != 'ADMIN':
-            return Response(
-                {"error": "Only administrators can delete employees"},
-                status=status.HTTP_403_FORBIDDEN
-            )
-        employee.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def set_employee_permissions(request, pk):
-    """Set menu access permissions for an employee"""
-    if request.user.role != 'ADMIN':
-        return Response(
-            {"error": "Only administrators can set permissions"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-
-    employee = get_object_or_404(Employee, pk=pk)
-    permissions = request.data.get('permissions', [])
-    
-    # Update employee's access privileges
-    employee.site_access_privileges = permissions
-    employee.save()
-    
-    return Response({"message": "Permissions updated successfully"})
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_available_permissions(request):
-    """Get list of available menu options for permission setting"""
-    menu_options = [
-        {'id': 'hr', 'name': 'HR Management'},
-        {'id': 'inventory', 'name': 'Inventory'},
-        {'id': 'sales', 'name': 'Sales'},
-        {'id': 'purchases', 'name': 'Purchases'},
-        {'id': 'accounting', 'name': 'Accounting'},
-        {'id': 'reports', 'name': 'Reports'},
-        {'id': 'settings', 'name': 'Settings'},
-    ]
-    return Response(menu_options)
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def setup_employee_password(request):
-    """Handle employee password setup"""
-    token = request.data.get('token')
-    password = request.data.get('password')
-    
-    try:
-        employee = Employee.objects.get(password_setup_token=token)
-        employee.set_password(password)
-        employee.password_setup_token = None
-        employee.save()
-        return Response({"message": "Password set successfully"})
-    except Employee.DoesNotExist:
-        return Response(
-            {"error": "Invalid or expired token"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def role_list(request):
-    if request.method == 'GET':
-        roles = Role.objects.all()
-        serializer = RoleSerializer(roles, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = RoleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def role_detail(request, pk):
-    role = get_object_or_404(Role, pk=pk)
-
-    if request.method == 'GET':
-        serializer = RoleSerializer(role)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = RoleSerializer(role, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        role.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def employee_role_list(request):
-    if request.method == 'GET':
-        employee_roles = EmployeeRole.objects.all()
-        serializer = EmployeeRoleSerializer(employee_roles, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = EmployeeRoleSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def employee_role_detail(request, pk):
-    employee_role = get_object_or_404(EmployeeRole, pk=pk)
-
-    if request.method == 'GET':
-        serializer = EmployeeRoleSerializer(employee_role)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = EmployeeRoleSerializer(employee_role, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        employee_role.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def access_permission_list(request):
-    if request.method == 'GET':
-        access_permissions = AccessPermission.objects.all()
-        serializer = AccessPermissionSerializer(access_permissions, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AccessPermissionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def access_permission_detail(request, pk):
-    access_permission = get_object_or_404(AccessPermission, pk=pk)
-
-    if request.method == 'GET':
-        serializer = AccessPermissionSerializer(access_permission)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AccessPermissionSerializer(access_permission, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        access_permission.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def preboarding_form_list(request):
-    if request.method == 'GET':
-        preboarding_forms = PreboardingForm.objects.all()
-        serializer = PreboardingFormSerializer(preboarding_forms, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = PreboardingFormSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def preboarding_form_detail(request, pk):
-    preboarding_form = get_object_or_404(PreboardingForm, pk=pk)
-
-    if request.method == 'GET':
-        serializer = PreboardingFormSerializer(preboarding_form)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = PreboardingFormSerializer(preboarding_form, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        preboarding_form.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+class EmployeeListRateThrottle(AnonRateThrottle):
+    rate = '60/minute'  # Higher rate for employee list
 
 @api_view(['GET', 'OPTIONS', 'HEAD'])
+@permission_classes([AllowAny])  # Explicitly allow unauthenticated access
+@throttle_classes([HealthCheckRateThrottle])  # Apply custom throttle class
 def health_check(request):
     """Health check endpoint for the HR module that doesn't require tenant ID or authentication"""
     from rest_framework.permissions import AllowAny
+    from rest_framework.decorators import permission_classes
     from rest_framework.response import Response
     from rest_framework import status
     from datetime import datetime
@@ -315,10 +52,12 @@ def health_check(request):
         response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
         response["Access-Control-Allow-Headers"] = (
             "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
             "access-control-allow-headers, Access-Control-Allow-Headers, "
             "access-control-allow-origin, Access-Control-Allow-Origin, "
             "access-control-allow-methods, Access-Control-Allow-Methods, "
-            "x-request-id, cache-control, x-user-id, x-id-token"
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
         )
         response["Access-Control-Allow-Credentials"] = "true"
         response["Access-Control-Max-Age"] = "86400"
@@ -333,13 +72,18 @@ def health_check(request):
         response["Access-Control-Allow-Credentials"] = "true"
         return response
 
+    # Get tenant ID from request if available
+    tenant_id = getattr(request, 'tenant_id', None)
+    if not tenant_id:
+        tenant_id = request.headers.get('X-Tenant-ID') or request.headers.get('x-tenant-id')
+
     # Create explicit response with CORS headers
     response = Response({
         "status": "healthy",
         "module": "hr",
         "timestamp": datetime.now().isoformat(),
         "auth_required": False,
-        "tenant_id": getattr(request, 'tenant_id', None)
+        "tenant_id": tenant_id
     }, status=status.HTTP_200_OK)
     
     # Add CORS headers
@@ -348,11 +92,396 @@ def health_check(request):
     response["Access-Control-Allow-Methods"] = "GET, OPTIONS, HEAD"
     response["Access-Control-Allow-Headers"] = (
         "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, "
+        "x-business-id, X-Business-ID, X-BUSINESS-ID, "
         "access-control-allow-headers, Access-Control-Allow-Headers, "
         "access-control-allow-origin, Access-Control-Allow-Origin, "
         "access-control-allow-methods, Access-Control-Allow-Methods, "
-        "x-request-id, cache-control, x-user-id, x-id-token"
+        "x-request-id, cache-control, x-user-id, x-id-token, "
+        "X-Requires-Auth, x-schema-name, X-Schema-Name"
     )
     response["Access-Control-Allow-Credentials"] = "true"
     
     return response
+
+# Employee views
+@api_view(['GET', 'POST', 'OPTIONS'])
+@permission_classes([AllowAny])  # Allow unauthenticated access for debugging
+@throttle_classes([EmployeeListRateThrottle])  # Apply custom throttle class
+def employee_list(request):
+    """List all employees or create a new employee"""
+    # Handle OPTIONS request for CORS preflight
+    if request.method == 'OPTIONS':
+        response = Response()
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, HEAD"
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Expose-Headers"] = (
+            "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Max-Age"] = "86400"
+        return response
+        
+    if request.method == 'GET':
+        # Add CORS headers explicitly
+        employees = Employee.objects.all()
+        serializer = EmployeeSerializer(employees, many=True)
+        response = Response(serializer.data)
+        
+        # Add explicit CORS headers
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, HEAD"
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Expose-Headers"] = (
+            "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Max-Age"] = "86400"
+        
+        return response
+    
+    elif request.method == 'POST':
+        serializer = EmployeeSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            # Add explicit CORS headers for POST responses too
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+            response["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+                "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+                "access-control-allow-headers, Access-Control-Allow-Headers, "
+                "access-control-allow-origin, Access-Control-Allow-Origin, "
+                "access-control-allow-methods, Access-Control-Allow-Methods, "
+                "x-request-id, cache-control, x-user-id, x-id-token, "
+                "X-Requires-Auth, x-schema-name, X-Schema-Name"
+            )
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Expose-Headers"] = (
+                "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+                "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+                "x-schema-name, X-Schema-Name"
+            )
+            
+            return response
+        
+        response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Add CORS headers to error responses as well
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
+        )
+        return response
+
+@api_view(['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@permission_classes([IsAuthenticated])
+def employee_detail(request, pk):
+    """Retrieve, update or delete an employee"""
+    # Handle OPTIONS request for CORS preflight
+    if request.method == 'OPTIONS':
+        response = Response()
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Methods"] = "GET, PUT, DELETE, OPTIONS"
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Expose-Headers"] = (
+            "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Max-Age"] = "86400"
+        return response
+    
+    try:
+        employee = Employee.objects.get(pk=pk)
+    except Employee.DoesNotExist:
+        response = Response(status=status.HTTP_404_NOT_FOUND)
+        # Even for errors, add CORS headers
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        return response
+    
+    if request.method == 'GET':
+        serializer = EmployeeSerializer(employee)
+        response = Response(serializer.data)
+        # Add CORS headers
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        response["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "access-control-allow-headers, Access-Control-Allow-Headers, "
+            "access-control-allow-origin, Access-Control-Allow-Origin, "
+            "access-control-allow-methods, Access-Control-Allow-Methods, "
+            "x-request-id, cache-control, x-user-id, x-id-token, "
+            "X-Requires-Auth, x-schema-name, X-Schema-Name"
+        )
+        response["Access-Control-Allow-Credentials"] = "true"
+        response["Access-Control-Expose-Headers"] = (
+            "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "x-schema-name, X-Schema-Name"
+        )
+        return response
+    
+    elif request.method == 'PUT':
+        serializer = EmployeeSerializer(employee, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = Response(serializer.data)
+            # Add CORS headers
+            response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+            response["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+                "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+                "access-control-allow-headers, Access-Control-Allow-Headers, "
+                "access-control-allow-origin, Access-Control-Allow-Origin, "
+                "access-control-allow-methods, Access-Control-Allow-Methods, "
+                "x-request-id, cache-control, x-user-id, x-id-token, "
+                "X-Requires-Auth, x-schema-name, X-Schema-Name"
+            )
+            response["Access-Control-Allow-Credentials"] = "true"
+            response["Access-Control-Expose-Headers"] = (
+                "Content-Type, x-tenant-id, X-Tenant-ID, X-TENANT-ID, "
+                "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+                "x-schema-name, X-Schema-Name"
+            )
+            return response
+        response = Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Add CORS headers to error responses
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        return response
+    
+    elif request.method == 'DELETE':
+        employee.delete()
+        response = Response(status=status.HTTP_204_NO_CONTENT)
+        # Add CORS headers
+        response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
+        return response
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_employee_permissions(request, pk):
+    """Set permissions for an employee"""
+    try:
+        employee = Employee.objects.get(pk=pk)
+    except Employee.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    # Logic to set permissions
+    permissions = request.data.get('permissions', [])
+    
+    # Implement your permission setting logic here
+    
+    return Response({"message": "Permissions updated successfully"})
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_available_permissions(request):
+    """Get all available permissions"""
+    permissions = AccessPermission.objects.all()
+    serializer = AccessPermissionSerializer(permissions, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+def setup_employee_password(request):
+    """Set up password for an employee during onboarding"""
+    # Implementation for password setup
+    return Response({"message": "Password set successfully"})
+
+# Role views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def role_list(request):
+    """List all roles or create a new role"""
+    if request.method == 'GET':
+        roles = Role.objects.all()
+        serializer = RoleSerializer(roles, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = RoleSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def role_detail(request, pk):
+    """Retrieve, update or delete a role"""
+    try:
+        role = Role.objects.get(pk=pk)
+    except Role.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = RoleSerializer(role)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = RoleSerializer(role, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        role.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Employee Role views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def employee_role_list(request):
+    """List all employee roles or create a new employee role"""
+    if request.method == 'GET':
+        employee_roles = EmployeeRole.objects.all()
+        serializer = EmployeeRoleSerializer(employee_roles, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = EmployeeRoleSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def employee_role_detail(request, pk):
+    """Retrieve, update or delete an employee role"""
+    try:
+        employee_role = EmployeeRole.objects.get(pk=pk)
+    except EmployeeRole.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = EmployeeRoleSerializer(employee_role)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = EmployeeRoleSerializer(employee_role, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        employee_role.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Access Permission views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def access_permission_list(request):
+    """List all access permissions or create a new access permission"""
+    if request.method == 'GET':
+        access_permissions = AccessPermission.objects.all()
+        serializer = AccessPermissionSerializer(access_permissions, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = AccessPermissionSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def access_permission_detail(request, pk):
+    """Retrieve, update or delete an access permission"""
+    try:
+        access_permission = AccessPermission.objects.get(pk=pk)
+    except AccessPermission.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = AccessPermissionSerializer(access_permission)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = AccessPermissionSerializer(access_permission, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        access_permission.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Preboarding Form views
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def preboarding_form_list(request):
+    """List all preboarding forms or create a new preboarding form"""
+    if request.method == 'GET':
+        preboarding_forms = PreboardingForm.objects.all()
+        serializer = PreboardingFormSerializer(preboarding_forms, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = PreboardingFormSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def preboarding_form_detail(request, pk):
+    """Retrieve, update or delete a preboarding form"""
+    try:
+        preboarding_form = PreboardingForm.objects.get(pk=pk)
+    except PreboardingForm.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = PreboardingFormSerializer(preboarding_form)
+        return Response(serializer.data)
+    
+    elif request.method == 'PUT':
+        serializer = PreboardingFormSerializer(preboarding_form, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        preboarding_form.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

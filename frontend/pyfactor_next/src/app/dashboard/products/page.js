@@ -1,10 +1,12 @@
 'use client';
 
+import withPageAccess from '../components/withPageAccess';
+import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCacheValue } from '@/utils/appCache';
 
-export default function ProductsPage() {
+function ProductsPage() {
   const router = useRouter();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -277,3 +279,6 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+// Wrap the component with page access control
+export default withPageAccess(ProductsPage, PAGE_ACCESS.PRODUCTS);

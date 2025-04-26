@@ -36,13 +36,17 @@ class CorsMiddleware:
             "x-csrftoken, x-requested-with, x-request-id, cache-control, pragma, "
             "x-onboarding-step, x-debug-step, x-current-step, x-request-version, "
             "x-id-token, x-user-id, x-tenant-id, X-Tenant-ID, X-TENANT-ID, x-schema-name, X-Schema-Name, "
-            "access-control-allow-origin, access-control-allow-headers, access-control-allow-methods"
+            "access-control-allow-origin, access-control-allow-headers, access-control-allow-methods, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "X-Requires-Auth, x-requires-auth"
         )
         response["Access-Control-Allow-Credentials"] = "true"
         response["Access-Control-Max-Age"] = "86400"  # 24 hours
         response["Access-Control-Expose-Headers"] = (
             "access-token, refresh-token, content-type, authorization, "
             "cache-control, last-modified, etag, x-debug-step, x-current-step, "
-            "x-tenant-id, X-Tenant-ID, x-schema-name, X-Schema-Name"
+            "x-tenant-id, X-Tenant-ID, x-schema-name, X-Schema-Name, "
+            "x-business-id, X-Business-ID, X-BUSINESS-ID, "
+            "X-Requires-Auth, x-requires-auth"
         )
         return response

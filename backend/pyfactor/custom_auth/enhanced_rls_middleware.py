@@ -52,7 +52,8 @@ class EnhancedRowLevelSecurityMiddleware:
             '/health/',
             '/api/public/',
             '/favicon.ico',
-            '/api/hr/health/',  # Add HR health endpoint as public
+            '/api/hr/health/',
+            '/api/hr/health',  # Add HR health endpoint as public
         ]
         
         # Add custom public paths from settings if available
@@ -205,10 +206,17 @@ class EnhancedRowLevelSecurityMiddleware:
         
         # Try alternative headers if needed
         if not tenant_id:
-            tenant_id = request.headers.get('Tenant-ID')
+            tenant_id = request.headers.get('x-tenant-id')
         
         if not tenant_id:
+            tenant_id = request.headers.get('Tenant-ID')
+            
+        if not tenant_id:
             tenant_id = request.headers.get('x-tenant')
+            
+        # Try business ID headers as fallback (they are often the same as tenant ID)
+        if not tenant_id:
+            tenant_id = request.headers.get('X-Business-ID') or request.headers.get('x-business-id')
             
         return tenant_id
     

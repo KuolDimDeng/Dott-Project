@@ -102,7 +102,7 @@ class Command(BaseCommand):
         """Find the owner of a tenant schema"""
         try:
             # Look up user who owns this tenant
-            tenant_user = User.objects.filter(tenant_id=tenant_id, role='OWNER').first()
+            tenant_user = User.objects.filter(tenant_id=tenant_id, role='owner').first()
             if tenant_user:
                 return str(tenant_user.id)
         except Exception as e:

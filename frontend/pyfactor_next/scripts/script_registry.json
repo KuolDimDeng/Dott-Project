@@ -65,6 +65,20 @@
       "execution_date": "2025-04-20T14:50:18.960Z",
       "status": "completed",
       "description": "Fixes session handling in the Employee Management component"
+    },
+    {
+      "id": "UI-001",
+      "name": "Move Subscription and Billing Tabs",
+      "description": "Moves the Subscription and Billing History tabs from My Account page to Settings page",
+      "script_path": "Version0001_move_subscription_billing_tabs.js",
+      "version": "1.0.0",
+      "date_created": "2025-04-23",
+      "date_executed": "2025-04-23",
+      "status": "completed",
+      "affected_files": [
+        "src/app/Settings/components/MyAccount.js",
+        "src/app/Settings/components/SettingsManagement.js"
+      ]
     }
   ]
 }

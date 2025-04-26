@@ -249,7 +249,7 @@ def verify_tenant_access(employee, current_user):
     employee_tenant = getattr(employee, 'tenant_id', None)
     
     # For admins, allow access regardless of tenant
-    if getattr(current_user, 'role', None) in ['ADMIN', 'OWNER']:
+    if getattr(current_user, 'role', None) in ['ADMIN', 'owner']:
         return True
         
     # If either doesn't have a tenant, check by ID
@@ -495,7 +495,7 @@ try {
   const employee = data?.employee;
   if (employee?.tenant_id && session?.user?.tenant_id && 
       employee.tenant_id !== session.user.tenant_id && 
-      !['ADMIN', 'OWNER'].includes(session.user.role)) {
+      !['ADMIN', 'owner'].includes(session.user.role)) {
     console.warn('Tenant access violation attempt');
     return NextResponse.json(
       { error: 'You do not have permission to access this employee' },

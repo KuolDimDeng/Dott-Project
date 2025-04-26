@@ -103,7 +103,7 @@ export async function POST(request) {
       first_name: data.firstName || '',
       last_name: data.lastName || '',
       cognito_id: data.cognitoId,
-      user_role: data.userRole || 'OWNER',
+      user_role: data.userRole || 'owner',
       business_id: data.business_id || data.businessId,
       business_name: businessName,
       business_type: data.business_type || data.businessType || 'Other',

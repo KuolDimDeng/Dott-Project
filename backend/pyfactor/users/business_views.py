@@ -22,6 +22,7 @@ from .models import Business, Subscription
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
+from django.db.models import Q
 
 User = get_user_model()
 
@@ -29,6 +30,269 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 logger = get_logger()
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def business_search(request):
+    """
+    Search for businesses based on provided search parameters.
+    
+    Parameters:
+    - query: search string to match against business name
+    - business_type: filter by business type
+    - country: filter by country
+    """
+    try:
+        query = request.query_params.get('query', '')
+        business_type = request.query_params.get('business_type', None)
+        country = request.query_params.get('country', None)
+        
+        # First check if user has a business through their profile
+        user_profile = UserProfile.objects.filter(user=request.user).first()
+        if user_profile and user_profile.business:
+            # User already has a business
+            business = user_profile.business
+            business_data = BusinessSerializer(business).data
+            return Response([business_data])  # Return as a list for consistency
+        
+        # For staff users, return all businesses
+        if request.user.is_staff:
+            businesses = Business.objects.all()
+            
+            # Apply filters
+            if query:
+                businesses = businesses.filter(name__icontains=query)
+            
+            if business_type:
+                # Get business IDs with matching type from BusinessDetails
+                from users.models import BusinessDetails
+                business_ids = BusinessDetails.objects.filter(
+                    business_type=business_type
+                ).values_list('business_id', flat=True)
+                businesses = businesses.filter(id__in=business_ids)
+                
+            if country:
+                # Get business IDs with matching country from BusinessDetails
+                from users.models import BusinessDetails
+                business_ids = BusinessDetails.objects.filter(
+                    country=country
+                ).values_list('business_id', flat=True)
+                businesses = businesses.filter(id__in=business_ids)
+            
+            # Serialize and return results
+            serializer = BusinessSerializer(businesses, many=True)
+            return Response(serializer.data)
+        
+        # Regular users only see businesses they're associated with via BusinessMember
+        try:
+            from users.models import BusinessMember
+            # Get business IDs where user is a member
+            business_ids = BusinessMember.objects.filter(
+                user=request.user
+            ).values_list('business_id', flat=True)
+            
+            if not business_ids:
+                # User is not a member of any business
+                return Response([])
+                
+            businesses = Business.objects.filter(id__in=business_ids)
+            
+            # Apply filters same as above
+            if query:
+                businesses = businesses.filter(name__icontains=query)
+            
+            if business_type or country:
+                # Filter through BusinessDetails if needed
+                from users.models import BusinessDetails
+                detail_filters = {}
+                
+                if business_type:
+                    detail_filters['business_type'] = business_type
+                
+                if country:
+                    detail_filters['country'] = country
+                    
+                if detail_filters:
+                    business_ids = BusinessDetails.objects.filter(
+                        business_id__in=business_ids,
+                        **detail_filters
+                    ).values_list('business_id', flat=True)
+                    businesses = businesses.filter(id__in=business_ids)
+            
+            # Serialize and return results
+            serializer = BusinessSerializer(businesses, many=True)
+            return Response(serializer.data)
+            
+        except Exception as e:
+            logger.error(f"Error filtering businesses: {str(e)}")
+            return Response([], status=200)  # Return empty array instead of error
+    
+    except Exception as e:
+        logger.error(f"Error searching businesses: {str(e)}")
+        return Response(
+            {"error": "An error occurred while searching businesses"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_business_details(request):
+    """
+    Get detailed information about a business.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+
+        if not business:
+            return Response({'error': 'No business found for user'}, status=404)
+            
+        # Get detailed business information
+        # This could be expanded to include more detailed information as needed
+        business_data = BusinessSerializer(business).data
+        
+        # You can add more data here as needed
+        
+        return Response(business_data)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error getting business details: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_subscription(request):
+    """
+    Get the subscription information for the current user's business.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+        
+        if not business:
+            return Response({'error': 'No business found for user'}, status=404)
+            
+        try:
+            subscription = Subscription.objects.filter(business=business, is_active=True).latest('start_date')
+            return Response({
+                'plan': subscription.selected_plan,
+                'is_active': subscription.is_active,
+                'start_date': subscription.start_date,
+                'billing_cycle': subscription.billing_cycle
+            })
+        except Subscription.DoesNotExist:
+            return Response({'plan': 'free', 'is_active': True})
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error getting user subscription: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_business(request):
+    """
+    Update basic business information.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+        
+        if not business:
+            return Response({'error': 'No business found for user'}, status=404)
+            
+        serializer = BusinessSerializer(business, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error updating business: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_business_details(request):
+    """
+    Update detailed business information.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+        
+        if not business:
+            return Response({'error': 'No business found for user'}, status=404)
+            
+        # This assumes business details are part of the Business model
+        # If they're in a separate model, you'd need to fetch and update that
+        serializer = BusinessSerializer(business, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error updating business details: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_business(request):
+    """
+    Create a new business.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        # Check if user already has a business
+        if user_profile.business:
+            return Response({'error': 'User already has a business'}, status=400)
+            
+        serializer = BusinessSerializer(data=request.data)
+        if serializer.is_valid():
+            business = serializer.save(owner=request.user)
+            
+            # Update user profile with new business
+            user_profile.business = business
+            user_profile.save()
+            
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error creating business: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_business_details(request):
+    """
+    Create detailed business information.
+    """
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        business = user_profile.business
+        
+        if not business:
+            return Response({'error': 'No business found for user'}, status=404)
+            
+        # This assumes business details are part of the Business model
+        # If they're in a separate model, you'd need to create that separately
+        serializer = BusinessSerializer(business, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    except UserProfile.DoesNotExist:
+        return Response({'error': 'User profile not found'}, status=404)
+    except Exception as e:
+        logger.error(f"Error creating business details: {str(e)}")
+        return Response({'error': 'An internal server error occurred'}, status=500)
 
 class BusinessRegistrationView(View):
     logger.debug("BusinessRegistrationView get method called")
@@ -138,7 +402,7 @@ class AddBusinessMemberView(APIView):
 
             try:
                 business = Business.objects.get(id=business_id)
-                if not business.members.filter(id=request.user.id, businessmember__role='OWNER').exists():
+                if not business.business_memberships.filter(user=request.user, role='owner').exists():
                     return Response({"detail": "You don't have permission to add members to this business."}, status=status.HTTP_403_FORBIDDEN)
 
                 user_to_add = User.objects.get(email=email)

@@ -40,9 +40,9 @@ class OnboardingProgress(models.Model):
 
     # User role choices matching Cognito custom:userrole attribute (4-6 chars)
     USER_ROLE_CHOICES = [
-        ('owner', 'Owner'),
+        ('owner', 'owner'),
         ('admin', 'Admin'),
-        ('employee', 'Employee')    
+        ('employee', 'employee')    
     ]
 
     # Plan choices matching Cognito custom:subplan attribute (4-12 chars)

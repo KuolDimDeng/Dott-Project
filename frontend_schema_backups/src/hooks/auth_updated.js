@@ -493,7 +493,7 @@ export function useAuth() {
         const userData = {
           email: email,
           cognitoId: result.userId,
-          userRole: 'OWNER'
+          userRole: 'owner'
         };
         
         logger.debug('[Auth] Sending user data to backend:', userData);

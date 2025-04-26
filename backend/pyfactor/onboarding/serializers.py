@@ -149,7 +149,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                     'onboarding_status': onboarding_status,
                     'current_step': 'BUSINESS_INFO',
                     'next_step': 'DASHBOARD' if plan.upper() == 'FREE' else 'subscription',
-                    'user_role': cognito_data.get('userrole', 'OWNER'),
+                    'user_role': cognito_data.get('userrole', 'owner'),
                     'account_status': cognito_data.get('acctstatus', 'PENDING'),
                     'attribute_version': cognito_data.get('attr_version', '1.0.0')
                 }

@@ -25,11 +25,13 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
   const [stripeLoaded, setStripeLoaded] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
   
-  // Load Stripe script when component mounts using our enhanced script loader
+  // IMPORTANT - Only load Stripe when the popup is actually shown
   useEffect(() => {
-    // Skip if already loaded
-    if (window.Stripe || document.getElementById('stripe-js')) {
-      setStripeLoaded(true);
+    // Skip if not showing popup or if Stripe is already loaded
+    if (!showPopup || stripeLoaded || window.Stripe || document.getElementById('stripe-js')) {
+      if (window.Stripe || document.getElementById('stripe-js')) {
+        setStripeLoaded(true);
+      }
       return;
     }
     
@@ -67,10 +69,12 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       }
     };
     
-    // Start loading
-    loadStripe();
+    // Only start loading Stripe when the popup is actually visible
+    if (showPopup) {
+      loadStripe();
+    }
     
-  }, [loadAttempts, notifyError]);
+  }, [showPopup, loadAttempts, notifyError, stripeLoaded]);
   
   // Reset selected plan when popup opens
   useEffect(() => {
@@ -79,13 +83,8 @@ const SubscriptionPopup = ({ open, onClose, isOpen }) => {
       setSelectedPlan((userData?.subscription_type === 'free' ? 'professional' : userData?.subscription_type) || 'professional');
       setIsSubmitting(false);
       setIsRedirectingToStripe(false);
-      
-      // Ensure Stripe is loaded when the popup is opened
-      if (!stripeLoaded && !window.Stripe && loadAttempts === 0) {
-        setLoadAttempts(prev => prev + 1); // This will trigger the useEffect to load Stripe
-      }
     }
-  }, [showPopup, userData, stripeLoaded, loadAttempts]);
+  }, [showPopup, userData]);
   
   // Get plan color using the utility function
   const getPlanColor = (planId) => {

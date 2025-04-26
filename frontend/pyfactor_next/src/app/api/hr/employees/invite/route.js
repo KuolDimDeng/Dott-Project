@@ -239,7 +239,7 @@ export async function POST(request) {
         firstName,
         lastName,
         tenantId,
-        role: role || 'EMPLOYEE', // This will be mapped to 4-6 char values in cognito.js (e.g., EMPLOYEE -> EMPL)
+        role: role || 'employee', // This will be mapped to 4-6 char values in cognito.js (e.g., EMPLOYEE -> EMPL)
         emailVerified: false // Do not mark as verified until they confirm
       };
       
@@ -280,7 +280,7 @@ export async function POST(request) {
         tenantId,
         firstName,
         lastName,
-        role: role || 'EMPLOYEE' // Will be mapped to EMPL in cognito.js (4-char minimum)
+        role: role || 'employee' // Will be mapped to EMPL in cognito.js (4-char minimum)
       };
       
       const verificationToken = generateVerificationToken(tokenPayload);

@@ -111,6 +111,10 @@ export function ClientDataSync() {
         // Get tenant ID from Cognito
         const tenantId = await getTenantIdFromCognito();
         
+        // Import and initialize menu privileges
+        const { fetchCurrentUserMenuPrivileges } = await import('@/utils/menuPrivileges');
+        await fetchCurrentUserMenuPrivileges();
+        
         // If we have a tenant ID and we're on the dashboard route, redirect to the tenant URL
         if (tenantId && isAuthFlow && window.location.pathname === '/dashboard') {
           logger.info('[ClientDataSync] Auth flow detected with tenant ID, redirecting to tenant URL');

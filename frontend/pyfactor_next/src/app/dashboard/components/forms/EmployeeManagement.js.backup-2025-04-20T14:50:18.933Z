@@ -633,7 +633,7 @@ const EmployeeManagement = () => {
         employment_type: 'FULL_TIME',
         employment_status: 'ACTIVE',
         date_joined: new Date().toISOString().split('T')[0],
-        role: 'EMPLOYEE',
+        role: 'employee',
         ...employee  // Spread the employee object to override defaults
       };
       
@@ -700,13 +700,13 @@ const EmployeeManagement = () => {
         const role = String(sanitizedEmployee.role).toUpperCase();
         if (['ADMIN', 'ADMN', 'ADMINISTRATOR'].includes(role)) {
           sanitizedEmployee.role = 'ADMIN';
-        } else if (['OWNER', 'OWNR'].includes(role)) {
-          sanitizedEmployee.role = 'OWNER';
+        } else if (['owner', 'OWNR'].includes(role)) {
+          sanitizedEmployee.role = 'owner';
         } else {
-          sanitizedEmployee.role = 'EMPLOYEE';
+          sanitizedEmployee.role = 'employee';
         }
       } else {
-        sanitizedEmployee.role = 'EMPLOYEE';
+        sanitizedEmployee.role = 'employee';
       }
       
       // Validate date fields (ensure they're in ISO format)
@@ -1332,7 +1332,7 @@ const EmployeeManagement = () => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     employee.role === 'ADMIN' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {employee.role === 'ADMIN' ? 'Administrator' : employee.role === 'MANAGER' ? 'Manager' : 'Employee'}
+                    {employee.role === 'ADMIN' ? 'Administrator' : employee.role === 'MANAGER' ? 'Manager' : 'employee'}
                   </span>
                     </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -1453,9 +1453,9 @@ const EmployeeManagement = () => {
                     <span className="block mt-1">
                       {selectedEmployee.role === 'ADMIN' || selectedEmployee.role === 'ADMN' 
                         ? 'Administrator' 
-                        : selectedEmployee.role === 'OWNER' || selectedEmployee.role === 'OWNR'
-                          ? 'Owner'
-                          : 'Employee'}
+                        : selectedEmployee.role === 'owner' || selectedEmployee.role === 'OWNR'
+                          ? 'owner'
+                          : 'employee'}
                     </span>
                   </div>
                   <div>

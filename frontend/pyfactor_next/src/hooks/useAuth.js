@@ -637,7 +637,7 @@ const handleConfirmSignUp = useCallback(async (email, code) => {
       const userData = {
         email: email,
         cognitoId: result.userId,
-        userRole: 'OWNER',
+        userRole: 'owner',
         is_already_verified: true  // Add this flag to indicate no need for another verification code
       };
       

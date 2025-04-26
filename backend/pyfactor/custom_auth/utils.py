@@ -555,7 +555,7 @@ def ensure_single_tenant_per_business(user, business_id=None):
                         
         # No existing tenant found, determine if user should create one
         # Only business owners can create new tenants
-        is_owner = user.role == 'OWNER' if hasattr(user, 'role') else True
+        is_owner = user.role == 'owner' if hasattr(user, 'role') else True
         
         if is_owner:
             logger.info(f"User {user.email} is authorized to create a new tenant")

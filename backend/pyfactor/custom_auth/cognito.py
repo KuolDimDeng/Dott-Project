@@ -227,7 +227,7 @@ class CognitoClient:
         try:
             default_attrs = {
                 'custom:onboarding': 'NOT_STARTED',
-                'custom:userrole': 'OWNER',
+                'custom:userrole': 'owner',
                 'custom:acctstatus': 'PENDING',
                 'custom:subplan': 'free',
                 'custom:subscriptioninterval': 'MONTHLY',
@@ -254,7 +254,7 @@ class CognitoClient:
             'NOT_STARTED', 'BUSINESS_INFO', 'SUBSCRIPTION',
             'PAYMENT', 'SETUP', 'COMPLETE'
         ]
-        valid_roles = ['OWNER', 'ADMIN']
+        valid_roles = ['owner']
         valid_statuses = ['PENDING', 'ACTIVE']
         valid_plans = ['free', 'PROFESSIONAL']
         valid_intervals = ['MONTHLY', 'YEARLY']
@@ -320,7 +320,7 @@ class CognitoClient:
             current_attrs = self.get_user_attributes(access_token)
             required_attrs = {
                 'custom:onboarding': 'NOT_STARTED',
-                'custom:userrole': 'OWNER',
+                'custom:userrole': 'owner',
                 'custom:acctstatus': 'PENDING',
                 'custom:subplan': 'free',
                 'custom:subscriptioninterval': 'MONTHLY',

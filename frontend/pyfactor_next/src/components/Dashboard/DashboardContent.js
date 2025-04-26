@@ -30,6 +30,7 @@ import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { useAuth } from '@/hooks/auth';
 import { ToastProvider } from '@/components/Toast/ToastProvider';
 import DashboardLoader from '@/components/DashboardLoader';
+import { ensureAuthProvider } from '@/utils/refreshUserSession';
 
 // Lazy load components to reduce initial memory usage
 const RenderMainContent = lazy(() =>
@@ -726,6 +727,34 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       window.removeEventListener('menuNavigation', handleMenuNavigation);
     };
   }, [setView, setNavigationKey]);
+
+  // Just use a single useEffect for fetching employees on mount
+  useEffect(() => {
+    // Create an async function inside the effect to call our async fetchEmployees
+    const loadEmployees = async () => {
+      try {
+        // Add backend connection test
+        console.log("[DashboardDebugger] Testing backend connection...");
+        try {
+          const { verifyBackendConnection } = await import('@/lib/axiosConfig');
+          const connectionResult = await verifyBackendConnection();
+          console.log("[DashboardDebugger] Backend connection test result:", connectionResult);
+        } catch (connError) {
+          console.error("[DashboardDebugger] Backend connection test failed:", connError);
+        }
+        
+        // Ensure AUTH_CACHE provider is set before doing anything else
+        ensureAuthProvider();
+        
+        // Check session status before fetching data
+        // ... existing code ...
+      } catch (error) {
+        console.error('[DashboardContent] Error in loadEmployees:', error);
+      }
+    };
+    
+    loadEmployees();
+  }, []);
 
   return (
     <ErrorBoundary>

@@ -205,11 +205,14 @@ CORS_ALLOW_HEADERS = [
     'X-SCHEMA-NAME',  # All caps schema name header
     'access-control-allow-origin',
     'access-control-allow-headers',
-    'access-control-allow-methods'
+    'access-control-allow-methods',
+    'x-business-id',      # Lowercase business ID header
+    'X-Business-ID',      # Standard format business ID header
+    'X-BUSINESS-ID',      # Uppercase business ID header
+    'X-Requires-Auth'     # Authentication requirement header
 ]
 
-CORS_EXPOSE_HEADERS = [
-    'access-token',
+CORS_EXPOSE_HEADERS = ['access-token',
     'refresh-token',
     'content-type',
     'authorization',
@@ -219,7 +222,8 @@ CORS_EXPOSE_HEADERS = [
     'x-debug-step',
     'x-current-step',
     'x-tenant-id',  # Add tenant ID header
-    'x-schema-name'  # Add schema name header
+    'x-schema-name',  # Add schema name header
+    'x-business-id'  # Add business ID header
 ]
 
 # Add this new setting for preflight caching
@@ -665,6 +669,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
+    'hr.middleware.HrCorsMiddleware',  # Add HR CORS middleware
     'onboarding.middleware.SchemaNameMiddleware',
     'allauth.account.middleware.AccountMiddleware',
     'custom_auth.middleware.RequestIDMiddleware',

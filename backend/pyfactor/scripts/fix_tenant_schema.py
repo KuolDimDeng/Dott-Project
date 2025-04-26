@@ -72,8 +72,8 @@ def fix_tenant_schema(tenant_id: uuid.UUID:
                     confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
                     is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
                     stripe_customer_id VARCHAR(255) NULL,
-                    role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
-                    occupation VARCHAR(50) NOT NULL DEFAULT 'OWNER',
+                    role VARCHAR(20) NOT NULL DEFAULT 'owner',
+                    occupation VARCHAR(50) NOT NULL DEFAULT 'owner',
                     tenant_id UUID NULL,
                     cognito_sub VARCHAR(36) NULL
                 );

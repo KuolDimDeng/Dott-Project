@@ -152,11 +152,11 @@ exports.handler = async (event, context, callback) => {
     const payload = {
       email: userAttributes.email,
       cognitoId: userAttributes.sub,
-      userRole: userAttributes['custom:role'] || 'OWNER', // Default to OWNER role
+      userRole: userAttributes['custom:userrole'] || 'owner', // Default to lowercase owner role
       firstName: userAttributes.given_name || '',
       lastName: userAttributes.family_name || '',
-      business_id: userAttributes['custom:business_id'] || '',
-      business_name: userAttributes['custom:business_name'] || '',
+      business_id: userAttributes['custom:businessid'] || '',
+      business_name: userAttributes['custom:businessname'] || '',
       is_already_verified: true // Mark as already verified
     };
     

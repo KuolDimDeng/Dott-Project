@@ -12,6 +12,8 @@ import { Toaster } from 'react-hot-toast';
 import TenantRecoveryWrapper from '@/components/TenantRecoveryWrapper';
 import AuthInitializer from '@/components/AuthInitializer';
 import ClientSideScripts from '@/components/ClientSideScripts';
+// Menu privilege system has been replaced with page privileges
+// import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
 // Scripts will be loaded via next/script in the component
 
@@ -53,9 +55,35 @@ export default async function RootLayout({ children, params }) {
   }
   
   return (
-    <html lang="en" className={`${inter.variable} ${montserrat.variable}`}>
+    <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="/scripts/emergency-menu-fix.js" defer></script>
+        <Script
+          id="emergency-menu-fix-loader"
+          strategy="beforeInteractive" 
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  console.log('[EmergencyLoader] Trying to load emergency menu fix...');
+                  const script = document.createElement('script');
+                  script.src = '/scripts/emergency-menu-fix.js';
+                  script.async = true;
+                  script.onload = function() {
+                    console.log('[EmergencyLoader] Emergency menu fix loaded successfully');
+                  };
+                  script.onerror = function() {
+                    console.error('[EmergencyLoader] Failed to load emergency menu fix');
+                  };
+                  document.head.appendChild(script);
+                } catch(e) {
+                  console.error('[EmergencyLoader] Error setting up fix:', e);
+                }
+              })();
+            `
+          }}
+        />
         {/* Add inline script to configure AWS Amplify early */}
         <script dangerouslySetInnerHTML={{
           __html: `
@@ -96,9 +124,52 @@ export default async function RootLayout({ children, params }) {
             }
           `
         }} />
+        <title>{metadata.title}</title>
+        <meta name="description" content={metadata.description} />
+        
+        {/* Dynamic script for supporting older browsers */}
+        <Script
+          id="browser-env-polyfill"
+          strategy="beforeInteractive"
+          src="/scripts/browser-env-polyfill.js"
+        />
+        
+        {/* Direct inline menu fix - highest priority */}
+        <script 
+          dangerouslySetInnerHTML={{ 
+            __html: `
+              // Force menu item visibility with inline script
+              (function() {
+                try {
+                  // Add extremely high priority style
+                  const style = document.createElement('style');
+                  style.innerHTML = \`
+                    /* Force all second spans in menu buttons to be visible */
+                    body #main-menu-container button span + span,
+                    body nav[aria-label="Main Navigation"] button span + span {
+                      display: inline-block !important;
+                      visibility: visible !important;
+                      opacity: 1 !important;
+                      position: static !important;
+                      color: #1f2937 !important;
+                      font-weight: 500 !important;
+                      margin-left: 12px !important;
+                    }
+                  \`;
+                  document.head.appendChild(style);
+                  console.log('[InlineMenuFix] Applied emergency inline fix');
+                } catch(e) {
+                  console.error('[InlineMenuFix] Error applying inline fix:', e);
+                }
+              })();
+            `
+          }}
+        />
       </head>
       <body className={inter.className}>
         <AuthInitializer />
+        {/* Menu privilege system has been replaced with page privileges */}
+        {/* <MenuPrivilegeInitializer /> */}
         <ClientSideScripts />
         <TenantRecoveryWrapper showRecoveryState={true}>
           <Providers>

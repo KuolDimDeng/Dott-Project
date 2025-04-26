@@ -1,6 +1,6 @@
 from django.urls import path
 from .views.auth_views import VerifyCredentialsView, VerifySessionView, CheckUserAttributesView
-from .views.tenant_views import TenantDetailView, TenantExistsView, CurrentTenantView, ValidateTenantView, TenantByEmailView
+from .views.tenant_views import TenantDetailView, TenantExistsView, CurrentTenantView, ValidateTenantView, TenantByEmailView, VerifyTenantOwnerView
 
 urlpatterns = [
     path('verify/', VerifyCredentialsView.as_view(), name='verify-credentials'),
@@ -11,4 +11,5 @@ urlpatterns = [
     path('tenant/current/', CurrentTenantView.as_view(), name='current-tenant'),
     path('tenant/validate/', ValidateTenantView.as_view(), name='validate-tenant'),
     path('tenant/by-email/<str:email>/', TenantByEmailView.as_view(), name='tenant-by-email'),
+    path('tenant/verify-owner/', VerifyTenantOwnerView.as_view(), name='verify-tenant-owner'),
 ]

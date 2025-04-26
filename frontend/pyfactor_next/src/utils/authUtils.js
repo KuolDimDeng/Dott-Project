@@ -4,6 +4,7 @@ import { fetchAuthSession, signIn, signOut, getCurrentUser } from 'aws-amplify/a
 import { Amplify } from 'aws-amplify';
 import { logger } from './logger';
 import { jwtDecode } from 'jwt-decode';
+import { clearAppCache, removeAppCacheItem } from '@/utils/appCache';
 
 /**
  * Checks if a route is public (doesn't require authentication)
@@ -130,7 +131,7 @@ export const refreshAccessToken = async (refreshToken) => {
       return null;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
     const response = await fetch(`${apiUrl}/api/auth/refresh/`, {
       method: 'POST',
       headers: {
@@ -462,118 +463,86 @@ export async function logoutUser() {
 }
 
 /**
- * Clears all authentication-related data from browser
- * @returns {Promise<boolean>} Success status
+ * Clear all authentication related data
+ * This includes:
+ * - AWS App Cache
+ * - Session storage
+ * - Local storage
+ * - IndexedDB
  */
 export async function clearAllAuthData() {
   try {
     logger.debug('[authUtils] Clearing all authentication data');
     
-    // Import required functions - use dynamic imports to avoid SSR issues
-    // Using signOut imported at the top of the file
-const { /* signOut already imported */ } = await import('aws-amplify/auth');
-    const { Amplify } = await import('aws-amplify');
-    const { clearCache, removeCacheValue } = await import('@/utils/appCache');
-    
-    // Force reconfigure Amplify before sign out to ensure it's in a valid state
+    // Clear AWS App Cache
     try {
-      // Get current configuration
-      const currentConfig = Amplify.getConfig();
-      const hasAuth = !!(currentConfig && currentConfig.Auth?.Cognito?.userPoolId);
-      
-      // Reconfigure if needed
-      if (!hasAuth) {
-        logger.info('[authUtils] Amplify not properly configured before sign out, reconfiguring...');
-        const { configureAmplify } = await import('@/config/amplifyUnified');
-        configureAmplify(true); // Force reconfiguration
-      }
-    } catch (configError) {
-      logger.warn('[authUtils] Error checking Amplify configuration:', configError);
-      // Continue with cleanup even if reconfiguration fails
+      await clearAppCache();
+      logger.debug('[authUtils] Successfully cleared AWS App Cache');
+    } catch (error) {
+      logger.error('[authUtils] Error clearing AWS App Cache:', error);
     }
     
-    // 1. Try to sign out with Amplify API first
-    try {
-      await signOut();
-      logger.debug('[authUtils] Successfully signed out from Amplify');
-    } catch (signOutError) {
-      logger.warn('[authUtils] Error signing out from Amplify:', signOutError);
-      // Continue with cleanup even if signOut fails
-    }
+    // Clear specific auth keys from App Cache as backup
+    const authKeys = [
+      'idToken',
+      'accessToken',
+      'refreshToken',
+      'user',
+      'auth',
+      'session'
+    ];
     
-    // 2. Clear appCache - our primary client-side storage now
-    try {
-      // Clear all app cache
-      clearCache();
-      
-      // Ensure specific auth keys are cleared from appCache
-      const appKeys = [
-        'unconfirmedEmail',
-        'pendingVerificationEmail',
-        'verificationEmail',
-        'pyfactor_email',
-        'needs_verification',
-        'returnToOnboarding',
-        'onboardingStep',
-        'userEmail',
-        'tempPassword',
-        'businessInfo',
-        'businessName',
-        'businessType', 
-        'country',
-        'legalStructure',
-        'onboardingInProgress',
-        'onboardedStatus',
-        'tokenExpired',
-        // Additional auth-related cache keys
-        'auth_id_token',
-        'auth_access_token',
-        'auth_refresh_token',
-        'id_token',
-        'access_token',
-        'refresh_token'
-      ];
-      
-      appKeys.forEach(key => removeCacheValue(key));
-      logger.debug('[authUtils] Successfully cleared cache items');
-    } catch (storageError) {
-      logger.error('[authUtils] Error clearing cache:', storageError);
-    }
-    
-    // 3. Clear sessionStorage
-    if (typeof sessionStorage !== 'undefined') {
-      try {
-        sessionStorage.clear();
-        logger.debug('[authUtils] Successfully cleared sessionStorage');
-      } catch (sessionError) {
-        logger.error('[authUtils] Error clearing sessionStorage:', sessionError);
-      }
-    }
-    
-    // 4. Try to clear IndexedDB if browser supports it
-    if (typeof window !== 'undefined' && window.indexedDB) {
-      try {
-        // Get list of all databases
-        const databases = await window.indexedDB.databases();
-        
-        // Delete each database
-        for (const db of databases) {
-          if (db.name) {
-            await window.indexedDB.deleteDatabase(db.name);
-          }
+    await Promise.all(
+      authKeys.map(async (key) => {
+        try {
+          await removeAppCacheItem(key);
+        } catch (error) {
+          logger.warn(`[authUtils] Error removing ${key} from App Cache:`, error);
         }
-        
+      })
+    );
+    
+    // Clear session storage
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.clear();
+        logger.debug('[authUtils] Successfully cleared sessionStorage');
+      } catch (error) {
+        logger.error('[authUtils] Error clearing sessionStorage:', error);
+      }
+      
+      // Clear local storage
+      try {
+        window.localStorage.clear();
+        logger.debug('[authUtils] Successfully cleared localStorage');
+      } catch (error) {
+        logger.error('[authUtils] Error clearing localStorage:', error);
+      }
+      
+      // Clear IndexedDB
+      try {
+        const databases = await window.indexedDB.databases();
+        await Promise.all(
+          databases.map((db) => {
+            if (db.name) {
+              return new Promise((resolve, reject) => {
+                const request = window.indexedDB.deleteDatabase(db.name);
+                request.onsuccess = () => resolve();
+                request.onerror = () => reject(request.error);
+              });
+            }
+          })
+        );
         logger.debug('[authUtils] Successfully cleared IndexedDB databases');
-      } catch (indexedDBError) {
-        logger.error('[authUtils] Error clearing IndexedDB:', indexedDBError);
+      } catch (error) {
+        logger.error('[authUtils] Error clearing IndexedDB:', error);
       }
     }
     
     logger.debug('[authUtils] Successfully cleared all authentication data');
-    return true;
   } catch (error) {
-    logger.error('[authUtils] Error clearing authentication data:', error);
-    return false;
+    logger.error('[authUtils] Error in clearAllAuthData:', error);
+    throw error;
   }
 }
 
@@ -628,14 +597,6 @@ export default {
   parseJwt,
   getAuth
 }; 
-/**
- * Ensures the authentication token is properly stored in APP_CACHE
- * This is a utility function to fix issues with token access
- * 
- * @returns {Promise<boolean>} True if token was found or stored, false otherwise
- */
-
-
 /**
  * Completely refreshes the authentication state by signing out and clearing all data
  * This is a nuclear option to fix authentication state issues

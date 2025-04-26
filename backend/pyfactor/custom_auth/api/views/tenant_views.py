@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from rest_framework.decorators import action
+from rest_framework.viewsets import ModelViewSet
 
 logger = logging.getLogger('Pyfactor')
 
@@ -408,3 +410,66 @@ class TenantByEmailView(APIView):
                 {"detail": "Error processing request"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class VerifyTenantOwnerView(APIView):
+    """
+    API endpoint to verify if the current user is the owner of a specific tenant.
+    
+    This is a critical endpoint for the menu privileges system, used to determine
+    if a user should have unrestricted access to all menu items.
+    
+    Version: 0001
+    Created: 2024-07-19
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Check if the current authenticated user is the owner of the specified tenant
+        
+        Query parameters:
+            - tenant_id: The UUID of the tenant to check
+        
+        Returns:
+            200 OK with JSON: { "is_owner": true/false }
+            400 Bad Request if tenant_id is missing
+            404 Not Found if tenant doesn't exist
+        """
+        tenant_id = request.query_params.get('tenant_id')
+        
+        if not tenant_id:
+            return Response({
+                'is_owner': False,
+                'error': 'Missing tenant_id parameter'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the current user ID
+        user_id = str(request.user.id)
+        
+        try:
+            # Find the tenant
+            tenant = get_object_or_404(Tenant, id=tenant_id)
+            
+            # Check if tenant owner_id matches current user
+            is_owner = str(tenant.owner_id) == user_id
+            
+            # Log the result for debugging
+            logging.info(f"[VerifyTenantOwner] User {user_id} is owner of tenant {tenant_id}: {is_owner}")
+            
+            return Response({
+                'is_owner': is_owner,
+                'tenant_id': tenant_id,
+                'tenant_name': tenant.name
+            })
+            
+        except Tenant.DoesNotExist:
+            return Response({
+                'is_owner': False,
+                'error': 'Tenant not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logging.error(f"[VerifyTenantOwner] Error: {str(e)}")
+            return Response({
+                'is_owner': False,
+                'error': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

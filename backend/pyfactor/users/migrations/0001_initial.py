@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
             name='BusinessMember',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('role', models.CharField(choices=[('OWNER', 'Business Owner'), ('ADMIN', 'Administrator'), ('EMPLOYEE', 'Employee')], max_length=20)),
+                ('role', models.CharField(choices=[('owner', 'Business Owner'), ('employee', 'employee')], max_length=20)),
                 ('is_active', models.BooleanField(default=True)),
                 ('date_joined', models.DateTimeField(auto_now_add=True)),
             ],

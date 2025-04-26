@@ -106,14 +106,31 @@ class TokenRefreshService {
 
         // Add timestamp to prevent caching
         const timestamp = Date.now();
-        const response = await fetch(`/api/auth/refresh?t=${timestamp}`, {
+        
+        // Get current tokens from APP_CACHE
+        const currentIdToken = getCacheValue('idToken');
+        
+        // Create headers for the refresh request
+        const headers = {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        };
+        
+        // Add authorization if we have a token
+        if (currentIdToken) {
+          headers['Authorization'] = `Bearer ${currentIdToken}`;
+        }
+        
+        // Use HTTPS URL directly to avoid redirects
+        const url = window.location.protocol === 'https:' 
+          ? `/api/auth/refresh?t=${timestamp}`
+          : `https://${window.location.host}/api/auth/refresh?t=${timestamp}`;
+          
+        const response = await fetch(url, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          credentials: 'include', // Important for cookies
+          headers,
+          // Don't include credentials option - we're not using cookies
         });
 
         if (!response.ok) {
@@ -143,8 +160,29 @@ class TokenRefreshService {
           throw new Error(error.message || 'Failed to refresh token');
         }
 
+        // Process and store the new tokens
         const result = await response.json();
         logger.debug('[TokenRefresh] Token refreshed successfully');
+
+        // Store new tokens in APP_CACHE
+        if (result.idToken) {
+          setCacheValue('idToken', result.idToken);
+        }
+        if (result.accessToken) {
+          setCacheValue('accessToken', result.accessToken);
+        }
+        // Update timestamp
+        setCacheValue('tokenTimestamp', Date.now().toString());
+        
+        // Store in window.__APP_CACHE for immediate use by other components
+        if (typeof window !== 'undefined' && window.__APP_CACHE) {
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          if (result.accessToken) {
+            window.__APP_CACHE.auth.token = result.accessToken;
+          }
+          window.__APP_CACHE.auth.provider = 'cognito';
+          window.__APP_CACHE.auth.timestamp = Date.now();
+        }
 
         // Clear any token expired flags
         removeCacheValue('tokenExpired');
@@ -231,22 +269,43 @@ class TokenRefreshService {
       }
     }
 
-    // Ensure credentials are included
-    const fetchOptions = {
-      ...options,
-      credentials: 'include', // Always include credentials
-    };
+    // Always use HTTPS to avoid redirects
+    const secureUrl = url.startsWith('http:') 
+      ? url.replace('http:', 'https:') 
+      : url;
 
+    // Clone options to avoid modifying the original object
+    const fetchOptions = { ...options };
+    
+    // Add headers from APP_CACHE if available
+    const idToken = getCacheValue('idToken');
+    if (idToken && !fetchOptions.headers?.Authorization) {
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        'Authorization': `Bearer ${idToken}`
+      };
+    }
+    
     try {
-      // Make the request
-      const response = await fetch(url, fetchOptions);
+      // Make the request with the secured URL
+      const response = await fetch(secureUrl, fetchOptions);
 
       // If unauthorized and not already refreshing, try to refresh and retry
       if (response.status === 401 && !this.isRefreshing) {
         try {
           await this.refreshToken();
+          
+          // Update authorization header with new token
+          const newToken = getCacheValue('idToken');
+          if (newToken) {
+            fetchOptions.headers = {
+              ...fetchOptions.headers,
+              'Authorization': `Bearer ${newToken}`
+            };
+          }
+          
           // Retry the request with fresh token
-          return fetch(url, fetchOptions);
+          return fetch(secureUrl, fetchOptions);
         } catch (refreshError) {
           // If refresh fails, return original failed response
           return response;

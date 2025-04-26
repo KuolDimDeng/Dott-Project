@@ -31,7 +31,7 @@ export async function POST(request) {
   }
   
   // Admin-only check
-  if (sessionData.userRole !== 'ADMIN' && sessionData.userRole !== 'OWNER' && process.env.NODE_ENV !== 'development') {
+  if (sessionData.userRole !== 'ADMIN' && sessionData.userRole !== 'owner' && process.env.NODE_ENV !== 'development') {
     return NextResponse.json(
       { success: false, error: 'Admin privileges required' },
       { status: 403, headers: corsHeaders }

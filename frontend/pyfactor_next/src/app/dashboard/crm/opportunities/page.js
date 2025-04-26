@@ -1,5 +1,7 @@
 'use client';
 
+import withPageAccess from '../../components/withPageAccess';
+import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
@@ -568,3 +570,6 @@ const OpportunitiesPage = () => {
 };
 
 export default OpportunitiesPage; 
+
+// Wrap the component with page access control
+export default withPageAccess(OpportunitiesPage, PAGE_ACCESS.CRM);

@@ -180,7 +180,7 @@ const TextField = ({ label, fullWidth, multiline, rows, value, onChange, require
       {multiline ? (
         <textarea
           name={name}
-          value={value}
+          value={value || ''}
           onChange={onChange}
           onClick={onClick}
           placeholder={placeholder}
@@ -191,7 +191,7 @@ const TextField = ({ label, fullWidth, multiline, rows, value, onChange, require
           <input
           type={type || 'text'}
           name={name}
-          value={value}
+          value={value || ''}
           onChange={onChange}
           onClick={onClick}
           placeholder={placeholder}
@@ -281,15 +281,22 @@ const ModernFormLayout = ({ children, title, subtitle, onSubmit, isLoading, subm
 };
 
 // Employee form component with validation
-const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleInputChange, isLoading, setNewEmployee, setShowAddForm, setShowEditForm }) => {
+const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleInputChange, isLoading, setNewEmployee, setShowAddForm, setShowEditForm, employees = [] }) => {
+    // Ensure we have a clean way to close the form
+    const handleCancel = () => {
+      if (isEdit && setShowEditForm) {
+        setShowEditForm(false);
+      } else if (setShowAddForm) {
+        setEmployeeTab('list');
+      }
+      logger.debug('[EmployeeManagement] Form canceled:', isEdit ? 'edit' : 'add');
+    };
   return (
     <ModernFormLayout 
       title={isEdit ? "Edit Employee" : "Add New Employee"}
       subtitle={isEdit ? "Update employee information" : "Add a new employee to your organization"}
       onSubmit={onSubmit}
-      onCancel={() => {
-        isEdit ? setShowEditForm(false) : setShowAddForm(false);
-      }}
+      onCancel={handleCancel}
       isSubmitting={isLoading}
       submitLabel={isEdit ? "Update Employee" : "Add Employee"}
     >
@@ -312,6 +319,16 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
         />
         
         <TextField
+          label="Date Joined"
+          type="date"
+          name="date_joined"
+          value={newEmployee.date_joined || new Date().toISOString().split('T')[0]}
+          onChange={handleInputChange}
+          required
+          fullWidth
+        />
+        
+        <TextField
           label="Middle Name"
             name="middle_name"
             value={newEmployee.middle_name}
@@ -327,6 +344,18 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
             required
           fullWidth
           />
+        
+        <TextField
+          label="Date of Birth"
+          type="date"
+          name="dob"
+          value={newEmployee.dob}
+          onChange={handleInputChange}
+          required
+          fullWidth
+        />
+        
+        
         
         <TextField
           label="Email"
@@ -399,27 +428,11 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
           />
         )}
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-          <select
-            name="role"
-            value={newEmployee.role}
-            onChange={handleInputChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-          >
-            <option value="EMPLOYEE">Employee</option>
-            <option value="ADMIN">Administrator</option>
-          </select>
-        </div>
         
-        <TextField
-          label="Date Joined"
-            type="date"
-            name="date_joined"
-            value={newEmployee.date_joined}
-            onChange={handleInputChange}
-          fullWidth
-          />
+        
+        
+        
+        
         
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Employment Type</label>
@@ -468,6 +481,75 @@ const EmployeeFormComponent = ({ isEdit = false, onSubmit, newEmployee, handleIn
           />
       </div>
       )}
+    
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="ID_verified"
+              checked={newEmployee.ID_verified}
+              onChange={(e) => handleInputChange({ target: { name: 'ID_verified', value: e.target.checked } })}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label className="ml-2 block text-sm text-gray-700">
+              ID Verified
+            </label>
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              name="areManager"
+              checked={newEmployee.areManager}
+              onChange={(e) => handleInputChange({ target: { name: 'areManager', value: e.target.checked } })}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label className="ml-2 block text-sm text-gray-700">
+              Is Manager
+            </label>
+          </div>
+          
+          {newEmployee.areManager && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Supervising Employees
+              </label>
+              <div className="mt-2 space-y-2 max-h-60 overflow-y-auto border border-gray-300 rounded-md p-2">
+                {employees
+                  .filter(emp => emp.id !== newEmployee.id)
+                  .map(emp => (
+                    <div key={emp.id} className="flex items-center">
+                      <input
+                        type="radio"
+                        name="supervising"
+                        id={`supervising-${emp.id}`}
+                        value={emp.id}
+                        checked={newEmployee.supervising === emp.id}
+                        onChange={(e) => {
+                          handleInputChange({ 
+                            target: { 
+                              name: 'supervising', 
+                              value: e.target.checked ? emp.id : null 
+                            } 
+                          });
+                        }}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                      />
+                      <label 
+                        htmlFor={`supervising-${emp.id}`}
+                        className="ml-2 block text-sm text-gray-700"
+                      >
+                        {emp.first_name} {emp.last_name}
+                      </label>
+                    </div>
+                  ))}
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Select one employee to supervise
+              </p>
+            </div>
+          )}
+        </div>
     </ModernFormLayout>
   );
 };
@@ -565,7 +647,8 @@ const EmployeeManagement = () => {
     // Set to true on mount (though it's already initialized as true)
     isMounted.current = true;
     // Cleanup function sets to false when component unmounts
-    return () => {
+    
+  return () => {
       isMounted.current = false;
     };
   }, []);
@@ -574,16 +657,14 @@ const EmployeeManagement = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
+  const [mainTab, setMainTab] = useState('personal'); // 'personal', 'add-employee', or 'list-employees'
+  const [employeeTab, setEmployeeTab] = useState('list'); // 'list' or 'add' for employee tabs - kept for backward compatibility
+  const [activeSection, setActiveSection] = useState('employee-management'); // 'employee-management' or 'personal' // 'employee-management' or 'personal'
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [showEmployeeDetails, setShowEmployeeDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [submitError, setSubmitError] = useState(null); // Add missing submitError state
@@ -592,7 +673,19 @@ const EmployeeManagement = () => {
   // Add state to track if we should show the connection checker
   const [showConnectionChecker, setShowConnectionChecker] = useState(false);
   
-  // Initialize tenantId from AppCache
+  
+  // Add state for edit form visibility
+  const [showEditForm, setShowEditForm] = useState(false);
+
+  // Add state for selected employee
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  // Add state for add form visibility
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Add state for editing mode
+  const [isEditing, setIsEditing] = useState(false);
+// Initialize tenantId from AppCache
   const getTenantId = () => {
     try {
       return typeof window !== 'undefined' ? 
@@ -617,15 +710,21 @@ const EmployeeManagement = () => {
     state: '',
     zip_code: '',
     country: 'US',
-    role: '',
+    role: 'employee',
     department: '',
+    job_title: '',
     hire_date: new Date().toISOString().split('T')[0],
+    date_joined: new Date().toISOString().split('T')[0],
+    dob: new Date().toISOString().split('T')[0],
     salary: '',
     employment_status: 'ACTIVE',
     employee_type: 'FULL_TIME',
     security_number_type: 'SSN',
     security_number: '',
-    invite_to_onboard: false
+    invite_to_onboard: false,
+    ID_verified: false,
+    areManager: false,
+    supervising: []
   };
 
   // Use the initialEmployeeState for the newEmployee state
@@ -701,7 +800,7 @@ const EmployeeManagement = () => {
         employment_type: 'FULL_TIME',
         employment_status: 'ACTIVE',
         date_joined: new Date().toISOString().split('T')[0],
-        role: 'EMPLOYEE',
+        role: 'employee',
         ...employee  // Spread the employee object to override defaults
       };
       
@@ -766,15 +865,15 @@ const EmployeeManagement = () => {
       // Normalize role to uppercase and handle common variations
       if (sanitizedEmployee.role) {
         const role = String(sanitizedEmployee.role).toUpperCase();
-        if (['ADMIN', 'ADMN', 'ADMINISTRATOR'].includes(role)) {
-          sanitizedEmployee.role = 'ADMIN';
-        } else if (['OWNER', 'OWNR'].includes(role)) {
-          sanitizedEmployee.role = 'OWNER';
+        if (['ADMINISTRATOR'].includes(role)) {
+          sanitizedEmployee.role = 'owner';
+        } else if (['owner', 'OWNR'].includes(role)) {
+          sanitizedEmployee.role = 'owner';
         } else {
-          sanitizedEmployee.role = 'EMPLOYEE';
+          sanitizedEmployee.role = 'employee';
         }
       } else {
-        sanitizedEmployee.role = 'EMPLOYEE';
+        sanitizedEmployee.role = 'employee';
       }
       
       // Validate date fields (ensure they're in ISO format)
@@ -948,6 +1047,38 @@ const EmployeeManagement = () => {
           }
           
           logger.error('[EmployeeManagement] Error fetching employees:', error);
+          
+          // Handle 403 errors by trying proxy route
+          if (error.response?.status === 403) {
+            logger.warn('[EmployeeManagement] Got 403 Forbidden, trying proxy route instead');
+            try {
+              // Try using the proxy route
+              const proxyResponse = await fetch(`/api/hr-proxy?tenantId=${tenantId}`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${authToken}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              const proxyData = await proxyResponse.json();
+              
+              if (proxyData.data && Array.isArray(proxyData.data)) {
+                logger.info('[EmployeeManagement] Successfully fetched employees through proxy route');
+                setEmployees(normalizeEmployeeData(proxyData.data));
+                setLoading(false);
+                setShowConnectionChecker(false);
+                return;
+              } else {
+                logger.warn('[EmployeeManagement] Proxy route returned non-array data:', proxyData);
+                // Continue to error handling below
+              }
+            } catch (proxyError) {
+              logger.error('[EmployeeManagement] Proxy route also failed:', proxyError);
+              // Continue to error handling below
+            }
+          }
+          
           setLoading(false);
           
           // Handle auth errors directly here
@@ -1021,6 +1152,32 @@ const EmployeeManagement = () => {
         logger.info('[EmployeeManagement] Session refreshed successfully');
       }
       
+      // Check for mock mode flag in AppCache
+      const useMockMode = typeof window !== 'undefined' && 
+        window.__APP_CACHE && 
+        window.__APP_CACHE.debug && 
+        window.__APP_CACHE.debug.useMockMode === true;
+      
+      if (useMockMode) {
+        logger.info('[EmployeeManagement] Using mock data mode from localStorage setting');
+        try {
+          setLoading(true);
+          // Use the mock API directly
+          const response = await fetch('/api/hr/employees');
+          const data = await response.json();
+          
+          if (Array.isArray(data)) {
+            setEmployees(normalizeEmployeeData(data));
+            setLoading(false);
+            setShowConnectionChecker(false);
+            return;
+          }
+        } catch (mockError) {
+          logger.error('[EmployeeManagement] Mock API error:', mockError);
+          // Continue to regular flow on error
+        }
+      }
+      
       // Now fetch the data
       await fetchEmployeesData(currentTenantId);
     } catch (error) {
@@ -1045,6 +1202,16 @@ const EmployeeManagement = () => {
     // Create an async function inside the effect to call our async fetchEmployees
     const loadEmployees = async () => {
       try {
+        // Add backend connection test
+        logger.info("[EmployeeManagement] Testing backend connection before employee fetch...");
+        try {
+          const { verifyBackendConnection } = await import('@/lib/axiosConfig');
+          const connectionResult = await verifyBackendConnection();
+          logger.info("[EmployeeManagement] Backend connection test result:", connectionResult);
+        } catch (connError) {
+          logger.error("[EmployeeManagement] Backend connection test failed:", connError);
+        }
+        
         // Ensure AUTH_CACHE provider is set before doing anything else
         ensureAuthProvider();
         
@@ -1073,11 +1240,53 @@ const EmployeeManagement = () => {
     // Call the async function
     loadEmployees();
     
-    // Cleanup function
+    // Set up the cleanup function
     return () => {
-      // Any cleanup needed
+      isMounted.current = false;
+      
+      // Clear any pending timeouts
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+      
+      // Abort any pending requests
+      if (fetchRequestRef.current) {
+        try {
+          fetchRequestRef.current.abort();
+        } catch (e) {
+          // Ignore abort errors
+        }
+      }
     };
-  }, []);  // Remove fetchEmployeesData from dependencies to avoid loops
+  }, []);
+
+  // Add a function to toggle mock mode
+  const toggleMockMode = useCallback(() => {
+    // Get current mock mode from AppCache
+    const currentMockMode = typeof window !== 'undefined' && 
+      window.__APP_CACHE && 
+      window.__APP_CACHE.debug && 
+      window.__APP_CACHE.debug.useMockMode === true;
+    
+    const newMockMode = !currentMockMode;
+    
+    // Update AppCache
+    if (typeof window !== 'undefined') {
+      window.__APP_CACHE = window.__APP_CACHE || {};
+      window.__APP_CACHE.debug = window.__APP_CACHE.debug || {};
+      window.__APP_CACHE.debug.useMockMode = newMockMode;
+    }
+    
+    // Show notification
+    if (newMockMode) {
+      notifySuccess('Switching to mock data mode');
+    } else {
+      notifyInfo('Switching to real backend mode');
+    }
+    
+    // Refresh data
+    fetchEmployees();
+  }, []);
 
   // Handle when the connection is restored
   const handleConnectionRestored = async () => {
@@ -1159,45 +1368,55 @@ const EmployeeManagement = () => {
         )
       },
       {
-        Header: '',
+        Header: 'Actions',
         id: 'actions',
         Cell: ({ row }) => (
-          <div className="text-right flex justify-end">
-                <button
-              onClick={() => {
-                setSelectedEmployee(row.original);
-                setShowEmployeeDetails(true);
-                setIsCreating(false);
-                setIsEditing(false);
-              }}
-              className="text-blue-600 hover:text-blue-900 mr-3"
-              title="View"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => handleEditEmployee(row.original)}
-              className="text-green-600 hover:text-green-900 mr-3"
-              title="Edit"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => handleDeleteEmployee(row.original.id)}
-              className="text-red-600 hover:text-red-900"
-              title="Delete"
-            >
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </div>
-        )
+  <div className="text-right flex justify-end space-x-2">
+    {/* Edit button */}
+    <button
+      onClick={() => {
+        handleEditEmployee(row.original);
+      }}
+      className="p-1 flex items-center bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-md"
+      title="Edit"
+    >
+      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+      <span className="text-xs">Edit</span>
+    </button>
+    
+    {/* Details button */}
+    <button
+      onClick={() => {
+        setSelectedEmployee(row.original);
+        setShowEmployeeDetails(true);
+        setIsCreating(false);
+        setIsEditing(false);
+      }}
+      className="p-1 flex items-center bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-md"
+      title="Details"
+    >
+      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+      </svg>
+      <span className="text-xs">Details</span>
+    </button>
+    
+    {/* Delete button */}
+    <button
+      onClick={() => handleDeleteEmployee(row.original.id)}
+      className="p-1 flex items-center bg-red-50 text-red-600 hover:bg-red-100 rounded-md"
+      title="Delete"
+    >
+      <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+      <span className="text-xs">Delete</span>
+    </button>
+  </div>
+)
       }
     ],
     []
@@ -1317,7 +1536,7 @@ const EmployeeManagement = () => {
               <button 
             className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             onClick={() => {
-              setShowAddForm(true);
+              setEmployeeTab('add');
               setIsCreating(false);
               setIsEditing(false);
               setShowEmployeeDetails(false);
@@ -1373,89 +1592,59 @@ const EmployeeManagement = () => {
     // Render the employee table
     return (
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table {...getTableProps()} className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
-                <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Employee
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Department
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-            {filteredEmployees.map(employee => (
-              <tr 
-                key={employee.id} 
-                className="hover:bg-gray-50 cursor-pointer"
-                onClick={() => {
-                  setSelectedEmployee(employee);
-                  setShowEmployeeDetails(true);
-                }}
-              >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                    <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                        {employee.first_name?.[0]}{employee.last_name?.[0]}
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                        {employee.first_name} {employee.last_name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {employee.job_title || 'No Title'}
-                      </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    employee.role === 'ADMIN' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {employee.role === 'ADMIN' ? 'Administrator' : employee.role === 'MANAGER' ? 'Manager' : 'Employee'}
-                  </span>
-                    </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {employee.department || 'Not Assigned'}
-                    </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div>{employee.email}</div>
-                  <div>{employee.phone_number || 'No Phone'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditEmployee(employee);
-                    }}
-                    className="text-indigo-600 hover:text-indigo-900 mr-3"
+                {headerGroups.map(headerGroup => (
+                  <tr {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map(column => (
+                      <th
+                        {...column.getHeaderProps(column.getSortByToggleProps())}
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Edit
-                      </button>
-                      <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteEmployee(employee.id);
-                    }}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
-                    </td>
+                        {column.render('Header')}
+                        <span>
+                          {column.isSorted
+                            ? column.isSortedDesc
+                              ? ' 🔽'
+                              : ' 🔼'
+                            : ''}
+                        </span>
+                      </th>
+                    ))}
                   </tr>
                 ))}
+              </thead>
+              <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
+                {page.map((row, i) => {
+                  prepareRow(row)
+                  return (
+                    <tr 
+                      {...row.getRowProps()} 
+                      className="hover:bg-gray-50 cursor-pointer"
+                      onClick={() => {
+                        setSelectedEmployee(row.original);
+                        setShowEmployeeDetails(true);
+                      }}
+                    >
+                      {row.cells.map(cell => {
+                        return (
+                          <td
+                            {...cell.getCellProps()}
+                            className="px-6 py-4 whitespace-nowrap"
+                            onClick={(e) => {
+                              // Prevent row click for action buttons
+                              if (cell.column.id === 'actions') {
+                                e.stopPropagation();
+                              }
+                            }}
+                          >
+                            {cell.render('Cell')}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -1464,10 +1653,11 @@ const EmployeeManagement = () => {
 
   // Employee details dialog component
   const renderEmployeeDetailsDialog = () => {
-    if (!selectedEmployee) return null;
+  // Only render if both selectedEmployee exists AND showEmployeeDetails is true
+  if (!selectedEmployee || !showEmployeeDetails) return null;
     
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-[55] flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto">
           <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 z-10">
             <div className="flex justify-between items-center">
@@ -1501,7 +1691,12 @@ const EmployeeManagement = () => {
                   
                   <div className="mt-4 w-full flex flex-col space-y-2">
                     <button
-                      onClick={() => handleEditEmployee(selectedEmployee)}
+                      onClick={() => {
+                        // First close the details dialog
+                        setShowEmployeeDetails(false);
+                        // Then edit the employee
+                        handleEditEmployee(selectedEmployee);
+                      }}
                       className="flex items-center justify-center w-full px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                       <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1540,14 +1735,60 @@ const EmployeeManagement = () => {
                     <span className="block text-sm font-medium text-gray-500">Department</span>
                     <span className="block mt-1">{selectedEmployee.department || 'Not assigned'}</span>
                   </div>
+                  
+                  <div>
+                    <span className="block text-sm font-medium text-gray-500">Management</span>
+                    <span className="block mt-1">
+                      {selectedEmployee.areManager ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                          </svg>
+                          Manager
+                        </span>
+                      ) : 'Not a manager'}
+                    </span>
+                  </div>
+                  
+                  {selectedEmployee.supervising && selectedEmployee.supervising.length > 0 && (
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Supervising</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {selectedEmployee.supervising.map(empId => {
+                          const supervisedEmp = employees.find(e => e.id === empId);
+                          return supervisedEmp ? (
+                            <span key={empId} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                              {supervisedEmp.first_name} {supervisedEmp.last_name}
+                            </span>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {employees.some(emp => emp.supervising && emp.supervising.includes(selectedEmployee.id)) && (
+                    <div>
+                      <span className="block text-sm font-medium text-gray-500">Reports to</span>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {employees
+                          .filter(emp => emp.supervising && emp.supervising.includes(selectedEmployee.id))
+                          .map(supervisor => (
+                            <span key={supervisor.id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                              {supervisor.first_name} {supervisor.last_name}
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <div>
                     <span className="block text-sm font-medium text-gray-500">Role</span>
                     <span className="block mt-1">
                       {selectedEmployee.role === 'ADMIN' || selectedEmployee.role === 'ADMN' 
                         ? 'Administrator' 
-                        : selectedEmployee.role === 'OWNER' || selectedEmployee.role === 'OWNR'
-                          ? 'Owner'
-                          : 'Employee'}
+                        : selectedEmployee.role === 'owner' || selectedEmployee.role === 'OWNR'
+                          ? 'owner'
+                          : 'employee'}
                     </span>
                   </div>
                   <div>
@@ -1642,6 +1883,11 @@ const EmployeeManagement = () => {
         return;
       }
       
+      // Ensure date_joined is set if not provided
+      if (!newEmployee.date_joined) {
+        newEmployee.date_joined = new Date().toISOString().split('T')[0];
+      }
+      
       // Try to refresh the user session first to ensure we have valid credentials
       await refreshUserSession();
       
@@ -1652,7 +1898,7 @@ const EmployeeManagement = () => {
         // Successfully created
         setEmployees([...employees, response]);
         setNewEmployee(initialEmployeeState);
-        setShowAddForm(false);
+        setEmployeeTab('list');
         notifySuccess('Employee created successfully!');
         
         // Refresh the employee list
@@ -1703,12 +1949,46 @@ const EmployeeManagement = () => {
   
   // Handle editing an existing employee
   const handleEditEmployee = (employee) => {
-    setNewEmployee(employee);
-    setSelectedEmployee(employee);
-    setIsEditing(true);
-    setShowEditForm(true);
-    setShowEmployeeDetails(false);
-  };
+  // Close any open dialogs first
+  setShowEmployeeDetails(false);
+  
+  // Reset any other state that might interfere
+  setSelectedEmployee(null);
+  
+  // Set up edit mode
+  setNewEmployee(employee);
+  setIsEditing(true);
+  setShowEditForm(true);
+  
+  // Log for debugging
+  logger.debug('[EmployeeManagement] Edit employee initiated:', employee.id);
+};
+
+  // Function to close the employee details dialog
+  const handleViewEmployeeDetails = (employee) => {
+  // Close any edit forms first
+  setShowEditForm(false);
+  setIsEditing(false);
+  
+  // Set up details view
+  setSelectedEmployee(employee);
+  setShowEmployeeDetails(true);
+  
+  // Log for debugging
+  logger.debug('[EmployeeManagement] View employee details initiated:', employee.id);
+};
+
+const handleCloseEmployeeDetails = () => {
+  if (showEditForm) {
+    setShowEditForm(false);
+  }
+  
+  setShowEmployeeDetails(false);
+  setSelectedEmployee(null);
+  
+  // Log for debugging
+  logger.debug('[EmployeeManagement] Employee details closed');
+};
   
   // Handle updating an employee
   const handleUpdateEmployee = async (e) => {
@@ -1727,12 +2007,90 @@ const EmployeeManagement = () => {
         return;
       }
       
+      // Create a clean copy of the employee data
+      const employeeData = { ...newEmployee };
+      
+      // Format date fields properly
+      if (employeeData.dob && typeof employeeData.dob === 'string') {
+        // Ensure date is in YYYY-MM-DD format
+        const dateObj = new Date(employeeData.dob);
+        if (!isNaN(dateObj.getTime())) {
+          employeeData.dob = dateObj.toISOString().split('T')[0];
+        }
+      }
+      
+      if (employeeData.date_joined && typeof employeeData.date_joined === 'string') {
+        // Ensure date is in YYYY-MM-DD format
+        const dateObj = new Date(employeeData.date_joined);
+        if (!isNaN(dateObj.getTime())) {
+          employeeData.date_joined = dateObj.toISOString().split('T')[0];
+        }
+      }
+      
+      if (employeeData.probation_end_date && typeof employeeData.probation_end_date === 'string') {
+        // Ensure date is in YYYY-MM-DD format
+        const dateObj = new Date(employeeData.probation_end_date);
+        if (!isNaN(dateObj.getTime())) {
+          employeeData.probation_end_date = dateObj.toISOString().split('T')[0];
+        }
+      }
+      
+      if (employeeData.termination_date && typeof employeeData.termination_date === 'string') {
+        // Ensure date is in YYYY-MM-DD format
+        const dateObj = new Date(employeeData.termination_date);
+        if (!isNaN(dateObj.getTime())) {
+          employeeData.termination_date = dateObj.toISOString().split('T')[0];
+        }
+      }
+      
+      if (employeeData.last_work_date && typeof employeeData.last_work_date === 'string') {
+        // Ensure date is in YYYY-MM-DD format
+        const dateObj = new Date(employeeData.last_work_date);
+        if (!isNaN(dateObj.getTime())) {
+          employeeData.last_work_date = dateObj.toISOString().split('T')[0];
+        }
+      }
+      
+      // Ensure numeric fields are properly formatted
+      if (employeeData.salary !== undefined && employeeData.salary !== null) {
+        employeeData.salary = Number(employeeData.salary);
+      }
+      
+      if (employeeData.wage_per_hour !== undefined && employeeData.wage_per_hour !== null) {
+        employeeData.wage_per_hour = Number(employeeData.wage_per_hour);
+      }
+      
+      if (employeeData.hours_per_day !== undefined && employeeData.hours_per_day !== null) {
+        employeeData.hours_per_day = Number(employeeData.hours_per_day);
+      }
+      
+      if (employeeData.days_per_week !== undefined && employeeData.days_per_week !== null) {
+        employeeData.days_per_week = Number(employeeData.days_per_week);
+      }
+      
+      if (employeeData.overtime_rate !== undefined && employeeData.overtime_rate !== null) {
+        employeeData.overtime_rate = Number(employeeData.overtime_rate);
+      }
+      
+      // Ensure boolean fields are properly formatted
+      employeeData.active = Boolean(employeeData.active);
+      employeeData.onboarded = Boolean(employeeData.onboarded);
+      employeeData.probation = Boolean(employeeData.probation);
+      employeeData.health_insurance_enrollment = Boolean(employeeData.health_insurance_enrollment);
+      employeeData.pension_enrollment = Boolean(employeeData.pension_enrollment);
+      employeeData.ID_verified = Boolean(employeeData.ID_verified);
+      employeeData.areManager = Boolean(employeeData.areManager);
+      
+      // Log the formatted data for debugging
+      logger.debug('[EmployeeManagement] Updating employee with formatted data:', 
+        JSON.stringify(employeeData, null, 2));
+      
       // Call API to update employee
-      const response = await employeeApi.update(newEmployee.id, newEmployee);
+      const response = await employeeApi.update(employeeData.id, employeeData);
       
       if (response && response.id) {
         // Successfully updated
-        setEmployees(employees.map(emp => emp.id === newEmployee.id ? response : emp));
+        setEmployees(employees.map(emp => emp.id === employeeData.id ? response : emp));
         setNewEmployee(initialEmployeeState);
         setShowEditForm(false);
         notifySuccess('Employee updated successfully!');
@@ -1744,7 +2102,32 @@ const EmployeeManagement = () => {
       }
     } catch (error) {
       logger.error('[EmployeeManagement] Error updating employee:', error);
-      setSubmitError(error.message || 'An unexpected error occurred while updating the employee');
+      
+      // Extract error message from response if available
+      let errorMessage = 'An unexpected error occurred while updating the employee';
+      if (error.response && error.response.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (typeof error.response.data === 'object') {
+          // Format validation errors from the API
+          const validationErrors = [];
+          Object.entries(error.response.data).forEach(([field, errors]) => {
+            if (Array.isArray(errors)) {
+              validationErrors.push(`${field}: ${errors.join(', ')}`);
+            } else {
+              validationErrors.push(`${field}: ${errors}`);
+            }
+          });
+          
+          if (validationErrors.length > 0) {
+            errorMessage = `Validation errors: ${validationErrors.join('; ')}`;
+          }
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -1804,238 +2187,686 @@ const EmployeeManagement = () => {
     }
   };
 
+  // Render the main content
   return (
-    <div>
-      {/* Authentication Status Handler */}
-      {!isAuthenticated && (
-        <div className="mb-6">
-          <Alert severity="error">
-            <div className="mb-2">
-              <Typography variant="h6" component="h2">
-                Authentication Required
-              </Typography>
-              <Typography variant="body1">
-                Your session has expired or is invalid. Please refresh your session to continue.
-              </Typography>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-4">
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={refreshSession}
-                disabled={loading}
-                startIcon={
-                  loading ? (
-                    <CircularProgress size="small" color="inherit" />
-                  ) : (
-                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  )
-                }
-              >
-                Refresh Session
-              </Button>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={redirectToLogin}
-              >
-                Log In Again
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      )}
-
-      {/* Page Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <Typography variant="h4" component="h1" className="mb-4 sm:mb-0">
-            Employee Management
+    <div className="p-6 bg-white shadow-sm rounded-lg">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+          <Typography variant="h4" component="h1" className="mb-2">
+            Employee Portal
           </Typography>
-          
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => {
-                setShowAddForm(true);
-                setIsCreating(false);
-                setIsEditing(false);
-                setShowEmployeeDetails(false);
-                setSelectedEmployee(null);
-              }}
-              startIcon={
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              }
-            >
-              Add Employee
-            </Button>
-          </div>
+          <Typography variant="body2" color="textSecondary">
+            Manage employees and personal information
+          </Typography>
         </div>
+
       </div>
 
-      {/* Connection Status Component */}
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setMainTab('personal')}
+            className={`${
+              mainTab === 'personal'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Personal Information
+          </button>
+          <button
+            onClick={() => {
+              setMainTab('add-employee');
+              setNewEmployee({
+                first_name: '',
+                last_name: '',
+                email: '',
+                phone: '',
+                department: '',
+                role: '',
+                hire_date: new Date().toISOString().split('T')[0],
+                employment_status: 'PENDING',
+                employee_type: 'FULL_TIME',
+                ID_verified: false,
+                areManager: false,
+                supervising: []
+              });
+            }}
+            className={`${
+              mainTab === 'add-employee'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            Add Employee
+          </button>
+          <button
+            onClick={() => setMainTab('list-employees')}
+            className={`${
+              mainTab === 'list-employees'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+          >
+            List Employees
+          </button>
+        </nav>
+      </div>
+
+      {/* Show connection errors with debug info */}
+      {error && (
+        <Alert severity="error" className="mb-4">
+          <div className="text-red-800">{error}</div>
+          
+          {/* Debug section - only visible in development */}
+          {process.env.NODE_ENV !== 'production' && (
+            <div className="mt-2 p-2 bg-gray-100 rounded text-xs">
+              <div className="font-bold">Debug Options:</div>
+              <div className="mt-1">
+                <button 
+                  onClick={refreshSession}
+                  className="px-2 py-1 mr-2 bg-green-100 hover:bg-green-200 rounded text-green-800"
+                >
+                  Refresh Session
+                </button>
+                
+                <button 
+                  onClick={() => fetch('/api/test-connection').then(r => r.json()).then(console.log)}
+                  className="px-2 py-1 bg-purple-100 hover:bg-purple-200 rounded text-purple-800"
+                >
+                  Test Connection
+                </button>
+              </div>
+            </div>
+          )}
+        </Alert>
+      )}
+
       {showConnectionChecker && (
-        <BackendConnectionCheck
+        <BackendConnectionCheck 
           onConnectionRestored={handleConnectionRestored}
-          onClose={() => setShowConnectionChecker(false)}
         />
       )}
-      
-      {/* Success Messages */}
-      {successMessage && (
-        <Alert severity="success" className="mb-4">
-          {successMessage}
-        </Alert>
-      )}
-      
-      {/* Fetch Errors */}
-      {fetchError && (
-        <div className="mb-4">
-          <Alert severity="error">
-            <div className="mb-2">
-              <Typography variant="body1">
-                {fetchError}
-              </Typography>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Button 
-                variant="contained" 
-                color="primary" 
-                size="small" 
-                onClick={fetchEmployees} 
-                startIcon={
-                  loading ? <CircularProgress size="small" color="inherit" /> : 
-                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                }
-              >
-                Retry Connection
-              </Button>
-              {fetchError.includes('Circuit breaker') && (
-                <Button
-                  variant="contained"
-                  color="error"
-                  size="small"
-                  onClick={resetCircuitBreaker}
-                  startIcon={
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  }
-                >
-                  Reset Circuit Breaker
-                </Button>
-              )}
-              <Button
-                variant="outlined"
-                color="primary"
-                size="small"
-                onClick={() => setShowConnectionChecker(true)}
-              >
-                Advanced Troubleshooting
-              </Button>
-            </div>
-          </Alert>
-        </div>
-      )}
-      
-      {/* Error Alerts in the main UI, for non-fetch errors */}
-      {error && !fetchError && (
-        <Alert severity="error" className="mb-4">
-          {error}
-          {error.includes('session has expired') ? (
-            <Button
-              variant="text" 
-              color="error" 
-              size="small"
-              onClick={redirectToLogin}
-              className="ml-2"
-            >
-              Log In Again
-            </Button>
-          ) : error.includes('Authentication error') ? (
-            <Button
-              variant="text" 
-              color="primary"
-              size="small"
-              onClick={refreshSession}
-              className="ml-2"
-            >
-              Refresh Session
-            </Button>
-          ) : null}
-        </Alert>
-      )}
-      
-      {/* Employee Form Dialogs */}
-      {showAddForm && !showEmployeeDetails && (
-        <EmployeeForm 
-          onSubmit={handleCreateEmployee}
+
+      {/* Tab Content */}
+      {mainTab === 'personal' ? (
+        <PersonalInformationTab />
+      ) : mainTab === 'add-employee' ? (
+        <EmployeeFormComponent 
+          onSubmit={handleCreateEmployee} 
           newEmployee={newEmployee}
           handleInputChange={handleInputChange}
           isLoading={isCreating}
           setNewEmployee={setNewEmployee}
-          setShowAddForm={setShowAddForm}
-          setShowEditForm={setShowEditForm}
+          setShowAddForm={setEmployeeTab}
+          employees={employees}
         />
-      )}
-      
-      {showEditForm && !showEmployeeDetails && (
-        <EmployeeForm 
-          isEdit={true} 
-          onSubmit={handleUpdateEmployee}
-          newEmployee={newEmployee}
-          handleInputChange={handleInputChange}
-          isLoading={isSubmitting}
-          setNewEmployee={setNewEmployee}
-          setShowAddForm={setShowAddForm}
-          setShowEditForm={setShowEditForm}
-        />
-      )}
-      
-      {/* Main Content */}
-      <Paper elevation={3} className="overflow-hidden mb-6">
-        {/* Search Bar */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative rounded-md shadow-sm">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+      ) : (
+        <>
+          {loading ? (
+            <div className="flex justify-center items-center py-10">
+              <CircularProgress size="large" color="primary" />
+              <span className="ml-3">Loading employees...</span>
             </div>
-            <input
-              type="text"
-              placeholder="Search employees by name, email, title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-10 pr-3 py-2 border-gray-300 rounded-md"
-            />
-            {searchQuery && (
-              <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
-                >
-                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
-                </button>
+          ) : (
+            renderEmployeesList()
+          )}
+
+          {showEditForm && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
+              <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto" style={{ marginLeft: '120px' }}>
+                <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4 flex justify-between items-center">
+                  <h3 className="text-lg font-medium text-white">Edit Employee</h3>
+                  <button
+                    onClick={() => {
+                      setShowEditForm(false);
+                      setIsEditing(false);
+                      // Ensure details dialog stays closed
+                      setShowEmployeeDetails(false);
+                      logger.debug('[EmployeeManagement] Edit form closed');
+                    }}
+                    className="text-white hover:text-blue-100"
+                    aria-label="Close"
+                  >
+                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                <EmployeeFormComponent 
+                  isEdit={true}
+                  onSubmit={handleUpdateEmployee} 
+                  newEmployee={newEmployee}
+                  handleInputChange={handleInputChange}
+                  isLoading={isSubmitting}
+                  setNewEmployee={setNewEmployee}
+                  setShowEditForm={setShowEditForm}
+                  employees={employees}
+                />
               </div>
+            </div>
+          )}
+
+          {renderEmployeeDetailsDialog()}
+        </>
+      )}
+    </div>
+  );
+};
+
+// Personal Information Tab Component
+const PersonalInformationTab = () => {
+  const [personalInfo, setPersonalInfo] = useState({
+    first_name: '',
+    last_name: '',
+    middle_name: '',
+    email: '',
+    phone_number: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'US',
+    dob: '',
+    gender: '',
+    marital_status: '',
+    payment_method: {
+      bank_name: '',
+      account_number: '',
+      account_number_confirm: '',
+      routing_number: '',
+      mobile_wallet_id: ''
+    },
+    emergency_contact: {
+      name: '',
+      relationship: '',
+      phone: ''
+    }
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Fetch personal information on component mount
+  useEffect(() => {
+    const fetchPersonalInfo = async () => {
+      try {
+        // Get tenant ID from context or cache
+        const tenantId = window.__APP_CACHE?.tenant?.currentTenantId || 
+                          window.getCacheValue?.('tenantId') || 
+                          localStorage.getItem('tenantId');
+        
+        // Try to get user data from multiple sources
+        let userData = null;
+        
+        // 1. First try the UserProfile API endpoint
+        try {
+          const url = tenantId 
+            ? `/api/user/profile?tenantId=${encodeURIComponent(tenantId)}`
+            : '/api/user/profile';
+            
+          console.log('Fetching user profile from API:', url);
+          const response = await fetch(url, { 
+            headers: { 
+              'Cache-Control': 'no-cache',
+              'X-Dashboard-Route': 'true'
+            }
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            if (result && result.profile) {
+              console.log('Successfully fetched user profile from API');
+              userData = {
+                first_name: result.profile.firstName || result.profile.first_name || '',
+                last_name: result.profile.lastName || result.profile.last_name || '',
+                email: result.profile.email || '',
+                // Use other fields if available
+                phone_number: result.profile.phoneNumber || result.profile.phone_number || '',
+                address: result.profile.street || result.profile.address || '',
+                city: result.profile.city || '',
+                state: result.profile.state || '',
+                zip_code: result.profile.postcode || result.profile.zip_code || '',
+                country: result.profile.country || 'US',
+              };
+            }
+          }
+        } catch (apiError) {
+          console.error('Error fetching from User Profile API:', apiError);
+        }
+        
+        // 2. If API fails, try to get data from AWS App Cache
+        if (!userData && window.__APP_CACHE?.userProfile?.data?.profile) {
+          console.log('Using App Cache for user profile data');
+          const cachedProfile = window.__APP_CACHE.userProfile.data.profile;
+          userData = {
+            first_name: cachedProfile.firstName || cachedProfile.first_name || '',
+            last_name: cachedProfile.lastName || cachedProfile.last_name || '',
+            email: cachedProfile.email || '',
+            phone_number: cachedProfile.phoneNumber || cachedProfile.phone_number || '',
+            address: cachedProfile.street || cachedProfile.address || '',
+            city: cachedProfile.city || '',
+            state: cachedProfile.state || '',
+            zip_code: cachedProfile.postcode || cachedProfile.zip_code || ''
+          };
+        }
+        
+        // 3. If both fail, try to get from Cognito attributes
+        if (!userData && window.fetchUserAttributes) {
+          try {
+            console.log('Fetching from Cognito attributes');
+            const userAttributes = await window.fetchUserAttributes();
+            userData = {
+              first_name: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
+              last_name: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
+              email: userAttributes['email'] || '',
+              phone_number: userAttributes['phone_number'] || ''
+            };
+          } catch (cognitoError) {
+            console.error('Error fetching from Cognito:', cognitoError);
+          }
+        }
+        
+        // If we couldn't get user data from any source, use empty defaults
+        if (!userData) {
+          console.log('No user data found, using defaults');
+          userData = {
+            first_name: '',
+            last_name: '',
+            email: '',
+          };
+        }
+        
+        // Set the personal information state with our user data
+        // Merge with existing state to keep empty fields for values we don't have
+        setPersonalInfo(prev => ({
+          ...prev,
+          ...userData,
+          // Keep nested objects with defaults
+          payment_method: prev.payment_method,
+          emergency_contact: prev.emergency_contact
+        }));
+      } catch (error) {
+        console.error('Error fetching personal information:', error);
+      }
+    };;
+    
+    fetchPersonalInfo();
+  }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setPersonalInfo(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setPersonalInfo(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    // Validate that account numbers match if we're editing and both fields have values
+    if (isEditing && personalInfo.accountNumber && personalInfo.accountNumberConfirmation) {
+      if (personalInfo.accountNumber !== personalInfo.accountNumberConfirmation) {
+        setAlertMessage({
+          type: 'error',
+          message: 'Account numbers do not match. Please verify and try again.'
+        });
+        return;
+      }
+    }
+    
+    setLoading(true);
+    
+    try {
+      // Prepare data for API submission
+      const paymentDetails = {};
+      
+      // Add data based on payment provider
+      if (personalInfo.paymentProvider === 'stripe') {
+        paymentDetails.bank_name = personalInfo.bankName;
+        
+        // Only include account details if they were modified
+        if (personalInfo.accountNumber && personalInfo.routingNumber) {
+          paymentDetails.account_number = personalInfo.accountNumber;
+          paymentDetails.routing_number = personalInfo.routingNumber;
+        }
+      } else if (personalInfo.paymentProvider === 'mpesa') {
+        paymentDetails.mpesa_phone_number = personalInfo.mpesaPhoneNumber;
+      } else if (personalInfo.paymentProvider === 'paypal') {
+        paymentDetails.paypal_email = personalInfo.paypalEmail;
+      }
+      
+      // Call the API to update employee payment method
+      const paymentResponse = await fetch(`/api/payments/employees/${employeeData.id}/payment-method/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          provider: personalInfo.paymentProvider,
+          details: paymentDetails
+        })
+      });
+      
+      const paymentResult = await paymentResponse.json();
+      
+      if (paymentResponse.ok) {
+        // Now update the rest of the personal information
+        // ... existing simulation code ...
+        
+        // Show success message with security note if using Stripe
+        if (paymentResult.secure_storage) {
+          setAlertMessage({
+            type: 'success',
+            message: 'Your information was saved successfully. For security, your full account details are stored securely with our payment processor and only the last 4 digits are stored in our system.'
+          });
+        } else {
+          setAlertMessage({
+            type: 'success',
+            message: 'Your information was saved successfully!'
+          });
+        }
+        
+        // Reset confirmation field and editing state
+        setPersonalInfo(prev => ({
+          ...prev,
+          accountNumberConfirmation: ''
+        }));
+        setIsEditing(false);
+      } else {
+        throw new Error(paymentResult.error || 'Failed to update payment information');
+      }
+    } catch (error) {
+      console.error("Error saving information:", error);
+      setAlertMessage({
+        type: 'error',
+        message: error.message || 'An error occurred while saving your information. Please try again.'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-lg">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Personal Information</h2>
+        {!isEditing ? (
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setIsEditing(true)}
+          >
+            Edit Information
+          </Button>
+        ) : (
+          <div className="flex space-x-2">
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => setIsEditing(false)}
+              disabled={isSaving}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {saveSuccess && (
+        <Alert severity="success" className="mb-4">
+          Your personal information has been updated successfully.
+        </Alert>
+      )}
+
+      {saveError && (
+        <Alert severity="error" className="mb-4">
+          {saveError}
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TextField
+            label="First Name"
+            name="first_name"
+            value={personalInfo.first_name}
+            onChange={handleInputChange}
+            required
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Last Name"
+            name="last_name"
+            value={personalInfo.last_name}
+            onChange={handleInputChange}
+            required
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Middle Name"
+            name="middle_name"
+            value={personalInfo.middle_name}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Email"
+            type="email"
+            name="email"
+            value={personalInfo.email}
+            onChange={handleInputChange}
+            required
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Phone Number"
+            type="tel"
+            name="phone_number"
+            value={personalInfo.phone_number}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Date of Birth"
+            type="date"
+            name="dob"
+            value={personalInfo.dob}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Gender"
+            name="gender"
+            value={personalInfo.gender}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Marital Status"
+            name="marital_status"
+            value={personalInfo.marital_status}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Address"
+            name="address"
+            value={personalInfo.address}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="City"
+            name="city"
+            value={personalInfo.city}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="State/Province"
+            name="state"
+            value={personalInfo.state}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="ZIP/Postal Code"
+            name="zip_code"
+            value={personalInfo.zip_code}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+          
+          <TextField
+            label="Country"
+            name="country"
+            value={personalInfo.country}
+            onChange={handleInputChange}
+            fullWidth
+            disabled={!isEditing}
+          />
+        </div>
+        
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">Payment Method</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TextField
+              label="Bank Name"
+              name="payment_method.bank_name"
+              value={personalInfo.payment_method.bank_name}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+            />
+            
+            <TextField
+              label="Account Number"
+              name="payment_method.account_number"
+              value={personalInfo.payment_method.account_number}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+              type={isEditing ? "text" : "password"}
+            />
+            
+            {isEditing && (
+              <TextField
+                label="Confirm Account Number"
+                name="payment_method.account_number_confirm"
+                value={personalInfo.payment_method.account_number_confirm}
+                onChange={handleInputChange}
+                fullWidth
+                required
+                error={personalInfo.payment_method.account_number !== personalInfo.payment_method.account_number_confirm}
+                helperText={personalInfo.payment_method.account_number !== personalInfo.payment_method.account_number_confirm ? "Account numbers don't match" : ""}
+                type="text"
+              />
+            )}
+            
+            <TextField
+              label="Routing Number"
+              name="payment_method.routing_number"
+              value={personalInfo.payment_method.routing_number}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+              type={isEditing ? "text" : "password"}
+            />
+            
+            {personalInfo.country === 'KE' && (
+              <TextField
+                label="M-Pesa Phone Number"
+                name="payment_method.mobile_wallet_id"
+                value={personalInfo.payment_method.mobile_wallet_id}
+                onChange={handleInputChange}
+                fullWidth
+                disabled={!isEditing}
+                placeholder="e.g., 07XXXXXXXX"
+              />
             )}
           </div>
         </div>
         
-        {/* Employees List */}
-        <div>
-          {renderEmployeesList()}
+        <div className="mt-8">
+          <h3 className="text-lg font-medium mb-4">Emergency Contact</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <TextField
+              label="Name"
+              name="emergency_contact.name"
+              value={personalInfo.emergency_contact.name}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+            />
+            
+            <TextField
+              label="Relationship"
+              name="emergency_contact.relationship"
+              value={personalInfo.emergency_contact.relationship}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+            />
+            
+            <TextField
+              label="Phone Number"
+              name="emergency_contact.phone"
+              value={personalInfo.emergency_contact.phone}
+              onChange={handleInputChange}
+              fullWidth
+              disabled={!isEditing}
+            />
+          </div>
         </div>
-      </Paper>
+      </form>
     </div>
   );
 };

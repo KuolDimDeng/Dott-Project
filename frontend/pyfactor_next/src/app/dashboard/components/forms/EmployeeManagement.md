@@ -1,5 +1,11 @@
 # Employee Management Component Documentation
 
+## Version History
+
+| Version | Date | Changes | Author |
+|---------|------|---------|--------|
+| 1.0 | 2023-11-28 | Fixed useMockMode reference error by replacing localStorage with AppCache | System |
+
 ## Overview
 The Employee Management component handles CRUD operations for employee data, including fetching, creating, updating, and deleting employees. The component interacts with the AWS RDS database through API endpoints.
 
@@ -102,4 +108,27 @@ The `normalizeEmployeeData` function was being used in the `fetchEmployeesData` 
 - Backend server runs on HTTP at 127.0.0.1:8000
 - SSL verification is disabled for local development
 - Uses tenant ID for Row-Level Security (RLS)
-- Direct API communication for HR operations rather than proxying through Next.js API routes 
+- Direct API communication for HR operations rather than proxying through Next.js API routes
+
+## Recent Changes
+
+### 2023-11-28: Fixed useMockMode reference error
+
+The component was previously using localStorage to store a flag indicating whether mock data should be used. This implementation
+had a bug where the `useMockMode` variable was being accessed but not properly defined, causing runtime errors.
+
+Changes made:
+- Replaced localStorage.getItem('use_mock_data') with a properly defined AppCache approach
+- Updated the toggleMockMode function to use AppCache instead of localStorage
+- Modified UI references to check AppCache instead of localStorage
+
+## Mock Mode Feature
+
+The mock mode feature allows testing the component without requiring backend connectivity. When enabled:
+- The component will fetch data from a local mock API endpoint instead of the real backend
+- This is useful for development and testing scenarios when the backend is not available
+
+## Usage
+
+The component is rendered in the dashboard area and provides an interface for HR management. It requires proper authentication
+and tenant context to function correctly. 

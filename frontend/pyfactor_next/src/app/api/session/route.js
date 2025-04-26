@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { verifyToken, decodeToken } from '@/utils/serverAuth';
+import { cookies } from 'next/headers';
 
 // Using our server-side auth utilities that don't rely on Amplify
 
@@ -12,7 +13,7 @@ import { verifyToken, decodeToken } from '@/utils/serverAuth';
 export async function POST(request) {
   try {
     // Verify token from request
-    const { token } = await request.json();
+    const { token, refreshToken } = await request.json();
     if (!token) {
       return new Response('No token provided', { status: 400 });
     }
@@ -35,7 +36,12 @@ export async function POST(request) {
     };
 
     response.cookies.set('idToken', token, cookieOptions);
-    response.cookies.set('accessToken', token, cookieOptions);
+    if (refreshToken) {
+      response.cookies.set('refreshToken', refreshToken, {
+        ...cookieOptions,
+        maxAge: 30 * 24 * 60 * 60, // 30 days for refresh token
+      });
+    }
 
     logger.debug('[Session] Session tokens set successfully');
     return response;
@@ -51,17 +57,38 @@ export async function POST(request) {
  */
 export async function GET(request) {
   try {
-    // Get tokens from request headers
-    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const idToken = request.headers.get('X-Id-Token');
-
-    if (!accessToken || !idToken) {
-      logger.error('[Session] No auth tokens in request headers');
+    const cookieStore = cookies();
+    
+    // Try to get tokens from cookies first
+    let idToken = cookieStore.get('idToken')?.value;
+    let refreshToken = cookieStore.get('refreshToken')?.value;
+    
+    // Fall back to headers if not in cookies
+    if (!idToken) {
+      idToken = request.headers.get('X-Id-Token');
+    }
+    
+    if (!idToken) {
+      logger.error('[Session] No ID token found');
       return new Response('No valid session', { status: 401 });
     }
 
     // Verify token with our server-side utility
-    const payload = await verifyToken(idToken);
+    let payload = await verifyToken(idToken);
+    
+    // If token is invalid but we have a refresh token, try to refresh
+    if (!payload && refreshToken) {
+      try {
+        // TODO: Implement token refresh logic here
+        // This would involve calling Cognito's token refresh endpoint
+        logger.debug('[Session] Attempting token refresh');
+        // For now, we'll just return 401 to trigger a re-login
+        return new Response('Session expired', { status: 401 });
+      } catch (refreshError) {
+        logger.error('[Session] Token refresh failed:', refreshError);
+        return new Response('Session expired', { status: 401 });
+      }
+    }
     
     // In development, be more lenient with token validation
     let decodedToken;
@@ -98,7 +125,7 @@ export async function GET(request) {
     };
 
     // Set refreshed session cookies
-    const response = NextResponse.json({ success: true, user });
+    const response = NextResponse.json({ user });
     const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -108,13 +135,17 @@ export async function GET(request) {
     };
 
     response.cookies.set('idToken', idToken, cookieOptions);
-    response.cookies.set('accessToken', accessToken, cookieOptions);
+    if (refreshToken) {
+      response.cookies.set('refreshToken', refreshToken, {
+        ...cookieOptions,
+        maxAge: 30 * 24 * 60 * 60, // 30 days for refresh token
+      });
+    }
 
-    logger.debug('[Session] Session tokens refreshed successfully');
     return response;
   } catch (error) {
-    logger.error('[Session] Failed to refresh session:', error);
-    return new Response('Failed to refresh session', { status: 401 });
+    logger.error('[Session] Session refresh failed:', error);
+    return new Response('Internal server error', { status: 500 });
   }
 }
 
@@ -125,9 +156,12 @@ export async function GET(request) {
 export async function DELETE() {
   try {
     const response = NextResponse.json({ success: true });
+    
+    // Clear all auth cookies
     response.cookies.delete('idToken');
+    response.cookies.delete('refreshToken');
     response.cookies.delete('accessToken');
-    logger.debug('[Session] Session tokens deleted successfully');
+    
     return response;
   } catch (error) {
     logger.error('[Session] Failed to delete session:', error);

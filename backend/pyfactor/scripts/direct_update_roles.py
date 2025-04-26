@@ -42,11 +42,11 @@ try:
         user_table = user_tables[0][0]
         print(f"Found user table: {user_table}")
         
-        # Update all users with role='EMPLOYEE' to role='OWNER'
+        # Update all users with role='employee' to role='owner'
         cursor.execute(f"""
             UPDATE {user_table} 
-            SET role='OWNER', occupation='OWNER' 
-            WHERE role='EMPLOYEE'
+            SET role='owner', occupation='owner' 
+            WHERE role='employee'
         """)
         
         rows_affected = cursor.rowcount
@@ -54,12 +54,12 @@ try:
         
         # Verify the changes
         cursor.execute(f"""
-            SELECT COUNT(*) FROM {user_table} WHERE role='OWNER'
+            SELECT COUNT(*) FROM {user_table} WHERE role='owner'
         """)
         owner_count = cursor.fetchone()[0]
         
         cursor.execute(f"""
-            SELECT COUNT(*) FROM {user_table} WHERE role='EMPLOYEE'
+            SELECT COUNT(*) FROM {user_table} WHERE role='employee'
         """)
         employee_count = cursor.fetchone()[0]
         

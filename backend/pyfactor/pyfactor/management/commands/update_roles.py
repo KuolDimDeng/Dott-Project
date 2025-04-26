@@ -6,17 +6,17 @@ class Command(BaseCommand):
     help = 'Update user roles from EMPLOYEE to OWNER'
 
     def handle(self, *args, **options):
-        users = User.objects.filter(role='EMPLOYEE')
+        users = User.objects.filter(role='employee')
         
-        self.stdout.write(f"Found {users.count()} users with role 'EMPLOYEE'")
+        self.stdout.write(f"Found {users.count()} users with role 'employee'")
         updated_count = 0
         
         for user in users:
             try:
                 self.stdout.write(f"Updating user: {user.email} from {user.role} to OWNER")
                 with transaction.atomic():
-                    user.role = 'OWNER'
-                    user.occupation = 'OWNER'
+                    user.role = 'owner'
+                    user.occupation = 'owner'
                     user.save(update_fields=['role', 'occupation'])
                     updated_count += 1
             except Exception as e:

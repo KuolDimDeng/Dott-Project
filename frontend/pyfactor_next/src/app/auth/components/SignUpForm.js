@@ -13,6 +13,19 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Password must be at least 8 characters and contain at least one number, one uppercase letter, and one special character
 const PASSWORD_REGEX = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
 
+/**
+ * Clear any existing session before showing the sign up form
+ */
+async function clearExistingSession() {
+  try {
+    await clearAllAuthData();
+    console.debug('[SignUp] Successfully cleared existing session');
+  } catch (error) {
+    console.error('[SignUp] Error clearing existing session:', error);
+    // Continue with sign up even if session clearing fails
+  }
+}
+
 export default function SignUpForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -29,21 +42,11 @@ export default function SignUpForm() {
   const [loading, setLoading] = useState(false);
   const [tenantId, setTenantId] = useState('');
 
-  // Define clearExistingSession function that can be called from both useEffect and handleSubmit
-  const clearExistingSession = async () => {
-    try {
-      logger.debug('[SignUpForm] Clearing any existing auth session');
-      await clearAllAuthData();
-    } catch (error) {
-      logger.error('[SignUpForm] Error clearing auth session:', error);
-    }
-  };
-
   // Add early in the component right after initial state setup
   useEffect(() => {
-    // Force clear any existing session when signup component loads
+    // Clear any existing session when the component mounts
     clearExistingSession();
-  }, []);
+  }, []); // Empty dependency array means this runs once on mount
 
   // Form validation function
   const validateForm = () => {
@@ -115,9 +118,6 @@ export default function SignUpForm() {
         hasFirstName: !!formData.firstName,
         hasLastName: !!formData.lastName
       });
-      
-      // Force clear any existing session before signup
-      await clearExistingSession();
       
       // Actual sign-up process
       const { isSignUpComplete, userId, nextStep } = await signUp({

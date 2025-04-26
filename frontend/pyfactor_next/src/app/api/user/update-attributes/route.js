@@ -74,8 +74,8 @@ export async function POST(request) {
       'custom:firstname',
       'custom:lastname',
       'custom:updated_at',
+      'custom:userrole',
       'custom:tenant_ID',
-      'custom:tenant_id',
       'custom:tenantId',
       'email',
       'family_name',
@@ -138,7 +138,7 @@ export async function POST(request) {
       
       // Set user role to OWNER if not specified
       if (!filteredAttributes['custom:userrole']) {
-        filteredAttributes['custom:userrole'] = 'OWNER';
+        filteredAttributes['custom:userrole'] = 'owner';
         logger.info('[API] Adding user role OWNER for completed onboarding');
       }
       

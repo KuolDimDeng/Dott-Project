@@ -13,8 +13,12 @@
  * Any changes require explicit approval from the project owner.
  */
 
+'use client';
+
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { logger } from '@/utils/logger';
 
 // SVG Icons for menu items
 const NavIcons = {
@@ -163,6 +167,8 @@ const MainListItems = ({
 
   // Check if we're on mobile/small screens
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const checkMobile = () => {
       isMobile.current = window.innerWidth < 640;
     };
@@ -192,26 +198,6 @@ const MainListItems = ({
       setButtonWidth(paperWidth - 40); // 16px for left and right margin
     }
   }, []);
-
-  const handleMenuToggle = (menuName) => {
-    // If in icon-only mode, always open the drawer first
-    if (isIconOnly && handleDrawerClose) {
-      handleDrawerClose();
-      return;
-    }
-    
-    setOpenMenu((prevOpenMenu) => (prevOpenMenu === menuName ? '' : menuName));
-    
-    // Add a setTimeout to allow the DOM to update before scrolling
-    setTimeout(() => {
-      // Find the clicked menu item
-      const menuItem = document.querySelector(`[data-menu-label="${menuName}"]`);
-      if (menuItem) {
-        // Scroll the menu item into view to ensure submenu is visible
-        menuItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
-  };
 
   const handleItemClick = useCallback((item, e) => {
     setOpenTooltip && setOpenTooltip(null);
@@ -287,6 +273,10 @@ const MainListItems = ({
 
   const handleMouseLeave = () => {
     setHoveredItem(null);
+  };
+
+  const handleMenuToggle = (menuName) => {
+    setOpenMenu(prevMenu => prevMenu === menuName ? '' : menuName);
   };
 
   const menuItems = [
@@ -670,6 +660,8 @@ const MainListItems = ({
 
   // Listen for navigation events from other components
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleNavigationChange = (event) => {
       const { item, navigationKey } = event.detail;
       
@@ -689,6 +681,8 @@ const MainListItems = ({
   
   // Listen for drawer state changes to reset menu state when drawer closes
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleDrawerStateChange = () => {
       // Close any open menus when drawer state changes
       if (isIconOnly) {
@@ -704,6 +698,52 @@ const MainListItems = ({
     };
   }, [isIconOnly]);
 
+  // Filter menuItems before rendering
+  const renderFilteredMenuItem = (item, index) => {
+    return (
+      <li
+        key={index}
+        className={`mb-2 ${isIconOnly ? '' : 'pr-3'}`}
+      >
+        <button
+          className={`flex items-center w-full rounded-md text-left ${
+            isIconOnly ? 'justify-center py-3 px-0' : 'px-4 py-2'
+          } ${
+            hoveredItem === item.label
+              ? 'text-white bg-blue-600 hover:bg-blue-700'
+              : 'text-gray-700 hover:bg-gray-100'
+          } transition-colors duration-150`}
+          onClick={(e) => {
+            if (item.subItems) {
+              handleMenuToggle(item.label);
+            } else if (item.onClick) {
+              item.onClick(e);
+            }
+          }}
+          onMouseEnter={() => handleMouseEnter(item.label)}
+          onMouseLeave={handleMouseLeave}
+        >
+          <span className={`${isIconOnly ? '' : 'mr-3'} flex items-center justify-center`}>
+            {item.icon}
+          </span>
+          {!isIconOnly && (
+            <span className="flex-1">{item.label}</span>
+          )}
+          {!isIconOnly && item.subItems && (
+            <span className="ml-2">
+              {openMenu === item.label ? (
+                <NavIcons.ChevronUp className="w-4 h-4" />
+              ) : (
+                <NavIcons.ChevronDown className="w-4 h-4" />
+              )}
+            </span>
+          )}
+        </button>
+        {item.subItems && renderSubMenu(item.subItems, item.label)}
+      </li>
+    );
+  };
+
   return (
     <div className="relative">
       <div
@@ -717,87 +757,8 @@ const MainListItems = ({
           style={{ width: isIconOnly ? '60px' : MENU_WIDTH + 'px' }}
         >
           <nav className="w-full" aria-label="Main Navigation">
-            <ul className="w-full space-y-0.5">
-              {/* Create New button - Only call handleShowCreateMenu */}
-              <li className={isIconOnly ? "px-[10px] py-2" : "px-3 py-2"}>
-                <button
-                  onClick={() => {
-                    console.log("Create New button clicked");
-                    // If in icon-only mode, also close the drawer
-                    if (isIconOnly && typeof handleDrawerClose === 'function') {
-                      handleDrawerClose();
-                    }
-                    // Call the external handleShowCreateMenu function to show the main menu
-                    if (typeof handleShowCreateMenu === 'function') {
-                      handleShowCreateMenu();
-                    } else {
-                      console.error("handleShowCreateMenu is not defined or not a function");
-                    }
-                  }}
-                  className={`
-                    flex items-center 
-                    ${isIconOnly ? 'justify-center w-10 h-10 p-0 mx-auto' : 'w-full text-left py-3 px-4'}
-                    bg-white text-primary-main font-medium
-                    rounded-lg transition-all duration-200 border border-gray-200
-                    hover:bg-blue-50 active:bg-blue-100
-                    shadow-sm hover:shadow-md
-                  `}
-                  title={isIconOnly ? "Create New" : undefined}
-                >
-                  <span className={`${isIconOnly ? '' : 'w-7'} text-primary-main flex items-center justify-center`}>
-                    <NavIcons.AddCircle className="w-5 h-5" />
-                  </span>
-                  {!isIconOnly && <span className="flex-1">Create New</span>}
-                  {!isIconOnly && (
-                    <svg className="w-4 h-4 ml-1 text-primary-main" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                  )}
-                </button>
-              </li>
-              
-              {/* Regular menu items - skip the first one (Create New) */}
-              {menuItems.slice(1).map((item, index) => (
-                <li key={index}>
-                  <button
-                    onClick={(event) => {
-                      if (isIconOnly) {
-                        handleDrawerClose();
-                      } else if (item.subItems) {
-                        handleMenuToggle(item.label);
-                      } else if (item.onClick) {
-                        handleItemClick(item.label, event);
-                      }
-                    }}
-                    onMouseEnter={() => handleMouseEnter(item.label)}
-                    onMouseLeave={handleMouseLeave}
-                    data-menu-label={item.label}
-                    className={`
-                      flex items-center ${isIconOnly ? 'justify-center' : 'w-full text-left'} 
-                      py-2 ${isIconOnly ? 'px-0 mx-auto' : 'px-4'}
-                      ${item.isSpecial 
-                        ? 'text-primary-main bg-blue-50 border-0 text-sm font-bold my-1' 
-                        : `text-primary-main ${hoveredItem === item.label ? 'bg-gray-100' : ''} hover:bg-gray-100`}
-                    `}
-                    title={isIconOnly ? item.label : undefined}
-                  >
-                    <span className={`${isIconOnly ? '' : 'w-7'} text-primary-main`}>{item.icon}</span>
-                    {!isIconOnly && (
-                      <>
-                        <span className={`flex-1 ${openMenu === item.label ? 'font-semibold' : ''}`}>
-                          {item.label}
-                        </span>
-                        {item.subItems && (
-                          openMenu === item.label 
-                            ? <NavIcons.ChevronUp className="w-4 h-4 text-primary-main" />
-                            : <NavIcons.ChevronDown className="w-4 h-4 text-primary-main" />
-                        )}
-                      </>
-                    )}
-                  </button>
-                  {!isIconOnly && item.subItems && renderSubMenu(item.subItems, item.label)}
-                </li>
-              ))}
+            <ul className="w-full space-y-0.5 px-3">
+              {menuItems.map((item, index) => renderFilteredMenuItem(item, index))}
             </ul>
           </nav>
         </div>

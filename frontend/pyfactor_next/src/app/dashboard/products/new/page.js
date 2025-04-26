@@ -1,5 +1,7 @@
 'use client';
 
+import withPageAccess from '../../components/withPageAccess';
+import { PAGE_ACCESS } from '@/utils/pageAccess';
 import { useState } from 'react';
 import ProductForm from '../components/ProductForm'; // Import from the new Tailwind component
 import { useRouter } from 'next/navigation';
@@ -102,7 +104,7 @@ function FallbackForm({ onSubmit }) {
   );
 }
 
-export default function NewProductPage() {
+function NewProductPage() {
   const router = useRouter();
   const [useStandardForm, setUseStandardForm] = useState(true);
   const [useFallbackForm, setUseFallbackForm] = useState(false);
@@ -441,3 +443,6 @@ export default function NewProductPage() {
     </div>
   );
 }
+
+// Wrap the component with page access control
+export default withPageAccess(NewProductPage, PAGE_ACCESS.PRODUCTS);

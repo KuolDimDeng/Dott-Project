@@ -62,7 +62,7 @@ export async function GET(request) {
       business_name: 'Demo Business',
       tenant_id: tenantId,
       database_name: `tenant_${tenantId.replace(/-/g, '_')}`,
-      role: 'OWNER',
+      role: 'owner',
       subscription_plan: 'FREE'
     };
     
@@ -99,7 +99,7 @@ export async function GET(request) {
       business_name: 'Mock Business',
       tenant_id: '18609ed2-1a46-4d50-bc4e-483d6e3405ff',
       database_name: 'tenant_18609ed2_1a46_4d50_bc4e_483d6e3405ff',
-      role: 'OWNER',
+      role: 'owner',
       subscription_plan: 'FREE',
       _proxied: true,
       _error: error.message

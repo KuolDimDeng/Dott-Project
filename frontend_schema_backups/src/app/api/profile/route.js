@@ -97,7 +97,7 @@ export async function GET(request) {
         is_onboarded: true,
         onboarding_status: 'COMPLETE',
         business_name: businessName || 'Demo Business',
-        role: 'OWNER',
+        role: 'owner',
         subscription_plan: 'FREE',
         /* RLS: tenant_id instead of schema_name */
     tenant_id: tenant.id // Using schema_name instead of database_name
@@ -154,7 +154,7 @@ export async function GET(request) {
       is_onboarded: true,
       onboarding_status: 'COMPLETE',
       business_name: businessName || 'Fallback Business',
-      role: 'OWNER',
+      role: 'owner',
       subscription_plan: 'FREE',
       /* RLS: tenant_id instead of schema_name */
     tenant_id: tenant.id,

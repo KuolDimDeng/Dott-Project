@@ -87,9 +87,17 @@ export function useSession() {
   const refreshFailuresRef = useRef(0);
   const lastRefreshAttemptRef = useRef(0);
   const refreshDebugCountRef = useRef(0);
+  const isMounted = useRef(true);
   // Track component's refresh timestamp
   const lastRefreshTimestampRef = useRef(Date.now());
   
+  // Add cleanup effect
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
   // Function to refresh the session
   const refreshSession = useCallback(async () => {
     // Check if we should throttle the refresh based on time since last attempt

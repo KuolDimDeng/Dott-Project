@@ -185,7 +185,7 @@ export async function POST(request) {
             VALUES (
               $1, $2, 'pbkdf2_sha256$placeholder', true, false, false, NOW(),
               'User', 'User', false, gen_random_uuid(),
-              false, 'OWNER', 'OWNER', $3
+              false, 'owner', 'owner', $3
             )
             ON CONFLICT (id) DO NOTHING;
           `;

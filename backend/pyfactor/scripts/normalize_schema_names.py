@@ -123,19 +123,19 @@ def update_tenant_schema_names():
 def update_user_roles():
     """Update user roles from EMPLOYEE to OWNER for all users that have the OWNER role in Cognito"""
     # Get all users with role EMPLOYEE
-    users = User.objects.filter(role='EMPLOYEE')
+    users = User.objects.filter(role='employee')
     
     updated_count = 0
     
-    print(f"Found {users.count()} users with role 'EMPLOYEE'")
+    print(f"Found {users.count()} users with role 'employee'")
     
     for user in users:
         try:
             with transaction.atomic():
                 if user.cognito_sub:
                     # Update the role to OWNER since Cognito has OWNER role
-                    user.role = 'OWNER'
-                    user.occupation = 'OWNER'
+                    user.role = 'owner'
+                    user.occupation = 'owner'
                     user.save(update_fields=['role', 'occupation'])
                     updated_count += 1
                     print(f"Updated user: {user.email} to role OWNER")

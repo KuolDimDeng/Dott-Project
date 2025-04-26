@@ -63,7 +63,7 @@ def check_users_without_schemas():
     issues = []
     
     # Get all owner users with tenant_id
-    users = User.objects.filter(role='OWNER', tenant_id__isnull=False)
+    users = User.objects.filter(role='owner', tenant_id__isnull=False)
     logger.info(f"Found {users.count()} owner users with tenant_id")
     
     for user in users:

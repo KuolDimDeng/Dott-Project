@@ -18,8 +18,7 @@ export const ONBOARDED_STATES = {
 };
 
 export const USER_ROLES = {
-  OWNER: 'owner',
-  ADMIN: 'admin'
+  OWNER: 'owner'
 };
 
 export const ACCOUNT_STATUSES = {

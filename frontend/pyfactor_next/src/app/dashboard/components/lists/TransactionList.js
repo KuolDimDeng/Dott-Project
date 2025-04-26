@@ -9,7 +9,7 @@ const TransactionList = () => {
     const fetchTransactions = async () => {
       try {
         const token = getCacheValue('token');
-        const response = await fetch('http://localhost:8000/api/transactions/', {
+        const response = await fetch('https://127.0.0.1:8000/api/transactions/', {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',

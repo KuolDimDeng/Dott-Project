@@ -78,7 +78,7 @@ class RegisterView(generics.CreateAPIView):
                     token = account_activation_token.make_token(user)
                     current_site = get_current_site(request)
                     confirmation_url = reverse('activate', kwargs={'uidb64': uid, 'token': token})
-                    confirmation_link = f'http://{current_site.domain}{confirmation_url}'
+                    confirmation_link = f'https://{current_site.domain}{confirmation_url}'
 
                     mail_subject = 'Activate your account'
                     message = render_to_string('email_activation.html', {
@@ -831,7 +831,7 @@ class SignupAPIView(APIView):
             # Validate required fields
             email = request.data.get('email')
             cognito_id = request.data.get('cognitoId')
-            user_role = request.data.get('userRole', 'OWNER')
+            user_role = request.data.get('userRole', 'owner')
             business_id = request.data.get('businessId') or request.data.get('custom:businessid')
 
             if not email or not cognito_id:
@@ -900,7 +900,7 @@ class SignupAPIView(APIView):
                 
                 if not tenant and should_create:
                     # Only OWNER users should create new tenants
-                    if user_role == 'OWNER':
+                    if user_role == 'owner':
                         try:
                             # Create new tenant with proper locking
                             tenant = create_tenant_schema_for_user(user)

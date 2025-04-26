@@ -50,6 +50,7 @@ const extractEssentialUserData = (user, attributes) => {
     attributes: {
       email: attributes.email,
       'custom:onboarding': attributes['custom:onboarding'],
+      'custom:userrole': attributes['custom:userrole'], // Include user role for menu access checks
       // Add other essential attributes as needed
     }
   };

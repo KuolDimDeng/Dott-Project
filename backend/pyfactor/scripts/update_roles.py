@@ -40,17 +40,17 @@ from custom_auth.models import User
 
 def update_user_roles():
     """Update user roles from EMPLOYEE to OWNER"""
-    users = User.objects.filter(role='EMPLOYEE')
+    users = User.objects.filter(role='employee')
     
-    print(f"Found {users.count()} users with role 'EMPLOYEE'")
+    print(f"Found {users.count()} users with role 'employee'")
     updated_count = 0
     
     for user in users:
         try:
             print(f"Updating user: {user.email} from {user.role} to OWNER")
             with transaction.atomic():
-                user.role = 'OWNER'
-                user.occupation = 'OWNER'
+                user.role = 'owner'
+                user.occupation = 'owner'
                 user.save(update_fields=['role', 'occupation'])
                 updated_count += 1
         except Exception as e:

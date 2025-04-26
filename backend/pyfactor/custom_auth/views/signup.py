@@ -53,7 +53,7 @@ class SignupView(APIView):
             # Validate required fields
             email = request.data.get('email')
             cognito_id = request.data.get('cognitoId')
-            user_role = request.data.get('userRole', 'OWNER')
+            user_role = request.data.get('userRole', 'owner')
             business_id = request.data.get('businessId') or request.data.get('custom:businessid')
 
             if not email or not cognito_id:
@@ -109,7 +109,7 @@ class SignupView(APIView):
                 business_name = request.data.get('business_name') or request.data.get('businessName')
                 
                 # Create or get tenant using our tenant management service
-                if user_role == 'OWNER':
+                if user_role == 'owner':
                     # Convert business_id to UUID if provided
                     tenant_id = None
                     if business_id:

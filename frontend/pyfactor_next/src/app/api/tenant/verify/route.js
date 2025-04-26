@@ -91,7 +91,7 @@ export async function GET(request) {
     });
     
     // Make request to Django backend for full verification
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     const response = await fetch(`${backendUrl}/api/tenant/verify/`, {
       method: 'POST',
       headers: {

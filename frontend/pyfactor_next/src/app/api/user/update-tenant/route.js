@@ -136,46 +136,36 @@ export async function POST(request) {
         };
         
         // Use Next.js API to update Cognito attributes
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'http://localhost:8000';
-        const updateResponse = await fetch(`${API_URL}/api/user/attributes`, {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+        const updateResponse = await fetch(`${API_URL}/update-user-attributes`, {
           method: 'POST',
-          headers,
+          headers: headers,
           body: JSON.stringify(attributesToUpdate)
         });
         
-        if (!updateResponse.ok) {
-          const error = await updateResponse.text();
+        if (updateResponse.ok) {
+          logger.info('[API:UpdateTenant] Cognito attributes updated successfully');
+        } else {
           logger.error('[API:UpdateTenant] Failed to update Cognito attributes', {
             status: updateResponse.status,
-            error
+            statusText: updateResponse.statusText
           });
-        } else {
-          logger.info('[API:UpdateTenant] Successfully updated Cognito attributes', attributesToUpdate);
         }
       } catch (error) {
         logger.error('[API:UpdateTenant] Error updating Cognito attributes', {
           error: error.message
         });
-        // Continue even if Cognito update fails
       }
-    } else {
-      logger.debug('[API:UpdateTenant] No Cognito attribute update needed');
     }
     
     return response;
   } catch (error) {
     logger.error('[API:UpdateTenant] Error processing request', {
-      error: error.message,
-      stack: error.stack
+      error: error.message
     });
-    
     return NextResponse.json(
-      { 
-        success: false,
-        error: 'Failed to update tenant ID',
-        message: error.message
-      },
+      { error: 'An error occurred' },
       { status: 500 }
     );
   }
-} 
+}

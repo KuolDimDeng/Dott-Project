@@ -1,10 +1,12 @@
 'use client';
 
+import withPageAccess from '../../components/withPageAccess';
+import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import ProductForm from '../../components/ProductForm';
 import { useParams } from 'next/navigation';
 
-export default function EditProductPage() {
+function EditProductPage() {
   const params = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,3 +60,6 @@ export default function EditProductPage() {
     </div>
   );
 }
+
+// Wrap the component with page access control
+export default withPageAccess(EditProductPage, PAGE_ACCESS.PRODUCTS);

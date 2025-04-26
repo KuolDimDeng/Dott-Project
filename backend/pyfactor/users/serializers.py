@@ -1,7 +1,7 @@
 import uuid
 from rest_framework import serializers
 from django_countries.serializers import CountryFieldMixin
-from .models import UserProfile, User, Business
+from .models import UserProfile, User, Business, UserMenuPrivilege
 from .serializer_helpers import BusinessProfileSerializer
 from pyfactor.logging_config import get_logger
 
@@ -127,3 +127,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
         except Exception as e:
             logger.error(f"Error serializing profile {instance.id}: {str(e)}")
             raise serializers.ValidationError(f"Failed to serialize profile data: {str(e)}")
+
+class UserMenuPrivilegeSerializer(serializers.ModelSerializer):
+    business_member_id = serializers.UUIDField(source='business_member.id', read_only=True)
+    user_id = serializers.UUIDField(source='business_member.user.id', read_only=True)
+    user_email = serializers.EmailField(source='business_member.user.email', read_only=True)
+    user_full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserMenuPrivilege
+        fields = ['id', 'business_member_id', 'user_id', 'user_email', 'user_full_name', 'menu_items', 'created_at', 'updated_at']
+    
+    def get_user_full_name(self, obj):
+        """Get the full name of the user"""
+        user = obj.business_member.user
+        if user.first_name or user.last_name:
+            return f"{user.first_name} {user.last_name}".strip()
+        return user.email

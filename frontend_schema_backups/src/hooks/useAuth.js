@@ -18,7 +18,7 @@ const signUp = async (userData) => {
           family_name: userData.lastName || '',
           'custom:onboarding': 'NOT_STARTED',
           'custom:setupdone': 'FALSE',
-          'custom:userrole': 'OWNER',
+          'custom:userrole': 'owner',
           'custom:created_at': new Date().toISOString()
         },
         autoSignIn: {
@@ -366,7 +366,7 @@ const handleConfirmSignUp = useCallback(async (email, code) => {
       const userData = {
         email: email,
         cognitoId: result.userId,
-        userRole: 'OWNER',
+        userRole: 'owner',
         is_already_verified: true  // Add this flag to indicate no need for another verification code
       };
       

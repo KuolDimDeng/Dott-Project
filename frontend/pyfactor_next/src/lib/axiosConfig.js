@@ -5,11 +5,16 @@ import axios from 'axios';
 import { logger } from '@/utils/logger';
 import https from 'https';
 
-// Always use HTTPS for backend connections to avoid CORS issues
+// Always use HTTPS for backend connections to avoid redirect issues
 const PROTOCOL = 'https';
 
 // Use the current origin as the base URL unless defined
-const BASE_URL = typeof window !== 'undefined' ? window.location.origin : process.env.NEXT_PUBLIC_API_URL || `${PROTOCOL}://127.0.0.1:3000`;
+// Ensure the URL always uses HTTPS
+const BASE_URL = typeof window !== 'undefined' 
+  ? (window.location.protocol === 'https:' 
+      ? window.location.origin 
+      : window.location.origin.replace('http:', 'https:'))
+  : process.env.NEXT_PUBLIC_API_URL || `${PROTOCOL}://127.0.0.1:3000`;
 const BACKEND_API_URL = process.env.BACKEND_API_URL || `${PROTOCOL}://127.0.0.1:8000`;
 
 // Create main axios instance for API calls
@@ -18,7 +23,9 @@ const axiosInstance = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  // Never follow redirects - fail fast instead to avoid losing auth headers
+  maxRedirects: 0
 });
 
 // Create server-side axios instance with SSL verification disabled for local development
@@ -43,367 +50,186 @@ const backendHrApiInstance = axios.create({
     // Explicitly include standard CORS headers
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Tenant-ID'
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Tenant-ID, X-Business-ID, X-Schema-Name'
   },
-  // For HTTPS in local development, disable SSL verification
-  // For HTTP, disable proxy to avoid interference
-  ...(PROTOCOL === 'https' && process.env.NODE_ENV !== 'production' ? {
-    httpsAgent: new https.Agent({ rejectUnauthorized: false })
-  } : {
-    proxy: false
-  }),
+  // Enhanced SSL configuration for local development
+  ...(process.env.NODE_ENV !== 'production' ? {
+    httpsAgent: new https.Agent({ 
+      rejectUnauthorized: false, // Disable SSL verification in development
+      requestCert: false,
+      secureProtocol: 'TLSv1_2_method'
+    }),
+    proxy: false // Disable proxy to avoid interference
+  } : {}),
   // Add specific settings to improve reliability of connections 
   maxRedirects: 5,
   maxContentLength: 50 * 1024 * 1024, // 50MB
   validateStatus: function (status) {
-    return status >= 200 && status < 500; // Only reject if status is 5xx (server errors)
+    // Let 401 and 403 errors be handled by the interceptor
+    return (status >= 200 && status < 300) || status === 401 || status === 403;
   },
   // Add automatic retry configuration
   retry: 3,
   retryDelay: 1000,
   // Prevent request abortion on navigation
   cancelToken: undefined,
-  signal: undefined
+  signal: undefined,
+  // Cookie handling for sessions
+  withCredentials: true
+});
+
+// Log the configuration for debugging
+console.log('[AxiosConfig] BackendHrApiInstance configuration:', {
+  baseURL: backendHrApiInstance.defaults.baseURL,
+  timeout: backendHrApiInstance.defaults.timeout,
+  httpAgent: !!backendHrApiInstance.defaults.httpAgent,
+  httpsAgent: !!backendHrApiInstance.defaults.httpsAgent,
+  rejectUnauthorized: backendHrApiInstance.defaults.httpsAgent?.options?.rejectUnauthorized ?? 'N/A'
 });
 
 // Add request interceptor to backendHrApiInstance for authentication and circuit breaking
-backendHrApiInstance.interceptors.request.use(
-  async (config) => {
-    try {
-      // Check if we're in a browser environment
-      const isBrowser = typeof window !== 'undefined';
-      
-      if (isBrowser) {
-        try {
-          // Dynamically import client-side only modules
-          const { getTenantId } = await import('@/utils/tenantUtils');
-          const { fetchAuthSession } = await import('aws-amplify/auth');
-          
-          // Use AWS AppCache for tenant ID - prioritize this over other sources
-          if (window.__APP_CACHE?.tenant?.id) {
-            const cachedTenantId = window.__APP_CACHE.tenant.id;
-            config.headers = {
-              ...config.headers,
-              'X-Tenant-ID': cachedTenantId
-            };
-            logger.debug('[AxiosConfig] Using tenant ID from APP_CACHE for HR API');
-          } else {
-            // Fall back to utilities function which will try other sources
-            const tenantId = await getTenantId();
-            if (tenantId) {
-              config.headers = {
-                ...config.headers,
-                'X-Tenant-ID': tenantId
-              };
-            }
-          }
-          
-          // Use AWS AppCache for auth tokens if available
-          if (window.__APP_CACHE?.auth?.token) {
-            config.headers.Authorization = `Bearer ${window.__APP_CACHE.auth.token}`;
-            logger.debug('[AxiosConfig] Using auth token from APP_CACHE for HR API');
-          } else {
-            // Fall back to Amplify Auth
-            try {
-              const session = await fetchAuthSession();
-              if (session?.tokens?.accessToken) {
-                config.headers.Authorization = `Bearer ${session.tokens.accessToken.toString()}`;
-              }
-            } catch (authError) {
-              logger.warn('[AxiosConfig] Auth session error for HR API:', authError.message);
-            }
-          }
-        } catch (importError) {
-          logger.warn('[AxiosConfig] Import error in HR API request interceptor:', importError.message);
-        }
-      }
-      
-      // Add CORS headers for direct backend communication
-      config.headers = {
-        ...config.headers,
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Origin, Content-Type, Accept, Authorization, X-Tenant-ID'
-      };
-      
-      // Circuit breaker pattern - reuse the same implementation from axiosInstance
-      const url = config.url?.split('?')[0] || '';
-      const cb = getCircuitBreaker(url);
-      
-      if (!cb.canRequest()) {
-        logger.warn(`[AxiosConfig] Circuit breaker open for HR API ${url}, rejecting request`);
-        return Promise.reject(new Error(`Circuit breaker open for ${url}`));
-      }
-      
-      // Track this request
-      cb.recordRequest();
-      config._circuitBreakerHandled = true;
-      
-      return config;
-    } catch (error) {
-      logger.error('[AxiosConfig] Error in HR API request interceptor:', error);
-      return Promise.reject(error);
-    }
-  },
-  (error) => {
-    logger.error('[AxiosConfig] HR API Request interceptor error:', error);
-    return Promise.reject(error);
-  }
-);
-
-// Add response interceptor to backendHrApiInstance for error handling and circuit breaking
-backendHrApiInstance.interceptors.response.use(
-  (response) => {
-    // Handle circuit breaker if this request was handled by it
-    if (response.config._circuitBreakerHandled) {
-      const url = response.config.url?.split('?')[0] || '';
-      const cb = getCircuitBreaker(url);
-      cb.recordSuccess();
-    }
-    
-    return response;
-  },
-  async (error) => {
-    // Basic error logging
-    const errorMessage = error.response ? 
-      `Error ${error.response.status}: ${error.response.statusText}` : 
-      `Network Error: ${error.message}`;
-    
-    logger.error(`[AxiosConfig] HR API Response error: ${errorMessage}`, error);
-    
-    // Handle circuit breaker if this request was handled by it
-    if (error.config && error.config._circuitBreakerHandled) {
-      const url = error.config.url?.split('?')[0] || '';
-      const cb = getCircuitBreaker(url);
-      cb.recordFailure();
-    }
-    
-    // Implement automatic retry for network-related errors
-    const config = error.config;
-    
-    // Initialize retry count if not already present
-    if (!config._retryCount) {
-      config._retryCount = 0;
-    }
-    
-    // Get max retries from config or use default
-    const maxRetries = config.retry || 3;
-    
-    // Check if we should retry this request
-    const shouldRetry = (
-      config._retryCount < maxRetries && 
-      (
-        // Network error or timeout
-        error.code === 'ECONNABORTED' || 
-        error.message?.includes('timeout') ||
-        error.message?.includes('Network Error') ||
-        error.message?.includes('aborted') ||
-        // Server errors (5xx)
-        (error.response && error.response.status >= 500 && error.response.status < 600)
-      )
-    );
-    
-    if (shouldRetry) {
-      config._retryCount += 1;
-      logger.info(`[AxiosConfig] Retrying HR API request (${config._retryCount}/${maxRetries}): ${config.url}`);
-      
-      // Clear any potential abort controllers or signals
-      delete config.cancelToken;
-      delete config.signal;
-      
-      // Increase timeout for subsequent retries
-      config.timeout = config.timeout * 1.5;
-      
-      // Wait before retrying - use exponential backoff
-      const delay = config.retryDelay || 1000;
-      const backoff = delay * Math.pow(2, config._retryCount - 1);
-      
-      await new Promise(resolve => setTimeout(resolve, backoff));
-      
-      // Retry the request
-      return backendHrApiInstance(config);
-    }
-    
-    // Handle specific error cases for HR API
-    if (error.response) {
-      // Handle HTTP errors
-      if (error.response.status === 401) {
-        // Authentication error - try to refresh token
-        try {
-          return await refreshTokenAndRetry(error.config);
-        } catch (refreshError) {
-          logger.error('[AxiosConfig] Failed to refresh token for HR API:', refreshError);
-          return Promise.reject(error);
-        }
-      } else if (error.response.status === 403) {
-        // Permission error - be more specific about tenant access
-        logger.warn('[AxiosConfig] Permission denied access to HR API. Check tenant ID configuration.');
-        return Promise.reject(new Error('Permission denied. Please verify you have access to this tenant\'s employee data.'));
-      }
-    }
-    
-    return Promise.reject(error);
-  }
-);
-
-// Export axiosInstance as the default export
-export default axiosInstance;
-
-// Export named instances for specific use cases
-export { 
-  axiosInstance,
-  serverAxiosInstance,
-  backendHrApiInstance,
-  refreshTokenAndRetry,
-  retryRequest,
-  testStandardTimeout,
-  testEnhancedTimeout,
-  testRetryMechanism,
-  initAxiosDebug,
-  useApi,
-  resetCircuitBreakers,
-  diagnoseConnection,
-  verifyBackendConnection,
-  diagnoseAndFixBackendConnection
-};
-
-// Token refresh function
-const refreshTokenAndRetry = async (config) => {
+backendHrApiInstance.interceptors.request.use(async (config) => {
   try {
-    // Get fresh tokens
-    const session = await fetchAuthSession();
-    if (!session?.tokens?.accessToken) {
-      throw new Error('No access token in session');
-    }
-    
-    const token = session.tokens.accessToken.toString();
-    
-    // Store the new token in APP_CACHE for future requests
-    if (typeof window !== 'undefined' && window.__APP_CACHE) {
-      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-      window.__APP_CACHE.auth.token = token;
-      window.__APP_CACHE.auth.provider = 'cognito';
-      logger.debug('[AxiosConfig] Updated access token in APP_CACHE');
-    }
-    
-    // Create new config with fresh token
-    const newConfig = {
-      ...config,
-      headers: {
-        ...config.headers,
-        Authorization: `Bearer ${token}`
+    // Get tenant ID from APP_CACHE if available
+    let tenantId = null;
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
+      tenantId = window.__APP_CACHE.tenant.id;
+      logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for HR API: ${tenantId}`);
+    } else {
+      // Try to get tenant ID from Cognito if needed
+      try {
+        const { getTenantId } = await import('@/utils/tenantUtils');
+        tenantId = await getTenantId();
+      } catch (e) {
+        logger.warn('[AxiosConfig] Could not load tenant ID:', e?.message);
       }
-    };
-    
-    // Add tenant headers if available
-    const tenantId = getTenantId();
-    if (tenantId) {
-      newConfig.headers = {
-        ...newConfig.headers,
-        'X-Tenant-ID': tenantId
-      };
     }
     
-    // Retry with the new token
-    logger.info('[AxiosConfig] Retrying request with fresh access token');
-    return backendHrApiInstance(newConfig);
-  } catch (error) {
-    logger.error('[AxiosConfig] Token refresh failed:', error);
-    throw error;
-  }
-};
+    // Initialize headers if not present
+    config.headers = config.headers || {};
+    
+    // Standardize tenant headers - use only backend-expected format
+    if (tenantId) {
+      // Only include the standard tenant header format to avoid CORS issues
+      config.headers['X-Tenant-ID'] = tenantId;
+      
+      // Add tenant ID as query parameter as fallback
+      if (!config.params) config.params = {};
+      config.params.tenantId = tenantId;
+    }
+    
+    // Get auth token from APP_CACHE if available
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token) {
+      const token = window.__APP_CACHE.auth.token;
+      if (token) {
+        logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for HR API`);
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
 
-// Circuit breaker implementation
+    return config;
+  } catch (error) {
+    logger.error('[AxiosConfig] Error in HR API request interceptor:', error);
+    return config;
+  }
+});
+
+// Circuit breaker implementation to prevent repeated failed requests
 const circuitBreakers = {};
 
+// Simple circuit breaker implementation
 class CircuitBreaker {
-  constructor(name, options = {}) {
+  constructor(name) {
     this.name = name;
-    this.failureThreshold = options.failureThreshold || 5; // Increased from 3 to 5
-    this.resetTimeout = options.resetTimeout || 15000; // Decreased from 30s to 15s
-    this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
+    this.state = 'CLOSED'; // CLOSED (normal), OPEN (blocking requests), HALF_OPEN (testing)
     this.failureCount = 0;
+    this.successCount = 0;
     this.lastFailureTime = null;
-    this.pendingRequests = 0;
-    this.maxPendingRequests = options.maxPendingRequests || 10; // Increased from 5 to 10
+    this.failureThreshold = 5;
+    this.successThreshold = 2;
+    this.resetTimeout = 30000; // 30 seconds
+    this.requestCount = 0;
   }
-  
+
   canRequest() {
-    const now = Date.now();
-    
-    // Check if too many requests are already pending for this endpoint
-    if (this.pendingRequests >= this.maxPendingRequests) {
-      logger.warn(`[CircuitBreaker] Too many pending requests (${this.pendingRequests}) for ${this.name}`);
-      return false;
+    if (this.state === 'CLOSED') {
+      return true;
     }
     
     if (this.state === 'OPEN') {
-      // Check if the circuit has been open long enough to try again
-      if (now - this.lastFailureTime > this.resetTimeout) {
+      const now = Date.now();
+      if (this.lastFailureTime && (now - this.lastFailureTime) > this.resetTimeout) {
+        // Try again after timeout
         this.state = 'HALF_OPEN';
-        logger.info(`[CircuitBreaker] ${this.name} state changed from OPEN to HALF_OPEN`);
+        logger.info(`[CircuitBreaker] ${this.name} is now HALF_OPEN`);
         return true;
       }
       return false;
     }
     
+    // HALF_OPEN - allow limited requests to test if service is back
     return true;
   }
-  
+
   recordRequest() {
-    this.pendingRequests++;
+    this.requestCount++;
   }
-  
+
   recordSuccess() {
-    this.pendingRequests = Math.max(0, this.pendingRequests - 1);
-    
     if (this.state === 'HALF_OPEN') {
-      this.failureCount = 0;
-      this.state = 'CLOSED';
-      logger.info(`[CircuitBreaker] ${this.name} state changed from HALF_OPEN to CLOSED`);
+      this.successCount++;
+      if (this.successCount >= this.successThreshold) {
+        this.reset();
+        logger.info(`[CircuitBreaker] ${this.name} is now CLOSED (service recovered)`);
+      }
     }
+    // Always reset failure count on success
+    this.failureCount = 0;
   }
-  
+
   recordFailure() {
-    this.pendingRequests = Math.max(0, this.pendingRequests - 1);
     this.failureCount++;
     this.lastFailureTime = Date.now();
     
     if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
       this.state = 'OPEN';
-      logger.warn(`[CircuitBreaker] ${this.name} state changed from CLOSED to OPEN after ${this.failureCount} failures`);
+      logger.warn(`[CircuitBreaker] ${this.name} is now OPEN (too many failures)`);
     } else if (this.state === 'HALF_OPEN') {
       this.state = 'OPEN';
-      logger.warn(`[CircuitBreaker] ${this.name} state changed from HALF_OPEN to OPEN after test request failed`);
+      this.successCount = 0;
+      logger.warn(`[CircuitBreaker] ${this.name} is now OPEN (failed while testing)`);
     }
   }
-  
+
   reset() {
     this.state = 'CLOSED';
     this.failureCount = 0;
+    this.successCount = 0;
     this.lastFailureTime = null;
-    this.pendingRequests = 0;
-    logger.info(`[CircuitBreaker] ${this.name} has been manually reset to CLOSED state`);
-    return true;
   }
 }
 
 // Get or create a circuit breaker for an endpoint
 const getCircuitBreaker = (endpoint) => {
-  const key = endpoint.split('?')[0]; // Ignore query params for circuit breaking
-  
-  if (!circuitBreakers[key]) {
-    circuitBreakers[key] = new CircuitBreaker(key);
+  if (!endpoint) {
+    endpoint = 'default';
   }
   
-  return circuitBreakers[key];
+  if (!circuitBreakers[endpoint]) {
+    circuitBreakers[endpoint] = new CircuitBreaker(endpoint);
+  }
+  
+  return circuitBreakers[endpoint];
 };
 
-// Reset all circuit breakers or a specific one
-const resetCircuitBreakers = (specificEndpoint = null) => {
-  if (specificEndpoint) {
-    const cb = getCircuitBreaker(specificEndpoint);
-    return cb.reset();
+// Define circuit breaker reset function
+const resetCircuitBreakers = (endpoint = null) => {
+  if (endpoint) {
+    // Reset specific endpoint
+    const cb = getCircuitBreaker(endpoint);
+    cb.reset();
+    logger.info(`[CircuitBreaker] Circuit breaker for ${endpoint} has been reset`);
+    return true;
   } else {
     // Reset all circuit breakers
     Object.keys(circuitBreakers).forEach(key => {
@@ -417,10 +243,15 @@ const resetCircuitBreakers = (specificEndpoint = null) => {
 // Reset the employees endpoint circuit breaker
 resetCircuitBreakers('/employees');
 
-// Request interceptor to add authorization token
+// Modify request interceptor to ensure we're only making HTTPS requests
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
+      // For absolute URLs, ensure HTTPS
+      if (config.url && config.url.startsWith('http:')) {
+        config.url = config.url.replace('http:', 'https:');
+      }
+      
       // Check if we're in a browser environment
       const isBrowser = typeof window !== 'undefined';
       
@@ -673,32 +504,32 @@ enhancedAxiosInstance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Simple retry mechanism
+// Retry a request with exponential backoff
 const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
   let lastError;
-  
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await requestFn();
     } catch (error) {
       lastError = error;
-      
-      // Don't retry 4xx client errors except timeout/abort
-      if (error.response && error.response.status >= 400 && error.response.status < 500 && 
-          error.code !== 'ECONNABORTED') {
+      // Don't retry on 4xx client errors (except 429 too many requests)
+      if (error.response && error.response.status >= 400 && error.response.status < 500 
+          && error.response.status !== 429) {
         throw error;
       }
       
-      // If this was the last attempt, throw the error
+      // Last attempt failed, throw
       if (attempt === maxRetries) {
         throw error;
       }
       
-      // Wait before trying again with exponential backoff
-      await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, attempt)));
+      // Calculate delay with exponential backoff
+      const backoffDelay = delay * Math.pow(2, attempt);
+      
+      // Wait before next attempt
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
     }
   }
-  
   throw lastError;
 };
 
@@ -852,7 +683,8 @@ const verifyBackendConnection = async () => {
           tenantId = await getTenantIdFromCognito();
           logger.debug(`[BackendConnectionCheck] Using tenant ID from Cognito: ${tenantId}`);
         } catch (error) {
-          logger.warn('[BackendConnectionCheck] Could not get tenant ID from Cognito:', error);
+          logger.warn('[BackendConnectionCheck] Could not get tenant ID from Cognito:', 
+            error?.message || 'Unknown error');
         }
       }
     }
@@ -886,7 +718,17 @@ const verifyBackendConnection = async () => {
       // If 403, we need to try with tenant ID
       logger.info(`[BackendConnectionCheck] Basic health check returned ${basicResponse.status}, trying with tenant ID...`);
     } catch (basicError) {
-      logger.warn('[BackendConnectionCheck] Basic health check failed:', basicError.message);
+      // Provide detailed error information for the basic request
+      const basicErrorDetails = {
+        message: basicError?.message || 'Unknown error',
+        code: basicError?.code || 'UNKNOWN',
+        isAxiosError: basicError?.isAxiosError || false,
+        status: basicError?.response?.status || 0,
+        statusText: basicError?.response?.statusText || '',
+        url: healthEndpoint
+      };
+      
+      logger.warn('[BackendConnectionCheck] Basic health check failed:', basicErrorDetails);
     }
     
     // Now try with tenant ID
@@ -907,7 +749,14 @@ const verifyBackendConnection = async () => {
       await customAxios.options(healthEndpoint);
       logger.info('[BackendConnectionCheck] Preflight request successful');
     } catch (preflightError) {
-      logger.warn('[BackendConnectionCheck] Preflight error (continuing anyway):', preflightError.message);
+      // Provide detailed error for preflight
+      const preflightErrorDetails = {
+        message: preflightError?.message || 'Unknown preflight error',
+        code: preflightError?.code || 'PREFLIGHT_ERROR',
+        method: 'OPTIONS'
+      };
+      
+      logger.warn('[BackendConnectionCheck] Preflight error (continuing anyway):', preflightErrorDetails);
     }
     
     // Create headers with tenant ID
@@ -938,23 +787,68 @@ const verifyBackendConnection = async () => {
       data: response.data
     };
   } catch (error) {
+    // Enhanced error details with safe access to properties
     const errorDetails = {
-      message: error.message,
-      code: error.code,
-      isAxiosError: error.isAxiosError || false,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      headers: error.response?.headers
+      message: error?.message || 'Unknown error',
+      code: error?.code || 'ERROR',
+      isAxiosError: error?.isAxiosError || false,
+      status: error?.response?.status || 0,
+      statusText: error?.response?.statusText || '',
+      url: healthEndpoint,
+      timestamp: new Date().toISOString()
     };
+    
+    // For network errors, provide additional diagnostic info
+    if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
+      errorDetails.diagnosticInfo = {
+        backendUrl: BACKEND_API_URL,
+        networkAvailable: typeof navigator !== 'undefined' && navigator.onLine,
+        sslEnabled: BACKEND_API_URL.startsWith('https'),
+        port: new URL(BACKEND_API_URL).port || (BACKEND_API_URL.startsWith('https') ? '443' : '80')
+      };
+    }
     
     logger.error('[BackendConnectionCheck] Connection failed:', errorDetails);
     
+    // Try a fallback method for connection check
+    try {
+      logger.info('[BackendConnectionCheck] Attempting fallback connection check...');
+      const fallbackResponse = await fetch(healthEndpoint, { 
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'omit',
+        headers: { 'Accept': 'application/json' },
+        redirect: 'follow',
+        timeout: 3000,
+        signal: AbortSignal.timeout(3000) // 3 second timeout
+      });
+      
+      if (fallbackResponse.ok) {
+        logger.info('[BackendConnectionCheck] Fallback connection check successful');
+        const fallbackData = await fallbackResponse.text();
+        
+        return {
+          success: true,
+          status: fallbackResponse.status,
+          message: 'Connection successful via fallback method',
+          fallbackData
+        };
+      } else {
+        logger.warn(`[BackendConnectionCheck] Fallback check failed with status: ${fallbackResponse.status}`);
+      }
+    } catch (fallbackError) {
+      logger.warn('[BackendConnectionCheck] Fallback connection check also failed:', 
+        fallbackError?.message || 'Unknown error');
+    }
+    
     return {
       success: false,
-      status: error.response?.status || 0,
-      message: `Connection failed: ${error.message}`,
+      status: errorDetails.status || 0,
+      message: `Connection failed: ${errorDetails.message}`,
       errorDetails,
-      error: error.toString()
+      error: error?.toString() || 'Unknown error',
+      timestamp: new Date().toISOString()
     };
   }
 };
@@ -1096,4 +990,24 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     diagnoseAndFixBackendConnection,
     resetConnectionSystem
   };
-} 
+}
+
+// Export the circuit breaker utilities and axios instances
+export {
+  axiosInstance,
+  useApi,
+  backendHrApiInstance,
+  serverAxiosInstance,
+  serverSafeAxiosInstance,
+  backendAxiosInstance,
+  enhancedAxiosInstance,
+  resetCircuitBreakers,
+  verifyBackendConnection,
+  diagnoseConnection,
+  diagnoseAndFixBackendConnection,
+  resetConnectionSystem,
+  retryRequest
+};
+
+// Default export for backwards compatibility
+export default axiosInstance; 

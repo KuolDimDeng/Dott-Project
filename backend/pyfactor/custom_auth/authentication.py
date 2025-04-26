@@ -438,7 +438,6 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 'detail': str(e)
             })
     
-    # Define synchronous method
     def get_or_create_user(self, cognito_user):
         """Create or update local user from Cognito data"""
         # Extract user data
@@ -456,12 +455,22 @@ class CognitoAuthentication(authentication.BaseAuthentication):
         if not email and hasattr(self, 'request') and self.request:
             logger.warning("[Auth] No email in Cognito user attributes, trying fallback methods")
             
-            # Try to get from decoded token if available
-            if hasattr(self, 'decoded_token') and self.decoded_token:
-                token_email = self.decoded_token.get('email')
-                if token_email:
-                    logger.info(f"[Auth] Found email in decoded token: {token_email}")
-                    email = token_email
+            # Try to get from token data if available
+            # The decoded_token may not be available as an instance attribute,
+            # so we'll check the token directly from the request if needed
+            token_email = None
+            auth_header = getattr(self.request, 'headers', {}).get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                try:
+                    token = auth_header.split(' ')[1]
+                    # Decode the token without verification to extract the email
+                    token_payload = jwt.decode(token, options={"verify_signature": False})
+                    token_email = token_payload.get('email')
+                    if token_email:
+                        logger.info(f"[Auth] Found email in bearer token: {token_email}")
+                        email = token_email
+                except Exception as e:
+                    logger.warning(f"[Auth] Error extracting email from bearer token: {str(e)}")
             
             # Try to get from ID token if available
             if not email and hasattr(self, 'request') and self.request.headers.get('X-Id-Token'):
@@ -538,13 +547,40 @@ class CognitoAuthentication(authentication.BaseAuthentication):
             # If still not found, create new user
             if not user:
                 logger.info(f"[Auth] Creating new user with email: {email}")
-                user = User.objects.create_user(
-                    email=email,
-                    username=email,  # Use email as username
-                    first_name=first_name,
-                    last_name=last_name,
-                    cognito_sub=cognito_sub
-                )
+                try:
+                    # Create user with only the fields that match our model
+                    # Do not include username as it's not in our model
+                    user_fields = {
+                        'email': email,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'cognito_sub': cognito_sub,
+                        'role': attr_dict.get('custom:userrole', 'owner').lower()  # Default to 'owner' role
+                    }
+                    
+                    # Add any custom attributes that exist in the User model
+                    for attr_name, attr_value in user_custom_attributes.items():
+                        if attr_name in user_model_fields and attr_name != 'username':
+                            user_fields[attr_name] = attr_value
+                    
+                    # Create the user with proper password handling
+                    user = User.objects.create_user(
+                        **user_fields,
+                        password=None  # No password needed as Cognito handles auth
+                    )
+                    logger.info(f"[Auth] Successfully created new user with email: {email}")
+                except TypeError as e:
+                    logger.error(f"[Auth] Type error creating user: {str(e)}")
+                    # Fallback to create user with minimal fields
+                    user = User.objects.create_user(
+                        email=email,
+                        password=None,  # No password needed as Cognito handles auth
+                        first_name=first_name,
+                        last_name=last_name,
+                        cognito_sub=cognito_sub,
+                        role=attr_dict.get('custom:userrole', 'owner').lower()  # Default to 'owner' role
+                    )
+                    logger.info(f"[Auth] Created user with fallback method for email: {email}")
             else:
                 # Update existing user with latest data
                 update_fields = []
@@ -566,6 +602,11 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 # Update custom attributes if they exist in the User model
                 for attr_name, attr_value in user_custom_attributes.items():
                     try:
+                        # Skip username field which is not in our User model
+                        if attr_name == 'username':
+                            logger.debug(f"[Auth] Skipping username attribute as it's not in User model")
+                            continue
+                            
                         if hasattr(user, attr_name):
                             setattr(user, attr_name, attr_value)
                             update_fields.append(attr_name)
@@ -574,7 +615,17 @@ class CognitoAuthentication(authentication.BaseAuthentication):
                 
                 # Save user if any fields updated
                 if update_fields:
-                    user.save(update_fields=update_fields)
+                    try:
+                        user.save(update_fields=update_fields)
+                        logger.debug(f"[Auth] Updated user fields: {', '.join(update_fields)}")
+                    except Exception as e:
+                        logger.error(f"[Auth] Error updating user fields: {str(e)}")
+                        # Try saving without specifying fields if that fails
+                        try:
+                            user.save()
+                            logger.debug("[Auth] Saved user without specifying update_fields")
+                        except Exception as e2:
+                            logger.error(f"[Auth] Critical: Failed to save user: {str(e2)}")
             
             # Store business attributes in request for potential later use
             if hasattr(self, 'request') and self.request and business_attributes:

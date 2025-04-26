@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
-            name='Employee',
+            name='employee',
             fields=[
                 ('password', models.CharField(max_length=128, verbose_name='password')),
                 ('last_login', models.DateTimeField(blank=True, null=True, verbose_name='last login')),
@@ -66,7 +66,7 @@ class Migration(migrations.Migration):
                 ('date_joined', models.DateField(default=hr.models.get_current_datetime)),
                 ('last_work_date', models.DateField(blank=True, null=True)),
                 ('active', models.BooleanField(default=True)),
-                ('role', models.CharField(choices=[('ADMIN', 'Administrator'), ('EMPLOYEE', 'Employee')], default='EMPLOYEE', max_length=20)),
+                ('role', models.CharField(choices=[('employee', 'employee')], default='employee', max_length=20)),
                 ('site_access_privileges', models.JSONField(default=list)),
                 ('email', models.EmailField(default='', max_length=254, unique=True)),
                 ('phone_number', phonenumber_field.modelfields.PhoneNumberField(blank=True, max_length=128, null=True, region=None)),

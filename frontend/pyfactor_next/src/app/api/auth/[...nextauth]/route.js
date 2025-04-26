@@ -23,7 +23,7 @@ export const authOptions = {
           }
 
           // Example: Call your API to verify credentials
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
           const response = await fetch(`${apiUrl}/api/auth/login/`, {
             method: 'POST',
             headers: {

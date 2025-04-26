@@ -11,6 +11,9 @@ import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ClientDataSync } from '@/app/dashboard/DashboardClient';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { fetchCurrentUserMenuPrivileges } from '@/utils/menuPrivileges';
+import { loadStripeScript } from '@/utils/stripeUtils';
+import { storeNormalizedRole } from '@/utils/userRoleUtils';
 
 // Use a more direct approach for dynamic imports
 const KeyboardFixerLoader = dynamic(
@@ -78,6 +81,27 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 }
 
 export default function ClientLayout({ children }) {
+  useEffect(() => {
+    // Initialize required features
+    const initFeatures = async () => {
+      try {
+        // Load Stripe script
+        await loadStripeScript();
+
+        // Get and normalize user role
+        const session = await fetchAuthSession();
+        const userRole = session?.accessToken?.payload?.['custom:role'];
+        if (userRole) {
+          await storeNormalizedRole(userRole);
+        }
+      } catch (error) {
+        console.error('Error initializing features:', error);
+      }
+    };
+
+    initFeatures();
+  }, []);
+
   return (
     <>
       <style jsx global>{`

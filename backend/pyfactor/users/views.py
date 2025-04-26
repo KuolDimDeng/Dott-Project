@@ -14,6 +14,14 @@ from .serializers import UserProfileSerializer
 from pyfactor.logging_config import get_logger
 from django.core import serializers
 from rest_framework.renderers import JSONRenderer
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from .models import UserMenuPrivilege, BusinessMember
+from .serializers import UserMenuPrivilegeSerializer
+from django.middleware.csrf import get_token
+import json
+import logging
+import datetime
 
 logger = get_logger()
 
@@ -232,4 +240,150 @@ class ProfileView(APIView):
                 "code": "server_error",
                 "message": str(e) if settings.DEBUG else "Internal server error"
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserMenuPrivilegeViewSet(viewsets.ModelViewSet):
+    """
+    API endpoints for managing user menu privileges
+    """
+    queryset = UserMenuPrivilege.objects.all()
+    serializer_class = UserMenuPrivilegeSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """
+        This view should return a list of all privileges for the current user's business
+        or for a specific user if requested.
+        """
+        queryset = UserMenuPrivilege.objects.all()
+        
+        # Get the user's business
+        user = self.request.user
+        try:
+            user_profile = UserProfile.objects.get(user=user)
+            business = user_profile.business
+            
+            if not business:
+                return UserMenuPrivilege.objects.none()
+            
+            # Check if user is requesting privileges for a specific user
+            user_id = self.request.query_params.get('user_id', None)
+            if user_id:
+                try:
+                    business_member = BusinessMember.objects.get(business=business, user__id=user_id)
+                    return UserMenuPrivilege.objects.filter(business_member=business_member)
+                except BusinessMember.DoesNotExist:
+                    return UserMenuPrivilege.objects.none()
+            
+            # Otherwise, return all privileges for the business
+            business_members = BusinessMember.objects.filter(business=business)
+            return UserMenuPrivilege.objects.filter(business_member__in=business_members)
+            
+        except UserProfile.DoesNotExist:
+            return UserMenuPrivilege.objects.none()
+    
+    @action(detail=False, methods=['get'])
+    def current_user(self, request):
+        """Get menu privileges for the current user"""
+        user = request.user
+        try:
+            # First check if the user has business_memberships
+            business_member = BusinessMember.objects.filter(user=user).first()
+            
+            if not business_member:
+                # User is not a member of any business, check if they have a business through profile
+                user_profile = UserProfile.objects.filter(user=user).first()
+                if user_profile and user_profile.business:
+                    # Create a default business membership as OWNER
+                    business_member, created = BusinessMember.objects.get_or_create(
+                        user=user,
+                        business=user_profile.business,
+                        defaults={
+                            'role': 'owner',
+                            'is_active': True
+                        }
+                    )
+                else:
+                    # Return empty menu items if no business
+                    return Response({'menu_items': []})
+            
+            # Now check for menu privileges
+            try:
+                privileges = UserMenuPrivilege.objects.get(business_member=business_member)
+                serializer = self.get_serializer(privileges)
+                return Response(serializer.data)
+            except UserMenuPrivilege.DoesNotExist:
+                # Create default privileges with all available menu items
+                default_menu_items = [
+                    'dashboard',
+                    'finance',
+                    'sales',
+                    'purchases',
+                    'inventory',
+                    'hr',
+                    'reports',
+                    'settings'
+                ]
+                
+                # Create default privileges
+                privileges = UserMenuPrivilege.objects.create(
+                    business_member=business_member,
+                    menu_items=default_menu_items,
+                    created_by=user
+                )
+                
+                serializer = self.get_serializer(privileges)
+                return Response(serializer.data)
+                
+        except Exception as e:
+            logger.error(f"Error fetching menu privileges: {str(e)}")
+            # Return a minimal set of menu items so the UI isn't broken
+            return Response({'menu_items': ['dashboard', 'settings']})
+    
+    @action(detail=False, methods=['post'])
+    def set_privileges(self, request):
+        """Set menu privileges for a user"""
+        user_id = request.data.get('user_id')
+        menu_items = request.data.get('menu_items', [])
+        
+        if not user_id:
+            return Response({'error': 'User ID is required'}, status=400)
+        
+        # Get the current user's business
+        current_user = request.user
+        try:
+            current_user_profile = UserProfile.objects.get(user=current_user)
+            business = current_user_profile.business
+            
+            if not business:
+                return Response({'error': 'No business found for current user'}, status=404)
+            
+            # Check if current user is the owner
+            current_user_member = BusinessMember.objects.filter(user=current_user, business=business).first()
+            if not current_user_member or current_user_member.role != 'owner':
+                return Response({'error': 'Only business owners can set menu privileges'}, status=403)
+            
+            # Get the target user's business membership
+            try:
+                target_user = User.objects.get(id=user_id)
+                business_member = BusinessMember.objects.get(user=target_user, business=business)
+                
+                # Update or create privileges
+                privileges, created = UserMenuPrivilege.objects.update_or_create(
+                    business_member=business_member,
+                    defaults={
+                        'menu_items': menu_items,
+                        'created_by': current_user
+                    }
+                )
+                
+                serializer = self.get_serializer(privileges)
+                return Response(serializer.data)
+                
+            except User.DoesNotExist:
+                return Response({'error': 'User not found'}, status=404)
+            except BusinessMember.DoesNotExist:
+                return Response({'error': 'User is not a member of this business'}, status=404)
+                
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'User profile not found'}, status=404)
 

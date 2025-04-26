@@ -138,3 +138,64 @@ Key features:
 - Ensures proper tenant ID header configuration in axios interceptors
 - Fixes circuit breaker resets during error recovery
 - Creates backups of all modified files
+
+# Tenant ID Retrieval Fix
+
+## Overview
+This fix addresses the issue where tenant ID is not being properly retrieved during employee fetch operations, resulting in the error: "[EmployeeApi] No tenant ID available for employee fetch".
+
+## Problem
+The tenant ID exists in Cognito attributes but is not being correctly passed during employee fetch operations. This is causing failures in the employee management system.
+
+## Solution
+The fix implements a more robust tenant ID retrieval mechanism with the following improvements:
+
+1. **Enhanced AppCache Initialization**
+   - Ensures AppCache is properly initialized with required properties
+   - Adds structured cache handling for tenant-related data
+
+2. **Improved Tenant ID Retrieval**
+   - Implements a multi-source retrieval strategy:
+     1. AppCache (primary source)
+     2. Cognito attributes (fallback)
+     3. Auth store (final fallback)
+   - Adds comprehensive error handling and logging
+
+3. **Cache Management**
+   - Implements proper cache expiration handling
+   - Adds structured cache entry management
+   - Includes error recovery mechanisms
+
+## Implementation
+The fix is implemented in `Version0001_fix_tenant_id_retrieval.js` and includes:
+
+- Enhanced `getTenantId` function with better error handling
+- Improved `getCacheValue` and `setCacheValue` functions
+- Proper initialization checks for AppCache
+- Comprehensive logging for debugging
+
+## Testing
+Before deploying to production, verify:
+1. Tenant ID retrieval from all sources
+2. Error handling scenarios
+3. Cache expiration behavior
+4. Logging functionality
+
+## Dependencies
+- AWS Amplify v6
+- Next.js 15
+- AWS AppCache
+
+## Security Considerations
+- Maintains strict tenant isolation
+- Preserves existing security measures
+- No exposure of sensitive data in logs
+
+## Rollback Plan
+If issues arise:
+1. Restore the backed-up `tenantUtils.js` file
+2. Remove the fix script
+3. Update the script registry
+
+## Support
+For issues or questions, contact the development team.
