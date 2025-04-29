@@ -20,9 +20,15 @@ const PayrollReport = () => {
   const fetchDepartments = async () => {
     try {
       const response = await axiosInstance.get('/api/departments/');
-      setDepartments(response.data);
+      if (Array.isArray(response.data)) {
+        setDepartments(response.data);
+      } else {
+        console.warn('Departments API did not return an array:', response.data);
+        setDepartments([]);
+      }
     } catch (error) {
       console.error('Error fetching departments:', error);
+      setDepartments([]);
     }
   };
 
@@ -110,7 +116,7 @@ const PayrollReport = () => {
               onChange={handleFilterChange}
             >
               <option value="">All Departments</option>
-              {departments.map((dept) => (
+              {Array.isArray(departments) && departments.map((dept) => (
                 <option key={dept.id} value={dept.id}>
                   {dept.name}
                 </option>

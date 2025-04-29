@@ -122,6 +122,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showHRDashboard: false,
     showEmployeeManagement: false,
     showTaxManagement: false,
+    showReportsManagement: false,
+    showTimesheetManagement: false, // Added for timesheet management
     hrSection: 'dashboard',
     
     // Form visibility
@@ -144,8 +146,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
     products, services, showKPIDashboard, showMainDashboard, showHome,
     showInventoryItems, showInventoryManagement, showForm, formOption,
-    showHRDashboard, showEmployeeManagement, hrSection, showMyAccount, showHelpCenter,
-    showCreateMenu, showCreateOptions
+    showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
+    showCreateMenu, showCreateOptions, showBenefitsManagement
   } = uiState;
   
   // Computed values - memoize these values
@@ -241,30 +243,38 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   // Reset all view states for navigation
   const resetAllStates = useCallback(() => {
     console.log('[DashboardContent] Resetting all view states');
-    // Reset specific view states
-    setShowMainDashboard(false);
-    setShowHome(false);
-    setShowForm(false);
-    setShowMyAccount(false);
-    setShowHelpCenter(false);
     
-    // Reset any view-specific state
-    setFormOption('');
-    setSelectedSettingsOption(null);
-    
-    // Use updateState for batch update of other states
+    // Use a single batch update for better performance
     updateState({
+      // Reset menu states
+      anchorEl: null,
+      settingsAnchorEl: null,
+      
+      // Reset view states
       view: null,
+      showMainDashboard: false,
+      showHome: false,
+      showForm: false,
+      showMyAccount: false,
+      showHelpCenter: false,
       showKPIDashboard: false,
       showUserProfileSettings: false,
+      
+      // Reset form states
+      formOption: '',
+      selectedSettingsOption: null,
+      
+      // Reset HR states
       showEmployeeManagement: false,
       showHRDashboard: false,
-      showTaxManagement: false  // Explicitly reset Tax Management
+      showTaxManagement: false,
+      showTimesheetManagement: false,
+      
+      // Reset other view states as needed
     });
     
     console.log('[DashboardContent] All view states have been reset');
-  }, [setShowMainDashboard, setShowHome, setShowForm, setShowMyAccount, setShowHelpCenter, 
-      setFormOption, setSelectedSettingsOption, updateState]);
+  }, [updateState]);
 
   const drawerWidth = 260; // Match the increased width in Drawer.js
   const iconOnlyWidth = 60; // Width when showing only icons
@@ -311,7 +321,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, setShowHome]);
 
   const handleHRClick = useCallback((section) => {
-    console.log('[DashboardContent] HR section selected:', section);
     // Hide other sections
     resetAllStates();
     
@@ -328,19 +337,117 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         showTaxManagement: true, 
         hrSection: section 
       });
+    } else if (section === 'timesheets') {
+      // Show timesheet management component
+      console.log('[DashboardContent] Setting showTimesheetManagement to true for section:', section);
+      // Generate a unique navigation key for component remounting
+      const timesheetNavKey = `timesheet-${Date.now()}`;
+      console.log('[DashboardContent] Setting navigationKey for timesheet:', timesheetNavKey);
+      
+      updateState({
+        showTimesheetManagement: true,
+        hrSection: section,
+        navigationKey: timesheetNavKey
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showTimesheetManagement: true, 
+        hrSection: section 
+      });
+    } else if (section === 'pay') {
+      // Show pay management component
+      console.log('[DashboardContent] Setting showPayManagement to true for section:', section);
+      // Generate a unique navigation key for component remounting
+      const payNavKey = `pay-${Date.now()}`;
+      console.log('[DashboardContent] Setting navigationKey for pay:', payNavKey);
+      
+      updateState({
+        showPayManagement: true,
+        hrSection: section,
+        navigationKey: payNavKey
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showPayManagement: true, 
+        hrSection: section 
+      });
+    } else if (section === 'benefits') {
+      // Show benefits management component with proper re-rendering
+      console.log('[DashboardContent] Setting showBenefitsManagement to true for section:', section);
+      
+      // Generate a unique navigation key for component remounting
+      const benefitsNavKey = `benefits-${Date.now()}`;
+      
+      // IMPORTANT FIX: Set state with the correct properties 
+      // and ensure navigationKey is included for proper component remounting
+      setUiState(prevState => ({
+        ...prevState,
+        showBenefitsManagement: true,
+        hrSection: section,
+        navigationKey: benefitsNavKey
+      }));
+      
+      // For event dispatch compatibility use updateState as well
+      updateState({
+        showBenefitsManagement: true,
+        hrSection: section,
+        navigationKey: benefitsNavKey
+      });
+      
+      // Log the state immediately after update
+      console.log('[DEBUG] State after update:', { 
+        showBenefitsManagement: true, 
+        hrSection: section,
+        navigationKey: benefitsNavKey
+      });
+    } else if (section === 'reports') {
+      // Show reports management component with proper re-rendering
+      console.log('[DEBUG-REPORT] DashboardContent handling reports section with value:', section);
+      
+      // Generate a unique navigation key for component remounting
+      const reportsNavKey = `reports-${Date.now()}`;
+      console.log('[DEBUG-REPORT] Generated navigation key:', reportsNavKey);
+      
+      // Set state with the correct properties and ensure navigationKey is included
+      console.log('[DEBUG-REPORT] About to update uiState with showReportsManagement=true');
+      setUiState(prevState => {
+        const newState = {
+          ...prevState,
+          showReportsManagement: true,
+          hrSection: section,
+          navigationKey: reportsNavKey
+        };
+        console.log('[DEBUG-REPORT] New uiState:', newState);
+        return newState;
+      });
+      
+      // For event dispatch compatibility use updateState as well
+      console.log('[DEBUG-REPORT] About to call updateState with showReportsManagement=true');
+      updateState({
+        showReportsManagement: true,
+        hrSection: section,
+        navigationKey: reportsNavKey
+      });
+      
+      // Log the state immediately after update
+      console.log('[DEBUG-REPORT] State update calls completed for Reports section. Values passed:', { 
+        showReportsManagement: true, 
+        hrSection: section,
+        navigationKey: reportsNavKey
+      });
     } else {
-      // Show other HR components
+      // Show other HR components (excluding benefits which has special handling above)
       updateState({
         showHRDashboard: section === 'dashboard',
         showEmployeeManagement: section === 'employees',
-        showTimesheetManagement: section === 'timesheets',
-        showBenefitsManagement: section === 'benefits',
-        showReportsManagement: section === 'reports',
+        // Benefits is handled in the specific if-block above
         showPerformanceManagement: section === 'performance',
         hrSection: section || 'dashboard'
       });
     }
-  }, [resetAllStates, updateState]);
+  }, [resetAllStates, updateState, setUiState]);
 
   const handleInventoryClick = useCallback((value) => {
     resetAllStates();
@@ -387,6 +494,38 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         updateState({ showInventoryManagement: true });
     }
   }, [resetAllStates, updateState, view]);
+
+  const handleBankingClick = useCallback((value) => {
+    console.log('[DashboardContent] Banking option selected:', value);
+    resetAllStates();
+    
+    switch(value) {
+      case 'dashboard':
+        updateState({ view: 'banking' });
+        break;
+      case 'connect':
+        updateState({ view: 'connect-bank' });
+        break;
+      case 'transactions':
+        updateState({ view: 'bank-transactions' });
+        break;
+      case 'reconciliation':
+        updateState({ view: 'bank-reconciliation' });
+        break;
+      case 'bank-reports':
+        updateState({ view: 'bank-report' });
+        break;
+      default:
+        // Default to banking dashboard
+        updateState({ view: 'banking' });
+    }
+    
+    // Generate a unique navigation key for component remounting
+    const bankNavKey = `banking-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for banking:', bankNavKey);
+    setNavigationKey(bankNavKey);
+    
+  }, [resetAllStates, updateState, setNavigationKey]);
 
   const handleShowCreateOptions = useCallback((option) => {
     if (option === selectedOption && showCreateOptions) return; // Skip if no change
@@ -518,6 +657,37 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     });
   }, [resetAllStates, updateState]);
 
+  // Add the handlePayrollClick function
+  const handlePayrollClick = useCallback((option) => {
+    console.log('[DashboardContent] handlePayrollClick called with option:', option);
+    resetAllStates();
+    
+    if (option === 'run-payroll') {
+      // Specifically handle Run Payroll menu item
+      updateState({ 
+        view: 'payroll-management',
+        showPayrollManagement: true 
+      });
+    } else if (option === 'transactions') {
+      updateState({ 
+        view: 'payroll-transactions',
+        showPayrollTransactions: true 
+      });
+    } else if (option === 'reports') {
+      updateState({ 
+        view: 'payroll-report',
+        showPayrollReport: true 
+      });
+    } else {
+      // Default to payroll dashboard
+      updateState({ 
+        view: 'payroll',
+        showPayrollDashboard: true,
+        payrollSection: option || 'dashboard'
+      });
+    }
+  }, [resetAllStates, updateState]);
+
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
     return userData || initialUserData;
@@ -590,7 +760,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId
   ]);
   
-  // Memoize Drawer props
+  // Memoize Drawer props with handlePayrollClick included
   const drawerProps = useMemo(() => ({
     drawerOpen,
     handleDrawerToggle: handleDrawerToggleWithLogging,
@@ -600,6 +770,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     resetAllStates,
     handleHomeClick,
     handleHRClick,
+    handlePayrollClick,
+    handleBankingClick,
     handleInventoryClick,
     handleShowCreateOptions,
     handleShowCreateMenu,
@@ -609,12 +781,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleTaxesClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
-    resetAllStates, handleHomeClick, handleHRClick, handleInventoryClick,
+    resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
     handleBillingClick, handleTaxesClick
   ]);
   
   // Memoize RenderMainContent props
+  // Debug current state before creating mainContentProps
+  console.log('[DEBUG] Creating mainContentProps with showBenefitsManagement:', uiState.showBenefitsManagement);
+  
+  // Debug current state before creating mainContentProps
+  console.log('[DEBUG] Creating mainContentProps with showBenefitsManagement:', uiState.showBenefitsManagement);
+  
   const mainContentProps = useMemo(() => ({
     view,
     userData: memoizedUserData,
@@ -628,6 +806,15 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     hrSection,
     showEmployeeManagement,
     showTaxManagement: uiState.showTaxManagement,
+    showTimesheetManagement: uiState.showTimesheetManagement,
+    showPayManagement: uiState.showPayManagement,
+    showBenefitsManagement: uiState.showBenefitsManagement,
+    showReportsManagement: uiState.showReportsManagement,
+    showPerformanceManagement: uiState.showPerformanceManagement,
+    ...(() => {
+      console.log('[DEBUG-REPORT] Setting mainContentProps with showReportsManagement:', uiState.showReportsManagement);
+      return {};
+    })(),
     setShowKPIDashboard,
     setShowMainDashboard,
     setSelectedReport: (selectedOption) => updateState({ selectedOption }),
@@ -688,6 +875,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showDownloadTransactions: view === 'download-transactions',
     showConnectBank: view === 'connect-bank',
     showInventoryItems: view === 'inventory-items',
+    showPayrollManagement: view === 'payroll-management',
     handleCreateCustomer: () => console.log('Create customer flow'),
     showMyAccount,
     showHelpCenter
@@ -699,11 +887,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     navigationKey, selectedSettingsOption,
     // We already have view listed above, but it's critical for all the conditional flags
     // that depend on it like showDownloadTransactions: view === 'download-transactions'
-  ]);
+  , uiState.showBenefitsManagement]);
 
   // Listen for menu navigation events
   useEffect(() => {
     const handleMenuNavigation = (event) => {
+      console.log('[DEBUG] handleMenuNavigation event received:', event.detail);
+      console.log('[DEBUG] handleMenuNavigation event received:', event.detail);
       const { item, navigationKey: newKey } = event.detail;
       console.log(`[DashboardContent] Menu navigation event received: ${item}, key: ${newKey}`);
       

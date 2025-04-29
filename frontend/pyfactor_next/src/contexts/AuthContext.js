@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { isPublicRoute } from '@/lib/authUtils';
 import { appendLanguageParam } from '@/utils/languageUtils';
+import { employeeApi } from '@/utils/apiClient';
 import {
   fetchAuthSession,
   getCurrentUser,
@@ -17,25 +18,27 @@ import { logMemoryUsage, trackMemory, detectMemorySpike, clearMemoryTracking } f
 import { setTokens } from '@/utils/tenantUtils';
 import { initializeTenantContext } from '@/utils/tenantContext';
 
-// Create a minimal initial state object
+// Extend the initial state to include employee
 const initialState = {
   isLoading: true,
   hasSession: false,
   hasError: false,
   user: null,
   session: null,
+  employee: null,
 };
 
 // Create context with default values
 const AuthContext = createSafeContext(initialState);
 
 // Reusable state setter to reduce object creation
-const createStateSetter = (loading, session, error, user, sessionObj) => ({
+const createStateSetter = (loading, session, error, user, sessionObj, employeeData) => ({
   isLoading: loading,
   hasSession: session,
   hasError: error,
   user,
   session: sessionObj,
+  employee: employeeData,
 });
 
 // Helper to extract only essential user data
@@ -142,7 +145,7 @@ export function AuthProvider({ children }) {
       // Skip auth check for public routes
       if (isPublicRoute(currentPath)) {
         logger.debug(`[Auth] Skipping auth check for public route: ${currentPath}`);
-        setState(createStateSetter(false, false, false, null, null));
+        setState(createStateSetter(false, false, false, null, null, null));
         refreshingRef.current = false;
         return;
       }
@@ -174,7 +177,7 @@ export function AuthProvider({ children }) {
         trackMemory('AuthProvider', 'after-fetchAuthSession');
         
         if (!tokens?.idToken) {
-          setState(createStateSetter(false, false, false, null, null));
+          setState(createStateSetter(false, false, false, null, null, null));
           refreshingRef.current = false;
           
           // Only redirect for non-public routes
@@ -187,7 +190,7 @@ export function AuthProvider({ children }) {
           return;
         }
       } catch (sessionError) {
-        setState(createStateSetter(false, false, false, null, null));
+        setState(createStateSetter(false, false, false, null, null, null));
         refreshingRef.current = false;
         
         // Only redirect for non-public routes
@@ -220,7 +223,7 @@ export function AuthProvider({ children }) {
         trackMemory('AuthProvider', 'after-getCurrentUser');
         
         if (!user) {
-          setState(createStateSetter(false, false, false, null, null));
+          setState(createStateSetter(false, false, false, null, null, null));
           refreshingRef.current = false;
           return;
         }
@@ -249,7 +252,8 @@ export function AuthProvider({ children }) {
             true,
             false,
             minimalUser,
-            { tokens: minimalTokens }
+            { tokens: minimalTokens },
+            null
           ));
           
           // Store that the user had a valid session for expiration detection later
@@ -270,7 +274,7 @@ export function AuthProvider({ children }) {
           // If in dashboard, we fail because Cognito is the source of truth
           // If not in dashboard, we could try fallbacks here for auth flows
           if (isInDashboard) {
-            setState(createStateSetter(false, false, false, null, null));
+            setState(createStateSetter(false, false, false, null, null, null));
             refreshingRef.current = false;
             return;
           } else {
@@ -280,11 +284,11 @@ export function AuthProvider({ children }) {
               username: user.username,
               userId: user.userId,
               // No attributes available
-            }, { tokens: extractEssentialTokenData(tokens) }));
+            }, { tokens: extractEssentialTokenData(tokens) }, null));
           }
         }
       } catch (userError) {
-        setState(createStateSetter(false, false, false, null, null));
+        setState(createStateSetter(false, false, false, null, null, null));
         refreshingRef.current = false;
         return;
       }
@@ -297,7 +301,7 @@ export function AuthProvider({ children }) {
         return checkSession(attempt + 1);
       }
 
-      setState(createStateSetter(false, false, true, null, null));
+      setState(createStateSetter(false, false, true, null, null, null));
 
       // Sign out on session error
       try {
@@ -334,7 +338,7 @@ export function AuthProvider({ children }) {
         break;
 
       case 'signedOut':
-        setState(createStateSetter(false, false, false, null, null));
+        setState(createStateSetter(false, false, false, null, null, null));
         break;
 
       case 'tokenRefresh':
@@ -342,7 +346,7 @@ export function AuthProvider({ children }) {
         break;
 
       case 'tokenRefresh_failure':
-        setState(createStateSetter(false, false, true, null, null));
+        setState(createStateSetter(false, false, true, null, null, null));
         
         try {
           await signOut();
@@ -380,7 +384,7 @@ export function AuthProvider({ children }) {
         break;
 
       case 'configurationError':
-        setState(createStateSetter(false, false, true, null, null));
+        setState(createStateSetter(false, false, true, null, null, null));
         break;
     }
     
@@ -420,6 +424,38 @@ export function AuthProvider({ children }) {
     trackMemory('AuthProvider', 'context-value-creation');
     return state;
   }, [state]);
+
+  // Add a function to fetch employee data
+  const fetchEmployeeData = useCallback(async () => {
+    if (!state.hasSession || !state.user) return null;
+    
+    try {
+      logger.debug('[Auth] Fetching employee data');
+      const employeeData = await employeeApi.getCurrent();
+      
+      // Update state with employee data
+      setState(prev => ({
+        ...prev,
+        employee: employeeData
+      }));
+      
+      logger.debug('[Auth] Employee data loaded');
+      return employeeData;
+    } catch (error) {
+      // Don't set error state if no employee record - this is normal for admin users
+      if (error.response && error.response.status !== 404) {
+        logger.error('[Auth] Error loading employee data:', error);
+      }
+      return null;
+    }
+  }, [state.hasSession, state.user]);
+  
+  // Add effect to fetch employee data when user is authenticated
+  useEffect(() => {
+    if (state.hasSession && state.user && !state.employee) {
+      fetchEmployeeData();
+    }
+  }, [state.hasSession, state.user, state.employee, fetchEmployeeData]);
 
   return (
     <AuthContext.Provider value={contextValue}>

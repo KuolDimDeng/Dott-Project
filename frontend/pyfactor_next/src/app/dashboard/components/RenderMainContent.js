@@ -1,6 +1,9 @@
 'use client';
 
 import React, { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import HRReportManagement from '../forms/HRReportManagement';
+import dynamic from 'next/dynamic';
+
 import ErrorBoundary from './ErrorBoundary';
 // Remove the direct imports and replace with lazy loading
 // import { TransportDashboard, VehicleManagement } from './transport';
@@ -172,7 +175,6 @@ const SettingsManagement = enhancedLazy(() => {
       };
     });
 }, 'Settings Management');
-const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
 const HelpCenter = enhancedLazy(() => import('@/app/Settings/components/HelpCenter'), 'Help Center');
 const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'), 'Terms and Conditions');
 const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
@@ -243,9 +245,36 @@ const TaxManagement = enhancedLazy(() => {
       };
     });
 }, 'Tax Management');
-const BenefitsManagement = enhancedLazy(() => import('./forms/BenefitsManagement.js'), 'Benefits Management');
+const BenefitsManagement = enhancedLazy(() => {
+  console.log('[RenderMainContent] Attempting to load BenefitsManagement component');
+  return import('./forms/BenefitsManagement.js')
+    .then(module => {
+      console.log('[RenderMainContent] BenefitsManagement component loaded successfully');
+      return module;
+    })
+    .catch(err => {
+      console.error('[RenderMainContent] Error loading BenefitsManagement component:', err);
+      return { 
+        default: () => (
+          <div className="p-4">
+            <h1 className="text-xl font-semibold mb-2">Benefits Management</h1>
+            <p className="mb-4">Manage your benefits</p>
+            <div className="bg-red-100 p-3 rounded">
+              <p>Error: {err.message}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        ) 
+      };
+    });
+}, 'Benefits Management');
+const PayManagement = enhancedLazy(() => import('./forms/PayManagement.js'), 'Pay Management');
 const HRReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'HR Reports Management');
-const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
 
 // Add lazy loading for Transport components
 const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');
@@ -370,6 +399,10 @@ const EmployeeTaxManagement = enhancedLazy(() => {
     });
 }, 'Employee Tax Management');
 
+// Make sure this declaration exists somewhere in the file:
+const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
+const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
+
 /**
  * Renders the main content of the dashboard based on the current view
  * This component uses lazy loading to reduce memory usage
@@ -455,6 +488,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
   showEmployeeManagement,
   showPayrollManagement,
   showTimesheetManagement,
+  showPayManagement,
   showTaxManagement,
   showBenefitsManagement,
   showReportsManagement,
@@ -491,6 +525,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
   const mountedComponentInfoRef = useRef(null);
   
   // Log when showTaxManagement changes
+  useEffect(() => {
+    console.log('[RenderMainContent] showBenefitsManagement changed to:', showBenefitsManagement);
+  }, [showBenefitsManagement]);
+  
   useEffect(() => {
     console.log('[RenderMainContent] showTaxManagement changed to:', showTaxManagement);
   }, [showTaxManagement]);
@@ -738,6 +776,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
 
   // Now render components with the componentKey
   const renderContent = useMemo(() => {
+    // Debug state at the beginning of renderContent
+    console.log('[DEBUG] renderContent called with showBenefitsManagement:', showBenefitsManagement);
+    
+    // Add deferred check for showBenefitsManagement (runs after initial render)
+    setTimeout(() => {
+      console.log('[DEBUG] Deferred check - showBenefitsManagement:', showBenefitsManagement);
+    }, 500);
+    // Debug state at the beginning of renderContent
+    console.log('[DEBUG] renderContent called with showBenefitsManagement:', showBenefitsManagement);
+    
+    // Add deferred check for showBenefitsManagement (runs after initial render)
+    setTimeout(() => {
+      console.log('[DEBUG] Deferred check - showBenefitsManagement:', showBenefitsManagement);
+    }, 500);
     // Use a unique component key for each render cycle to enforce proper cleanup
     const componentKey = `component-${navigationKey || 'default'}`;
     console.log('[RenderMainContent] renderContent called, showTaxManagement:', showTaxManagement);
@@ -883,7 +935,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <ContentWrapperWithKey className="settings-management-wrapper">
               <SuspenseWithCleanup componentKey={uniqueKey} fallback={
                 <div className="p-4">
-                  <h1 className="text-2xl font-semibold text-gray-800 mb-4">Settings Management</h1>
+                  <h2 className="text-2xl font-semibold text-gray-800 mb-4">Settings Management</h2>
                   <div className="flex items-center justify-center h-64">
                     <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                   </div>
@@ -1069,13 +1121,44 @@ const RenderMainContent = React.memo(function RenderMainContent({
         showEmployeeManagement,
         showHRDashboard,
         hrSection,
-        view
+        view,
+        showTimesheetManagement,
+        showPayrollManagement
       });
 
       if (showTimesheetManagement) {
-        ActiveComponent = TimesheetManagement;
+        console.log('[RenderMainContent] Rendering TimesheetManagement component');
+        
+        // Use an error boundary to prevent the entire app from crashing
+        return (
+          <ContentWrapperWithKey>
+            <LazyLoadErrorBoundary fallback={
+              <div className="p-4">
+                <h2 className="text-lg font-medium text-red-800">Error loading Timesheet Management</h2>
+                <p className="mt-2">There was a problem loading the timesheet management component.</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700"
+                >
+                  Reload Page
+                </button>
+              </div>
+            }>
+              <SuspenseWithCleanup 
+                componentKey={`timesheet-management-${navigationKey || 'default'}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
+              >
+                <TimesheetManagement />
+              </SuspenseWithCleanup>
+            </LazyLoadErrorBoundary>
+          </ContentWrapperWithKey>
+        );
       } else if (showTaxManagement) {
-        console.log('[RenderMainContent] showTaxManagement is true, setting ActiveComponent to EmployeeTaxManagement');
+        console.log('[RenderMainContent] showTaxManagement is true, setting ActiveComponent to TaxManagement');
         // Instead of just setting ActiveComponent, return the component directly
         // This ensures we don't have any issues with hooks ordering
         return (
@@ -1095,32 +1178,68 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showBenefitsManagement) {
-        ActiveComponent = BenefitsManagement;
+        console.log('[DEBUG] showBenefitsManagement is TRUE, rendering BenefitsManagement component');
+        console.log('[DEBUG] navigationKey:', navigationKey);
+        console.log('[DEBUG] showBenefitsManagement details:', {
+          type: typeof showBenefitsManagement,
+          value: showBenefitsManagement,
+          truthyCheck: showBenefitsManagement ? 'is truthy' : 'is falsy'
+        });
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`benefits-management-${navigationKey || 'default'}-${Date.now()}`} 
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <div className="benefits-management-wrapper">
+                <BenefitsManagement />
+              </div>
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (showPayrollManagement || payrollSection === 'run-payroll') {
+        console.log('[RenderMainContent] Rendering PayrollManagement component with:', { 
+          showPayrollManagement, 
+          payrollSection,
+          view
+        });
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`payroll-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <PayrollManagement initialTab="run-payroll" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showReportsManagement) {
-        ActiveComponent = HRReportsManagement;
-      } else if (showPerformanceManagement) {
-        ActiveComponent = PerformanceManagement;
-      } else if (showHRDashboard) {
-        ActiveComponent = HRDashboard;
-        componentProps = { section: hrSection };
-      } else if (showUserProfileSettings) {
-        ActiveComponent = UserProfileSettings;
-        componentProps = { userData, onUpdate: handleUserProfileUpdate };
-      } else if (showMyAccount) {
-        ActiveComponent = MyAccount;
-        componentProps = {
-          userData: {
-            ...userData,
-            firstName: userData?.firstName,
-            lastName: userData?.lastName,
-            first_name: userData?.first_name,
-            last_name: userData?.last_name,
-            email: userData?.email,
-            tenantId: userData?.tenantId || tenantId,
-          }
-        };
-      } else if (showIntegrationSettings) {
-        ActiveComponent = IntegrationSettings;
+        console.log('[DEBUG-REPORT] RenderMainContent detected showReportsManagement=true');
+        console.log('[DEBUG-REPORT] Directly rendering HRReportManagement component');
+        
+        // Instead of setting ActiveComponent, directly return the component
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`reports-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <HRReportManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showMainDashboard) {
         ActiveComponent = MainDashboard;
         componentProps = { userData };
@@ -1233,13 +1352,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
         componentProps = { reportType: selectedReport };
       } else if (showBankingDashboard) {
         ActiveComponent = BankingDashboard;
-      } else if (showPayrollDashboard) {
-        // Use a plain div for PayrollDashboard for now
-        return (
-          <ContentWrapperWithKey>
-            <div>Payroll Dashboard content goes here</div>
-          </ContentWrapperWithKey>
-        );
       } else if (showAnalysisPage) {
         ActiveComponent = AnalysisPage;
       } else if (showHelpCenter) {
@@ -1276,10 +1388,33 @@ const RenderMainContent = React.memo(function RenderMainContent({
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
+      } else if (showPerformanceManagement) {
+        console.log('[RenderMainContent] Rendering PerformanceManagement component');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`performance-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <PerformanceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       }
 
       // If we reached here and have an ActiveComponent, render it
       if (ActiveComponent) {
+        console.log('[DEBUG-REPORT] About to render ActiveComponent:', {
+          componentName: ActiveComponent.name,
+          sectionComponentKey,
+          navigationKey,
+          props: componentProps
+        });
+        
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${sectionComponentKey}-${navigationKey}`}>
@@ -1332,7 +1467,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showCreateOptions,
     selectedOption,
     showHome,
-    showKPIDashboard,
     showMainDashboard,
     userData,
     tenantId,
@@ -1340,9 +1474,11 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showHRDashboard,
     showEmployeeManagement,
     showTimesheetManagement,
+    showPayManagement,
     showTaxManagement,
     showBenefitsManagement,
     showReportsManagement,
+    showPayrollManagement,
     showPerformanceManagement,
     // Financial management dependencies
     showChartOfAccounts,

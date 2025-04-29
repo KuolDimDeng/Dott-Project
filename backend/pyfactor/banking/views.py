@@ -11,7 +11,7 @@ from django.views.decorators.csrf import csrf_exempt
 import plaid
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 from plaid.model.transactions_get_request import TransactionsGetRequest
-from .utils import get_reconciliation_summary
+from .utils import get_reconciliation_summary, get_payment_gateway_for_country
 from rest_framework import status
 from plaid.api import plaid_api
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
@@ -518,3 +518,213 @@ class BankingReportView(APIView):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+def get_user_country_from_cognito(request):
+    """
+    Extract the user's business country from Cognito attributes.
+    
+    Args:
+        request: The HTTP request with user information
+        
+    Returns:
+        str: Two-letter country code or None if not found
+    """
+    try:
+        # The exact implementation will depend on how Cognito attributes are accessed
+        # This assumes the attribute is available in the request or user object
+        
+        # Try to get from request headers first (might be set by middleware)
+        country_code = request.headers.get('X-Business-Country')
+        
+        # If not in headers, try to get from user's attributes
+        if not country_code and hasattr(request.user, 'custom_attributes'):
+            country_code = request.user.custom_attributes.get('businesscountry')
+            
+        # If not in user's attributes directly, try other potential locations
+        if not country_code and hasattr(request.user, 'userattributes'):
+            # This might be a different way attributes are stored
+            country_code = request.user.userattributes.get('custom:businesscountry')
+        
+        return country_code
+    except Exception as e:
+        logger.error(f"Error getting user country from Cognito: {str(e)}")
+        return None
+
+def connect_bank_account(request):
+    """
+    Connect a bank account using the appropriate payment gateway based on the user's country.
+    
+    This function:
+    1. Gets the user's country from Cognito attributes
+    2. Determines available payment gateways for that country
+    3. Uses the gateway specified in the request (or defaults to primary)
+    4. Connects to the bank using the selected gateway
+    """
+    try:
+        # Get the user's country
+        country_code = get_user_country_from_cognito(request)
+        
+        # Determine which payment gateways are available for this country
+        available_gateways = get_payment_gateway_for_country(country_code)
+        
+        # Get the selected gateway from the request or default to primary
+        selected_gateway = request.data.get('selected_gateway', available_gateways.get('primary', 'WISE'))
+        
+        # Connect using the appropriate gateway
+        if selected_gateway == 'WISE':
+            return connect_with_wise(request)
+        elif selected_gateway == 'STRIPE':
+            return connect_with_stripe(request)
+        elif selected_gateway == 'PLAID':
+            return connect_with_plaid(request)
+        elif selected_gateway == 'DLOCAL':
+            return connect_with_dlocal(request)
+        elif selected_gateway == 'PAYPAL':
+            return connect_with_paypal(request)
+        elif selected_gateway == 'MERCADO_PAGO':
+            return connect_with_mercado_pago(request)
+        elif selected_gateway == 'RAZORPAY':
+            return connect_with_razorpay(request)
+        elif selected_gateway == 'IYZICO':
+            return connect_with_iyzico(request)
+        elif selected_gateway == 'M_PESA':
+            return connect_with_mpesa(request)
+        else:
+            # Fallback to Wise
+            return connect_with_wise(request)
+    except Exception as e:
+        logger.error(f"Error connecting bank account: {str(e)}")
+        return Response(
+            {"error": "Failed to connect bank account", "details": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+def connect_with_wise(request):
+    """Placeholder for Wise integration"""
+    return Response(
+        {"message": "Wise integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_stripe(request):
+    """Placeholder for Stripe integration"""
+    return Response(
+        {"message": "Stripe integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_plaid(request):
+    """Connect bank account using Plaid"""
+    # Existing Plaid implementation
+    user = request.user
+    provider_data = request.data
+
+    try:
+        integration = PlaidItem.objects.create(
+            user=user,
+            access_token=provider_data['access_token'],
+            item_id=provider_data['item_id']
+        )
+        integration_type = ContentType.objects.get_for_model(PlaidItem)
+        
+        bank_account = BankAccount.objects.create(
+            user=user,
+            bank_name=provider_data['bank_name'],
+            account_number=provider_data['account_number'],
+            balance=provider_data['balance'],
+            account_type=provider_data.get('account_type'),
+            integration_type=integration_type,
+            integration_id=integration.id
+        )
+
+        return Response({
+            "message": "Bank account connected successfully with Plaid",
+            "account_id": bank_account.id
+        }, status=status.HTTP_201_CREATED)
+    except KeyError as e:
+        return Response(
+            {"error": f"Missing required field: {str(e)}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"Failed to connect bank account with Plaid: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+def connect_with_dlocal(request):
+    """Placeholder for DLocal integration"""
+    return Response(
+        {"message": "DLocal integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_paypal(request):
+    """Placeholder for PayPal integration"""
+    return Response(
+        {"message": "PayPal integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_mercado_pago(request):
+    """Placeholder for Mercado Pago integration"""
+    return Response(
+        {"message": "Mercado Pago integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_razorpay(request):
+    """Placeholder for Razorpay integration"""
+    return Response(
+        {"message": "Razorpay integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_iyzico(request):
+    """Placeholder for iyzico integration"""
+    return Response(
+        {"message": "iyzico integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+def connect_with_mpesa(request):
+    """Placeholder for M-Pesa integration"""
+    return Response(
+        {"message": "M-Pesa integration not yet implemented"},
+        status=status.HTTP_501_NOT_IMPLEMENTED
+    )
+
+class PaymentGatewayView(APIView):
+    """
+    View to retrieve the appropriate payment gateway for a country.
+    Uses the country-to-gateway mapping in the database to determine 
+    which gateway to use for a given country.
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        """
+        Get payment gateway options for a country.
+        
+        Query Parameters:
+            country (str): Two-letter country code
+            
+        Returns:
+            JSON response with gateway information for the country
+        """
+        country_code = request.query_params.get('country', None)
+        
+        if not country_code:
+            # Try to get from user's Cognito attributes
+            country_code = get_user_country_from_cognito(request)
+            
+        if not country_code:
+            return Response(
+                {"error": "Country code not provided"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        # Get the gateway options from our utility function
+        gateway_options = get_payment_gateway_for_country(country_code)
+        
+        return Response(gateway_options)

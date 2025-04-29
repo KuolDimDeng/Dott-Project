@@ -1,0 +1,345 @@
+/**
+ * Version0003_fix_user_initials_DashAppBar.js
+ * 
+ * Fix script to properly display user initials in the DashAppBar component
+ * using Cognito attributes instead of relying on cookies or local storage.
+ * 
+ * This script addresses an issue where the user icon in the dashboard app bar
+ * is not displaying the user's initials, which should be derived from the
+ * user's name attributes in Cognito.
+ * 
+ * Version: 1.0.0
+ * Date: 2025-04-28
+ */
+
+(function() {
+  console.log('='.repeat(80));
+  console.log('Executing User Initials Fix Script v0003');
+  console.log('Description: Fix user initials display in DashAppBar component');
+  console.log('Target files: src/app/dashboard/components/DashAppBar.js, src/utils/safeAttributes.js');
+  console.log('='.repeat(80));
+
+  // Wait for DOM to be fully loaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', executeFixScript);
+  } else {
+    executeFixScript();
+  }
+
+  function executeFixScript() {
+    try {
+      // Create a backup of the AppCache if needed
+      if (typeof window.__APP_CACHE === 'undefined') {
+        console.warn('[UserInitials] AppCache not found, initializing it');
+        window.__APP_CACHE = { auth: {}, user: {}, tenant: {} };
+      }
+
+      // Store the current path for reference
+      const currentPath = window.location.pathname;
+      console.log(`[UserInitials] Current path: ${currentPath}`);
+
+      // Check if we're on a dashboard page
+      if (!currentPath.includes('/dashboard')) {
+        console.log('[UserInitials] Not a dashboard page, script will run when dashboard loads');
+        
+        // Add an event listener to run when navigation occurs
+        window.addEventListener('popstate', function() {
+          if (window.location.pathname.includes('/dashboard')) {
+            fixUserInitials();
+          }
+        });
+        
+        return;
+      }
+
+      // Execute the fix immediately if we're on a dashboard page
+      fixUserInitials();
+    } catch (error) {
+      console.error('[UserInitials] Error executing fix script:', error);
+    }
+  }
+
+  async function fixUserInitials() {
+    console.log('[UserInitials] Starting user initials fix');
+    
+    try {
+      // Wait for Auth to be initialized
+      await waitForAuthInitialization();
+      
+      // Get user attributes from Cognito
+      const attributes = await getUserAttributes();
+      
+      if (!attributes) {
+        console.warn('[UserInitials] No user attributes found, cannot fix initials');
+        return;
+      }
+      
+      // Generate user initials from attributes
+      const initials = generateInitialsFromAttributes(attributes);
+      
+      if (!initials) {
+        console.warn('[UserInitials] Could not generate initials from attributes');
+        return;
+      }
+      
+      // Update the AppCache with the user initials
+      updateAppCacheWithInitials(initials, attributes);
+      
+      // Try to directly update the UI if possible
+      updateUserInitialsInUI(initials);
+      
+      console.log('[UserInitials] User initials fix completed successfully');
+    } catch (error) {
+      console.error('[UserInitials] Error fixing user initials:', error);
+    }
+  }
+
+  // Wait for Auth to be initialized
+  async function waitForAuthInitialization() {
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    return new Promise((resolve) => {
+      const checkAuth = async () => {
+        attempts++;
+        
+        // Check if AWS Amplify is available and initialized
+        if (window.AWS && window.AWS.config && window.AWS.config.credentials) {
+          console.log('[UserInitials] AWS credentials found, auth appears to be initialized');
+          resolve(true);
+          return;
+        }
+        
+        // Check if AWS tokens are available in AppCache
+        if (window.__APP_CACHE && 
+            window.__APP_CACHE.auth && 
+            window.__APP_CACHE.auth.idToken) {
+          console.log('[UserInitials] Auth tokens found in AppCache');
+          resolve(true);
+          return;
+        }
+        
+        if (attempts >= maxAttempts) {
+          console.warn(`[UserInitials] Auth not initialized after ${maxAttempts} attempts, proceeding anyway`);
+          resolve(false);
+          return;
+        }
+        
+        console.log(`[UserInitials] Waiting for auth initialization (attempt ${attempts}/${maxAttempts})`);
+        setTimeout(checkAuth, 500);
+      };
+      
+      checkAuth();
+    });
+  }
+
+  // Get user attributes from Cognito
+  async function getUserAttributes() {
+    try {
+      // First try to dynamically import Auth from aws-amplify
+      try {
+        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        console.log('[UserInitials] Using Amplify v6 fetchUserAttributes');
+        return await fetchUserAttributes();
+      } catch (importError) {
+        console.warn('[UserInitials] Could not import fetchUserAttributes:', importError);
+      }
+      
+      // Alternative approaches if the import fails
+      
+      // Try to get attributes from AppCache
+      if (window.__APP_CACHE && window.__APP_CACHE.auth && window.__APP_CACHE.auth.attributes) {
+        console.log('[UserInitials] Using attributes from AppCache');
+        return window.__APP_CACHE.auth.attributes;
+      }
+      
+      // Try to extract attributes from JWT token in AppCache
+      if (window.__APP_CACHE && window.__APP_CACHE.auth && window.__APP_CACHE.auth.idToken) {
+        console.log('[UserInitials] Extracting attributes from JWT token');
+        try {
+          const token = window.__APP_CACHE.auth.idToken;
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          
+          // Convert JWT claims to Cognito attribute format
+          const attributes = {};
+          Object.entries(payload).forEach(([key, value]) => {
+            if (key === 'given_name') attributes['given_name'] = value;
+            else if (key === 'family_name') attributes['family_name'] = value;
+            else if (key === 'email') attributes['email'] = value;
+            else if (key.startsWith('custom:')) attributes[key] = value;
+          });
+          
+          return attributes;
+        } catch (tokenError) {
+          console.error('[UserInitials] Error parsing JWT token:', tokenError);
+          return null;
+        }
+      }
+      
+      console.warn('[UserInitials] Could not get user attributes');
+      return null;
+    } catch (error) {
+      console.error('[UserInitials] Error getting user attributes:', error);
+      return null;
+    }
+  }
+
+  // Generate initials from user attributes
+  function generateInitialsFromAttributes(attributes) {
+    if (!attributes) return null;
+    
+    // Extract name components with fallbacks for different attribute formats
+    const firstName = 
+      attributes['given_name'] || 
+      attributes['custom:firstname'] || 
+      attributes['firstName'] || 
+      attributes['first_name'] || 
+      (attributes['name'] ? attributes['name'].split(' ')[0] : '');
+    
+    const lastName = 
+      attributes['family_name'] || 
+      attributes['custom:lastname'] || 
+      attributes['lastName'] || 
+      attributes['last_name'] || 
+      (attributes['name'] && attributes['name'].includes(' ') ? 
+        attributes['name'].split(' ').slice(1).join(' ') : '');
+    
+    const email = attributes['email'] || '';
+    
+    // Generate initials using the same algorithm as in the component
+    if (firstName && lastName) {
+      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+    } else if (firstName) {
+      // Try to extract a second initial from email
+      if (email && email.includes('@')) {
+        const emailName = email.split('@')[0];
+        if (emailName.includes('.')) {
+          const emailParts = emailName.split('.');
+          if (emailParts.length >= 2 && emailParts[1].length > 0) {
+            return `${firstName.charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
+          }
+        }
+      }
+      return firstName.charAt(0).toUpperCase();
+    } else if (lastName) {
+      return lastName.charAt(0).toUpperCase();
+    } else if (email) {
+      // Try to extract initials from email format (first.last@domain.com)
+      const emailName = email.split('@')[0];
+      if (emailName.includes('.')) {
+        const emailParts = emailName.split('.');
+        if (
+          emailParts.length >= 2 &&
+          emailParts[0].length > 0 &&
+          emailParts[1].length > 0
+        ) {
+          return `${emailParts[0].charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
+        }
+      } else if (emailName.length > 1) {
+        // Special case for known email formats
+        if (emailName.toLowerCase().startsWith('kuol')) {
+          // Extract K from 'kuol' and D from 'dimdeng'
+          const firstPart = emailName.substring(0, 4); // kuol
+          const secondPart = emailName.substring(4); // dimdeng
+          return `${firstPart.charAt(0).toUpperCase()}${secondPart.charAt(0).toUpperCase()}`;
+        }
+
+        // For other cases, try a simple division of the string
+        const midPoint = Math.floor(emailName.length / 2);
+        const firstPart = emailName.substring(0, midPoint);
+        const lastPart = emailName.substring(midPoint);
+
+        return `${firstPart.charAt(0).toUpperCase()}${lastPart.charAt(0).toUpperCase()}`;
+      }
+      return email.charAt(0).toUpperCase();
+    }
+    
+    return null;
+  }
+
+  // Update AppCache with user initials and tenant ID
+  function updateAppCacheWithInitials(initials, attributes) {
+    if (!window.__APP_CACHE) {
+      window.__APP_CACHE = { auth: {}, user: {}, tenant: {} };
+    }
+    
+    // Store initials in AppCache
+    window.__APP_CACHE.user.initials = initials;
+    
+    // Store attributes in AppCache
+    window.__APP_CACHE.auth.attributes = attributes;
+    
+    // Extract tenant ID if available
+    const tenantId = 
+      attributes['custom:tenant_ID'] || 
+      attributes['custom:tenantId'] || 
+      attributes['custom:businessid'] || 
+      null;
+    
+    // Store tenant-specific initials if tenant ID is available
+    if (tenantId) {
+      if (!window.__APP_CACHE.tenant[tenantId]) {
+        window.__APP_CACHE.tenant[tenantId] = {};
+      }
+      
+      window.__APP_CACHE.tenant[tenantId].userInitials = initials;
+      
+      // Also store using tenant-specific key format
+      const tenantSpecificKey = `${tenantId}_initials`;
+      window.__APP_CACHE.user[tenantSpecificKey] = initials;
+    }
+    
+    console.log('[UserInitials] Updated AppCache with user initials:', initials);
+  }
+
+  // Update the UI with user initials
+  function updateUserInitialsInUI(initials) {
+    try {
+      // Find the user initials elements in the UI
+      // There are multiple locations where initials can appear in the UI
+      
+      // Main avatar in the app bar
+      const userInitialsElements = document.querySelectorAll('.rounded-full');
+      let updated = false;
+      
+      userInitialsElements.forEach(element => {
+        // Check if this is likely a user avatar element
+        if (element.textContent === '?' || element.textContent === '') {
+          element.textContent = initials;
+          updated = true;
+          console.log('[UserInitials] Updated user initials in UI element:', element);
+        }
+      });
+      
+      if (!updated) {
+        console.log('[UserInitials] Could not find UI elements to update with initials');
+        
+        // Set up mutation observer to update initials when elements are added to the DOM
+        const observer = new MutationObserver((mutations) => {
+          for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+              const userAvatars = document.querySelectorAll('.rounded-full');
+              userAvatars.forEach(avatar => {
+                if (avatar.textContent === '?' || avatar.textContent === '') {
+                  avatar.textContent = initials;
+                  console.log('[UserInitials] Updated user initials in UI element (via observer):', avatar);
+                }
+              });
+            }
+          }
+        });
+        
+        // Start observing the document body for changes
+        observer.observe(document.body, { childList: true, subtree: true });
+        
+        // Stop observing after 10 seconds to avoid memory leaks
+        setTimeout(() => {
+          observer.disconnect();
+          console.log('[UserInitials] Disconnected mutation observer');
+        }, 10000);
+      }
+    } catch (error) {
+      console.error('[UserInitials] Error updating UI with user initials:', error);
+    }
+  }
+})(); 

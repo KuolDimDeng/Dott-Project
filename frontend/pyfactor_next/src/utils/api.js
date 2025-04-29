@@ -190,3 +190,59 @@ export function handleApiError(error) {
     message
   };
 }
+
+/**
+ * Fetches benefits data for a specific employee
+ * @param {string} employeeId - The ID of the employee
+ * @returns {Promise<Object>} - The benefits data for the employee
+ */
+export const fetchEmployeeBenefits = async (employeeId) => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employees/${employeeId}/benefits`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch benefits data');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching employee benefits:', error);
+    return null;
+  }
+};
+
+/**
+ * Updates benefits data for a specific employee
+ * @param {string} employeeId - The ID of the employee
+ * @param {Object} benefitsData - The updated benefits data
+ * @returns {Promise<Object>} - The updated benefits data
+ */
+export const updateEmployeeBenefits = async (employeeId, benefitsData) => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/employees/${employeeId}/benefits`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(benefitsData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update benefits data');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating employee benefits:', error);
+    throw error;
+  }
+};

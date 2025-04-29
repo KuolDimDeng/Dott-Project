@@ -14,28 +14,18 @@ const STRIPE_SCRIPT_ID = 'stripe-js';
  */
 export const loadStripeScript = () => {
   return new Promise((resolve, reject) => {
-    if (document.getElementById(STRIPE_SCRIPT_ID)) {
+    if (window.Stripe) {
       resolve();
       return;
     }
 
     const script = document.createElement('script');
-    script.id = STRIPE_SCRIPT_ID;
     script.src = 'https://js.stripe.com/v3/';
     script.async = true;
-    script.onload = () => {
-      cache.setItem(STRIPE_CACHE_KEY, true)
-        .then(() => resolve())
-        .catch(error => {
-          console.error('Error caching Stripe loaded state:', error);
-          resolve(); // Still resolve as script loaded successfully
-        });
-    };
-    script.onerror = (error) => {
-      console.error('Error loading Stripe script:', error);
-      reject(error);
-    };
-    document.head.appendChild(script);
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Stripe.js'));
+
+    document.body.appendChild(script);
   });
 };
 
@@ -80,4 +70,50 @@ export const clearStripeCache = async () => {
     console.error('Error clearing Stripe cache:', error);
     throw error;
   }
+};
+
+/**
+ * Utility functions for Stripe integration
+ */
+
+/**
+ * Creates a payment method from card details
+ * @param {Object} stripe - The Stripe instance
+ * @param {Object} elements - The Stripe Elements instance
+ * @param {Object} cardElement - The card Element
+ * @returns {Promise} - Resolves with the payment method or rejects with an error
+ */
+export const createPaymentMethod = async (stripe, elements, cardElement) => {
+  try {
+    const { error, paymentMethod } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+    });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return paymentMethod;
+  } catch (error) {
+    console.error('Error creating payment method:', error);
+    throw error;
+  }
+};
+
+/**
+ * Formats currency amounts for display
+ * @param {number} amount - Amount in smallest currency unit (e.g., cents)
+ * @param {string} currency - Currency code (e.g., 'usd')
+ * @returns {string} - Formatted currency string
+ */
+export const formatCurrency = (amount, currency = 'usd') => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+    minimumFractionDigits: 2,
+  });
+  
+  // Stripe amounts are in cents, convert to dollars for display
+  return formatter.format(amount / 100);
 }; 

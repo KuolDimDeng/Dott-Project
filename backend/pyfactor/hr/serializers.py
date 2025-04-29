@@ -1,96 +1,25 @@
 # hr/serializers.py
 
 from rest_framework import serializers
-from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission
+from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    supervisor_name = serializers.CharField(source='supervisor.get_full_name', read_only=True)
-    dob = serializers.DateField(input_formats=['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%d'])
-    date_joined = serializers.DateField(input_formats=['%Y-%m-%dT%H:%M:%S.%fZ', '%Y-%m-%d'])
-    
-    # Add masked fields for SSN and bank account display
-    masked_ssn = serializers.SerializerMethodField()
-    masked_bank_account = serializers.SerializerMethodField()
-    
+    """
+    Serializer for Employee model with sensitive information excluded
+    """
     class Meta:
         model = Employee
         fields = [
-            'id', 'employee_number', 'first_name', 'middle_name', 'last_name',
-            'dob', 'gender', 'marital_status', 'nationality', 'street',
-            'postcode', 'city', 'country', 'date_joined', 'last_work_date',
-            'active', 'role', 'site_access_privileges', 'email', 'phone_number',
-            'department', 'salary', 'emergency_contact_name', 'emergency_contact_phone',
-            'skills', 'documents', 'wage_per_hour', 'hours_per_day', 'overtime_rate',
-            'days_per_week', 'employment_type', 'supervisor', 'supervisor_name',
-            'onboarded', 'security_number_type', 'tax_filing_status', 'job_title',
-            'probation', 'probation_end_date', 'health_insurance_enrollment',
-            'pension_enrollment', 'termination_date', 'reason_for_leaving',
-            'business_id', 'masked_ssn', 'masked_bank_account', 'ID_verified', 'areManager', 'supervising',
-            # New Stripe fields
-            'stripe_person_id', 'ssn_stored_in_stripe', 'bank_account_stored_in_stripe',
-            'tax_id_stored_in_stripe', 'ssn_last_four', 'bank_account_last_four'
+            'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
+            'email', 'phone_number', 'job_title', 'department', 'employment_type',
+            'date_joined', 'salary', 'active', 'onboarded', 'role',
+            'street', 'city', 'postcode', 'country', 'compensation_type',
+            'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment'
         ]
-        read_only_fields = [
-            'id', 'employee_number', 'stripe_person_id', 'ssn_stored_in_stripe',
-            'bank_account_stored_in_stripe', 'tax_id_stored_in_stripe',
-            'ssn_last_four', 'bank_account_last_four', 'masked_ssn', 'masked_bank_account'
-        ]
-        
-    def get_masked_ssn(self, obj):
-        """Return a masked version of the SSN for display"""
-        if obj.ssn_last_four:
-            return f"XXX-XX-{obj.ssn_last_four}"
-        return None
-        
-    def get_masked_bank_account(self, obj):
-        """Return a masked version of the bank account for display"""
-        if obj.bank_account_last_four:
-            return f"XXXXXXXXXXXX{obj.bank_account_last_four}"
-        return None
-        
-    def create(self, validated_data):
-        # Create the employee without sensitive data first
-        # Set defaults for required fields
-        if 'role' not in validated_data or not validated_data['role']:
-            validated_data['role'] = 'user'
-        from datetime import datetime
-        # Always set date_joined to current date if not provided
-        if 'date_joined' not in validated_data or not validated_data['date_joined']:
-            validated_data['date_joined'] = datetime.now().date()
-        employee = Employee.objects.create(**validated_data)
-        
-        # If SSN was provided in the request context, store it in Stripe
-        request = self.context.get('request')
-        if request and request.data.get('security_number'):
-            employee.save_ssn_to_stripe(request.data.get('security_number'))
-            
-        # If bank account details were provided, store them in Stripe
-        if request and request.data.get('bank_account_number') and request.data.get('routing_number'):
-            employee.save_bank_account_to_stripe(
-                request.data.get('bank_account_number'),
-                request.data.get('routing_number')
-            )
-            
-        return employee
-
-    def to_internal_value(self, data):
-        # Convert salary and wage_rate to Decimal if they're strings
-        if 'salary' in data and isinstance(data['salary'], str):
-            try:
-                data['salary'] = Decimal(data['salary'])
-            except InvalidOperation:
-                raise serializers.ValidationError({'salary': 'Must be a valid number'})
-        
-        if 'wage_rate' in data and isinstance(data['wage_rate'], str) and data['wage_rate']:
-            try:
-                data['wage_rate'] = Decimal(data['wage_rate'])
-            except InvalidOperation:
-                raise serializers.ValidationError({'wage_rate': 'Must be a valid number'})
-
-        return super().to_internal_value(data)
+        read_only_fields = ['id', 'employee_number']
 
 
 class RoleSerializer(serializers.ModelSerializer):
@@ -112,3 +41,68 @@ class PreboardingFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = PreboardingForm
         fields = '__all__'
+
+class PerformanceReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceReview
+        fields = '__all__'
+        read_only_fields = ('id', 'review_number', 'created_at', 'updated_at')
+
+
+class PerformanceMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceMetric
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceRating
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceGoal
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class FeedbackRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedbackRecord
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceSetting
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceReviewDetailSerializer(serializers.ModelSerializer):
+    ratings = PerformanceRatingSerializer(many=True, read_only=True)
+    related_goals = serializers.SerializerMethodField()
+    related_feedback = FeedbackRecordSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = PerformanceReview
+        fields = '__all__'
+        read_only_fields = ('id', 'review_number', 'created_at', 'updated_at')
+    
+    def get_related_goals(self, obj):
+        goals = PerformanceGoal.objects.filter(related_review=obj)
+        return PerformanceGoalSerializer(goals, many=True).data
+
+
+class BenefitsSerializer(serializers.ModelSerializer):
+    """Serializer for the Benefits model"""
+    
+    class Meta:
+        model = Benefits
+        fields = '__all__'
+        read_only_fields = ['id', 'employee', 'business_id', 'created_at', 'updated_at']

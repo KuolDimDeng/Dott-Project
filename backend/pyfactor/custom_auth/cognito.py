@@ -108,7 +108,7 @@ class CognitoClient:
                 if not key.startswith('custom:') and not key in ['email', 'given_name', 'family_name', 'name', 'phone_number']:
                     # These attribute types should have the custom: prefix
                     custom_attr_patterns = ['business', 'onboarding', 'setup', 'sub', 'acc', 'payment', 
-                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last']
+                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last', 'employee']
                     
                     # Check if the key matches any of the patterns for custom attributes
                     should_be_custom = any(pattern in key.lower() for pattern in custom_attr_patterns)
@@ -416,7 +416,7 @@ def update_user_attributes_sync(user_id, attributes):
                 if not key.startswith('custom:') and not key in ['email', 'given_name', 'family_name', 'name', 'phone_number']:
                     # These attribute types should have the custom: prefix
                     custom_attr_patterns = ['business', 'onboarding', 'setup', 'sub', 'acc', 'payment', 
-                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last']
+                                           'preferences', 'legal', 'date', 'attr', 'use', 'pay', 'last', 'employee']
                     
                     # Check if the key matches any of the patterns for custom attributes
                     should_be_custom = any(pattern in key.lower() for pattern in custom_attr_patterns)

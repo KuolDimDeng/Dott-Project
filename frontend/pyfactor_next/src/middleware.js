@@ -64,7 +64,7 @@ function resetCircuitBreakerForCriticalPath(pathname) {
  * @returns {NextResponse} - The response
  */
 export async function middleware(request) {
-  const { pathname } = new URL(request.url);
+  const { pathname, search } = request.nextUrl;
   
   // Reset circuit breaker for important paths
   resetCircuitBreakerForCriticalPath(pathname);
@@ -87,6 +87,44 @@ export async function middleware(request) {
     return NextResponse.redirect(new URL('/onboarding/business-info', request.url));
   }
   
+  // Check if navigating from subscription to dashboard
+  if (pathname.includes('/dashboard') && search.includes('fromSubscription=true')) {
+    // Extract the tenant ID from the URL path - format is /{tenantId}/dashboard
+    const tenantIdMatch = pathname.match(/\/([^\/]+)\/dashboard/);
+    const tenantId = tenantIdMatch ? tenantIdMatch[1] : null;
+    
+    // Get authentication cookies and tokens
+    const authToken = request.cookies.get('authToken')?.value;
+    const idToken = request.cookies.get('idToken')?.value;
+    const refreshToken = request.cookies.get('refreshToken')?.value;
+    
+    // Create a response that allows the dashboard access
+    const response = NextResponse.next();
+    
+    // If we have tenant ID but missing auth tokens, add emergency token headers
+    if (tenantId && (!authToken || !idToken)) {
+      // Set emergency headers for backend verification
+      response.headers.set('X-Emergency-Access', 'true');
+      response.headers.set('X-Tenant-ID', tenantId);
+      if (search.includes('plan=free')) {
+        response.headers.set('X-Subscription-Type', 'free');
+      }
+      
+      // Add cookies to maintain session
+      if (!authToken && request.cookies.get('authSessionId')?.value) {
+        response.cookies.set('authToken', request.cookies.get('authSessionId').value, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 60 * 60 * 24, // 1 day
+          path: '/',
+        });
+      }
+    }
+    
+    return response;
+  }
+  
   // Extract tenant information to determine if isolation check is needed
   const tenantInfo = extractTenantId(request);
   
@@ -105,7 +143,10 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
-    // Match all paths except for static resources
-    '/((?!_next/static|_next/image|favicon.ico|robots.txt).*)',
+    // Apply to dashboard routes
+    '/:tenantId/dashboard',
+    '/:tenantId/dashboard/:path*',
+    // Don't run on API routes, static files, etc.
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

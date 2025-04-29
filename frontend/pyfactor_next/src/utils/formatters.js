@@ -119,4 +119,46 @@ export const fileSizeFormat = (bytes) => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+};
+
+/**
+ * Format a date for display
+ * @param {Date|string} date - The date to format
+ * @returns {string} - The formatted date string
+ */
+export const formatDate = (date) => {
+  if (!date) return '';
+  
+  try {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, 'MMM d, yyyy');
+  } catch (error) {
+    console.error('Date formatting error:', error);
+    return String(date);
+  }
+};
+
+/**
+ * Format currency for display
+ * @param {number} amount - The amount to format 
+ * @param {string} currency - Currency code (e.g., USD, EUR, GBP)
+ * @returns {string} - The formatted currency string
+ */
+export const formatCurrency = (amount, currency = 'USD') => {
+  if (amount === null || amount === undefined || isNaN(amount)) {
+    return 'N/A';
+  }
+  
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  } catch (error) {
+    console.error('Currency formatting error:', error);
+    // Fallback to a simple format
+    return `${currency} ${Number(amount).toFixed(2)}`;
+  }
 }; 

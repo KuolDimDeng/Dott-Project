@@ -643,9 +643,38 @@ export default function SignInForm() {
               setCacheValue('user_attributes', userAttributes, { ttl: 3600000 }); // 1 hour cache
               
               // Also store in window.__APP_CACHE directly
-              if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.user) {
+              if (typeof window !== 'undefined') {
+                window.__APP_CACHE = window.__APP_CACHE || {};
+                window.__APP_CACHE.user = window.__APP_CACHE.user || {};
                 window.__APP_CACHE.user.attributes = userAttributes;
                 window.__APP_CACHE.user.email = userAttributes.email || formData.username;
+                
+                // Ensure auth data is also stored in sessionStorage as a fallback
+                try {
+                  // Get the tokens from the current session
+                  const { fetchAuthSession } = await import('@/config/amplifyUnified');
+                  const session = await fetchAuthSession();
+                  
+                  if (session && session.tokens) {
+                    // Store tokens in sessionStorage for fallback
+                    sessionStorage.setItem('idToken', session.tokens.idToken.toString());
+                    sessionStorage.setItem('accessToken', session.tokens.accessToken.toString());
+                    sessionStorage.setItem('tokenTimestamp', Date.now().toString());
+                    sessionStorage.setItem('hasSession', 'true');
+                    
+                    // Also store in APP_CACHE
+                    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                    window.__APP_CACHE.auth.idToken = session.tokens.idToken.toString();
+                    window.__APP_CACHE.auth.token = session.tokens.idToken.toString();
+                    window.__APP_CACHE.auth.accessToken = session.tokens.accessToken.toString();
+                    window.__APP_CACHE.auth.hasSession = true;
+                    window.__APP_CACHE.auth.provider = 'cognito';
+                    
+                    logger.debug('[SignInForm] Successfully stored tokens in sessionStorage and APP_CACHE');
+                  }
+                } catch (e) {
+                  logger.warn('[SignInForm] Error storing tokens in sessionStorage:', e);
+                }
               }
               
               // Log raw onboarding status value before conversion

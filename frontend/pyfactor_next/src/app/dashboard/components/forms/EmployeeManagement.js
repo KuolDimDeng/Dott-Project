@@ -1596,30 +1596,42 @@ const EmployeeManagement = () => {
               <thead className="bg-gray-50">
                 {headerGroups.map(headerGroup => (
                   <tr {...headerGroup.getHeaderGroupProps()}>
-                    {headerGroup.headers.map(column => (
-                      <th
-                        {...column.getHeaderProps(column.getSortByToggleProps())}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        {column.render('Header')}
-                        <span>
-                          {column.isSorted
-                            ? column.isSortedDesc
-                              ? ' 🔽'
-                              : ' 🔼'
-                            : ''}
-                        </span>
-                      </th>
-                    ))}
+                    {headerGroup.headers.map(column => {
+                      // Get props but extract the key
+                      const headerProps = column.getHeaderProps(column.getSortByToggleProps());
+                      const { key, ...restHeaderProps } = headerProps;
+                      
+                      return (
+                        <th
+                          key={key}
+                          {...restHeaderProps}
+                          className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        >
+                          {column.render('Header')}
+                          <span>
+                            {column.isSorted
+                              ? column.isSortedDesc
+                                ? ' 🔽'
+                                : ' 🔼'
+                              : ''}
+                          </span>
+                        </th>
+                      );
+                    })}
                   </tr>
                 ))}
               </thead>
               <tbody {...getTableBodyProps()} className="bg-white divide-y divide-gray-200">
                 {page.map((row, i) => {
-                  prepareRow(row)
+                  prepareRow(row);
+                  // Extract key from row props to fix React key prop warning
+                  const rowProps = row.getRowProps();
+                  const { key, ...restRowProps } = rowProps;
+                  
                   return (
                     <tr 
-                      {...row.getRowProps()} 
+                      key={key || row.id || i}
+                      {...restRowProps} 
                       className="hover:bg-gray-50 cursor-pointer"
                       onClick={() => {
                         setSelectedEmployee(row.original);
@@ -1627,9 +1639,14 @@ const EmployeeManagement = () => {
                       }}
                     >
                       {row.cells.map(cell => {
+                        // Extract key from cell props
+                        const cellProps = cell.getCellProps();
+                        const { key, ...restCellProps } = cellProps;
+                        
                         return (
                           <td
-                            {...cell.getCellProps()}
+                            key={key}
+                            {...restCellProps}
                             className="px-6 py-4 whitespace-nowrap"
                             onClick={(e) => {
                               // Prevent row click for action buttons
@@ -2411,8 +2428,11 @@ const PersonalInformationTab = () => {
           const response = await fetch(url, { 
             headers: { 
               'Cache-Control': 'no-cache',
-              'X-Dashboard-Route': 'true'
-            }
+              'X-Dashboard-Route': 'true',
+              'Authorization': 'Bearer ' + (localStorage.getItem('idToken') || sessionStorage.getItem('idToken') || ''),
+              'X-Tenant-ID': tenantId || ''
+            },
+            credentials: 'include'
           });
           
           if (response.ok) {
@@ -2435,6 +2455,17 @@ const PersonalInformationTab = () => {
           }
         } catch (apiError) {
           console.error('Error fetching from User Profile API:', apiError);
+          // Log additional info about the error for debugging
+          if (apiError.response) {
+            console.error('API Error Status:', apiError.response.status);
+            console.error('API Error Headers:', apiError.response.headers);
+          } else if (apiError.request) {
+            console.error('No response received:', apiError.request);
+          }
+          // Check specifically for auth errors to handle them better
+          if (apiError.status === 401 || (apiError.response && apiError.response.status === 401)) {
+            console.warn('[UserProfile] Authentication error (401), will try Cognito fallback');
+          }
         }
         
         // 2. If API fails, try to get data from AWS App Cache
@@ -2454,21 +2485,63 @@ const PersonalInformationTab = () => {
         }
         
         // 3. If both fail, try to get from Cognito attributes
-        if (!userData && window.fetchUserAttributes) {
+        if (!userData) {
           try {
-            console.log('Fetching from Cognito attributes');
-            const userAttributes = await window.fetchUserAttributes();
-            userData = {
-              first_name: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
-              last_name: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
-              email: userAttributes['email'] || '',
-              phone_number: userAttributes['phone_number'] || ''
-            };
+            console.log('[UserProfile] Falling back to Cognito attributes');
+            
+            // Handle multiple possible auth methods in a safer way
+            let userAttributes = null;
+            
+            // First try the global fetchUserAttributes if available
+            if (typeof window.fetchUserAttributes === 'function') {
+              try {
+                console.log('[UserProfile] Using window.fetchUserAttributes');
+                userAttributes = await window.fetchUserAttributes();
+              } catch (error) {
+                console.warn('[UserProfile] Error with fetchUserAttributes:', error.message);
+              }
+            }
+            
+            // Try Auth from AWS Amplify if available and we didn't get attributes yet
+            if (!userAttributes && window.Auth && typeof window.Auth.currentAuthenticatedUser === 'function') {
+              try {
+                console.log('[UserProfile] Using Auth.currentAuthenticatedUser');
+                const user = await window.Auth.currentAuthenticatedUser();
+                userAttributes = user.attributes;
+              } catch (error) {
+                console.warn('[UserProfile] Error with Auth.currentAuthenticatedUser:', error.message);
+              }
+            }
+            
+            // Try Amplify v6 API if available and we still don't have attributes
+            if (!userAttributes && window.Amplify && window.Amplify.Auth) {
+              try {
+                console.log('[UserProfile] Using Amplify v6 API');
+                const user = await window.Amplify.Auth.currentAuthenticatedUser();
+                userAttributes = user.attributes;
+              } catch (error) {
+                console.warn('[UserProfile] Error with Amplify.Auth:', error.message);
+              }
+            }
+            
+            // Check if we found attributes through any method
+            if (!userAttributes) {
+              console.warn('[UserProfile] Could not retrieve user attributes from any method');
+              // Continue without throwing, will use default empty values later
+            } else {
+              // userAttributes is now retrieved above through multiple fallback methods
+              userData = {
+                first_name: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
+                last_name: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
+                email: userAttributes['email'] || '',
+                phone_number: userAttributes['phone_number'] || ''
+              };
+            }
           } catch (cognitoError) {
             console.error('Error fetching from Cognito:', cognitoError);
           }
         }
-        
+
         // If we couldn't get user data from any source, use empty defaults
         if (!userData) {
           console.log('No user data found, using defaults');
@@ -2491,7 +2564,7 @@ const PersonalInformationTab = () => {
       } catch (error) {
         console.error('Error fetching personal information:', error);
       }
-    };;
+    };
     
     fetchPersonalInfo();
   }, []);

@@ -1,6 +1,38 @@
 # Backend Scripts Registry
 
-This file tracks all scripts in the backend scripts directory, their purpose, and execution status.
+This file tracks all scripts created for backend modifications, fixes, and implementations.
+
+## Script Inventory
+
+| Version | Script Name | Description | Date | Status |
+|---------|------------|-------------|------|--------|
+| 0001 | `Version0001_BankingModels_FixLinterErrors.py` | Fix linter errors in Banking Models | 2025-04-28 | Applied |
+| 0002 | `Version0002_BankingModels_LinterNotes.py` | Document linter limitation with dynamic imports | 2025-04-28 | Applied |
+| 0003 | `Version0003_Create_Country_Payment_Gateway_Mapping.py` | Creates a country to payment gateway mapping for Connect to Bank feature | 2024-05-30 | Applied |
+| 0004 | `Version0004_Update_Country_Payment_Gateway_Model.py` | Updates CountryPaymentGateway model to support multiple gateways per country | 2024-05-30 | Applied |
+| 0005 | `Version0005_Prioritize_Plaid_Gateway.py` | Updates country-gateway mappings to prioritize Plaid in supported countries | 2025-04-28 | Applied |
+| 0006 | `payroll_migration_fix.md` | Generated and applied missing payroll migrations for new models | 2025-04-28 | Applied |
+
+## Usage Guidelines
+
+1. All scripts should follow the naming convention: `Version<number>_<description>_<file_modified>.py`
+2. Scripts should be documented with a header explaining their purpose
+3. Before executing any script, back up affected files
+4. Each script should be listed in this registry with current status
+5. Scripts should handle errors gracefully and provide logging
+
+## Execution Status Definitions
+
+- **Applied**: Script has been executed and changes are in production
+- **Pending**: Script has been created but not yet executed
+- **Deprecated**: Script is no longer applicable but kept for historical purposes
+- **Failed**: Script execution failed and requires investigation
+
+## Important Notes
+
+- Scripts that modify database models should be coordinated with migrations
+- Always test scripts in a development environment before applying to production
+- For critical changes, a more formal migration approach should be used instead of scripts
 
 ## Backend Scripts
 
@@ -65,3 +97,83 @@ We may need to create the following backend scripts to support the page-level ac
   - Updated user creation process to automatically create employee records for new owners
   - Added user field to Employee model to link with User model
 | Version0001_verify_profile_api.py | 1.0 | Verify user profile API configuration | 2025-04-26 15:13:39 | Completed | Checked UserProfile model and API configuration |
+
+# PyFactor Script Registry
+
+This file tracks all scripts created for maintenance, data migration, and other administrative tasks in the PyFactor application.
+
+## Timesheet Model Consolidation Scripts
+
+| Script Name | Version | Purpose | Execution Status | Date Executed | Executed By |
+|-------------|---------|---------|-----------------|---------------|-------------|
+| Version0001_TimesheetModelConsolidation.py | 1.0 | Analyzes dependencies and provides a plan for consolidating timesheet models | Completed | 2025-04-25 | System Admin |
+| Version0002_MigrateTimesheetData.py | 1.0 | Migrates data from payroll.Timesheet to hr.Timesheet | Pending | - | - |
+
+## Execution Steps for Timesheet Consolidation
+
+1. Run Django migrations to add timesheet_number field to HR Timesheet:
+   ```
+   python manage.py migrate hr 0008_timesheet_timesheet_number
+   ```
+
+2. Run Django migrations to add timesheet field to PayrollTransaction:
+   ```
+   python manage.py migrate payroll 0002_add_timesheet_to_payrolltransaction
+   ```
+
+3. Run data migration script:
+   ```
+   python backend/pyfactor/scripts/Version0002_MigrateTimesheetData.py
+   ```
+
+4. Verify data integrity after migration
+
+5. Run Django migrations to remove Timesheet models from payroll app:
+   ```
+   python manage.py migrate payroll 0003_remove_timesheet_models
+   ```
+
+## Post-Migration Verification Checklist
+
+- [ ] All payroll.Timesheet records have been migrated to hr.Timesheet
+- [ ] All PayrollTransaction records have been linked to the correct hr.Timesheet
+- [ ] Employee → Timesheet → PayrollTransaction relationships are intact
+- [ ] Frontend components work with the new model structure
+- [ ] Payroll processing works with the consolidated model
+
+## Additional Notes
+
+The scripts should be run in a test environment first to ensure all data is correctly migrated. Make backups of the database before running these scripts in production.
+
+
+## HR Reports Management Implementation - 2025-04-27
+
+### Script: Version0001_Add_HRReportManagement_Component.js
+
+#### Description
+Implements the HR Reports Management component that displays tabs for different report categories:
+- Employee reports
+- Pay reports
+- Timesheet reports
+- Benefits reports
+
+#### Changes Made
+1. Created new HRReportManagement component with tabs for the different report categories
+2. Added documentation in HR_REPORT_MANAGEMENT.md
+3. Updated RenderMainContent.js to handle the new component
+4. Updated DashboardContent.js to add state handling for reports management
+5. Enhanced the Reports menu item in listItems.js to use the standardized onClick pattern
+
+#### Status
+- [x] Implemented
+- [ ] Connected to backend API
+
+#### Future Work
+- Connect to backend API for real report generation
+- Add report filters and parameters
+- Implement report export functionality (PDF, CSV)
+- Add data visualization for key metrics
+
+| Script Name | Purpose | Status | Date |
+|-------------|---------|--------|------|
+| Version0001_create_benefits_model.py | Adds a Benefits model to hr/models.py and links it with the Employee model | Executed | 2023-11-15 |

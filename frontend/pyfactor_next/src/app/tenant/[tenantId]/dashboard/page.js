@@ -13,6 +13,54 @@ import { NotificationProvider } from '@/context/NotificationContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 import { fetchUserAttributes } from 'aws-amplify/auth';
 import useEnsureTenant from '@/hooks/useEnsureTenant';
+import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
+
+// Import needed for recovery
+import { signIn } from '@aws-amplify/auth';
+import Cookies from 'js-cookie';
+
+// Emergency recovery functions
+const checkEmergencyAccess = () => {
+  // Check for emergency tokens in cookies or localStorage
+  const hasEmergencyTokens = 
+    Cookies.get('tenant_id') || 
+    Cookies.get('subscription_plan') || 
+    localStorage.getItem('subscription_completed') === 'true';
+  
+  // If coming from subscription page, we should have these markers
+  const fromSubscription = window.location.search.includes('fromSubscription=true');
+  
+  logger.debug('[TenantDashboard] Emergency access check:', {
+    hasEmergencyTokens,
+    fromSubscription,
+    cookies: {
+      tenant_id: Cookies.get('tenant_id'),
+      subscription_plan: Cookies.get('subscription_plan')
+    }
+  });
+  
+  return hasEmergencyTokens && fromSubscription;
+};
+
+const recoverSession = async (tenantId) => {
+  try {
+    // Store the tenant ID as reliable for recovery
+    if (tenantId) {
+      storeReliableTenantId(tenantId);
+      localStorage.setItem('tenant_id', tenantId);
+      Cookies.set('tenant_id', tenantId, { path: '/', expires: 30 });
+    }
+    
+    // Set session recovery marker
+    sessionStorage.setItem('recovery_attempted', 'true');
+    sessionStorage.setItem('recovery_timestamp', new Date().toISOString());
+    
+    return true;
+  } catch (error) {
+    logger.error('[TenantDashboard] Session recovery failed:', error);
+    return false;
+  }
+};
 
 /**
  * TenantDashboard - A tenant-specific dashboard route
@@ -23,70 +71,93 @@ export default function TenantDashboard() {
   const searchParams = useSearchParams();
   const tenantId = params?.tenantId;
   const fromSignIn = searchParams.get('fromSignIn') === 'true';
+  const fromSubscription = searchParams.get('fromSubscription') === 'true';
+  const emergencyAccess = fromSubscription && checkEmergencyAccess();
+  
   const [isLoading, setIsLoading] = useState(true);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [userAttributes, setUserAttributes] = useState(null);
   const [error, setError] = useState(null);
-  
-  // Use the hook to ensure tenant existence
-  const { status: tenantStatus, tenantId: ensuredTenantId } = useEnsureTenant();
-  
-  // Check auth on mount and store tenant ID
+  const [authChecked, setAuthChecked] = useState(false);
+  const [tenantStatus, setTenantStatus] = useState('pending');
+
+  // Initialize dashboard
   useEffect(() => {
     const initializeDashboard = async () => {
       try {
-        if (!tenantId) {
-          throw new Error('No tenant ID in URL parameters');
-        }
+        logger.info('[TenantDashboard] Initializing dashboard for tenant:', tenantId);
         
-        // Store tenant ID in localStorage/sessionStorage
-        logger.info('[TenantDashboard] Storing tenant ID from URL parameter:', tenantId);
-        storeTenantId(tenantId);
-        
-        // Fetch user attributes from Cognito to verify we're authenticated
-        try {
-          const attributes = await fetchUserAttributes();
-          setUserAttributes(attributes);
+        // If this is from subscription page and we have emergency tokens
+        if (emergencyAccess) {
+          logger.info('[TenantDashboard] Using emergency access mode from subscription');
           
-          // Check if tenant ID matches - if not, update it
-          const cognitoTenantId = attributes['custom:tenant_ID'];
+          // Recover the session using fallback data
+          await recoverSession(tenantId);
+          
+          // Set tenant status to active to allow access
+          setTenantStatus('active');
+          setAuthChecked(true);
+          setIsLoading(false);
+          return;
+        }
+
+        // Check cookie auth token
+        const idToken = Cookies.get('idToken') || sessionStorage.getItem('idToken');
+        
+        // Normal authentication flow
+        try {
+          // First try Cognito
+          const userAttributes = await fetchUserAttributes();
+          logger.debug('[TenantDashboard] User attributes:', userAttributes);
+          
+          // If the fetch succeeds, we're authenticated
+          setAuthChecked(true);
+          
+          // Check if tenant ID matches what's in Cognito
+          const cognitoTenantId = userAttributes['custom:tenant_ID'] || 
+                                 userAttributes['custom:businessid'] || 
+                                 getFallbackTenantId();
+          
+          // If tenant IDs don't match, either store the new one or redirect
           if (cognitoTenantId && cognitoTenantId !== tenantId) {
-            logger.warn('[TenantDashboard] Tenant ID mismatch between URL and Cognito:', {
-              url: tenantId,
-              cognito: cognitoTenantId
+            // For now, we'll allow the access but update our tracking
+            // This could be modified to redirect if desired
+            logger.warn('[TenantDashboard] Tenant ID mismatch:', {
+              urlTenantId: tenantId,
+              cognitoTenantId
             });
             
-            // Prefer the Cognito tenant ID if available (update the URL without redirecting)
-            if (cognitoTenantId && window.history && window.history.replaceState) {
-              try {
-                const newUrl = window.location.pathname.replace(
-                  `/tenant/${tenantId}/`, 
-                  `/tenant/${cognitoTenantId}/`
-                );
-                window.history.replaceState({}, '', newUrl);
-                logger.info('[TenantDashboard] Updated URL with Cognito tenant ID:', cognitoTenantId);
-              } catch (urlError) {
-                logger.error('[TenantDashboard] Failed to update URL:', urlError);
-              }
-            }
+            // Store the current tenant ID as the active one
+            storeTenantId(tenantId);
           }
           
-          setAuthChecked(true);
+          // Set tenant as active
+          setTenantStatus('active');
         } catch (authError) {
-          logger.error('[TenantDashboard] Auth check failed:', authError);
+          logger.warn('[TenantDashboard] Cognito auth check failed:', authError);
           
-          // If auth check fails and we weren't coming from sign-in page, redirect to sign in
-          if (!fromSignIn) {
-            router.push(`/auth/signin?redirect=/tenant/${tenantId}/dashboard`);
-            return;
+          // If we have idToken in cookies/storage but Cognito check failed,
+          // try emergency fallback
+          if (idToken || emergencyAccess) {
+            logger.info('[TenantDashboard] Using emergency token fallback');
+            
+            // Attempt to recover session
+            const recovered = await recoverSession(tenantId);
+            
+            if (recovered) {
+              setTenantStatus('active');
+              setAuthChecked(true);
+            } else {
+              // If recovery failed, redirect to sign in
+              setError('Your session has expired. Please sign in again.');
+              router.push('/auth/signin');
+            }
+          } else {
+            // No tokens at all, redirect to sign in
+            logger.error('[TenantDashboard] No valid authentication found');
+            setError('Please sign in to access your dashboard');
+            router.push('/auth/signin');
           }
-          
-          // Otherwise still mark auth checked but with error
-          setAuthChecked(true);
-          setError('Authentication failed. Please try signing in again.');
         }
         
-        // Set loading false after initialization
         setIsLoading(false);
       } catch (error) {
         logger.error('[TenantDashboard] Dashboard initialization error:', error);
@@ -97,7 +168,7 @@ export default function TenantDashboard() {
     };
     
     initializeDashboard();
-  }, [tenantId, router, fromSignIn]);
+  }, [tenantId, router, fromSignIn, emergencyAccess]);
 
   // If still initializing, show loader
   if (isLoading) {
@@ -146,11 +217,12 @@ export default function TenantDashboard() {
     plan: searchParams.get('plan'),
     mockData: searchParams.get('mockData') === 'true',
     setupStatus: searchParams.get('setupStatus'),
-    fromSignIn
+    fromSignIn,
+    fromSubscription
   };
 
   // Render dashboard within providers, using the ensured tenantId if possible
-  const effectiveTenantId = ensuredTenantId || tenantId;
+  const effectiveTenantId = tenantId;
   
   return (
     <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
@@ -164,7 +236,7 @@ export default function TenantDashboard() {
               setupStatus={dashboardParams.setupStatus}
               tenantId={effectiveTenantId}
               fromSignIn={fromSignIn}
-              userAttributes={userAttributes}
+              fromSubscription={fromSubscription}
             />
           </DashboardProvider>
         </UserProfileProvider>

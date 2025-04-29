@@ -1,10 +1,18 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useToast } from '@/components/Toast/ToastProvider';
 import { format, addDays, addWeeks } from 'date-fns';
+import { loadStripeScript } from '@/utils/stripeUtils';
+import { toast } from 'react-hot-toast';
+import axios from 'axios';
+import PayrollRunSummary from './PayrollRunSummary';
 
-const PayrollManagement = () => {
+const PayrollManagement = ({ initialTab = 'run-payroll' }) => {
+  // Tab management
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Original state
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [accountingPeriod, setAccountingPeriod] = useState('');
@@ -26,8 +34,23 @@ const PayrollManagement = () => {
   const [serviceType, setServiceType] = useState('');
   const [showUsdComparison, setShowUsdComparison] = useState(false);
   const [currencyInfo, setCurrencyInfo] = useState(null);
+  
+  // Payroll Settings state
+  const [authorizedUsers, setAuthorizedUsers] = useState([]);
+  const [taxIdInfo, setTaxIdInfo] = useState({
+    ein: '',
+    stateId: '',
+    countrySpecificIds: {}
+  });
+  const [businessCountry, setBusinessCountry] = useState('');
+  const [payrollAdmin, setPayrollAdmin] = useState('');
 
   useEffect(() => {
+    // Set AWS RDS as the data source
+    axiosInstance.defaults.headers.common['X-Data-Source'] = 'AWS_RDS';
+    
+    // Fetch all necessary data
+    fetchBusinessCountry();
     fetchPayPeriods();
     fetchConnectedAccounts();
     fetchEmployees();
@@ -35,64 +58,211 @@ const PayrollManagement = () => {
   }, []);
 
   useEffect(() => {
-    if (country) {
-      // This is just example logic - replace with your actual service type determination
-      if (['US', 'CA'].includes(country)) {
-        setServiceType('full');
-      } else {
-        setServiceType('self');
-      }
-      fetchCurrencyInfo(country);
+    if (businessCountry) {
+      // After country is determined, load country-specific settings
+      fetchCurrencyInfo(businessCountry);
+      fetchPayrollSettings();
     }
-  }, [country]);
+  }, [businessCountry]);
+
+  const fetchBusinessCountry = async () => {
+    try {
+      // Use AWS RDS-connected endpoint
+      const response = await axiosInstance.get('/api/auth/business-attributes/');
+      if (response.data && response.data.country) {
+        setBusinessCountry(response.data.country);
+      } else {
+        setBusinessCountry('US'); // Default to US if not set
+      }
+    } catch (error) {
+      console.error('Error fetching business country:', error);
+      setBusinessCountry('US'); // Default to US on error
+    }
+  };
+
+  const fetchPayrollSettings = async () => {
+    try {
+      // Ensure we're using the AWS RDS data source
+      const response = await axiosInstance.get('/api/payroll/settings/');
+      
+      if (response.data) {
+        const settings = response.data;
+        
+        // Set tax information
+        if (settings.taxInfo) {
+          setTaxIdInfo(settings.taxInfo);
+        }
+        
+        // Set authorized users
+        if (settings.authorizedUsers && Array.isArray(settings.authorizedUsers)) {
+          setAuthorizedUsers(settings.authorizedUsers);
+        }
+        
+        // Set payroll admin
+        if (settings.payrollAdmin) {
+          setPayrollAdmin(settings.payrollAdmin);
+        }
+        
+        // Set pay period type
+        if (settings.payPeriodType) {
+          setPayPeriodType(settings.payPeriodType);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching payroll settings:', error);
+      // Don't show error toast as this might be first-time setup
+    }
+  };
+
+  const savePayrollSettings = async (settingType) => {
+    try {
+      setLoading(true);
+      let endpoint;
+      let data;
+      
+      switch (settingType) {
+        case 'authorization':
+          endpoint = '/api/payroll/settings/authorization';
+          data = { authorizedUsers, payrollAdmin };
+          break;
+        case 'tax':
+          endpoint = '/api/payroll/settings/tax';
+          data = { 
+            taxInfo: taxIdInfo,
+            businessCountry 
+          };
+          break;
+        case 'schedule':
+          endpoint = '/api/payroll/settings/schedule';
+          data = { 
+            payPeriodType,
+            // Add other schedule-related settings
+          };
+          break;
+        default:
+          // Save all settings
+          endpoint = '/api/payroll/settings/';
+          data = {
+            authorizedUsers,
+            payrollAdmin,
+            taxInfo: taxIdInfo,
+            businessCountry,
+            payPeriodType
+          };
+      }
+      
+      // Explicitly set AWS RDS as data source for this request
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      await axiosInstance.post(endpoint, data, config);
+      toast.success(`Payroll ${settingType || 'settings'} saved successfully`);
+    } catch (error) {
+      toast.error(`Error saving payroll ${settingType || 'settings'}`);
+      console.error(`Error saving payroll ${settingType || 'settings'}:`, error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchScheduledPayrolls = async () => {
     try {
-      const response = await axiosInstance.get('/api/payroll/scheduled-runs/');
-      setScheduledPayrolls(response.data);
+      // Ensure we're using AWS RDS by setting explicit header
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      const response = await axiosInstance.get('/api/payroll/scheduled-runs/', config);
+      // Ensure we're setting an array
+      if (response.data && Array.isArray(response.data)) {
+        setScheduledPayrolls(response.data);
+      } else {
+        console.warn('Scheduled payrolls API did not return an array:', response.data);
+        setScheduledPayrolls([]);
+      }
     } catch (error) {
-      toast.error('Error fetching scheduled payrolls');
+      toast.error('Error fetching scheduled payrolls from AWS RDS');
       console.error('Error fetching scheduled payrolls:', error);
+      // Ensure we set an empty array on error
+      setScheduledPayrolls([]);
     }
   };
 
   const fetchPayPeriods = async () => {
     try {
-      const response = await axiosInstance.get('/api/payroll/pay-periods/');
+      // Ensure we're using AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      const response = await axiosInstance.get('/api/payroll/pay-periods/', config);
       setLastPayPeriod(response.data.last_pay_period);
       setNextPayPeriod(response.data.next_pay_period);
     } catch (error) {
-      toast.error('Error fetching pay periods');
+      toast.error('Error fetching pay periods from AWS RDS');
       console.error('Error fetching pay periods:', error);
     }
   };
 
   const fetchConnectedAccounts = async () => {
     try {
-      const response = await axiosInstance.get('/api/banking/accounts/');
+      // Ensure we're using AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      const response = await axiosInstance.get('/api/banking/accounts/', config);
       if (response.data.accounts && Array.isArray(response.data.accounts)) {
         setConnectedAccounts(response.data.accounts);
       } else {
-        toast.info('No connected bank accounts found');
+        toast.info('No connected bank accounts found in AWS RDS');
         setConnectedAccounts([]);
       }
     } catch (error) {
-      toast.error('Error fetching connected accounts');
+      toast.error('Error fetching connected accounts from AWS RDS');
       console.error('Error fetching connected accounts:', error);
     }
   };
 
   const fetchEmployees = async () => {
     try {
-      const response = await axiosInstance.get('/api/hr/employees/');
-      const employeesWithLastPayPeriod = response.data.map((employee) => ({
-        ...employee,
-        lastPayPeriod: employee.lastPayPeriod || 'N/A',
-      }));
-      setEmployees(employeesWithLastPayPeriod);
+      // Ensure we're using AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      const response = await axiosInstance.get('/api/hr/employees/', config);
+      
+      // Ensure response.data is an array before calling map
+      if (response.data && Array.isArray(response.data)) {
+        const employeesWithLastPayPeriod = response.data.map((employee) => ({
+          ...employee,
+          lastPayPeriod: employee.lastPayPeriod || 'N/A',
+        }));
+        setEmployees(employeesWithLastPayPeriod);
+        setSelectedEmployees([]);
+      } else {
+        console.warn('Employees API did not return an array:', response.data);
+        setEmployees([]);
+        setSelectedEmployees([]);
+      }
     } catch (error) {
-      toast.error('Error fetching employees');
+      toast.error('Error fetching employees from AWS RDS');
       console.error('Error fetching employees:', error);
+      // Ensure we set an empty array on error
+      setEmployees([]);
+      setSelectedEmployees([]);
     }
   };
 
@@ -100,16 +270,30 @@ const PayrollManagement = () => {
     if (!countryCode) return;
     
     try {
-      const response = await axiosInstance.get(`/api/taxes/currency-info/${countryCode}/`);
+      // Ensure we're using AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      const response = await axiosInstance.get(`/api/taxes/currency-info/${countryCode}/`, config);
       setCurrencyInfo(response.data);
     } catch (error) {
-      console.error('Error fetching currency info:', error);
+      console.error('Error fetching currency info from AWS RDS:', error);
     }
   };
 
   const handleRunPayroll = async () => {
     setLoading(true);
     try {
+      // Ensure we're using AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
       const response = await axiosInstance.post('/api/payroll/calculate/', {
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
@@ -118,11 +302,12 @@ const PayrollManagement = () => {
         employee_ids: selectedEmployees,
         pay_period_type: payPeriodType,
         bi_weekly_start_date: biWeeklyStartDate ? format(biWeeklyStartDate, 'yyyy-MM-dd') : null,
-      });
+      }, config);
+      
       setPayrollSummary(response.data);
       setOpenConfirmDialog(true);
     } catch (error) {
-      toast.error(`Error calculating payroll: ${error.response?.data?.detail || error.message}`);
+      toast.error(`Error calculating payroll from AWS RDS: ${error.response?.data?.detail || error.message}`);
     } finally {
       setLoading(false);
     }
@@ -131,7 +316,8 @@ const PayrollManagement = () => {
   const confirmRunPayroll = async () => {
     setLoading(true);
     try {
-      await axiosInstance.post('/api/payroll/run/', {
+      // First create the payroll run in our system
+      const payrollResponse = await axiosInstance.post('/api/payroll/run/', {
         start_date: startDate ? format(startDate, 'yyyy-MM-dd') : null,
         end_date: endDate ? format(endDate, 'yyyy-MM-dd') : null,
         accounting_period: accountingPeriod,
@@ -140,13 +326,87 @@ const PayrollManagement = () => {
         pay_period_type: payPeriodType,
         bi_weekly_start_date: biWeeklyStartDate ? format(biWeeklyStartDate, 'yyyy-MM-dd') : null,
       });
+      
+      // Get the payroll run ID from the response
+      const payrollRunId = payrollResponse.data.id;
+      
+      // Now initiate the Stripe Connect payment
+      await initiateStripePayment(payrollRunId);
+      
       setOpenConfirmDialog(false);
-      toast.success('Payroll run successfully');
+      toast.success('Payroll run successfully initiated');
+      
+      // Refresh scheduled payrolls after successful run
+      fetchScheduledPayrolls();
     } catch (error) {
-      toast.error('Error running payroll');
+      const errorMessage = error.response?.data?.detail || error.message || 'Error running payroll';
+      toast.error(errorMessage);
       console.error('Error running payroll:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initiateStripePayment = async (payrollRunId) => {
+    try {
+      // Ensure Stripe script is loaded
+      await loadStripeScript();
+      
+      // Get payment intent from our backend
+      const response = await axiosInstance.post('/api/payments/create-payroll-intent', {
+        payroll_run_id: payrollRunId,
+        account_id: selectedAccount
+      });
+      
+      if (!response.data || !response.data.clientSecret) {
+        throw new Error('Failed to create payment intent');
+      }
+      
+      const { clientSecret, stripeAccountId } = response.data;
+      
+      // Initialize Stripe with our public key
+      const stripe = window.Stripe(process.env.NEXT_PUBLIC_STRIPE_KEY, {
+        stripeAccount: stripeAccountId // Use the connected account ID
+      });
+      
+      // Confirm the payment
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        clientSecret,
+        confirmParams: {
+          return_url: `${window.location.origin}/dashboard/payroll/confirmation`,
+        },
+        redirect: 'if_required',
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (paymentIntent.status === 'succeeded' || paymentIntent.status === 'processing') {
+        // Update the payroll run status
+        await axiosInstance.patch(`/api/payroll/run/${payrollRunId}/`, {
+          payment_status: paymentIntent.status,
+          stripe_payment_id: paymentIntent.id
+        });
+        
+        return true;
+      } else {
+        throw new Error(`Payment status: ${paymentIntent.status}`);
+      }
+    } catch (error) {
+      console.error('Stripe payment error:', error);
+      // Notify backend about payment failure
+      if (payrollRunId) {
+        try {
+          await axiosInstance.patch(`/api/payroll/run/${payrollRunId}/`, {
+            payment_status: 'failed',
+            payment_error: error.message
+          });
+        } catch (updateError) {
+          console.error('Error updating payment status:', updateError);
+        }
+      }
+      throw error;
     }
   };
 
@@ -210,8 +470,8 @@ const PayrollManagement = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <div className="flex items-center mb-2">
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex items-center mb-6">
         <div className="mr-2 text-blue-600">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -219,390 +479,786 @@ const PayrollManagement = () => {
         </div>
         <h1 className="text-2xl font-bold">Payroll Management</h1>
       </div>
-      <p className="text-gray-600 mb-6">Manage payroll and run payrolls for your company.</p>
-
-      {/* Scheduled Payrolls Section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Scheduled Payrolls</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {scheduledPayrolls.length > 0 ? (
-            scheduledPayrolls.map((payroll, index) => (
-              <div key={index} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h3 className="font-semibold">{payroll.name}</h3>
-                <p className="text-sm text-gray-600">Date: {new Date(payroll.date).toLocaleDateString()}</p>
-                <p className="text-sm text-gray-600">Employees: {payroll.employeeCount}</p>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">No scheduled payrolls found</p>
-          )}
-        </div>
-      </div>
-
-      {/* Connected Bank Accounts Section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Connected Bank Accounts</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {connectedAccounts.length > 0 ? (
-            connectedAccounts.map((account) => (
-              <div key={account.account_id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-                <h3 className="font-semibold">{account.name}</h3>
-                <p className="text-sm text-gray-600">Balance: ${account.balances?.current?.toFixed(2) || 'N/A'}</p>
-                <p className="text-sm text-gray-600">Account Type: {account.type || 'N/A'}</p>
-                <div className="mt-3">
-                  <label className="inline-flex items-center">
-                    <input
-                      type="checkbox"
-                      className="form-checkbox h-5 w-5 text-blue-600"
-                      checked={selectedAccount === account.account_id}
-                      onChange={() => setSelectedAccount(account.account_id)}
-                    />
-                    <span className="ml-2 text-gray-700">Select for Payroll</span>
-                  </label>
-                </div>
-              </div>
-            ))
-          ) : (
-            <p className="text-gray-500">No connected bank accounts found</p>
-          )}
-        </div>
-      </div>
-
-      {selectedAccount && (
-        <div className="mb-6 text-blue-600">
-          <p>
-            The selected account (
-            {connectedAccounts.find((a) => a.account_id === selectedAccount)?.name}) will be used
-            to fund this payroll run.
-          </p>
-        </div>
-      )}
-
-      {/* Country Selection */}
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-        <select
-          className="w-full p-2 border border-gray-300 rounded-md bg-white"
-          value={country}
-          onChange={(e) => setCountry(e.target.value)}
-        >
-          <option value="">Select Country</option>
-          <option value="US">United States</option>
-          <option value="CA">Canada</option>
-          <option value="UK">United Kingdom</option>
-          <option value="AU">Australia</option>
-          {/* Add more countries */}
-        </select>
-      </div>
-
-      {country && country !== 'US' && (
-        <div className="mb-4">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              className="form-checkbox h-5 w-5 text-blue-600"
-              checked={showUsdComparison}
-              onChange={(e) => setShowUsdComparison(e.target.checked)}
-            />
-            <span className="ml-2 text-gray-700">Show USD comparison</span>
-          </label>
-        </div>
-      )}
-
-      {currencyInfo && (
-        <div className="mb-4">
-          <p className="text-sm">
-            Currency: {currencyInfo.symbol} ({currencyInfo.code})
-            {showUsdComparison && currencyInfo.code !== 'USD' && (
-              <span className="block text-sm text-gray-500">
-                Exchange Rate: 1 USD = {currencyInfo.exchangeRate} {currencyInfo.code}
-              </span>
-            )}
-          </p>
-        </div>
-      )}
-
-      {/* Service Type Alert */}
-      {country && serviceType && (
-        <div className={`p-4 mb-6 rounded-md ${serviceType === 'full' ? 'bg-green-50 text-green-800' : 'bg-blue-50 text-blue-800'}`}>
-          <div className="flex">
-            <div className="flex-shrink-0">
-              {serviceType === 'full' ? (
-                <svg className="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-              )}
-            </div>
-            <div className="ml-3">
-              <p>
-                {serviceType === 'full' 
-                  ? "Full-service payroll available - we'll handle tax filing for you" 
-                  : "Self-service payroll - we'll provide filing instructions but you'll need to submit taxes manually"
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Pay Period Selection */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-2">Select Pay Period</h2>
-        <p className="text-sm text-gray-600 mb-4">
-          Choose either monthly, bi-weekly, or a custom date range for your pay period. You can
-          only select one option.
-        </p>
-        
-        <div className="space-y-2 mb-4">
-          <label className="inline-flex items-center">
-            <input
-              type="radio"
-              className="form-radio h-5 w-5 text-blue-600"
-              checked={payPeriodType === 'monthly'}
-              onChange={() => handlePayPeriodTypeChange('monthly')}
-            />
-            <span className="ml-2 text-gray-700">Monthly</span>
-          </label>
-          
-          <label className="inline-flex items-center block">
-            <input
-              type="radio"
-              className="form-radio h-5 w-5 text-blue-600"
-              checked={payPeriodType === 'biweekly'}
-              onChange={() => handlePayPeriodTypeChange('biweekly')}
-            />
-            <span className="ml-2 text-gray-700">Bi-weekly</span>
-          </label>
-          
-          <label className="inline-flex items-center block">
-            <input
-              type="radio"
-              className="form-radio h-5 w-5 text-blue-600"
-              checked={payPeriodType === 'custom'}
-              onChange={() => handlePayPeriodTypeChange('custom')}
-            />
-            <span className="ml-2 text-gray-700">Custom Date Range</span>
-          </label>
-        </div>
-
-        {payPeriodType === 'monthly' && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Accounting Period</label>
-            <select
-              className="w-full p-2 border border-gray-300 rounded-md bg-white"
-              value={accountingPeriod}
-              onChange={handleAccountingPeriodChange}
+      
+      {/* Tab Navigation */}
+      <div className="mb-6 border-b border-gray-200">
+        <ul className="flex flex-wrap -mb-px text-sm font-medium text-center">
+          <li className="mr-2">
+            <button 
+              onClick={() => setActiveTab('run-payroll')} 
+              className={`inline-block p-4 rounded-t-lg ${activeTab === 'run-payroll' 
+                ? 'text-blue-600 border-b-2 border-blue-600 active' 
+                : 'border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300'}`}
             >
-              <option value="">Select Period</option>
-              {getAccountingPeriods().map((period) => (
-                <option key={period} value={period}>
-                  {period}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {payPeriodType === 'biweekly' && (
-          <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Bi-weekly Start Date</label>
-            <input
-              type="date"
-              className="w-full p-2 border border-gray-300 rounded-md"
-              value={formatDate(biWeeklyStartDate)}
-              onChange={(e) => setBiWeeklyStartDate(e.target.value ? new Date(e.target.value) : null)}
-            />
-          </div>
-        )}
-
-        {payPeriodType === 'custom' && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                value={formatDate(startDate)}
-                onChange={(e) => handleDateChange(e, 'start')}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border border-gray-300 rounded-md"
-                value={formatDate(endDate)}
-                onChange={(e) => handleDateChange(e, 'end')}
-              />
-            </div>
-          </div>
-        )}
+              Run Payroll
+            </button>
+          </li>
+          <li className="mr-2">
+            <button 
+              onClick={() => setActiveTab('payroll-settings')} 
+              className={`inline-block p-4 rounded-t-lg ${activeTab === 'payroll-settings' 
+                ? 'text-blue-600 border-b-2 border-blue-600 active' 
+                : 'border-b-2 border-transparent hover:text-gray-600 hover:border-gray-300'}`}
+            >
+              Payroll Settings
+            </button>
+          </li>
+        </ul>
       </div>
 
-      {/* Employee Summary Section */}
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Employee Summary</h2>
-        <div className="mb-2">
-          <label className="inline-flex items-center">
-            <input
-              type="checkbox"
-              className="form-checkbox h-5 w-5 text-blue-600"
-              checked={selectAll}
-              onChange={handleSelectAll}
-            />
-            <span className="ml-2 text-gray-700">Select All</span>
-          </label>
-        </div>
-        
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <span className="sr-only">Select</span>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Employee
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Department
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Position
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Salary
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Last Pay Period
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {employees.length > 0 ? (
-                employees.map((employee) => (
-                  <tr key={employee.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        className="form-checkbox h-5 w-5 text-blue-600"
-                        checked={selectedEmployees.includes(employee.id)}
-                        onChange={() => handleEmployeeSelection(employee.id)}
-                      />
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {`${employee.first_name} ${employee.last_name}`}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.department || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.job_title || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.salary ? `$${Number(employee.salary).toFixed(2)}` : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.lastPayPeriod}
-                    </td>
-                  </tr>
+      {/* Tab Content */}
+      {activeTab === 'run-payroll' ? (
+        <div>
+          <p className="text-gray-600 mb-6">Run payroll and manage payments for your employees.</p>
+          
+          {/* Scheduled Payrolls Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Scheduled Payrolls</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {Array.isArray(scheduledPayrolls) && scheduledPayrolls.length > 0 ? (
+                scheduledPayrolls.map((payroll, index) => (
+                  <div key={index} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold">{payroll.name}</h3>
+                    <p className="text-sm text-gray-600">Date: {new Date(payroll.date).toLocaleDateString()}</p>
+                    <p className="text-sm text-gray-600">Employees: {payroll.employeeCount}</p>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
-                    No employees found
-                  </td>
-                </tr>
+                <p className="text-gray-500">No scheduled payrolls found</p>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleRunPayroll}
-        disabled={
-          !selectedAccount ||
-          (!accountingPeriod && !biWeeklyStartDate && (!startDate || !endDate)) ||
-          loading ||
-          selectedEmployees.length === 0
-        }
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-      >
-        {loading ? (
-          <div className="flex items-center">
-            <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing
-          </div>
-        ) : (
-          'Run Payroll'
-        )}
-      </button>
-
-      {/* Confirm Dialog */}
-      {openConfirmDialog && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
-            <h3 className="text-lg font-medium mb-4">Confirm Payroll Run</h3>
-            <div className="mb-6">
-              <p className="mb-2">Total Payroll Amount: ${payrollSummary?.total_amount.toFixed(2)}</p>
-              <p className="mb-2">Number of Employees: {payrollSummary?.employee_count}</p>
-              <p>Pay Period: {payrollSummary?.pay_period}</p>
-            </div>
-            <div className="flex justify-end space-x-3">
-              <button
-                type="button"
-                onClick={() => setOpenConfirmDialog(false)}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmRunPayroll}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Confirm
-              </button>
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Filing Instructions for Self-Service */}
-      {payrollSummary && payrollSummary.service_type === 'self' && (
-        <div className="mt-6 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-          <h3 className="text-lg font-medium mb-2">Filing Instructions</h3>
-          <p className="mb-4">{payrollSummary.filing_instructions}</p>
-          
-          {payrollSummary.tax_authority_links && (
-            <div>
-              <h4 className="font-medium mb-2">Tax Authority Links:</h4>
-              <ul className="space-y-2">
-                {Object.entries(payrollSummary.tax_authority_links).map(([name, url]) => (
-                  <li key={name} className="pl-2 border-l-2 border-blue-500">
-                    <p className="font-medium">{name}</p>
-                    <a 
-                      href={url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
-                    >
-                      {url}
-                    </a>
-                  </li>
-                ))}
-              </ul>
+          {/* Connected Bank Accounts Section */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Connected Bank Accounts</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {connectedAccounts.length > 0 ? (
+                connectedAccounts.map((account) => (
+                  <div key={account.account_id} className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                    <h3 className="font-semibold">{account.name}</h3>
+                    <p className="text-sm text-gray-600">Balance: ${account.balances?.current?.toFixed(2) || 'N/A'}</p>
+                    <p className="text-sm text-gray-600">Account: {account.mask ? `****${account.mask}` : 'N/A'}</p>
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setSelectedAccount(account.account_id)}
+                        className={`px-3 py-1 text-xs rounded ${selectedAccount === account.account_id
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                          }`}
+                      >
+                        {selectedAccount === account.account_id ? 'Selected' : 'Select'}
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <p className="text-gray-500">No connected bank accounts found. Please connect an account first.</p>
+                  <button className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    Connect a Bank Account
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Payroll period selection */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Select Pay Period</h2>
+            <div className="grid gap-6 mb-6 md:grid-cols-2">
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-900">Pay Period Type</label>
+                <div className="flex space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="monthly"
+                      name="payPeriodType"
+                      value="monthly"
+                      checked={payPeriodType === 'monthly'}
+                      onChange={() => handlePayPeriodTypeChange('monthly')}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
+                    />
+                    <label htmlFor="monthly" className="ml-2 text-sm font-medium text-gray-900">Monthly</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="biweekly"
+                      name="payPeriodType"
+                      value="biweekly"
+                      checked={payPeriodType === 'biweekly'}
+                      onChange={() => handlePayPeriodTypeChange('biweekly')}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
+                    />
+                    <label htmlFor="biweekly" className="ml-2 text-sm font-medium text-gray-900">Bi-Weekly</label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="radio"
+                      id="custom"
+                      name="payPeriodType"
+                      value="custom"
+                      checked={payPeriodType === 'custom'}
+                      onChange={() => handlePayPeriodTypeChange('custom')}
+                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300"
+                    />
+                    <label htmlFor="custom" className="ml-2 text-sm font-medium text-gray-900">Custom Period</label>
+                  </div>
+                </div>
+              </div>
+
+              {payPeriodType === 'monthly' && (
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-900">Accounting Period</label>
+                  <select
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    value={accountingPeriod}
+                    onChange={handleAccountingPeriodChange}
+                  >
+                    <option value="">Select a period</option>
+                    {getAccountingPeriods().map((period) => (
+                      <option key={period} value={period}>
+                        {period}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {payPeriodType === 'biweekly' && (
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-900">Bi-Weekly Start Date</label>
+                  <input
+                    type="date"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    value={biWeeklyStartDate ? format(biWeeklyStartDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => setBiWeeklyStartDate(e.target.value ? new Date(e.target.value) : null)}
+                  />
+                  {biWeeklyStartDate && (
+                    <p className="mt-2 text-sm text-gray-600">
+                      End Date: {format(addDays(biWeeklyStartDate, 13), 'yyyy-MM-dd')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {payPeriodType === 'custom' && (
+                <>
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-900">Start Date</label>
+                    <input
+                      type="date"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                      value={startDate ? format(startDate, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => handleDateChange(e, 'start')}
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-2 text-sm font-medium text-gray-900">End Date</label>
+                    <input
+                      type="date"
+                      className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                      value={endDate ? format(endDate, 'yyyy-MM-dd') : ''}
+                      onChange={(e) => handleDateChange(e, 'end')}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Employee Selection */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Select Employees</h2>
+            <div className="mb-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-5 w-5 text-blue-600"
+                  checked={selectAll}
+                  onChange={handleSelectAll}
+                />
+                <span className="ml-2 text-gray-700">Select All</span>
+              </label>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="py-2 px-4 border-b text-left">Select</th>
+                    <th className="py-2 px-4 border-b text-left">Name</th>
+                    <th className="py-2 px-4 border-b text-left">ID</th>
+                    <th className="py-2 px-4 border-b text-left">Department</th>
+                    <th className="py-2 px-4 border-b text-left">Position</th>
+                    <th className="py-2 px-4 border-b text-left">Last Pay Period</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.map((employee) => (
+                    <tr key={employee.id} className="hover:bg-gray-50">
+                      <td className="py-2 px-4 border-b">
+                        <input
+                          type="checkbox"
+                          className="form-checkbox h-5 w-5 text-blue-600"
+                          checked={selectedEmployees.includes(employee.id)}
+                          onChange={() => handleEmployeeSelection(employee.id)}
+                        />
+                      </td>
+                      <td className="py-2 px-4 border-b">{employee.name}</td>
+                      <td className="py-2 px-4 border-b">{employee.employeeId || 'N/A'}</td>
+                      <td className="py-2 px-4 border-b">{employee.department || 'N/A'}</td>
+                      <td className="py-2 px-4 border-b">{employee.position || 'N/A'}</td>
+                      <td className="py-2 px-4 border-b">{employee.lastPayPeriod}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Calculate Payroll Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={handleRunPayroll}
+              disabled={loading || !selectedAccount || selectedEmployees.length === 0 || (!startDate && !endDate && !accountingPeriod && !biWeeklyStartDate)}
+              className={`px-6 py-3 rounded-md text-white font-medium ${loading || !selectedAccount || selectedEmployees.length === 0 || (!startDate && !endDate && !accountingPeriod && !biWeeklyStartDate)
+                ? 'bg-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                'Calculate Payroll'
+              )}
+            </button>
+          </div>
+
+          {/* Payroll Summary Dialog */}
+          {openConfirmDialog && payrollSummary && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-screen overflow-y-auto">
+                <h2 className="text-2xl font-bold mb-4">Payroll Summary</h2>
+                <p className="mb-4">Please review the payroll details before confirming:</p>
+
+                <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Pay Period:</p>
+                      <p className="font-medium">
+                        {payrollSummary.pay_period_start} to {payrollSummary.pay_period_end}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Employees:</p>
+                      <p className="font-medium">{payrollSummary.employee_count}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Gross Pay:</p>
+                      <p className="font-medium">${payrollSummary.total_gross.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Deductions:</p>
+                      <p className="font-medium">${payrollSummary.total_deductions.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Taxes:</p>
+                      <p className="font-medium">${payrollSummary.total_taxes.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Total Net Pay:</p>
+                      <p className="font-medium">${payrollSummary.total_net.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto mb-6">
+                  <table className="min-w-full bg-white">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="py-2 px-3 border-b text-left text-xs">Employee</th>
+                        <th className="py-2 px-3 border-b text-left text-xs">Gross Pay</th>
+                        <th className="py-2 px-3 border-b text-left text-xs">Taxes</th>
+                        <th className="py-2 px-3 border-b text-left text-xs">Deductions</th>
+                        <th className="py-2 px-3 border-b text-left text-xs">Net Pay</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payrollSummary.employees.map((employee) => (
+                        <tr key={employee.id} className="hover:bg-gray-50">
+                          <td className="py-2 px-3 border-b text-sm">{employee.name}</td>
+                          <td className="py-2 px-3 border-b text-sm">${employee.gross.toFixed(2)}</td>
+                          <td className="py-2 px-3 border-b text-sm">${employee.taxes.toFixed(2)}</td>
+                          <td className="py-2 px-3 border-b text-sm">${employee.deductions.toFixed(2)}</td>
+                          <td className="py-2 px-3 border-b text-sm">${employee.net.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => setOpenConfirmDialog(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmRunPayroll}
+                    disabled={loading}
+                    className={`px-4 py-2 rounded-md text-white ${loading ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
+                  >
+                    {loading ? 'Processing...' : 'Confirm Payroll Run'}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
+        </div>
+      ) : (
+        <div>
+          <p className="text-gray-600 mb-6">Configure payroll settings and authorizations.</p>
+          
+          {/* Payroll Authorizations */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Payroll Authorizations</h2>
+            <p className="text-gray-600 mb-4">Designate employees who are authorized to run payroll.</p>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
+              <h3 className="font-medium mb-2">Payroll Administrator</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                The payroll administrator has full access to all payroll functions and can authorize other users.
+                By default, only the business owner has this privilege.
+              </p>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Administrator</label>
+                <div className="flex items-center space-x-3 bg-gray-50 p-3 rounded-md">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium">Business Owner</p>
+                    <p className="text-sm text-gray-600">Owner privileges cannot be revoked</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Delegate Administrative Rights</label>
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  value={payrollAdmin}
+                  onChange={(e) => setPayrollAdmin(e.target.value)}
+                >
+                  <option value="">Select an employee</option>
+                  {employees.map(employee => (
+                    <option key={employee.id} value={employee.id}>{employee.name}</option>
+                  ))}
+                </select>
+                
+                <button 
+                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={() => {
+                    if (payrollAdmin) {
+                      toast.success('Payroll administrator updated successfully');
+                      setAuthorizedUsers(prev => {
+                        if (!prev.find(user => user.id === payrollAdmin)) {
+                          const employee = employees.find(emp => emp.id === payrollAdmin);
+                          return [...prev, { 
+                            id: employee.id, 
+                            name: employee.name, 
+                            role: 'Admin', 
+                            isAdmin: true 
+                          }];
+                        }
+                        return prev;
+                      });
+                    } else {
+                      toast.error('Please select an employee');
+                    }
+                  }}
+                >
+                  Save Administrator
+                </button>
+              </div>
+            </div>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <h3 className="font-medium mb-2">Authorized Payroll Users</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                These employees can run payroll but cannot change payroll settings.
+              </p>
+              
+              <div className="mb-4">
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const employee = employees.find(emp => emp.id === e.target.value);
+                      if (employee && !authorizedUsers.find(user => user.id === employee.id)) {
+                        setAuthorizedUsers(prev => [...prev, { 
+                          id: employee.id, 
+                          name: employee.name, 
+                          role: 'User', 
+                          isAdmin: false 
+                        }]);
+                        e.target.value = "";
+                        toast.success(`${employee.name} added as authorized payroll user`);
+                      }
+                    }
+                  }}
+                >
+                  <option value="">Add an employee</option>
+                  {employees
+                    .filter(emp => !authorizedUsers.find(user => user.id === emp.id))
+                    .map(employee => (
+                      <option key={employee.id} value={employee.id}>{employee.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+              
+              {authorizedUsers.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 tracking-wider">Name</th>
+                        <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 tracking-wider">Role</th>
+                        <th className="py-2 px-4 text-left text-xs font-medium text-gray-500 tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {authorizedUsers.map((user) => (
+                        <tr key={user.id}>
+                          <td className="py-2 px-4 whitespace-nowrap">{user.name}</td>
+                          <td className="py-2 px-4 whitespace-nowrap">
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              user.isAdmin 
+                              ? 'bg-blue-100 text-blue-800' 
+                              : 'bg-green-100 text-green-800'
+                            }`}>
+                              {user.role}
+                            </span>
+                          </td>
+                          <td className="py-2 px-4 whitespace-nowrap text-sm text-gray-500">
+                            <button
+                              onClick={() => {
+                                setAuthorizedUsers(prev => prev.filter(u => u.id !== user.id));
+                                toast.success(`${user.name} removed from authorized users`);
+                              }}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-center py-4">No additional authorized users</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Tax Information */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Tax Information</h2>
+            <p className="text-gray-600 mb-4">Configure tax IDs and identifiers for payroll processing.</p>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Country
+                  </label>
+                  <select
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    value={businessCountry}
+                    onChange={(e) => {
+                      setBusinessCountry(e.target.value);
+                      // Reset country-specific tax IDs when country changes
+                      setTaxIdInfo(prev => ({
+                        ...prev,
+                        countrySpecificIds: {}
+                      }));
+                    }}
+                  >
+                    <option value="">Select Country</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="JP">Japan</option>
+                    <option value="IN">India</option>
+                    <option value="BR">Brazil</option>
+                    <option value="ZA">South Africa</option>
+                  </select>
+                </div>
+              </div>
+              
+              {businessCountry === 'US' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Federal Employer Identification Number (EIN)
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="XX-XXXXXXX"
+                      value={taxIdInfo.ein}
+                      onChange={(e) => setTaxIdInfo(prev => ({ ...prev, ein: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      State Tax ID
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="State Tax ID"
+                      value={taxIdInfo.stateId}
+                      onChange={(e) => setTaxIdInfo(prev => ({ ...prev, stateId: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {businessCountry === 'CA' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Number (BN)
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Business Number"
+                      value={taxIdInfo.countrySpecificIds.bn || ''}
+                      onChange={(e) => setTaxIdInfo(prev => ({ 
+                        ...prev, 
+                        countrySpecificIds: {
+                          ...prev.countrySpecificIds,
+                          bn: e.target.value
+                        }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Provincial Tax ID
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Provincial Tax ID"
+                      value={taxIdInfo.countrySpecificIds.provincialId || ''}
+                      onChange={(e) => setTaxIdInfo(prev => ({ 
+                        ...prev, 
+                        countrySpecificIds: {
+                          ...prev.countrySpecificIds,
+                          provincialId: e.target.value
+                        }
+                      }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {businessCountry === 'GB' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      PAYE Reference
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="123/AB12345"
+                      value={taxIdInfo.countrySpecificIds.payeRef || ''}
+                      onChange={(e) => setTaxIdInfo(prev => ({ 
+                        ...prev, 
+                        countrySpecificIds: {
+                          ...prev.countrySpecificIds,
+                          payeRef: e.target.value
+                        }
+                      }))}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Accounts Office Reference
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="123PX00123456"
+                      value={taxIdInfo.countrySpecificIds.aoRef || ''}
+                      onChange={(e) => setTaxIdInfo(prev => ({ 
+                        ...prev, 
+                        countrySpecificIds: {
+                          ...prev.countrySpecificIds,
+                          aoRef: e.target.value
+                        }
+                      }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {businessCountry && !['US', 'CA', 'GB'].includes(businessCountry) && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Business Tax ID
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Business Tax ID"
+                      value={taxIdInfo.countrySpecificIds.businessTaxId || ''}
+                      onChange={(e) => setTaxIdInfo(prev => ({ 
+                        ...prev, 
+                        countrySpecificIds: {
+                          ...prev.countrySpecificIds,
+                          businessTaxId: e.target.value
+                        }
+                      }))}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              <button 
+                className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => {
+                  toast.success('Tax information saved successfully');
+                }}
+              >
+                Save Tax Information
+              </button>
+            </div>
+          </div>
+          
+          {/* Pay Schedule */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Pay Schedule</h2>
+            <p className="text-gray-600 mb-4">Configure your default pay schedule and cycle.</p>
+            
+            <div className="bg-white p-4 rounded-lg border border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Default Pay Frequency
+                  </label>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                    value={payPeriodType}
+                    onChange={(e) => setPayPeriodType(e.target.value)}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-Weekly</option>
+                    <option value="semimonthly">Semi-Monthly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pay Day
+                  </label>
+                  <select 
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {payPeriodType === 'monthly' ? (
+                      Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
+                        <option key={day} value={day}>{day}</option>
+                      ))
+                    ) : payPeriodType === 'biweekly' ? (
+                      ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
+                        <option key={day} value={day}>{day}</option>
+                      ))
+                    ) : (
+                      ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].map(day => (
+                        <option key={day} value={day}>{day}</option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Settings
+                </label>
+                
+                <div className="space-y-2">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="autorunPayroll"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="autorunPayroll" className="ml-2 block text-sm text-gray-900">
+                      Automatically run payroll on schedule (requires admin approval)
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="automaticTaxes"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      defaultChecked
+                    />
+                    <label htmlFor="automaticTaxes" className="ml-2 block text-sm text-gray-900">
+                      Automatically calculate taxes and deductions
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="directDeposit"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      defaultChecked
+                    />
+                    <label htmlFor="directDeposit" className="ml-2 block text-sm text-gray-900">
+                      Use direct deposit for all employees with bank information
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => {
+                  toast.success('Pay schedule saved successfully');
+                }}
+              >
+                Save Pay Schedule
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

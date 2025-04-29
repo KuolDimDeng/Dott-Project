@@ -22,7 +22,10 @@ const axiosInstance = axios.create({
   baseURL: '/api',
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    // Always default to using AWS RDS for data
+    'X-Data-Source': 'AWS_RDS',
+    'X-Database-Only': 'true'
   },
   // Never follow redirects - fail fast instead to avoid losing auth headers
   maxRedirects: 0
@@ -34,7 +37,10 @@ const serverAxiosInstance = axios.create({
   baseURL: BACKEND_API_URL,
   timeout: 30000,
   headers: {
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    // Always default to using AWS RDS for data
+    'X-Data-Source': 'AWS_RDS',
+    'X-Database-Only': 'true'
   },
   httpsAgent: process.env.NODE_ENV !== 'production' ? new https.Agent({
     rejectUnauthorized: false // Disable SSL certificate verification for local development only
@@ -47,10 +53,13 @@ const backendHrApiInstance = axios.create({
   timeout: 120000, // Increased timeout for HR operations from 90s to 120s
   headers: {
     'Content-Type': 'application/json',
+    // Always default to using AWS RDS for data
+    'X-Data-Source': 'AWS_RDS',
+    'X-Database-Only': 'true',
     // Explicitly include standard CORS headers
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Tenant-ID, X-Business-ID, X-Schema-Name'
+    'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Tenant-ID, X-Business-ID, X-Schema-Name, X-Data-Source, X-Database-Only'
   },
   // Enhanced SSL configuration for local development
   ...(process.env.NODE_ENV !== 'production' ? {
@@ -78,13 +87,73 @@ const backendHrApiInstance = axios.create({
   withCredentials: true
 });
 
+// AWS RDS-specific configuration for payroll operations
+const payrollApiInstance = axios.create({
+  baseURL: `${BACKEND_API_URL}/api/payroll`,
+  timeout: 60000, // 60 second timeout for payroll operations
+  headers: {
+    'Content-Type': 'application/json',
+    // Always use AWS RDS for payroll data
+    'X-Data-Source': 'AWS_RDS',
+    'X-Database-Only': 'true',
+    'X-Use-Mock-Data': 'false'
+  },
+  // Add specific settings to improve reliability of connections
+  maxRedirects: 3,
+  validateStatus: function (status) {
+    return (status >= 200 && status < 300) || status === 401 || status === 403;
+  },
+  // Cookie handling for sessions
+  withCredentials: true
+});
+
 // Log the configuration for debugging
-console.log('[AxiosConfig] BackendHrApiInstance configuration:', {
-  baseURL: backendHrApiInstance.defaults.baseURL,
-  timeout: backendHrApiInstance.defaults.timeout,
-  httpAgent: !!backendHrApiInstance.defaults.httpAgent,
-  httpsAgent: !!backendHrApiInstance.defaults.httpsAgent,
-  rejectUnauthorized: backendHrApiInstance.defaults.httpsAgent?.options?.rejectUnauthorized ?? 'N/A'
+console.log('[AxiosConfig] Instances configured to use AWS RDS database:', {
+  axiosInstance: true,
+  serverAxiosInstance: true,
+  backendHrApiInstance: true,
+  payrollApiInstance: true
+});
+
+// Add request interceptor to axiosInstance for AWS RDS DB
+axiosInstance.interceptors.request.use(async (config) => {
+  try {
+    // Initialize headers if not present
+    config.headers = config.headers || {};
+
+    // Always ensure we're using AWS RDS
+    config.headers['X-Data-Source'] = 'AWS_RDS';
+    config.headers['X-Database-Only'] = 'true';
+    config.headers['X-Use-Mock-Data'] = 'false';
+    
+    // Add flag for payroll-specific endpoints
+    if (config.url?.includes('/payroll/')) {
+      config.headers['X-Payroll-RDS'] = 'true';
+    }
+
+    return config;
+  } catch (error) {
+    logger.error('[AxiosConfig] Error in AWS RDS request interceptor:', error);
+    return config;
+  }
+});
+
+// Apply the same interceptor to server instance
+serverAxiosInstance.interceptors.request.use(async (config) => {
+  try {
+    // Initialize headers if not present
+    config.headers = config.headers || {};
+
+    // Always ensure we're using AWS RDS
+    config.headers['X-Data-Source'] = 'AWS_RDS';
+    config.headers['X-Database-Only'] = 'true';
+    config.headers['X-Use-Mock-Data'] = 'false';
+    
+    return config;
+  } catch (error) {
+    logger.error('[AxiosConfig] Error in AWS RDS request interceptor:', error);
+    return config;
+  }
 });
 
 // Add request interceptor to backendHrApiInstance for authentication and circuit breaking
@@ -118,6 +187,11 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
       config.params.tenantId = tenantId;
     }
     
+    // Ensure we're using AWS RDS
+    config.headers['X-Data-Source'] = 'AWS_RDS';
+    config.headers['X-Database-Only'] = 'true';
+    config.headers['X-Use-Mock-Data'] = 'false';
+    
     // Get auth token from APP_CACHE if available
     if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token) {
       const token = window.__APP_CACHE.auth.token;
@@ -130,6 +204,61 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     return config;
   } catch (error) {
     logger.error('[AxiosConfig] Error in HR API request interceptor:', error);
+    return config;
+  }
+});
+
+// Add similar interceptor to payroll instance
+payrollApiInstance.interceptors.request.use(async (config) => {
+  try {
+    // Get tenant ID from APP_CACHE if available
+    let tenantId = null;
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
+      tenantId = window.__APP_CACHE.tenant.id;
+      logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for Payroll API: ${tenantId}`);
+    } else {
+      // Try to get tenant ID from Cognito if needed
+      try {
+        const { getTenantId } = await import('@/utils/tenantUtils');
+        tenantId = await getTenantId();
+      } catch (e) {
+        logger.warn('[AxiosConfig] Could not load tenant ID:', e?.message);
+      }
+    }
+    
+    // Initialize headers if not present
+    config.headers = config.headers || {};
+    
+    // Standardize tenant headers - use only backend-expected format
+    if (tenantId) {
+      // Only include the standard tenant header format to avoid CORS issues
+      config.headers['X-Tenant-ID'] = tenantId;
+      
+      // Add tenant ID as query parameter as fallback
+      if (!config.params) config.params = {};
+      config.params.tenantId = tenantId;
+    }
+    
+    // Ensure we're using AWS RDS
+    config.headers['X-Data-Source'] = 'AWS_RDS';
+    config.headers['X-Database-Only'] = 'true';
+    config.headers['X-Use-Mock-Data'] = 'false';
+    
+    // Always add payroll specific header
+    config.headers['X-Payroll-RDS'] = 'true';
+    
+    // Get auth token from APP_CACHE if available
+    if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token) {
+      const token = window.__APP_CACHE.auth.token;
+      if (token) {
+        logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for Payroll API`);
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    return config;
+  } catch (error) {
+    logger.error('[AxiosConfig] Error in Payroll API request interceptor:', error);
     return config;
   }
 });

@@ -84,17 +84,49 @@ export default function OnboardingLayout({ children }) {
     try {
       setIsRefreshing(true);
       logger.debug('[OnboardingLayout] Attempting to refresh user session');
+      
+      // First try the standard refresh
       const result = await refreshUserSession();
       
       if (result && result.tokens) {
         logger.debug('[OnboardingLayout] Session refreshed successfully');
         setRefreshError(false);
         return true;
-      } else {
-        logger.warn('[OnboardingLayout] Failed to refresh session, tokens not returned');
-        setRefreshError(true);
-        return false;
       }
+      
+      // If standard refresh fails, try fallback to sessionStorage tokens
+      logger.warn('[OnboardingLayout] Standard session refresh failed, trying fallback');
+      
+      // Use tokens from sessionStorage if available
+      const idToken = sessionStorage.getItem('idToken');
+      const accessToken = sessionStorage.getItem('accessToken');
+      
+      if (idToken) {
+        // Manually construct a result
+        logger.debug('[OnboardingLayout] Using fallback tokens from sessionStorage');
+        
+        // Set tokens in APP_CACHE for other components to use
+        if (typeof window !== 'undefined') {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.idToken = idToken;
+          window.__APP_CACHE.auth.token = idToken;
+          
+          if (accessToken) {
+            window.__APP_CACHE.auth.accessToken = accessToken;
+          }
+          
+          window.__APP_CACHE.auth.hasSession = true;
+          window.__APP_CACHE.auth.provider = 'cognito';
+        }
+        
+        setRefreshError(false);
+        return true;
+      }
+      
+      logger.warn('[OnboardingLayout] Failed to refresh session, tokens not returned');
+      setRefreshError(true);
+      return false;
     } catch (error) {
       logger.error('[OnboardingLayout] Error refreshing session:', error);
       setRefreshError(true);
@@ -115,13 +147,27 @@ export default function OnboardingLayout({ children }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Check if the route should be treated as public (all onboarding routes are public)
+      // This prevents infinite sign-in redirect loops
+      if (pathname.startsWith('/onboarding')) {
+        logger.debug('[OnboardingLayout] Onboarding route is public, skipping strict auth check');
+        
+        // Still try to refresh but don't block on failure
+        handleTokenRefresh().catch(e => {
+          logger.warn('[OnboardingLayout] Optional token refresh failed:', e);
+        });
+        
+        setIsLoading(false);
+        return;
+      }
+      
       // Skip any checks if circuit breaker parameters are present
       if (noRedirect || noLoop) {
         logger.debug('[OnboardingLayout] Circuit breaker active, skipping navigation checks');
         setIsLoading(false);
         return;
       }
-
+      
       // Skip redirect checks if coming from a known source to prevent loops
       if (fromParam === 'middleware' || fromParam === 'signin') {
         logger.debug('[OnboardingLayout] Request from known source, skipping navigation checks');

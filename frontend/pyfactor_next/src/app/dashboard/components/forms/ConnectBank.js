@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
 import { axiosInstance } from '@/lib/axiosConfig';
 
-const ConnectBank = () => {
+const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false }) => {
   const [region, setRegion] = useState('');
   const [africanOption, setAfricanOption] = useState('');
   const [africanBankProvider, setAfricanBankProvider] = useState('');
@@ -11,6 +11,39 @@ const ConnectBank = () => {
   const [linkToken, setLinkToken] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
   const [connectedBankInfo, setConnectedBankInfo] = useState(null);
+
+  // Use preferredProvider when provided
+  useEffect(() => {
+    if (preferredProvider) {
+      // Set region based on preferred provider
+      if (preferredProvider === 'plaid') {
+        // Check if this is Europe or North America
+        const europeanCountries = [
+          'GB', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'CH', 'SE', 'DK', 'NO', 'FI', 
+          'PT', 'IE', 'GR', 'PL', 'CZ', 'HU', 'RO'
+        ];
+        
+        if (businessCountry && europeanCountries.includes(businessCountry)) {
+          setRegion('Europe');
+        } else {
+          setRegion('America');
+        }
+      } else if (preferredProvider === 'paystack') {
+        setRegion('Africa');
+        setAfricanOption('Mobile Money');
+      } else if (preferredProvider === 'dlocal') {
+        setRegion('South America');
+      }
+      
+      // If autoConnect is true, automatically connect to the bank
+      if (autoConnect) {
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          autoConnectToBank();
+        }, 100);
+      }
+    }
+  }, [preferredProvider, businessCountry, autoConnect]);
 
   const handleRegionChange = (event) => {
     setRegion(event.target.value);
@@ -28,17 +61,67 @@ const ConnectBank = () => {
   };
 
   const getProviderForRegion = (region) => {
+    // If we have a preferred provider from the backend, use that
+    if (preferredProvider) {
+      return preferredProvider;
+    }
+    
+    // Otherwise, use region-based logic as a fallback
     switch (region) {
       case 'America':
-        return 'plaid';
       case 'Europe':
-        return 'tink';
+        return 'plaid';
       case 'Africa':
         return africanOption === 'Mobile Money' ? 'africas_talking' : africanBankProvider;
+      case 'South America':
+        return 'dlocal';
       case 'Asia':
         return 'salt_edge';
       default:
         return 'unknown';
+    }
+  };
+  
+  // Function to automatically connect based on the preferred provider
+  const autoConnectToBank = async () => {
+    if (!preferredProvider || !region) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const provider = getProviderForRegion(region);
+      console.log(`Auto-connecting to bank with provider: ${provider}, region: ${region}`);
+      
+      const payload = { region, provider };
+      if (region === 'Africa') {
+        payload.sub_option = africanOption;
+        if (africanOption === 'Banks') {
+          payload.bank_provider = africanBankProvider;
+        }
+      }
+      
+      // Add business country to payload
+      if (businessCountry) {
+        payload.country_code = businessCountry;
+      }
+
+      const response = await axiosInstance.post('/api/banking/create_link_token/', payload);
+
+      if (response.data.link_token) {
+        setLinkToken(response.data.link_token);
+      } else if (response.data.auth_url) {
+        // Handle non-Plaid providers that return an auth URL
+        window.location.href = response.data.auth_url;
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (err) {
+      console.error('Error auto-connecting to bank:', err);
+      setError('Failed to initialize bank connection. Please try again.');
+      setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,6 +136,11 @@ const ConnectBank = () => {
         if (africanOption === 'Banks') {
           payload.bank_provider = africanBankProvider;
         }
+      }
+      
+      // Add business country to payload
+      if (businessCountry) {
+        payload.country_code = businessCountry;
       }
 
       const response = await axiosInstance.post('/api/banking/create_link_token/', payload);
@@ -127,6 +215,36 @@ const ConnectBank = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
+  // Add message about auto-detected region when preferred provider is used
+  const getRegionMessage = () => {
+    if (preferredProvider && businessCountry) {
+      return (
+        <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md">
+          <span className="font-medium">Based on your business location ({businessCountry}), we've selected the best connection method for you.</span>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  // Show loading state when auto-connecting
+  if (autoConnect && loading && !connectedBankInfo) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h1 className="text-2xl font-bold mb-4">
+          Connecting to Your Bank
+        </h1>
+        <div className="flex flex-col items-center justify-center py-10">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mb-4"></div>
+          <p className="text-gray-600">
+            We're setting up your bank connection based on your business location.
+            Please wait a moment...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h1 className="text-2xl font-bold mb-4">
@@ -139,6 +257,9 @@ const ConnectBank = () => {
             Please choose the region where your bank is located. This helps us provide you with the
             most appropriate connection method for your bank.
           </p>
+          
+          {getRegionMessage()}
+          
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Select Your Region
@@ -152,6 +273,7 @@ const ConnectBank = () => {
               <option value="America">America</option>
               <option value="Europe">Europe</option>
               <option value="Africa">Africa</option>
+              <option value="South America">South America</option>
               <option value="Asia">Asia</option>
             </select>
           </div>

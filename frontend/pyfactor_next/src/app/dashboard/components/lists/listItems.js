@@ -200,6 +200,8 @@ const MainListItems = ({
   }, []);
 
   const handleItemClick = useCallback((item, e) => {
+    console.log('[DEBUG] handleItemClick called with item:', item);
+    console.log('[DEBUG] handleItemClick called with item:', item);
     setOpenTooltip && setOpenTooltip(null);
     if (e) e.stopPropagation();
     
@@ -315,6 +317,7 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleSalesClick, value: 'reports' },
       ],
     },
+    /* CRM menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Contacts className="w-5 h-5" />,
       label: 'CRM',
@@ -330,6 +333,7 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleCRMClick, value: 'reports' },
       ],
     },
+    */
     {
       icon: <NavIcons.Inventory className="w-5 h-5" />,
       label: 'Inventory',
@@ -343,6 +347,7 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleInventoryClick, value: 'reports' },
       ],
     },
+    /* Transport menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Shipping className="w-5 h-5" />,
       label: 'Transport',
@@ -357,6 +362,7 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleTransportClick, value: 'reports' },
       ],
     },
+    */
     {
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payments',
@@ -444,9 +450,79 @@ const MainListItems = ({
             }
           }
         },
-        { label: 'Timesheets', onClick: handleHRClick, value: 'timesheets' },
-        { label: 'Taxes', onClick: handleHRClick, value: 'taxes' },
-        { label: 'Benefits', onClick: handleHRClick, value: 'benefits' },
+        { 
+          label: 'Timesheets', 
+          onClick: () => {
+            console.log('[listItems] Timesheets menu item clicked');
+            // Dispatch a standardized navigation event
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'timesheets', 
+              navigationKey
+            };
+            
+            // Dispatch navigation events for all listeners
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            
+            // Call the handler directly
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('timesheets');
+            }
+          }
+        },
+        { 
+          label: 'Pay', 
+          onClick: () => {
+            console.log('[listItems] Pay menu item clicked');
+            // Dispatch a standardized navigation event
+            const navigationKey = `nav-${Date.now()}`;
+            const payload = { 
+              item: 'pay', 
+              navigationKey
+            };
+            
+            // Dispatch navigation events for all listeners
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            
+            // Call the handler directly
+            if (typeof handleHRClick === 'function') {
+              handleHRClick('pay');
+            }
+          }
+        },
+        { 
+          label: 'Benefits', 
+          onClick: () => {
+            console.log('[DEBUG] Benefits menu item clicked - Start');
+            
+            // Generate a unique navigation key for navigation
+            const navigationKey = `benefits-${Date.now()}`;
+            console.log('[DEBUG] Generated navigationKey:', navigationKey);
+            
+            const payload = { 
+              item: 'benefits', 
+              navigationKey,
+              source: 'hr-benefits-menu-click'
+            };
+            
+            console.log('[DEBUG] Dispatching menuNavigation event with payload:', JSON.stringify(payload));
+            
+            // Dispatch navigation events for all listeners
+            window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
+            console.log('[DEBUG] menuNavigation event dispatched');
+            
+            // Call the handler directly
+            if (typeof handleHRClick === 'function') {
+              console.log('[DEBUG] Calling handleHRClick with section: benefits');
+              handleHRClick('benefits');
+              console.log('[DEBUG] handleHRClick called');
+            } else {
+              console.error('[DEBUG] handleHRClick is not a function');
+            }
+            
+            console.log('[DEBUG] Benefits menu item clicked - End');
+          }
+        },
         { label: 'Reports', onClick: handleHRClick, value: 'reports' },
         { label: 'Performance', onClick: handleHRClick, value: 'performance' },
       ],
@@ -456,7 +532,7 @@ const MainListItems = ({
       label: 'Payroll',
       subItems: [
         { label: 'Dashboard', onClick: handlePayrollClick, value: 'dashboard' },
-        { label: 'Run Payroll', onClick: handlePayrollClick, value: 'run' },
+        { label: 'Run Payroll', onClick: handlePayrollClick, value: 'run-payroll' },
         { label: 'Payroll Transactions', onClick: handlePayrollClick, value: 'transactions' },
         { label: 'Reports', onClick: handlePayrollClick, value: 'reports' },
       ],

@@ -1,0 +1,44 @@
+{
+  "frontend": {
+    "scripts": [
+      {
+        "id": "FE0001",
+        "name": "Version0001_update_payroll_navigation.js",
+        "path": "/Users/kuoldeng/projectx/scripts/Version0001_update_payroll_navigation.js",
+        "description": "Updates payroll navigation and menu structure to support Run Payroll feature",
+        "created": "2025-06-05",
+        "executed": true,
+        "execution_date": "2025-06-05",
+        "author": "AI Assistant",
+        "affected_files": [
+          "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js",
+          "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/Dashboard/DashboardContent.js"
+        ]
+      }
+    ]
+  },
+  "backend": {
+    "scripts": [
+      {
+        "id": "BE0001",
+        "name": "Version0001_payroll_stripe_connect_integration.py",
+        "path": "/Users/kuoldeng/projectx/backend/pyfactor/scripts/Version0001_payroll_stripe_connect_integration.py",
+        "description": "Sets up Stripe Connect integration for payroll processing with batch payments",
+        "created": "2025-06-05",
+        "executed": true,
+        "execution_date": "2025-06-05",
+        "author": "AI Assistant",
+        "affected_tables": [
+          "business_settings",
+          "employee_payment_methods",
+          "payroll_transfers",
+          "payroll_errors"
+        ],
+        "dependencies": [
+          "stripe",
+          "psycopg2"
+        ]
+      }
+    ]
+  }
+} 

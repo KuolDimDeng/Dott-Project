@@ -24,7 +24,7 @@ function HRDashboard({ section = 'dashboard' }) {
     <div className="mb-6">
       <div className="border-b border-gray-200">
         <nav className="flex -mb-px space-x-8">
-          {['dashboard', 'timesheets', 'taxes', 'benefits', 'reports', 'performance'].map((tab) => (
+          {['dashboard', 'timesheets', 'pay', 'taxes', 'benefits', 'reports', 'performance'].map((tab) => (
             <button
               key={tab}
               onClick={() => handleTabChange(tab)}

@@ -213,7 +213,22 @@ const BusinessInfoPage = () => {
       setCache('onboarding_status', onboardingStatus, { ttl: 86400000 }); // 24 hours
       
       logger.debug('[BusinessInfoPage] Business info updated successfully, redirecting to subscription page');
-      router.push('/onboarding/subscription');
+      
+      // Force redirection with a small delay to ensure state is properly updated
+      setTimeout(() => {
+        // Use the Next.js router push with specific options for more reliable navigation
+        router.push('/onboarding/subscription?source=business-info&ts=' + Date.now(), { 
+          forceOptimisticNavigation: true 
+        });
+        
+        // Fallback with direct window.location for problematic cases
+        setTimeout(() => {
+          if (window.location.pathname.includes('/business-info')) {
+            logger.warn('[BusinessInfoPage] Router navigation failed, using direct location change');
+            window.location.href = '/onboarding/subscription?source=business-info&fallback=true&ts=' + Date.now();
+          }
+        }, 1000);
+      }, 300);
     } catch (error) {
       logger.error('[BusinessInfoPage] Failed to update business info', error);
       setError('Failed to save business information. Please try again.');

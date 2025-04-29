@@ -34,5 +34,19 @@
         "frontend/pyfactor_next/src/app/Settings/components/SettingsManagement.js"
       ]
     }
-  ]
+  ],
+  "Version0001_update_script_registry_hr_reports.py": {
+    "name": "Version0001_update_script_registry_hr_reports.py",
+    "description": "Update script registry with HRReportManagement implementation details",
+    "related_frontend_script": "Version0001_Add_HRReportManagement_Component.js",
+    "feature": "HR Reports Management",
+    "components_affected": [
+      "HRReportManagement.js",
+      "RenderMainContent.js",
+      "DashboardContent.js",
+      "listItems.js"
+    ],
+    "executed": "2025-04-27T18:43:12.307294",
+    "status": "completed"
+  }
 }

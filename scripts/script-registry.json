@@ -1,0 +1,18 @@
+[
+  {
+    "name": "Version0005_fix_Benefits_Menu_Item_RenderMainContent",
+    "description": "Fix the Benefits menu item in HR menu to properly render the Benefits Management page",
+    "version": "1.0.0",
+    "status": "success",
+    "created": "2025-04-28T00:27:22.022Z",
+    "executedAt": "2025-04-28T00:27:22.035Z"
+  },
+  {
+    "name": "Version0006_fix_Benefits_Radio_Buttons_And_Owner_Access",
+    "description": "Fix radio buttons in ManageBenefits.js and ensure owners can access all tabs in Benefits Management",
+    "version": "1.0.0",
+    "status": "success",
+    "created": "2025-04-28T00:31:37.162Z",
+    "executedAt": "2025-04-28T00:31:37.178Z"
+  }
+]

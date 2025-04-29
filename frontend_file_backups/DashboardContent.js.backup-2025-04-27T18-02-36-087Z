@@ -1,0 +1,859 @@
+/**
+ * PRIMARY DASHBOARD CONTENT FILE
+ * 
+ * IMPORTANT: This is the main DashboardContent file that should be used throughout the application.
+ * Do not create duplicates or alternative versions of this component.
+ * 
+ * It is being imported by:
+ * - /src/app/[tenantId]/dashboard/page.js
+ */
+
+'use client';
+
+import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo, useRef } from 'react';
+import useClientEffect from '@/hooks/useClientEffect';
+import { useStore } from '@/store/authStore';
+import { Box, Container, Typography, Alert, Button } from '@/components/ui/TailwindComponents';
+import DashAppBar from '../../app/dashboard/components/DashAppBar';
+import Drawer from '../../app/dashboard/components/Drawer';
+import { logger } from '@/utils/logger';
+import ErrorBoundary from '../../app/dashboard/components/ErrorBoundary';
+import { useRouter } from 'next/navigation';
+import { getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
+import renderForm from '../../app/dashboard/components/RenderForm';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import Link from 'next/link';
+import { fetchAuthSession } from '@aws-amplify/auth';
+import { NotificationProvider, useNotification } from '@/context/NotificationContext';
+import useEnsureTenant from '@/hooks/useEnsureTenant';
+import { useAuth } from '@/hooks/auth';
+import { ToastProvider } from '@/components/Toast/ToastProvider';
+import DashboardLoader from '@/components/DashboardLoader';
+import { ensureAuthProvider } from '@/utils/refreshUserSession';
+
+// Lazy load components to reduce initial memory usage
+const RenderMainContent = lazy(() =>
+  import('../../app/dashboard/components/RenderMainContent').then(module => ({
+    default: module.default
+  }))
+);
+
+// Use DashboardLoader for loading component
+const LoadingComponent = () => <DashboardLoader message="Loading dashboard components..." />;
+
+function DashboardContent({ setupStatus = 'pending', customContent, mockData, userAttributes, tenantId: propTenantId }) {
+  const { user, isAuthenticated, logout } = useAuth();
+  const router = useRouter();
+  const { showNotification } = useNotification();
+  const { tenantStatus, tenantError, tenantId: hookTenantId, retry } = useEnsureTenant();
+  // Use prop tenant ID if available, otherwise use the one from the hook
+  const effectiveTenantId = propTenantId || hookTenantId;
+  const [tenantSetupAttempted, setTenantSetupAttempted] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
+  const [profileData, setProfileData] = useState(null);
+  const [actualSetupStatus, setActualSetupStatus] = useState(setupStatus || 'pending');
+  // Add ref for main content
+  const mainContentRef = useRef(null);
+  // Add state for window width
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
+  // Add navigationKey state to track navigation changes
+  const [navigationKey, setNavigationKey] = useState(`initial-${Date.now()}`);
+
+  // Initialize user data with userAttributes from props if available
+  const [initialUserData] = useState(() => {
+    if (userAttributes) {
+      return {
+        email: userAttributes.email,
+        name: userAttributes.name,
+        phone_number: userAttributes.phone_number,
+        sub: userAttributes.sub,
+        businessName: userAttributes['custom:businessname'],
+        businessType: userAttributes['custom:businesstype'],
+        ...userAttributes
+      };
+    }
+    return null;
+  });
+
+  // Watch for props changes
+  useEffect(() => {
+    if (setupStatus && setupStatus !== actualSetupStatus) {
+      setActualSetupStatus(setupStatus);
+    }
+  }, [setupStatus, actualSetupStatus]);
+
+  // Use a single state object for UI visibility flags to reduce memory overhead
+  const [uiState, setUiState] = useState({
+    // Menu state
+    anchorEl: null,
+    settingsAnchorEl: null,
+    drawerOpen: true,
+    
+    // User data
+    userData: initialUserData,
+    
+    // Current view
+    view: 'customerList',
+    
+    // Selected items
+    selectedOption: null,
+    selectedReport: null,
+    selectedInvoiceId: null,
+    selectedCustomer: null,
+    selectedInvoice: null,
+    selectedCustomerId: null,
+    selectedAnalysis: null,
+    selectedSettingsOption: null,
+    
+    // Data collections
+    products: [],
+    services: [],
+    
+    // Section visibility - these are grouped by category
+    // to reduce the number of state updates
+    showKPIDashboard: false,
+    showMainDashboard: false,
+    showHome: true, // Show Home page by default,
+    showInventoryItems: false, // Added for inventory items
+    showInventoryManagement: false, // Added for inventory management
+    
+    // HR section visibility
+    showHRDashboard: false,
+    showEmployeeManagement: false,
+    showTaxManagement: false,
+    showTimesheetManagement: false, // Added for timesheet management
+    hrSection: 'dashboard',
+    
+    // Form visibility
+    showForm: false,
+    formOption: null,
+    showCreateOptions: false, // Added for Create New menu functionality
+    
+    // User menu options visibility
+    showMyAccount: false,
+    showHelpCenter: false,
+    
+    // Create menu visibility
+    showCreateMenu: false,
+  });
+  
+  // Destructure state for easier access
+  const {
+    anchorEl, settingsAnchorEl, drawerOpen, userData, view,
+    selectedOption, selectedReport, selectedInvoiceId, selectedCustomer,
+    selectedInvoice, selectedCustomerId, selectedAnalysis, selectedSettingsOption,
+    products, services, showKPIDashboard, showMainDashboard, showHome,
+    showInventoryItems, showInventoryManagement, showForm, formOption,
+    showHRDashboard, showEmployeeManagement, showTimesheetManagement, hrSection, showMyAccount, showHelpCenter,
+    showCreateMenu, showCreateOptions
+  } = uiState;
+  
+  // Computed values - memoize these values
+  const openMenu = Boolean(anchorEl);
+  const settingsMenuOpen = Boolean(settingsAnchorEl);
+  
+  // Create optimized state setter that uses functional updates to prevent unnecessary renders
+  const updateState = useCallback((updates) => {
+    setUiState(prev => {
+      // Check if any values are actually changing to prevent unnecessary renders
+      const hasChanges = Object.entries(updates).some(
+        ([key, value]) => prev[key] !== value
+      );
+      
+      // If no changes, return the previous state reference to avoid a re-render
+      if (!hasChanges) return prev;
+      
+      // Otherwise, apply the updates
+      return { ...prev, ...updates };
+    });
+  }, []);
+  
+  // Memoize commonly used callbacks with optimized equality checks
+  const setAnchorEl = useCallback((value) => {
+    if (value === uiState.anchorEl) return; // Skip update if unchanged
+    updateState({ anchorEl: value });
+  }, [updateState, uiState.anchorEl]);
+  
+  const setSettingsAnchorEl = useCallback((value) => {
+    if (value === uiState.settingsAnchorEl) return; // Skip update if unchanged
+    updateState({ settingsAnchorEl: value });
+  }, [updateState, uiState.settingsAnchorEl]);
+  
+  const setDrawerOpen = useCallback((value) => {
+    if (value === uiState.drawerOpen) return; // Skip update if unchanged
+    updateState({ drawerOpen: value });
+  }, [updateState, uiState.drawerOpen]);
+  
+  const setUserData = useCallback((value) => {
+    updateState({ userData: value });
+  }, [updateState]);
+  
+  const setView = useCallback((value) => {
+    if (value === uiState.view) return; // Skip update if unchanged
+    updateState({ view: value });
+  }, [updateState, uiState.view]);
+  
+  const setShowKPIDashboard = useCallback((value) => {
+    if (value === uiState.showKPIDashboard) return; // Skip update if unchanged
+    updateState({ showKPIDashboard: value });
+  }, [updateState, uiState.showKPIDashboard]);
+  
+  const setShowMainDashboard = useCallback((value) => {
+    if (value === uiState.showMainDashboard) return; // Skip update if unchanged
+    updateState({ showMainDashboard: value });
+  }, [updateState, uiState.showMainDashboard]);
+  
+  const setShowHome = useCallback((value) => {
+    if (value === uiState.showHome) return; // Skip update if unchanged
+    updateState({ showHome: value });
+  }, [updateState, uiState.showHome]);
+  
+  const setShowForm = useCallback((value) => {
+    if (value === uiState.showForm) return; // Skip update if unchanged
+    updateState({ showForm: value });
+  }, [updateState, uiState.showForm]);
+  
+  const setFormOption = useCallback((value) => {
+    if (value === uiState.formOption) return; // Skip update if unchanged
+    updateState({ formOption: value });
+  }, [updateState, uiState.formOption]);
+  
+  const setShowMyAccount = useCallback((value) => {
+    if (value === uiState.showMyAccount) return; // Skip update if unchanged
+    updateState({ showMyAccount: value });
+  }, [updateState, uiState.showMyAccount]);
+  
+  const setShowHelpCenter = useCallback((value) => {
+    if (value === uiState.showHelpCenter) return; // Skip update if unchanged
+    updateState({ showHelpCenter: value });
+  }, [updateState, uiState.showHelpCenter]);
+  
+  const setSelectedSettingsOption = useCallback((value) => {
+    if (value === uiState.selectedSettingsOption) return; // Skip update if unchanged
+    updateState({ selectedSettingsOption: value });
+  }, [updateState, uiState.selectedSettingsOption]);
+  
+  const setShowCreateMenu = useCallback((value) => {
+    if (value === uiState.showCreateMenu) return; // Skip update if unchanged
+    updateState({ showCreateMenu: value });
+  }, [updateState, uiState.showCreateMenu]);
+
+  // Reset all view states for navigation
+  const resetAllStates = useCallback(() => {
+    console.log('[DashboardContent] Resetting all view states');
+    
+    // Use a single batch update for better performance
+    updateState({
+      // Reset menu states
+      anchorEl: null,
+      settingsAnchorEl: null,
+      
+      // Reset view states
+      view: null,
+      showMainDashboard: false,
+      showHome: false,
+      showForm: false,
+      showMyAccount: false,
+      showHelpCenter: false,
+      showKPIDashboard: false,
+      showUserProfileSettings: false,
+      
+      // Reset form states
+      formOption: '',
+      selectedSettingsOption: null,
+      
+      // Reset HR states
+      showEmployeeManagement: false,
+      showHRDashboard: false,
+      showTaxManagement: false,
+      showTimesheetManagement: false,
+      
+      // Reset other view states as needed
+    });
+    
+    console.log('[DashboardContent] All view states have been reset');
+  }, [updateState]);
+
+  const drawerWidth = 260; // Match the increased width in Drawer.js
+  const iconOnlyWidth = 60; // Width when showing only icons
+
+  // Basic event handlers that need to be defined - memoize all handlers
+  const handleClick = useCallback((event) => {
+    setAnchorEl(event.currentTarget);
+  }, [setAnchorEl]);
+
+  const handleClose = useCallback(() => {
+    setAnchorEl(null);
+  }, [setAnchorEl]);
+
+  const handleCloseCreateMenu = useCallback(() => {
+    setShowCreateMenu(false);
+  }, [setShowCreateMenu]);
+
+  const handleDrawerItemClick = useCallback((option) => {
+    console.log(`Drawer item clicked: ${option}`);
+    
+    // Reset states first
+    resetAllStates();
+    
+    // Handle different navigation options
+    switch(option) {
+      case 'home':
+        setShowHome(true);
+        break;
+      case 'main-dashboard':
+        setShowMainDashboard(true);
+        break;
+      case 'kpi-dashboard':
+        setShowKPIDashboard(true);
+        break;
+      default:
+        // For other options, update the view directly
+        setView(option);
+    }
+  }, [resetAllStates, setShowHome, setShowMainDashboard, setShowKPIDashboard, setView]);
+
+  const handleHomeClick = useCallback(() => {
+    resetAllStates();
+    setShowHome(true);
+  }, [resetAllStates, setShowHome]);
+
+  const handleHRClick = useCallback((section) => {
+    console.log('[DashboardContent] HR section selected:', section);
+    // Hide other sections
+    resetAllStates();
+    
+    if (section === 'taxes') {
+      // Show tax management component
+      console.log('[DashboardContent] Setting showTaxManagement to true for section:', section);
+      updateState({
+        showTaxManagement: true,
+        hrSection: section
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showTaxManagement: true, 
+        hrSection: section 
+      });
+    } else if (section === 'timesheets') {
+      // Show timesheet management component
+      console.log('[DashboardContent] Setting showTimesheetManagement to true for section:', section);
+      updateState({
+        showTimesheetManagement: true,
+        hrSection: section
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showTimesheetManagement: true, 
+        hrSection: section 
+      });
+    } else if (section === 'pay') {
+      // Show pay management component
+      console.log('[DashboardContent] Setting showPayManagement to true for section:', section);
+      updateState({
+        showPayManagement: true,
+        hrSection: section
+      });
+      
+      // Log the state immediately after update
+      console.log('[DashboardContent] State after update:', { 
+        showPayManagement: true, 
+        hrSection: section 
+      });
+    } else {
+      // Show other HR components
+      updateState({
+        showHRDashboard: section === 'dashboard',
+        showEmployeeManagement: section === 'employees',
+        showBenefitsManagement: section === 'benefits',
+        showReportsManagement: section === 'reports',
+        showPerformanceManagement: section === 'performance',
+        hrSection: section || 'dashboard'
+      });
+    }
+  }, [resetAllStates, updateState]);
+
+  const handleInventoryClick = useCallback((value) => {
+    resetAllStates();
+    console.log('[DashboardContent] Inventory option selected:', value);
+    
+    // For the products view, redirect to our new unified inventory page
+    if (value === 'items') {
+      window.location.href = '/inventory';
+      return;
+    }
+    
+    switch(value) {
+      case 'inventorydashboard':
+        updateState({ view: 'inventory-dashboard' });
+        break;
+      case 'stock-adjustments':
+        updateState({ view: 'inventory-stock-adjustments' });
+        break;
+      case 'locations':
+        updateState({ view: 'inventory-locations' });
+        break;
+      case 'suppliers':
+        console.log('[DashboardContent] Setting view to inventory-suppliers');
+        updateState({ view: 'inventory-suppliers' });
+        // Force a rerender by adding a timestamp to the view
+        setTimeout(() => {
+          if (view === 'inventory-suppliers') {
+            console.log('[DashboardContent] Refreshing inventory-suppliers view');
+            updateState({ view: '' });
+            setTimeout(() => {
+              updateState({ view: 'inventory-suppliers' });
+            }, 50);
+          }
+        }, 100);
+        break;
+      case 'transactions':
+        updateState({ view: 'inventory-transactions' });
+        break;
+      case 'reports':
+        updateState({ view: 'inventory-reports' });
+        break;
+      default:
+        // If no specific option is selected, show the inventory management page
+        updateState({ showInventoryManagement: true });
+    }
+  }, [resetAllStates, updateState, view]);
+
+  const handleShowCreateOptions = useCallback((option) => {
+    if (option === selectedOption && showCreateOptions) return; // Skip if no change
+    
+    resetAllStates();
+    updateState({ 
+      showCreateOptions: true,
+      selectedOption: option 
+    });
+  }, [resetAllStates, updateState, selectedOption, showCreateOptions]);
+
+  const handleShowCreateMenu = useCallback(() => {
+    setShowCreateMenu(true);
+  }, [setShowCreateMenu]);
+
+  const handleMenuItemClick = useCallback((option) => {
+    handleCloseCreateMenu();
+    handleShowCreateOptions(option);
+  }, [handleCloseCreateMenu, handleShowCreateOptions]);
+
+  const handleUserProfileClick = useCallback(() => {
+    setShowMyAccount(true);
+    setShowHelpCenter(false);
+    setSelectedSettingsOption(null);
+    handleClose();
+  }, [setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, handleClose]);
+
+  const handleSettingsClick = useCallback(() => {
+    console.log('[DashboardContent] Settings button clicked - Starting Settings navigation');
+    try {
+      // Reset all other states first
+      resetAllStates();
+      
+      // Set the necessary states to show the Settings view
+      setShowMyAccount(false);
+      setShowHelpCenter(false);
+      
+      // Set the selected settings option to 'Settings'
+      console.log('[DashboardContent] Setting selectedSettingsOption to "Settings"');
+      setSelectedSettingsOption('Settings');
+      
+      // Force a re-render with a new navigation key
+      const newNavKey = `settings-${Date.now()}`;
+      console.log(`[DashboardContent] Updating navigationKey to: ${newNavKey}`);
+      setNavigationKey(newNavKey);
+      
+      // Close the menu
+      handleClose();
+      
+      console.log('[DashboardContent] Settings navigation completed');
+    } catch (error) {
+      console.error('[DashboardContent] Error in handleSettingsClick:', error);
+    }
+  }, [resetAllStates, setShowMyAccount, setShowHelpCenter, setSelectedSettingsOption, setNavigationKey, handleClose]);
+
+  const handleHelpClick = useCallback(() => {
+    setShowHelpCenter(true);
+    handleClose();
+  }, [setShowHelpCenter, handleClose]);
+
+  const handlePrivacyClick = useCallback(() => {
+    window.open('/privacy', '_blank');
+    handleClose();
+  }, [handleClose]);
+
+  const handleTermsClick = useCallback(() => {
+    window.open('/terms', '_blank');
+    handleClose();
+  }, [handleClose]);
+
+  const handleSignOut = useCallback(() => {
+    if (logout) {
+      logout();
+    }
+    router.push('/');
+  }, [logout, router]);
+
+  // Handle drawer toggle with improved memory management
+  const handleDrawerToggle = useCallback(() => {
+    // Toggle the drawer state
+    setDrawerOpen(prev => !prev);
+  }, [setDrawerOpen]);
+  
+  // Add logging to help debug issues
+  const handleDrawerToggleWithLogging = useCallback(() => {
+    console.log('[DashboardContent] Toggling drawer');
+    handleDrawerToggle();
+  }, [handleDrawerToggle]);
+
+  // Handle specific click for employee management for direct access
+  const handleEmployeeManagementClick = useCallback(() => {
+    console.log('[DashboardContent] Employee Management directly clicked');
+    resetAllStates();
+    updateState({
+      showHome: false,
+      showKPIDashboard: false,
+      showMainDashboard: false,
+      showInventoryItems: false,
+      showInventoryManagement: false,
+      showHRDashboard: false,
+      showEmployeeManagement: true,
+      hrSection: 'employees'
+    });
+  }, [updateState, resetAllStates]);
+
+  // Add the handleCRMClick function
+  const handleCRMClick = useCallback((option) => {
+    console.log('[DashboardContent] handleCRMClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct CRM section format that RenderMainContent expects
+    setView(`crm-${option}`);
+  }, [resetAllStates, setView]);
+
+  // Add the handleBillingClick function
+  const handleBillingClick = useCallback((option) => {
+    console.log('[DashboardContent] handleBillingClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct billing section
+    setView(option || 'invoices');
+  }, [resetAllStates, setView]);
+
+  // Add the handleTaxesClick function
+  const handleTaxesClick = useCallback((option) => {
+    console.log('[DashboardContent] handleTaxesClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct taxes section
+    updateState({
+      view: `taxes-${option}`
+    });
+  }, [resetAllStates, updateState]);
+
+  // Memoize userData to prevent unnecessary re-renders
+  const memoizedUserData = useMemo(() => {
+    return userData || initialUserData;
+  }, [userData, initialUserData]);
+  
+  // Memoize the main content class to prevent recalculating on every render
+  const mainContentClass = useMemo(() => {
+    // When drawer is OPEN (expanded): content should be MORE collapsed (smaller width)
+    // When drawer is COLLAPSED: content should be MORE expanded (larger width)
+    console.log(`%c[ComponentsDashboard] Calculating mainContentClass: drawer ${!drawerOpen ? 'COLLAPSED' : 'EXPANDED'}`, 'background: #f9a8d4; color: #831843; padding: 2px 4px; border-radius: 2px;');
+    
+    // Detailed logging of measurements
+    // When drawer is open, we COLLAPSE the content more by adding extra padding
+    const extraCollapsedWidth = drawerWidth + 100; // Add 100px extra to make content more collapsed when drawer is open
+    const regularCollapsedWidth = 60; // The width when drawer is collapsed (icon only)
+    
+    const extraCollapsedMeasurements = `ml-[${drawerWidth}px] w-[calc(100%-${extraCollapsedWidth}px)]`;
+    const expandedMeasurements = `ml-[${regularCollapsedWidth}px] w-[calc(100%-${regularCollapsedWidth}px)]`;
+    
+    console.log(`[ComponentsDashboard] Measurements:`);
+    console.log(`  - Drawer Open (Extra Collapsed): ${extraCollapsedMeasurements}`);
+    console.log(`  - Drawer Closed (Expanded): ${expandedMeasurements}`);
+    
+    // When drawer is OPEN, use the extra collapsed measurements (content is narrower)
+    // When drawer is COLLAPSED, use the expanded measurements (content is wider)
+    return `flex-grow bg-[#F8FAFC] min-h-[calc(100vh-64px)] p-6 transition-all duration-300 ease-in-out z-0 ${
+      drawerOpen 
+        ? `ml-[${drawerWidth}px] w-[calc(100%-${extraCollapsedWidth}px)]` 
+        : `ml-[${regularCollapsedWidth}px] w-[calc(100%-${regularCollapsedWidth}px)]`
+    }`;
+  }, [drawerOpen, drawerWidth]);
+  
+  // Memoize DashAppBar props to prevent unnecessary re-renders
+  const dashAppBarProps = useMemo(() => ({
+    anchorEl,
+    settingsAnchorEl,
+    openMenu,
+    settingsMenuOpen,
+    setAnchorEl,
+    setSettingsAnchorEl,
+    setShowMyAccount,
+    setShowHelpCenter,
+    userData: memoizedUserData,
+    userAttributes,
+    setUserData,
+    drawerOpen,
+    handleDrawerToggle: handleDrawerToggleWithLogging,
+    resetAllStates,
+    setShowHome,
+    setShowCreateMenu,
+    showCreateMenu,
+    handleClick,
+    handleClose,
+    handleUserProfileClick,
+    handleSettingsClick,
+    handleHelpClick,
+    handlePrivacyClick,
+    handleTermsClick,
+    handleLogout: handleSignOut,
+    handleCloseCreateMenu,
+    handleMenuItemClick,
+    setShowForm,
+    setFormOption,
+    tenantId: effectiveTenantId
+  }), [
+    anchorEl, settingsAnchorEl, openMenu, settingsMenuOpen, setAnchorEl, setSettingsAnchorEl,
+    setShowMyAccount, setShowHelpCenter, memoizedUserData, userAttributes, setUserData, drawerOpen, handleDrawerToggleWithLogging,
+    resetAllStates, setShowHome, setShowCreateMenu, showCreateMenu, handleClick, handleClose,
+    handleUserProfileClick, handleSettingsClick, handleHelpClick, handlePrivacyClick, handleTermsClick,
+    handleSignOut, handleCloseCreateMenu, handleMenuItemClick, setShowForm, setFormOption, effectiveTenantId
+  ]);
+  
+  // Memoize Drawer props
+  const drawerProps = useMemo(() => ({
+    drawerOpen,
+    handleDrawerToggle: handleDrawerToggleWithLogging,
+    width: drawerOpen ? drawerWidth : iconOnlyWidth,
+    handleDrawerItemClick,
+    userData: memoizedUserData,
+    resetAllStates,
+    handleHomeClick,
+    handleHRClick,
+    handleInventoryClick,
+    handleShowCreateOptions,
+    handleShowCreateMenu,
+    handleEmployeeManagementClick,
+    handleCRMClick,
+    handleBillingClick,
+    handleTaxesClick
+  }), [
+    drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
+    resetAllStates, handleHomeClick, handleHRClick, handleInventoryClick,
+    handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
+    handleBillingClick, handleTaxesClick
+  ]);
+  
+  // Memoize RenderMainContent props
+  const mainContentProps = useMemo(() => ({
+    view,
+    userData: memoizedUserData,
+    showKPIDashboard,
+    showMainDashboard,
+    showHome,
+    handleSetView: setView,
+    showForm,
+    formOption,
+    showHRDashboard,
+    hrSection,
+    showEmployeeManagement,
+    showTaxManagement: uiState.showTaxManagement,
+    showTimesheetManagement,
+    setShowKPIDashboard,
+    setShowMainDashboard,
+    setSelectedReport: (selectedOption) => updateState({ selectedOption }),
+    customContent,
+    mockData,
+    tenantId: effectiveTenantId,
+    showCreateOptions,
+    selectedOption,
+    selectedSettingsOption,
+    navigationKey,
+    showProductManagement: view === 'inventory-products',
+    showServiceManagement: view === 'services',
+    showInvoiceManagement: view === 'invoices',
+    showBillManagement: view === 'bills',
+    showEstimateManagement: view === 'estimates',
+    showCustomerList: view === 'customers',
+    showVendorManagement: view === 'vendors',
+    showTransactionForm: view === 'transactions',
+    showChartOfAccounts: view === 'chart-of-accounts',
+    showJournalEntryManagement: view === 'journal-entries',
+    showGeneralLedgerManagement: view === 'general-ledger',
+    showAccountReconManagement: view === 'account-reconciliation',
+    showMonthEndManagement: view === 'month-end',
+    showFinancialStatements: view === 'financial-statements',
+    showFixedAssetManagement: view === 'fixed-assets',
+    showBudgetManagement: view === 'budget',
+    showCostAccountingManagement: view === 'cost-accounting',
+    showIntercompanyManagement: view === 'intercompany',
+    showAuditTrailManagement: view === 'audit-trail',
+    showProfitAndLossReport: view === 'profit-loss-report',
+    showBalanceSheetReport: view === 'balance-sheet-report',
+    showCashFlowReport: view === 'cash-flow-report',
+    showIncomeByCustomer: view === 'income-by-customer',
+    showAgedReceivables: view === 'aged-receivables',
+    showAgedPayables: view === 'aged-payables',
+    showAccountBalances: view === 'account-balances',
+    showTrialBalances: view === 'trial-balances',
+    showProfitAndLossAnalysis: view === 'profit-loss-analysis',
+    showBalanceSheetAnalysis: view === 'balance-sheet-analysis',
+    showCashFlowAnalysis: view === 'cash-flow-analysis',
+    showBudgetVsActualAnalysis: view === 'budget-vs-actual',
+    showSalesAnalysis: view === 'sales-analysis',
+    showExpenseAnalysis: view === 'expense-analysis',
+    showInventoryManagement: view === 'inventory',
+    showProcurementManagement: view === 'procurement',
+    showPurchaseOrderManagement: view === 'purchase-orders',
+    showExpensesManagement: view === 'expenses',
+    showPurchaseReturnManagement: view === 'purchase-returns',
+    showReports: view === 'reports',
+    showAnalysisPage: view === 'analysis',
+    showBankingDashboard: view === 'banking',
+    showPayrollDashboard: view === 'payroll',
+    showPayrollTransactions: view === 'payroll-transactions',
+    showBankRecon: view === 'bank-reconciliation',
+    showPayrollReport: view === 'payroll-report',
+    showBankReport: view === 'bank-report',
+    showBankTransactions: view === 'bank-transactions',
+    showDownloadTransactions: view === 'download-transactions',
+    showConnectBank: view === 'connect-bank',
+    showInventoryItems: view === 'inventory-items',
+    handleCreateCustomer: () => console.log('Create customer flow'),
+    showMyAccount,
+    showHelpCenter
+  }), [
+    view, memoizedUserData, showKPIDashboard, showMainDashboard, showHome, setView,
+    showForm, formOption, showHRDashboard, hrSection, showEmployeeManagement,
+    setShowKPIDashboard, setShowMainDashboard, updateState, customContent, mockData,
+    effectiveTenantId, showCreateOptions, selectedOption, showMyAccount, showHelpCenter,
+    navigationKey, selectedSettingsOption,
+    // We already have view listed above, but it's critical for all the conditional flags
+    // that depend on it like showDownloadTransactions: view === 'download-transactions'
+  ]);
+
+  // Listen for menu navigation events
+  useEffect(() => {
+    const handleMenuNavigation = (event) => {
+      const { item, navigationKey: newKey } = event.detail;
+      console.log(`[DashboardContent] Menu navigation event received: ${item}, key: ${newKey}`);
+      
+      // Update navigation key to force remounting of components
+      setNavigationKey(newKey);
+      
+      // Clean up any previous component state
+      if (item) {
+        setView(item);
+      }
+      
+      // Reset scroll position for the main content area
+      if (mainContentRef.current) {
+        mainContentRef.current.scrollTop = 0;
+      }
+    };
+    
+    window.addEventListener('menuNavigation', handleMenuNavigation);
+    
+    return () => {
+      window.removeEventListener('menuNavigation', handleMenuNavigation);
+    };
+  }, [setView, setNavigationKey]);
+
+  // Just use a single useEffect for fetching employees on mount
+  useEffect(() => {
+    // Create an async function inside the effect to call our async fetchEmployees
+    const loadEmployees = async () => {
+      try {
+        // Add backend connection test
+        console.log("[DashboardDebugger] Testing backend connection...");
+        try {
+          const { verifyBackendConnection } = await import('@/lib/axiosConfig');
+          const connectionResult = await verifyBackendConnection();
+          console.log("[DashboardDebugger] Backend connection test result:", connectionResult);
+        } catch (connError) {
+          console.error("[DashboardDebugger] Backend connection test failed:", connError);
+        }
+        
+        // Ensure AUTH_CACHE provider is set before doing anything else
+        ensureAuthProvider();
+        
+        // Check session status before fetching data
+        // ... existing code ...
+      } catch (error) {
+        console.error('[DashboardContent] Error in loadEmployees:', error);
+      }
+    };
+    
+    loadEmployees();
+  }, []);
+
+  return (
+    <ErrorBoundary>
+      <NotificationProvider>
+        <ToastProvider>
+          <div className="flex min-h-screen flex-col">
+            <DashAppBar {...dashAppBarProps} />
+            <div className="flex flex-grow pt-16 relative">
+              <Drawer {...drawerProps} />
+              
+              <div 
+                ref={mainContentRef}
+                style={{
+                  position: 'absolute',
+                  top: '64px',
+                  left: drawerOpen ? `${drawerWidth}px` : '60px',
+                  right: '0',
+                  width: 'auto',
+                  minHeight: 'calc(100vh - 64px)',
+                  backgroundColor: '#F8FAFC',
+                  padding: '24px',
+                  transition: 'all 300ms ease-in-out',
+                  zIndex: '0'
+                }}
+                key={`content-container-${navigationKey}`}
+              >
+                <Suspense fallback={<LoadingComponent />}>
+                  <RenderMainContent 
+                    {...mainContentProps} 
+                    navigationKey={navigationKey}
+                    selectedSettingsOption={selectedSettingsOption} 
+                  />
+                </Suspense>
+              </div>
+            </div>
+          </div>
+        </ToastProvider>
+      </NotificationProvider>
+    </ErrorBoundary>
+  );
+}
+
+// Wrap DashboardContent with memo to prevent re-renders when props don't change
+const MemoizedDashboardContent = React.memo(DashboardContent);
+
+// Wrap DashboardContent with export for reuse
+export default function Dashboard({ newAccount, plan, mockData, setupStatus, userAttributes, tenantId, children }) {
+  return (
+    <NotificationProvider>
+      <ToastProvider>
+        <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+          <ErrorBoundary>
+            <MemoizedDashboardContent 
+              setupStatus={setupStatus}
+              mockData={mockData}
+              userAttributes={userAttributes}
+              tenantId={tenantId}
+              newAccount={newAccount}
+              plan={plan}
+              customContent={children}
+            />
+          </ErrorBoundary>
+        </Suspense>
+      </ToastProvider>
+    </NotificationProvider>
+  );
+} 

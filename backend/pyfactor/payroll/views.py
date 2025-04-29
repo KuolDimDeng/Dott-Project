@@ -3,8 +3,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Timesheet, PayrollRun, PayrollTransaction, BankAccount
-from .serializers import PayrollRunSerializer, PayrollTransactionSerializer
+from hr.models import Timesheet, TimesheetEntry  # Import from HR instead of payroll
+from .models import PayrollRun, PayrollTransaction, BankAccount
+from .serializers import PayrollRunSerializer, PayrollTransactionSerializer, PayrollTimesheetSerializer
 from datetime import date
 from django.db.models import Sum, F
 from taxes.services import TaxCalculationService, TaxFilingService

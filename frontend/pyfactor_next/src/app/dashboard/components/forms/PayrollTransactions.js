@@ -12,35 +12,60 @@ const PayrollTransactions = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [expandEmployees, setExpandEmployees] = useState(false);
   const toast = useToast();
+  const [availableYears, setAvailableYears] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    // Set AWS RDS as the data source
+    axiosInstance.defaults.headers.common['X-Data-Source'] = 'AWS_RDS';
+    
     fetchPayrollRuns();
     fetchArchivedYears();
   }, [selectedYear]);
 
   const fetchPayrollRuns = async () => {
+    setLoading(true);
     try {
-      const response = await axiosInstance.get('/api/payroll/runs/', {
+      // Configure request to explicitly use AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        },
         params: {
           year: selectedYear,
-          start_date: startDate ? formatDateForAPI(startDate) : null,
-          end_date: endDate ? formatDateForAPI(endDate) : null,
-        },
-      });
+          start_date: formatDateForAPI(startDate),
+          end_date: formatDateForAPI(endDate)
+        }
+      };
+      
+      // Make API call to fetch data from AWS RDS
+      const response = await axiosInstance.get('/api/payroll/runs/', config);
       setPayrollRuns(response.data);
     } catch (error) {
-      toast.error('Error fetching payroll runs');
-      console.error('Error fetching payroll runs:', error);
+      console.error('Error fetching payroll runs from AWS RDS:', error);
+      toast.error('Error fetching payroll data from AWS RDS');
+      setPayrollRuns([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchArchivedYears = async () => {
     try {
-      const response = await axiosInstance.get('/api/payroll/archived-years/');
+      // Configure request to explicitly use AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      // Make API call to fetch data from AWS RDS
+      const response = await axiosInstance.get('/api/payroll/archived-years/', config);
       setArchivedYears(response.data);
     } catch (error) {
-      toast.error('Error fetching archived years');
-      console.error('Error fetching archived years:', error);
+      toast.error('Error fetching archived years from AWS RDS');
+      console.error('Error fetching archived years from AWS RDS:', error);
+      setArchivedYears([]);
     }
   };
 
@@ -54,12 +79,20 @@ const PayrollTransactions = () => {
 
   const handleRowClick = async (runId) => {
     try {
-      const response = await axiosInstance.get(`/api/payroll/runs/${runId}/`);
+      // Configure request to explicitly use AWS RDS
+      const config = {
+        headers: {
+          'X-Data-Source': 'AWS_RDS'
+        }
+      };
+      
+      // Make API call to fetch data from AWS RDS
+      const response = await axiosInstance.get(`/api/payroll/runs/${runId}/`, config);
       setSelectedRun(response.data);
       setOpenDialog(true);
     } catch (error) {
-      toast.error('Error fetching payroll run details');
-      console.error('Error fetching payroll run details:', error);
+      toast.error('Error fetching payroll run details from AWS RDS');
+      console.error('Error fetching payroll run details from AWS RDS:', error);
     }
   };
 
@@ -72,7 +105,7 @@ const PayrollTransactions = () => {
   // Format date for API
   const formatDateForAPI = (date) => {
     if (!date) return null;
-    return date instanceof Date ? date.toISOString() : date;
+    return date instanceof Date ? date.toISOString().split('T')[0] : date;
   };
 
   // Format date for input type="date"
@@ -96,7 +129,7 @@ const PayrollTransactions = () => {
             className="w-full p-2 border border-gray-300 rounded-md bg-white"
           >
             <option value={new Date().getFullYear()}>Current Year</option>
-            {archivedYears.map((year) => (
+            {Array.isArray(archivedYears) && archivedYears.map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>
@@ -154,29 +187,37 @@ const PayrollTransactions = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {payrollRuns.map((run) => (
-              <tr 
-                key={run.id} 
-                onClick={() => handleRowClick(run.id)} 
-                className="hover:bg-gray-50 cursor-pointer"
-              >
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {formatDate(run.run_date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {formatDate(run.start_date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {formatDate(run.end_date)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {run.status}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  ${run.total_amount.toFixed(2)}
+            {Array.isArray(payrollRuns) && payrollRuns.length > 0 ? (
+              payrollRuns.map((run) => (
+                <tr 
+                  key={run.id} 
+                  onClick={() => handleRowClick(run.id)} 
+                  className="hover:bg-gray-50 cursor-pointer"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatDate(run.run_date)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatDate(run.start_date)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {formatDate(run.end_date)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {run.status}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    ${run.total_amount.toFixed(2)}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="5" className="px-6 py-4 text-sm text-center text-gray-500">
+                  No payroll runs found
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

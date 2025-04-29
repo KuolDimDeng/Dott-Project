@@ -5,13 +5,20 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting
 from .serializers import (
     EmployeeSerializer, 
     RoleSerializer, 
     EmployeeRoleSerializer, 
     AccessPermissionSerializer,
-    PreboardingFormSerializer
+    PreboardingFormSerializer,
+    PerformanceReviewSerializer,
+    PerformanceReviewDetailSerializer,
+    PerformanceMetricSerializer,
+    PerformanceRatingSerializer,
+    PerformanceGoalSerializer,
+    FeedbackRecordSerializer,
+    PerformanceSettingSerializer
 )
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -20,6 +27,7 @@ from django.conf import settings
 import uuid
 from datetime import datetime
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework import viewsets
 
 from pyfactor.logging_config import get_logger
 
@@ -485,3 +493,182 @@ def preboarding_form_detail(request, pk):
     elif request.method == 'DELETE':
         preboarding_form.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+# Performance Management Views
+class PerformanceReviewViewSet(viewsets.ModelViewSet):
+    queryset = PerformanceReview.objects.all()
+    serializer_class = PerformanceReviewSerializer
+    
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return PerformanceReviewDetailSerializer
+        return PerformanceReviewSerializer
+    
+    def get_queryset(self):
+        queryset = PerformanceReview.objects.all()
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by reviewer
+        reviewer_id = self.request.query_params.get('reviewer_id', None)
+        if reviewer_id:
+            queryset = queryset.filter(reviewer_id=reviewer_id)
+        
+        # Filter by status
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by review type
+        review_type = self.request.query_params.get('review_type', None)
+        if review_type:
+            queryset = queryset.filter(review_type=review_type)
+        
+        # Filter by date range
+        date_from = self.request.query_params.get('date_from', None)
+        date_to = self.request.query_params.get('date_to', None)
+        if date_from and date_to:
+            queryset = queryset.filter(review_date__range=[date_from, date_to])
+        
+        return queryset
+
+
+class PerformanceMetricViewSet(viewsets.ModelViewSet):
+    queryset = PerformanceMetric.objects.all()
+    serializer_class = PerformanceMetricSerializer
+    
+    def get_queryset(self):
+        queryset = PerformanceMetric.objects.all()
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by active status
+        active = self.request.query_params.get('active', None)
+        if active is not None:
+            active_bool = active.lower() == 'true'
+            queryset = queryset.filter(active=active_bool)
+        
+        return queryset
+
+
+class PerformanceRatingViewSet(viewsets.ModelViewSet):
+    queryset = PerformanceRating.objects.all()
+    serializer_class = PerformanceRatingSerializer
+    
+    def get_queryset(self):
+        queryset = PerformanceRating.objects.all()
+        
+        # Filter by review
+        review_id = self.request.query_params.get('review_id', None)
+        if review_id:
+            queryset = queryset.filter(review_id=review_id)
+        
+        # Filter by metric
+        metric_id = self.request.query_params.get('metric_id', None)
+        if metric_id:
+            queryset = queryset.filter(metric_id=metric_id)
+        
+        return queryset
+
+
+class PerformanceGoalViewSet(viewsets.ModelViewSet):
+    queryset = PerformanceGoal.objects.all()
+    serializer_class = PerformanceGoalSerializer
+    
+    def get_queryset(self):
+        queryset = PerformanceGoal.objects.all()
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by status
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by goal type
+        goal_type = self.request.query_params.get('goal_type', None)
+        if goal_type:
+            queryset = queryset.filter(goal_type=goal_type)
+        
+        # Filter by priority
+        priority = self.request.query_params.get('priority', None)
+        if priority:
+            queryset = queryset.filter(priority=priority)
+        
+        # Filter by date range
+        start_from = self.request.query_params.get('start_from', None)
+        start_to = self.request.query_params.get('start_to', None)
+        if start_from and start_to:
+            queryset = queryset.filter(start_date__range=[start_from, start_to])
+        
+        return queryset
+
+
+class FeedbackRecordViewSet(viewsets.ModelViewSet):
+    queryset = FeedbackRecord.objects.all()
+    serializer_class = FeedbackRecordSerializer
+    
+    def get_queryset(self):
+        queryset = FeedbackRecord.objects.all()
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        # Filter by employee (recipient)
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by provider
+        provider_id = self.request.query_params.get('provider_id', None)
+        if provider_id:
+            queryset = queryset.filter(provider_id=provider_id)
+        
+        # Filter by feedback type
+        feedback_type = self.request.query_params.get('feedback_type', None)
+        if feedback_type:
+            queryset = queryset.filter(feedback_type=feedback_type)
+        
+        # Filter by visibility
+        is_shared = self.request.query_params.get('is_shared', None)
+        if is_shared is not None:
+            is_shared_bool = is_shared.lower() == 'true'
+            queryset = queryset.filter(is_shared=is_shared_bool)
+        
+        return queryset
+
+
+class PerformanceSettingViewSet(viewsets.ModelViewSet):
+    queryset = PerformanceSetting.objects.all()
+    serializer_class = PerformanceSettingSerializer
+    
+    def get_queryset(self):
+        queryset = PerformanceSetting.objects.all()
+        
+        # Filter by business_id
+        business_id = self.request.query_params.get('business_id', None)
+        if business_id:
+            queryset = queryset.filter(business_id=business_id)
+        
+        return queryset
