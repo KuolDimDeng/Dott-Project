@@ -489,6 +489,9 @@ CACHES = {
             'socket_connect_timeout': 5,
             'retry_on_timeout': True,
             'max_connections': 100,
+            
+            
+            
         },
         'KEY_PREFIX': '{tenant}',  # Moved outside OPTIONS to the correct location
     }
@@ -819,12 +822,15 @@ DATABASES = {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'application_name': 'dott',
-            'sslmode': 'prefer',
+            'sslmode': 'require',
             'options': '',  # Allow router to control schema
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
             'keepalives_count': 5,
+            
+            
+            
         },
         'POOL_OPTIONS': {
             'POOL_SIZE': 5,            # Reduced from 20
@@ -848,11 +854,16 @@ DATABASES = {
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
-            'sslmode': 'prefer',
+            'sslmode': 'require',
             'keepalives': 1,
             'keepalives_idle': 30,
             'keepalives_interval': 10,
             'keepalives_count': 5,
+            
+            
+            
+            
+            
         },
         'POOL_OPTIONS': {
             'POOL_SIZE': 10,

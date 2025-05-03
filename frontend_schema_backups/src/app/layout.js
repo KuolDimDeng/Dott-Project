@@ -12,7 +12,7 @@ const montserrat = Montserrat({ subsets: ['latin'] });
 
 // Using local font styling instead of next/font/google to prevent build errors
 export const metadata = {
-  title: 'PyFactor - Modern Business Solutions',
+  title: '',
   description: 'Streamline your business operations with PyFactor',
 };
 

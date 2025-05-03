@@ -1,0 +1,247 @@
+/**
+ * AWS App Cache Utility
+ * 
+ * This utility provides functions for storing and retrieving data from AWS App Cache.
+ * It is used for storing authentication tokens and other sensitive data.
+ */
+
+import { logger } from './logger';
+
+// Initialize AWS App Cache if available
+let appCache = null;
+try {
+  if (typeof window !== 'undefined' && window.AWSCache) {
+    appCache = window.AWSCache;
+    logger.debug('[appCache] AWS App Cache initialized successfully');
+  }
+} catch (error) {
+  logger.warn('[appCache] Failed to initialize AWS App Cache:', error);
+}
+
+/**
+ * Set a value in the AWS App Cache
+ * @param {string} key - The key to store the value under
+ * @param {any} value - The value to store
+ * @param {number} [ttl] - Time to live in seconds (optional)
+ * @returns {Promise<void>}
+ */
+export async function setCacheValue(key, value, ttl) {
+  try {
+    if (!key) {
+      throw new Error('Cache key is required');
+    }
+
+    if (appCache) {
+      // Use AWS App Cache if available
+      await appCache.set(key, value, ttl);
+      logger.debug(`[appCache] Set value for key: ${key}`);
+    } else {
+      // Fallback to sessionStorage in development
+      if (typeof window !== 'undefined') {
+        const item = {
+          value,
+          timestamp: Date.now(),
+          ttl: ttl ? ttl * 1000 : null // Convert seconds to milliseconds
+        };
+        window.sessionStorage.setItem(key, JSON.stringify(item));
+        logger.debug(`[appCache] Set value in sessionStorage for key: ${key}`);
+      }
+    }
+  } catch (error) {
+    logger.error(`[appCache] Error setting cache value for key ${key}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get a value from the AWS App Cache
+ * @param {string} key - The key to retrieve
+ * @returns {Promise<any>} The cached value or null if not found/expired
+ */
+export async function getCacheValue(key) {
+  try {
+    if (!key) {
+      throw new Error('Cache key is required');
+    }
+
+    if (appCache) {
+      // Use AWS App Cache if available
+      const value = await appCache.get(key);
+      logger.debug(`[appCache] Retrieved value for key: ${key}`);
+      return value;
+    } else {
+      // Fallback to sessionStorage in development
+      if (typeof window !== 'undefined') {
+        const item = window.sessionStorage.getItem(key);
+        if (!item) return null;
+        
+        // Handle potential JSON parse errors
+        try {
+            const parsed = JSON.parse(item);
+            
+            // Validate that the parsed item has the expected structure
+            if (typeof parsed !== 'object' || parsed === null) {
+                logger.warn(`[appCache] Invalid cache entry format for key: ${key}, removing it`);
+                window.sessionStorage.removeItem(key);
+                return null;
+            }
+            
+            const { value, timestamp, ttl } = parsed;
+
+            // Check if item has expired
+            if (ttl && Date.now() - timestamp > ttl) {
+                window.sessionStorage.removeItem(key);
+                logger.debug(`[appCache] Removed expired value for key: ${key}`);
+                return null;
+            }
+
+            logger.debug(`[appCache] Retrieved value from sessionStorage for key: ${key}`);
+            return value;
+        } catch (error) {
+            logger.warn(`[appCache] Error parsing cache entry for key: ${key}, removing corrupted entry`, error);
+            window.sessionStorage.removeItem(key);
+            return null;
+        }
+      }
+    }
+    return null;
+  } catch (error) {
+    logger.error(`[appCache] Error getting cache value for key ${key}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Remove a value from the AWS App Cache
+ * @param {string} key - The key to remove
+ * @returns {Promise<void>}
+ */
+export async function removeCacheValue(key) {
+  try {
+    if (!key) {
+      throw new Error('Cache key is required');
+    }
+
+    if (appCache) {
+      // Use AWS App Cache if available
+      await appCache.remove(key);
+      logger.debug(`[appCache] Removed value for key: ${key}`);
+    } else {
+      // Fallback to sessionStorage in development
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(key);
+        logger.debug(`[appCache] Removed value from sessionStorage for key: ${key}`);
+      }
+    }
+  } catch (error) {
+    logger.error(`[appCache] Error removing cache value for key ${key}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Clear all values from the AWS App Cache
+ * @returns {Promise<void>}
+ */
+export async function clearCache() {
+  try {
+    if (appCache) {
+      // Use AWS App Cache if available
+      await appCache.clear();
+      logger.debug('[appCache] Cleared all values from AWS App Cache');
+    } else {
+      // Fallback to sessionStorage in development
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.clear();
+        logger.debug('[appCache] Cleared all values from sessionStorage');
+      }
+    }
+  } catch (error) {
+    logger.error('[appCache] Error clearing cache:', error);
+    throw error;
+  }
+}
+
+// Export aliases for backward compatibility
+export const setAppCacheItem = setCacheValue;
+export const getAppCacheItem = getCacheValue;
+export const removeAppCacheItem = removeCacheValue;
+export const clearAppCache = clearCache;
+
+
+/**
+ * Cleans up potentially corrupted cache entries
+ * @param {boolean} [removeAll=false] - Whether to remove all cache entries or just validate them
+ * @returns {Promise<number>} - Number of entries cleaned up
+ */
+export async function cleanupCacheEntries(removeAll = false) {
+  try {
+    if (!removeAll && !getCacheValue) {
+      logger.warn('[appCache] getCacheValue function not available, skipping cleanup');
+      return 0;
+    }
+
+    let cleanedCount = 0;
+
+    if (appCache) {
+      // AWS App Cache doesn't need cleanup as it handles serialization internally
+      logger.debug('[appCache] Using AWS App Cache, no cleanup needed');
+      return 0;
+    } else {
+      // Fallback to sessionStorage in development
+      if (typeof window === 'undefined') return 0;
+
+      // Get all keys in sessionStorage
+      const keys = Object.keys(window.sessionStorage);
+      logger.debug(`[appCache] Checking ${keys.length} sessionStorage items for corruption`);
+
+      for (const key of keys) {
+        if (removeAll) {
+          window.sessionStorage.removeItem(key);
+          cleanedCount++;
+          continue;
+        }
+
+        // Attempt to parse each entry to find corrupted ones
+        const item = window.sessionStorage.getItem(key);
+        if (!item) continue;
+
+        try {
+          const parsed = JSON.parse(item);
+
+          // Validate the expected structure
+          if (typeof parsed !== 'object' || parsed === null || 
+              !('timestamp' in parsed) || typeof parsed.timestamp !== 'number') {
+            // Invalid format, remove it
+            logger.warn(`[appCache] Invalid cache format for key: ${key}, removing it`);
+            window.sessionStorage.removeItem(key);
+            cleanedCount++;
+          }
+        } catch (error) {
+          // JSON parse error, remove the corrupted entry
+          logger.warn(`[appCache] Corrupted cache entry for key: ${key}, removing it`);
+          window.sessionStorage.removeItem(key);
+          cleanedCount++;
+        }
+      }
+    }
+
+    logger.info(`[appCache] Cleanup completed: ${cleanedCount} entries removed`);
+    return cleanedCount;
+  } catch (error) {
+    logger.error('[appCache] Error during cache cleanup:', error);
+    return 0;
+  }
+}
+
+export default {
+  cleanupCacheEntries,
+  setCacheValue,
+  getCacheValue,
+  removeCacheValue,
+  clearCache,
+  setAppCacheItem,
+  getAppCacheItem,
+  removeAppCacheItem,
+  clearAppCache
+};

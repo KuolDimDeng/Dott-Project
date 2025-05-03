@@ -1,0 +1,14 @@
+[2025-05-03T13:38:46.788Z] Starting script: Version0016_fix_DashAppBar_CognitoAttributes.js
+[2025-05-03T13:38:46.813Z] Created backup of /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/DashAppBar.js at /Users/kuoldeng/projectx/scripts/backups/DashAppBar.js.backup-2025-05-03T13-38-46.809Z
+[2025-05-03T13:38:46.815Z] Added CognitoAttributes import
+[2025-05-03T13:38:46.815Z] Could not find effectiveBusinessName to update, skipping
+[2025-05-03T13:38:46.816Z] Updated user avatar initials to use CognitoAttributes.getUserInitials
+[2025-05-03T13:38:46.816Z] Updated fetchCorrectUserDetails to use CognitoAttributes.getUserInitials
+[2025-05-03T13:38:46.817Z] Updated fetchAttributes to use CognitoAttributes.getUserInitials
+[2025-05-03T13:38:46.817Z] Updated tenant ID access to use CognitoAttributes
+[2025-05-03T13:38:46.818Z] Updated business name access to use CognitoAttributes
+[2025-05-03T13:38:46.819Z] Updated subscription plan access to use CognitoAttributes
+[2025-05-03T13:38:46.821Z] Updated name display to use CognitoAttributes
+[2025-05-03T13:38:46.823Z] Successfully updated /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/DashAppBar.js
+[2025-05-03T13:38:46.823Z] Backup saved at /Users/kuoldeng/projectx/scripts/backups/DashAppBar.js.backup-2025-05-03T13-38-46.809Z
+[2025-05-03T13:38:46.824Z] Script completed successfully.

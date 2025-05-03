@@ -1,0 +1,103 @@
+/**
+ * Version0004_fix_cognito_attributes_display_simple.js
+ * 
+ * Purpose: Simplified version to fix issues with displaying user business name 
+ * and initials in DashAppBar by retrieving data from Cognito attributes.
+ * 
+ * Version: 1.0
+ * Date: 2025-06-05
+ */
+
+(function() {
+  console.log('[CognitoAttributesFix] Simple version loaded');
+  
+  // Main function
+  async function fixCognitoDisplay() {
+    try {
+      console.log('[CognitoAttributesFix] Applying simple fix');
+      
+      // Initialize app cache
+      if (typeof window !== 'undefined' && !window.__APP_CACHE) {
+        window.__APP_CACHE = { auth: {}, user: {}, tenant: {} };
+      }
+      
+      // Import Amplify auth and fetch attributes
+      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const attributes = await fetchUserAttributes();
+      
+      console.log('[CognitoAttributesFix] Retrieved attributes:', attributes);
+      
+      // Extract data
+      const businessName = attributes['custom:businessname'] || 
+                         attributes['custom:tenant_name'] || 
+                         attributes['custom:business_name'] || '';
+      
+      const firstName = attributes['given_name'] || '';
+      const lastName = attributes['family_name'] || '';
+      const email = attributes['email'] || '';
+      
+      // Generate initials
+      let initials = '';
+      if (firstName && lastName) {
+        initials = `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+      } else if (firstName) {
+        initials = firstName.charAt(0).toUpperCase();
+      } else if (lastName) {
+        initials = lastName.charAt(0).toUpperCase();
+      }
+      
+      // Log retrieved data
+      console.log('[CognitoAttributesFix] Data extracted:', { 
+        businessName, 
+        firstName,
+        lastName,
+        initials,
+        email
+      });
+      
+      // Store in app cache
+      if (typeof window !== 'undefined') {
+        window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+        window.__APP_CACHE.user.businessName = businessName;
+        window.__APP_CACHE.user.firstName = firstName;
+        window.__APP_CACHE.user.lastName = lastName;
+        window.__APP_CACHE.user.initials = initials;
+        window.__APP_CACHE.user.email = email;
+      }
+      
+      // Update UI directly
+      setTimeout(() => {
+        // Update business name display
+        if (businessName) {
+          document.querySelectorAll('.font-semibold').forEach(el => {
+            if (el.textContent.trim() === '') {
+              el.textContent = businessName;
+              console.log('[CognitoAttributesFix] Updated business name');
+            }
+          });
+        }
+        
+        // Update user initials
+        if (initials) {
+          document.querySelectorAll('.w-10.h-10.rounded-full.bg-primary-main').forEach(el => {
+            if (el.textContent.trim() === '?' || el.textContent.trim() === '') {
+              el.textContent = initials;
+              console.log('[CognitoAttributesFix] Updated user initials');
+            }
+          });
+        }
+      }, 1000);
+      
+      console.log('[CognitoAttributesFix] Simple fix applied successfully');
+    } catch (error) {
+      console.error('[CognitoAttributesFix] Error in simple fix:', error);
+    }
+  }
+  
+  // Run the fix when document is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixCognitoDisplay);
+  } else {
+    fixCognitoDisplay();
+  }
+})(); 

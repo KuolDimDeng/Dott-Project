@@ -1,0 +1,259 @@
+/**
+ * CognitoAttributes.js
+ * 
+ * This utility provides standardized access to Cognito user attributes
+ * and handles fallbacks for inconsistent attribute naming patterns.
+ */
+
+// Standard Cognito attribute names with correct casing
+const SUB = 'sub';
+const EMAIL = 'email';
+const EMAIL_VERIFIED = 'email_verified';
+const PHONE_NUMBER = 'phone_number';
+const PHONE_NUMBER_VERIFIED = 'phone_number_verified';
+const GIVEN_NAME = 'given_name';
+const FAMILY_NAME = 'family_name';
+const PREFERRED_USERNAME = 'preferred_username';
+const BIRTHDATE = 'birthdate';
+const ADDRESS = 'address';
+const LOCALE = 'locale';
+const UPDATED_AT = 'updated_at';
+
+// Custom attribute names with correct casing
+const TENANT_ID = 'custom:tenant_ID';
+const BUSINESS_ID = 'custom:businessid';
+const BUSINESS_NAME = 'custom:businessname';
+const TENANT_NAME = 'custom:tenant_name';
+const BUSINESS_TYPE = 'custom:businesstype';
+const BUSINESS_SUBTYPES = 'custom:businesssubtypes';
+const BUSINESS_COUNTRY = 'custom:businesscountry';
+const BUSINESS_STATE = 'custom:businessstate';
+const USER_ROLE = 'custom:role';
+const ONBOARDING = 'custom:onboarding';
+const SETUP_DONE = 'custom:setupdone';
+
+// Attribute validation rules
+const VALIDATION_RULES = {
+  [EMAIL]: {
+    required: true,
+    pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    maxLength: 320
+  },
+  [GIVEN_NAME]: {
+    required: false,
+    maxLength: 255
+  },
+  [FAMILY_NAME]: {
+    required: false,
+    maxLength: 255
+  },
+  [TENANT_ID]: {
+    required: false,
+    maxLength: 100
+  },
+  [BUSINESS_NAME]: {
+    required: false,
+    maxLength: 255
+  }
+};
+
+// Fallback mapping for inconsistent attribute casing
+const ATTRIBUTE_FALLBACKS = {
+  [TENANT_ID]: ['custom:tenant_id', 'custom:tenantId', 'custom:businessid', BUSINESS_ID],
+  [BUSINESS_NAME]: ['custom:businessname', 'custom:business_name', 'custom:tenant_name', TENANT_NAME],
+  [USER_ROLE]: ['custom:role', 'custom:userRole', 'custom:user_role', 'role'],
+  [BUSINESS_TYPE]: ['custom:businesstype', 'custom:business_type'],
+  [BUSINESS_SUBTYPES]: ['custom:businesssubtypes', 'custom:business_subtypes']
+};
+
+/**
+ * Gets a Cognito attribute with fallback support
+ * @param {Object} attributes - The Cognito attributes object
+ * @param {String} attributeName - The attribute name to retrieve
+ * @param {*} defaultValue - Default value if attribute is not found
+ * @returns {*} - The attribute value or defaultValue
+ */
+const getValue = (attributes, attributeName, defaultValue = null) => {
+  if (!attributes) return defaultValue;
+  
+  // Direct match
+  if (attributes[attributeName] !== undefined) {
+    return attributes[attributeName];
+  }
+  
+  // Try fallbacks if available
+  const fallbacks = ATTRIBUTE_FALLBACKS[attributeName] || [];
+  for (const fallback of fallbacks) {
+    if (attributes[fallback] !== undefined) {
+      return attributes[fallback];
+    }
+  }
+  
+  return defaultValue;
+};
+
+/**
+ * Gets the tenant ID with fallback support for different attribute names
+ * @param {Object} attributes - The Cognito attributes object
+ * @returns {String} - The tenant ID or null
+ */
+const getTenantId = (attributes) => {
+  return getValue(attributes, TENANT_ID);
+};
+
+/**
+ * Gets the business name with fallback support for different attribute names
+ * @param {Object} attributes - The Cognito attributes object
+ * @returns {String} - The business name or null
+ */
+const getBusinessName = (attributes) => {
+  return getValue(attributes, BUSINESS_NAME);
+};
+
+/**
+ * Gets the user role with fallback support
+ * @param {Object} attributes - The Cognito attributes object
+ * @returns {String} - The user role or null
+ */
+const getUserRole = (attributes) => {
+  return getValue(attributes, USER_ROLE);
+};
+
+/**
+ * Determines if the user is an admin based on attributes
+ * @param {Object} attributes - The Cognito attributes object
+ * @returns {Boolean} - True if user is admin
+ */
+const isAdmin = (attributes) => {
+  const role = getUserRole(attributes);
+  return role === 'admin' || role === 'ADMIN';
+};
+
+/**
+ * Gets user initials from name attributes
+ * @param {Object} attributes - The Cognito attributes object
+ * @returns {String} - User initials (2 characters) or 'U' if unavailable
+ */
+const getUserInitials = (attributes) => {
+  const firstName = getValue(attributes, GIVEN_NAME, '');
+  const lastName = getValue(attributes, FAMILY_NAME, '');
+  
+  if (firstName && lastName) {
+    return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+  }
+  
+  if (firstName) {
+    return firstName.charAt(0).toUpperCase();
+  }
+  
+  if (lastName) {
+    return lastName.charAt(0).toUpperCase();
+  }
+  
+  // Fallback to email if available
+  const email = getValue(attributes, EMAIL, '');
+  if (email && email.length > 0) {
+    return email.charAt(0).toUpperCase();
+  }
+  
+  return 'U'; // Unknown user fallback
+};
+
+/**
+ * Validates attribute values against rules
+ * @param {Object} attributes - Attributes to validate
+ * @returns {Object} - Validation results
+ */
+const validateAttributes = (attributes) => {
+  const results = {};
+  let valid = true;
+  
+  Object.entries(attributes).forEach(([key, value]) => {
+    const rule = VALIDATION_RULES[key];
+    if (!rule) return; // No validation rule for this attribute
+    
+    results[key] = { valid: true };
+    
+    // Check if required
+    if (rule.required && (value === undefined || value === null || value === '')) {
+      results[key].valid = false;
+      results[key].message = `${key} is required`;
+      valid = false;
+    }
+    
+    // Check max length
+    if (rule.maxLength && value && value.length > rule.maxLength) {
+      results[key].valid = false;
+      results[key].message = `${key} must be less than ${rule.maxLength} characters`;
+      valid = false;
+    }
+    
+    // Check pattern
+    if (rule.pattern && value && !rule.pattern.test(value)) {
+      results[key].valid = false;
+      results[key].message = `${key} has invalid format`;
+      valid = false;
+    }
+  });
+  
+  return { valid, results };
+};
+
+/**
+ * Creates a properly formatted update object for Cognito
+ * @param {Object} attributes - The attributes to update
+ * @returns {Object} - Properly formatted update object
+ */
+const createUpdateObject = (attributes) => {
+  const updateObj = {};
+  
+  Object.entries(attributes).forEach(([key, value]) => {
+    // Only include non-null values
+    if (value !== undefined && value !== null) {
+      updateObj[key] = String(value); // Cognito requires string values
+    }
+  });
+  
+  return updateObj;
+};
+
+const CognitoAttributes = {
+  // Standard attributes
+  SUB,
+  EMAIL,
+  EMAIL_VERIFIED,
+  PHONE_NUMBER,
+  PHONE_NUMBER_VERIFIED,
+  GIVEN_NAME,
+  FAMILY_NAME,
+  PREFERRED_USERNAME,
+  BIRTHDATE,
+  ADDRESS,
+  LOCALE,
+  UPDATED_AT,
+  
+  // Custom attributes
+  TENANT_ID,
+  BUSINESS_ID,
+  BUSINESS_NAME,
+  TENANT_NAME,
+  BUSINESS_TYPE,
+  BUSINESS_SUBTYPES,
+  BUSINESS_COUNTRY,
+  BUSINESS_STATE,
+  USER_ROLE,
+  ONBOARDING,
+  SETUP_DONE,
+  
+  // Methods
+  getValue,
+  getTenantId,
+  getBusinessName,
+  getUserRole,
+  isAdmin,
+  getUserInitials,
+  validateAttributes,
+  createUpdateObject
+};
+
+export default CognitoAttributes; 

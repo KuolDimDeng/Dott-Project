@@ -1,0 +1,626 @@
+'use client';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Tab } from '@headlessui/react';
+import { Button, TextField } from '@/components/ui/TailwindComponents';
+import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
+import { extractTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
+import { employeeApi } from '@/utils/apiClient';
+import api from '@/utils/api';
+import UserMenuPrivileges from './UserMenuPrivileges';
+import UserPagePrivileges from './UserPagePrivileges';
+
+  // Cognito custom attributes schema for user management
+  const cognitoCustomAttributes = {
+    USERROLE: 'custom:userrole', // "Owner", "User"
+    ACCESSIBLE_PAGES: 'custom:accessiblePages', // comma-separated list of page IDs
+    CAN_MANAGE_USERS: 'custom:canManageUsers', // "true"/"false"
+    MANAGABLE_PAGES: 'custom:managablePages' // comma-separated list of page IDs
+  };
+
+  // Define all available pages for user access permissions
+  const ALL_PAGE_IDS = [
+    'dashboard',
+    'sales_orders', 'sales_customers', 'sales_quotes', 'sales_promotions',
+    'inventory_products', 'inventory_categories', 'inventory_stock',
+    'billing_invoices', 'billing_estimates', 'billing_payments', 'billing_subscriptions',
+    'crm_contacts', 'crm_leads', 'crm_deals', 'crm_activities',
+    'hr_employees', 'hr_attendance', 'hr_payroll',
+    'reports_sales', 'reports_financial', 'reports_inventory',
+    'settings_business', 'settings_users'
+  ];
+
+const SettingsManagement = () => {
+  // Notification helpers
+  const notifySuccess = (message) => {
+    console.log('[SUCCESS]', message);
+    // Implement toast/notification system here
+  };
+  
+  const notifyError = (message) => {
+    console.error('[ERROR]', message);
+    // Implement toast/notification system here
+  };
+  console.log('[SettingsManagement] Component rendering');
+  const { user } = useAuth();
+  const { notifySuccess, notifyError } = useNotification();
+  const isMounted = useRef(true);
+  
+  // State for managing user list and form
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showAddUserForm, setShowAddUserForm] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // New state for settings navigation
+  const [activeSection, setActiveSection] = useState('userManagement');
+  const [activeUserTab, setActiveUserTab] = useState('usersList');
+  
+  // Handler for selecting a user to edit
+  const handleUserSelect = useCallback((userId) => {
+    const user = employees.find(emp => emp.id === userId);
+    setSelectedUser(user || null);
+  }, [employees]);
+  
+  // Handler for editing a user
+  const handleEditUser = useCallback((user) => {
+    setSelectedUser(user);
+    setActiveUserTab('userDetails');
+  }, []);
+  
+  // Handler for changing user details
+  const handleUserDetailChange = useCallback((field, value) => {
+    setSelectedUser(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  }, []);
+  
+  // Handler for changing managable pages selection
+  const handleManagablePagesChange = useCallback((e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions).map(option => option.value);
+    handleUserDetailChange('managablePages', selectedOptions);
+  }, [handleUserDetailChange]);
+  
+  // Fetch employees (potential users)
+  const fetchEmployees = useCallback(async () => {
+    if (!isMounted.current) return;
+    
+    try {
+      setLoading(true);
+      const data = await employeeApi.getAll();
+      
+      if (isMounted.current) {
+        setEmployees(data || []);
+        setError(null);
+      }
+    } catch (err) {
+      logger.error('[SettingsManagement] Error fetching employees:', err);
+      if (isMounted.current) {
+        setError('Failed to load employees');
+      }
+    } finally {
+      if (isMounted.current) {
+        setLoading(false);
+      }
+    }
+  }, []);
+  
+  // Handler for saving user details
+  const handleSaveUserDetails = useCallback(async () => {
+    if (!selectedUser) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Call API to update user
+      await api.post('/users/api/update-user/', {
+        user_id: selectedUser.id,
+        first_name: selectedUser.first_name,
+        last_name: selectedUser.last_name,
+        role: selectedUser.role,
+        canManageUsers: selectedUser.canManageUsers,
+        managablePages: selectedUser.managablePages
+      });
+      
+      notifySuccess('User updated successfully');
+      fetchEmployees(); // Refresh the list
+    } catch (error) {
+      logger.error('[SettingsManagement] Error updating user:', error);
+      notifyError(error.message || 'Failed to update user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedUser, notifySuccess, notifyError, fetchEmployees]);
+  
+  // New user form state
+  const [newUser, setNewUser] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    role: 'employee'
+  });
+  
+  // Check if user has owner permissions
+  const isOwner = useCallback(() => {
+    if (!user || !user.attributes) return false;
+    return user.attributes['custom:userrole'] === 'owner';
+  }, [user]);
+  
+  // Fetch employees on mount
+  useEffect(() => {
+    fetchEmployees();
+    
+    return () => {
+      isMounted.current = false;
+    };
+  }, [fetchEmployees]);
+  
+  // Handle form input changes
+  const handleInputChange = useCallback((e) => {
+    const { name, value } = e.target;
+    setNewUser(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  }, []);
+  
+  // Handle add user from form
+  const handleAddUser = useCallback(async (e) => {
+    e.preventDefault();
+    
+    if (!isOwner()) {
+      notifyError('Only owners can add users');
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Validate email
+      if (!newUser.email) {
+        notifyError('Email is required');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const tenantId = extractTenantId();
+      if (!tenantId) {
+        notifyError('Tenant ID not found');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Send invitation to user
+      await api.post('/api/hr/employees/invite', {
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        role: newUser.role,
+        companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company Name'
+      });
+      
+      notifySuccess(`Invitation sent to ${newUser.email}`);
+      setNewUser({
+        email: '',
+        firstName: '',
+        lastName: '',
+        role: 'employee'
+      });
+      setShowAddUserForm(false);
+      
+      // Refresh employee list
+      fetchEmployees();
+      
+    } catch (error) {
+      logger.error('[SettingsManagement] Error adding user:', error);
+      notifyError(error.message || 'Failed to add user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [newUser, isOwner, notifyError, notifySuccess, fetchEmployees]);
+  
+  // Handle adding an existing employee as a user
+  const handleAddExistingEmployee = useCallback(async (employee) => {
+    if (!isOwner()) {
+      notifyError('Only owners can add users');
+      return;
+    }
+    
+    if (!employee || !employee.email) {
+      notifyError('Invalid employee data');
+      return;
+    }
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Send invitation to the selected employee
+      await api.post('/api/hr/employees/invite', {
+        email: employee.email,
+        firstName: employee.first_name,
+        lastName: employee.last_name,
+        role: 'employee',
+        companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company Name'
+      });
+      
+      notifySuccess(`Invitation sent to ${employee.email}`);
+      setSelectedUser(null);
+      
+    } catch (error) {
+      logger.error('[SettingsManagement] Error adding existing employee as user:', error);
+      notifyError(error.message || 'Failed to add user');
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [isOwner, notifyError, notifySuccess]);
+
+  
+  // Settings navigation items
+  const navigationItems = [
+    { id: 'companyProfile', label: 'Company Profile', icon: 'building' },
+    { id: 'userManagement', label: 'User Management', icon: 'users' },
+  ];
+
+  // Render icon based on icon name
+  const renderIcon = (iconName) => {
+    switch (iconName) {
+      case 'users':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        );
+      case 'building':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        );
+      case 'credit-card':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+          </svg>
+        );
+      case 'shield':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        );
+      case 'cash':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        );
+      case 'puzzle':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path>
+          </svg>
+        );
+      case 'globe':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        );
+      case 'shield-check':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+        );
+    }
+  };
+
+  // Render placeholder section
+  const renderPlaceholderSection = (title, description) => (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h3 className="text-xl font-semibold text-gray-800 mb-3">{title}</h3>
+      <p className="text-gray-600 mb-5">{description}</p>
+      <div className="bg-gray-100 border border-gray-200 rounded-lg p-6 flex items-center justify-center h-40">
+        <p className="text-gray-500">This section is under development</p>
+      </div>
+    </div>
+  );
+
+  // Render the User Management section
+  
+    // Render the User Management section
+  const renderUserManagement = () => {
+    // User management tabs
+    const userTabs = [
+      { id: 'usersList', label: 'Users List', icon: 'users-list' },
+      { id: 'userDetails', label: 'User Details', icon: 'user-details' },
+      { id: 'accessLogs', label: 'Access Logs', icon: 'access-logs' }
+    ];
+    
+    return (
+      <div className="space-y-6">
+        <div className="flex border-b border-gray-200">
+          {userTabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`py-2 px-4 flex items-center text-sm font-medium ${
+                activeUserTab === tab.id
+                  ? 'text-blue-600 border-b-2 border-blue-500'
+                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveUserTab(tab.id)}
+            >
+              <span className="mr-2">{renderTabIcon(tab.icon)}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-4">
+          {activeUserTab === 'usersList' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Users</h3>
+                <button
+                  onClick={() => setShowAddUserForm(true)}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Add User
+                </button>
+              </div>
+              
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                </div>
+              ) : error ? (
+                <div className="bg-red-50 p-4 rounded-md text-red-800">
+                  {error}
+                </div>
+              ) : employees.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>No users found</p>
+                </div>
+              ) : (
+                <div className="bg-white shadow overflow-hidden sm:rounded-md">
+                  <ul className="divide-y divide-gray-200">
+                    {employees.map((employee) => (
+                      <li key={employee.id}>
+                        <div className="px-4 py-4 flex items-center justify-between sm:px-6">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-full flex items-center justify-center">
+                              {employee.first_name?.charAt(0)}{employee.last_name?.charAt(0)}
+                            </div>
+                            <div className="ml-4">
+                              <div className="text-sm font-medium text-gray-900">
+                                {employee.first_name} {employee.last_name}
+                              </div>
+                              <div className="text-sm text-gray-500">{employee.email}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <button
+                              onClick={() => handleEditUser(employee)}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:bg-blue-200 transition ease-in-out duration-150"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeUserTab === 'userDetails' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">
+                  {selectedUser ? `Edit User: ${selectedUser.first_name} ${selectedUser.last_name}` : 'User Details'}
+                </h3>
+                {selectedUser && (
+                  <button
+                    onClick={() => setSelectedUser(null)}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                  >
+                    Back to List
+                  </button>
+                )}
+              </div>
+              
+              {!selectedUser ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p>Please select a user from the Users List</p>
+                </div>
+              ) : (
+                <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+                  <div className="border-b border-gray-200 bg-gray-50 px-4 py-5 sm:px-6">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">User Profile Information</h3>
+                    <p className="mt-1 max-w-2xl text-sm text-gray-500">Personal details and application settings.</p>
+                  </div>
+                  
+                  <div className="border-b border-gray-200">
+                    <dl>
+                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">Full name</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          <input
+                            type="text"
+                            value={`${selectedUser.first_name} ${selectedUser.last_name}`}
+                            onChange={(e) => {
+                              const nameParts = e.target.value.split(' ');
+                              handleUserDetailChange('first_name', nameParts[0] || '');
+                              handleUserDetailChange('last_name', nameParts.slice(1).join(' ') || '');
+                            }}
+                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </dd>
+                      </div>
+                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">Email address</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          <input
+                            type="email"
+                            value={selectedUser.email || ''}
+                            onChange={(e) => handleUserDetailChange('email', e.target.value)}
+                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          />
+                        </dd>
+                      </div>
+                      <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">Role</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          <select
+                            value={selectedUser.role || 'User'}
+                            onChange={(e) => handleUserDetailChange('role', e.target.value)}
+                            className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                          >
+                            <option value="Owner">Owner</option>
+                            <option value="User">User</option>
+                          </select>
+                        </dd>
+                      </div>
+                      <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt className="text-sm font-medium text-gray-500">Can manage users</dt>
+                        <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedUser.canManageUsers === 'true'}
+                            onChange={(e) => handleUserDetailChange('canManageUsers', e.target.checked ? 'true' : 'false')}
+                            className="focus:ring-blue-500 h-4 w-4 text-blue-600 border-gray-300 rounded"
+                          />
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                  
+                  <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                    <button
+                      onClick={() => handleSaveUserDetails()}
+                      disabled={isSubmitting}
+                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      {isSubmitting ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeUserTab === 'accessLogs' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Access Logs</h3>
+              <p className="text-sm text-gray-500">
+                View a history of permission changes and system access events.
+              </p>
+              
+              <div className="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center text-gray-500">
+                <p>Access log functionality will be available in a future update.</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  
+  // Helper function to render tab icons
+  const renderTabIcon = (iconName) => {
+    switch (iconName) {
+      case 'users-list':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+          </svg>
+        );
+      case 'user-details':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        );
+      case 'access-logs':
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        );
+      default:
+        return (
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        );
+    }
+  };
+
+
+    // Render the active section based on state
+  const renderActiveSection = () => {
+    switch (activeSection) {
+      case 'companyProfile':
+        return renderCompanyProfile();
+      case 'userManagement':
+        return renderUserManagement();
+      default:
+        return (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h3 className="text-lg font-semibold">Section Not Found</h3>
+            <p className="text-gray-600">The requested settings section was not found.</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <Tab.Group selectedIndex={navigationItems.findIndex(item => item.id === activeSection)} onChange={(index) => setActiveSection(navigationItems[index].id)}>
+          <Tab.List className="flex border-b border-gray-200 bg-gray-50">
+            {navigationItems.map((item) => (
+              <Tab 
+                key={item.id}
+                className={({ selected }) => `
+                  py-4 px-6 text-sm font-medium outline-none whitespace-nowrap flex items-center
+                  ${selected 
+                    ? 'text-blue-600 border-b-2 border-blue-500 bg-white' 
+                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                <span className="mr-2">{renderIcon(item.icon)}</span>
+                {item.label}
+              </Tab>
+            ))}
+          </Tab.List>
+          
+          <Tab.Panels className="p-6">
+            {navigationItems.map((item) => (
+              <Tab.Panel key={item.id}>
+                {renderActiveSection()}
+              </Tab.Panel>
+            ))}
+          </Tab.Panels>
+        </Tab.Group>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsManagement; 

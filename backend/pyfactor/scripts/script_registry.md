@@ -1,6 +1,39 @@
-# Backend Scripts Registry
+# Backend Script Registry
 
-This file tracks all scripts created for backend modifications, fixes, and implementations.
+This document tracks all backend scripts created for fixing issues or implementing features in the ProjectX application.
+
+## Backend Scripts
+
+| Script ID | Script Name | Purpose | Created Date | Status | Applied To |
+|-----------|-------------|---------|-------------|--------|------------|
+| B0004 | Version0004_FixRedisSSL_Settings.py | Removes SSL settings from Redis cache configuration | 2023-05-03 | Executed | pyfactor/settings.py |
+| B0003 | Version0003_DirectFix_TemplatesSSL.py | Directly fixes the TEMPLATES section in settings.py by removing SSL settings | 2023-05-03 | Executed | pyfactor/settings.py |
+| B0002 | Version0002_FixTemplateSSL_Settings.py | Fixes erroneously added SSL settings in the TEMPLATES section | 2023-05-03 | Executed | pyfactor/settings.py |
+| B0001 | Version0001_EnableSSL_DatabaseSettings.py | Modifies database settings to properly handle SSL connections in the backend | 2023-05-03 | Executed | pyfactor/settings.py |
+
+## Script Status Definitions
+
+- **Ready**: Script has been created and is ready to be executed
+- **Executed**: Script has been executed successfully in the development environment
+- **Deployed**: Script has been deployed to production environment
+- **Failed**: Script execution failed, check logs for details
+- **Deprecated**: Script is no longer needed or has been replaced
+- **Requires Review**: Script needs to be reviewed before execution
+
+## Execution Instructions
+
+Before running any script:
+1. **Make sure you have a backup of the target files**
+2. Check this registry to see if the script has dependencies
+3. Verify the script status before running it
+4. After execution, update the status in this registry
+
+### Running Backend Scripts
+
+```bash
+cd /Users/kuoldeng/projectx/backend/pyfactor/scripts
+python <script_name>.py
+```
 
 ## Script Inventory
 

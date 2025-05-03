@@ -22,8 +22,8 @@ const montserrat = Montserrat({ subsets: ['latin'] });
 
 // Using local font styling instead of next/font/google to prevent build errors
 export const metadata = {
-  title: 'PyFactor - Modern Business Solutions',
-  description: 'Streamline your business operations with PyFactor',
+  title: 'Dott: Small Business Software',
+  description: 'Streamline your business operations with Dott',
 };
 
 // Root layout component (Server Component)

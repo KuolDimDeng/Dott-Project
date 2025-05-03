@@ -1,0 +1,76 @@
+import { NextResponse } from 'next/server';
+import { isPublicRoute } from '@/utils/authUtils';
+
+// Global middleware for all routes
+export async function middleware(req) {
+  const { pathname } = req.nextUrl;
+  console.log(`[Middleware] Processing request for: ${pathname}`);
+  
+  // Handle public routes (no auth required)
+  if (isPublicRoute(pathname)) {
+    console.log(`[Middleware] Public route detected: ${pathname}`);
+    return NextResponse.next();
+  }
+  
+  // Special handling for NextAuth and API routes
+  if (pathname.startsWith('/api/')) {
+    // NextAuth routes - must always let these through without tenant checks
+    if (pathname.startsWith('/api/auth/')) {
+      console.log(`[Middleware] NextAuth API route: ${pathname}`);
+      return NextResponse.next();
+    }
+    
+    // Health and user profile routes - special handling
+    if (pathname === '/api/health' || pathname === '/api/user/profile') {
+      console.log(`[Middleware] Internal API route that bypasses tenant check: ${pathname}`);
+      return NextResponse.next();
+    }
+    
+    // For other API routes that require tenant ID but don't have it
+    const tenantId = 
+      req.nextUrl.searchParams.get('tenantId') ||
+      req.cookies.get('tenantId')?.value ||
+      req.cookies.get('businessid')?.value;
+      
+    if (!tenantId) {
+      console.log(`[Middleware] API route missing tenant ID: ${pathname}`);
+      // For API routes without tenant ID, return 403
+      return NextResponse.json({ error: 'Tenant ID required' }, { status: 403 });
+    }
+  }
+  
+  // For other routes, check for tenant ID
+  const tenantId = 
+    req.nextUrl.searchParams.get('tenantId') ||
+    req.cookies.get('tenantId')?.value ||
+    req.cookies.get('businessid')?.value;
+  
+  // If no tenant ID and not in a tenant path, allow it through (will be handled by app/page.js)
+  if (!tenantId && !pathname.startsWith('/tenant/')) {
+    console.log(`[Middleware] Non-tenant route: ${pathname}`);
+    return NextResponse.next();
+  }
+  
+  // If we have a tenant ID but not in the tenant path, redirect to the tenant path
+  if (tenantId && !pathname.startsWith('/tenant/')) {
+    console.log(`[Middleware] Redirecting to tenant path: /tenant/${tenantId}`);
+    return NextResponse.redirect(new URL(`/tenant/${tenantId}`, req.url));
+  }
+  
+  // Continue to the route
+  return NextResponse.next();
+}
+
+// Configure which paths this middleware is run for
+export const config = {
+  matcher: [
+    /*
+     * Match all paths except for:
+     * 1. /api/auth/ (NextAuth authentication routes)
+     * 2. /_next/ (Next.js internals)
+     * 3. /static (static files)
+     * 4. /favicon.ico, /robots.txt (common browser requests)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|robots.txt|public/|assets/).*)',
+  ],
+}; 

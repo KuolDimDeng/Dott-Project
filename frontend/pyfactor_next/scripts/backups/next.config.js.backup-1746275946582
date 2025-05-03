@@ -1,0 +1,176 @@
+/** @type {import('next').NextConfig} */
+const path = require('path');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const fs = require('fs');
+
+const isDev = process.env.NODE_ENV === 'development';
+const isHttps = process.env.HTTPS === 'true';
+
+// Log HTTPS settings for debugging
+console.log(`[NextJS Config] HTTPS settings - env.HTTPS: ${process.env.HTTPS}, isHttps: ${isHttps}`);
+console.log(`[NextJS Config] SSL files - CRT: ${process.env.SSL_CRT_FILE}, KEY: ${process.env.SSL_KEY_FILE}`);
+
+// HTTPS configuration moved to package.json script instead of next.config.js
+// The dev:https script should include --experimental-https which is how Next.js 13+ handles HTTPS
+
+// Config focused on stability and compatibility
+const nextConfig = {
+  // Basic Next.js settings
+  reactStrictMode: true,
+  
+  // Set the correct src directory
+  distDir: 'dist',
+  
+  // Next.js 15 doesn't support 'dir' property
+  // Instead, we rely on the default src directory structure
+  
+  // Set pageExtensions at the top level instead of in experimental
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  
+  // Environment variables available on the client side
+  env: {
+    BACKEND_API_URL: process.env.BACKEND_API_URL || 'https://127.0.0.1:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000',
+    USE_DATABASE: process.env.USE_DATABASE || 'false',
+    MOCK_DATA_DISABLED: process.env.MOCK_DATA_DISABLED || 'false',
+    PROD_MODE: process.env.PROD_MODE || 'false',
+    HTTPS_ENABLED: 'true' // Force HTTPS to true since we're using SSL
+  },
+  
+  // Handle API routes that should be proxied to the backend
+  async rewrites() {
+    console.log(`[NextJS Config] Setting up API proxy rewrites to: ${process.env.BACKEND_API_URL || 'https://127.0.0.1:8000'}/api/`);
+    return [
+      // ONLY these specific frontend API routes bypass the backend
+      // These are the minimum required routes to make the app work
+      {
+        source: '/api/auth/session',
+        destination: '/api/auth/session',
+      },
+      {
+        source: '/api/health',
+        destination: '/api/health',
+      },
+      {
+        source: '/api/user/profile',
+        destination: '/api/user/profile',
+      },
+      // All other API routes continue to the backend WITH tenant isolation enforcement
+      {
+        source: '/api/:path*',
+        destination: `${process.env.BACKEND_API_URL || 'https://127.0.0.1:8000'}/api/:path*`,
+      },
+    ];
+  },
+  
+  // External packages for server components - moved from experimental per Next.js 15.3.1 guidance
+  serverExternalPackages: [],
+  
+  // Experimental features that are still supported
+  experimental: {
+    // Enable server actions with correct configuration
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: ['localhost:3000', '127.0.0.1:3000']
+    }
+  },
+  
+  // Use transpilePackages for client-side only
+  transpilePackages: [
+    '@aws-amplify/ui-react',
+    'aws-amplify',
+    // Include all AWS Amplify modular packages
+    'aws-amplify/auth',
+    'aws-amplify/utils',
+    'aws-amplify/core',
+    '@aws-amplify/core',
+    '@aws-amplify/auth'
+  ],
+  
+  // Webpack config focusing on pure CommonJS for stability and AWS Amplify compatibility
+  webpack: (config, { isServer, dev }) => {
+    // Create stub for datepicker CSS
+    config.module.rules.push({
+      test: /react-datepicker\/dist\/react-datepicker\.css$/,
+      use: 'null-loader',
+    });
+
+    // Set up aliases for problematic modules
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),
+      'react-chartjs-2': path.resolve(__dirname, 'src/utils/stubs/react-chartjs-2-stub.js'),
+      'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
+      'react-datepicker/dist/react-datepicker.css': path.resolve(__dirname, 'src/utils/stubs/empty.css'),
+    };
+
+    // Handle CSS files
+    if (!isServer) {
+      // Force CSS extraction at the top level
+      const miniCssExtractPlugin = new MiniCssExtractPlugin({
+        filename: 'static/css/[name].[contenthash:8].css',
+        chunkFilename: 'static/css/[name].[contenthash:8].chunk.css',
+        ignoreOrder: true, // Prevents order warnings with CSS modules
+      });
+
+      // Ensure the plugin is added only once
+      const hasPlugin = config.plugins.some(
+        plugin => plugin instanceof MiniCssExtractPlugin
+      );
+      
+      if (!hasPlugin) {
+        config.plugins.push(miniCssExtractPlugin);
+      }
+    }
+    
+    // Fix Node.js polyfills and AWS SDK requirements
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      os: false,
+      crypto: false,
+      'aws-crt': false
+    };
+
+    // Add module resolution for AWS Amplify v6 modular imports
+    config.resolve = {
+      ...config.resolve,
+      extensionAlias: {
+        ...config.resolve.extensionAlias,
+        '.js': ['.js', '.ts', '.tsx']
+      }
+    };
+
+    // Add SVG support
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+
+    return config;
+  },
+  
+  // Update image optimization configuration
+  images: {
+    // Disable image optimization completely
+    unoptimized: true,
+    
+    // Allow SVGs
+    dangerouslyAllowSVG: true,
+    
+    // Set content security policy
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    
+    // Remote image domains
+    domains: [
+      'localhost',
+      '127.0.0.1',
+      'via.placeholder.com',
+      'picsum.photos',
+      'images.unsplash.com',
+    ],
+  }
+};
+
+module.exports = nextConfig;

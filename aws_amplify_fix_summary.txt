@@ -1,0 +1,7 @@
+AWS Amplify v6.x Integration Fixes - Summary
+
+1. Updated Next.js configuration to handle aws-amplify/auth modular imports
+2. Improved CognitoAttributesFix script to use dynamic imports
+3. Created comprehensive documentation for the fixes
+
+Restart your Next.js application with 'pnpm run dev' to verify the fixes.

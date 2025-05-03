@@ -37,6 +37,7 @@ import { useSession } from '@/hooks/useSession';
 import { useProfile } from '@/hooks/useProfile';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import CognitoAttributes from '@/utils/CognitoAttributes';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined' && !window.__APP_CACHE) {
@@ -489,7 +490,7 @@ const DashAppBar = ({
       const attributes = await fetchUserAttributes();
       
       // Validate current tenant ID matches the attribute tenant ID (for security)
-      const attributeTenantId = attributes['custom:tenant_ID'] || attributes['custom:businessid'];
+      const attributeTenantId = CognitoAttributes.getValue(attributes, CognitoAttributes.TENANT_ID) || CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_ID);
       if (attributeTenantId && attributeTenantId !== tenantId) {
         logger.error('[AppBar] Tenant ID mismatch! URL tenant ID does not match authenticated user tenant ID', {
           urlTenantId: tenantId,
@@ -501,16 +502,10 @@ const DashAppBar = ({
       }
       
       // Get business name from Cognito attributes
-      let businessName = attributes['custom:businessname'] || 
-                         attributes['custom:tenant_name'] || 
-                         attributes['custom:business_name'] || 
-                         '';
+      let businessName = CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_NAME, '');
       
       // Get subscription type from Cognito attributes
-      const subscriptionType = attributes['custom:subplan'] || 
-                               attributes['custom:subscription_plan'] || 
-                               attributes['custom:subscription'] || 
-                               'free';
+      const subscriptionType = CognitoAttributes.getValue(attributes, CognitoAttributes.SUBSCRIPTION_PLAN, 'free');
       
       // Set business name if available
       if (businessName && businessName.trim() !== '') {
@@ -523,7 +518,7 @@ const DashAppBar = ({
       const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
       const email = attributes['email'] || '';
       
-      const initials = generateInitialsFromNames(firstName, lastName, email);
+      const initials = CognitoAttributes.getUserInitials(attributes);
       if (initials) {
         setUserInitials(initials);
       }
@@ -556,7 +551,7 @@ const DashAppBar = ({
           const attributes = await fetchUserAttributes();
           
           // Get the tenant ID from attributes
-          const attributeTenantId = attributes['custom:tenant_ID'] || attributes['custom:businessid'];
+          const attributeTenantId = CognitoAttributes.getValue(attributes, CognitoAttributes.TENANT_ID) || CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_ID);
           
           // If there's a mismatch, clear cache and log warning
           if (attributeTenantId && attributeTenantId !== tenantId) {
@@ -575,10 +570,7 @@ const DashAppBar = ({
           }
           
           // Check subscription plan from attributes
-          const subscriptionType = attributes['custom:subplan'] || 
-                                  attributes['custom:subscription_plan'] || 
-                                  attributes['custom:subscription'] || 
-                                  'free';
+          const subscriptionType = CognitoAttributes.getValue(attributes, CognitoAttributes.SUBSCRIPTION_PLAN, 'free');
                                   
           // Update subscription plan in userData if needed
           if (subscriptionType && subscriptionType !== 'free') {
@@ -920,7 +912,7 @@ const DashAppBar = ({
             
             // Generate initials from the attributes
             if (firstName || lastName || email) {
-            const initials = generateInitialsFromNames(firstName, lastName, email);
+            const initials = CognitoAttributes.getUserInitials(attributes);
             if (initials) {
               setUserInitials(initials);
               }
@@ -1000,7 +992,7 @@ const DashAppBar = ({
         
       const email = payload['email'] || '';
       
-      const initials = generateInitialsFromNames(firstName, lastName, email);
+      const initials = CognitoAttributes.getUserInitials(attributes);
       if (initials) {
         logger.info('[AppBar] Setting initials from JWT token:', { firstName, lastName, initials });
         setUserInitials(initials);
@@ -1173,11 +1165,7 @@ const DashAppBar = ({
                 className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
-                  {userInitials || (userAttributes && generateInitialsFromNames(
-                    userAttributes['given_name'] || userAttributes['custom:firstname'] || userAttributes['firstName'] || userAttributes['first_name'] || '',
-                    userAttributes['family_name'] || userAttributes['custom:lastname'] || userAttributes['lastName'] || userAttributes['last_name'] || '',
-                    userAttributes['email'] || ''
-                  )) || '?'}
+                  {userInitials || (userAttributes && CognitoAttributes.getUserInitials(userAttributes)) || '?'}
                 </div>
               </button>
             </div>
@@ -1202,40 +1190,27 @@ const DashAppBar = ({
               <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                 <div className="flex items-center mb-2">
                   <div className="w-10 h-10 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-base font-medium mr-3">
-                    {userInitials || (userAttributes && generateInitialsFromNames(
-                      userAttributes['given_name'] || userAttributes['custom:firstname'] || userAttributes['firstName'] || userAttributes['first_name'] || '',
-                      userAttributes['family_name'] || userAttributes['custom:lastname'] || userAttributes['lastName'] || userAttributes['last_name'] || '',
-                      userAttributes['email'] || ''
-                    )) || '?'}
+                    {userInitials || (userAttributes && CognitoAttributes.getUserInitials(userAttributes)) || '?'}
                   </div>
                   <div>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">
-                        {userAttributes?.['given_name'] && userAttributes?.['family_name'] ? 
-                          `${userAttributes['given_name']} ${userAttributes['family_name']}` : 
-                        userAttributes?.['custom:firstname'] && userAttributes?.['custom:lastname'] ? 
-                          `${userAttributes['custom:firstname']} ${userAttributes['custom:lastname']}` : 
-                        userAttributes?.['firstName'] && userAttributes?.['lastName'] ? 
-                          `${userAttributes['firstName']} ${userAttributes['lastName']}` :
-                        userData?.name || 
-                        (userData?.firstName && userData?.lastName) ? 
-                          `${userData.firstName} ${userData.lastName}` :
-                        (userData?.first_name && userData?.last_name) ? 
-                          `${userData.first_name} ${userData.last_name}` : 
-                        userData?.firstName || 
-                        userData?.first_name || 
-                        userData?.email?.split('@')[0] || 
-                        'Guest'}
+                        {userAttributes ? 
+                          (CognitoAttributes.getValue(userAttributes, CognitoAttributes.GIVEN_NAME) && CognitoAttributes.getValue(userAttributes, CognitoAttributes.FAMILY_NAME) ?
+                            `${CognitoAttributes.getValue(userAttributes, CognitoAttributes.GIVEN_NAME)} ${CognitoAttributes.getValue(userAttributes, CognitoAttributes.FAMILY_NAME)}` :
+                            userData?.name || (userData?.firstName && userData?.lastName ? 
+                              `${userData.firstName} ${userData.lastName}` : userData?.firstName || userData?.email?.split('@')[0] || 'Guest')) :
+                          'Guest'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {userAttributes?.email || userData?.email || ''}
+                        {(userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.EMAIL) : '') || userData?.email || ''}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
                   <span className="font-semibold">Business: </span>
-                  <span>{userAttributes?.['custom:businessname'] || userData?.businessName || businessName || effectiveBusinessName || ''}</span>
+                  <span>{(userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.BUSINESS_NAME) : '') || userData?.businessName || businessName || effectiveBusinessName || ''}</span>
                 </div>
               </div>
 

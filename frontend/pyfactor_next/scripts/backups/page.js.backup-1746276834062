@@ -1,0 +1,17 @@
+'use client';
+import React from 'react';
+
+export default function HomePage() {
+  return (
+    <div className="container mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-4">Welcome to Next.js App</h1>
+      <p className="mb-4">This is a basic page that should always work.</p>
+      <div className="bg-gray-100 p-4 rounded">
+        <h2 className="text-xl font-semibold mb-2">Debug Information</h2>
+        <p>The home page is rendering correctly.</p>
+        <p>App Version: 1.0.0</p>
+        <p>Environment: {process.env.APP_ENV || 'development'}</p>
+      </div>
+    </div>
+  );
+}

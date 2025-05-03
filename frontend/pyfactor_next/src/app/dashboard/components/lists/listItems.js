@@ -293,6 +293,7 @@ const MainListItems = ({
       label: 'Dashboard',
       onClick: handleMainDashboardClick,
     },
+    /* Billing menu item - This will be used in future versions of the application
     {
       icon: <NavIcons.Wallet className="w-5 h-5" />,
       label: 'Billing',
@@ -304,6 +305,7 @@ const MainListItems = ({
         { label: 'Reports', onClick: handleBillingClick, value: 'reports' },
       ],
     },
+    */
     {
       icon: <NavIcons.Sales className="w-5 h-5" />,
       label: 'Sales',
