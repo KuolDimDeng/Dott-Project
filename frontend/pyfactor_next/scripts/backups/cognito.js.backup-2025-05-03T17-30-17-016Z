@@ -274,7 +274,7 @@ async function createCognitoUser(userData) {
       { Name: 'email_verified', Value: 'true' },
       { Name: 'given_name', Value: userData.firstName || '' },
       { Name: 'family_name', Value: userData.lastName || '' },
-      { Name: "custom:userrole", Value: mapRoleForCognito(userData.role) },
+      { Name: 'custom:role', Value: mapRoleForCognito(userData.role) },
     ];
     
     // Add tenant-related attributes

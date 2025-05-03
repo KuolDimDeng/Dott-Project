@@ -6,6 +6,10 @@ This document tracks all scripts created for fixing issues or implementing featu
 
 | Script ID | Script Name | Purpose | Created Date | Status | Applied To |
 |-----------|-------------|---------|-------------|--------|------------|
+| F0053 | Version0053_fix_userrole_attribute_name.js | Fixes user role attribute name from 'custom:role' to 'custom:userrole' to match Cognito schema | 2025-05-03 | Executed | src/utils/cognito.js |
+
+| F0052 | Version0052_fix_user_invitation_attributes_cognito.js | Fixes user invitation system to properly copy tenant attributes from owner to new users | 2025-05-03 | Executed | src/app/api/hr/employees/invite/route.js, src/utils/cognito.js |
+
 | F0024 | Version0001_FixSSL_TenantAPI.mjs | Fixes SSL configuration for tenant API database connections | 2023-05-03 | Ready | src/app/api/tenant/db-config.js |
 | F0023 | Version0003_DirectFix_TemplatesSSL.py | Directly fixes the TEMPLATES section in settings.py by removing SSL settings | 2023-05-03 | Executed | pyfactor/settings.py |
 | F0022 | Version0002_FixTemplateSSL_Settings.py | Fixes erroneously added SSL settings in the TEMPLATES section | 2023-05-03 | Executed | pyfactor/settings.py |
@@ -589,3 +593,4 @@ This file tracks all frontend scripts, their purpose, and execution status.
 | Version0048_fix_reference_error_in_SettingsManagement.mjs | Fixes ReferenceError for user variable being accessed before declaration in SettingsManagement.js | EXECUTED | 2025-05-03T16:01:34.931Z |
 | Version0049_fix_duplicate_declarations_in_SettingsManagement.mjs | Fixes duplicate variable declarations (notifySuccess, notifyError) in SettingsManagement.js | EXECUTED | 2025-05-03T16:02:35.961Z |
 | Version0051_fix_db_ssl_connection.mjs | Fixes PostgreSQL SSL connection issue by making SSL optional for localhost connections | EXECUTED | 2025-05-03T16:36:30.756Z |
+| Version0001_fix_SalesMenu_Navigation.js | Fix Sales menu navigation for Products and Services | v1.0 | 2025-05-02 | Completed |

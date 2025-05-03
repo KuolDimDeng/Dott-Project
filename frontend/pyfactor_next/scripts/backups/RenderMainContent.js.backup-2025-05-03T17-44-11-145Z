@@ -74,7 +74,6 @@ const RenderForm = enhancedLazy(() => import('./RenderForm.js').then(m => ({ def
 const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const CreateProductManagement = enhancedLazy(() => import('./forms/CreateProductManagement.js'), 'Create Product Management');
 const SalesProductManagement = enhancedLazy(() => import('./forms/SalesProductManagement.js'), 'Sales Product Management');
-import SalesServiceManagement from './forms/SalesServiceManagement.js';
 const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
 const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
 const SalesOrderManagement = enhancedLazy(() => import('./forms/SalesOrderManagement.js'), 'Sales Order Management');
@@ -1095,7 +1094,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <SuspenseWithCleanup componentKey={salesComponentKey}>
               {view === 'sales-dashboard' && <SalesAnalysis />}
               {view === 'sales-products' && <SalesProductManagement />}
-              {view === 'sales-services' && <SalesServiceManagement />}
+              {view === 'sales-services' && <ServiceManagement salesContext={true} />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
@@ -1276,7 +1275,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`service-management-${sectionComponentKey}`}>
-              <SalesServiceManagement />
+              <ServiceManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

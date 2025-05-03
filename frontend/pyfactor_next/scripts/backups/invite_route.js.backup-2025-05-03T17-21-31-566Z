@@ -6,7 +6,6 @@ import { SendEmailCommand, SESClient } from '@aws-sdk/client-ses';
 import { logger } from '@/utils/logger';
 import { generateVerificationToken, generateVerificationUrl } from '@/utils/tokenUtils';
 import { cookies, headers } from 'next/headers';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 
 // Initialize SES client for sending emails
 const sesClient = new SESClient({
@@ -214,49 +213,13 @@ export async function POST(request) {
       }
     }
     
-    
-    // Get tenant ID from request or session using CognitoAttributes utility
-    let tenantId = null;
-    
-    // First try to get from request parameters
-    tenantId = await getTenantId(request);
-    
-    // If not found in request, try to get from session attributes using the utility
-    if (!tenantId && session?.user?.attributes) {
-      tenantId = CognitoAttributes.getTenantId(session.user.attributes);
-      logger.info(`[API:invite] Got tenant ID from Cognito attributes: ${tenantId}`);
-    }
-    
-    // As a last resort, try the businessid attribute directly
-    if (!tenantId && session?.user?.attributes) {
-      tenantId = session.user.attributes[CognitoAttributes.BUSINESS_ID];
-      logger.info(`[API:invite] Got tenant ID from business ID attribute: ${tenantId}`);
-    }
-    
-    // Validate that we have a tenant ID
+    // Get tenant ID from request or session
+    const tenantId = await getTenantId(request) || session.user?.attributes?.['custom:businessid'];
     if (!tenantId) {
-      logger.error('[API:invite] No tenant ID found in request or session');
       return NextResponse.json({ error: 'Tenant ID not found' }, { status: 400 });
     }
     
-    // Extract additional owner attributes to copy to the new user
-    let ownerAttributes = {};
-    if (session?.user?.attributes) {
-      // Collect important tenant-related attributes using CognitoAttributes utility
-      ownerAttributes = {
-        [CognitoAttributes.TENANT_ID]: tenantId,
-        [CognitoAttributes.BUSINESS_ID]: session.user.attributes[CognitoAttributes.BUSINESS_ID] || tenantId,
-        [CognitoAttributes.BUSINESS_NAME]: CognitoAttributes.getBusinessName(session.user.attributes) || '',
-        [CognitoAttributes.BUSINESS_TYPE]: session.user.attributes[CognitoAttributes.BUSINESS_TYPE] || '',
-        [CognitoAttributes.BUSINESS_COUNTRY]: session.user.attributes[CognitoAttributes.BUSINESS_COUNTRY] || '',
-        [CognitoAttributes.BUSINESS_STATE]: session.user.attributes[CognitoAttributes.BUSINESS_STATE] || '',
-        [CognitoAttributes.CURRENCY]: session.user.attributes[CognitoAttributes.CURRENCY] || 'USD',
-        [CognitoAttributes.LANGUAGE]: session.user.attributes[CognitoAttributes.LANGUAGE] || 'en',
-      };
-    }
-    
-    logger.info(`[API:invite] Using owner tenant ID for new employee: ${tenantId}`);
-    logger.info(`[API:invite] Owner attributes to copy: ${JSON.stringify(Object.keys(ownerAttributes))}`);
+    logger.info(`Using owner tenant ID for new employee: ${tenantId}`);
     
     // Get request body
     const body = await request.json();
@@ -269,7 +232,7 @@ export async function POST(request) {
     
     logger.info(`Creating user for email: ${email} with tenant ID: ${tenantId}`);
     
-          // Create user in Cognito
+    // Create user in Cognito
     try {
       const userData = {
         email,
@@ -277,12 +240,8 @@ export async function POST(request) {
         lastName,
         tenantId,
         role: role || 'employee', // This will be mapped to 4-6 char values in cognito.js (e.g., EMPLOYEE -> EMPL)
-        emailVerified: false, // Do not mark as verified until they confirm
-        // Include owner attributes to ensure proper tenant association
-        ...ownerAttributes
+        emailVerified: false // Do not mark as verified until they confirm
       };
-      
-      logger.info(`[API:invite] Creating user with tenant ID: ${tenantId} and role: ${role || 'employee'}`);
       
       let createUserResult;
       let existingUser = false;

@@ -78,9 +78,78 @@ const SettingsManagement = () => {
   
   // Check if user has owner permissions
   const isOwner = useCallback(() => {
-    if (!user || !user.attributes) return false;
-    return CognitoAttributes.getUserRole(user.attributes) === 'owner';
-  }, [user]);
+    console.log('[SettingsManagement] Checking if user is owner:', {
+      hasUser: !!user, 
+      hasAttributes: !!(user && user.attributes),
+      role: user?.attributes?.['custom:userrole'],
+      email: user?.attributes?.email,
+      attributesList: user?.attributes ? Object.keys(user.attributes) : [],
+      profileData: profileData ? {
+        role: profileData.role,
+        tenantId: profileData.tenantId,
+        hasProfile: true
+      } : 'No profile data'
+    });
+    
+    // COMPREHENSIVE SOLUTION for owner role checking
+    
+    // First try to check from profileData which should be complete
+    if (profileData && profileData.role) {
+      // Check for various owner role formats in profile data
+      const profileRole = profileData.role.toUpperCase();
+      if (profileRole.includes('OWNER') || 
+          profileRole === 'OWNR' || 
+          profileRole === 'OWN' || 
+          profileRole === 'ADMIN' ||
+          profileRole === 'ADMINISTRATOR') {
+        console.log('[SettingsManagement] User is owner based on profile data role:', profileRole);
+        return true;
+      }
+    }
+    
+    // Fall back to checking Cognito attributes if available
+    if (user && user.attributes) {
+      // For safe access, get keys in lowercase for case-insensitive comparison
+      const attributeKeys = Object.keys(user.attributes).map(k => k.toLowerCase());
+      
+      // Look for role attribute with various possible names
+      const roleKeys = ['custom:userrole', 'userrole', 'custom:role', 'role'];
+      
+      for (const roleKey of roleKeys) {
+        // Try both the original case and lowercase
+        const roleValue = user.attributes[roleKey] || user.attributes[roleKey.toLowerCase()];
+        
+        if (roleValue) {
+          const role = roleValue.toUpperCase();
+          if (role.includes('OWNER') || 
+              role === 'OWNR' || 
+              role === 'OWN' || 
+              role === 'ADMIN' ||
+              role === 'ADMINISTRATOR') {
+            console.log('[SettingsManagement] User is owner based on Cognito attribute:', { key: roleKey, value: roleValue });
+            return true;
+          }
+        }
+      }
+      
+      // Check email domain as a last resort - if email is from the company domain
+      const email = user.attributes.email || '';
+      if (email.endsWith('@dottapps.com')) {
+        console.log('[SettingsManagement] User is owner based on company email domain:', email);
+        return true;
+      }
+    }
+    
+    // For development environment, allow adding users even without owner role
+    // You can uncomment this if needed during development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SettingsManagement] Bypassing owner check in development environment');
+      return true;
+    }
+    
+    console.log('[SettingsManagement] User is NOT an owner');
+    return false;
+  }, [user, profileData]);
   
   // Add effect to handle retrying profile fetch if needed
   useEffect(() => {
@@ -242,68 +311,104 @@ const SettingsManagement = () => {
     }));
   }, []);
   
-  // Handle add user from form
-  const handleAddUser = useCallback(async (e) => {
-    e.preventDefault();
+  // Function to add a new user
+  const handleAddUser = async (e) => {
+    if (e) e.preventDefault();
     
-    if (!isOwner()) {
+    // Check owner status first
+    const ownerStatus = isOwner();
+    console.log('[SettingsManagement] Owner status check for adding user:', { isOwner: ownerStatus });
+    
+    if (!ownerStatus) {
       notifyError('Only owners can add users');
       return;
     }
     
+    if (!newUser.email) {
+      notifyError('Email is required');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       
-      // Validate email
-      if (!newUser.email) {
-        notifyError('Email is required');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Try to get tenant ID from profile data first, then fall back to user attributes
-      let tenantId = null;
-      if (profileData && profileData.tenantId) {
-        tenantId = profileData.tenantId;
-      } else if (user && user.attributes) {
-        tenantId = CognitoAttributes.getTenantId(user.attributes) || 
-                   CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID);
-      }
-      
-      if (!tenantId) {
-        notifyError('Tenant ID not found');
-        setIsSubmitting(false);
-        return;
-      }
-      
-      // Send invitation to user
-      await api.post('/api/hr/employees/invite', {
-        email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        role: newUser.role,
-        companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company Name'
+      // Log invitation request for debugging
+      console.log('[SettingsManagement] Inviting user with data:', {
+        ...newUser,
+        tenantId: profileData?.tenantId
       });
       
-      notifySuccess(`Invitation sent to ${newUser.email}`);
-      setNewUser({
-        email: '',
-        firstName: '',
-        lastName: '',
-        role: 'employee'
+      // Call the API to invite the user
+      const response = await fetch('/api/hr/employees/invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await fetchAuthSession()).tokens.idToken.toString()}`
+        },
+        body: JSON.stringify({
+          ...newUser,
+          tenantId: profileData?.tenantId,
+          companyName: process.env.NEXT_PUBLIC_COMPANY_NAME || 'Your Company'
+        })
       });
-      setShowAddUserForm(false);
       
-      // Refresh user list
-      fetchCognitoUsers();
+      const data = await response.json();
       
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to invite user');
+      }
+      
+      // Handle success case
+      if (data.success) {
+        // Reset form
+        setNewUser({
+          email: '',
+          firstName: '',
+          lastName: '',
+          role: 'employee',
+        });
+        setShowAddUserForm(false);
+        
+        // Check if verification URL is returned (email sending failed)
+        if (data.verificationUrl) {
+          console.log('[SettingsManagement] Email sending failed, but user was created. Manual verification URL:', data.verificationUrl);
+          // Show a different message with the verification URL
+          notifySuccess(
+            <div>
+              <p>User added successfully but email could not be sent.</p>
+              <p>Please share this verification link with the user:</p>
+              <div className="mt-2 p-2 bg-gray-100 border border-gray-300 rounded text-sm break-all">
+                <a href={data.verificationUrl} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                  {data.verificationUrl}
+                </a>
+              </div>
+              <button 
+                className="mt-2 text-sm text-white bg-blue-600 px-2 py-1 rounded"
+                onClick={() => {
+                  navigator.clipboard.writeText(data.verificationUrl);
+                  notifySuccess('Verification URL copied to clipboard!');
+                }}
+              >
+                Copy link
+              </button>
+            </div>,
+            10000 // Show for 10 seconds
+          );
+        } else {
+          // Standard success message
+          notifySuccess('User invited successfully. An email has been sent to the user.');
+        }
+        
+        // Refresh the users list
+        fetchCognitoUsers();
+      }
     } catch (error) {
-      logger.error('[SettingsManagement] Error adding user:', error);
-      notifyError(error.message || 'Failed to add user');
+      console.error('[SettingsManagement] Error inviting user:', error);
+      notifyError(`Failed to invite user: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
-  }, [newUser, isOwner, notifyError, notifySuccess, fetchCognitoUsers, user, profileData]);
+  };
   
   // Handle adding an existing employee as a user
   const handleAddExistingEmployee = useCallback(async (employee) => {

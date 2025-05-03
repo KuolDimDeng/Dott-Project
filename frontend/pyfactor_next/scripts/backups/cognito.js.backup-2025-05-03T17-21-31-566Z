@@ -13,7 +13,6 @@ import {
   MessageActionType
 } from "@aws-sdk/client-cognito-identity-provider";
 import { logger } from '@/utils/logger';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 
 // Initialize AWS SDK
 function getCognitoClient() {
@@ -250,7 +249,7 @@ function mapRoleForCognito(role) {
 /**
  * Create a new user in Cognito
  * 
- * @param {object} userData - User data including email, firstName, lastName, role, and tenant attributes
+ * @param {object} userData - User data including email, firstName, lastName, role
  * @returns {Promise<object>} - Newly created user
  */
 async function createCognitoUser(userData) {
@@ -259,8 +258,7 @@ async function createCognitoUser(userData) {
       email: userData.email,
       firstName: userData.firstName || '(not provided)',
       lastName: userData.lastName || '(not provided)',
-      role: userData.role || '(not provided)',
-      tenantId: userData.tenantId || '(not provided)'
+      role: userData.role || '(not provided)'
     });
 
     const client = getCognitoClient();
@@ -268,58 +266,19 @@ async function createCognitoUser(userData) {
     // Generate a random temporary password
     const temporaryPassword = generateRandomPassword();
     
-    // Prepare user attributes - start with standard attributes
-    const userAttributes = [
-      { Name: 'email', Value: userData.email },
-      { Name: 'email_verified', Value: 'true' },
-      { Name: 'given_name', Value: userData.firstName || '' },
-      { Name: 'family_name', Value: userData.lastName || '' },
-      { Name: "custom:userrole", Value: mapRoleForCognito(userData.role) },
-    ];
-    
-    // Add tenant-related attributes
-    if (userData.tenantId) {
-      // Add the primary tenant ID attribute
-      userAttributes.push({ 
-        Name: CognitoAttributes.TENANT_ID, 
-        Value: userData.tenantId 
-      });
-      
-      // Add businessid as an alias for backward compatibility
-      userAttributes.push({ 
-        Name: CognitoAttributes.BUSINESS_ID, 
-        Value: userData.tenantId 
-      });
-    }
-    
-    // Copy all other tenant attributes (business name, type, etc.)
-    Object.entries(userData).forEach(([key, value]) => {
-      // Skip attributes we've already handled
-      if (['email', 'firstName', 'lastName', 'role', 'tenantId', 'emailVerified'].includes(key)) {
-        return;
-      }
-      
-      // Skip empty values
-      if (value === undefined || value === null || value === '') {
-        return;
-      }
-      
-      // Add the attribute
-      userAttributes.push({ 
-        Name: key, 
-        Value: String(value) 
-      });
-    });
-    
-    logger.info(`[COGNITO DEBUG] Creating user with ${userAttributes.length} attributes`);
-    
     // Create a user in Cognito
     logger.info('[COGNITO DEBUG] Sending AdminCreateUserCommand');
     const createUserCommand = new AdminCreateUserCommand({
       UserPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID,
       Username: userData.email,
       TemporaryPassword: temporaryPassword,
-      UserAttributes: userAttributes,
+      UserAttributes: [
+        { Name: 'email', Value: userData.email },
+        { Name: 'email_verified', Value: 'true' },
+        { Name: 'given_name', Value: userData.firstName || '' },
+        { Name: 'family_name', Value: userData.lastName || '' },
+        { Name: 'custom:role', Value: mapRoleForCognito(userData.role) },
+      ],
       // Disable sending Cognito's default emails since we'll send our own
       MessageAction: MessageActionType.SUPPRESS
     });
