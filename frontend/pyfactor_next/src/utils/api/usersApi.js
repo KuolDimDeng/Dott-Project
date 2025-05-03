@@ -6,6 +6,7 @@
 
 import axios from 'axios';
 import { logger } from '@/utils/logger';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 /**
  * Create an axios instance for users API
@@ -17,6 +18,34 @@ const usersApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+// Add request interceptor to add authentication token
+usersApiClient.interceptors.request.use(
+  async (config) => {
+    try {
+      // Try to get the auth session
+      const { tokens } = await fetchAuthSession();
+      const idToken = tokens?.idToken?.toString();
+      
+      if (idToken) {
+        // Add the Authorization header with the token
+        config.headers.Authorization = `Bearer ${idToken}`;
+      }
+      
+      // Add dashboard route header for internal routing
+      config.headers['X-Dashboard-Route'] = 'true';
+      
+      return config;
+    } catch (error) {
+      // If we can't get the token, proceed without it
+      logger.warn('[UsersApi] Failed to get auth token:', error.message);
+      return config;
+    }
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 /**
  * Response interceptor to handle errors
@@ -51,6 +80,27 @@ export const usersApi = {
     } catch (error) {
       logger.error(`[UsersApi] Error fetching users for tenant ID ${tenantId}:`, error);
       throw error;
+    }
+  },
+
+  /**
+   * Get current user profile
+   * 
+   * @returns {Promise<Object>} - User profile object
+   */
+  async getCurrentUser() {
+    try {
+      logger.info('[UsersApi] Fetching current user profile');
+      const response = await usersApiClient.get('/profile');
+      return response.data || null;
+    } catch (error) {
+      // If 401/403 don't log as error since it's expected when not authenticated
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        logger.info('[UsersApi] User not authenticated for profile request');
+      } else {
+        logger.error('[UsersApi] Error fetching current user profile:', error);
+      }
+      return null;
     }
   }
 };

@@ -81,12 +81,20 @@ export async function GET(request) {
         attributes[attr.Name] = attr.Value;
       });
       
-      // Format user object for frontend
+      // Extract email username part for fallback name
+      let emailUsername = '';
+      if (attributes.email && attributes.email.includes('@')) {
+        emailUsername = attributes.email.split('@')[0];
+        // Capitalize the first letter
+        emailUsername = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+      }
+      
+      // Format user object for frontend with improved name handling
       return {
         id: user.Username,
         email: attributes.email || 'No email',
-        first_name: attributes.given_name || 'Unknown',
-        last_name: attributes.family_name || 'User',
+        first_name: attributes.given_name || emailUsername || 'User',
+        last_name: attributes.family_name || '',
         role: attributes['custom:userrole'] || 'user',
         is_active: user.Enabled,
         date_joined: user.UserCreateDate ? new Date(user.UserCreateDate).toISOString() : null,

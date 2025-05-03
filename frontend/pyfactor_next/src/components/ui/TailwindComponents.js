@@ -1655,7 +1655,8 @@ export const Snackbar = ({
   
   return (
     <div 
-      className={`fixed z-1000 ${positionClass} transform transition-transform duration-300 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'} ${className}`}
+      className={`fixed z-[10000] ${positionClass} transform transition-transform duration-300 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'} ${className}`}
+      style={{ position: 'fixed !important' }}
       {...props}
     >
       <div className={`rounded-md shadow-lg px-4 py-3 flex items-center ${severityClass}`}>

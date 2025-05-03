@@ -588,3 +588,4 @@ This file tracks all frontend scripts, their purpose, and execution status.
 | Version0047_fix_tenant_id_casing_in_user_management.mjs | Fixes tenant ID casing issue in CognitoAttributes utility by making getTenantId check multiple attribute formats | EXECUTED | 2025-05-03T16:00:15.540Z |
 | Version0048_fix_reference_error_in_SettingsManagement.mjs | Fixes ReferenceError for user variable being accessed before declaration in SettingsManagement.js | EXECUTED | 2025-05-03T16:01:34.931Z |
 | Version0049_fix_duplicate_declarations_in_SettingsManagement.mjs | Fixes duplicate variable declarations (notifySuccess, notifyError) in SettingsManagement.js | EXECUTED | 2025-05-03T16:02:35.961Z |
+| Version0051_fix_db_ssl_connection.mjs | Fixes PostgreSQL SSL connection issue by making SSL optional for localhost connections | EXECUTED | 2025-05-03T16:36:30.756Z |

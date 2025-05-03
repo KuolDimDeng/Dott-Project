@@ -48,6 +48,9 @@ let poolClosed = false;
 export function getDbConfig() {
   console.log('Using AWS RDS database connection');
   
+  // Check if SSL should be disabled
+  const useSSL = process.env.DB_USE_SSL !== 'false';
+  
   // Base configuration using environment variables with fallbacks for AWS RDS
   const config = {
     user: process.env.RDS_USERNAME || process.env.DB_USER || process.env.DJANGO_DB_USER || 'dott_admin',
@@ -70,24 +73,11 @@ export function getDbConfig() {
     port: config.port
   });
   
-  // Check if the host is localhost or 127.0.0.1
-  const isLocalhost = config.host === 'localhost' || config.host === '127.0.0.1';
-  
-  // Determine SSL configuration based on the host
-  // 1. If DB_USE_SSL is explicitly set to 'false', disable SSL
-  // 2. If connecting to localhost, don't use SSL unless explicitly enabled
-  // 3. Otherwise, enable SSL with rejectUnauthorized: false for AWS RDS
-  const useSSL = process.env.DB_USE_SSL === 'false' ? false : 
-                (isLocalhost ? process.env.DB_USE_SSL === 'true' : true);
-  
+  // Always add SSL configuration for AWS RDS unless explicitly disabled
   if (useSSL) {
-    console.log('SSL enabled for database connection');
     config.ssl = {
       rejectUnauthorized: false // Allow self-signed certs for AWS RDS
     };
-  } else {
-    console.log('SSL disabled for database connection');
-    // Don't set ssl property to ensure it's not used
   }
   
   return config;

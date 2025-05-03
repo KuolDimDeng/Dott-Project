@@ -8,6 +8,7 @@ import { extractTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 import { employeeApi } from '@/utils/apiClient';
 import api from '@/utils/api';
+import usersApi from '@/utils/api/usersApi';
 import UserMenuPrivileges from './UserMenuPrivileges';
 import UserPagePrivileges from './UserPagePrivileges';
 import CognitoAttributes from '@/utils/CognitoAttributes';
@@ -26,7 +27,7 @@ import {
 const SettingsManagement = () => {
   console.log('[SettingsManagement] Component rendering');
   const { user } = useAuth();
-  const { profileData, loading: profileLoading } = useProfile();
+  const { profileData, loading: profileLoading, fetchProfile } = useProfile();
   
   // Log component initialization with user data
   console.log('[SettingsManagement] Component initialized with user data:', { 
@@ -39,6 +40,10 @@ const SettingsManagement = () => {
   
   const { notifySuccess, notifyError } = useNotification();
   const isMounted = useRef(true);
+  
+  // Track profile data fetch attempts
+  const [profileFetchAttempts, setProfileFetchAttempts] = useState(0);
+  const maxProfileFetchAttempts = 3;
   
   // State for managing user list and form
   const [users, setUsers] = useState([]);
@@ -77,12 +82,46 @@ const SettingsManagement = () => {
     return CognitoAttributes.getUserRole(user.attributes) === 'owner';
   }, [user]);
   
+  // Add effect to handle retrying profile fetch if needed
+  useEffect(() => {
+    // If we don't have profile data and we're not loading and haven't exceeded max attempts
+    if (!profileData && !profileLoading && profileFetchAttempts < maxProfileFetchAttempts) {
+      const retryDelay = 1000 * (profileFetchAttempts + 1); // Incremental backoff
+      logger.info(`[SettingsManagement] Profile data not available, retry attempt ${profileFetchAttempts + 1} in ${retryDelay}ms`);
+      
+      const timer = setTimeout(() => {
+        if (isMounted.current) {
+          setProfileFetchAttempts(prev => prev + 1);
+          // Try to get tenant ID from user attributes as fallback
+          let tenantId = null;
+          if (user && user.attributes) {
+            tenantId = CognitoAttributes.getTenantId(user.attributes) || 
+                     CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID) ||
+                     user.attributes['custom:tenant_ID'] ||
+                     user.attributes['custom:businessid'];
+          }
+          // Force refresh profile data
+          fetchProfile(tenantId, true);
+        }
+      }, retryDelay);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [profileData, profileLoading, profileFetchAttempts, fetchProfile, user]);
+  
   // Fetch users from Cognito with the same tenant ID as the current user
   const fetchCognitoUsers = useCallback(async () => {
     if (!isMounted.current) return;
     
     try {
       setLoading(true);
+      
+      // Wait for profile data to be loaded
+      if (profileLoading) {
+        logger.info('[SettingsManagement] Waiting for profile data to load...');
+        // Return without setting error - we'll rely on the useEffect dependency to retry
+        return;
+      }
       
       // Get current user's tenant ID - TRY MULTIPLE SOURCES INCLUDING PROFILE DATA
       let currentTenantId = null;
@@ -96,11 +135,6 @@ const SettingsManagement = () => {
       else if (user && user.attributes) {
         // Try to get tenant ID from multiple possible attributes
         logger.info('[SettingsManagement] User attributes:', user.attributes);
-        logger.info('[SettingsManagement] Tenant ID from CognitoAttributes.getTenantId:', CognitoAttributes.getTenantId(user.attributes));
-        logger.info('[SettingsManagement] Business ID from CognitoAttributes.getValue:', CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID));
-        logger.info('[SettingsManagement] Raw tenant_ID attribute value:', user.attributes['custom:tenant_ID']);
-        logger.info('[SettingsManagement] Raw businessid attribute value:', user.attributes['custom:businessid']);
-        logger.info('[SettingsManagement] All available attributes in user.attributes:', Object.keys(user.attributes).filter(key => key.startsWith('custom:')));
         
         // Try all possible attribute formats for tenant ID
         currentTenantId = CognitoAttributes.getTenantId(user.attributes) || 
@@ -128,61 +162,69 @@ const SettingsManagement = () => {
       
       logger.info('[SettingsManagement] Fetching users with tenant ID:', currentTenantId);
       
-      // Initialize Cognito client
-      logger.info('[SettingsManagement] Initializing Cognito client with region:', process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2');
-      
-      // MANUAL CLIENT-SIDE SOLUTION - SINCE AWS ADMIN COMMANDS NEED SERVER-SIDE ACCESS
-      // Instead of using admin commands that require server-side execution,
-      // we'll use the current user session to fetch the owner user attributes
       try {
-        // We know the current user is the owner
-        const ownerUser = {
-          id: user.username || profileData.userId || 'owner-user',
-          email: user.attributes?.email || profileData.email || 'Unknown Email',
-          first_name: user.attributes?.given_name || profileData.firstname || 'Unknown',
-          last_name: user.attributes?.family_name || profileData.lastname || 'Unknown',
-          role: 'owner',
-          is_active: true,
-          date_joined: new Date().toLocaleString(),
-          last_login: new Date().toLocaleString()
-        };
+        // Use the usersApi client to fetch users by tenant ID
+        const users = await usersApi.getUsersByTenantId(currentTenantId);
+        logger.info(`[SettingsManagement] Received ${users.length} users from API`);
         
-        logger.info('[SettingsManagement] Created owner user entry:', ownerUser);
-        
-        // Set the users array with this owner user
-        setUsers([ownerUser]);
-        setError(null);
-        setLoading(false);
-        
-        // NOTE: In a real server-side implementation, we would use:
-        // const client = new CognitoIdentityProviderClient({
-        //   region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2'
-        // });
-        // 
-        // const command = new ListUsersCommand({
-        //   UserPoolId: process.env.NEXT_PUBLIC_AWS_USER_POOL_ID,
-        //   Filter: `custom:businessid = "${currentTenantId}" or custom:tenant_ID = "${currentTenantId}"`,
-        //   Limit: 60
-        // });
-        // 
-        // const response = await client.send(command);
-        // ... process response ...
-        
+        if (users.length > 0) {
+          setUsers(users);
+          setError(null);
+        } else {
+          setUsers([]);
+          setError('No users found');
+        }
       } catch (error) {
-        logger.error('[SettingsManagement] Error creating owner user entry:', error);
-        setError('Failed to load users');
+        logger.error('[SettingsManagement] Error fetching users from API:', error);
+        
+        // Check for specific error types and provide better messages
+        let errorMessage = '';
+        if (error.message.includes('500')) {
+          errorMessage = 'The server encountered an error. This may be due to missing API implementation or permissions issues.';
+          // Try to get the current user profile directly
+          try {
+            const currentUser = await usersApi.getCurrentUser();
+            if (currentUser) {
+              // If we can get the current user, add them as a fallback
+              setUsers([{
+                id: currentUser.id || 'current-user',
+                email: currentUser.email || profileData.email || 'Current User',
+                first_name: currentUser.firstName || profileData.firstName || 'Current',
+                last_name: currentUser.lastName || profileData.lastName || 'User',
+                role: currentUser.role || profileData.role || 'user',
+                is_active: true,
+                last_login: 'Now',
+                date_joined: new Date().toISOString()
+              }]);
+              setError(null);
+              setLoading(false);
+              return;
+            }
+          } catch (userError) {
+            logger.error('[SettingsManagement] Also failed to get current user profile:', userError);
+          }
+        } else if (error.message.includes('401') || error.message.includes('403')) {
+          errorMessage = 'You do not have permission to view users. Please log in again or contact your administrator.';
+        } else if (error.message.includes('Network Error')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else {
+          errorMessage = `Failed to load users: ${error.message}`;
+        }
+        
+        setError(errorMessage);
+      } finally {
         setLoading(false);
       }
     } catch (err) {
       logger.error('[SettingsManagement] Error in fetchCognitoUsers:', err);
       if (isMounted.current) {
-        setError('Failed to load users from Cognito');
+        setError('Failed to load users');
       }
       setLoading(false);
     }
-  }, [user, notifyError, profileData]);
+  }, [user, notifyError, profileData, profileLoading]);
   
-  // Fetch employees on mount
+  // Fetch employees on mount and when profile data updates
   useEffect(() => {
     fetchCognitoUsers();
     
@@ -416,18 +458,55 @@ const SettingsManagement = () => {
         />
       </div>
       
-      {/* Users Table */}
-      {loading ? (
+      {/* Users Table with better loading states */}
+      {profileLoading ? (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading profile data...</span>
+        </div>
+      ) : loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Loading users...</span>
         </div>
       ) : error ? (
         <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <p className="text-red-700">{error}</p>
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm leading-5 text-red-700">{error}</p>
+              <button 
+                onClick={() => fetchCognitoUsers()} 
+                className="mt-2 text-sm text-red-700 underline hover:text-red-900"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
         </div>
       ) : users.length === 0 ? (
-        <div className="bg-gray-50 p-8 text-center rounded-md border border-gray-200">
-          <p className="text-gray-500">No users found with the same tenant ID.</p>
+        <div className="bg-gray-50 p-8 rounded-md border border-gray-200">
+          <div className="text-center">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              There are no users associated with your tenant. Add your first user to get started.
+            </p>
+            <div className="mt-6">
+              <button
+                onClick={() => setShowAddUserForm(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Add your first user
+              </button>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-md shadow overflow-hidden">
@@ -836,38 +915,51 @@ const SettingsManagement = () => {
   );
 
   return (
-    <div className="p-4">
-      {/* Main Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex space-x-8">
-          <button
-            onClick={() => setActiveTab('userManagement')}
-            className={`${
-              activeTab === 'userManagement'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            <span className="flex items-center"><UserGroupIcon className="w-5 h-5 mr-2" /> User Management</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('companyProfile')}
-            className={`${
-              activeTab === 'companyProfile'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            <span className="flex items-center"><BuildingOfficeIcon className="w-5 h-5 mr-2" /> Company Profile</span>
-          </button>
-        </nav>
-      </div>
+    <div className="p-4 relative">
+      {/* Add loading indicator while waiting for profile data */}
+      {profileLoading ? (
+        <div className="flex flex-col items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading user profile data...</p>
+        </div>
+      ) : (
+        <>
+          {/* Main Tabs */}
+          <div className="border-b border-gray-200 mb-6">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab('userManagement')}
+                className={`${
+                  activeTab === 'userManagement'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                <span className="flex items-center"><UserGroupIcon className="w-5 h-5 mr-2" /> User Management</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('companyProfile')}
+                className={`${
+                  activeTab === 'companyProfile'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+              >
+                <span className="flex items-center"><BuildingOfficeIcon className="w-5 h-5 mr-2" /> Company Profile</span>
+              </button>
+            </nav>
+          </div>
+          
+          {/* Main Tab Content */}
+          <div className="mt-6">
+            {activeTab === 'userManagement' && renderUserManagement()}
+            {activeTab === 'companyProfile' && renderCompanyProfile()}
+          </div>
+        </>
+      )}
       
-      {/* Main Tab Content */}
-      <div className="mt-6">
-        {activeTab === 'userManagement' && renderUserManagement()}
-        {activeTab === 'companyProfile' && renderCompanyProfile()}
-      </div>
+      {/* Add a hidden element with high z-index to establish proper stacking context */}
+      <div className="absolute inset-0 pointer-events-none z-0"></div>
     </div>
   );
 };

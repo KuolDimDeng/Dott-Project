@@ -826,7 +826,7 @@ const MainListItems = ({
     <div className="relative">
       <div
         id="main-menu-container"
-        className="w-full h-full overflow-x-hidden overflow-y-auto"
+        className="w-full h-full overflow-x-hidden overflow-y-auto z-10"
         style={{ borderRight: `${borderRightWidth} solid ${borderRightColor}` }}
       >
         <div
