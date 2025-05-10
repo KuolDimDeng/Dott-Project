@@ -1,5 +1,6 @@
-{
-  "fix_react_key_props": {
+[
+  {
+    "scriptName": "fix_react_key_props",
     "version": "1.0",
     "date": "2023-10-20",
     "description": "Fixed React key props spreading issue in EmployeeManagement.js",
@@ -13,7 +14,8 @@
     "status": "completed",
     "execution_date": "2023-10-20"
   },
-  "Version0002_Fix_UserProfile_Auth_EmployeeManagement": {
+  {
+    "scriptName": "Version0002_Fix_UserProfile_Auth_EmployeeManagement",
     "version": "1.0",
     "date": "2025-04-26",
     "description": "Fixed 401 Unauthorized error when accessing user profile API in EmployeeManagement.js",
@@ -29,7 +31,8 @@
     "status": "ready",
     "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EmployeeManagement_Auth_Fix.md"
   },
-  "Version0003_Fix_Auth_Method_EmployeeManagement": {
+  {
+    "scriptName": "Version0003_Fix_Auth_Method_EmployeeManagement",
     "version": "1.1",
     "date": "2025-04-26",
     "description": "Fixed 'No authentication method available' error in EmployeeManagement.js",
@@ -45,7 +48,8 @@
     "status": "completed",
     "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EmployeeManagement_Auth_Fix.md"
   },
-  "Version0004_Fix_Syntax_EmployeeManagement": {
+  {
+    "scriptName": "Version0004_Fix_Syntax_EmployeeManagement",
     "version": "1.0",
     "date": "2025-04-26",
     "description": "Fixed syntax errors in EmployeeManagement.js",
@@ -62,7 +66,8 @@
     "status": "completed",
     "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EmployeeManagement_Auth_Fix.md"
   },
-  "Version0005_Fix_Syntax_EmployeeManagement": {
+  {
+    "scriptName": "Version0005_Fix_Syntax_EmployeeManagement",
     "version": "1.0",
     "date": "2025-04-26",
     "description": "Fixed additional syntax errors in EmployeeManagement.js",
@@ -77,33 +82,128 @@
     "status": "completed",
     "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/EmployeeManagement_Syntax_Fix.md"
   },
-  "Version0003_Create_PaySettings_Components.js": {
-    "executed": true,
+  {
+    "scriptName": "Version0003_Create_PaySettings_Components.js",
     "executionDate": "2023-07-15T10:30:00.000Z",
     "status": "completed",
     "description": "Created missing PaySettings components to fix build error"
   },
-  "Version0001_Add_HRReportManagement_Component.mjs": {
-    "name": "Version0001_Add_HRReportManagement_Component.mjs",
+  {
+    "scriptName": "Version0001_Add_HRReportManagement_Component.mjs",
     "description": "Implement HRReportManagement component for the HR Reports menu section",
-    "executed": "2025-04-28T00:43:03.592Z",
+    "executionDate": "2025-04-28T00:43:03.592Z",
     "status": "completed"
   },
-  "Version0002_Fix_HRReportManagement_Import.mjs": {
-    "name": "Version0002_Fix_HRReportManagement_Import.mjs",
+  {
+    "scriptName": "Version0002_Fix_HRReportManagement_Import.mjs",
     "description": "Fix misplaced import statement in RenderMainContent.js",
-    "executed": "2025-04-28T00:44:17.782Z",
+    "executionDate": "2025-04-28T00:44:17.782Z",
     "status": "completed"
   },
-  "Version0003_Fix_HRReportManagement_RenderMainContent.mjs": {
-    "name": "Version0003_Fix_HRReportManagement_RenderMainContent.mjs",
+  {
+    "scriptName": "Version0003_Fix_HRReportManagement_RenderMainContent.mjs",
     "description": "Fix import statement in RenderMainContent.js for HRReportManagement component",
-    "executed": "2025-04-28T00:53:52.401Z",
+    "executionDate": "2025-04-28T00:53:52.401Z",
     "status": "completed"
   },
-  "Version0001_Add_PerformanceManagement_Component.mjs": {
-    "executed": "2025-04-28T01:37:48.530Z",
+  {
+    "scriptName": "Version0001_Add_PerformanceManagement_Component.mjs",
+    "executionDate": "2025-04-28T01:37:48.530Z",
     "description": "Added Performance Management component and functionality to the HR menu",
-    "filesModified": []
+    "status": "completed"
+  },
+  {
+    "scriptName": "Version0001_ProductServices_listItems.mjs",
+    "executionDate": "2023-11-15T12:00:00.000Z",
+    "purpose": "Update Sales menu Products and Services items to load their management pages",
+    "status": "completed",
+    "completionDate": "2023-11-15T13:00:00.000Z"
+  },
+  {
+    "scriptName": "Version0001_ProductServices_listItems.mjs",
+    "executionDate": "2025-05-03T18:27:58.637Z",
+    "purpose": "Update Sales menu Products and Services items to load their management pages",
+    "status": "completed",
+    "completionDate": "2025-05-03T18:27:58.649Z"
+  },
+  {
+    "scriptName": "Version0002_Add_ProductService_RenderContent.mjs",
+    "executionDate": "2025-05-03T18:38:17.718Z",
+    "purpose": "Update RenderMainContent.js to handle product-management and service-management views",
+    "status": "failed",
+    "completionDate": "2025-05-03T18:38:17.728Z",
+    "message": "Could not find insertion point in the file. The file structure may have changed."
+  },
+  {
+    "scriptName": "Manual_Update_RenderMainContent",
+    "executionDate": "2025-05-03T18:40:00.000Z",
+    "description": "Manually updated RenderMainContent.js to handle product-management and service-management views",
+    "status": "completed",
+    "completionDate": "2025-05-03T18:40:00.000Z",
+    "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/scripts/ProductService_RenderContent_Manual_Update.md",
+    "files_modified": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderMainContent.js"
+    ],
+    "purpose": "Fix Products and Services menu items not loading their respective management pages"
+  },
+  {
+    "scriptName": "Manual_Update_EstimatesOrders_Navigation",
+    "executionDate": "2025-05-03T19:00:00.000Z",
+    "description": "Updated navigation for Estimates and Orders menu items in Sales menu",
+    "status": "completed",
+    "completionDate": "2025-05-03T19:00:00.000Z",
+    "documentation": "/Users/kuoldeng/projectx/frontend/pyfactor_next/scripts/EstimatesOrders_Navigation_Update.md",
+    "files_modified": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderMainContent.js"
+    ],
+    "purpose": "Enable Estimates and Orders menu items to load their respective management pages"
+  },
+  {
+    "scriptName": "Version0003_Fix_SalesOrderManagement_TypeError",
+    "version": "1.0",
+    "date": "2023-11-16",
+    "description": "Fixed TypeError in SalesOrderManagement.js by adding Array.isArray checks before calling .map()",
+    "author": "Claude AI",
+    "files_modified": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/SalesOrderManagement.js"
+    ],
+    "issues_fixed": [
+      "TypeError: customers.map is not a function in SalesOrderManagement.js"
+    ],
+    "status": "completed",
+    "execution_date": "2023-11-16"
+  },
+  {
+    "scriptName": "Version0004_Update_InvoicesReports_Navigation",
+    "version": "1.0",
+    "date": "2023-11-17",
+    "description": "Updated Invoices and Reports menu items in the Sales menu to load their respective management pages",
+    "author": "Claude AI",
+    "files_modified": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderMainContent.js"
+    ],
+    "issues_fixed": [
+      "Invoices and Reports menu items in Sales menu not loading their respective pages"
+    ],
+    "status": "completed",
+    "execution_date": "2023-11-17"
+  },
+  {
+    "scriptName": "Version0005_Add_Customers_Navigation",
+    "version": "1.0",
+    "date": "2023-11-18",
+    "description": "Added Customers menu item to the Sales menu under Services",
+    "author": "Claude AI",
+    "files_modified": [
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/lists/listItems.js",
+      "/Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/RenderMainContent.js"
+    ],
+    "issues_fixed": [
+      "Missing Customers menu item in the Sales menu"
+    ],
+    "status": "completed",
+    "execution_date": "2023-11-18"
   }
-}
+]

@@ -1,6 +1,9 @@
 'use client';
 
 import React, { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import HRReportManagement from '../forms/HRReportManagement';
+import dynamic from 'next/dynamic';
+
 import ErrorBoundary from './ErrorBoundary';
 // Remove the direct imports and replace with lazy loading
 // import { TransportDashboard, VehicleManagement } from './transport';
@@ -71,6 +74,7 @@ const RenderForm = enhancedLazy(() => import('./RenderForm.js').then(m => ({ def
 const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.js'), 'Product Management');
 const CreateProductManagement = enhancedLazy(() => import('./forms/CreateProductManagement.js'), 'Create Product Management');
 const SalesProductManagement = enhancedLazy(() => import('./forms/SalesProductManagement.js'), 'Sales Product Management');
+import SalesServiceManagement from './forms/SalesServiceManagement.js';
 const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
 const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
 const SalesOrderManagement = enhancedLazy(() => import('./forms/SalesOrderManagement.js'), 'Sales Order Management');
@@ -172,7 +176,6 @@ const SettingsManagement = enhancedLazy(() => {
       };
     });
 }, 'Settings Management');
-const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
 const HelpCenter = enhancedLazy(() => import('@/app/Settings/components/HelpCenter'), 'Help Center');
 const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/components/TermsOfUse'), 'Terms and Conditions');
 const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
@@ -243,10 +246,36 @@ const TaxManagement = enhancedLazy(() => {
       };
     });
 }, 'Tax Management');
-const BenefitsManagement = enhancedLazy(() => import('./forms/BenefitsManagement.js'), 'Benefits Management');
+const BenefitsManagement = enhancedLazy(() => {
+  console.log('[RenderMainContent] Attempting to load BenefitsManagement component');
+  return import('./forms/BenefitsManagement.js')
+    .then(module => {
+      console.log('[RenderMainContent] BenefitsManagement component loaded successfully');
+      return module;
+    })
+    .catch(err => {
+      console.error('[RenderMainContent] Error loading BenefitsManagement component:', err);
+      return { 
+        default: () => (
+          <div className="p-4">
+            <h1 className="text-xl font-semibold mb-2">Benefits Management</h1>
+            <p className="mb-4">Manage your benefits</p>
+            <div className="bg-red-100 p-3 rounded">
+              <p>Error: {err.message}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        ) 
+      };
+    });
+}, 'Benefits Management');
 const PayManagement = enhancedLazy(() => import('./forms/PayManagement.js'), 'Pay Management');
 const HRReportsManagement = enhancedLazy(() => import('./forms/ReportsManagement.js'), 'HR Reports Management');
-const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
 
 // Add lazy loading for Transport components
 const TransportDashboard = enhancedLazy(() => import('./transport/TransportDashboard.js'), 'Transport Dashboard');
@@ -371,6 +400,41 @@ const EmployeeTaxManagement = enhancedLazy(() => {
     });
 }, 'Employee Tax Management');
 
+// Add CustomerManagement component
+const CustomerManagement = enhancedLazy(() => {
+  console.log('[RenderMainContent] Attempting to load CustomerManagement component');
+  return import('./forms/CustomerManagement.js')
+    .then(module => {
+      console.log('[RenderMainContent] CustomerManagement component loaded successfully', module);
+      return module;
+    })
+    .catch(err => {
+      console.error('[RenderMainContent] Error loading CustomerManagement component:', err);
+      return { 
+        default: () => (
+          <div className="p-4">
+            <h1 className="text-xl font-semibold mb-2">Customer Management</h1>
+            <p className="mb-4">Manage your customers</p>
+            <div className="bg-red-100 p-3 rounded">
+              <p>Error: {err.message}</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="mt-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        ) 
+      };
+    });
+}, 'Customer Management');
+
+// Make sure this declaration exists somewhere in the file:
+const PerformanceManagement = enhancedLazy(() => import('./forms/PerformanceManagement.js'), 'Performance Management');
+const CustomerManagement = enhancedLazy(() => import('./forms/CustomerManagement.js'), 'Customer Management');
+const MyAccount = enhancedLazy(() => import('@/app/Settings/components/MyAccount'), 'My Account');
+
 /**
  * Renders the main content of the dashboard based on the current view
  * This component uses lazy loading to reduce memory usage
@@ -494,6 +558,10 @@ const RenderMainContent = React.memo(function RenderMainContent({
   
   // Log when showTaxManagement changes
   useEffect(() => {
+    console.log('[RenderMainContent] showBenefitsManagement changed to:', showBenefitsManagement);
+  }, [showBenefitsManagement]);
+  
+  useEffect(() => {
     console.log('[RenderMainContent] showTaxManagement changed to:', showTaxManagement);
   }, [showTaxManagement]);
   
@@ -523,7 +591,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         sessionStorage.removeItem('inventoryState');
         sessionStorage.removeItem('inventoryFilters');
         sessionStorage.removeItem('inventoryScroll');
-      } else if (previousView === 'billing' || (previousView && previousView.includes('invoice'))) {
+      } else if (previousView === 'billing' || previousView.includes('invoice')) {
         sessionStorage.removeItem('billingState');
         sessionStorage.removeItem('invoiceFilters');
         sessionStorage.removeItem('invoiceScroll');
@@ -740,6 +808,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
 
   // Now render components with the componentKey
   const renderContent = useMemo(() => {
+    // Debug state at the beginning of renderContent
+    console.log('[DEBUG] renderContent called with showBenefitsManagement:', showBenefitsManagement);
+    
+    // Add deferred check for showBenefitsManagement (runs after initial render)
+    setTimeout(() => {
+      console.log('[DEBUG] Deferred check - showBenefitsManagement:', showBenefitsManagement);
+    }, 500);
+    // Debug state at the beginning of renderContent
+    console.log('[DEBUG] renderContent called with showBenefitsManagement:', showBenefitsManagement);
+    
+    // Add deferred check for showBenefitsManagement (runs after initial render)
+    setTimeout(() => {
+      console.log('[DEBUG] Deferred check - showBenefitsManagement:', showBenefitsManagement);
+    }, 500);
     // Use a unique component key for each render cycle to enforce proper cleanup
     const componentKey = `component-${navigationKey || 'default'}`;
     console.log('[RenderMainContent] renderContent called, showTaxManagement:', showTaxManagement);
@@ -778,8 +860,161 @@ const RenderMainContent = React.memo(function RenderMainContent({
         console.log('[RenderMainContent] Rendering inventory-suppliers view');
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`${componentKey}-suppliers`}>
+            <SuspenseWithCleanup componentKey={`${sectionComponentKey}-suppliers`}>
               <SupplierManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'product-management') {
+        console.log('[RenderMainContent] Rendering ProductManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`product-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Product Management...</div>
+                </div>
+              }
+            >
+              <ProductManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'service-management') {
+        console.log('[RenderMainContent] Rendering ServiceManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`service-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Service Management...</div>
+                </div>
+              }
+            >
+              <ServiceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'customer-management') {
+        console.log('[RenderMainContent] Rendering CustomerManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`customer-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Customer Management...</div>
+                </div>
+              }
+            >
+              <CustomerManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'estimate-management') {
+        console.log('[RenderMainContent] Rendering EstimateManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`estimate-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Estimate Management...</div>
+                </div>
+              }
+            >
+              <EstimateManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'order-management') {
+        console.log('[RenderMainContent] Rendering SalesOrderManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`order-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Sales Order Management...</div>
+                </div>
+              }
+            >
+              <SalesOrderManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'invoice-management') {
+        console.log('[RenderMainContent] Rendering InvoiceManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`invoice-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Invoice Management...</div>
+                </div>
+              }
+            >
+              <InvoiceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'sales-reports-management') {
+        console.log('[RenderMainContent] Rendering ReportDisplay for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`sales-reports-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Sales Reports...</div>
+                </div>
+              }
+            >
+              <ReportDisplay type="sales" />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'invoice-management') {
+        console.log('[RenderMainContent] Rendering InvoiceManagement for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`invoice-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Invoice Management...</div>
+                </div>
+              }
+            >
+              <InvoiceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (view === 'sales-reports-management') {
+        console.log('[RenderMainContent] Rendering ReportDisplay for view:', view);
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`sales-reports-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  <div className="ml-3">Loading Sales Reports...</div>
+                </div>
+              }
+            >
+              <ReportDisplay type="sales" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1044,7 +1279,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <SuspenseWithCleanup componentKey={salesComponentKey}>
               {view === 'sales-dashboard' && <SalesAnalysis />}
               {view === 'sales-products' && <SalesProductManagement />}
-              {view === 'sales-services' && <ServiceManagement salesContext={true} />}
+              {view === 'sales-services' && <SalesServiceManagement />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
@@ -1072,7 +1307,8 @@ const RenderMainContent = React.memo(function RenderMainContent({
         showHRDashboard,
         hrSection,
         view,
-        showTimesheetManagement
+        showTimesheetManagement,
+        showPayrollManagement
       });
 
       if (showTimesheetManagement) {
@@ -1127,62 +1363,68 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showBenefitsManagement) {
-        console.log('[RenderMainContent] Rendering BenefitsManagement component');
+        console.log('[DEBUG] showBenefitsManagement is TRUE, rendering BenefitsManagement component');
+        console.log('[DEBUG] navigationKey:', navigationKey);
+        console.log('[DEBUG] showBenefitsManagement details:', {
+          type: typeof showBenefitsManagement,
+          value: showBenefitsManagement,
+          truthyCheck: showBenefitsManagement ? 'is truthy' : 'is falsy'
+        });
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup 
-              componentKey={`benefits-management-${navigationKey || 'default'}`} 
+              componentKey={`benefits-management-${navigationKey || 'default'}-${Date.now()}`} 
               fallback={
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               }
             >
-              <BenefitsManagement />
+              <div className="benefits-management-wrapper">
+                <BenefitsManagement />
+              </div>
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      } else if (showPayrollManagement || payrollSection === 'run-payroll') {
+        console.log('[RenderMainContent] Rendering PayrollManagement component with:', { 
+          showPayrollManagement, 
+          payrollSection,
+          view
+        });
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`payroll-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <PayrollManagement initialTab="run-payroll" />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
       } else if (showReportsManagement) {
-        ActiveComponent = HRReportsManagement;
-      } else if (showPerformanceManagement) {
-        ActiveComponent = PerformanceManagement;
-      } else if (showPayManagement) {
-        console.log('[RenderMainContent] Rendering PayManagement component');
+        console.log('[DEBUG-REPORT] RenderMainContent detected showReportsManagement=true');
+        console.log('[DEBUG-REPORT] Directly rendering HRReportManagement component');
+        
+        // Instead of setting ActiveComponent, directly return the component
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup 
-              componentKey={`pay-management-${navigationKey || 'default'}`} 
+              componentKey={`reports-management-${navigationKey || 'default'}-${Date.now()}`}
               fallback={
                 <div className="flex justify-center items-center h-64">
                   <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
               }
             >
-              <PayManagement />
+              <HRReportManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
-      } else if (showHRDashboard) {
-        ActiveComponent = HRDashboard;
-        componentProps = { section: hrSection };
-      } else if (showUserProfileSettings) {
-        ActiveComponent = UserProfileSettings;
-        componentProps = { userData, onUpdate: handleUserProfileUpdate };
-      } else if (showMyAccount) {
-        ActiveComponent = MyAccount;
-        componentProps = {
-          userData: {
-            ...userData,
-            firstName: userData?.firstName,
-            lastName: userData?.lastName,
-            first_name: userData?.first_name,
-            last_name: userData?.last_name,
-            email: userData?.email,
-            tenantId: userData?.tenantId || tenantId,
-          }
-        };
-      } else if (showIntegrationSettings) {
-        ActiveComponent = IntegrationSettings;
       } else if (showMainDashboard) {
         ActiveComponent = MainDashboard;
         componentProps = { userData };
@@ -1218,7 +1460,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`service-management-${sectionComponentKey}`}>
-              <ServiceManagement />
+              <SalesServiceManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1295,13 +1537,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
         componentProps = { reportType: selectedReport };
       } else if (showBankingDashboard) {
         ActiveComponent = BankingDashboard;
-      } else if (showPayrollDashboard) {
-        // Use a plain div for PayrollDashboard for now
-        return (
-          <ContentWrapperWithKey>
-            <div>Payroll Dashboard content goes here</div>
-          </ContentWrapperWithKey>
-        );
       } else if (showAnalysisPage) {
         ActiveComponent = AnalysisPage;
       } else if (showHelpCenter) {
@@ -1338,10 +1573,33 @@ const RenderMainContent = React.memo(function RenderMainContent({
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
+      } else if (showPerformanceManagement) {
+        console.log('[RenderMainContent] Rendering PerformanceManagement component');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup 
+              componentKey={`performance-management-${navigationKey || 'default'}-${Date.now()}`}
+              fallback={
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
+              }
+            >
+              <PerformanceManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       }
 
       // If we reached here and have an ActiveComponent, render it
       if (ActiveComponent) {
+        console.log('[DEBUG-REPORT] About to render ActiveComponent:', {
+          componentName: ActiveComponent.name,
+          sectionComponentKey,
+          navigationKey,
+          props: componentProps
+        });
+        
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${sectionComponentKey}-${navigationKey}`}>
@@ -1394,7 +1652,6 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showCreateOptions,
     selectedOption,
     showHome,
-    showKPIDashboard,
     showMainDashboard,
     userData,
     tenantId,
@@ -1406,6 +1663,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
     showTaxManagement,
     showBenefitsManagement,
     showReportsManagement,
+    showPayrollManagement,
     showPerformanceManagement,
     // Financial management dependencies
     showChartOfAccounts,

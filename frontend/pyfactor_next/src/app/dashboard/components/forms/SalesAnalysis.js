@@ -126,13 +126,58 @@ export default function SalesAnalysis() {
       const response = await axiosInstance.get(`/api/analysis/sales-data`, {
         params: { time_range: timeRange },
       });
-      setData(response.data);
+      
+      // Make sure we initialize empty arrays for chart data if they don't exist
+      const responseData = response.data || {};
+      
+      // Ensure all required properties exist to prevent errors
+      const safeData = {
+        totalSales: responseData.totalSales || 0,
+        previousPeriodSales: responseData.previousPeriodSales || 0,
+        salesGrowth: responseData.salesGrowth || 0,
+        averageOrderValue: responseData.averageOrderValue || 0,
+        previousAverageOrderValue: responseData.previousAverageOrderValue || 0,
+        aovGrowth: responseData.aovGrowth || 0,
+        numberOfOrders: responseData.numberOfOrders || 0,
+        previousNumberOfOrders: responseData.previousNumberOfOrders || 0,
+        ordersGrowth: responseData.ordersGrowth || 0,
+        activeCustomers: responseData.activeCustomers || 0,
+        previousActiveCustomers: responseData.previousActiveCustomers || 0,
+        customersGrowth: responseData.customersGrowth || 0,
+        topProducts: responseData.topProducts || [],
+        salesByCustomer: responseData.salesByCustomer || [],
+        salesOverTime: responseData.salesOverTime || [],
+        salesByCategory: responseData.salesByCategory || [],
+      };
+      
+      setData(safeData);
+      setError(null);
     } catch (error) {
       console.error('Error fetching data:', error);
       if (error.response) {
         console.error('Error response:', error.response.data);
       }
       setError('Failed to fetch sales data. Please try again later.');
+      
+      // Provide some fallback data for development/error cases
+      setData({
+        totalSales: 0,
+        previousPeriodSales: 0,
+        salesGrowth: 0,
+        averageOrderValue: 0,
+        previousAverageOrderValue: 0,
+        aovGrowth: 0,
+        numberOfOrders: 0,
+        previousNumberOfOrders: 0,
+        ordersGrowth: 0,
+        activeCustomers: 0,
+        previousActiveCustomers: 0,
+        customersGrowth: 0,
+        topProducts: [],
+        salesByCustomer: [],
+        salesOverTime: [],
+        salesByCategory: [],
+      });
     }
   };
 
@@ -189,12 +234,13 @@ export default function SalesAnalysis() {
     return <p className="text-xl">Loading...</p>;
   }
 
+  // Ensure we have defaulted data for our charts to prevent runtime errors
   const salesOverTimeData = {
-    labels: data.salesOverTime.map((item) => item.date),
+    labels: data.salesOverTime?.map((item) => item.date) || [],
     datasets: [
       {
         label: 'Sales',
-        data: data.salesOverTime.map((item) => item.amount),
+        data: data.salesOverTime?.map((item) => item.amount) || [],
         fill: true,
         backgroundColor: 'rgba(75, 192, 192, 0.2)',
         borderColor: 'rgb(75, 192, 192)',
@@ -204,10 +250,10 @@ export default function SalesAnalysis() {
   };
 
   const topProductsData = {
-    labels: data.topProducts.map((item) => item.product__name),
+    labels: data.topProducts?.map((item) => item.product__name) || [],
     datasets: [
       {
-        data: data.topProducts.map((item) => item.sales),
+        data: data.topProducts?.map((item) => item.sales) || [],
         backgroundColor: [
           'rgba(255, 99, 132, 0.6)',
           'rgba(54, 162, 235, 0.6)',
@@ -228,11 +274,11 @@ export default function SalesAnalysis() {
   };
 
   const salesByCustomerData = {
-    labels: data.salesByCustomer.map((item) => item.customer__customerName),
+    labels: data.salesByCustomer?.map((item) => item.customer__customerName) || [],
     datasets: [
       {
         label: 'Sales',
-        data: data.salesByCustomer.map((item) => item.sales),
+        data: data.salesByCustomer?.map((item) => item.sales) || [],
         backgroundColor: 'rgba(75, 192, 192, 0.6)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 1,
@@ -275,6 +321,28 @@ export default function SalesAnalysis() {
           </select>
         </div>
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm font-medium">{error}</p>
+              <button 
+                onClick={fetchData}
+                className="mt-2 text-sm font-medium text-red-600 hover:text-red-500"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">

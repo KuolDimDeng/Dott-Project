@@ -8,6 +8,21 @@ const LIST_CACHE_KEY = `${CACHE_PREFIX}_list`;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 /**
+ * Helper function to check if a key exists in the cache
+ * @param {string} key - Cache key to check
+ * @returns {Promise<boolean>} - Whether the key exists in cache
+ */
+const hasCacheKey = async (key) => {
+  try {
+    const value = await appCache.getCacheValue(key);
+    return value !== null && value !== undefined;
+  } catch (error) {
+    logger.warn(`[CustomerService] Error checking cache for key ${key}:`, error);
+    return false;
+  }
+};
+
+/**
  * Safely parse JSON from API response
  * @param {any} data - Response data to parse
  * @returns {Object|Array} Parsed data or empty array/object
@@ -40,9 +55,12 @@ export const CustomerService = {
   async getCustomers({ forceRefresh = false, headers = {} } = {}) {
     try {
       // Check cache first if not forcing refresh
-      if (!forceRefresh && appCache.has(LIST_CACHE_KEY)) {
-        logger.info('[CustomerService] Returning customers from cache');
-        return appCache.get(LIST_CACHE_KEY);
+      if (!forceRefresh) {
+        const hasCache = await hasCacheKey(LIST_CACHE_KEY);
+        if (hasCache) {
+          logger.info('[CustomerService] Returning customers from cache');
+          return await appCache.getCacheValue(LIST_CACHE_KEY);
+        }
       }
 
       // Fetch from API
@@ -68,7 +86,7 @@ export const CustomerService = {
       }
       
       // Cache results
-      appCache.set(LIST_CACHE_KEY, customers, CACHE_TTL);
+      await appCache.setCacheValue(LIST_CACHE_KEY, customers, CACHE_TTL / 1000); // Convert ms to seconds
       
       return customers;
     } catch (error) {
@@ -103,9 +121,12 @@ export const CustomerService = {
       const cacheKey = `${CACHE_PREFIX}_${id}`;
       
       // Check cache first if not forcing refresh
-      if (!forceRefresh && appCache.has(cacheKey)) {
-        logger.info(`[CustomerService] Returning customer ${id} from cache`);
-        return appCache.get(cacheKey);
+      if (!forceRefresh) {
+        const hasCache = await hasCacheKey(cacheKey);
+        if (hasCache) {
+          logger.info(`[CustomerService] Returning customer ${id} from cache`);
+          return await appCache.getCacheValue(cacheKey);
+        }
       }
       
       // Fetch from API
@@ -120,7 +141,7 @@ export const CustomerService = {
       const customerData = safeParseJSON(response.data);
       
       // Cache result
-      appCache.set(cacheKey, customerData, CACHE_TTL);
+      await appCache.setCacheValue(cacheKey, customerData, CACHE_TTL / 1000); // Convert ms to seconds
       
       return customerData;
     } catch (error) {
@@ -151,7 +172,7 @@ export const CustomerService = {
       const response = await axios.post(API_BASE_URL, customerData, { headers });
       
       // Clear list cache to ensure fresh data on next fetch
-      appCache.delete(LIST_CACHE_KEY);
+      await appCache.removeCacheValue(LIST_CACHE_KEY);
       
       return response.data;
     } catch (error) {
@@ -175,10 +196,10 @@ export const CustomerService = {
       
       // Update customer in cache
       const cacheKey = `${CACHE_PREFIX}_${id}`;
-      appCache.set(cacheKey, response.data, CACHE_TTL);
+      await appCache.setCacheValue(cacheKey, response.data, CACHE_TTL / 1000); // Convert ms to seconds
       
       // Clear list cache to ensure fresh data on next fetch
-      appCache.delete(LIST_CACHE_KEY);
+      await appCache.removeCacheValue(LIST_CACHE_KEY);
       
       return response.data;
     } catch (error) {
@@ -201,10 +222,10 @@ export const CustomerService = {
       
       // Remove from cache
       const cacheKey = `${CACHE_PREFIX}_${id}`;
-      appCache.delete(cacheKey);
+      await appCache.removeCacheValue(cacheKey);
       
       // Clear list cache to ensure fresh data on next fetch
-      appCache.delete(LIST_CACHE_KEY);
+      await appCache.removeCacheValue(LIST_CACHE_KEY);
       
       return response.data;
     } catch (error) {
@@ -216,15 +237,11 @@ export const CustomerService = {
   /**
    * Clear all customer cache entries
    */
-  clearCache() {
+  async clearCache() {
     logger.info('[CustomerService] Clearing customer cache');
     
-    // Find and delete all customer-related cache entries
-    for (const key of [...appCache.cache.keys()]) {
-      if (key.startsWith(CACHE_PREFIX)) {
-        appCache.delete(key);
-      }
-    }
+    // Just clear all cache for simplicity
+    await appCache.clearCache();
   }
 };
 

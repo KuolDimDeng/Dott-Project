@@ -45,57 +45,30 @@ const SalesOrderManagement = () => {
   const fetchCustomers = async () => {
     try {
       const response = await axiosInstance.get('/api/customers/');
-      // Ensure customers is always an array
-      if (Array.isArray(response.data)) {
-        setCustomers(response.data);
-      } else {
-        console.error('Customers data is not an array:', response.data);
-        setCustomers([]);
-        toast.error('Invalid customers data format');
-      }
+      setCustomers(response.data);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast.error('Failed to fetch customers');
-      // Initialize with empty array on error
-      setCustomers([]);
     }
   };
 
   const fetchProducts = async () => {
     try {
       const response = await axiosInstance.get('/api/products/');
-      // Ensure products is always an array
-      if (Array.isArray(response.data)) {
-        setProducts(response.data);
-      } else {
-        console.error('Products data is not an array:', response.data);
-        setProducts([]);
-        toast.error('Invalid products data format');
-      }
+      setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Failed to fetch products');
-      // Initialize with empty array on error
-      setProducts([]);
     }
   };
 
   const fetchServices = async () => {
     try {
       const response = await axiosInstance.get('/api/services/');
-      // Ensure services is always an array
-      if (Array.isArray(response.data)) {
-        setServices(response.data);
-      } else {
-        console.error('Services data is not an array:', response.data);
-        setServices([]);
-        toast.error('Invalid services data format');
-      }
+      setServices(response.data);
     } catch (error) {
       console.error('Error fetching services:', error);
       toast.error('Failed to fetch services');
-      // Initialize with empty array on error
-      setServices([]);
     }
   };
 
@@ -351,11 +324,11 @@ const SalesOrderManagement = () => {
                 } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
               >
                 <option value="">Select a customer</option>
-                {Array.isArray(customers) ? customers.map((customer) => (
+                {customers.map((customer) => (
                   <option key={customer.id} value={customer.id}>
                     {customer.customerName}
                   </option>
-                )) : null}
+                ))}
               </select>
               {!newSalesOrder.customer && (
                 <p className="mt-1 text-sm text-red-600">Please select a customer</p>
@@ -392,18 +365,18 @@ const SalesOrderManagement = () => {
                     >
                       <option value="">Select a product/service</option>
                       <optgroup label="Products">
-                        {Array.isArray(products) ? products.map((product) => (
+                        {products.map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name}
                           </option>
-                        )) : null}
+                        ))}
                       </optgroup>
                       <optgroup label="Services">
-                        {Array.isArray(services) ? services.map((service) => (
+                        {services.map((service) => (
                           <option key={service.id} value={service.id}>
                             {service.name}
                           </option>
-                        )) : null}
+                        ))}
                       </optgroup>
                     </select>
                   </div>

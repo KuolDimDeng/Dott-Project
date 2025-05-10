@@ -527,6 +527,88 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     
   }, [resetAllStates, updateState, setNavigationKey]);
 
+  const handleBillingClick = useCallback((option) => {
+    console.log('[DashboardContent] handleBillingClick called with option:', option);
+    resetAllStates();
+    // Set view to the correct billing section
+    setView(option || 'invoices');
+  }, [resetAllStates, setView]);
+
+  const handleSalesClick = useCallback((value) => {
+    console.log('[DashboardContent] Sales option selected:', value);
+    resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const salesNavKey = `sales-${Date.now()}`;
+    
+    switch(value) {
+      case 'dashboard':
+        updateState({ 
+          view: 'sales-dashboard',
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'products':
+        updateState({ 
+          view: 'sales-products',
+          showProductManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'services':
+        updateState({ 
+          view: 'sales-services',
+          showServiceManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'customers':
+        updateState({ 
+          view: 'customers',
+          showCustomerList: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'estimates':
+        updateState({ 
+          view: 'estimate-management',
+          showEstimateManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'orders':
+        updateState({ 
+          view: 'order-management',
+          showSalesOrderManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'invoices':
+        updateState({ 
+          view: 'invoice-management',
+          showInvoiceManagement: true,
+          navigationKey: salesNavKey
+        });
+        break;
+      case 'reports':
+        updateState({ 
+          view: 'sales-reports',
+          showReports: true,
+          selectedReport: 'sales',
+          navigationKey: salesNavKey
+        });
+        break;
+      default:
+        // Default to sales dashboard
+        updateState({ 
+          view: 'sales-dashboard',
+          navigationKey: salesNavKey
+        });
+    }
+    
+    console.log(`[DashboardContent] Navigating to Sales ${value} with key ${salesNavKey}`);
+  }, [resetAllStates, updateState]);
+
   const handleShowCreateOptions = useCallback((option) => {
     if (option === selectedOption && showCreateOptions) return; // Skip if no change
     
@@ -637,14 +719,6 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     resetAllStates();
     // Set view to the correct CRM section format that RenderMainContent expects
     setView(`crm-${option}`);
-  }, [resetAllStates, setView]);
-
-  // Add the handleBillingClick function
-  const handleBillingClick = useCallback((option) => {
-    console.log('[DashboardContent] handleBillingClick called with option:', option);
-    resetAllStates();
-    // Set view to the correct billing section
-    setView(option || 'invoices');
   }, [resetAllStates, setView]);
 
   // Add the handleTaxesClick function
@@ -778,12 +852,13 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleEmployeeManagementClick,
     handleCRMClick,
     handleBillingClick,
+    handleSalesClick,
     handleTaxesClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
     resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
-    handleBillingClick, handleTaxesClick
+    handleBillingClick, handleSalesClick, handleTaxesClick
   ]);
   
   // Memoize RenderMainContent props
@@ -829,7 +904,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     showServiceManagement: view === 'services',
     showInvoiceManagement: view === 'invoices',
     showBillManagement: view === 'bills',
-    showEstimateManagement: view === 'estimates',
+    showEstimateManagement: view === 'estimates' || view === 'estimate-management',
+    showSalesOrderManagement: view === 'order-management',
     showCustomerList: view === 'customers',
     showVendorManagement: view === 'vendors',
     showTransactionForm: view === 'transactions',

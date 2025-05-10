@@ -355,28 +355,6 @@ const MainListItems = ({
         }, 
         value: 'services' 
       },
-      { 
-        label: 'Customers', 
-        onClick: (value) => {
-          // Create navigation event for customers
-          const navigationKey = `nav-${Date.now()}`;
-          const payload = { 
-            item: 'customer-management', 
-            navigationKey,
-            originalItem: 'Customers'
-          };
-          
-          // Dispatch navigation events
-          window.dispatchEvent(new CustomEvent('menuNavigation', { detail: payload }));
-          window.dispatchEvent(new CustomEvent('navigationChange', { detail: payload }));
-          
-          // Load the CustomerManagement component
-          if (typeof handleSalesClick === 'function') {
-            handleSalesClick('customers');
-          }
-        }, 
-        value: 'customers' 
-      },
         { 
           label: 'Estimates', 
           onClick: (value) => {
@@ -489,91 +467,12 @@ const MainListItems = ({
       label: 'Inventory',
       subItems: [
         { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard' },
-        { 
-          label: 'Stock Adjustments', 
-          onClick: (value) => {
-            // Create navigation event for stock adjustments
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'stock-adjustments-management', 
-              navigationKey,
-              originalItem: 'Stock Adjustments'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'stock-adjustments' 
-        },
-        { 
-          label: 'Locations', 
-          onClick: (value) => {
-            // Create navigation event for locations
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'inventory-locations-management', 
-              navigationKey,
-              originalItem: 'Locations'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'locations' 
-        },
-        { 
-          label: 'Suppliers', 
-          onClick: (value) => {
-            // Create navigation event for suppliers
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'inventory-suppliers-management', 
-              navigationKey,
-              originalItem: 'Suppliers'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'suppliers' 
-        },
-        { 
-          label: 'Transactions', 
-          onClick: (value) => {
-            // Create navigation event for transactions
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'inventory-transactions-management', 
-              navigationKey,
-              originalItem: 'Transactions'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'transactions' 
-        },
-        { 
-          label: 'Reports', 
-          onClick: (value) => {
-            // Create navigation event for reports
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'inventory-reports-management', 
-              navigationKey,
-              originalItem: 'Reports'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'reports' 
-        },
+        { label: 'Products', onClick: handleInventoryClick, value: 'items' },
+        { label: 'Stock Adjustments', onClick: handleInventoryClick, value: 'stock-adjustments' },
+        { label: 'Locations', onClick: handleInventoryClick, value: 'locations' },
+        { label: 'Suppliers', onClick: handleInventoryClick, value: 'suppliers' },
+        { label: 'Transactions', onClick: handleInventoryClick, value: 'transactions' },
+        { label: 'Reports', onClick: handleInventoryClick, value: 'reports' },
       ],
     },
     /* Transport menu item - This will be used in future versions of the application
