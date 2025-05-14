@@ -7,6 +7,9 @@ from django.utils.decorators import method_decorator
 from onboarding.views import DatabaseHealthCheckView
 from custom_auth.api.views.tenant_views import TenantDetailView
 
+# Import health check view
+from .health_check import health_check
+
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -70,6 +73,10 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),
     
     path('api/auth/', include('custom_auth.api.urls')),
+    
+    # Add health check endpoint for AWS
+    path('health/', health_check, name='health_check'),
+    path('health-check/', health_check, name='health_check_alt'),
 ]
 
 # Handle debug configuration properly

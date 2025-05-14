@@ -121,3 +121,4 @@ weasyprint==59.0
 WooCommerce==3.0.0
 xlrd==1.2.0
 XlsxWriter==3.2.0
+gunicorn==21.2.0
