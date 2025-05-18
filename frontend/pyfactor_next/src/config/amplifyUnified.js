@@ -84,6 +84,7 @@ export const configureAmplify = (forceReconfigure = false) => {
     }
     
     // Define the configuration object - make sure we follow Amplify v6 format
+      // Define the configuration object - make sure we follow Amplify v6 format
     const amplifyConfig = {
       Auth: {
         Cognito: {
@@ -97,6 +98,15 @@ export const configureAmplify = (forceReconfigure = false) => {
             email: true,
             username: true,
             phone: false
+          },
+          
+          // Enhanced network settings
+          httpOptions: {
+            timeout: 30000, // Increase timeout to 30 seconds
+            connectTimeout: 10000, // 10 second connect timeout
+            rejectUnauthorized: false, // Allow self-signed certificates
+            retryable: true, // Enable retries
+            maxRetries: 3 // Maximum retries for network operations
           }
         }
       }
@@ -298,7 +308,7 @@ const ensureConfigAndCall = async (authFunction, ...args) => {
       configureAmplify(true);
     }
     
-    // Call the auth function with retry logic
+    // Call the auth function with enhanced retry logic
     let retries = 0;
     const maxRetries = 3;
     
@@ -307,6 +317,15 @@ const ensureConfigAndCall = async (authFunction, ...args) => {
         return await authFunction(...args);
       } catch (error) {
         retries++;
+        
+        // Log more detailed error information
+        logger.error(`[AmplifyUnified] Error in ${authFunction.name} (retry ${retries}/${maxRetries}):`, {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          statusCode: error?.response?.status,
+          retryable: error.retryable
+        });
         
         // Handle UserPool configuration errors specifically
         if (error.name === 'AuthUserPoolException' || 
@@ -318,20 +337,34 @@ const ensureConfigAndCall = async (authFunction, ...args) => {
           
           // Wait before retrying
           if (retries <= maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 500 * retries));
+            await new Promise(resolve => setTimeout(resolve, 1000 * retries));
             continue;
           }
         }
         
-        // Handle network errors with a longer retry
+        // Enhanced network error handling with exponential backoff
         if (error.name === 'NetworkError' || 
-            (error.message && error.message.includes('network')) ||
-            error.code === 'NETWORK_ERROR') {
-          logger.warn(`[AmplifyUnified] Network error, attempting retry (${retries}/${maxRetries})`);
+            (error.message && (
+              error.message.includes('network') || 
+              error.message.includes('Network') ||
+              error.message.includes('SSL') ||
+              error.message.includes('certificate') ||
+              error.message.includes('CORS') ||
+              error.message.includes('timeout')
+            )) ||
+            error.code === 'NETWORK_ERROR' ||
+            error.code === 'NetworkingError') {
           
-          // Wait longer for network errors
+          logger.warn(`[AmplifyUnified] Network error, attempting retry with backoff (retry ${retries}/${maxRetries})`);
+          
+          // Force reconfiguration on network errors as well
+          configureAmplify(true);
+          
+          // Wait longer for network errors with exponential backoff
           if (retries <= maxRetries) {
-            await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+            const backoffTime = Math.min(2000 * Math.pow(2, retries - 1), 10000); // Cap at 10 seconds
+            logger.info(`[AmplifyUnified] Waiting ${backoffTime}ms before retry`);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
             continue;
           }
         }
@@ -341,8 +374,9 @@ const ensureConfigAndCall = async (authFunction, ...args) => {
           throw error;
         }
         
-        // Wait before regular retry
-        await new Promise(resolve => setTimeout(resolve, 500 * retries));
+        // Wait before regular retry with linear backoff
+        const retryDelay = 1000 * retries;
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
     }
     

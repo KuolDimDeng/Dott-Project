@@ -1,51 +1,47 @@
-FROM python:3.11-slim
+# Dockerfile for Python Django - Updated by Version0039_fix_docker_build.js application with PostgreSQL support
+# Created by Version0025_docker_based_deployment.py
+# Updated for port compatibility with EB Docker
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SETTINGS_MODULE=pyfactor.settings
-ENV DJANGO_DEBUG=True
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=pyfactor.settings_eb
+ENV PORT=8080
+
+# Set work directory
+WORKDIR /var/app
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     libpq-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    libfreetype6-dev \
-    liblcms2-dev \
-    libwebp-dev \
-    libopenjp2-7-dev \
-    libssl-dev \
-    libffi-dev \
-    netcat-openbsd \
+    postgresql-client \
+    gcc \
+    python3-dev \
+    default-libmysqlclient-dev \
+    curl \
+    wget \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
 # Install Python dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+COPY requirements-eb.txt .
+RUN pip install --no-cache-dir -r requirements-eb.txt
 
-# Install development dependencies
-RUN pip install --no-cache-dir \
-    django-debug-toolbar \
-    ipdb \
-    werkzeug
-
-# Copy the project files
+# Copy project
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/staticfiles /app/mediafiles
+# Make sure scripts are executable
+RUN chmod +x .platform/hooks/predeploy/*.sh .platform/hooks/postdeploy/*.sh .platform/hooks/prebuild/*.sh
 
-# Copy and set permissions for entrypoint script
-COPY entrypoint.sh .
-RUN chmod +x entrypoint.sh
+# Create the required directories as EB might expect them
+RUN mkdir -p /var/app/current
+RUN ln -sf /var/app /var/app/current
 
-EXPOSE 8000
+# Expose port 8080 for EB Nginx compatibility
+EXPOSE 8080
 
-ENTRYPOINT ["./entrypoint.sh"]
-
-# Use Django's development server instead of Daphne for development
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Command to run the app on port 8080
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "application:application"]

@@ -269,6 +269,24 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0002_fix_cognito_attributes_permissions.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="dashboard-multiple-render-fix-script" 
+          src="/scripts/Version0005_fix_dashboard_multiple_renders.js"
+          strategy="afterInteractive"
+        />
+        
+        <Script 
+          id="amplify-network-error-fix-script" 
+          src="/scripts/Version0006_fix_amplify_network_errors.js"
+          strategy="afterInteractive"
+        />
+        
+        <Script 
+          id="amplify-signin-network-error-fix-script" 
+          src="/scripts/Version0007_fix_amplify_signin_network_errors.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
