@@ -1,0 +1,146 @@
+{
+  "Arizona": [
+    "Single: $13,850",
+    "Married filing joint: $27,700",
+    "Married filing separate: $13,850",
+    "Head of household: $20,800"
+  ],
+  "Georgia": [
+    {
+      "state": "Georgia",
+      "year": 2023,
+      "tax_info": [
+        {
+          "tax_brackets": "single",
+          "income_range": "$0-$750",
+          "tax_rate": "1%",
+          "base_tax": "$0",
+          "extra_info": "1% of taxable income"
+        },
+        {
+          "tax_brackets": "single",
+          "income_range": "$750-$2,250",
+          "tax_rate": "3%",
+          "base_tax": "$8.00",
+          "extra_info": "Plus 2% of the amount over $750"
+        },
+        {
+          "tax_brackets": "single",
+          "income_range": "$2,250-$3,750",
+          "tax_rate": "5%",
+          "base_tax": "$38.00",
+          "extra_info": "Plus 3% of the amount over $2,250"
+        },
+        {
+          "tax_brackets": "single",
+          "income_range": "$3,750-$5,250",
+          "tax_rate": "4%",
+          "base_tax": "$83.00",
+          "extra_info": "Plus 4% of the amount over $3,750"
+        },
+        {
+          "tax_brackets": "single",
+          "income_range": "$5,250-$7,000",
+          "tax_rate": "5%",
+          "base_tax": "$143.00",
+          "extra_info": "Plus 5% of the amount over $5,250"
+        },
+        {
+          "tax_brackets": "single",
+          "income_range": "$7,000-and above",
+          "tax_rate": "5.75%",
+          "base_tax": "$230.00",
+          "extra_info": "Plus 5.75% of the amount over $7,000"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$0-$1,000",
+          "tax_rate": "1%",
+          "base_tax": "$0",
+          "extra_info": "1% of taxable income"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$1,000-$3,000",
+          "tax_rate": "2%",
+          "base_tax": "$10.00",
+          "extra_info": "Plus 2% of the amount over $1,000"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$3,000-$5,000",
+          "tax_rate": "3%",
+          "base_tax": "$50.00",
+          "extra_info": "Plus 3% of the amount over $3,000"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$5,000-$7,000",
+          "tax_rate": "4%",
+          "base_tax": "$110.00",
+          "extra_info": "Plus 4% of the amount over $5,000"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$7,000-$10,000",
+          "tax_rate": "5%",
+          "base_tax": "$190.00",
+          "extra_info": "Plus 5% of the amount over $7,000"
+        },
+        {
+          "tax_brackets": "married_filing_joint_or_head_of_household",
+          "income_range": "$10,000-and above",
+          "tax_rate": "5.75%",
+          "base_tax": "$340.00",
+          "extra_info": "Plus 5.75% of the amount over $10,000"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$0-$500",
+          "tax_rate": "1%",
+          "base_tax": "$0",
+          "extra_info": "1% of taxable income"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$500-$1,500",
+          "tax_rate": "2%",
+          "base_tax": "$5.00",
+          "extra_info": "Plus 2% of the amount over $500"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$1,500-$2,500",
+          "tax_rate": "3%",
+          "base_tax": "$25.00",
+          "extra_info": "Plus 3% of the amount over $1,500"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$2,500-$3,500",
+          "tax_rate": "4%",
+          "base_tax": "$55.00",
+          "extra_info": "Plus 4% of the amount over $2,500"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$3,500-$5,000",
+          "tax_rate": "5%",
+          "base_tax": "$95.00",
+          "extra_info": "Plus 5% of the amount over $3,500"
+        },
+        {
+          "tax_brackets": "married_filing_separate",
+          "income_range": "$5,000-and above",
+          "tax_rate": "5.75%",
+          "base_tax": "$170.00",
+          "extra_info": "Plus 5.75% of the amount over $5,000"
+        }
+      ]
+    }
+  ],
+  "Kentucky": {
+    "tax_rate": "4.5%",
+    "details": "Kentucky's individual income tax law is based on the Internal Revenue Code in effect as of December 31, 2022​​​​. The tax rate is four and one-half (4.5) percent and allows itemized deductions and certain income reducing deductions as defined in KRS 141.019​."
+  }
+}

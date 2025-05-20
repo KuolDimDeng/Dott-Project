@@ -1,0 +1,58 @@
+# Backend Scripts Registry
+
+This file tracks all scripts in the backend scripts directory, their purpose, and execution status.
+
+## Backend Scripts
+
+| Script Name | Purpose | Author | Date | Status | Last Execution |
+|-------------|---------|--------|------|--------|----------------|
+| No scripts executed yet | | | | | |
+
+## Instructions for Execution
+
+1. Navigate to the scripts directory: `cd /Users/kuoldeng/projectx/backend/pyfactor/scripts`
+2. Activate the virtual environment if needed: `source ../../../.venv/bin/activate`
+3. Run the script: `python <script_name>.py`
+4. After execution, update the Status and Last Execution columns in this registry
+
+## Notes on Script Design
+
+- All scripts should include a version number in the filename
+- Scripts should create backups before modifying files
+- Scripts should have comprehensive documentation within the file
+- Scripts should log all operations they perform
+- Scripts should have error handling to prevent partial/broken changes
+- For database operations, scripts should implement transaction rollback capabilities
+
+## Backend Script Registry
+
+This file tracks all backend scripts that have been executed in the system.
+
+| Script Version | Description | Execution Date | Status |
+|----------------|-------------|----------------|--------|
+| Version0001_add_page_privileges_model | Add UserPagePrivilege model for page-level access control | 2023-06-25T14:30:00Z | Completed |
+
+## Backend Scripts
+
+| Script Name | Version | Purpose | Status | Date |
+| Version0007_fix_cors_business_id_in_cors_middleware.py | 1.0 | Fix CORS middleware to include business ID headers | Completed | 2025-04-23 |
+| Version0007_fix_hr_api_authentication.py | 1.0 | Fix HR API authentication and business ID header handling | Completed | 2025-04-23 |
+| Version0006_fix_cors_headers_for_business_id.py | 1.0 | Fix CORS headers for business_id in settings.py | Completed | 2025-04-23 |
+|-------------|---------|---------|--------|------|
+| Version0001_Fix_Owner_Employee_Permission.py | 1.0 | Fix owner permission issue in employee creation | Completed | 2025-04-22 |
+| Version0002_Update_Employee_Form_and_Role.py | 1.0 | Update employee form: add DOB field, remove role field, set role to 'user' | Completed | 2025-04-22 |
+
+## Future Scripts
+
+We may need to create the following backend scripts to support the page-level access control feature:
+
+1. A script to create the necessary database schema updates (if needed)
+2. A script to implement the API endpoint for retrieving user page privileges
+
+## Script Development Guidelines
+
+1. Use the versioning convention: `Version####_Description.py`
+2. Include comprehensive documentation within the script
+3. Always create backups before modifying files
+4. Add error handling and logging
+5. Update this registry after creating a new script 

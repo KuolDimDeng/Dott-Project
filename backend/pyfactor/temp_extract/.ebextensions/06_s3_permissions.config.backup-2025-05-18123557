@@ -1,0 +1,65 @@
+files:
+  "/tmp/update_s3_permissions.sh":
+    mode: "000755"
+    owner: root
+    group: root
+    content: |
+      #!/bin/bash
+      # This script grants the EC2 instance permission to access S3
+      
+      # Get the instance profile name
+      INSTANCE_PROFILE=$(curl -s http://169.254.169.254/latest/meta-data/iam/info | grep -o 'InstanceProfileArn.*\"' | cut -d'"' -f3 | cut -d'/' -f2)
+      ROLE_NAME=$(aws iam get-instance-profile --instance-profile-name $INSTANCE_PROFILE --query "InstanceProfile.Roles[0].RoleName" --output text)
+      
+      # Create a policy document that allows S3 access
+      cat > /tmp/s3-policy.json << 'EOF'
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": [
+              "s3:GetObject",
+              "s3:ListBucket"
+            ],
+            "Resource": [
+              "arn:aws:s3:::dott-app-deployments-dockerebmanual001",
+              "arn:aws:s3:::dott-app-deployments-dockerebmanual001/*"
+            ]
+          }
+        ]
+      }
+      EOF
+      
+      # Create and attach the policy
+      POLICY_NAME="EB-S3-Access-Policy-$(date +%s)"
+      aws iam create-policy --policy-name $POLICY_NAME --policy-document file:///tmp/s3-policy.json
+      POLICY_ARN=$(aws iam list-policies --query "Policies[?PolicyName=='$POLICY_NAME'].Arn" --output text)
+      aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn $POLICY_ARN
+      
+      echo "S3 access policy attached to role $ROLE_NAME"
+
+commands:
+  01_create_s3_policy:
+    command: "/tmp/update_s3_permissions.sh"
+    ignoreErrors: true
+
+Resources:
+  AWSEBAutoScalingGroup:
+    Metadata:
+      AWS::CloudFormation::Authentication:
+        S3Auth:
+          type: "s3"
+          buckets: ["dott-app-deployments-dockerebmanual001"]
+          roleName: 
+            "Fn::GetOptionSetting": 
+              Namespace: "aws:autoscaling:launchconfiguration"
+              OptionName: "IamInstanceProfile"
+              DefaultValue: "aws-elasticbeanstalk-ec2-role"
+
+option_settings:
+  aws:elasticbeanstalk:application:environment:
+    S3_BUCKET: "dott-app-deployments-dockerebmanual001"
+  
+  aws:autoscaling:launchconfiguration:
+    IamInstanceProfile: "aws-elasticbeanstalk-ec2-role"

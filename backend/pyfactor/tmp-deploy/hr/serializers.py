@@ -1,0 +1,108 @@
+# hr/serializers.py
+
+from rest_framework import serializers
+from .models import Employee, PreboardingForm, Role, EmployeeRole, AccessPermission, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Benefits
+from decimal import Decimal, InvalidOperation
+from datetime import datetime
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Employee model with sensitive information excluded
+    """
+    class Meta:
+        model = Employee
+        fields = [
+            'id', 'employee_number', 'first_name', 'middle_name', 'last_name', 
+            'email', 'phone_number', 'job_title', 'department', 'employment_type',
+            'date_joined', 'salary', 'active', 'onboarded', 'role',
+            'street', 'city', 'postcode', 'country', 'compensation_type',
+            'probation', 'probation_end_date', 'health_insurance_enrollment', 'pension_enrollment'
+        ]
+        read_only_fields = ['id', 'employee_number']
+
+
+class RoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Role
+        fields = '__all__'
+
+class EmployeeRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeRole
+        fields = '__all__'
+
+class AccessPermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AccessPermission
+        fields = '__all__'
+
+class PreboardingFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PreboardingForm
+        fields = '__all__'
+
+class PerformanceReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceReview
+        fields = '__all__'
+        read_only_fields = ('id', 'review_number', 'created_at', 'updated_at')
+
+
+class PerformanceMetricSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceMetric
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceRating
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceGoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceGoal
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class FeedbackRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FeedbackRecord
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PerformanceSetting
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class PerformanceReviewDetailSerializer(serializers.ModelSerializer):
+    ratings = PerformanceRatingSerializer(many=True, read_only=True)
+    related_goals = serializers.SerializerMethodField()
+    related_feedback = FeedbackRecordSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = PerformanceReview
+        fields = '__all__'
+        read_only_fields = ('id', 'review_number', 'created_at', 'updated_at')
+    
+    def get_related_goals(self, obj):
+        goals = PerformanceGoal.objects.filter(related_review=obj)
+        return PerformanceGoalSerializer(goals, many=True).data
+
+
+class BenefitsSerializer(serializers.ModelSerializer):
+    """Serializer for the Benefits model"""
+    
+    class Meta:
+        model = Benefits
+        fields = '__all__'
+        read_only_fields = ['id', 'employee', 'business_id', 'created_at', 'updated_at']

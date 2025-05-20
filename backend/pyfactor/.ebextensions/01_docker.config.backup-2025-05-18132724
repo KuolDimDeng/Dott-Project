@@ -1,0 +1,20 @@
+# Docker configuration for AWS Elastic Beanstalk
+# Created by Version0025_docker_based_deployment.py
+
+option_settings:
+  # Enable application health checks
+  aws:elasticbeanstalk:application:
+    Application Healthcheck URL: /health/
+
+  # Use health check path
+  aws:elasticbeanstalk:environment:process:default:
+    HealthCheckPath: /health/
+    HealthCheckTimeout: 30
+    HealthCheckInterval: 30
+
+  # Set environment variables for Docker
+  aws:elasticbeanstalk:application:environment:
+    DJANGO_SETTINGS_MODULE: pyfactor.settings_eb
+    PYTHONPATH: /var/app
+    EB_ENV_NAME: pyfactor-prod
+    DEBUG: "False"

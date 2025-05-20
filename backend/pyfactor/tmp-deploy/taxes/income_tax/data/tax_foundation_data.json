@@ -1,0 +1,1415 @@
+{
+  "Alabama (a, b, c)": {
+    "timestamp": "2024-09-30T12:55:44.156044",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$0",
+        "married_rate": "2.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Alabama": {
+    "timestamp": "2024-09-30T12:55:44.156105",
+    "tax_info": [
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$500",
+        "married_rate": "4.00%",
+        "married_bracket": "$1,000"
+      },
+      {
+        "single_rate": "5.00%",
+        "single_bracket": "$3,000",
+        "married_rate": "5.00%",
+        "married_bracket": "$6,000"
+      }
+    ]
+  },
+  "Alaska": {
+    "timestamp": "2024-09-30T12:55:44.156114",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Arizona (e, f, u)": {
+    "timestamp": "2024-09-30T12:55:44.156119",
+    "tax_info": [
+      {
+        "single_rate": "2.50%",
+        "single_bracket": "$0",
+        "married_rate": "2.50%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Arkansas (g, h, bb, ll)": {
+    "timestamp": "2024-09-30T12:55:44.156129",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$0",
+        "married_rate": "2.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Arkansas": {
+    "timestamp": "2024-09-30T12:55:44.156134",
+    "tax_info": [
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$4,400",
+        "married_rate": "4.00%",
+        "married_bracket": "$4,400"
+      },
+      {
+        "single_rate": "4.40%",
+        "single_bracket": "$8,800",
+        "married_rate": "4.40%",
+        "married_bracket": "$8,800"
+      }
+    ]
+  },
+  "California (a, h, j, k, l, m, n, oo)": {
+    "timestamp": "2024-09-30T12:55:44.156141",
+    "tax_info": [
+      {
+        "single_rate": "1.00%",
+        "single_bracket": "$0",
+        "married_rate": "1.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "California": {
+    "timestamp": "2024-09-30T12:55:44.156145",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$10,412",
+        "married_rate": "2.00%",
+        "married_bracket": "$20,824"
+      },
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$24,684",
+        "married_rate": "4.00%",
+        "married_bracket": "$49,368"
+      },
+      {
+        "single_rate": "6.00%",
+        "single_bracket": "$38,959",
+        "married_rate": "6.00%",
+        "married_bracket": "$77,918"
+      },
+      {
+        "single_rate": "8.00%",
+        "single_bracket": "$54,081",
+        "married_rate": "8.00%",
+        "married_bracket": "$108,162"
+      },
+      {
+        "single_rate": "9.30%",
+        "single_bracket": "$68,350",
+        "married_rate": "9.30%",
+        "married_bracket": "$136,700"
+      },
+      {
+        "single_rate": "10.30%",
+        "single_bracket": "$349,137",
+        "married_rate": "10.30%",
+        "married_bracket": "$698,274"
+      },
+      {
+        "single_rate": "11.30%",
+        "single_bracket": "$418,961",
+        "married_rate": "11.30%",
+        "married_bracket": "$837,922"
+      },
+      {
+        "single_rate": "12.30%",
+        "single_bracket": "$698,271",
+        "married_rate": "12.30%",
+        "married_bracket": "$1,000,000"
+      },
+      {
+        "single_rate": "13.30%",
+        "single_bracket": "$1,000,000",
+        "married_rate": "13.30%",
+        "married_bracket": "$1,396,542"
+      }
+    ]
+  },
+  "Colorado (a, o)": {
+    "timestamp": "2024-09-30T12:55:44.156166",
+    "tax_info": [
+      {
+        "single_rate": "4.40%",
+        "single_bracket": "$0",
+        "married_rate": "4.40%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Connecticut ((i, p, q, r)": {
+    "timestamp": "2024-09-30T12:55:44.156171",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$0",
+        "married_rate": "2.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Connecticut": {
+    "timestamp": "2024-09-30T12:55:44.156175",
+    "tax_info": [
+      {
+        "single_rate": "4.50%",
+        "single_bracket": "$10,000",
+        "married_rate": "4.50%",
+        "married_bracket": "$20,000"
+      },
+      {
+        "single_rate": "5.50%",
+        "single_bracket": "$50,000",
+        "married_rate": "5.50%",
+        "married_bracket": "$100,000"
+      },
+      {
+        "single_rate": "6.00%",
+        "single_bracket": "$100,000",
+        "married_rate": "6.00%",
+        "married_bracket": "$200,000"
+      },
+      {
+        "single_rate": "6.50%",
+        "single_bracket": "$200,000",
+        "married_rate": "6.50%",
+        "married_bracket": "$400,000"
+      },
+      {
+        "single_rate": "6.90%",
+        "single_bracket": "$250,000",
+        "married_rate": "6.90%",
+        "married_bracket": "$500,000"
+      },
+      {
+        "single_rate": "6.99%",
+        "single_bracket": "$500,000",
+        "married_rate": "6.99%",
+        "married_bracket": "$1,000,000"
+      }
+    ]
+  },
+  "Delaware (a, h, m, s)": {
+    "timestamp": "2024-09-30T12:55:44.156191",
+    "tax_info": [
+      {
+        "single_rate": "2.20%",
+        "single_bracket": "$2,000",
+        "married_rate": "2.20%",
+        "married_bracket": "$2,000"
+      }
+    ]
+  },
+  "Delaware": {
+    "timestamp": "2024-09-30T12:55:44.156195",
+    "tax_info": [
+      {
+        "single_rate": "3.90%",
+        "single_bracket": "$5,000",
+        "married_rate": "3.90%",
+        "married_bracket": "$5,000"
+      },
+      {
+        "single_rate": "4.80%",
+        "single_bracket": "$10,000",
+        "married_rate": "4.80%",
+        "married_bracket": "$10,000"
+      },
+      {
+        "single_rate": "5.20%",
+        "single_bracket": "$20,000",
+        "married_rate": "5.20%",
+        "married_bracket": "$20,000"
+      },
+      {
+        "single_rate": "5.55%",
+        "single_bracket": "$25,000",
+        "married_rate": "5.55%",
+        "married_bracket": "$25,000"
+      },
+      {
+        "single_rate": "6.60%",
+        "single_bracket": "$60,000",
+        "married_rate": "6.60%",
+        "married_bracket": "$60,000"
+      }
+    ]
+  },
+  "Florida": {
+    "timestamp": "2024-09-30T12:55:44.156208",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Georgia": {
+    "timestamp": "2024-09-30T12:55:44.156213",
+    "tax_info": [
+      {
+        "single_rate": "5.49%",
+        "single_bracket": "$0",
+        "married_rate": "5.49%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Hawaii (m, t)": {
+    "timestamp": "2024-09-30T12:55:44.156217",
+    "tax_info": [
+      {
+        "single_rate": "1.40%",
+        "single_bracket": "$0",
+        "married_rate": "1.40%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Hawaii": {
+    "timestamp": "2024-09-30T12:55:44.156221",
+    "tax_info": [
+      {
+        "single_rate": "3.20%",
+        "single_bracket": "$2,400",
+        "married_rate": "3.20%",
+        "married_bracket": "$4,800"
+      },
+      {
+        "single_rate": "5.50%",
+        "single_bracket": "$4,800",
+        "married_rate": "5.50%",
+        "married_bracket": "$9,600"
+      },
+      {
+        "single_rate": "6.40%",
+        "single_bracket": "$9,600",
+        "married_rate": "6.40%",
+        "married_bracket": "$19,200"
+      },
+      {
+        "single_rate": "6.80%",
+        "single_bracket": "$14,400",
+        "married_rate": "6.80%",
+        "married_bracket": "$28,800"
+      },
+      {
+        "single_rate": "7.20%",
+        "single_bracket": "$19,200",
+        "married_rate": "7.20%",
+        "married_bracket": "$38,400"
+      },
+      {
+        "single_rate": "7.60%",
+        "single_bracket": "$24,000",
+        "married_rate": "7.60%",
+        "married_bracket": "$48,000"
+      },
+      {
+        "single_rate": "7.90%",
+        "single_bracket": "$36,000",
+        "married_rate": "7.90%",
+        "married_bracket": "$72,000"
+      },
+      {
+        "single_rate": "8.25%",
+        "single_bracket": "$48,000",
+        "married_rate": "8.25%",
+        "married_bracket": "$96,000"
+      },
+      {
+        "single_rate": "9.00%",
+        "single_bracket": "$150,000",
+        "married_rate": "9.00%",
+        "married_bracket": "$300,000"
+      },
+      {
+        "single_rate": "10.00%",
+        "single_bracket": "$175,000",
+        "married_rate": "10.00%",
+        "married_bracket": "$350,000"
+      },
+      {
+        "single_rate": "11.00%",
+        "single_bracket": "$200,000",
+        "married_rate": "11.00%",
+        "married_bracket": "$400,000"
+      }
+    ]
+  },
+  "Idaho (m, u)": {
+    "timestamp": "2024-09-30T12:55:44.156245",
+    "tax_info": [
+      {
+        "single_rate": "5.8%",
+        "single_bracket": "$4,489",
+        "married_rate": "5.8%",
+        "married_bracket": "$8,978"
+      }
+    ]
+  },
+  "Illinois (d, m, v)": {
+    "timestamp": "2024-09-30T12:55:44.156250",
+    "tax_info": [
+      {
+        "single_rate": "4.95%",
+        "single_bracket": "$0",
+        "married_rate": "4.95%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Indiana (a, m, w)": {
+    "timestamp": "2024-09-30T12:55:44.156255",
+    "tax_info": [
+      {
+        "single_rate": "3.05%",
+        "single_bracket": "$0",
+        "married_rate": "3.05%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Iowa (a, d, h)": {
+    "timestamp": "2024-09-30T12:55:44.156260",
+    "tax_info": [
+      {
+        "single_rate": "4.40%",
+        "single_bracket": "$0",
+        "married_rate": "4.40%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Iowa": {
+    "timestamp": "2024-09-30T12:55:44.156264",
+    "tax_info": [
+      {
+        "single_rate": "4.82%",
+        "single_bracket": "$6,210",
+        "married_rate": "4.82%",
+        "married_bracket": "$12,420"
+      },
+      {
+        "single_rate": "5.70%",
+        "single_bracket": "$31,050",
+        "married_rate": "5.70%",
+        "married_bracket": "$62,100"
+      }
+    ]
+  },
+  "Kansas (a, m)": {
+    "timestamp": "2024-09-30T12:55:44.156271",
+    "tax_info": [
+      {
+        "single_rate": "3.10%",
+        "single_bracket": "$0",
+        "married_rate": "3.10%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Kansas": {
+    "timestamp": "2024-09-30T12:55:44.156275",
+    "tax_info": [
+      {
+        "single_rate": "5.25%",
+        "single_bracket": "$15,000",
+        "married_rate": "5.25%",
+        "married_bracket": "$30,000"
+      },
+      {
+        "single_rate": "5.70%",
+        "single_bracket": "$30,000",
+        "married_rate": "5.70%",
+        "married_bracket": "$60,000"
+      }
+    ]
+  },
+  "Kentucky (a, d)": {
+    "timestamp": "2024-09-30T12:55:44.156281",
+    "tax_info": [
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$0",
+        "married_rate": "4.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Kentucky": {
+    "timestamp": "2024-09-30T12:55:44.156284",
+    "tax_info": [
+      {
+        "single_rate": "",
+        "single_bracket": "",
+        "married_rate": "",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Louisiana (x)": {
+    "timestamp": "2024-09-30T12:55:44.156289",
+    "tax_info": [
+      {
+        "single_rate": "1.85%",
+        "single_bracket": "$0",
+        "married_rate": "1.85%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Louisiana": {
+    "timestamp": "2024-09-30T12:55:44.156296",
+    "tax_info": [
+      {
+        "single_rate": "3.50%",
+        "single_bracket": "$12,500",
+        "married_rate": "3.50%",
+        "married_bracket": "$25,000"
+      },
+      {
+        "single_rate": "4.25%",
+        "single_bracket": "$50,000",
+        "married_rate": "4.25%",
+        "married_bracket": "$100,000"
+      }
+    ]
+  },
+  "Maine (u, y, bb)": {
+    "timestamp": "2024-09-30T12:55:44.156304",
+    "tax_info": [
+      {
+        "single_rate": "5.80%",
+        "single_bracket": "$0",
+        "married_rate": "5.80%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Maine": {
+    "timestamp": "2024-09-30T12:55:44.156309",
+    "tax_info": [
+      {
+        "single_rate": "6.75%",
+        "single_bracket": "$26,050",
+        "married_rate": "6.75%",
+        "married_bracket": "$52,100"
+      },
+      {
+        "single_rate": "7.15%",
+        "single_bracket": "$61,600",
+        "married_rate": "7.15%",
+        "married_bracket": "$123,250"
+      }
+    ]
+  },
+  "Maryland (a, m, n, z, aa)": {
+    "timestamp": "2024-09-30T12:55:44.156315",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$0",
+        "married_rate": "2.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Maryland": {
+    "timestamp": "2024-09-30T12:55:44.156319",
+    "tax_info": [
+      {
+        "single_rate": "3.00%",
+        "single_bracket": "$1,000",
+        "married_rate": "3.00%",
+        "married_bracket": "$1,000"
+      },
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$2,000",
+        "married_rate": "4.00%",
+        "married_bracket": "$2,000"
+      },
+      {
+        "single_rate": "4.75%",
+        "single_bracket": "$3,000",
+        "married_rate": "4.75%",
+        "married_bracket": "$3,000"
+      },
+      {
+        "single_rate": "5.00%",
+        "single_bracket": "$100,000",
+        "married_rate": "5.00%",
+        "married_bracket": "$150,000"
+      },
+      {
+        "single_rate": "5.25%",
+        "single_bracket": "$125,000",
+        "married_rate": "5.25%",
+        "married_bracket": "$175,000"
+      },
+      {
+        "single_rate": "5.50%",
+        "single_bracket": "$150,000",
+        "married_rate": "5.50%",
+        "married_bracket": "$225,000"
+      },
+      {
+        "single_rate": "5.75%",
+        "single_bracket": "$250,000",
+        "married_rate": "5.75%",
+        "married_bracket": "$300,000"
+      }
+    ]
+  },
+  "Massachusetts": {
+    "timestamp": "2024-09-30T12:55:44.156337",
+    "tax_info": [
+      {
+        "single_rate": "5.00%",
+        "single_bracket": "$0",
+        "married_rate": "5.00%",
+        "married_bracket": "$0"
+      },
+      {
+        "single_rate": "9.00%",
+        "single_bracket": "$1,000,000",
+        "married_rate": "9.00%",
+        "married_bracket": "$1,000,000"
+      }
+    ]
+  },
+  "Michigan (a, d, n)": {
+    "timestamp": "2024-09-30T12:55:44.156343",
+    "tax_info": [
+      {
+        "single_rate": "4.25%",
+        "single_bracket": "$0",
+        "married_rate": "4.25%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Minnesota (d, bb, cc, pp)": {
+    "timestamp": "2024-09-30T12:55:44.156348",
+    "tax_info": [
+      {
+        "single_rate": "5.35%",
+        "single_bracket": "$0",
+        "married_rate": "5.35%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Minnesota": {
+    "timestamp": "2024-09-30T12:55:44.156352",
+    "tax_info": [
+      {
+        "single_rate": "6.80%",
+        "single_bracket": "$31,690",
+        "married_rate": "6.80%",
+        "married_bracket": "$46,330"
+      },
+      {
+        "single_rate": "7.85%",
+        "single_bracket": "$104,090",
+        "married_rate": "7.85%",
+        "married_bracket": "$184,040"
+      },
+      {
+        "single_rate": "9.85%",
+        "single_bracket": "$193,240",
+        "married_rate": "9.85%",
+        "married_bracket": "$321,450"
+      }
+    ]
+  },
+  "Mississippi": {
+    "timestamp": "2024-09-30T12:55:44.156359",
+    "tax_info": [
+      {
+        "single_rate": "4.70%",
+        "single_bracket": "$10,000",
+        "married_rate": "4.70%",
+        "married_bracket": "$10,000"
+      }
+    ]
+  },
+  "Missouri (a, b, j, m, u)": {
+    "timestamp": "2024-09-30T12:55:44.156364",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$1,273",
+        "married_rate": "2.00%",
+        "married_bracket": "$1,207"
+      }
+    ]
+  },
+  "Missouri": {
+    "timestamp": "2024-09-30T12:55:44.156370",
+    "tax_info": [
+      {
+        "single_rate": "2.50%",
+        "single_bracket": "$2,546",
+        "married_rate": "2.50%",
+        "married_bracket": "$2,414"
+      },
+      {
+        "single_rate": "3.00%",
+        "single_bracket": "$3,819",
+        "married_rate": "3.00%",
+        "married_bracket": "$3,621"
+      },
+      {
+        "single_rate": "3.50%",
+        "single_bracket": "$5,092",
+        "married_rate": "3.50%",
+        "married_bracket": "$4,828"
+      },
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$6,365",
+        "married_rate": "4.00%",
+        "married_bracket": "$6,035"
+      },
+      {
+        "single_rate": "4.50%",
+        "single_bracket": "$7,638",
+        "married_rate": "4.50%",
+        "married_bracket": "$7,242"
+      },
+      {
+        "single_rate": "4.80%",
+        "single_bracket": "$8,911",
+        "married_rate": "4.80%",
+        "married_bracket": "$8,449"
+      }
+    ]
+  },
+  "Montana (b, d, u, bb)": {
+    "timestamp": "2024-09-30T12:55:44.156385",
+    "tax_info": [
+      {
+        "single_rate": "4.70%",
+        "single_bracket": "$0",
+        "married_rate": "4.70%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Montana": {
+    "timestamp": "2024-09-30T12:55:44.156389",
+    "tax_info": [
+      {
+        "single_rate": "5.90%",
+        "single_bracket": "$20,500",
+        "married_rate": "5.90%",
+        "married_bracket": "$41,000"
+      }
+    ]
+  },
+  "Nebraska (d, h, m, bb)": {
+    "timestamp": "2024-09-30T12:55:44.156393",
+    "tax_info": [
+      {
+        "single_rate": "2.46%",
+        "single_bracket": "$0",
+        "married_rate": "2.46%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Nebraska": {
+    "timestamp": "2024-09-30T12:55:44.156398",
+    "tax_info": [
+      {
+        "single_rate": "3.51%",
+        "single_bracket": "$3,700",
+        "married_rate": "3.51%",
+        "married_bracket": "$7,390"
+      },
+      {
+        "single_rate": "5.01%",
+        "single_bracket": "$22,170",
+        "married_rate": "5.01%",
+        "married_bracket": "$44,350"
+      },
+      {
+        "single_rate": "5.84%",
+        "single_bracket": "$35,730",
+        "married_rate": "5.84%",
+        "married_bracket": "$71,460"
+      }
+    ]
+  },
+  "Nevada": {
+    "timestamp": "2024-09-30T12:55:44.156406",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "New Hampshire (dd)": {
+    "timestamp": "2024-09-30T12:55:44.156414",
+    "tax_info": [
+      {
+        "single_rate": "3% on interest and dividends only",
+        "single_bracket": "",
+        "married_rate": "3% on interest and dividends only",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "New Jersey (a)": {
+    "timestamp": "2024-09-30T12:55:44.156418",
+    "tax_info": [
+      {
+        "single_rate": "1.400%",
+        "single_bracket": "$0",
+        "married_rate": "1.400%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "New Jersey": {
+    "timestamp": "2024-09-30T12:55:44.156423",
+    "tax_info": [
+      {
+        "single_rate": "1.750%",
+        "single_bracket": "$20,000",
+        "married_rate": "1.750%",
+        "married_bracket": "$20,000"
+      },
+      {
+        "single_rate": "3.500%",
+        "single_bracket": "$35,000",
+        "married_rate": "2.450%",
+        "married_bracket": "$50,000"
+      },
+      {
+        "single_rate": "5.525%",
+        "single_bracket": "$40,000",
+        "married_rate": "3.500%",
+        "married_bracket": "$70,000"
+      },
+      {
+        "single_rate": "6.370%",
+        "single_bracket": "$75,000",
+        "married_rate": "5.525%",
+        "married_bracket": "$80,000"
+      },
+      {
+        "single_rate": "8.970%",
+        "single_bracket": "$500,000",
+        "married_rate": "6.370%",
+        "married_bracket": "$150,000"
+      },
+      {
+        "single_rate": "10.750%",
+        "single_bracket": "$1,000,000",
+        "married_rate": "8.970%",
+        "married_bracket": "$500,000"
+      },
+      {
+        "single_rate": "",
+        "single_bracket": "",
+        "married_rate": "10.750%",
+        "married_bracket": "$1,000,000"
+      }
+    ]
+  },
+  "New Mexico (m, u, kk)": {
+    "timestamp": "2024-09-30T12:55:44.156758",
+    "tax_info": [
+      {
+        "single_rate": "1.70%",
+        "single_bracket": "$0",
+        "married_rate": "1.70%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "New Mexico": {
+    "timestamp": "2024-09-30T12:55:44.156764",
+    "tax_info": [
+      {
+        "single_rate": "3.20%",
+        "single_bracket": "$5,500",
+        "married_rate": "3.20%",
+        "married_bracket": "$8,000"
+      },
+      {
+        "single_rate": "4.70%",
+        "single_bracket": "$11,000",
+        "married_rate": "4.70%",
+        "married_bracket": "$16,000"
+      },
+      {
+        "single_rate": "4.90%",
+        "single_bracket": "$16,000",
+        "married_rate": "4.90%",
+        "married_bracket": "$24,000"
+      },
+      {
+        "single_rate": "5.90%",
+        "single_bracket": "$210,000",
+        "married_rate": "5.90%",
+        "married_bracket": "$315,000"
+      }
+    ]
+  },
+  "New York (a, i)": {
+    "timestamp": "2024-09-30T12:55:44.156776",
+    "tax_info": [
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$0",
+        "married_rate": "4.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "New York": {
+    "timestamp": "2024-09-30T12:55:44.156781",
+    "tax_info": [
+      {
+        "single_rate": "4.50%",
+        "single_bracket": "$8,500",
+        "married_rate": "4.50%",
+        "married_bracket": "$17,150"
+      },
+      {
+        "single_rate": "5.25%",
+        "single_bracket": "$11,700",
+        "married_rate": "5.25%",
+        "married_bracket": "$23,600"
+      },
+      {
+        "single_rate": "5.50%",
+        "single_bracket": "$13,900",
+        "married_rate": "5.50%",
+        "married_bracket": "$27,900"
+      },
+      {
+        "single_rate": "6.00%",
+        "single_bracket": "$80,650",
+        "married_rate": "6.00%",
+        "married_bracket": "$161,550"
+      },
+      {
+        "single_rate": "6.85%",
+        "single_bracket": "$215,400",
+        "married_rate": "6.85%",
+        "married_bracket": "$323,200"
+      },
+      {
+        "single_rate": "9.65%",
+        "single_bracket": "$1,077,550",
+        "married_rate": "9.65%",
+        "married_bracket": "$2,155,350"
+      },
+      {
+        "single_rate": "10.30%",
+        "single_bracket": "$5,000,000",
+        "married_rate": "10.30%",
+        "married_bracket": "$5,000,000"
+      },
+      {
+        "single_rate": "10.90%",
+        "single_bracket": "$25,000,000",
+        "married_rate": "10.90%",
+        "married_bracket": "$25,000,000"
+      }
+    ]
+  },
+  "North Carolina": {
+    "timestamp": "2024-09-30T12:55:44.156796",
+    "tax_info": [
+      {
+        "single_rate": "4.50%",
+        "single_bracket": "$0",
+        "married_rate": "4.50%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "North Dakota (j, o, u)": {
+    "timestamp": "2024-09-30T12:55:44.156800",
+    "tax_info": [
+      {
+        "single_rate": "1.95%",
+        "single_bracket": "$44,725",
+        "married_rate": "1.95%",
+        "married_bracket": "$74,750"
+      }
+    ]
+  },
+  "North Dakota": {
+    "timestamp": "2024-09-30T12:55:44.156804",
+    "tax_info": [
+      {
+        "single_rate": "2.50%",
+        "single_bracket": "$225,975",
+        "married_rate": "2.50%",
+        "married_bracket": "$275,100"
+      }
+    ]
+  },
+  "Ohio (a, j, n, ee)": {
+    "timestamp": "2024-09-30T12:55:44.156808",
+    "tax_info": [
+      {
+        "single_rate": "2.750%",
+        "single_bracket": "$26,050",
+        "married_rate": "2.750%",
+        "married_bracket": "$26,050"
+      }
+    ]
+  },
+  "Ohio": {
+    "timestamp": "2024-09-30T12:55:44.156812",
+    "tax_info": [
+      {
+        "single_rate": "3.500%",
+        "single_bracket": "$92,150",
+        "married_rate": "3.500%",
+        "married_bracket": "$92,150"
+      }
+    ]
+  },
+  "Oklahoma (m)": {
+    "timestamp": "2024-09-30T12:55:44.156819",
+    "tax_info": [
+      {
+        "single_rate": "0.25%",
+        "single_bracket": "$0",
+        "married_rate": "0.25%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Oklahoma": {
+    "timestamp": "2024-09-30T12:55:44.156823",
+    "tax_info": [
+      {
+        "single_rate": "0.75%",
+        "single_bracket": "$1,000",
+        "married_rate": "0.75%",
+        "married_bracket": "$2,000"
+      },
+      {
+        "single_rate": "1.75%",
+        "single_bracket": "$2,500",
+        "married_rate": "1.75%",
+        "married_bracket": "$5,000"
+      },
+      {
+        "single_rate": "2.75%",
+        "single_bracket": "$3,750",
+        "married_rate": "2.75%",
+        "married_bracket": "$7,500"
+      },
+      {
+        "single_rate": "3.75%",
+        "single_bracket": "$4,900",
+        "married_rate": "3.75%",
+        "married_bracket": "$9,800"
+      },
+      {
+        "single_rate": "4.75%",
+        "single_bracket": "$7,200",
+        "married_rate": "4.75%",
+        "married_bracket": "$12,200"
+      }
+    ]
+  },
+  "Oregon (a, b, d, h, m, bb, ff, oo)": {
+    "timestamp": "2024-09-30T12:55:44.156837",
+    "tax_info": [
+      {
+        "single_rate": "4.75%",
+        "single_bracket": "$0",
+        "married_rate": "4.75%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Oregon": {
+    "timestamp": "2024-09-30T12:55:44.156843",
+    "tax_info": [
+      {
+        "single_rate": "6.75%",
+        "single_bracket": "$4,300",
+        "married_rate": "6.75%",
+        "married_bracket": "$8,600"
+      },
+      {
+        "single_rate": "8.75%",
+        "single_bracket": "$10,750",
+        "married_rate": "8.75%",
+        "married_bracket": "$21,500"
+      },
+      {
+        "single_rate": "9.90%",
+        "single_bracket": "$125,000",
+        "married_rate": "9.90%",
+        "married_bracket": "$250,000"
+      }
+    ]
+  },
+  "Pennsylvania (a)": {
+    "timestamp": "2024-09-30T12:55:44.156851",
+    "tax_info": [
+      {
+        "single_rate": "3.07%",
+        "single_bracket": "$0",
+        "married_rate": "3.07%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Rhode Island (d, bb, gg)": {
+    "timestamp": "2024-09-30T12:55:44.156856",
+    "tax_info": [
+      {
+        "single_rate": "3.75%",
+        "single_bracket": "$0",
+        "married_rate": "3.75%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Rhode Island": {
+    "timestamp": "2024-09-30T12:55:44.156860",
+    "tax_info": [
+      {
+        "single_rate": "4.75%",
+        "single_bracket": "$77,450",
+        "married_rate": "4.75%",
+        "married_bracket": "$77,450"
+      },
+      {
+        "single_rate": "5.99%",
+        "single_bracket": "$176,050",
+        "married_rate": "5.99%",
+        "married_bracket": "$176,050"
+      }
+    ]
+  },
+  "South Carolina (d, o, u, bb)": {
+    "timestamp": "2024-09-30T12:55:44.156866",
+    "tax_info": [
+      {
+        "single_rate": "0.00%",
+        "single_bracket": "$0",
+        "married_rate": "0.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "South Carolina": {
+    "timestamp": "2024-09-30T12:55:44.156869",
+    "tax_info": [
+      {
+        "single_rate": "3.00%",
+        "single_bracket": "$3,460",
+        "married_rate": "3.00%",
+        "married_bracket": "$3,460"
+      },
+      {
+        "single_rate": "6.40%",
+        "single_bracket": "$17,330",
+        "married_rate": "6.40%",
+        "married_bracket": "$17,330"
+      }
+    ]
+  },
+  "South Dakota": {
+    "timestamp": "2024-09-30T12:55:44.156878",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Tennessee": {
+    "timestamp": "2024-09-30T12:55:44.156883",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Texas": {
+    "timestamp": "2024-09-30T12:55:44.156887",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Utah (d, h, hh)": {
+    "timestamp": "2024-09-30T12:55:44.156891",
+    "tax_info": [
+      {
+        "single_rate": "4.65%",
+        "single_bracket": "$0",
+        "married_rate": "4.65%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Vermont (j, n, ii, nn)": {
+    "timestamp": "2024-09-30T12:55:44.156896",
+    "tax_info": [
+      {
+        "single_rate": "3.35%",
+        "single_bracket": "$0",
+        "married_rate": "3.35%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Vermont": {
+    "timestamp": "2024-09-30T12:55:44.156904",
+    "tax_info": [
+      {
+        "single_rate": "6.60%",
+        "single_bracket": "$45,400",
+        "married_rate": "6.60%",
+        "married_bracket": "$75,850"
+      },
+      {
+        "single_rate": "7.60%",
+        "single_bracket": "$110,050",
+        "married_rate": "7.60%",
+        "married_bracket": "$183,400"
+      },
+      {
+        "single_rate": "8.75%",
+        "single_bracket": "$229,550",
+        "married_rate": "8.75%",
+        "married_bracket": "$279,450"
+      }
+    ]
+  },
+  "Virginia (m, mm)": {
+    "timestamp": "2024-09-30T12:55:44.156912",
+    "tax_info": [
+      {
+        "single_rate": "2.00%",
+        "single_bracket": "$0",
+        "married_rate": "2.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Virginia": {
+    "timestamp": "2024-09-30T12:55:44.156916",
+    "tax_info": [
+      {
+        "single_rate": "3.00%",
+        "single_bracket": "$3,000",
+        "married_rate": "3.00%",
+        "married_bracket": "$3,000"
+      },
+      {
+        "single_rate": "5.00%",
+        "single_bracket": "$5,000",
+        "married_rate": "5.00%",
+        "married_bracket": "$5,000"
+      },
+      {
+        "single_rate": "5.75%",
+        "single_bracket": "$17,000",
+        "married_rate": "5.75%",
+        "married_bracket": "$17,000"
+      }
+    ]
+  },
+  "Washington": {
+    "timestamp": "2024-09-30T12:55:44.156928",
+    "tax_info": [
+      {
+        "single_rate": "7.0% on capital gains income only",
+        "single_bracket": "",
+        "married_rate": "7.0% on capital gains income only",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "West Virginia (a, m)": {
+    "timestamp": "2024-09-30T12:55:44.156933",
+    "tax_info": [
+      {
+        "single_rate": "2.36%",
+        "single_bracket": "$0",
+        "married_rate": "2.36%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "West Virginia": {
+    "timestamp": "2024-09-30T12:55:44.156937",
+    "tax_info": [
+      {
+        "single_rate": "3.15%",
+        "single_bracket": "$10,000",
+        "married_rate": "3.15%",
+        "married_bracket": "$10,000"
+      },
+      {
+        "single_rate": "3.54%",
+        "single_bracket": "$25,000",
+        "married_rate": "3.54%",
+        "married_bracket": "$25,000"
+      },
+      {
+        "single_rate": "4.72%",
+        "single_bracket": "$40,000",
+        "married_rate": "4.72%",
+        "married_bracket": "$40,000"
+      },
+      {
+        "single_rate": "5.12%",
+        "single_bracket": "$60,000",
+        "married_rate": "5.12%",
+        "married_bracket": "$60,000"
+      }
+    ]
+  },
+  "Wisconsin (d, m, bb, jj)": {
+    "timestamp": "2024-09-30T12:55:44.156946",
+    "tax_info": [
+      {
+        "single_rate": "3.50%",
+        "single_bracket": "$0",
+        "married_rate": "3.50%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Wisconsin": {
+    "timestamp": "2024-09-30T12:55:44.156956",
+    "tax_info": [
+      {
+        "single_rate": "4.40%",
+        "single_bracket": "$14,320",
+        "married_rate": "4.40%",
+        "married_bracket": "$19,090"
+      },
+      {
+        "single_rate": "5.30%",
+        "single_bracket": "$28,640",
+        "married_rate": "5.30%",
+        "married_bracket": "$38,190"
+      },
+      {
+        "single_rate": "7.65%",
+        "single_bracket": "$315,310",
+        "married_rate": "7.65%",
+        "married_bracket": "$420,420"
+      }
+    ]
+  },
+  "Wyoming": {
+    "timestamp": "2024-09-30T12:55:44.156963",
+    "tax_info": [
+      {
+        "single_rate": "none",
+        "single_bracket": "",
+        "married_rate": "none",
+        "married_bracket": ""
+      }
+    ]
+  },
+  "Washington, DC (u)": {
+    "timestamp": "2024-09-30T12:55:44.156968",
+    "tax_info": [
+      {
+        "single_rate": "4.00%",
+        "single_bracket": "$0",
+        "married_rate": "4.00%",
+        "married_bracket": "$0"
+      }
+    ]
+  },
+  "Washington, DC": {
+    "timestamp": "2024-09-30T12:55:44.156972",
+    "tax_info": [
+      {
+        "single_rate": "6.00%",
+        "single_bracket": "$10,000",
+        "married_rate": "6.00%",
+        "married_bracket": "$10,000"
+      },
+      {
+        "single_rate": "6.50%",
+        "single_bracket": "$40,000",
+        "married_rate": "6.50%",
+        "married_bracket": "$40,000"
+      },
+      {
+        "single_rate": "8.50%",
+        "single_bracket": "$60,000",
+        "married_rate": "8.50%",
+        "married_bracket": "$60,000"
+      },
+      {
+        "single_rate": "9.25%",
+        "single_bracket": "$250,000",
+        "married_rate": "9.25%",
+        "married_bracket": "$250,000"
+      },
+      {
+        "single_rate": "9.75%",
+        "single_bracket": "$500,000",
+        "married_rate": "9.75%",
+        "married_bracket": "$500,000"
+      },
+      {
+        "single_rate": "10.75%",
+        "single_bracket": "$1,000,000",
+        "married_rate": "10.75%",
+        "married_bracket": "$1,000,000"
+      }
+    ]
+  }
+}

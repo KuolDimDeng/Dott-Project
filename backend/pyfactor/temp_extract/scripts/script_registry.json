@@ -1,0 +1,52 @@
+{
+  "scripts": [
+    {
+      "id": "AUTH-001",
+      "name": "Authentication Fix for Employee Management Backend",
+      "description": "Fixes authentication issues in the employee API endpoints",
+      "script_path": "fix_auth_issues.py",
+      "version": "1.0.0",
+      "date_created": "2025-04-20",
+      "date_executed": "2025-04-20",
+      "status": "completed",
+      "issues_fixed": [
+        "Inconsistent token extraction",
+        "Poor error handling for authentication failures",
+        "Missing tenant isolation in employee endpoints"
+      ],
+      "affected_files": [
+        "api/middleware/auth.py",
+        "api/routes/employees.py",
+        "api/utils/auth.py"
+      ]
+    },
+    {
+      "id": "UI-001",
+      "name": "Move Subscription and Billing Tabs",
+      "description": "Updates backend registry for the migration of Subscription and Billing History tabs from My Account page to Settings page",
+      "script_path": "Version0001_update_script_registry_subscription_billing.py",
+      "version": "1.0.0",
+      "date_created": "2025-04-23",
+      "date_executed": "2025-04-23",
+      "status": "completed",
+      "affected_files": [
+        "frontend/pyfactor_next/src/app/Settings/components/MyAccount.js",
+        "frontend/pyfactor_next/src/app/Settings/components/SettingsManagement.js"
+      ]
+    }
+  ],
+  "Version0001_update_script_registry_hr_reports.py": {
+    "name": "Version0001_update_script_registry_hr_reports.py",
+    "description": "Update script registry with HRReportManagement implementation details",
+    "related_frontend_script": "Version0001_Add_HRReportManagement_Component.js",
+    "feature": "HR Reports Management",
+    "components_affected": [
+      "HRReportManagement.js",
+      "RenderMainContent.js",
+      "DashboardContent.js",
+      "listItems.js"
+    ],
+    "executed": "2025-04-27T18:43:12.307294",
+    "status": "completed"
+  }
+}

@@ -1,0 +1,93 @@
+--- a/users/models.py
++++ b/users/models.py
+@@ -85,58 +85,36 @@ class Business(models.Model):
+         # Perform the actual save operation
+         super().save(*args, **kwargs)
+         
+-        # If we have an owner_id, update the UserProfile
++        # If we have an owner_id, update the UserProfile safely
+         if owner_id:
+             try:
+                 from users.models import UserProfile
+-                # Update the UserProfile in a separate transaction
+-                from django.db import connection
+-                with connection.cursor() as cursor:
+-                    # Check if profile exists
+-                    cursor.execute("""
+-                        SELECT id FROM users_userprofile 
+-                        WHERE user_id = %s
+-                    """, [str(owner_id)])
+-                    profile_exists = cursor.fetchone() is not None
+-                    
+-                    if profile_exists:
+-                        # Update existing profile using ORM to avoid type conversion issues
+-                        from users.models import UserProfile
+-                        UserProfile.objects.filter(user_id=owner_id).update(
+-                            business=self,
+-                            modified_at=timezone.now()
+-                        )
+-                        
+-                        # Ensure BusinessDetails exists for this business
+-                        from users.models import BusinessDetails
+-                        BusinessDetails.objects.get_or_create(
+-                            business=self,
+-                            defaults={
+-                                'business_type': 'default',
+-                                'legal_structure': 'SOLE_PROPRIETORSHIP',
+-                                'country': 'US'
+-                            }
+-                        )
+-                    else:
+-                        # Create new profile
+-                        # Use ORM instead of raw SQL to avoid type conversion issues
+-                        from users.models import UserProfile
+-                        UserProfile.objects.create(
+-                            user_id=owner_id,
+-                            business=self,
+-                            created_at=timezone.now(),
+-                            modified_at=timezone.now()
+-                        )
+-                        
+-                        # Ensure BusinessDetails exists for this business
+-                        from users.models import BusinessDetails
+-                        BusinessDetails.objects.get_or_create(
+-                            business=self,
+-                            defaults={
+-                                'business_type': 'default',
+-                                'legal_structure': 'SOLE_PROPRIETORSHIP',
+-                                'country': 'US'
+-                            }
+-                        )
++                # Check if profile exists using ORM
++                try:
++                    # Get existing profile
++                    profile = UserProfile.objects.get(user_id=owner_id)
++                    
++                    # Update existing profile using ORM
++                    profile.business = self
++                    profile.modified_at = timezone.now()
++                    profile.save(update_fields=['business', 'modified_at'])
++                    
++                except UserProfile.DoesNotExist:
++                    # Create new profile using ORM
++                    UserProfile.objects.create(
++                        user_id=owner_id,
++                        business=self,
++                        created_at=timezone.now(),
++                        modified_at=timezone.now()
++                    )
++                
++                # Ensure BusinessDetails exists for this business
++                from users.models import BusinessDetails
++                BusinessDetails.objects.get_or_create(
++                    business=self,
++                    defaults={
++                        'business_type': 'default',
++                        'legal_structure': 'SOLE_PROPRIETORSHIP',
++                        'country': 'US'
++                    }
++                )
++                
+             except Exception as e:
+                 import logging
+                 logger = logging.getLogger(__name__)

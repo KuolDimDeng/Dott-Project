@@ -1,0 +1,144 @@
+"""
+Django settings for Elastic Beanstalk deployment.
+Extends the base settings.py with EB-specific configurations.
+"""
+
+import os
+from pathlib import Path
+import sys
+
+# Define base settings in case they're not defined
+try:
+    from pyfactor.settings import *  # Import all settings from the base settings file
+except ImportError:
+    # Define fallbacks for critical settings if main settings import fails
+    import django
+    sys.stderr.write("Warning: Failed to import main settings file. Using fallbacks.\n")
+
+# Fallback BASE_DIR if not defined
+if 'BASE_DIR' not in locals() and 'BASE_DIR' not in globals():
+    BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Fallback for INSTALLED_APPS
+if 'INSTALLED_APPS' not in locals() and 'INSTALLED_APPS' not in globals():
+    INSTALLED_APPS = []
+    
+# Fallback for MIDDLEWARE
+if 'MIDDLEWARE' not in locals() and 'MIDDLEWARE' not in globals():
+    MIDDLEWARE = []
+
+# Fallback for Redis settings
+if 'REDIS_HOST' not in locals() and 'REDIS_HOST' not in globals():
+    REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+    
+if 'REDIS_PORT' not in locals() and 'REDIS_PORT' not in globals():
+    REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+
+# Override settings for Elastic Beanstalk deployment
+DEBUG = False
+
+# Get the Elastic Beanstalk environment name or use default
+EB_ENV_NAME = os.environ.get('EB_ENV_NAME', 'eb-env')
+
+# Get the EB domain and add it to ALLOWED_HOSTS
+eb_domain = os.environ.get('EB_DOMAIN', f'{EB_ENV_NAME}.elasticbeanstalk.com')
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', eb_domain, '.elasticbeanstalk.com', 'dottapps.com', '*.dottapps.com']
+
+# Add specific CORS origins for the EB domain and dottapps.com
+allowed_eb_origin = f'https://{eb_domain}'
+dottapps_origin = 'https://dottapps.com'
+
+# Make sure CORS_ALLOWED_ORIGINS exists
+if not hasattr(globals(), 'CORS_ALLOWED_ORIGINS'):
+    CORS_ALLOWED_ORIGINS = []
+
+# Make sure CSRF_TRUSTED_ORIGINS exists
+if not hasattr(globals(), 'CSRF_TRUSTED_ORIGINS'):
+    CSRF_TRUSTED_ORIGINS = []
+
+# Add EB domain to CORS and CSRF origins
+if allowed_eb_origin not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(allowed_eb_origin)
+
+if allowed_eb_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(allowed_eb_origin)
+
+# Add dottapps.com to CORS and CSRF origins
+if dottapps_origin not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(dottapps_origin)
+
+if dottapps_origin not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(dottapps_origin)
+
+# Database configuration - use RDS settings if available
+if 'RDS_HOSTNAME' in os.environ:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ['RDS_DB_NAME'],
+            'USER': os.environ['RDS_USERNAME'],
+            'PASSWORD': os.environ['RDS_PASSWORD'],
+            'HOST': os.environ['RDS_HOSTNAME'],
+            'PORT': os.environ['RDS_PORT'],
+            'OPTIONS': {
+                'connect_timeout': 10,
+                'sslmode': 'require',
+                'keepalives': 1,
+                'keepalives_idle': 30,
+                'keepalives_interval': 10,
+                'keepalives_count': 5,
+            }
+        }
+    }
+
+# Configure static files for EB
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+
+# Configure logging for EB
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(message)s',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs', 'django.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Security settings for EB
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Disable debug toolbar in production
+if 'debug_toolbar' in INSTALLED_APPS:
+    INSTALLED_APPS.remove('debug_toolbar')
+    MIDDLEWARE = [m for m in MIDDLEWARE if 'debug_toolbar' not in m]
+
+# Redis settings - use ElastiCache if available
+REDIS_HOST = os.environ.get('ELASTICACHE_HOST', REDIS_HOST)
+REDIS_PORT = os.environ.get('ELASTICACHE_PORT', REDIS_PORT)
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'

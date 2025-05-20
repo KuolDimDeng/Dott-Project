@@ -1,187 +1,49 @@
-# Node dependencies
+# Deployment files
+*.zip
+pyfactor-docker-deployment*.zip
+fixed-docker-eb-package*.zip
+optimized-docker-eb-package*.zip
+
+# Temp files
+backend/pyfactor/temp_extract/
+backend/pyfactor/temp_extract_fix/
+backend/pyfactor/tmp-deploy/
+
+# Node modules
 node_modules/
-.pnpm-store/
-.pnp.*
-.pnpm-debug.log*
+**/node_modules/
 
-# Next.js
-.next/
-out/
-build/
-dist/
-.vercel/
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Python virtual environments
-.venv/
-venv/
-ENV/
-env/
-.env/
-
-# Environment variables
-.env
-.env.*
-!.env.example
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# OS files
-.DS_Store
-Thumbs.db
-*.pem
-Desktop.ini
-$RECYCLE.BIN/
-
-# Python bytecode and cache
+# Python cache files
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
-.Python
-*.so
-.python-version
+**/migrations/__pycache__/
 
-# Django stuff
-*.sqlite3
-*.sqlite3-journal
-*.pyc
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-static/
-staticfiles/
-*.pot
-*.mo
+# Environment
+.env
+**/.env
+.env.local
+**/.env.local
 
-# Coverage and test reports
-htmlcov/
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-.nyc_output
-coverage
-
-# IDE specific files
-.idea/
-.vscode/
-*.swp
-*.swo
-*.swn
-*.bak
-*.orig
-*~
-.project
-.classpath
-.settings/
-*.sublime-workspace
-*.sublime-project
-.vs/
-
-# Mobile development
-android/.gradle
-android/app/build/
-ios/Pods/
-ios/build/
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-xcuserdata
-*.xccheckout
-*.moved-aside
-DerivedData
-*.hmap
-*.ipa
-*.xcuserstate
-project.xcworkspace
-
-# Build and compilation artifacts
+# Distribution / packaging
 dist/
 build/
 *.egg-info/
-*.egg
-develop-eggs/
-downloads/
-eggs/
-parts/
-sdist/
-var/
-wheels/
-*.manifest
-*.spec
-.installed.cfg
-lib/
-lib64/
-.eggs/
 
-# Temporary and cache files
-*.swp
-*~
-*.tmp
-*.bak
-.temp/
-.cache/
-.parcel-cache/
+# Docker files and backups
+*.backup-*
+*.backup
+backup-*
 
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# Debug
-.debug/
-debug.log
-npm-debug.log*
+# Database files
+dump.rdb
+*.db
+*.sqlite3
+*.log
 
 # Misc
-*.class
-*.log
-*.backup
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db?
-.dynamodb/
-.serverless/
-.fusebox/
-.firebase/
-.docusaurus
-.turbo
-.stylelintcache
-
-# Docker
-.docker/
-docker-compose.override.yml
-
-# Database backups
-*.dump
-*.sql
-*.bak
-
-# Local development
-*.local
-.localdev/*.zip
+.DS_Store
+.idea/
+.vscode/
+.expo/

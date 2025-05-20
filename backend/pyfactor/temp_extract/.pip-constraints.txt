@@ -1,0 +1,10 @@
+# Constraint file created by Version0011_ultimate_dependency_fix.py
+# Date: 2025-05-15 22:16:26
+# 
+# These constraints force specific versions of packages
+# to prevent dependency conflicts during pip installs
+#
+urllib3==1.26.16
+boto3==1.26.164 
+botocore==1.29.164
+s3transfer==0.6.2

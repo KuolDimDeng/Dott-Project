@@ -1,0 +1,11 @@
+# Script Registry
+
+This file tracks the execution of maintenance scripts in the pyfactor backend.
+Each entry follows the format: DATE - SCRIPT_NAME - PURPOSE - STATUS
+
+---------------------------------------------------------------------------
+
+2024-08-29 - 20240829_cors_fix_add_middleware.py - Added custom CORS middleware to fix Cross-Origin issues - SUCCESS 
+2025-04-19 17:40:56 - 20240829_cors_fix_add_middleware.py - Added custom CORS middleware to fix Cross-Origin issues - SUCCESS
+2025-04-19 18:11:44 - fix_cors_settings.py - Fixed CORS configuration for HTTPS backend connections - SUCCESS
+2025-04-19 18:17:24 - fix_ssl_certificate.py - Fixed SSL certificate trust issues for HTTPS connections - SUCCESS

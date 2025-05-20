@@ -1,0 +1,41 @@
+import axios from 'axios';
+import { logger } from '@/utils/logger';
+
+// Create a server-side axios instance with no interceptors 
+// for use in server components and API routes
+const serverAxiosInstance = axios.create({
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
+
+// Fix proper BACKEND_URL configuration for server-side requests
+serverAxiosInstance.interceptors.request.use(
+  (config) => {
+    // Set a proper base URL for backend API requests
+    if (config.url?.startsWith('/api/') && !config.baseURL) {
+      // Use environment variable or fallback to localhost
+      const backendUrl = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_BACKEND_API_URL || 'http://localhost:8000';
+      
+      // Log the baseURL being used for debugging
+      logger.debug('[ServerAxiosConfig] Setting backend URL for server request:', { 
+        url: config.url,
+        backendUrl
+      });
+      
+      // Update the config with the correct baseURL
+      config.baseURL = backendUrl;
+    }
+    
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+logger.debug('[ServerAxiosConfig] Server axios instance initialized with enhanced URL handling');
+
+// Export the server axios instance
+export { serverAxiosInstance }; 

@@ -1,0 +1,35 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+exports.id = "vendor-chunks/@smithy+util-body-length-node@4.0.0";
+exports.ids = ["vendor-chunks/@smithy+util-body-length-node@4.0.0"];
+exports.modules = {
+
+/***/ "(ssr)/../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/calculateBodyLength.js":
+/*!**********************************************************************************************************************************************!*\
+  !*** ../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/calculateBodyLength.js ***!
+  \**********************************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   calculateBodyLength: () => (/* binding */ calculateBodyLength)\n/* harmony export */ });\n/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! fs */ \"fs\");\n/* harmony import */ var fs__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(fs__WEBPACK_IMPORTED_MODULE_0__);\n\nconst calculateBodyLength = (body) => {\n    if (!body) {\n        return 0;\n    }\n    if (typeof body === \"string\") {\n        return Buffer.byteLength(body);\n    }\n    else if (typeof body.byteLength === \"number\") {\n        return body.byteLength;\n    }\n    else if (typeof body.size === \"number\") {\n        return body.size;\n    }\n    else if (typeof body.start === \"number\" && typeof body.end === \"number\") {\n        return body.end + 1 - body.start;\n    }\n    else if (typeof body.path === \"string\" || Buffer.isBuffer(body.path)) {\n        return (0,fs__WEBPACK_IMPORTED_MODULE_0__.lstatSync)(body.path).size;\n    }\n    else if (typeof body.fd === \"number\") {\n        return (0,fs__WEBPACK_IMPORTED_MODULE_0__.fstatSync)(body.fd).size;\n    }\n    throw new Error(`Body Length computation failed for ${body}`);\n};\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi4vLi4vbm9kZV9tb2R1bGVzLy5wbnBtL0BzbWl0aHkrdXRpbC1ib2R5LWxlbmd0aC1ub2RlQDQuMC4wL25vZGVfbW9kdWxlcy9Ac21pdGh5L3V0aWwtYm9keS1sZW5ndGgtbm9kZS9kaXN0LWVzL2NhbGN1bGF0ZUJvZHlMZW5ndGguanMiLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBQTBDO0FBQ25DO0FBQ1A7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQSxlQUFlLDZDQUFTO0FBQ3hCO0FBQ0E7QUFDQSxlQUFlLDZDQUFTO0FBQ3hCO0FBQ0EsMERBQTBELEtBQUs7QUFDL0QiLCJzb3VyY2VzIjpbIi9Vc2Vycy9rdW9sZGVuZy9wcm9qZWN0eC9ub2RlX21vZHVsZXMvLnBucG0vQHNtaXRoeSt1dGlsLWJvZHktbGVuZ3RoLW5vZGVANC4wLjAvbm9kZV9tb2R1bGVzL0BzbWl0aHkvdXRpbC1ib2R5LWxlbmd0aC1ub2RlL2Rpc3QtZXMvY2FsY3VsYXRlQm9keUxlbmd0aC5qcyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBmc3RhdFN5bmMsIGxzdGF0U3luYyB9IGZyb20gXCJmc1wiO1xuZXhwb3J0IGNvbnN0IGNhbGN1bGF0ZUJvZHlMZW5ndGggPSAoYm9keSkgPT4ge1xuICAgIGlmICghYm9keSkge1xuICAgICAgICByZXR1cm4gMDtcbiAgICB9XG4gICAgaWYgKHR5cGVvZiBib2R5ID09PSBcInN0cmluZ1wiKSB7XG4gICAgICAgIHJldHVybiBCdWZmZXIuYnl0ZUxlbmd0aChib2R5KTtcbiAgICB9XG4gICAgZWxzZSBpZiAodHlwZW9mIGJvZHkuYnl0ZUxlbmd0aCA9PT0gXCJudW1iZXJcIikge1xuICAgICAgICByZXR1cm4gYm9keS5ieXRlTGVuZ3RoO1xuICAgIH1cbiAgICBlbHNlIGlmICh0eXBlb2YgYm9keS5zaXplID09PSBcIm51bWJlclwiKSB7XG4gICAgICAgIHJldHVybiBib2R5LnNpemU7XG4gICAgfVxuICAgIGVsc2UgaWYgKHR5cGVvZiBib2R5LnN0YXJ0ID09PSBcIm51bWJlclwiICYmIHR5cGVvZiBib2R5LmVuZCA9PT0gXCJudW1iZXJcIikge1xuICAgICAgICByZXR1cm4gYm9keS5lbmQgKyAxIC0gYm9keS5zdGFydDtcbiAgICB9XG4gICAgZWxzZSBpZiAodHlwZW9mIGJvZHkucGF0aCA9PT0gXCJzdHJpbmdcIiB8fCBCdWZmZXIuaXNCdWZmZXIoYm9keS5wYXRoKSkge1xuICAgICAgICByZXR1cm4gbHN0YXRTeW5jKGJvZHkucGF0aCkuc2l6ZTtcbiAgICB9XG4gICAgZWxzZSBpZiAodHlwZW9mIGJvZHkuZmQgPT09IFwibnVtYmVyXCIpIHtcbiAgICAgICAgcmV0dXJuIGZzdGF0U3luYyhib2R5LmZkKS5zaXplO1xuICAgIH1cbiAgICB0aHJvdyBuZXcgRXJyb3IoYEJvZHkgTGVuZ3RoIGNvbXB1dGF0aW9uIGZhaWxlZCBmb3IgJHtib2R5fWApO1xufTtcbiJdLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOlswXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(ssr)/../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/calculateBodyLength.js\n");
+
+/***/ }),
+
+/***/ "(ssr)/../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/index.js":
+/*!********************************************************************************************************************************!*\
+  !*** ../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/index.js ***!
+  \********************************************************************************************************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   calculateBodyLength: () => (/* reexport safe */ _calculateBodyLength__WEBPACK_IMPORTED_MODULE_0__.calculateBodyLength)\n/* harmony export */ });\n/* harmony import */ var _calculateBodyLength__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./calculateBodyLength */ \"(ssr)/../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/calculateBodyLength.js\");\n\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi4vLi4vbm9kZV9tb2R1bGVzLy5wbnBtL0BzbWl0aHkrdXRpbC1ib2R5LWxlbmd0aC1ub2RlQDQuMC4wL25vZGVfbW9kdWxlcy9Ac21pdGh5L3V0aWwtYm9keS1sZW5ndGgtbm9kZS9kaXN0LWVzL2luZGV4LmpzIiwibWFwcGluZ3MiOiI7Ozs7O0FBQXNDIiwic291cmNlcyI6WyIvVXNlcnMva3VvbGRlbmcvcHJvamVjdHgvbm9kZV9tb2R1bGVzLy5wbnBtL0BzbWl0aHkrdXRpbC1ib2R5LWxlbmd0aC1ub2RlQDQuMC4wL25vZGVfbW9kdWxlcy9Ac21pdGh5L3V0aWwtYm9keS1sZW5ndGgtbm9kZS9kaXN0LWVzL2luZGV4LmpzIl0sInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCAqIGZyb20gXCIuL2NhbGN1bGF0ZUJvZHlMZW5ndGhcIjtcbiJdLCJuYW1lcyI6W10sImlnbm9yZUxpc3QiOlswXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(ssr)/../../node_modules/.pnpm/@smithy+util-body-length-node@4.0.0/node_modules/@smithy/util-body-length-node/dist-es/index.js\n");
+
+/***/ })
+
+};
+;

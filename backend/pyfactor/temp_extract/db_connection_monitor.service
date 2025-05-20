@@ -1,0 +1,16 @@
+[Unit]
+Description=PostgreSQL Connection Monitor
+After=network.target
+
+[Service]
+User=kuoldeng
+WorkingDirectory=/Users/kuoldeng/projectx/backend/pyfactor
+ExecStart=/Users/kuoldeng/projectx/.venv/bin/python monitor_and_fix_connections.py --auto-fix --interval 5
+Restart=on-failure
+RestartSec=5s
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=db-connection-monitor
+
+[Install]
+WantedBy=multi-user.target

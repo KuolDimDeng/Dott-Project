@@ -1,0 +1,17 @@
+# docker-compose.yml for local testing
+# Created by Version0025_docker_based_deployment.py
+
+version: '3'
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/var/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=pyfactor.settings_eb
+      - PYTHONPATH=/var/app
+      - DEBUG=True
+    command: python application.py

@@ -1,0 +1,145 @@
+{
+    "Alabama": {
+      "url": "https://www.revenue.alabama.gov/tax-types/individual-income-tax/",
+      "has_income_tax": true
+    },
+
+    "Arizona": {
+      "url": "https://azdor.gov/individuals",
+      "has_income_tax": true
+    },
+
+    "Utah": {
+      "url": "https://incometax.utah.gov/paying/tax-rates",
+      "has_income_tax": true
+    },
+    "California": {
+        "url": "https://www.ftb.ca.gov/forms/2023/2023-540-taxtable.pdf",
+        "has_income_tax": true
+    },
+      "Colorado": {
+      "url": "https://tax.colorado.gov/individual-income-tax-FAQ",
+      "has_income_tax": true
+    },
+    "Connecticut": {
+        "url": "https://www.cga.ct.gov/2022/rpt/pdf/2022-R-0108.pdf",
+        "has_income_tax": true
+      },
+      "Delaware": {
+        "url": "https://revenue.delaware.gov/software-developer/tax-rate-changes/",
+        "has_income_tax": true
+      },
+      "Hawaii": {
+        "url": "https://tax.hawaii.gov/forms/d_18table-on/",
+        "has_income_tax": true
+      },
+      "Idaho": {
+        "url": "https://tax.idaho.gov/taxes/income-tax/individual-income/online-guide/",
+        "has_income_tax": true
+      },
+      "Illinois": {
+        "url": "https://tax.illinois.gov/research/taxrates/income.html",
+        "has_income_tax": true
+      },
+      "Indiana": {
+        "url": "https://www.in.gov/dor/resources/tax-rates-and-reports/rates-fees-and-penalties/",
+        "has_income_tax": true
+      },
+      "Kentucky": {
+        "url": "https://revenue.ky.gov/Individual/Individual-Income-Tax/Pages/default.aspx#:~:text=Kentucky's%20individual%20income%20tax%20law,defined%20in%20KRS%20141.019%E2%80%8B.",
+        "has_income_tax": true
+      },
+      "Louisiana": {
+        "url": "https://revenue.louisiana.gov/IndividualIncomeTax",
+        "has_income_tax": true
+      },
+      "Maryland": {
+        "url": "https://www.marylandtaxes.gov/individual/income/tax-info/index.php#:~:text=For%20tax%20year%202021%2C%20Maryland's,or%20qualifying%20widow(ers).",
+        "has_income_tax": true
+      },
+      "Massachusetts": {
+        "url": "https://www.mass.gov/guides/personal-income-tax-for-residents",
+        "has_income_tax": true
+      },
+      "Michigan": {
+        "url": "https://www.michigan.gov/treasury/reference/taxpayer-notices/2024-tax-year-income-tax-rate-for-individuals-and-fiduciaries",
+        "has_income_tax": true
+      },
+      "Minnesota": {
+        "url": "https://www.revenue.state.mn.us/minnesota-income-tax-rates-and-brackets",
+        "has_income_tax": true
+      },
+      "Mississippi": {
+        "url": "https://www.dor.ms.gov/individual/tax-rates",
+        "has_income_tax": true
+      },
+      "Nebraska": {
+        "url": "https://www.nebraskalegislature.gov/laws/statutes.php?statute=77-2715.03",
+        "has_income_tax": true
+      },
+      "New Mexico": {
+        "url": "https://www.tax.newmexico.gov/individuals/wp-content/uploads/sites/5/2021/12/PIT-rates_2005_2021.pdf",
+        "has_income_tax": true
+      },
+      "New York": {
+        "url": "https://www.tax.ny.gov/pit/file/tax-tables/it201i-2023.htm#nys",
+        "has_income_tax": true
+      },
+      "North Carolina": {
+        "url": "https://www.ncdor.gov/taxes-forms/tax-rate-schedules",
+        "has_income_tax": true
+      },
+      "North Dakota": {
+        "url": "https://www.tax.nd.gov/sites/www/files/documents/forms/individual/2022-iit/form-nd-1-tables-2022.pdf",
+        "has_income_tax": true
+      },
+      "Ohio": {
+        "url": "https://tax.ohio.gov/individual/resources/annual-tax-rates",
+        "has_income_tax": true
+      },
+      "Oklahoma": {
+        "url": "https://oklahoma.gov/content/dam/ok/en/tax/documents/resources/publications/businesses/withholding-tables/WHTables-2024.pdf",
+        "has_income_tax": true
+      },
+      "Pennsylvania": {
+        "url": "https://www.revenue.pa.gov/TaxTypes/PIT/Pages/default.aspx",
+        "has_income_tax": true
+      },
+      "Rhode Island": {
+        "url": "https://tax.ri.gov/sites/g/files/xkgbur541/files/2022-10/2022%20RI%20Tax%20Tables_Complete.pdf",
+        "has_income_tax": true
+      }, 
+      "Vermont": {
+        "url": "https://tax.vermont.gov/sites/tax/files/documents/RateSched-2023.pdf",
+        "has_income_tax": true
+      },
+      "Virginia": {
+      "url": "https://www.tax.virginia.gov/sites/default/files/2016-12/TAXTABLE.pdf",
+      "has_income_tax": true
+    },
+      "West Virginia": {
+        "url": "https://tax.wv.gov/Documents/Withholding/it100.2a.pdf",
+        "has_income_tax": true
+      },
+      "Wisconsin": {
+        "url": "https://www.revenue.wi.gov/Pages/FAQS/pcs-taxrates.aspx",
+        "has_income_tax": true
+      },
+      "South Carolina": {
+        "url": "https://dor.sc.gov/tax/individual-income",
+        "has_income_tax": true
+      },
+      "Oregon": {
+      "url": "https://www.oregon.gov/dor/programs/individuals/Pages/rates-tables.aspx",
+      "has_income_tax": true
+    },
+    "Missouri": {
+      "url": "https://dor.mo.gov/taxation/individual/tax-types/income/year-changes/",
+      "has_income_tax": true
+    }
+  
+
+      
+
+      
+}

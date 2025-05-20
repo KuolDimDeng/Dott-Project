@@ -1,0 +1,630 @@
+✅ Loaded environment variables from: /Users/kuoldeng/projectx/backend/pyfactor/.env
+# This is an auto-generated Django model module.
+# You'll have to do the following manually to clean this up:
+#   * Rearrange models' order
+#   * Make sure each model has one field with primary_key=True
+#   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
+#   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
+# Feel free to rename the models, but don't rename db_table values or field names.
+from django.db import models
+
+
+class AccountEmailaddress(models.Model):
+    id = models.UUIDField(primary_key=True)
+    email = models.CharField(unique=True, max_length=254)
+    verified = models.BooleanField()
+    primary = models.BooleanField()
+    user = models.ForeignKey('CustomAuthUser', models.DO_NOTHING)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'account_emailaddress'
+
+
+class AccountEmailconfirmation(models.Model):
+    id = models.UUIDField(primary_key=True)
+    created = models.DateTimeField()
+    sent = models.DateTimeField(blank=True, null=True)
+    key = models.CharField(unique=True, max_length=64)
+    email_address = models.ForeignKey(AccountEmailaddress, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'account_emailconfirmation'
+
+
+class AnalysisChartconfiguration(models.Model):
+    id = models.UUIDField(primary_key=True)
+    chart_type = models.CharField(max_length=50)
+    configuration = models.JSONField()
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'analysis_chartconfiguration'
+
+
+class AnalysisFinancialdata(models.Model):
+    id = models.UUIDField(primary_key=True)
+    data_type = models.CharField(max_length=50)
+    data_date = models.DateField()
+    data_value = models.DecimalField(max_digits=15, decimal_places=2)
+    metadata = models.JSONField(blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'analysis_financialdata'
+
+
+class AuthGroup(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(unique=True, max_length=150)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_group'
+
+
+class AuthGroupPermissions(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    group = models.ForeignKey(AuthGroup, models.DO_NOTHING)
+    permission = models.ForeignKey('AuthPermission', models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_group_permissions'
+        unique_together = (('group', 'permission'),)
+
+
+class AuthPermission(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255)
+    content_type = models.ForeignKey('DjangoContentType', models.DO_NOTHING)
+    codename = models.CharField(max_length=100)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_permission'
+        unique_together = (('content_type', 'codename'),)
+
+
+class AuthUserUserPermissions(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey('CustomAuthUser', models.DO_NOTHING)
+    permission = models.ForeignKey(AuthPermission, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'auth_user_user_permissions'
+        unique_together = (('user', 'permission'),)
+
+
+class AuthtokenToken(models.Model):
+    key = models.CharField(primary_key=True, max_length=40)
+    created = models.DateTimeField()
+    user = models.OneToOneField('CustomAuthUser', models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'authtoken_token'
+
+
+class BankingBankaccount(models.Model):
+    id = models.UUIDField(primary_key=True)
+    account_number = models.CharField(max_length=50)
+    bank_name = models.CharField(max_length=255)
+    account_type = models.CharField(max_length=50)
+    routing_number = models.CharField(max_length=50, blank=True, null=True)
+    balance = models.DecimalField(max_digits=15, decimal_places=2)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'banking_bankaccount'
+
+
+class BankingBanktransaction(models.Model):
+    id = models.UUIDField(primary_key=True)
+    transaction_date = models.DateField()
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    description = models.TextField(blank=True, null=True)
+    transaction_type = models.CharField(max_length=50)
+    account = models.ForeignKey(BankingBankaccount, models.DO_NOTHING)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'banking_banktransaction'
+
+
+class BankingPlaiditem(models.Model):
+    id = models.UUIDField(primary_key=True)
+    item_id = models.CharField(max_length=255)
+    access_token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'banking_plaiditem'
+
+
+class BankingTinkitem(models.Model):
+    id = models.UUIDField(primary_key=True)
+    item_id = models.CharField(max_length=255)
+    access_token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'banking_tinkitem'
+
+
+class CrmActivity(models.Model):
+    id = models.UUIDField(primary_key=True)
+    type = models.CharField(max_length=50)
+    subject = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    due_date = models.DateField(blank=True, null=True)
+    status = models.CharField(max_length=50)
+    customer = models.ForeignKey('CrmCustomer', models.DO_NOTHING, blank=True, null=True)
+    lead = models.ForeignKey('CrmLead', models.DO_NOTHING, blank=True, null=True)
+    opportunity = models.ForeignKey('CrmOpportunity', models.DO_NOTHING, blank=True, null=True)
+    deal = models.ForeignKey('CrmDeal', models.DO_NOTHING, blank=True, null=True)
+    assigned_to = models.ForeignKey('CustomAuthUser', models.DO_NOTHING, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_activity'
+
+
+class CrmCampaign(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField(blank=True, null=True)
+    status = models.CharField(max_length=50)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_campaign'
+
+
+class CrmCampaignmember(models.Model):
+    id = models.UUIDField(primary_key=True)
+    campaign = models.ForeignKey(CrmCampaign, models.DO_NOTHING)
+    customer = models.ForeignKey('CrmCustomer', models.DO_NOTHING, blank=True, null=True)
+    lead = models.ForeignKey('CrmLead', models.DO_NOTHING, blank=True, null=True)
+    status = models.CharField(max_length=50)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_campaignmember'
+
+
+class CrmContact(models.Model):
+    id = models.UUIDField(primary_key=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.CharField(max_length=254, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    position = models.CharField(max_length=100, blank=True, null=True)
+    customer = models.ForeignKey('CrmCustomer', models.DO_NOTHING)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_contact'
+
+
+class CrmCustomer(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(max_length=255)
+    email = models.CharField(max_length=254, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_customer'
+
+
+class CrmDeal(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    stage = models.CharField(max_length=50)
+    customer = models.ForeignKey(CrmCustomer, models.DO_NOTHING)
+    opportunity = models.ForeignKey('CrmOpportunity', models.DO_NOTHING, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_deal'
+
+
+class CrmLead(models.Model):
+    id = models.UUIDField(primary_key=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    email = models.CharField(max_length=254, blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    status = models.CharField(max_length=50)
+    assigned_to = models.ForeignKey('CustomAuthUser', models.DO_NOTHING, blank=True, null=True)
+    converted_to = models.ForeignKey(CrmCustomer, models.DO_NOTHING, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_lead'
+
+
+class CrmOpportunity(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(max_length=255)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    stage = models.CharField(max_length=50)
+    expected_close_date = models.DateField(blank=True, null=True)
+    customer = models.ForeignKey(CrmCustomer, models.DO_NOTHING)
+    assigned_to = models.ForeignKey('CustomAuthUser', models.DO_NOTHING, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'crm_opportunity'
+
+
+class CustomAuthTenant(models.Model):
+    id = models.UUIDField(primary_key=True)
+    schema_name = models.CharField(unique=True, max_length=63)
+    name = models.CharField(max_length=100)
+    created_on = models.DateTimeField()
+    is_active = models.BooleanField(blank=True, null=True)
+    database_status = models.CharField(max_length=50, blank=True, null=True)
+    setup_status = models.CharField(max_length=20, blank=True, null=True)
+    last_setup_attempt = models.DateTimeField(blank=True, null=True)
+    setup_error_message = models.TextField(blank=True, null=True)
+    last_health_check = models.DateTimeField(blank=True, null=True)
+    setup_task_id = models.CharField(max_length=255, blank=True, null=True)
+    owner = models.ForeignKey('CustomAuthUser', models.DO_NOTHING)
+    storage_quota_bytes = models.BigIntegerField(blank=True, null=True)
+    last_archive_date = models.DateTimeField(blank=True, null=True)
+    archive_retention_days = models.IntegerField(blank=True, null=True)
+    archive_expiry_notification_sent = models.BooleanField(blank=True, null=True)
+    archive_expiry_notification_date = models.DateTimeField(blank=True, null=True)
+    archive_user_decision = models.CharField(max_length=20, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'custom_auth_tenant'
+
+
+class CustomAuthUser(models.Model):
+    id = models.UUIDField(primary_key=True)
+    password = models.CharField(max_length=128)
+    last_login = models.DateTimeField(blank=True, null=True)
+    is_superuser = models.BooleanField()
+    email = models.CharField(unique=True, max_length=254)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    is_active = models.BooleanField()
+    is_staff = models.BooleanField()
+    date_joined = models.DateTimeField()
+    email_confirmed = models.BooleanField()
+    confirmation_token = models.UUIDField()
+    is_onboarded = models.BooleanField()
+    stripe_customer_id = models.CharField(max_length=255, blank=True, null=True)
+    role = models.CharField(max_length=20)
+    occupation = models.CharField(max_length=50)
+    tenant = models.ForeignKey(CustomAuthTenant, models.DO_NOTHING, blank=True, null=True)
+    cognito_sub = models.CharField(unique=True, max_length=36, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'custom_auth_user'
+
+
+class CustomAuthUserGroups(models.Model):
+    id = models.UUIDField(primary_key=True)
+    user = models.ForeignKey(CustomAuthUser, models.DO_NOTHING)
+    group = models.ForeignKey(AuthGroup, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'custom_auth_user_groups'
+        unique_together = (('user', 'group'),)
+
+
+class DeletedSchemas(models.Model):
+    schema_name = models.CharField(max_length=255)
+    deleted_at = models.DateTimeField()
+    is_processed = models.BooleanField()
+    processed_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'deleted_schemas'
+
+
+class DjangoAdminLog(models.Model):
+    id = models.UUIDField(primary_key=True)
+    action_time = models.DateTimeField()
+    object_id = models.TextField(blank=True, null=True)
+    object_repr = models.CharField(max_length=200)
+    action_flag = models.SmallIntegerField()
+    change_message = models.TextField()
+    content_type = models.ForeignKey('DjangoContentType', models.DO_NOTHING, blank=True, null=True)
+    user = models.ForeignKey(CustomAuthUser, models.DO_NOTHING)
+
+    class Meta:
+        managed = False
+        db_table = 'django_admin_log'
+
+
+class DjangoContentType(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    app_label = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'django_content_type'
+        unique_together = (('app_label', 'model'),)
+
+
+class DjangoMigrations(models.Model):
+    id = models.UUIDField(primary_key=True)
+    app = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    applied = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'django_migrations'
+
+
+class DjangoSession(models.Model):
+    session_key = models.CharField(primary_key=True, max_length=40)
+    session_data = models.TextField()
+    expire_date = models.DateTimeField()
+
+    class Meta:
+        managed = False
+        db_table = 'django_session'
+
+
+class DjangoSite(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    domain = models.CharField(unique=True, max_length=100)
+    name = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'django_site'
+
+
+class FinanceAccount(models.Model):
+    id = models.UUIDField(primary_key=True)
+    name = models.CharField(max_length=255)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    account_type = models.ForeignKey('FinanceAccounttype', models.DO_NOTHING)
+    parent_account = models.ForeignKey('self', models.DO_NOTHING, blank=True, null=True)
+    business = models.ForeignKey('UsersBusiness', models.DO_NOTHING)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'finance_account'
+# Unable to inspect table 'finance_accountcategory'
+# The error was: SSL connection has been closed unexpectedly
+# Unable to inspect table 'finance_accountreconciliation'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_accounttype'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_audittrail'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_budget'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_budgetitem'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_cashaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_chartofaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_costallocation'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_costcategory'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_costentry'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_financetransaction'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_financialstatement'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_fixedasset'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_generalledgerentry'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_income'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_intercompanyaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_intercompanytransaction'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_journalentry'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_journalentryline'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_monthendclosing'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_monthendtask'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_reconciliationitem'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_revenueaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'finance_salestaxaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'hr_accesspermission'
+# The error was: cursor already closed
+# Unable to inspect table 'hr_employee'
+# The error was: cursor already closed
+# Unable to inspect table 'hr_employeerole'
+# The error was: cursor already closed
+# Unable to inspect table 'hr_preboardingform'
+# The error was: cursor already closed
+# Unable to inspect table 'hr_role'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_category'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_customchargeplan'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_department'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_inventoryitem'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_inventorytransaction'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_location'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_product'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_product_custom_charge_plans'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_producttypefields'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_service'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_service_custom_charge_plans'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_servicetypefields'
+# The error was: cursor already closed
+# Unable to inspect table 'inventory_supplier'
+# The error was: cursor already closed
+# Unable to inspect table 'onboarding_onboardingprogress'
+# The error was: cursor already closed
+# Unable to inspect table 'payroll_payrollrun'
+# The error was: cursor already closed
+# Unable to inspect table 'payroll_payrolltransaction'
+# The error was: cursor already closed
+# Unable to inspect table 'payroll_taxform'
+# The error was: cursor already closed
+# Unable to inspect table 'payroll_timesheet'
+# The error was: cursor already closed
+# Unable to inspect table 'payroll_timesheetentry'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_bill'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_billitem'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_procurement'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_procurementitem'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_purchaseorder'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_purchaseorderitem'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_purchasereturn'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_purchasereturnitem'
+# The error was: cursor already closed
+# Unable to inspect table 'purchases_vendor'
+# The error was: cursor already closed
+# Unable to inspect table 'reports_report'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_estimate'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_estimateattachment'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_estimateitem'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_invoice'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_invoiceitem'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_refund'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_refunditem'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_sale'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_saleitem'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_salesorder'
+# The error was: cursor already closed
+# Unable to inspect table 'sales_salesorderitem'
+# The error was: cursor already closed
+# Unable to inspect table 'socialaccount_socialaccount'
+# The error was: cursor already closed
+# Unable to inspect table 'socialaccount_socialapp'
+# The error was: cursor already closed
+# Unable to inspect table 'socialaccount_socialapp_sites'
+# The error was: cursor already closed
+# Unable to inspect table 'socialaccount_socialtoken'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_incometaxrate'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_payrolltaxfiling'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_state'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_taxapitransaction'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_taxfilinginstruction'
+# The error was: cursor already closed
+# Unable to inspect table 'taxes_taxform'
+# The error was: cursor already closed
+# Unable to inspect table 'token_blacklist_blacklistedtoken'
+# The error was: cursor already closed
+# Unable to inspect table 'token_blacklist_outstandingtoken'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_compliance'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_driver'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_equipment'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_expense'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_load'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_maintenance'
+# The error was: cursor already closed
+# Unable to inspect table 'transport_route'
+# The error was: cursor already closed
+# Unable to inspect table 'users_account'
+# The error was: cursor already closed
+# Unable to inspect table 'users_business'
+# The error was: cursor already closed
+# Unable to inspect table 'users_business_details'
+# The error was: cursor already closed
+# Unable to inspect table 'users_session'
+# The error was: cursor already closed
+# Unable to inspect table 'users_subscription'
+# The error was: cursor already closed
+# Unable to inspect table 'users_userprofile'
+# The error was: cursor already closed
+# Unable to inspect table 'users_verification_token'
+# The error was: cursor already closed

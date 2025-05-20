@@ -1,0 +1,23 @@
+{
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.3",
+    "@mui/x-date-pickers": "^7.15.0",
+    "@tailwindcss/forms": "^0.5.10",
+    "chart.js": "^4.4.4",
+    "country-state-city": "^3.2.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "file-saver": "^2.0.5",
+    "jose": "^6.0.10",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.8.2",
+    "pdfjs-dist": "^4.4.168",
+    "react-chartjs-2": "^5.2.0",
+    "react-plaid-link": "^3.6.0",
+    "react-select": "^5.10.0",
+    "socket.io": "^4.8.0",
+    "socket.io-client": "^4.8.0",
+    "xlsx": "^0.18.5",
+    "yup": "^1.4.0"
+  }
+}

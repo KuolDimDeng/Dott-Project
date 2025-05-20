@@ -1,0 +1,131 @@
+# Requirements for Development
+# Fixed by Version0011_ultimate_dependency_fix.py
+# Date: 2025-05-15 22:09:53
+#
+# Key changes:
+#  - FORCED urllib3 version to 1.26.16 to resolve conflicts with botocore/boto3
+#  - Updated boto3/botocore versions for compatibility
+#  - REMOVED any newer urllib3 version specifications
+#  - Ensured consistent versions across all requirements files
+#
+amqp==5.2.0
+argcomplete==1.10.3
+asgiref==3.7.2
+asyncpg==0.29.0
+attrs==23.2.0
+beautifulsoup4==4.12.2
+billiard==4.2.0
+boto3==1.26.164  # Requires urllib3<1.27.0 for Python<3.10
+botocore==1.29.164  # Requires urllib3<1.27.0 for Python<3.10
+celery==5.4.0
+certifi==2024.8.30
+cffi==1.16.0
+chardet==3.0.4
+charset-normalizer==3.3.2
+click==8.1.7
+click-didyoumean==0.3.1
+click-plugins==1.1.1
+click-repl==0.3.0
+compressed_rtf==1.0.6
+cron-descriptor==1.4.3
+cryptography==42.0.8
+django-db-connection-pool==1.2.1
+dj-rest-auth==6.0.0
+Django==4.2.10
+django-allauth==0.62.1
+django-appconf==1.0.6
+django-celery-beat==2.6.0
+django-celery-results==2.5.1
+django-cors-headers==4.3.1
+django-countries==7.6.1
+django-cryptography==1.1
+django-debug-toolbar==4.4.6
+django-extensions==3.2.3
+django-fernet-fields==0.6
+django-iam-dbauth==0.1.4
+django-phonenumber-field==8.0.0
+django-postgrespool2==2.0.5
+django-timezone-field==6.1.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.0
+dnspython==2.6.1
+docx2txt==0.8
+ebcdic==1.1.1
+extract-msg==0.28.7
+greenlet==3.0.3
+h11==0.14.0
+idna==3.7
+IMAPClient==2.1.0
+iniconfig==2.0.0
+jmespath==1.0.1
+joblib==1.4.2
+kombu==5.3.7
+lxml==5.3.0
+msgpack==1.0.8
+nulltype==2.3.1
+numpy==1.24.4
+oauthlib==3.2.2
+olefile==0.47
+outcome==1.3.0.post0
+packaging==24.1
+pdf2image==1.17.0
+pdfminer.six==20231228
+pdfplumber==0.11.4
+phonenumbers==8.13.45
+pillow==10.4.0
+plaid-python==26.0.0
+pluggy==1.5.0
+prompt_toolkit==3.0.47
+psycopg2-binary==2.9.9
+pyactiveresource==2.2.2
+pyasn1==0.6.0
+pyasn1_modules==0.4.0
+pycparser==2.22
+pycryptodome==3.20.0
+PyJWT==2.8.0
+pyOpenSSL==24.1.0
+PyPDF2==3.0.1
+pypdfium2==4.30.0
+pypng==0.20220715.0
+PySocks==1.7.1
+pytesseract==0.3.13
+pytest==8.3.3
+python-barcode==0.15.1
+python-crontab==3.1.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+python-pptx==0.6.23
+pytz==2024.1
+PyYAML==6.0.1
+qrcode==7.4.2
+ratelimit==2.2.1
+redis==5.0.7
+reportlab==4.2.2
+requests==2.31.0
+requests-oauthlib==2.0.0
+s3transfer==0.6.2  # Compatible with boto3 1.26.164
+scikit-learn==1.2.2
+scipy==1.10.1
+selenium==4.25.0
+setuptools==70.0.0
+ShopifyAPI==12.6.0
+six==1.16.0
+sniffio==1.3.1
+sortedcontainers==2.4.0
+soupsieve==2.6
+SpeechRecognition==3.8.1
+SQLAlchemy==2.0.30
+sqlparse==0.5.0
+
+threadpoolctl==3.5.0
+typing_extensions==4.11.0
+tzdata==2024.1
+tzlocal==5.2
+urllib3==1.26.16  # Version compatible with botocore<1.30.0 - DO NOT CHANGE THIS VERSION
+vine==5.1.0
+wcwidth==0.2.13
+weasyprint==59.0
+WooCommerce==3.0.0
+xlrd==1.2.0
+XlsxWriter==3.2.0
+gunicorn==21.2.0

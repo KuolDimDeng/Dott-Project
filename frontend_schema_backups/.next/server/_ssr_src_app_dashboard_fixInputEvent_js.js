@@ -1,0 +1,25 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+exports.id = "_ssr_src_app_dashboard_fixInputEvent_js";
+exports.ids = ["_ssr_src_app_dashboard_fixInputEvent_js"];
+exports.modules = {
+
+/***/ "(ssr)/./src/app/dashboard/fixInputEvent.js":
+/*!********************************************!*\
+  !*** ./src/app/dashboard/fixInputEvent.js ***!
+  \********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ FixInputEvent)\n/* harmony export */ });\n/* harmony import */ var react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react/jsx-dev-runtime */ \"(ssr)/../../node_modules/.pnpm/next@15.2.2_@babel+core@7.26.10_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react-jsx-dev-runtime.js\");\n/* harmony import */ var react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__);\n/* harmony import */ var styled_jsx_style__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! styled-jsx/style */ \"(ssr)/../../node_modules/.pnpm/next@15.2.2_@babel+core@7.26.10_react-dom@18.3.1_react@18.3.1/node_modules/next/node_modules/styled-jsx/style.js\");\n/* harmony import */ var styled_jsx_style__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(styled_jsx_style__WEBPACK_IMPORTED_MODULE_1__);\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! react */ \"(ssr)/../../node_modules/.pnpm/next@15.2.2_@babel+core@7.26.10_react-dom@18.3.1_react@18.3.1/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js\");\n/* harmony import */ var react__WEBPACK_IMPORTED_MODULE_2___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_2__);\n/* __next_internal_client_entry_do_not_use__ default auto */ \n\n\n/**\n * Simplified version of FixInputEvent that doesn't rely on DOM manipulation\n * to avoid causing chunk loading errors\n */ function FixInputEvent() {\n    // Return an empty fragment with some basic CSS that can be statically rendered\n    return /*#__PURE__*/ (0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_0__.jsxDEV)((styled_jsx_style__WEBPACK_IMPORTED_MODULE_1___default()), {\n        id: \"3b1a8324c0ecc398\",\n        children: \".emergency-form input,.emergency-form textarea,.emergency-form select{position:relative!important;z-index:9999!important;pointer-events:auto!important}.MuiDrawer-root .MuiBackdrop-root{pointer-events:none}\"\n    }, void 0, false, void 0, this);\n}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi9zcmMvYXBwL2Rhc2hib2FyZC9maXhJbnB1dEV2ZW50LmpzIiwibWFwcGluZ3MiOiI7Ozs7Ozs7Ozs7OztBQUUwQjtBQUUxQjs7O0NBR0MsR0FDYyxTQUFTQztJQUN0QiwrRUFBK0U7SUFDL0U7Ozs7QUFlRiIsInNvdXJjZXMiOlsiL1VzZXJzL2t1b2xkZW5nL3Byb2plY3R4L2Zyb250ZW5kL3B5ZmFjdG9yX25leHQvc3JjL2FwcC9kYXNoYm9hcmQvZml4SW5wdXRFdmVudC5qcyJdLCJzb3VyY2VzQ29udGVudCI6WyIndXNlIGNsaWVudCc7XG5cbmltcG9ydCBSZWFjdCBmcm9tICdyZWFjdCc7XG5cbi8qKlxuICogU2ltcGxpZmllZCB2ZXJzaW9uIG9mIEZpeElucHV0RXZlbnQgdGhhdCBkb2Vzbid0IHJlbHkgb24gRE9NIG1hbmlwdWxhdGlvblxuICogdG8gYXZvaWQgY2F1c2luZyBjaHVuayBsb2FkaW5nIGVycm9yc1xuICovXG5leHBvcnQgZGVmYXVsdCBmdW5jdGlvbiBGaXhJbnB1dEV2ZW50KCkge1xuICAvLyBSZXR1cm4gYW4gZW1wdHkgZnJhZ21lbnQgd2l0aCBzb21lIGJhc2ljIENTUyB0aGF0IGNhbiBiZSBzdGF0aWNhbGx5IHJlbmRlcmVkXG4gIHJldHVybiAoXG4gICAgPHN0eWxlIGpzeCBnbG9iYWw+e2BcbiAgICAgIC5lbWVyZ2VuY3ktZm9ybSBpbnB1dCxcbiAgICAgIC5lbWVyZ2VuY3ktZm9ybSB0ZXh0YXJlYSxcbiAgICAgIC5lbWVyZ2VuY3ktZm9ybSBzZWxlY3Qge1xuICAgICAgICBwb3NpdGlvbjogcmVsYXRpdmUgIWltcG9ydGFudDtcbiAgICAgICAgei1pbmRleDogOTk5OSAhaW1wb3J0YW50O1xuICAgICAgICBwb2ludGVyLWV2ZW50czogYXV0byAhaW1wb3J0YW50O1xuICAgICAgfVxuICAgICAgXG4gICAgICAuTXVpRHJhd2VyLXJvb3QgLk11aUJhY2tkcm9wLXJvb3Qge1xuICAgICAgICBwb2ludGVyLWV2ZW50czogbm9uZTtcbiAgICAgIH1cbiAgICBgfTwvc3R5bGU+XG4gICk7XG59Il0sIm5hbWVzIjpbIlJlYWN0IiwiRml4SW5wdXRFdmVudCJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlUm9vdCI6IiJ9\n//# sourceURL=webpack-internal:///(ssr)/./src/app/dashboard/fixInputEvent.js\n");
+
+/***/ })
+
+};
+;
