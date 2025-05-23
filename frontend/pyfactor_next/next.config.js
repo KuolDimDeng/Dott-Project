@@ -5,8 +5,8 @@ const nextConfig = {
   // Basic Next.js settings optimized for production deployment
   reactStrictMode: true,
   
-  // Remove static export for now to support dynamic API routes
-  // output: 'export',
+  // Enable static export for AWS Amplify static hosting
+  output: 'export',
   trailingSlash: false,
   
   // Standard Next.js build output
