@@ -12,11 +12,14 @@ frontend:
         - "echo 'DEBUG: Build phase - Current directory:' $(pwd)"
         - "echo 'DEBUG: Checking if we are in pyfactor_next directory...'"
         - "if [[ $(pwd) == *'pyfactor_next'* ]]; then echo '✅ Already in pyfactor_next directory, building directly...' && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build; else echo '🔍 Searching for pyfactor_next directory...' && FRONTEND_DIR=$(find . -name 'pyfactor_next' -type d | head -1) && if [ -z \"$FRONTEND_DIR\" ]; then echo 'ERROR: Could not find pyfactor_next directory' && exit 1; fi && echo \"Found frontend directory at: $FRONTEND_DIR\" && cd \"$FRONTEND_DIR\" && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build; fi"
+        - "echo 'DEBUG: After build - Current directory:' $(pwd)"
+        - "echo 'DEBUG: Checking for .next directory:' && ls -la | grep next || echo 'No .next directory found'"
+        - "echo 'DEBUG: Listing all directories:' && ls -la"
   artifacts:
-    baseDirectory: .next
+    baseDirectory: frontend/pyfactor_next/.next
     files:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/*
-      - .next/cache/**/* 
+      - frontend/pyfactor_next/node_modules/**/*
+      - frontend/pyfactor_next/.next/cache/**/* 
