@@ -47,3 +47,53 @@ dump.rdb
 .idea/
 .vscode/
 .expo/
+
+# Dependencies
+node_modules/
+
+# Production builds
+.next/
+out/
+build/
+dist/
+
+# Environment variables
+.env
+.env*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Large backend files (temporary ignore)
+backend/
+aws/
+frontend_schema_backups/
+frontend_file_backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
