@@ -1,0 +1,33 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - echo "Installing dependencies with pnpm..."
+        - npm install -g pnpm@8.10.0
+        - pnpm install
+        - echo "Setting up environment for production build..."
+        - echo "NEXT_PUBLIC_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production" >> .env.production
+        - echo "BACKEND_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production" >> .env.production
+    build:
+      commands:
+        - echo "Building Next.js application for static export..."
+        - echo "API URL will be set to https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production"
+        - pnpm run build
+        - pnpm run export
+    postBuild:
+      commands:
+        - echo "Static export completed successfully!"
+        - echo "Checking build output..."
+        - ls -la out/
+        - echo "Verifying index.html exists..."
+        - test -f out/index.html && echo "✅ index.html found" || echo "❌ index.html missing"
+  artifacts:
+    baseDirectory: out
+    files:
+      - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
+      - .pnpm-store/**/* 
