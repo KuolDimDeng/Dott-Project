@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
 
+// Get environment variables with fallbacks
+const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+
 const nextConfig = {
   // Basic Next.js settings optimized for Vercel deployment
   reactStrictMode: true,
@@ -113,6 +116,40 @@ const nextConfig = {
             value: 'strict-origin-when-cross-origin'
           },
         ]
+      }
+    ];
+  },
+
+  // API rewrites for backend communication
+  async rewrites() {
+    return [
+      {
+        source: '/api/auth/:path*',
+        destination: '/api/auth/:path*'
+      },
+      {
+        source: '/api/onboarding/token-exchange',
+        destination: `${BACKEND_API_URL}/api/onboarding/token-exchange`
+      },
+      {
+        source: '/api/:path*',
+        destination: `${BACKEND_API_URL}/api/:path*`
+      }
+    ];
+  },
+
+  // Redirects for common routes
+  async redirects() {
+    return [
+      {
+        source: '/onboarding/components/stepundefined',
+        destination: '/onboarding/step1',
+        permanent: false
+      },
+      {
+        source: '/onboarding/components/:path*',
+        destination: '/onboarding/step1',
+        permanent: false
       }
     ];
   },

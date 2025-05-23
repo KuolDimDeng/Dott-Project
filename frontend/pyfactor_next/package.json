@@ -147,14 +147,20 @@
     "peerDependencyRules": {
       "allowAny": [
         "debug"
+      ],
+      "ignoreMissing": [
+        "canvas"
       ]
     },
+    "neverBuiltDependencies": [
+      "canvas"
+    ],
     "supportedArchitectures": {
       "os": ["linux", "darwin", "win32"],
       "cpu": ["x64", "arm64"]
     },
     "installConfig": {
-      "optional": true
+      "optional": false
     }
   },
   "browserslist": [
