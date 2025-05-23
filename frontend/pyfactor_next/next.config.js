@@ -4,25 +4,10 @@ const path = require('path');
 const nextConfig = {
   // Basic Next.js settings optimized for Vercel deployment
   reactStrictMode: true,
-  
-  // Remove static export for Vercel SSR support
-  // output: 'export',
   trailingSlash: false,
-  
-  // Standard Next.js build output
-  distDir: '.next',
   
   // Page extensions
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
-  
-  // Environment variables for production
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production',
-    BACKEND_API_URL: process.env.BACKEND_API_URL || 'https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production',
-    USE_DATABASE: 'true',
-    MOCK_DATA_DISABLED: 'true',
-    PROD_MODE: 'true',
-  },
   
   // ESLint and TypeScript configuration
   eslint: {
@@ -32,12 +17,12 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Experimental features for SWC transforms
+  // Experimental features
   experimental: {
     forceSwcTransforms: true,
   },
   
-  // Webpack configuration optimized for production
+  // Webpack configuration
   webpack: (config, { isServer }) => {
     // Handle problematic modules with stubs
     config.resolve.alias = {
@@ -54,7 +39,12 @@ const nextConfig = {
       path: false,
       os: false,
       crypto: false,
+      net: false,
+      tls: false,
     };
+
+    // Exclude canvas from being processed by webpack
+    config.externals = [...(config.externals || []), { canvas: 'commonjs canvas' }];
 
     // SVG support
     config.module.rules.push({
@@ -65,7 +55,7 @@ const nextConfig = {
     return config;
   },
   
-  // Image optimization for production
+  // Image optimization for Vercel
   images: {
     unoptimized: true,
     dangerouslyAllowSVG: true,
@@ -76,14 +66,56 @@ const nextConfig = {
       'via.placeholder.com',
       'images.unsplash.com',
     ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.dottapps.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'dottapps.com',
+      },
+    ],
   },
   
   // Production optimizations
   productionBrowserSourceMaps: false,
   compress: true,
   
-  // Headers not supported with static export
-  // Security headers would need to be configured at S3/CloudFront level
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+        ]
+      }
+    ];
+  },
 };
 
 module.exports = nextConfig; 
