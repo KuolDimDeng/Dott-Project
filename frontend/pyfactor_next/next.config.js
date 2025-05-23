@@ -5,8 +5,9 @@ const nextConfig = {
   // Basic Next.js settings optimized for production deployment
   reactStrictMode: true,
   
-  // Standard Next.js build for Amplify deployment
-  trailingSlash: true,
+  // Remove static export for now to support dynamic API routes
+  // output: 'export',
+  trailingSlash: false,
   
   // Standard Next.js build output
   distDir: '.next',
@@ -25,14 +26,9 @@ const nextConfig = {
   
   // ESLint and TypeScript configuration
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
     ignoreBuildErrors: true,
   },
   
