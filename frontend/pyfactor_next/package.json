@@ -141,12 +141,20 @@
       "@aws-amplify/core": "^6.10.0",
       "@aws-amplify/adapter-nextjs": "^1.5.0",
       "aws-amplify": "^6.10.0",
-      "debug": "^4.3.7"
+      "debug": "^4.3.7",
+      "canvas": false
     },
     "peerDependencyRules": {
       "allowAny": [
         "debug"
       ]
+    },
+    "supportedArchitectures": {
+      "os": ["linux", "darwin", "win32"],
+      "cpu": ["x64", "arm64"]
+    },
+    "installConfig": {
+      "optional": true
     }
   },
   "browserslist": [
