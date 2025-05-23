@@ -5,7 +5,7 @@ const nextConfig = {
   // Basic Next.js settings optimized for production deployment
   reactStrictMode: true,
   
-  // Remove static export to support dynamic API routes
+  // Remove static export to support SSR and API routes  
   // output: 'export',
   trailingSlash: false,
   

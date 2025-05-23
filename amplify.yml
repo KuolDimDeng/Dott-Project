@@ -3,22 +3,24 @@ frontend:
   phases:
     preBuild:
       commands:
-        - echo "Installing dependencies..."
+        - echo "Installing dependencies for Next.js SSR..."
         - npm install -g pnpm@8.10.0 || npm install -g yarn
         - cd frontend/pyfactor_next && pnpm install --no-frozen-lockfile
     build:
       commands:
-        - echo "Building Next.js SSR application..."
+        - echo "Building Next.js SSR application for AWS Lambda..."
         - "echo 'DEBUG: Build phase - Current directory:' $(pwd)"
-        - "echo 'DEBUG: Checking if we are in pyfactor_next directory...'"
-        - "if [[ $(pwd) == *'pyfactor_next'* ]]; then echo '✅ Already in pyfactor_next directory, building directly...' && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build && echo 'Build completed, checking SSR output...' && ls -la .next/ | head -10 && echo 'Checking for standalone output...' && ls -la .next/standalone 2>/dev/null || echo 'No standalone directory found'; else echo '🔍 Searching for pyfactor_next directory...' && FRONTEND_DIR=$(find . -name 'pyfactor_next' -type d | head -1) && if [ -z \"$FRONTEND_DIR\" ]; then echo 'ERROR: Could not find pyfactor_next directory' && exit 1; fi && echo \"Found frontend directory at: $FRONTEND_DIR\" && cd \"$FRONTEND_DIR\" && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build && echo 'Build completed, checking SSR output...' && ls -la .next/ | head -10 && echo 'Checking for standalone output...' && ls -la .next/standalone 2>/dev/null || echo 'No standalone directory found'; fi"
-        - "echo 'DEBUG: After build - Current directory:' $(pwd)"
-        - "echo 'DEBUG: Checking .next directory contents:' && ls -la .next/ | head -5"
-        - "echo 'DEBUG: Full directory structure:' && find .next -name '*.js' | head -10"
+        - "if [[ $(pwd) == *'pyfactor_next'* ]]; then echo '✅ Already in pyfactor_next directory, building for SSR...' && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build && echo 'SSR Build completed successfully' && ls -la .next/ | head -10; else echo '🔍 Searching for pyfactor_next directory...' && FRONTEND_DIR=$(find . -name 'pyfactor_next' -type d | head -1) && if [ -z \"$FRONTEND_DIR\" ]; then echo 'ERROR: Could not find pyfactor_next directory' && exit 1; fi && echo \"Found frontend directory at: $FRONTEND_DIR\" && cd \"$FRONTEND_DIR\" && export NODE_ENV=production && export NEXT_PUBLIC_API_URL=https://api.dottapps.com && export BACKEND_API_URL=https://api.dottapps.com && export USE_DATABASE=true && export MOCK_DATA_DISABLED=true && export PROD_MODE=true && export NODE_OPTIONS='--max-old-space-size=4096' && pnpm run build && echo 'SSR Build completed successfully' && ls -la .next/ | head -10; fi"
+        - "echo 'DEBUG: Verifying Next.js SSR output...'"
+        - "echo 'Static files:' && ls -la .next/static 2>/dev/null | head -5 || echo 'No static directory'"
+        - "echo 'Server files:' && ls -la .next/server 2>/dev/null | head -5 || echo 'No server directory'"
   artifacts:
-    baseDirectory: frontend/pyfactor_next/.next
+    baseDirectory: frontend/pyfactor_next
     files:
-      - '**/*'
+      - '.next/**/*'
+      - 'public/**/*'
+      - 'package.json'
+      - 'next.config.js'
   cache:
     paths:
       - frontend/pyfactor_next/node_modules/**/*
