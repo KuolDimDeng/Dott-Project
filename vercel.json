@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "name": "dottapps",
+  "builds": [
+    {
+      "src": "frontend/pyfactor_next/package.json",
+      "use": "@vercel/next",
+      "config": {
+        "projectSettings": {
+          "framework": "nextjs"
+        }
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "frontend/pyfactor_next/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_API_URL": "https://api.dottapps.com",
+    "BACKEND_API_URL": "https://api.dottapps.com",
+    "USE_DATABASE": "true",
+    "MOCK_DATA_DISABLED": "true",
+    "PROD_MODE": "true"
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "frontend/pyfactor_next/src/app/api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
+} 

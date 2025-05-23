@@ -2,11 +2,11 @@
 const path = require('path');
 
 const nextConfig = {
-  // Basic Next.js settings optimized for production deployment
+  // Basic Next.js settings optimized for Vercel deployment
   reactStrictMode: true,
   
-  // Enable static export for AWS Amplify hosting
-  output: 'export',
+  // Remove static export for Vercel SSR support
+  // output: 'export',
   trailingSlash: false,
   
   // Standard Next.js build output
