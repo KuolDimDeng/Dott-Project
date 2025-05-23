@@ -76,7 +76,7 @@ if [ -f "$OUTPUT_ZIP" ]; then
     echo "2. Create a new application or environment"
     echo "3. Choose 'Upload your code'"
     echo "4. Upload this ZIP file: $OUTPUT_ZIP"
-    echo "5. Select 'Python 3.9 running on 64bit Amazon Linux 2023/4.5.1' platform"
+    echo "5. Select 'Python 3.9 running on 64bit Amazon Linux 2023/4.5.2' platform"
     echo "6. Configure environment variables (especially database credentials)"
     echo "7. Complete the environment setup"
     echo "------------------------------------------------------"

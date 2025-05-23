@@ -1,265 +1,409 @@
 """
-Django settings for Elastic Beanstalk deployment.
-Enhanced by Version0008_fix_eb_deployment_settings.py script.
+Django settings for pyfactor project (Elastic Beanstalk Production).
 """
 
 import os
+from pathlib import Path
 import sys
 import logging
-from pathlib import Path
+import logging.config
+from datetime import timedelta
+from cryptography.fernet import Fernet
 
-# Setup basic logging for settings module
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(levelname)s %(asctime)s %(module)s %(message)s',
-    handlers=[logging.StreamHandler()]
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('SECRET_KEY')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False
+
+# Update ALLOWED_HOSTS with the Elastic Beanstalk domain and our custom domain
+# Allow all AWS internal IPs for health checks and load balancers
+ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',') if os.getenv('DJANGO_ALLOWED_HOSTS') != '*' else ['*']
+
+# Ensure we have all necessary hosts for AWS health checks
+if ALLOWED_HOSTS != ['*']:
+    ALLOWED_HOSTS.extend([
+        '.elasticbeanstalk.com',
+        'dottapps.com',
+        'api.dottapps.com',
+        'www.dottapps.com',
+        'localhost',
+        '127.0.0.1',
+        # AWS internal IPs for load balancer health checks (from logs)
+        '172.31.44.125',  # Internal instance IP
+        '54.83.126.185',  # External IP
+        '172.31.42.237',  # ELB health checker IP
+        '172.31.7.76',    # ELB health checker IP  
+        '172.31.73.73',   # ELB health checker IP
+    ])
+
+# Application definition
+# From original settings.py
+SHARED_APPS = (
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'django_celery_beat',
+    'corsheaders',
+    'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
+    'django_countries',
+    'rest_framework.authtoken',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'django_cryptography',
+    'phonenumber_field',
+    'django_extensions',
+    'custom_auth',
+    'onboarding.apps.OnboardingConfig',
 )
-logger = logging.getLogger('eb_settings')
-logger.info("Loading Elastic Beanstalk settings")
 
-# Define base settings in case they're not defined
-try:
-    from pyfactor.settings import *  # Import all settings from the base settings file
-    logger.info("Successfully imported base settings from pyfactor.settings")
-except ImportError as e:
-    # Define fallbacks for critical settings if main settings import fails
-    logger.error(f"Failed to import main settings file: {str(e)}")
-    logger.error("Using fallback settings")
-    import django
+TENANT_APPS = (
+    'users.apps.UsersConfig',
+    'sales',
+    'finance',
+    'reports',
+    'banking',
+    'payments',
+    'payroll',
+    'inventory',
+    'analysis',
+    'chart',
+    'integrations',
+    'taxes',
+    'purchases',
+    'barcode',
+    'hr.apps.HrConfig',
+    'crm.apps.CrmConfig',
+    'transport.apps.TransportConfig',
+)
 
-# Ensure BASE_DIR is defined
-if 'BASE_DIR' not in locals() and 'BASE_DIR' not in globals():
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    logger.info(f"Using fallback BASE_DIR: {BASE_DIR}")
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
-# Ensure critical Django settings are defined with fallbacks
-if 'INSTALLED_APPS' not in locals() and 'INSTALLED_APPS' not in globals():
-    logger.warning("INSTALLED_APPS not found in base settings, using fallback")
-    INSTALLED_APPS = [
-        'django.contrib.admin',
-        'django.contrib.auth',
-        'django.contrib.contenttypes',
-        'django.contrib.sessions',
-        'django.contrib.messages',
-        'django.contrib.staticfiles',
-        'rest_framework',
-        'corsheaders',
-    ]
+# Ensure corsheaders is in installed apps
+if 'corsheaders' not in INSTALLED_APPS:
+    INSTALLED_APPS = ['corsheaders'] + list(INSTALLED_APPS)
 
-if 'MIDDLEWARE' not in locals() and 'MIDDLEWARE' not in globals():
-    logger.warning("MIDDLEWARE not found in base settings, using fallback")
-    MIDDLEWARE = [
-        'django.middleware.security.SecurityMiddleware',
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'corsheaders.middleware.CorsMiddleware',
-        'django.middleware.common.CommonMiddleware',
-        'django.middleware.csrf.CsrfViewMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django.contrib.messages.middleware.MessageMiddleware',
-        'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    ]
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Added at top
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
+    'hr.middleware.HrCorsMiddleware',  # Add HR CORS middleware
+    'onboarding.middleware.SchemaNameMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'custom_auth.middleware.RequestIDMiddleware',
+    'custom_auth.middleware.TenantMiddleware',
+    'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
+]
 
-if 'TEMPLATES' not in locals() and 'TEMPLATES' not in globals():
-    logger.warning("TEMPLATES not found in base settings, using fallback")
-    TEMPLATES = [
-        {
-            'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'DIRS': [],
-            'APP_DIRS': True,
-            'OPTIONS': {
-                'context_processors': [
-                    'django.template.context_processors.debug',
-                    'django.template.context_processors.request',
-                    'django.contrib.auth.context_processors.auth',
-                    'django.contrib.messages.context_processors.messages',
-                ],
-            },
+# CORS settings for production
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = [
+    'https://dottapps.com',
+    'https://www.dottapps.com',
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r'^https://dottapps\.com$',
+    r'^https://.*\.dottapps\.com$',
+]
+
+# CSRF settings for production
+CSRF_TRUSTED_ORIGINS = [
+    'https://dottapps.com',
+    'https://www.dottapps.com',
+    'https://api.dottapps.com',
+]
+
+# Security settings
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# Production domain settings
+SESSION_COOKIE_DOMAIN = '.dottapps.com'
+CSRF_COOKIE_DOMAIN = '.dottapps.com'
+
+# Database settings for RDS
+DATABASES = {
+    'default': {
+        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
+        'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
+        'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
+        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'TIME_ZONE': 'UTC',
+        'CONN_MAX_AGE': 0,
+        'AUTOCOMMIT': True,
+        'CONN_HEALTH_CHECKS': True,
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'client_encoding': 'UTF8',
+            'application_name': 'dott',
+            'sslmode': 'require',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
         },
-    ]
-
-if 'SECRET_KEY' not in locals() and 'SECRET_KEY' not in globals():
-    logger.warning("SECRET_KEY not found in base settings, using environment variable")
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-fallback-key-for-eb-deployment')
-
-# Ensure logs directory exists
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(LOGS_DIR):
-    try:
-        os.makedirs(LOGS_DIR)
-        logger.info(f"Created logs directory at {LOGS_DIR}")
-    except Exception as e:
-        logger.warning(f"Failed to create logs directory: {str(e)}")
-        LOGS_DIR = '/tmp'  # Fallback to /tmp if logs directory can't be created
-
-# Redis settings with fallbacks
-REDIS_HOST = os.environ.get('ELASTICACHE_HOST') or os.environ.get('REDIS_HOST', 'localhost')
-REDIS_PORT = os.environ.get('ELASTICACHE_PORT') or os.environ.get('REDIS_PORT', '6379')
-logger.info(f"Using Redis host: {REDIS_HOST}, port: {REDIS_PORT}")
-
-# Set to True for local development, False for Elastic Beanstalk deployment
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
-logger.info(f"DEBUG mode: {DEBUG}")
-
-# Get the Elastic Beanstalk environment name or use default
-EB_ENV_NAME = os.environ.get('EB_ENV_NAME', 'eb-env')
-logger.info(f"EB_ENV_NAME: {EB_ENV_NAME}")
-
-# Get the EB domain and add it to ALLOWED_HOSTS
-eb_domain = os.environ.get('EB_DOMAIN', f'{EB_ENV_NAME}.elasticbeanstalk.com')
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', eb_domain, '.elasticbeanstalk.com', 'dottapps.com', '*.dottapps.com']
-logger.info(f"ALLOWED_HOSTS: {ALLOWED_HOSTS}")
-
-# Add specific CORS origins for the EB domain and dottapps.com
-allowed_eb_origin = f'https://{eb_domain}'
-dottapps_origin = 'https://dottapps.com'
-
-# Make sure CORS_ALLOWED_ORIGINS exists
-if not hasattr(globals(), 'CORS_ALLOWED_ORIGINS'):
-    CORS_ALLOWED_ORIGINS = []
-
-# Make sure CSRF_TRUSTED_ORIGINS exists
-if not hasattr(globals(), 'CSRF_TRUSTED_ORIGINS'):
-    CSRF_TRUSTED_ORIGINS = []
-
-# Add EB domain to CORS and CSRF origins
-if allowed_eb_origin not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(allowed_eb_origin)
-
-if allowed_eb_origin not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append(allowed_eb_origin)
-
-# Add dottapps.com to CORS and CSRF origins
-if dottapps_origin not in CORS_ALLOWED_ORIGINS:
-    CORS_ALLOWED_ORIGINS.append(dottapps_origin)
-
-if dottapps_origin not in CSRF_TRUSTED_ORIGINS:
-    CSRF_TRUSTED_ORIGINS.append(dottapps_origin)
-
-# Database configuration - use RDS settings if available
-if 'RDS_HOSTNAME' in os.environ:
-    logger.info("Using RDS database settings from environment variables")
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ['RDS_DB_NAME'],
-            'USER': os.environ['RDS_USERNAME'],
-            'PASSWORD': os.environ['RDS_PASSWORD'],
-            'HOST': os.environ['RDS_HOSTNAME'],
-            'PORT': os.environ['RDS_PORT'],
-            'OPTIONS': {
-                'connect_timeout': 10,
-                'sslmode': 'prefer',  # 'require' can cause issues in some EB environments
-                'keepalives': 1,
-                'keepalives_idle': 30,
-                'keepalives_interval': 10,
-                'keepalives_count': 5,
-            }
+        'POOL_OPTIONS': {
+            'POOL_SIZE': 5,
+            'MAX_OVERFLOW': 2,
+            'RECYCLE': 300,
+            'TIMEOUT': 30,
+            'RETRY': 3,
+            'RECONNECT': True,
+            'DISABLE_POOLING': False,
+        }
+    },
+    'taxes': {
+        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
+        'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
+        'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
+        'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
+        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'CONN_MAX_AGE': 0,
+        'OPTIONS': {
+            'connect_timeout': 10,
+            'client_encoding': 'UTF8',
+            'sslmode': 'require',
+            'keepalives': 1,
+            'keepalives_idle': 30,
+            'keepalives_interval': 10,
+            'keepalives_count': 5,
+        },
+        'POOL_OPTIONS': {
+            'POOL_SIZE': 5,
+            'MAX_OVERFLOW': 2,
+            'RECYCLE': 300,
+            'TIMEOUT': 30,
+            'RETRY': 3,
+            'RECONNECT': True,
         }
     }
-else:
-    logger.warning("RDS environment variables not found. Using default database settings if available.")
+}
 
-# Configure static files for EB
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+ROOT_URLCONF = 'pyfactor.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'pyfactor.wsgi.application'
+ASGI_APPLICATION = 'pyfactor.asgi.application'
+
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
+]
+
+# Internationalization
+LANGUAGE_CODE = 'en'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+SITE_ID = 1
+
+# Static files
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
-# Ensure staticfiles directory exists
-if not os.path.exists(STATIC_ROOT):
-    try:
-        os.makedirs(STATIC_ROOT)
-        logger.info(f"Created staticfiles directory at {STATIC_ROOT}")
-    except Exception as e:
-        logger.warning(f"Failed to create staticfiles directory: {str(e)}")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Configure logging for EB
+# Default auto field
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Authentication settings
+AUTH_USER_MODEL = 'custom_auth.User'
+
+# Update the FRONTEND_URL
+FRONTEND_URL = 'https://dottapps.com'
+
+# Redis settings - use ElastiCache if available
+REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
+REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+        'OPTIONS': {
+            'db': 1,
+            'parser_class': 'redis.connection.DefaultParser',
+            'pool_class': 'redis.connection.ConnectionPool',
+            'socket_timeout': 5,
+            'socket_connect_timeout': 5,
+            'retry_on_timeout': True,
+            'max_connections': 100,
+        },
+        'KEY_PREFIX': '{tenant}',
+    }
+}
+
+# Define AWS Cognito Settings
+COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID', 'us-east-1_JPL8vGfb6')
+COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID', '1o5v84mrgn4gt87khtr179uc5b') 
+COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN', 'pyfactor-dev.auth.us-east-1.amazoncognito.com')
+USE_AWS_AUTH = True
+
+# AWS Authentication Settings
+COGNITO_AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+COGNITO_USER_POOL = COGNITO_USER_POOL_ID
+COGNITO_TOKEN_VERIFY = True
+COGNITO_ATTR_MAPPING = {
+    'email': 'email',
+    'given_name': 'first_name',
+    'family_name': 'last_name',
+    'custom:userrole': 'role',
+    'custom:businessid': 'business_id',
+    'custom:businessname': 'business_name',
+    'custom:businesstype': 'business_type',
+    'custom:businesscountry': 'business_country',
+    'custom:legalstructure': 'legal_structure',
+    'custom:datefounded': 'date_founded',
+    'custom:subplan': 'subscription_plan',
+    'custom:subscriptioninterval': 'subscription_interval',
+    'custom:onboarding': 'onboarding_status',
+    'custom:setupdone': 'setup_complete'
+}
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'custom_auth.jwt.CognitoJWTAuthentication',
+        'custom_auth.authentication.CognitoAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'custom_auth.permissions.SetupEndpointPermission',
+    ],
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+    ],
+    'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '5/minute',
+        'user': '60/minute',
+        'tax_calculation': '100/day',  # Custom rate for tax calculations
+    },
+}
+
+# JWT settings
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'sub',
+}
+
+# Authentication settings for dj-rest-auth and allauth
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False  # Disable username requirement
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Explicitly set no username field
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Set to 'none' for development
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_EMAIL_REQUIRED = False
+SOCIALACCOUNT_QUERY_EMAIL = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# Setup a minimal logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s',
+            'format': '%(levelname)s %(asctime)s %(module)s %(message)s',
         },
-        'simple': {
-            'format': '%(levelname)s %(message)s',
+        'json': {
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s',
+            'datefmt': '%Y-%m-%dT%H:%M:%S%z',
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': os.path.join(LOGS_DIR, 'django.log'),
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'null': {
-            'class': 'logging.NullHandler',
-        },
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
-        },
-        'django.request': {
-            'handlers': ['file', 'console'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.db.backends': {
-            'handlers': ['file'],
-            'level': 'WARNING',
-            'propagate': False,
-        },
-        'eb_application': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'eb_settings': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
             'propagate': True,
         },
     },
 }
 
-# Security settings for EB
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-
-# Disable debug toolbar in production
-if 'debug_toolbar' in INSTALLED_APPS:
-    INSTALLED_APPS.remove('debug_toolbar')
-    MIDDLEWARE = [m for m in MIDDLEWARE if 'debug_toolbar' not in m]
-
-# Redis settings - use ElastiCache if available
-REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
-
-# Celery settings - conditionally enabled based on Redis availability
-try:
-    import redis
-    redis_client = redis.Redis(host=REDIS_HOST, port=int(REDIS_PORT), socket_connect_timeout=5)
-    redis_client.ping()  # Test Redis connection
-    logger.info("Redis connection successful, enabling Celery")
-    
-    CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
-    CELERY_ACCEPT_CONTENT = ['json']
-    CELERY_TASK_SERIALIZER = 'json'
-    CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_TIMEZONE = TIME_ZONE if 'TIME_ZONE' in globals() else 'UTC'
-    
-except Exception as e:
-    logger.warning(f"Redis connection failed: {str(e)}. Disabling Celery.")
-    # Configure Celery to use a dummy broker
-    CELERY_TASK_ALWAYS_EAGER = True
-    CELERY_BROKER_URL = 'memory://'
-    CELERY_RESULT_BACKEND = 'file:///tmp/celery-results'
-
-logger.info("Elastic Beanstalk settings loaded successfully")
+# Environment-specific variables to override
+DJANGO_SETTINGS_MODULE = 'pyfactor.settings_eb'
+ENVIRONMENT = 'production'
+PORT = 8000
+EB_ENV_NAME = 'Dott-env-fixed'
+DOMAIN = 'dottapps.com'
+API_DOMAIN = 'api.dottapps.com'

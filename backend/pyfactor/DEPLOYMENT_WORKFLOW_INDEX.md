@@ -27,6 +27,23 @@
   - Creates application version in Elastic Beanstalk
   - Creates or updates environment
 
+- **Improved DottApps Deployment Script**: `scripts/Version0041_improved_deploy_dottapps_env.sh` (Recommended)
+  - Automatic package detection and intelligent selection
+  - Enhanced Apple Silicon compatibility with Rosetta 2 auto-installation
+  - Better error handling and user experience
+  - Deploys specifically to DottApps/DottApps-env
+  - Configures RDS PostgreSQL integration
+  - Sets up SSL/HTTPS with load balancer
+  - Configures VPC with public IP addresses
+  - Implements comprehensive monitoring
+
+- **Legacy DottApps Deployment Script**: `scripts/Version0040_deploy_dottapps_env.sh` (Deprecated)
+  - Deploys specifically to DottApps/DottApps-env
+  - Configures RDS PostgreSQL integration
+  - Sets up SSL/HTTPS with load balancer
+  - Configures VPC with public IP addresses
+  - Implements comprehensive monitoring
+
 ### 4. Monitor and Troubleshoot
 - **Log Check Script**: `scripts/check_deployment_logs.sh`
   - Retrieves logs from Elastic Beanstalk
@@ -41,6 +58,11 @@
   - Configuration details
   - Troubleshooting tips
 
+- **DottApps Deployment Guide**: `DOTTAPPS_DEPLOYMENT_GUIDE.md`
+  - Specific deployment instructions for DottApps
+  - Comprehensive configuration reference
+  - Environment settings and options
+
 - **Errors and Fixes Document**: `DOCKER_EB_DEPLOYMENT_ERRORS_FIXED.md`
   - Common errors encountered
   - Solutions implemented
@@ -53,8 +75,15 @@
   - Load balancer settings
   - Health check configuration
 
-## Deployment Command
+- **DottApps Environment Options**: `environment-options-dott.json`
+  - DottApps-specific configuration
+  - RDS PostgreSQL setup
+  - SSL/HTTPS configuration
+  - VPC and networking settings
 
+## Deployment Commands
+
+### Standard Deployment
 To deploy the backend to AWS Elastic Beanstalk:
 
 ```bash
@@ -68,6 +97,22 @@ chmod +x scripts/deploy_docker_eb.sh
 ./scripts/deploy_docker_eb.sh
 ```
 
+### DottApps Deployment
+To deploy specifically to the DottApps environment:
+
+```bash
+# Navigate to the backend directory
+cd backend/pyfactor
+
+# Make the script executable
+chmod +x scripts/Version0041_improved_deploy_dottapps_env.sh
+
+# Run the improved DottApps deployment script
+./scripts/Version0041_improved_deploy_dottapps_env.sh
+```
+
+> **Note**: The previous deployment script (`Version0040_deploy_dottapps_env.sh`) is now deprecated. The new script provides enhanced functionality including automatic package detection, improved Apple Silicon compatibility, and better error handling.
+
 ## Health Check Monitoring
 
 After deployment, use the following command to check the health of your application:
@@ -79,4 +124,5 @@ After deployment, use the following command to check the health of your applicat
 ## Access Your Deployed Application
 
 Once deployment is complete, your application will be available at:
-https://Dott-env-4.us-east-1.elasticbeanstalk.com
+- Standard environment: https://Dott-env-4.us-east-1.elasticbeanstalk.com
+- DottApps environment: https://DottApps-env.us-east-1.elasticbeanstalk.com

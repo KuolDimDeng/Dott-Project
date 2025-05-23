@@ -1,0 +1,260 @@
+#!/bin/bash
+
+# Version0042_deployment_error_detection.sh - Detect and report common Elastic Beanstalk deployment errors
+# Version: 1.0.0
+# Created: May 22, 2025
+# Author: System Administrator
+#
+# This script validates AWS Elastic Beanstalk configurations before deployment to catch common errors
+# and provides solutions for fixing them. It's designed to be used alongside the deployment scripts
+# to prevent failed deployments due to configuration issues.
+
+# Define colors for better output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+BOLD='\033[1m'
+NC='\033[0m' # No Color
+
+# Configuration file to check
+CONFIG_FILE=$1
+
+if [ -z "$CONFIG_FILE" ]; then
+    echo -e "${RED}Error: No configuration file specified.${NC}"
+    echo -e "${YELLOW}Usage: $0 <config-file.json>${NC}"
+    exit 1
+fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "${RED}Error: Configuration file '$CONFIG_FILE' not found.${NC}"
+    exit 1
+fi
+
+echo -e "${BLUE}${BOLD}======== ELASTIC BEANSTALK DEPLOYMENT ERROR DETECTION ========${NC}"
+echo -e "${YELLOW}Analyzing configuration file: ${CONFIG_FILE}${NC}"
+
+# Function to check if a required parameter exists in the config
+check_parameter() {
+    local namespace=$1
+    local option_name=$2
+    local description=$3
+    local fix_suggestion=$4
+    
+    if ! grep -q "\"Namespace\": \"$namespace\", *\n *\"OptionName\": \"$option_name\"" "$CONFIG_FILE"; then
+        echo -e "${RED}ERROR: Missing required parameter${NC}"
+        echo -e "  Namespace: ${YELLOW}$namespace${NC}"
+        echo -e "  OptionName: ${YELLOW}$option_name${NC}"
+        echo -e "  Description: $description"
+        echo -e "  ${BOLD}Fix:${NC} $fix_suggestion"
+        return 1
+    fi
+    return 0
+}
+
+# Function to validate parameter values
+validate_parameter_value() {
+    local namespace=$1
+    local option_name=$2
+    local expected_pattern=$3
+    local description=$4
+    local fix_suggestion=$5
+    
+    # Extract the value for the given namespace and option name
+    local value=$(grep -A 2 "\"Namespace\": \"$namespace\", *\n *\"OptionName\": \"$option_name\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+    
+    if [ -z "$value" ]; then
+        echo -e "${RED}ERROR: Could not find value for parameter${NC}"
+        echo -e "  Namespace: ${YELLOW}$namespace${NC}"
+        echo -e "  OptionName: ${YELLOW}$option_name${NC}"
+        echo -e "  ${BOLD}Fix:${NC} $fix_suggestion"
+        return 1
+    fi
+    
+    if ! echo "$value" | grep -E "$expected_pattern" > /dev/null; then
+        echo -e "${RED}ERROR: Invalid value for parameter${NC}"
+        echo -e "  Namespace: ${YELLOW}$namespace${NC}"
+        echo -e "  OptionName: ${YELLOW}$option_name${NC}"
+        echo -e "  Current Value: ${YELLOW}$value${NC}"
+        echo -e "  Expected Pattern: $expected_pattern"
+        echo -e "  Description: $description"
+        echo -e "  ${BOLD}Fix:${NC} $fix_suggestion"
+        return 1
+    fi
+    return 0
+}
+
+# Function to check for HTTPS configuration
+check_https_configuration() {
+    local https_listener_enabled=$(grep -A 2 "\"Namespace\": \"aws:elb:listener:443\", *\n *\"OptionName\": \"ListenerEnabled\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+    
+    if [ "$https_listener_enabled" = "true" ]; then
+        # Check if SSL certificate is specified when HTTPS is enabled
+        local ssl_cert_id=$(grep -A 2 "\"Namespace\": \"aws:elb:listener:443\", *\n *\"OptionName\": \"SSLCertificateId\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+        
+        if [ -z "$ssl_cert_id" ]; then
+            echo -e "${RED}ERROR: HTTPS listener is enabled but no SSL certificate is specified${NC}"
+            echo -e "  When HTTPS (port 443) is enabled, you must specify an SSL certificate."
+            echo -e "  ${BOLD}Fix options:${NC}"
+            echo -e "  1. Add the SSL certificate parameter:"
+            echo -e "     {\"Namespace\": \"aws:elb:listener:443\", \"OptionName\": \"SSLCertificateId\", \"Value\": \"arn:aws:acm:region:account:certificate/certificate-id\"}"
+            echo -e "  2. OR Disable HTTPS listener by setting ListenerEnabled to false:"
+            echo -e "     {\"Namespace\": \"aws:elb:listener:443\", \"OptionName\": \"ListenerEnabled\", \"Value\": \"false\"}"
+            return 1
+        fi
+    fi
+    return 0
+}
+
+# Function to validate RDS configuration
+validate_rds_configuration() {
+    local has_coupled_db=$(grep -A 2 "\"Namespace\": \"aws:rds:dbinstance\", *\n *\"OptionName\": \"HasCoupledDatabase\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+    
+    if [ "$has_coupled_db" = "true" ]; then
+        # Check for required RDS parameters when DB is enabled
+        check_parameter "aws:rds:dbinstance" "DBPassword" "Database password is required when RDS is enabled" "Add the DBPassword parameter with a secure password value" || return 1
+        
+        # Validate DB engine version is supported
+        local db_engine=$(grep -A 2 "\"Namespace\": \"aws:rds:dbinstance\", *\n *\"OptionName\": \"DBEngine\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+        
+        if [ "$db_engine" = "postgres" ]; then
+            echo -e "${YELLOW}Validating PostgreSQL version against AWS supported versions...${NC}"
+            
+            # Get the configured version
+            local db_version=$(grep -A 2 "\"Namespace\": \"aws:rds:dbinstance\", *\n *\"OptionName\": \"DBEngineVersion\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+            
+            # List of supported PostgreSQL versions (could fetch from AWS API in a real implementation)
+            local supported_versions=("11.22" "12.20" "12.22" "13.15" "13.16" "13.17" "13.18" "13.19" "13.20" "13.21" 
+                                     "14.12" "14.13" "14.14" "14.15" "14.16" "14.17" "14.18" 
+                                     "15.7" "15.8" "15.9" "15.10" "15.11" "15.12" "15.13"
+                                     "16.3" "16.4" "16.5" "16.6" "16.7" "16.8" "16.9"
+                                     "17.1" "17.2" "17.3" "17.4" "17.5")
+            
+            local version_supported=false
+            for version in "${supported_versions[@]}"; do
+                if [ "$version" = "$db_version" ]; then
+                    version_supported=true
+                    break
+                fi
+            done
+            
+            if [ "$version_supported" = false ]; then
+                echo -e "${RED}ERROR: Unsupported PostgreSQL version: $db_version${NC}"
+                echo -e "  Supported PostgreSQL versions include: 13.16, 13.17, 13.18, 13.19, 13.20, 13.21, 14.x, 15.x, 16.x, 17.x"
+                echo -e "  ${BOLD}Fix:${NC} Update the DBEngineVersion parameter to a supported version."
+                echo -e "  Recommended version: 13.16"
+                return 1
+            else
+                echo -e "${GREEN}PostgreSQL version $db_version is supported.${NC}"
+            fi
+        fi
+    fi
+    return 0
+}
+
+# Check load balancer configuration
+check_load_balancer_configuration() {
+    # Check for conflicting load balancer configurations
+    local classic_lb_config=$(grep -q "\"Namespace\": \"aws:elb:" "$CONFIG_FILE" && echo "true" || echo "false")
+    local app_lb_config=$(grep -q "\"Namespace\": \"aws:elbv2:" "$CONFIG_FILE" && echo "true" || echo "false")
+    
+    if [ "$classic_lb_config" = "true" ] && [ "$app_lb_config" = "true" ]; then
+        echo -e "${YELLOW}WARNING: Configuration contains both Classic Load Balancer (elb) and Application Load Balancer (elbv2) settings.${NC}"
+        echo -e "  This may cause conflicts or unexpected behavior."
+        echo -e "  ${BOLD}Fix:${NC} Choose either Classic Load Balancer or Application Load Balancer, not both."
+        echo -e "  1. For Application Load Balancer (recommended), remove all 'aws:elb:' namespace settings."
+        echo -e "  2. For Classic Load Balancer, remove all 'aws:elbv2:' namespace settings."
+    fi
+    
+    # Check load balancer type matches configuration
+    local lb_type=$(grep -A 2 "\"Namespace\": \"aws:elasticbeanstalk:environment\", *\n *\"OptionName\": \"LoadBalancerType\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+    
+    if [ "$lb_type" = "application" ] && [ "$classic_lb_config" = "true" ]; then
+        echo -e "${YELLOW}WARNING: Load balancer type is set to 'application' but configuration contains Classic Load Balancer settings.${NC}"
+        echo -e "  ${BOLD}Fix:${NC} Remove all 'aws:elb:' namespace settings when using Application Load Balancer."
+    elif [ "$lb_type" = "classic" ] && [ "$app_lb_config" = "true" ]; then
+        echo -e "${YELLOW}WARNING: Load balancer type is set to 'classic' but configuration contains Application Load Balancer settings.${NC}"
+        echo -e "  ${BOLD}Fix:${NC} Remove all 'aws:elbv2:' namespace settings when using Classic Load Balancer."
+    fi
+    
+    return 0
+}
+
+# Check for common parameter issues
+check_common_parameters() {
+    # Check instance type is valid
+    local instance_type=$(grep -A 2 "\"Namespace\": \"aws:autoscaling:launchconfiguration\", *\n *\"OptionName\": \"InstanceType\"" "$CONFIG_FILE" | grep "\"Value\":" | sed -E 's/.*"Value": *"([^"]*).*/\1/')
+    
+    if [ -n "$instance_type" ]; then
+        # Simple check for valid instance type pattern
+        if ! echo "$instance_type" | grep -E "^[a-z][1-9][.][a-z0-9]+$" > /dev/null; then
+            echo -e "${YELLOW}WARNING: Instance type '$instance_type' may not be valid.${NC}"
+            echo -e "  ${BOLD}Fix:${NC} Ensure you're using a valid AWS instance type (e.g., t2.micro, t3.small, etc.)"
+        fi
+    fi
+    
+    # Check for environment variables that might contain sensitive information
+    grep -n "\"Namespace\": \"aws:elasticbeanstalk:application:environment\"" "$CONFIG_FILE" -A 2 | grep -i "password\|secret\|key\|token" > /dev/null
+    if [ $? -eq 0 ]; then
+        echo -e "${YELLOW}WARNING: Environment configuration may contain sensitive information.${NC}"
+        echo -e "  Avoid storing passwords, secrets, or keys directly in the configuration."
+        echo -e "  ${BOLD}Fix:${NC} Use AWS Systems Manager Parameter Store or Secrets Manager for sensitive values."
+    fi
+    
+    return 0
+}
+
+# Main validation logic
+validation_errors=0
+
+# Run all validation checks
+echo -e "${BLUE}Checking for required parameters...${NC}"
+check_parameter "aws:elasticbeanstalk:environment" "ServiceRole" "AWS service role is required" "Add the ServiceRole parameter with your EB service role ARN"
+validation_errors=$((validation_errors + $?))
+
+echo -e "${BLUE}Validating HTTPS configuration...${NC}"
+check_https_configuration
+validation_errors=$((validation_errors + $?))
+
+echo -e "${BLUE}Validating RDS database configuration...${NC}"
+validate_rds_configuration
+validation_errors=$((validation_errors + $?))
+
+echo -e "${BLUE}Checking load balancer configuration...${NC}"
+check_load_balancer_configuration
+validation_errors=$((validation_errors + $?))
+
+echo -e "${BLUE}Checking common parameters...${NC}"
+check_common_parameters
+validation_errors=$((validation_errors + $?))
+
+# Summary
+echo -e "${BLUE}${BOLD}======== VALIDATION SUMMARY ========${NC}"
+if [ $validation_errors -eq 0 ]; then
+    echo -e "${GREEN}Configuration appears valid! No critical errors detected.${NC}"
+    echo -e "${YELLOW}Note: This tool cannot catch all possible configuration issues.${NC}"
+    echo -e "${YELLOW}If deployment still fails, check the AWS Elastic Beanstalk console for specific error messages.${NC}"
+else
+    echo -e "${RED}Found $validation_errors potential issues that might cause deployment failure.${NC}"
+    echo -e "${YELLOW}Please fix the reported issues before attempting deployment.${NC}"
+fi
+
+# Add common error reference
+echo -e "${BLUE}${BOLD}======== COMMON ERROR REFERENCE ========${NC}"
+echo -e "${BOLD}Error:${NC} Configuration validation exception: Before you can create a database, 'DBPassword' must be set."
+echo -e "${BOLD}Fix:${NC} Add the DBPassword parameter to your configuration:"
+echo -e "  {\"Namespace\": \"aws:rds:dbinstance\", \"OptionName\": \"DBPassword\", \"Value\": \"YourSecurePassword\"}"
+echo
+echo -e "${BOLD}Error:${NC} Invalid option value: 'x.y' (Namespace: 'aws:rds:dbinstance', OptionName: 'DBEngineVersion'): Engine Version x.y not supported"
+echo -e "${BOLD}Fix:${NC} Use the AWS CLI to check supported versions and update your configuration:"
+echo -e "  aws rds describe-db-engine-versions --engine postgres --query \"DBEngineVersions[].EngineVersion\""
+echo
+echo -e "${BOLD}Error:${NC} You must specify an SSL certificate to configure a listener to use HTTPS"
+echo -e "${BOLD}Fix:${NC} Either add an SSL certificate or disable HTTPS listener:"
+echo -e "  1. Add certificate: {\"Namespace\": \"aws:elb:listener:443\", \"OptionName\": \"SSLCertificateId\", \"Value\": \"arn:aws:acm:region:account:certificate/id\"}"
+echo -e "  2. Disable HTTPS: {\"Namespace\": \"aws:elb:listener:443\", \"OptionName\": \"ListenerEnabled\", \"Value\": \"false\"}"
+echo
+echo -e "${BOLD}Error:${NC} VPC with id 'vpc-xxx' not found"
+echo -e "${BOLD}Fix:${NC} Ensure the VPC ID exists and is accessible from your AWS account"
+
+exit $validation_errors

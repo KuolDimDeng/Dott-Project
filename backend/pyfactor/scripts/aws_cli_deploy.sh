@@ -18,7 +18,7 @@ ENV_NAME="Dott-env"
 VERSION_LABEL="V$(date '+%Y%m%d%H%M%S')" # Unique version label with timestamp
 S3_BUCKET="dott-app-deployments-dockerebmanual001"
 AWS_REGION="us-east-1" # Default to us-east-1, change if needed
-PLATFORM_ARN="arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux 2023/4.5.1"
+PLATFORM_ARN="arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux 2023/4.5.2"
 INSTANCE_TYPE="t2.medium" # From your configuration
 EC2_KEY_PAIR="dott-key-pair" # From your configuration
 

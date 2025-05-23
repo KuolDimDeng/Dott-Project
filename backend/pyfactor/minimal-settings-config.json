@@ -1,0 +1,57 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "ServiceRole",
+    "Value": "arn:aws:iam::471112661935:role/aws-elasticbeanstalk-service-role"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "EnvironmentType",
+    "Value": "LoadBalanced"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "LoadBalancerType",
+    "Value": "application"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "IamInstanceProfile",
+    "Value": "aws-elasticbeanstalk-ec2-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "InstanceType",
+    "Value": "t2.small"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "EC2KeyName",
+    "Value": "dott-key-pair"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "VPCId",
+    "Value": "vpc-0564a66b550c7063e"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "AssociatePublicIpAddress",
+    "Value": "true"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "Subnets",
+    "Value": "subnet-0cc4a92e849ff4b13,subnet-08cd4e29bf37927d4,subnet-005ad102daaebca3a,subnet-00c1377c2d03b3214,subnet-058e65aed208fc90b,subnet-06d85dd067b0b1d59"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "ELBSubnets",
+    "Value": "subnet-005ad102daaebca3a,subnet-00c1377c2d03b3214,subnet-058e65aed208fc90b,subnet-06d85dd067b0b1d59,subnet-08cd4e29bf37927d4,subnet-0cc4a92e849ff4b13"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DJANGO_SETTINGS_MODULE",
+    "Value": "pyfactor.settings_eb"
+  }
+]

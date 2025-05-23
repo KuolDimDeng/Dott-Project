@@ -221,7 +221,7 @@ else
         aws elasticbeanstalk create-environment \
             --application-name ${APPLICATION_NAME} \
             --environment-name ${ENVIRONMENT_NAME} \
-            --solution-stack-name "64bit Amazon Linux 2023 v4.5.1 running Docker" \
+            --solution-stack-name "64bit Amazon Linux 2023 v4.5.2 running Docker" \
             --version-label ${VERSION_LABEL} \
             --option-settings file://${ENV_OPTIONS_FILE} \
             --region ${REGION}
@@ -230,7 +230,7 @@ else
         aws elasticbeanstalk create-environment \
             --application-name ${APPLICATION_NAME} \
             --environment-name ${ENVIRONMENT_NAME} \
-            --solution-stack-name "64bit Amazon Linux 2023 v4.5.1 running Docker" \
+            --solution-stack-name "64bit Amazon Linux 2023 v4.5.2 running Docker" \
             --version-label ${VERSION_LABEL} \
             --region ${REGION}
     fi

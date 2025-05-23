@@ -1,0 +1,174 @@
+# DottApps Deployment Guide for AWS Elastic Beanstalk
+
+## Overview
+
+This document provides a comprehensive guide for deploying the DottApps application to AWS Elastic Beanstalk. It includes setup instructions, configuration details, and troubleshooting tips.
+
+## Deployment Prerequisites
+
+Before deployment, ensure the following prerequisites are met:
+
+1. AWS CLI is installed and configured with appropriate credentials
+2. Elastic Beanstalk CLI is installed (optional, but recommended)
+3. A deployment package is prepared and available locally
+4. AWS account has necessary permissions for Elastic Beanstalk, RDS, and related services
+
+## Configuration Details
+
+The DottApps application requires the following configuration:
+
+### Application Configuration
+
+- **Application Name**: DottApps
+- **Environment Name**: DottApps-env
+- **Platform**: Docker running on 64bit Amazon Linux 2023/4.5.2
+- **Service Role**: `arn:aws:iam::471112661935:role/aws-elasticbeanstalk-service-role`
+- **EC2 Instance Profile**: `aws-elasticbeanstalk-ec2-role`
+- **EC2 Key Pair**: `dott-key-pair`
+
+### Network Configuration
+
+- **VPC**: `vpc-0564a66b550c7063e`
+- **Public IP Address**: `true`
+- **Instance Subnets**: 
+  - `subnet-0cc4a92e849ff4b13`
+  - `subnet-08cd4e29bf37927d4`
+  - `subnet-005ad102daaebca3a`
+  - `subnet-00c1377c2d03b3214`
+  - `subnet-058e65aed208fc90b`
+  - `subnet-06d85dd067b0b1d59`
+
+### Load Balancer Configuration
+
+- **Load Balancer Type**: Application Load Balancer
+- **Security Groups**: `sg-0d385b514eeee83dd`
+- **SSL Certificate**: `arn:aws:acm:us-east-1:471112661935:certificate/e7526d2d-484b-4b91-a594-cdcbf8df5810`
+- **Listener Port**: 443 (HTTPS)
+
+### Database Configuration
+
+- **Database Engine**: PostgreSQL
+- **Engine Version**: 13.16
+- **Instance Class**: `db.t3.small`
+- **Allocated Storage**: 10GB
+- **Multi-AZ**: Disabled
+- **Deletion Policy**: Snapshot
+
+### Auto-scaling Configuration
+
+- **Environment Type**: Load Balanced
+- **Min Instances**: 1
+- **Max Instances**: 3
+- **Instance Type**: t2.medium
+- **Trigger Metric**: NetworkOut
+- **Upper Threshold**: 6,000,000 bytes
+- **Lower Threshold**: 2,000,000 bytes
+- **Scale Up Increment**: 1
+- **Scale Down Increment**: -1
+
+## Deployment Process
+
+### Step 1: Prepare Configuration
+
+Run the following scripts in sequence to prepare the environment configuration:
+
+1. **Check for deployment errors**:
+   ```bash
+   ./scripts/Version0042_deployment_error_detection.sh
+   ```
+
+2. **Fix the ServiceRole parameter**:
+   ```bash
+   ./scripts/Version0044_fix_servicerole_issue.sh
+   ```
+
+3. **Remove Classic Load Balancer settings** (to avoid conflicts):
+   ```bash
+   ./scripts/Version0056_remove_classic_lb.sh
+   ```
+
+4. **Add SSL certificate configuration**:
+   ```bash
+   ./scripts/Version0055_add_ssl_certificate.sh
+   ```
+
+### Step 2: Deploy the Application
+
+Run the final deployment script:
+
+```bash
+./scripts/Version0046_final_dottapps_deploy.sh
+```
+
+This script will:
+1. Upload the package to S3
+2. Create an application version
+3. Create or update the environment
+4. Monitor the deployment status
+
+### Step 3: Verify Deployment
+
+After deployment completes, verify the application works correctly:
+
+1. Access the application URL: https://DottApps-env.us-east-1.elasticbeanstalk.com
+2. Check the Elastic Beanstalk console for any errors or warnings
+3. Review CloudWatch logs for application issues
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+1. **ServiceRole Error**
+   - **Error**: Invalid option value: 'null' (Namespace: 'aws:elasticbeanstalk:environment', OptionName: 'ServiceRole')
+   - **Solution**: Run `Version0044_fix_servicerole_issue.sh` to set the correct ServiceRole
+
+2. **Load Balancer Conflicts**
+   - **Error**: Configuration contains both Classic Load Balancer and Application Load Balancer settings
+   - **Solution**: Run `Version0056_remove_classic_lb.sh` to remove Classic Load Balancer settings
+
+3. **SSL Certificate Error**
+   - **Error**: You must specify an SSL certificate to configure HTTPS
+   - **Solution**: Run `Version0055_add_ssl_certificate.sh` to add SSL certificate configuration
+
+4. **Database Engine Version Error**
+   - **Error**: Engine Version x.y not supported for postgres db
+   - **Solution**: Update the DBEngineVersion parameter to a supported version (13.16)
+
+5. **Listener Rules Error**
+   - **Error**: The rules provided on the listener port 80 does not exist
+   - **Solution**: Remove the Rules parameter from the elbv2:listener namespace
+
+## Maintenance
+
+### Regular Maintenance Tasks
+
+1. **Monitor Deployment Health**:
+   ```bash
+   ./scripts/check_deployment_logs.sh
+   ```
+
+2. **Update Configuration**:
+   If configuration changes are needed, update the `DottAppsConfig.json` file and re-deploy.
+
+3. **Database Backups**:
+   RDS will automatically create snapshots based on the retention period.
+
+### Scaling Considerations
+
+The application is configured to scale automatically based on network traffic. If you need to adjust scaling parameters:
+
+1. Update the `aws:autoscaling:trigger` namespace parameters in the configuration
+2. Re-deploy the application with the updated configuration
+
+## Security Considerations
+
+- SSL is configured for secure HTTPS connections
+- The database is secured within the VPC
+- EC2 instances use the `aws-elasticbeanstalk-ec2-role` IAM profile
+- Security groups restrict access to necessary ports only
+
+## Additional Resources
+
+- [AWS Elastic Beanstalk Documentation](https://docs.aws.amazon.com/elasticbeanstalk/)
+- [PostgreSQL RDS Documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_PostgreSQL.html)
+- [Elastic Load Balancing Documentation](https://docs.aws.amazon.com/elasticloadbalancing/)

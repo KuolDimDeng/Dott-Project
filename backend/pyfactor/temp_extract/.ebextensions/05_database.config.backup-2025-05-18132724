@@ -1,8 +1,0 @@
-option_settings:
-  aws:elasticbeanstalk:application:environment:
-    # These placeholders will be replaced by environment variables in the EB console
-    RDS_DB_NAME: placeholder
-    RDS_USERNAME: placeholder
-    RDS_PASSWORD: placeholder
-    RDS_HOSTNAME: placeholder
-    RDS_PORT: 5432
