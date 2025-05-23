@@ -155,4 +155,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig; /* Trigger deployment - Fri May 23 16:15:39 MDT 2025 */
