@@ -16,7 +16,7 @@ frontend:
         - "echo 'DEBUG: Checking .next directory contents:' && ls -la .next/ | head -5"
         - "echo 'DEBUG: Full directory structure:' && find .next -name '*.js' | head -10"
   artifacts:
-    baseDirectory: .next
+    baseDirectory: frontend/pyfactor_next/.next
     files:
       - '**/*'
   cache:
