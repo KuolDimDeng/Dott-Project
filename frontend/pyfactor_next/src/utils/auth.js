@@ -62,6 +62,27 @@ const getRefreshedAccessToken = async () => {
 };
 
 /**
+ * Refreshes the user session and returns new tokens
+ * @returns {Promise<Object|null>} The refreshed session or null
+ */
+export const refreshUserSession = async () => {
+  try {
+    logger.debug('[Auth] Attempting to refresh user session');
+    const { fetchAuthSession } = await import('@/config/amplifyUnified');
+    const session = await fetchAuthSession({ forceRefresh: true });
+    
+    if (session?.tokens) {
+      logger.debug('[Auth] User session refreshed successfully');
+      return session;
+    }
+    return null;
+  } catch (error) {
+    logger.error('[Auth] Failed to refresh user session:', error);
+    return null;
+  }
+};
+
+/**
  * Get the current API base URL based on the window location
  * This handles different ports in development mode
  */

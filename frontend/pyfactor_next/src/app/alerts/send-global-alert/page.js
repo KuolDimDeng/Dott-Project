@@ -5,7 +5,11 @@ import GlobalAlertPage from '../components/GlobalAlertPage';
 import AdminRoute from '../../../components/AdminRoute';
 
 const SendGlobalAlertPage = () => {
-  return <GlobalAlertPage />;
+  return (
+    <AdminRoute>
+      <GlobalAlertPage />
+    </AdminRoute>
+  );
 };
 
-export default AdminRoute(SendGlobalAlertPage);
+export default SendGlobalAlertPage;

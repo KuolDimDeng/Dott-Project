@@ -1,10 +1,12 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/subscription/route.js
 import { NextResponse } from 'next/server';
 import { cookies, headers } from 'next/headers';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';
 import { updateOnboardingStep, validateSubscription } from '@/utils/onboardingUtils';
 import crypto from 'crypto';
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
 
 // Helper function to parse cookies from header
 const parseCookies = (cookieHeader) => {
@@ -472,7 +474,7 @@ export async function POST(request) {
                         (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card'),
       tenant_id: tenantId,
       /* RLS: tenant_id instead of schema_name */
-    tenant_id: tenant.id(/-/g, '_')}`, // Format as Django expects it
+      schema_name: "tenant_" + tenantId.replace(/-/g, '_'), // Format as Django expects it
       business_id: attributes['custom:businessid'],
       cognito_sub: cognitoUserId,
       request_id: requestId,
@@ -700,7 +702,7 @@ export async function POST(request) {
         idToken: idToken
       });
       
-      logger.info(`[Subscription] Successfully updated onboarding step to ${nextStep}`);
+      logger.info('[Subscription] Successfully updated onboarding step to ' + nextStep);
     } catch (updateError) {
       // Log the error but continue since the subscription was saved successfully
       logger.warn('[Subscription] Failed to update onboarding step, but subscription was saved:', {
@@ -724,7 +726,7 @@ export async function POST(request) {
       ...data,
       setupStatus: 'pending',
       nextRoute,
-      message: `Subscription saved successfully. Redirecting to ${nextRoute === '/dashboard' ? 'dashboard' : 'payment'}...`,
+      message: "Subscription saved successfully. Redirecting to " + (nextRoute === '/dashboard' ? 'dashboard' : 'payment') + "...",
       timestamp: new Date().toISOString(),
       tenant: {
         id: tenantId,
@@ -800,7 +802,7 @@ export async function POST(request) {
       plan: body.plan.toLowerCase(),
       interval: body.interval.toLowerCase(),
       next_step: data?.next_step || targetRoute,
-      target_route: `/${targetRoute}`,
+      target_route: "/" + targetRoute,
       requires_payment: body.plan.toLowerCase() !== 'free'
     }, {
       status: 200, // Always return 200 to ensure frontend flow continues

@@ -61,6 +61,21 @@ export async function sendInvitation(email, firstName, lastName, token) {
   }
 }
 
+/**
+ * Get a specific attribute value from Cognito user attributes
+ * @param {Array} attributes - Array of Cognito user attributes
+ * @param {string} attributeName - The name of the attribute to get
+ * @returns {string|null} - The attribute value or null if not found
+ */
+export const getAttributeValue = (attributes, attributeName) => {
+  if (!attributes || !Array.isArray(attributes)) {
+    return null;
+  }
+  
+  const attribute = attributes.find(attr => attr.Name === attributeName);
+  return attribute ? attribute.Value : null;
+};
+
 export default {
   sendInvitation
 };

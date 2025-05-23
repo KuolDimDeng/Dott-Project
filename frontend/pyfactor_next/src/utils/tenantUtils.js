@@ -136,6 +136,65 @@ export const clearTenantCache = async () => {
 };
 
 /**
+ * Clear all tenant storage including cache, localStorage, sessionStorage, and cookies
+ * @returns {Promise<void>}
+ */
+export const clearTenantStorage = async () => {
+  try {
+    // Clear Amplify cache
+    await clearTenantCache();
+    await cache.removeItem(TENANT_ID_KEY);
+    
+    // Clear browser storage if available
+    if (typeof window !== 'undefined') {
+      // Clear localStorage
+      try {
+        localStorage.removeItem('tenantId');
+        localStorage.removeItem('businessid');
+        localStorage.removeItem('selectedTenant');
+        localStorage.removeItem('tenant_id');
+        localStorage.removeItem('tenant_info');
+      } catch (e) {
+        console.warn('Could not clear localStorage:', e);
+      }
+      
+      // Clear sessionStorage
+      try {
+        sessionStorage.removeItem('tenant_id');
+        sessionStorage.removeItem('tenant_info');
+        sessionStorage.removeItem('tenantId');
+        sessionStorage.removeItem('businessid');
+      } catch (e) {
+        console.warn('Could not clear sessionStorage:', e);
+      }
+      
+      // Clear cookies
+      try {
+        document.cookie = 'tenantId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'businessid=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'tenant_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } catch (e) {
+        console.warn('Could not clear cookies:', e);
+      }
+      
+      // Clear APP_CACHE
+      try {
+        if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
+          delete window.__APP_CACHE.tenant;
+        }
+      } catch (e) {
+        console.warn('Could not clear APP_CACHE:', e);
+      }
+    }
+    
+    console.log('Tenant storage cleared successfully');
+  } catch (error) {
+    console.error('Error clearing tenant storage:', error);
+    throw error;
+  }
+};
+
+/**
  * Check if user has access to tenant
  * @param {string} tenantId - The tenant ID to check
  * @returns {Promise<boolean>} Whether the user has access
@@ -250,27 +309,7 @@ export const updateTenantIdInCognito = async (tenantId) => {
 };
 
 /**
- * Set authentication tokens
- * @param {Object} tokens - The tokens to set
- * @returns {Promise<void>}
- */
-export const setTokens = async (tokens) => {
-  try {
-    await cache.setItem('auth_tokens', tokens);
-  } catch (error) {
-    console.error('Error setting tokens:', error);
-    throw error;
-  }
-};
-
-/**
- * Force validate tenant ID
- * @param {string} tenantId - The tenant ID to validate
- * @returns {Promise<boolean>} Whether the tenant ID is valid
- */
-
-/**
- * Get tenant ID from Cognito
+ * Get tenant ID from Cognito user attributes
  * @returns {Promise<string|null>} The tenant ID or null if not found
  */
 export const getTenantIdFromCognito = async () => {
@@ -299,6 +338,25 @@ export const getTenantIdFromCognito = async () => {
   }
 };
 
+/**
+ * Set authentication tokens
+ * @param {Object} tokens - The tokens to set
+ * @returns {Promise<void>}
+ */
+export const setTokens = async (tokens) => {
+  try {
+    await cache.setItem('auth_tokens', tokens);
+  } catch (error) {
+    console.error('Error setting tokens:', error);
+    throw error;
+  }
+};
+
+/**
+ * Force validate tenant ID
+ * @param {string} tenantId - The tenant ID to validate
+ * @returns {Promise<boolean>} Whether the tenant ID is valid
+ */
 export const forceValidateTenantId = async (tenantId) => {
   try {
     if (!isValidUUID(tenantId)) {
@@ -328,6 +386,7 @@ export const generateDeterministicTenantId = (input) => {
   // Convert to UUID v4 format
   return `00000000-0000-4000-a000-${Math.abs(hash).toString(16).padStart(12, '0')}`;
 };
+
 /**
  * Get secure tenant ID with validation
  * @returns {Promise<string|null>} The validated tenant ID or null if not found/valid

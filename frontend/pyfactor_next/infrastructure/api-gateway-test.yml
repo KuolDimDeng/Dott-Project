@@ -1,0 +1,63 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Minimal Dott API Gateway for Testing'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: 'production'
+    Description: 'Deployment environment'
+
+Resources:
+  # Simple API Gateway
+  DottAPIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'Dott-API-Test-${Environment}'
+      Description: 'Dott Test API Gateway'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # Simple health check resource
+  HealthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !GetAtt DottAPIGateway.RootResourceId
+      PathPart: health
+
+  # Simple GET method
+  HealthMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref HealthResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseTemplates:
+              application/json: '{"status": "healthy", "service": "dott-api-gateway"}'
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+
+  # Simple deployment
+  TestDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: HealthMethod
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      StageName: !Ref Environment
+
+Outputs:
+  APIGatewayURL:
+    Description: 'Test API Gateway endpoint URL'
+    Value: !Sub 'https://${DottAPIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+
+  APIGatewayId:
+    Description: 'API Gateway ID'
+    Value: !Ref DottAPIGateway 

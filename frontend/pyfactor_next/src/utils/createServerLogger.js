@@ -39,7 +39,7 @@ export function createServerLogger(context = {}) {
   
   // Extract tenant ID for consistent logging
   const tenant = context.tenantId || 'no-tenant';
-  const module = context.module || '';
+  const moduleName = context.module || '';
   const component = context.component || '';
   
   // Keep track of recently logged messages to prevent duplication
@@ -76,7 +76,7 @@ export function createServerLogger(context = {}) {
     recentLogs.set(logKey, Date.now());
     
     // Format prefix consistently
-    const prefix = `[${timestamp()}] [SERVER:${level}] [${tenant}] ${module ? `[${module}]` : ''} ${component ? `[${component}]` : ''}`;
+    const prefix = `[${timestamp()}] [SERVER:${level}] [${tenant}] ${moduleName ? `[${moduleName}]` : ''} ${component ? `[${component}]` : ''}`;
     
     // Perform actual logging
     switch(level) {

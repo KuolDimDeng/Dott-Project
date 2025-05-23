@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Application State - Dott</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8fafc;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      margin-top: 50px;
+    }
+    h1 {
+      color: #2563eb;
+      font-size: 24px;
+      margin-top: 0;
+    }
+    .warning {
+      background-color: #fee2e2;
+      border-left: 4px solid #ef4444;
+      padding: 12px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .info {
+      background-color: #dbeafe;
+      border-left: 4px solid #3b82f6;
+      padding: 12px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-right: 10px;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button.secondary {
+      background-color: #e5e7eb;
+      color: #1f2937;
+    }
+    button.secondary:hover {
+      background-color: #d1d5db;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .error {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+    .actions {
+      margin-top: 30px;
+      display: flex;
+      gap: 10px;
+    }
+    code {
+      background-color: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px;
+    }
+    .steps {
+      margin-top: 20px;
+    }
+    .steps li {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Application Reset Tool</h1>
+    
+    <div class="warning">
+      <strong>Warning:</strong> This page is designed to help you recover from redirect loops or authentication issues. Use the options below to reset your application state.
+    </div>
+    
+    <div class="info">
+      <strong>Information:</strong> If you're experiencing redirect loops or login issues, resetting your application state can often resolve these problems. This will clear cookies, local storage, and reset your authentication.
+    </div>
+    
+    <div class="steps">
+      <h3>Reset Options:</h3>
+      <ol>
+        <li>
+          <strong>Quick Reset</strong> - Clears most application state cookies and redirects to the sign-in page
+        </li>
+        <li>
+          <strong>Full Reset</strong> - Performs a complete reset of all cookies, local storage, and browser state
+        </li>
+        <li>
+          <strong>Go to Landing Page</strong> - Navigate to the home page with circuit breaker parameters
+        </li>
+      </ol>
+    </div>
+    
+    <div class="actions">
+      <button onclick="quickReset()">Quick Reset</button>
+      <button onclick="fullReset()">Full Reset</button>
+      <button class="secondary" onclick="safeRedirect()">Go to Landing Page</button>
+    </div>
+    
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // Display status message
+    function showStatus(message, type) {
+      const statusElement = document.getElementById('status');
+      statusElement.className = `status ${type}`;
+      statusElement.textContent = message;
+    }
+    
+    // Quick reset - clear essential cookies and redirect
+    function quickReset() {
+      try {
+        // Clear redirect-related cookies
+        clearCookies(['authToken', 'idToken', 'refreshToken', 'redirect_counter', 'onboardingStep', 
+                     'onboardedStatus', 'circuitBreakerActive', 'middleware_redirect_counter',
+                     'businessId', 'businessName', 'businessType', 'selectedPlan', 'setupCompleted']);
+        
+        // Clear simple localStorage items
+        localStorage.removeItem('redirect_loop_count');
+        localStorage.removeItem('signin_redirect_counter');
+        localStorage.removeItem('middleware_redirect_counter');
+        localStorage.removeItem('signin_attempts');
+        localStorage.removeItem('userContext_loadAttempts');
+        
+        showStatus('Quick reset successful! Redirecting in 2 seconds...', 'success');
+        
+        // Redirect to sign-in with circuit breaker
+        setTimeout(() => {
+          window.location.href = '/auth/signin?noredirect=true&noloop=true';
+        }, 2000);
+      } catch (error) {
+        showStatus('Error during quick reset: ' + error.message, 'error');
+      }
+    }
+    
+    // Full reset - clear everything
+    function fullReset() {
+      try {
+        // Clear all cookies
+        const cookies = document.cookie.split(';');
+        cookies.forEach(cookie => {
+          const name = cookie.split('=')[0].trim();
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        });
+        
+        // Clear localStorage
+        localStorage.clear();
+        
+        // Clear sessionStorage
+        sessionStorage.clear();
+        
+        // Clear AppCache
+        if (window.__APP_CACHE) {
+          Object.keys(window.__APP_CACHE).forEach(key => {
+            delete window.__APP_CACHE[key];
+          });
+        }
+        
+        showStatus('Full reset successful! Please reload the page.', 'success');
+        
+        // Redirect to sign-in with circuit breaker
+        setTimeout(() => {
+          window.location.href = '/auth/signin?noredirect=true&noloop=true';
+        }, 2000);
+      } catch (error) {
+        showStatus('Error during full reset: ' + error.message, 'error');
+      }
+    }
+    
+    // Safe redirect to home page
+    function safeRedirect() {
+      window.location.href = '/?noredirect=true&noloop=true';
+    }
+    
+    // Helper to clear specific cookies
+    function clearCookies(cookieNames) {
+      cookieNames.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      });
+    }
+  </script>
+</body>
+</html> 

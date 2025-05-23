@@ -35,7 +35,14 @@ This document tracks all scripts created for fixing issues or implementing featu
 
 | Script ID | Script Name | Purpose | Created Date | Status | Applied To |
 |-----------|-------------|---------|-------------|--------|------------|
-| *No backend scripts yet* | | | | | |
+| B0072 | Version0072_deploy_fixed_package.sh | Deploys Django application to AWS Elastic Beanstalk with proper configuration | 2025-05-22 | Executed | AWS Elastic Beanstalk environment |
+| B0073 | Version0073_fix_config_and_settings.sh | Fixes configuration format and adds missing settings module for Django deployment | 2025-05-22 | Executed | Deployment package |
+| B0074 | Version0074_fix_all_configs_and_settings.sh | Comprehensive fix for ALL configuration issues and Django deployment setup | 2025-05-22 | Executed | Deployment package |
+| B0075 | Version0075_fix_docker_config_and_package.sh | Fixes Docker-specific configuration issues and removes Python platform incompatibilities | 2025-05-22 | Executed | Deployment package |
+| B0076 | Version0076_fix_celery_import_issue.sh | Fixes Celery import issue that was preventing Django from starting in Docker container | 2025-05-22 | Executed | Deployment package |
+| B0077 | Version0077_fix_onboarding_import_issue.sh | Fixes onboarding module import issue in urls.py that was causing HTTP 500 errors | 2025-05-22 | Executed | Deployment package |
+| B0078 | Version0078_fix_dockerfile_parsing_issue.sh | Fixes Dockerfile parsing issue where EB misinterpreted Python imports as Docker image names | 2025-05-22 | Executed | Deployment package |
+| B0079 | Version0079_configure_https_ssl.sh | Configures HTTPS/SSL with AWS Certificate Manager for custom domains dottapps.com and www.dottapps.com | 2025-05-22 | Executed | Deployment package |
 
 ## Script Status Definitions
 
@@ -594,3 +601,4 @@ This file tracks all frontend scripts, their purpose, and execution status.
 | Version0049_fix_duplicate_declarations_in_SettingsManagement.mjs | Fixes duplicate variable declarations (notifySuccess, notifyError) in SettingsManagement.js | EXECUTED | 2025-05-03T16:02:35.961Z |
 | Version0051_fix_db_ssl_connection.mjs | Fixes PostgreSQL SSL connection issue by making SSL optional for localhost connections | EXECUTED | 2025-05-03T16:36:30.756Z |
 | Version0001_fix_SalesMenu_Navigation.js | Fix Sales menu navigation for Products and Services | v1.0 | 2025-05-02 | Completed |
+\n| F0058 | Version0058_fix_auth_utils_imports_payroll_api.js | Fixes auth-utils import issues in payroll API routes by creating proper auth-utils module with live Cognito integration | 2025-05-22 | Executed | src/lib/auth-utils.js |

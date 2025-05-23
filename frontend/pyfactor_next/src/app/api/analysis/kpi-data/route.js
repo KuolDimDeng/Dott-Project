@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 15);
   logger.debug('[KPI-API] Proxying KPI data request', { requestId });

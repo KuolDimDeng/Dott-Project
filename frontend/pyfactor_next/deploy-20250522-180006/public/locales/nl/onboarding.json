@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "Voer uw bedrijfsgegevens in",
+    "subtitle": "Vertel ons over uw bedrijf",
+    "nameLabel": "Bedrijfsnaam",
+    "addressLabel": "Bedrijfsadres",
+    "phoneLabel": "Bedrijfstelefoon",
+    "emailLabel": "Bedrijfse-mail",
+    "websiteLabel": "Website (optioneel)",
+    "industryLabel": "Branche",
+    "nextButton": "Doorgaan naar abonnement",
+    "errors": {
+      "nameRequired": "Bedrijfsnaam is verplicht",
+      "addressRequired": "Bedrijfsadres is verplicht",
+      "phoneRequired": "Bedrijfstelefoon is verplicht",
+      "emailRequired": "Bedrijfse-mail is verplicht",
+      "emailInvalid": "Voer een geldig e-mailadres in"
+    }
+  },
+  "subscription": {
+    "title": "Kies uw abonnement",
+    "subtitle": "Selecteer een abonnement dat past bij uw zakelijke behoeften",
+    "basic": "Basis",
+    "professional": "Professioneel",
+    "premium": "Premium",
+    "perMonth": "per maand",
+    "selectPlan": "Selecteer Abonnement",
+    "currentPlan": "Huidig Abonnement",
+    "features": {
+      "accounting": "Boekhouding en Administratie",
+      "invoicing": "Facturering",
+      "expenses": "Uitgavenbeheer",
+      "payroll": "Salarisadministratie",
+      "inventory": "Voorraadbeheer",
+      "support": "24/7 Klantenondersteuning"
+    }
+  },
+  "payment": {
+    "title": "Betalingsgegevens",
+    "subtitle": "Stel een veilige betalingsmethode in",
+    "cardName": "Naam op kaart",
+    "cardNumber": "Kaartnummer",
+    "expiry": "Vervaldatum",
+    "cvv": "CVV",
+    "saveCard": "Kaart opslaan voor toekomstige facturering",
+    "confirmPayment": "Bevestig Betaling",
+    "errors": {
+      "nameRequired": "Naam op kaart is verplicht",
+      "cardRequired": "Kaartnummer is verplicht",
+      "expiryRequired": "Vervaldatum is verplicht",
+      "cvvRequired": "CVV is verplicht"
+    }
+  },
+  "setup": {
+    "title": "Stel uw Dott-account in",
+    "subtitle": "Enkele laatste details die we moeten weten over uw bedrijf",
+    "industryLabel": "Branchetype",
+    "employeesLabel": "Aantal medewerkers",
+    "revenueLabel": "Geschatte jaaromzet",
+    "finishSetup": "Installatie voltooien",
+    "goToDashboard": "Ga naar Dashboard"
+  }
+}

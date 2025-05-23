@@ -274,9 +274,5 @@ export default function SetupPassword() {
         </form>
       </div>
     </div>
-          </div>
-        </form>
-      </div>
-    </div>
   );
 }

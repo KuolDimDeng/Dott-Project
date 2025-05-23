@@ -1,0 +1,7 @@
+{
+  "apiGatewayUrl": "https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production",
+  "apiGatewayId": "uonwc77x38",
+  "deploymentTime": "2025-05-22 23:40:23 UTC",
+  "environment": "production",
+  "status": "success"
+}

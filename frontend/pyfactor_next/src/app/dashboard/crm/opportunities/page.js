@@ -569,7 +569,5 @@ const OpportunitiesPage = () => {
   );
 };
 
-export default OpportunitiesPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(OpportunitiesPage, PAGE_ACCESS.CRM);

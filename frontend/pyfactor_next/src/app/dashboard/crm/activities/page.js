@@ -457,7 +457,5 @@ const ActivitiesPage = () => {
   );
 };
 
-export default ActivitiesPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(ActivitiesPage, PAGE_ACCESS.CRM);

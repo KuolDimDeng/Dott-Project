@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "Entrez les informations de votre entreprise",
+    "subtitle": "Parlez-nous de votre entreprise",
+    "nameLabel": "Nom de l'entreprise",
+    "addressLabel": "Adresse de l'entreprise",
+    "phoneLabel": "Téléphone de l'entreprise",
+    "emailLabel": "Email de l'entreprise",
+    "websiteLabel": "Site web (facultatif)",
+    "industryLabel": "Secteur d'activité",
+    "nextButton": "Continuer vers l'abonnement",
+    "errors": {
+      "nameRequired": "Le nom de l'entreprise est requis",
+      "addressRequired": "L'adresse de l'entreprise est requise",
+      "phoneRequired": "Le téléphone de l'entreprise est requis",
+      "emailRequired": "L'email de l'entreprise est requis",
+      "emailInvalid": "Veuillez entrer une adresse email valide"
+    }
+  },
+  "subscription": {
+    "title": "Choisissez votre forfait d'abonnement",
+    "subtitle": "Sélectionnez un forfait qui correspond aux besoins de votre entreprise",
+    "basic": "Basique",
+    "professional": "Professionnel",
+    "premium": "Premium",
+    "perMonth": "par mois",
+    "selectPlan": "Sélectionner le forfait",
+    "currentPlan": "Forfait actuel",
+    "features": {
+      "accounting": "Comptabilité et tenue de livres",
+      "invoicing": "Facturation",
+      "expenses": "Suivi des dépenses",
+      "payroll": "Traitement de la paie",
+      "inventory": "Gestion des stocks",
+      "support": "Support client 24/7"
+    }
+  },
+  "payment": {
+    "title": "Détails de paiement",
+    "subtitle": "Configurez un mode de paiement sécurisé",
+    "cardName": "Nom sur la carte",
+    "cardNumber": "Numéro de carte",
+    "expiry": "Date d'expiration",
+    "cvv": "CVV",
+    "saveCard": "Enregistrer la carte pour les facturations futures",
+    "confirmPayment": "Confirmer le paiement",
+    "errors": {
+      "nameRequired": "Le nom sur la carte est requis",
+      "cardRequired": "Le numéro de carte est requis",
+      "expiryRequired": "La date d'expiration est requise",
+      "cvvRequired": "Le CVV est requis"
+    }
+  },
+  "setup": {
+    "title": "Configurez votre compte Dott",
+    "subtitle": "Quelques détails finaux dont nous avons besoin à propos de votre entreprise",
+    "industryLabel": "Type d'industrie",
+    "employeesLabel": "Nombre d'employés",
+    "revenueLabel": "Revenu annuel estimé",
+    "finishSetup": "Terminer la configuration",
+    "goToDashboard": "Aller au tableau de bord"
+  }
+}

@@ -582,7 +582,5 @@ const DealsPage = () => {
   );
 };
 
-export default DealsPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(DealsPage, PAGE_ACCESS.CRM);

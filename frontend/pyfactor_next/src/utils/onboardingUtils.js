@@ -602,44 +602,58 @@ export async function validateBusinessInfo(info) {
  * @returns {Promise<boolean>} Success status
  */
 export async function updateSubscriptionInfo(subscription) {
-  if (!subscription) return false;
-  
   try {
-    // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    logger.debug('[OnboardingUtils] Updating subscription info:', subscription);
     
-    // Create attributes to update
-    const attributesToUpdate = {
-      'custom:updated_at': new Date().toISOString(),
-      'custom:subscription_done': 'TRUE'
-    };
-    
-    // Add subscription fields that exist
-    if (subscription.plan) attributesToUpdate['custom:subplan'] = subscription.plan;
-    if (subscription.interval) attributesToUpdate['custom:billingcycle'] = subscription.interval;
-    if (subscription.price) attributesToUpdate['custom:subprice'] = subscription.price.toString();
-    
-    // If it's a free plan, mark onboarding as complete
-    if (subscription.plan === 'free') {
-      attributesToUpdate['custom:onboarding'] = 'complete';
-      attributesToUpdate['custom:setupdone'] = 'true';
-      attributesToUpdate['custom:payment_done'] = 'TRUE';
-    } else {
-      // Otherwise, set onboarding step to payment
-      attributesToUpdate['custom:onboarding'] = 'payment';
+    // Validate subscription data
+    if (!subscription || typeof subscription !== 'object') {
+      throw new Error('Invalid subscription data');
     }
     
-    // Update Cognito attributes
+    // Update the user's subscription info in Cognito attributes
+    const attributes = {
+      'custom:subscription_plan': subscription.plan || '',
+      'custom:subscription_status': subscription.status || '',
+      'custom:subscription_id': subscription.id || '',
+      'custom:updated_at': new Date().toISOString()
+    };
+    
     await updateUserAttributes({
-      userAttributes: attributesToUpdate
+      userAttributes: attributes
     });
     
-    logger.info('[onboardingUtils] Updated subscription info in Cognito');
+    logger.debug('[OnboardingUtils] Subscription info updated successfully');
     return true;
   } catch (error) {
-    logger.error('[onboardingUtils] Error updating subscription info in Cognito:', error);
-    return false;
+    logger.error('[OnboardingUtils] Failed to update subscription info:', error);
+    throw error;
   }
+}
+
+/**
+ * Validate subscription data
+ * @param {Object} subscription - The subscription object to validate
+ * @returns {boolean} - True if valid, throws error if invalid
+ */
+export function validateSubscription(subscription) {
+  if (!subscription || typeof subscription !== 'object') {
+    throw new Error('Subscription data is required');
+  }
+  
+  if (!subscription.plan) {
+    throw new Error('Subscription plan is required');
+  }
+  
+  const validPlans = ['free', 'basic', 'premium', 'enterprise'];
+  if (!validPlans.includes(subscription.plan.toLowerCase())) {
+    throw new Error('Invalid subscription plan');
+  }
+  
+  if (subscription.status && !['active', 'inactive', 'pending', 'cancelled'].includes(subscription.status.toLowerCase())) {
+    throw new Error('Invalid subscription status');
+  }
+  
+  return true;
 }
 
 /**

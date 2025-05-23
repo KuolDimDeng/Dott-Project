@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { CognitoIdentityProviderClient, AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
-import { getLogger } from '@/utils/logger';
+import { logger } from '@/utils/logger';
 
-const logger = getLogger('fix-attributes-api');
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
 
 // Cognito configuration
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';

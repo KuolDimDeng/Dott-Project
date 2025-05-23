@@ -1,0 +1,71 @@
+{
+  "timestamp": "2025-05-23T00:06:34.573Z",
+  "apiGatewayUrl": "https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production",
+  "results": {
+    "health": true,
+    "auth": {
+      "/payroll/reports": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/payroll/run": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/payroll/export-report": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/payroll/settings": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/business/profile": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/business/employees": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/business/settings": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/onboarding/business-info": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/onboarding/subscription": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      },
+      "/onboarding/setup": {
+        "unauthorized": true,
+        "invalidToken": false,
+        "passed": false
+      }
+    },
+    "rateLimiting": true,
+    "summary": {
+      "total": 21,
+      "passed": 11,
+      "failed": 10
+    }
+  },
+  "summary": {
+    "healthCheck": "PASS",
+    "authenticationTests": "0/10 PASSED",
+    "rateLimitingTest": "PASS",
+    "overallStatus": "10 TESTS FAILED"
+  }
+}

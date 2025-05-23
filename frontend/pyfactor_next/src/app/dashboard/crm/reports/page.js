@@ -495,7 +495,5 @@ const CRMReportsPage = () => {
   );
 };
 
-export default CRMReportsPage;
-
 // Wrap the component with page access control
 export default withPageAccess(CRMReportsPage, PAGE_ACCESS.CRM);

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-05-23 00:08:45 UTC",
+  "apiGatewayId": "uonwc77x38",
+  "apiGatewayName": "Dott-API-production",
+  "stage": "production",
+  "monitoring": {
+    "alarms": {
+      "created": [
+        "Dott-API-HighErrorRate",
+        "Dott-API-HighLatency",
+        "Dott-API-HighThrottling",
+        "Dott-API-LowRequestCount"
+      ],
+      "total": 4
+    },
+    "dashboard": "Dott-API-Gateway-Dashboard",
+    "metricsTracked": [
+      "Count",
+      "4XXError",
+      "5XXError",
+      "Latency",
+      "Throttles"
+    ]
+  },
+  "urls": {
+    "cloudWatchDashboard": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#dashboards:name=Dott-API-Gateway-Dashboard",
+    "cloudWatchAlarms": "https://console.aws.amazon.com/cloudwatch/home?region=us-east-1#alarmsV2:",
+    "apiGatewayConsole": "https://console.aws.amazon.com/apigateway/main/apis/uonwc77x38/resources?api=uonwc77x38&region=us-east-1"
+  }
+}

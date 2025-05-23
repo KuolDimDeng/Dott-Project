@@ -583,7 +583,5 @@ const LeadsPage = () => {
   );
 };
 
-export default LeadsPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(LeadsPage, PAGE_ACCESS.CRM);

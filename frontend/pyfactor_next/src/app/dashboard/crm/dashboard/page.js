@@ -239,7 +239,5 @@ const CRMDashboard = () => {
   );
 };
 
-export default CRMDashboard; 
-
 // Wrap the component with page access control
 export default withPageAccess(CRMDashboard, PAGE_ACCESS.CRM);

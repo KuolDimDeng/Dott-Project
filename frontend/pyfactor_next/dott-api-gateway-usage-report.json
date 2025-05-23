@@ -1,0 +1,38 @@
+{
+  "reportPeriod": {
+    "start": "2025-05-22 00:08:45 UTC",
+    "end": "2025-05-23 00:08:45 UTC"
+  },
+  "metrics": {
+    "TotalRequests": {
+      "total": 15.0,
+      "average": 1.0,
+      "dataPoints": 1
+    },
+    "SuccessfulRequests": {
+      "total": 15.0,
+      "average": 1.0,
+      "dataPoints": 1
+    },
+    "ClientErrors": {
+      "total": 15.0,
+      "average": 1.0,
+      "dataPoints": 1
+    },
+    "ServerErrors": {
+      "total": 0.0,
+      "average": 0.0,
+      "dataPoints": 1
+    },
+    "AverageLatency": {
+      "total": 0.0,
+      "average": 0.0,
+      "dataPoints": 1
+    },
+    "Throttles": {
+      "total": 0,
+      "average": 0,
+      "dataPoints": 0
+    }
+  }
+}

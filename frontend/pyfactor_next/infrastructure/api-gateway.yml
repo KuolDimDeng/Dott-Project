@@ -1,0 +1,330 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Dott API Gateway with Cognito Authorization'
+
+Parameters:
+  CognitoUserPoolId:
+    Type: String
+    Default: 'us-east-1_JPL8vGfb6'
+    Description: 'Cognito User Pool ID'
+  
+  DjangoBackendUrl:
+    Type: String
+    Default: 'https://api.dottapps.com'
+    Description: 'Django Backend URL'
+  
+  NextJSApiUrl:
+    Type: String
+    Default: 'https://your-nextjs-deployment.vercel.app'
+    Description: 'Next.js API Routes URL'
+  
+  Environment:
+    Type: String
+    Default: 'production'
+    AllowedValues: ['development', 'staging', 'production']
+    Description: 'Deployment environment'
+
+Resources:
+  # API Gateway
+  DottAPIGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub 'Dott-API-${Environment}'
+      Description: 'Dott Application API Gateway'
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Policy:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 'execute-api:Invoke'
+            Resource: '*'
+
+  # Cognito Authorizer
+  CognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: DottCognitoAuth
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref DottAPIGateway
+      ProviderARNs:
+        - !Sub 'arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${CognitoUserPoolId}'
+
+  # API Gateway Resources
+  AuthResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !GetAtt DottAPIGateway.RootResourceId
+      PathPart: auth
+
+  PayrollResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !GetAtt DottAPIGateway.RootResourceId
+      PathPart: payroll
+
+  BusinessResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !GetAtt DottAPIGateway.RootResourceId
+      PathPart: business
+
+  OnboardingResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !GetAtt DottAPIGateway.RootResourceId
+      PathPart: onboarding
+
+  # Payroll Sub-resources
+  PayrollReportsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref PayrollResource
+      PathPart: reports
+
+  PayrollRunResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref PayrollResource
+      PathPart: run
+
+  PayrollExportResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref PayrollResource
+      PathPart: export-report
+
+  PayrollSettingsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref PayrollResource
+      PathPart: settings
+
+  # Payroll API Methods
+  PayrollReportsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollReportsResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      RequestParameters:
+        method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub '${NextJSApiUrl}/api/payroll/reports'
+        PassthroughBehavior: WHEN_NO_MATCH
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestParameters:
+          integration.request.header.Authorization: method.request.header.Authorization
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+
+  PayrollRunMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollRunResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      RequestParameters:
+        method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub '${NextJSApiUrl}/api/payroll/run'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.header.Authorization: method.request.header.Authorization
+
+  PayrollExportMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollExportResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      RequestParameters:
+        method.request.header.Authorization: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub '${NextJSApiUrl}/api/payroll/export-report'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.header.Authorization: method.request.header.Authorization
+
+  PayrollSettingsGetMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollSettingsResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: GET
+        Uri: !Sub '${NextJSApiUrl}/api/payroll/settings'
+        PassthroughBehavior: WHEN_NO_MATCH
+
+  PayrollSettingsPostMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollSettingsResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub '${NextJSApiUrl}/api/payroll/settings'
+        PassthroughBehavior: WHEN_NO_MATCH
+
+  # Django Backend Proxy (catch-all for business logic)
+  BusinessProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref BusinessResource
+      PathPart: '{proxy+}'
+
+  BusinessProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref BusinessProxyResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub '${DjangoBackendUrl}/api/business/{proxy}'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.proxy: method.request.path.proxy
+
+  # Onboarding Proxy
+  OnboardingProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ParentId: !Ref OnboardingResource
+      PathPart: '{proxy+}'
+
+  OnboardingProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref OnboardingProxyResource
+      HttpMethod: ANY
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      RequestParameters:
+        method.request.path.proxy: true
+      Integration:
+        Type: HTTP_PROXY
+        IntegrationHttpMethod: ANY
+        Uri: !Sub '${DjangoBackendUrl}/api/onboarding/{proxy}'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestParameters:
+          integration.request.path.proxy: method.request.path.proxy
+
+  # CORS for Payroll Resources
+  PayrollReportsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      ResourceId: !Ref PayrollReportsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # API Deployment
+  APIDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - PayrollReportsMethod
+      - PayrollRunMethod
+      - PayrollExportMethod
+      - PayrollSettingsGetMethod
+      - PayrollSettingsPostMethod
+      - BusinessProxyMethod
+      - OnboardingProxyMethod
+    Properties:
+      RestApiId: !Ref DottAPIGateway
+      StageName: !Ref Environment
+
+  # Usage Plan for Rate Limiting
+  APIUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: APIDeployment
+    Properties:
+      UsagePlanName: !Sub 'Dott-UsagePlan-${Environment}'
+      Description: "Usage plan for Dott API"
+      ApiStages:
+        - ApiId: !Ref DottAPIGateway
+          Stage: !Ref Environment
+      Throttle:
+        BurstLimit: 100
+        RateLimit: 50
+      Quota:
+        Limit: 10000
+        Period: DAY
+
+Outputs:
+  APIGatewayURL:
+    Description: 'API Gateway endpoint URL'
+    Value: !Sub 'https://${DottAPIGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}'
+    Export:
+      Name: !Sub '${AWS::StackName}-APIGatewayURL'
+
+  APIGatewayId:
+    Description: 'API Gateway ID'
+    Value: !Ref DottAPIGateway
+    Export:
+      Name: !Sub '${AWS::StackName}-APIGatewayId'
+
+  CognitoAuthorizerId:
+    Description: 'Cognito Authorizer ID'
+    Value: !Ref CognitoAuthorizer
+    Export:
+      Name: !Sub '${AWS::StackName}-CognitoAuthorizerId' 

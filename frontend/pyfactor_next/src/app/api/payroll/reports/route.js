@@ -4,6 +4,9 @@ import { getDbConfigFromEnv } from '@/utils/db-config';
 import { createServerLogger } from '@/utils/serverLogger';
 import { getAuthenticatedUser } from '@/lib/auth-utils';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 const logger = createServerLogger('payroll-reports-api');
 
 /**

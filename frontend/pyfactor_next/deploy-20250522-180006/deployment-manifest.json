@@ -1,0 +1,19 @@
+{
+  "deploymentId": "20250522-180006",
+  "timestamp": "2025-05-22 18:01:30 UTC",
+  "version": "0.1.0",
+  "environment": "production",
+  "apiGatewayUrl": "https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production",
+  "frontendDomain": "frontend.dottapps.com",
+  "buildInfo": {
+    "nodeVersion": "v22.11.0",
+    "pnpmVersion": "9.14.4",
+    "nextVersion": "15.3.1"
+  },
+  "features": {
+    "apiGateway": true,
+    "cognitoAuth": true,
+    "rdsDatabase": true,
+    "payrollApi": true
+  }
+} 

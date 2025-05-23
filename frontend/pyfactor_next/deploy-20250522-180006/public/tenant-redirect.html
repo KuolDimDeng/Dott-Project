@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Initialize app cache
+    if (!window.__APP_CACHE) {
+      window.__APP_CACHE = {};
+    }
+    
+    // AppCache utility functions
+    function setCacheValue(key, value, options = {}) {
+      try {
+        const now = Date.now();
+        const ttl = options.ttl || 3600000 * 24 * 30; // Default 30 days
+        
+        // Create cache entry with metadata
+        window.__APP_CACHE[key] = {
+          value,
+          timestamp: now,
+          expiresAt: now + ttl,
+          ttl
+        };
+        
+        return true;
+      } catch (error) {
+        console.error(`[AppCache] Error setting cache value for key ${key}:`, error);
+        return false;
+      }
+    }
+    
+    // Extract tenant ID from URL path
+    function getTenantIdFromUrl() {
+      const pathParts = window.location.pathname.split('/');
+      if (pathParts.length > 1) {
+        const potentialTenantId = pathParts[1];
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        
+        if (uuidRegex.test(potentialTenantId)) {
+          return potentialTenantId;
+        }
+      }
+      return null;
+    }
+    
+    // Store tenant ID in AppCache
+    function storeTenantId(tenantId) {
+      if (!tenantId) return;
+      
+      // Store in AppCache (30 day expiry)
+      const options = { ttl: 3600000 * 24 * 30 }; // 30 days in milliseconds
+      setCacheValue('tenantId', tenantId, options);
+      setCacheValue('businessid', tenantId, options);
+    }
+    
+    // Main redirect function - immediately redirect without showing loading UI
+    function handleRedirect() {
+      // Get tenant ID from URL
+      const tenantId = getTenantIdFromUrl();
+      
+      if (!tenantId) {
+        window.location.href = '/dashboard';
+        return;
+      }
+      
+      // Store tenant ID
+      storeTenantId(tenantId);
+      
+      // Get existing query parameters
+      const queryParams = new URLSearchParams(window.location.search);
+      
+      // Create new query string, adding direct=true to prevent redirect loops
+      const newParams = new URLSearchParams();
+      
+      // Add all existing query parameters
+      for (const [key, value] of queryParams.entries()) {
+        newParams.append(key, value);
+      }
+      
+      // Add tenant ID and direct flag
+      newParams.append('tenantId', tenantId);
+      newParams.append('direct', 'true');
+      newParams.append('from', 'html_redirect');
+      
+      // Create redirect URL
+      const redirectUrl = `/dashboard?${newParams.toString()}`;
+      
+      // Redirect immediately
+      window.location.href = redirectUrl;
+    }
+    
+    // Run redirect function immediately
+    handleRedirect();
+  </script>
+</head>
+<body>
+  <!-- No visible content - immediate redirect -->
+</body>
+</html> 

@@ -10,6 +10,9 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { EOL } from 'os';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 const logger = createServerLogger('payroll-export-api');
 
 /**

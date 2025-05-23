@@ -7,23 +7,36 @@ frontend:
         - npm install -g pnpm@8.10.0
         - pnpm install
         - echo "Setting up environment for production build..."
+        - echo "NODE_ENV=production" >> .env.production
         - echo "NEXT_PUBLIC_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production" >> .env.production
         - echo "BACKEND_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production" >> .env.production
+        - echo "USE_DATABASE=true" >> .env.production
+        - echo "MOCK_DATA_DISABLED=true" >> .env.production
+        - echo "PROD_MODE=true" >> .env.production
+        - echo "Environment configured for production deployment"
     build:
       commands:
-        - echo "Building Next.js application for static export..."
+        - echo "Building Next.js application for production deployment..."
         - echo "API URL will be set to https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production"
+        - export NODE_ENV=production
+        - export NEXT_PUBLIC_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production
+        - export BACKEND_API_URL=https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production
+        - export USE_DATABASE=true
+        - export MOCK_DATA_DISABLED=true
+        - export PROD_MODE=true
+        - export NODE_OPTIONS="--max-old-space-size=4096"
+        - echo "Starting build with optimized memory settings..."
         - pnpm run build
-        - pnpm run export
     postBuild:
       commands:
-        - echo "Static export completed successfully!"
+        - echo "Build completed successfully!"
         - echo "Checking build output..."
-        - ls -la out/
-        - echo "Verifying index.html exists..."
-        - test -f out/index.html && echo "✅ index.html found" || echo "❌ index.html missing"
+        - ls -la .next/ || echo "No .next directory found"
+        - echo "Verifying static export..."
+        - test -d .next && echo "✅ .next build found" || echo "❌ .next build missing"
+        - echo "Build artifacts ready for deployment"
   artifacts:
-    baseDirectory: out
+    baseDirectory: .next
     files:
       - '**/*'
   cache:

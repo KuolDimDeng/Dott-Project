@@ -397,7 +397,5 @@ const CampaignsPage = () => {
   );
 };
 
-export default CampaignsPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(CampaignsPage, PAGE_ACCESS.CRM);

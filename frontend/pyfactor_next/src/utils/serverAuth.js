@@ -354,3 +354,36 @@ export async function fetchUserAttributes(req) {
     return null;
   }
 }
+
+/**
+ * Require authentication for a request
+ * @param {Request} request - The incoming request
+ * @returns {Promise<Object>} - The authenticated user or throws error
+ */
+export async function requireAuth(request) {
+  const user = await getServerUser(request);
+  
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+  
+  return user;
+}
+
+/**
+ * Get authentication headers from request
+ * @param {Request} request - The incoming request
+ * @returns {Object} - Object containing auth headers
+ */
+export function getAuthHeaders(request) {
+  const token = extractTokenFromRequest(request);
+  
+  if (!token) {
+    return {};
+  }
+  
+  return {
+    'Authorization': `Bearer ${token}`,
+    'X-Id-Token': token
+  };
+}

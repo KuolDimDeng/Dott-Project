@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { handleAuthResponse, fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 
@@ -23,7 +23,7 @@ export default function Callback() {
         // Handle the OAuth callback
         let tokens;
         try {
-          const authResponse = await handleAuthResponse();
+          const authResponse = await fetchAuthSession();
           tokens = authResponse?.tokens;
           logger.debug('[OAuth Callback] Auth response handled:', { 
             hasTokens: !!tokens,

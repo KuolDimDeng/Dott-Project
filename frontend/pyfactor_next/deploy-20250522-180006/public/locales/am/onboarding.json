@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "የንግድዎን መረጃ ያስገቡ",
+    "subtitle": "ስለ ኩባንያዎ ይንገሩን",
+    "nameLabel": "የንግድ ስም",
+    "addressLabel": "የንግድ አድራሻ",
+    "phoneLabel": "የንግድ ስልክ",
+    "emailLabel": "የንግድ ኢሜይል",
+    "websiteLabel": "ድህረ ገጽ (አማራጭ)",
+    "industryLabel": "ኢንዱስትሪ",
+    "nextButton": "ወደ ምዝገባ ይቀጥሉ",
+    "errors": {
+      "nameRequired": "የንግድ ስም ያስፈልጋል",
+      "addressRequired": "የንግድ አድራሻ ያስፈልጋል",
+      "phoneRequired": "የንግድ ስልክ ያስፈልጋል",
+      "emailRequired": "የንግድ ኢሜይል ያስፈልጋል",
+      "emailInvalid": "እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ"
+    }
+  },
+  "subscription": {
+    "title": "የደንበኝነት እቅድዎን ይምረጡ",
+    "subtitle": "ከንግድዎ ፍላጎቶች ጋር የሚጣጣም እቅድ ይምረጡ",
+    "basic": "መሰረታዊ",
+    "professional": "ሙያዊ",
+    "premium": "ፕሪሚየም",
+    "perMonth": "በወር",
+    "selectPlan": "እቅድ ይምረጡ",
+    "currentPlan": "አሁን ያለው እቅድ",
+    "features": {
+      "accounting": "የሂሳብ እና የሂሳብ አያያዝ",
+      "invoicing": "ደረሰኝ እና ክፍያ",
+      "expenses": "የወጪ መከታተያ",
+      "payroll": "የደመወዝ ክፍያ ሂደት",
+      "inventory": "የእቃ ክምችት አያያዝ",
+      "support": "24/7 የደንበኞች ድጋፍ"
+    }
+  },
+  "payment": {
+    "title": "የክፍያ ዝርዝሮች",
+    "subtitle": "አስተማማኝ የክፍያ ዘዴ ያዋቅሩ",
+    "cardName": "በካርድ ላይ ያለው ስም",
+    "cardNumber": "የካርድ ቁጥር",
+    "expiry": "የመጨረሻ ቀን",
+    "cvv": "CVV",
+    "saveCard": "ለወደፊት ክፍያዎች ካርድ ያስቀምጡ",
+    "confirmPayment": "ክፍያን ያረጋግጡ",
+    "errors": {
+      "nameRequired": "በካርድ ላይ ያለው ስም ያስፈልጋል",
+      "cardRequired": "የካርድ ቁጥር ያስፈልጋል",
+      "expiryRequired": "የመጨረሻ ቀን ያስፈልጋል",
+      "cvvRequired": "CVV ያስፈልጋል"
+    }
+  },
+  "setup": {
+    "title": "የዎትን Dott መለያ ያዋቅሩ",
+    "subtitle": "ስለ ንግድዎ ማወቅ የሚያስፈልጉን ጥቂት የመጨረሻ ዝርዝሮች",
+    "industryLabel": "የኢንዱስትሪ አይነት",
+    "employeesLabel": "የሰራተኞች ብዛት",
+    "revenueLabel": "የተገመተ አመታዊ ገቢ",
+    "finishSetup": "ማዋቀር ይጨርሱ",
+    "goToDashboard": "ወደ ዳሽቦርድ ይሂዱ"
+  }
+}

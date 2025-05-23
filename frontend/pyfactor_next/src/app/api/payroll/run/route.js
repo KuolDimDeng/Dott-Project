@@ -9,6 +9,9 @@ import { createServerLogger } from '@/utils/serverLogger';
 import { getAuthenticatedUser } from '@/lib/auth-utils';
 import { format } from 'date-fns';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 // Create logger for this endpoint
 const logger = createServerLogger('payroll-run-api');
 

@@ -12,9 +12,9 @@
 export const loadReactPdfRenderer = async () => {
   try {
     // Use dynamic import to load the library only when needed
-    const module = await import('@react-pdf/renderer');
+    const reactPdfModule = await import('@react-pdf/renderer');
     console.log('React PDF renderer loaded successfully');
-    return module;
+    return reactPdfModule;
   } catch (error) {
     console.error('Error loading React PDF renderer:', error);
     // Return stub implementation to prevent errors
@@ -67,8 +67,8 @@ export const loadPdfLib = async () => {
  */
 export const loadJsPdf = async () => {
   try {
-    const module = await import('jspdf');
-    return module.jsPDF;
+    const jsPdfModule = await import('jspdf');
+    return jsPdfModule.jsPDF;
   } catch (error) {
     console.error('Error loading jsPDF:', error);
     // Return stub implementation

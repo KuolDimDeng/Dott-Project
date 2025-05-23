@@ -1,0 +1,63 @@
+{
+  "businessInfo": {
+    "title": "Masukkan informasi bisnis Anda",
+    "subtitle": "Ceritakan tentang perusahaan Anda",
+    "nameLabel": "Nama bisnis",
+    "addressLabel": "Alamat bisnis",
+    "phoneLabel": "Telepon bisnis",
+    "emailLabel": "Email bisnis",
+    "websiteLabel": "Situs web (opsional)",
+    "industryLabel": "Industri",
+    "nextButton": "Lanjutkan ke langganan",
+    "errors": {
+      "nameRequired": "Nama bisnis diperlukan",
+      "addressRequired": "Alamat bisnis diperlukan",
+      "phoneRequired": "Telepon bisnis diperlukan",
+      "emailRequired": "Email bisnis diperlukan",
+      "emailInvalid": "Harap masukkan alamat email yang valid"
+    }
+  },
+  "subscription": {
+    "title": "Pilih paket langganan Anda",
+    "subtitle": "Pilih paket yang sesuai dengan kebutuhan bisnis Anda",
+    "basic": "Dasar",
+    "professional": "Profesional",
+    "premium": "Premium",
+    "perMonth": "per bulan",
+    "selectPlan": "Pilih Paket",
+    "currentPlan": "Paket Saat Ini",
+    "features": {
+      "accounting": "Akuntansi dan Pembukuan",
+      "invoicing": "Penagihan dan Faktur",
+      "expenses": "Pelacakan Pengeluaran",
+      "payroll": "Pemrosesan Penggajian",
+      "inventory": "Manajemen Inventaris",
+      "support": "Dukungan Pelanggan 24/7"
+    }
+  },
+  "payment": {
+    "title": "Detail Pembayaran",
+    "subtitle": "Siapkan metode pembayaran yang aman",
+    "cardName": "Nama pada kartu",
+    "cardNumber": "Nomor kartu",
+    "expiry": "Tanggal kadaluarsa",
+    "cvv": "CVV",
+    "saveCard": "Simpan kartu untuk penagihan di masa mendatang",
+    "confirmPayment": "Konfirmasi Pembayaran",
+    "errors": {
+      "nameRequired": "Nama pada kartu diperlukan",
+      "cardRequired": "Nomor kartu diperlukan",
+      "expiryRequired": "Tanggal kadaluarsa diperlukan",
+      "cvvRequired": "CVV diperlukan"
+    }
+  },
+  "setup": {
+    "title": "Siapkan akun Dott Anda",
+    "subtitle": "Beberapa detail akhir yang perlu kami ketahui tentang bisnis Anda",
+    "industryLabel": "Jenis industri",
+    "employeesLabel": "Jumlah karyawan",
+    "revenueLabel": "Perkiraan pendapatan tahunan",
+    "finishSetup": "Selesaikan Pengaturan",
+    "goToDashboard": "Pergi ke Dasbor"
+  }
+}

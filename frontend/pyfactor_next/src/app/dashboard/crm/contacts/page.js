@@ -383,7 +383,5 @@ const ContactsPage = () => {
   );
 };
 
-export default ContactsPage; 
-
 // Wrap the component with page access control
 export default withPageAccess(ContactsPage, PAGE_ACCESS.CRM);

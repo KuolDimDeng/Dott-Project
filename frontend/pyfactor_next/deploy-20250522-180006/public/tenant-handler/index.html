@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <script>
+    // Extract tenant ID from URL path
+    function extractTenantID() {
+      const path = window.location.pathname;
+      
+      // Try to match /{uuid}/dashboard pattern first
+      const dashboardMatch = path.match(/^\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/dashboard/i);
+      if (dashboardMatch && dashboardMatch[1]) {
+        return dashboardMatch[1];
+      }
+      
+      // Otherwise extract any UUID from the path
+      const uuidMatch = path.match(/\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i);
+      if (uuidMatch && uuidMatch[1]) {
+        return uuidMatch[1];
+      }
+      
+      // Check query parameters as a fallback
+      const urlParams = new URLSearchParams(window.location.search);
+      const tenantId = urlParams.get('tenantId');
+      if (tenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tenantId)) {
+        return tenantId;
+      }
+      
+      return null;
+    }
+    
+    // Store tenant ID in localStorage and cookies
+    function storeTenantID(tenantId) {
+      try {
+        // Store in localStorage
+        localStorage.setItem('tenantId', tenantId);
+        
+        // Store in cookies with 30-day expiration
+        const expiryDate = new Date();
+        expiryDate.setDate(expiryDate.getDate() + 30);
+        
+        document.cookie = `tenantId=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
+        document.cookie = `businessid=${tenantId}; path=/; expires=${expiryDate.toUTCString()}; samesite=lax`;
+        
+        return true;
+      } catch (error) {
+        console.error('Error storing tenant ID:', error);
+        return false;
+      }
+    }
+    
+    // Redirect to dashboard with tenant ID as parameter
+    function redirectToDashboard(tenantId) {
+      // Get current query parameters
+      const currentParams = new URLSearchParams(window.location.search);
+      
+      // Create new query parameters for redirect
+      const newParams = new URLSearchParams();
+      
+      // Copy all existing parameters
+      for (const [key, value] of currentParams.entries()) {
+        newParams.append(key, value);
+      }
+      
+      // Add tenant ID and direct flag to prevent redirect loops
+      newParams.set('tenantId', tenantId);
+      newParams.set('direct', 'true');
+      newParams.set('from', 'tenant_handler');
+      
+      // Create redirect URL
+      const dashboardUrl = `/dashboard?${newParams.toString()}`;
+      
+      // Redirect immediately
+      window.location.href = dashboardUrl;
+    }
+    
+    // Main function to process tenant ID
+    function processTenantID() {
+      try {
+        // Extract tenant ID from URL
+        const tenantId = extractTenantID();
+        
+        if (!tenantId) {
+          // Redirect to dashboard without tenant ID immediately
+          window.location.href = '/dashboard';
+          return;
+        }
+        
+        // Store tenant ID
+        const stored = storeTenantID(tenantId);
+        
+        // Redirect to dashboard with tenant ID
+        redirectToDashboard(tenantId);
+      } catch (error) {
+        console.error('Error processing tenant ID:', error);
+        // Redirect to dashboard on error
+        window.location.href = '/dashboard';
+      }
+    }
+    
+    // Run immediately
+    processTenantID();
+  </script>
+</head>
+<body>
+  <!-- No visible content - immediate redirect -->
+</body>
+</html>
