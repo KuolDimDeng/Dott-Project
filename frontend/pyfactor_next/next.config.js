@@ -2,7 +2,7 @@
 const path = require('path');
 
 // Get environment variables with fallbacks
-const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://Dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com';
+const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 const nextConfig = {
   // Basic Next.js settings optimized for Vercel deployment
@@ -123,14 +123,14 @@ const nextConfig = {
   // UPDATED: API rewrites with error handling and fallbacks
   async rewrites() {
     return [
-      // ENABLED: Backend connectivity fixed - now pointing to working Elastic Beanstalk deployment
+      // ENABLED: Backend connectivity with HTTPS API domain
       {
         source: '/api/backend-health',
-        destination: 'http://Dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com/health/'
+        destination: 'https://api.dottapps.com/health/'
       },
       {
         source: '/api/backend/:path*',
-        destination: 'http://Dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com/:path*'
+        destination: 'https://api.dottapps.com/:path*'
       }
     ];
   },
