@@ -9,7 +9,14 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 ### Version0001_update_backend_url_deployment.js
 - **Version**: 0001
 - **Purpose**: Update frontend configuration to point to the deployed AWS Elastic Beanstalk backend URL after successful deployment
-- **Status**: ✅ CREATED - READY FOR EXECUTION
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Execution Date**: 2025-05-24T00:10:29.066Z
+
+### Version0002_fix_backend_connectivity_deployment.js
+- **Version**: 0002
+- **Purpose**: Fix backend connectivity issues and create diagnostic tools
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Execution Date**: 2025-05-24T00:41:19.355Z
 - **Requirements**:
   - Next.js 15
   - No hardcoded environment keys

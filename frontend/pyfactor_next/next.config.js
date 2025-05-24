@@ -120,19 +120,21 @@ const nextConfig = {
     ];
   },
 
-  // API rewrites for backend communication
+  // UPDATED: API rewrites with error handling and fallbacks
   async rewrites() {
     return [
-      // Map specific backend health check (since local /api/health exists)
+      // DISABLED: Backend connectivity issues - using local API routes instead
+      // TODO: Re-enable once Elastic Beanstalk deployment is fixed
+      /*
       {
         source: '/api/backend-health',
         destination: 'https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com/health/'
       },
-      // Map backend API calls (remove /api/ prefix since backend doesn't use it)
       {
         source: '/api/backend/:path*',
         destination: 'https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com/:path*'
       }
+      */
     ];
   },
 
@@ -153,4 +155,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; /* Trigger deployment - Fri May 23 16:15:39 MDT 2025 */
+module.exports = nextConfig; /* Backend connectivity fix - 2025-05-24T00:41:19.355Z */
