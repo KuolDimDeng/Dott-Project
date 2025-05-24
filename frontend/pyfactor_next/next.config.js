@@ -123,14 +123,14 @@ const nextConfig = {
   // UPDATED: API rewrites with error handling and fallbacks
   async rewrites() {
     return [
-      // ENABLED: Backend connectivity with HTTPS API domain
+      // ENABLED: Backend connectivity with working Elastic Beanstalk URL
       {
         source: '/api/backend-health',
-        destination: 'https://api.dottapps.com/health/'
+        destination: `${BACKEND_API_URL}/health/`
       },
       {
         source: '/api/backend/:path*',
-        destination: 'https://api.dottapps.com/:path*'
+        destination: `${BACKEND_API_URL}/:path*`
       }
     ];
   },
