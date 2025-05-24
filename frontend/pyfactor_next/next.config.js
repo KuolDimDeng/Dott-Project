@@ -120,10 +120,10 @@ const nextConfig = {
     ];
   },
 
-  // UPDATED: API rewrites with error handling and fallbacks
+  // UPDATED: API rewrites for global CloudFront distribution
   async rewrites() {
     return [
-      // ENABLED: Backend connectivity with working Elastic Beanstalk URL
+      // ENABLED: Global API with CloudFront (no rewrites needed - direct API calls)
       {
         source: '/api/backend-health',
         destination: `${BACKEND_API_URL}/health/`
