@@ -8,7 +8,7 @@ from onboarding.views import DatabaseHealthCheckView
 from custom_auth.api.views.tenant_views import TenantDetailView
 
 # Import health check view
-from .health_check import health_check
+from .health_check import health_check, root_health_check, detailed_health_check
 
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -74,9 +74,10 @@ urlpatterns = [
     
     path('api/auth/', include('custom_auth.api.urls')),
     
-    # Add health check endpoint for AWS
+    # Add health check endpoints for AWS
     path('health/', health_check, name='health_check'),
     path('health-check/', health_check, name='health_check_alt'),
+    path('health/detailed/', detailed_health_check, name='detailed_health_check'),
 ]
 
 # Handle debug configuration properly

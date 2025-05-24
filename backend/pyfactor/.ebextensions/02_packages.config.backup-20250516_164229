@@ -1,7 +1,0 @@
-packages:
-  yum:
-    gcc-c++: []
-    libpq-devel: []
-    python3-devel: []
-    # Package names for PostgreSQL development libraries
-    postgresql-devel: []

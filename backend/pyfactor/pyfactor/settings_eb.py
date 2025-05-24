@@ -24,24 +24,34 @@ DEBUG = False
 
 # Update ALLOWED_HOSTS with the Elastic Beanstalk domain and our custom domain
 # Allow all AWS internal IPs for health checks and load balancers
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', '*').split(',') if os.getenv('DJANGO_ALLOWED_HOSTS') != '*' else ['*']
+DJANGO_ALLOWED_HOSTS_ENV = os.getenv('DJANGO_ALLOWED_HOSTS', '*')
 
-# Ensure we have all necessary hosts for AWS health checks
-if ALLOWED_HOSTS != ['*']:
-    ALLOWED_HOSTS.extend([
-        '.elasticbeanstalk.com',
-        'dottapps.com',
-        'api.dottapps.com',
-        'www.dottapps.com',
-        'localhost',
-        '127.0.0.1',
-        # AWS internal IPs for load balancer health checks (from logs)
-        '172.31.44.125',  # Internal instance IP
-        '54.83.126.185',  # External IP
-        '172.31.42.237',  # ELB health checker IP
-        '172.31.7.76',    # ELB health checker IP  
-        '172.31.73.73',   # ELB health checker IP
-    ])
+# Essential hosts that must always be included for AWS health checks
+REQUIRED_HOSTS = [
+    '.elasticbeanstalk.com',
+    'dottapps.com',
+    'api.dottapps.com',
+    'www.dottapps.com',
+    'localhost',
+    '127.0.0.1',
+    # AWS internal IPs for load balancer health checks (from logs)
+    '172.31.44.125',  # Internal instance IP
+    '172.31.38.137',  # ELB health checker IP 
+    '172.31.73.55',   # ELB health checker IP
+    '172.31.34.90',   # ELB health checker IP
+    '54.83.126.185',  # External IP
+    '172.31.42.237',  # ELB health checker IP
+    '172.31.7.76',    # ELB health checker IP  
+    '172.31.73.73',   # ELB health checker IP
+]
+
+if DJANGO_ALLOWED_HOSTS_ENV == '*':
+    # Use wildcard but also include specific IPs for better compatibility
+    ALLOWED_HOSTS = ['*'] + REQUIRED_HOSTS
+else:
+    # Parse comma-separated hosts and add required hosts
+    custom_hosts = [host.strip() for host in DJANGO_ALLOWED_HOSTS_ENV.split(',') if host.strip()]
+    ALLOWED_HOSTS = list(set(custom_hosts + REQUIRED_HOSTS))
 
 # Application definition
 # From original settings.py
@@ -100,6 +110,7 @@ if 'corsheaders' not in INSTALLED_APPS:
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'pyfactor.health_check.HealthCheckMiddleware',  # Add health check middleware first
     'corsheaders.middleware.CorsMiddleware',  # Added at top
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -137,7 +148,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Security settings
-SECURE_SSL_REDIRECT = True
+# Allow HTTP for ELB health checks but redirect everything else to HTTPS
+SECURE_SSL_REDIRECT = False  # Let the load balancer handle SSL termination
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

@@ -123,17 +123,15 @@ const nextConfig = {
   // API rewrites for backend communication
   async rewrites() {
     return [
+      // Map specific backend health check (since local /api/health exists)
       {
-        source: '/api/auth/:path*',
-        destination: '/api/auth/:path*'
+        source: '/api/backend-health',
+        destination: 'https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com/health/'
       },
+      // Map backend API calls (remove /api/ prefix since backend doesn't use it)
       {
-        source: '/api/onboarding/token-exchange',
-        destination: `${BACKEND_API_URL}/api/onboarding/token-exchange`
-      },
-      {
-        source: '/api/:path*',
-        destination: `${BACKEND_API_URL}/api/:path*`
+        source: '/api/backend/:path*',
+        destination: 'https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com/:path*'
       }
     ];
   },
