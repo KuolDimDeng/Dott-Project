@@ -1,7 +1,7 @@
 'use client';
 
-// Minimal safe imports for Amplify v6
-import { Amplify } from 'aws-amplify';
+// Minimal safe imports for Amplify v6 - with Hub for compatibility
+import { Amplify, Hub } from 'aws-amplify';
 import { signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
@@ -134,3 +134,6 @@ export const initAmplify = () => {
 };
 
 export default configureAmplify;
+
+// Export Hub for other components that need it
+export { Hub };
