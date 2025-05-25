@@ -1,15 +1,14 @@
 'use client';
 
 // Important: Use the correct import paths for Amplify v6
-import { Amplify } from 'aws-amplify';
+import { Amplify, Hub } from 'aws-amplify';
 import { signIn, signOut, confirmSignUp, signUp, resetPassword, confirmResetPassword } from 'aws-amplify/auth';
 import { fetchAuthSession, getCurrentUser, fetchUserAttributes, resendSignUpCode, updateUserAttributes } from 'aws-amplify/auth';
 import { signInWithRedirect, sendUserAttributeVerificationCode, confirmUserAttribute, setUpTOTP } from 'aws-amplify/auth';
-import { Hub as AmplifyHub } from 'aws-amplify/utils';
 import { logger } from '@/utils/logger';
 
 // Re-export Amplify's Hub for event listening
-export const Hub = AmplifyHub;
+export { Hub };
 
 // Get values from environment for debugging only
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
@@ -31,7 +30,7 @@ export { Amplify };
 // Track configuration state
 let isConfigured = false;
 
-// Configure Amplify
+// Configure Amplify with SIMPLIFIED v6 configuration (FIXED!)
 export const configureAmplify = (forceReconfigure = false) => {
   // Skip if already configured and force isn't set
   if (isConfigured && !forceReconfigure) {
@@ -51,6 +50,7 @@ export const configureAmplify = (forceReconfigure = false) => {
   } catch (e) {
     logger.error('[AmplifyUnified] Error during force reconfigure:', e);
   }
+  
   try {
     // Store the current environment
     const environment = process.env.NODE_ENV;
@@ -83,30 +83,17 @@ export const configureAmplify = (forceReconfigure = false) => {
       return false;
     }
     
-    // Define the configuration object - make sure we follow Amplify v6 format
-      // Define the configuration object - make sure we follow Amplify v6 format
+    // SIMPLIFIED Amplify v6 configuration - REMOVED ALL PROBLEMATIC PROPERTIES
     const amplifyConfig = {
       Auth: {
         Cognito: {
           userPoolId: userPoolId,
           userPoolClientId: userPoolClientId,
-          identityPoolId: process.env.NEXT_PUBLIC_COGNITO_IDENTITY_POOL_ID,
           region: region,
-          
-          // Development-specific settings
           loginWith: {
             email: true,
             username: true,
             phone: false
-          },
-          
-          // Enhanced network settings
-          httpOptions: {
-            timeout: 30000, // Increase timeout to 30 seconds
-            connectTimeout: 10000, // 10 second connect timeout
-            rejectUnauthorized: false, // Allow self-signed certificates
-            retryable: true, // Enable retries
-            maxRetries: 3 // Maximum retries for network operations
           }
         }
       }
@@ -173,6 +160,9 @@ export const configureAmplify = (forceReconfigure = false) => {
     // Store configuration in window for global access
     if (typeof window !== 'undefined') {
       window.__amplifyConfigured = true;
+      
+      // Add global network error handler
+      setupNetworkErrorHandler();
     }
     
     return true;
@@ -426,3 +416,80 @@ export {
   confirmUserAttribute,
   setUpTOTP
 };
+
+// Network error handler for improved reliability
+function setupNetworkErrorHandler() {
+  if (typeof window === 'undefined') return;
+  
+  // Override fetch for AWS endpoints to add better error handling
+  const originalFetch = window.fetch;
+  window.fetch = async function(url, options = {}) {
+    // Check if this is an AWS Cognito request
+    const isAwsRequest = typeof url === 'string' && (
+      url.includes('amazonaws.com') || 
+      url.includes('cognito-idp')
+    );
+    
+    if (isAwsRequest) {
+      // Ensure HTTPS
+      if (typeof url === 'string') {
+        url = url.replace('http://', 'https://');
+      }
+      
+      // Add retry logic for AWS requests
+      let lastError;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          // Add default headers for AWS requests
+          const enhancedOptions = {
+            ...options,
+            headers: {
+              'User-Agent': 'DottApps/1.0.0 (Web)',
+              'X-Requested-With': 'XMLHttpRequest',
+              'Cache-Control': 'no-cache',
+              ...options.headers
+            },
+            // Increase timeout for AWS requests
+            signal: AbortSignal.timeout(30000)
+          };
+          
+          logger.debug(`[NetworkHandler] AWS request attempt ${attempt}:`, { url: url.substring(0, 50) + '...' });
+          const response = await originalFetch(url, enhancedOptions);
+          
+          // Log successful response
+          if (response.ok) {
+            logger.debug('[NetworkHandler] AWS request successful');
+          } else {
+            logger.warn(`[NetworkHandler] AWS request failed with status ${response.status}`);
+          }
+          
+          return response;
+        } catch (error) {
+          lastError = error;
+          logger.warn(`[NetworkHandler] AWS request attempt ${attempt} failed:`, error.message);
+          
+          // Don't retry on certain errors
+          if (error.name === 'AbortError' || error.message.includes('aborted')) {
+            break;
+          }
+          
+          // Wait before retry (exponential backoff)
+          if (attempt < 3) {
+            const delay = Math.pow(2, attempt) * 1000;
+            logger.debug(`[NetworkHandler] Waiting ${delay}ms before retry`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+      
+      // If all retries failed, throw the last error
+      logger.error('[NetworkHandler] All AWS request attempts failed:', lastError);
+      throw lastError;
+    }
+    
+    // For non-AWS requests, use original fetch
+    return originalFetch(url, options);
+  };
+  
+  logger.info('[NetworkHandler] Enhanced network error handling enabled');
+}
