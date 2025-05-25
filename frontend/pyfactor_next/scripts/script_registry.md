@@ -32,46 +32,22 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Usage**: `node Version0001_update_backend_url_deployment.js <backend_url>`
 - **Example**: `node Version0001_update_backend_url_deployment.js https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com`
 
+### Version0003_pnpm_everywhere_deploy_fix.mjs
+- **Version**: 0003
+- **Purpose**: Configure and deploy frontend with PNPM everywhere
+- **Status**: ✅ PNPM CONFIGURATION SUCCESSFUL (Vercel deployment requires manual fix)
+- **Execution Date**: 2025-05-25T14:12:03.950Z
+- **Description**: Fixes package manager conflicts and ensures PNPM is used consistently
+- **Changes Made**:
+  - ✅ Removed npm lock file conflicts
+  - ✅ Configured Vercel for pnpm (vercel.json created)
+  - ✅ Updated build and deploy commands
+  - ✅ Cleared npm cache conflicts
+  - ✅ Installed pnpm globally (version 8.10.0)
+  - ✅ Refreshed dependencies with pnpm
+  - ✅ Tested local build with pnpm (BUILD SUCCESSFUL)
+  - ⚠️ Vercel deployment requires project settings fix
+- **Manual Fix Required**: Vercel project settings need to be updated via dashboard
+
 ## Files That Will Be Modified
-- `.env.local` (backend URL configuration)
-- `src/utils/api.js` (if exists)
-- `next.config.js` (API rewrites)
-
-## Files That Will Be Created
-- `verify_backend_connection.js` (connection testing)
-- `deploy-to-vercel-production.sh` (deployment automation)
-- `FRONTEND_BACKEND_UPDATE_SUMMARY_[timestamp].md` (change summary)
-
-## Environment Variables Set
-- `NEXT_PUBLIC_API_BASE_URL` - Production backend URL
-- `NEXT_PUBLIC_BACKEND_URL` - Production backend URL
-- `NEXT_PUBLIC_API_URL` - Production backend URL
-- `NEXT_PUBLIC_ENVIRONMENT` - Set to 'production'
-
-## Backup Strategy
-- All modified files backed up to: `frontend_file_backups/`
-- Backup naming: `filename.backup-[ISO-timestamp]`
-- Timestamp format: `YYYY-MM-DDTHH-mm-ss-sssZ`
-
-## Deployment Workflow
-1. **Backend Deployment**: Complete backend deployment to AWS Elastic Beanstalk first
-2. **Frontend Update**: Run Version0001_update_backend_url_deployment.js with backend URL
-3. **Connection Verification**: Run `node verify_backend_connection.js`
-4. **Production Deployment**: Run `./deploy-to-vercel-production.sh`
-
-## Frontend Deployment Targets
-- **Production**: https://www.dottapps.com (Vercel)
-- **Platform**: Next.js 15 with PNPM package manager
-- **Backend Integration**: AWS Elastic Beanstalk with RDS tenant isolation
-
-## Execution Status
-- **Created**: 2025-05-23 18:07:29
-- **Status**: Ready for execution after backend deployment
-- **Prerequisites**: Backend must be successfully deployed and accessible
-
-## Notes
-- Script uses ES modules (not CommonJS) as per requirements
-- Comprehensive documentation within script
-- Version control naming convention: Version####_<description>_<target>
-- Production mode only (no development mode)
-- No hardcoded environment keys or sensitive information
+- `.env.local`
