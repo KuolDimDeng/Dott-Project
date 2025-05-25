@@ -4,7 +4,7 @@
  * Generated: 2025-05-25 12:32:00 UTC
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 export const API_ENDPOINTS = {
   // Direct Django Backend Base
@@ -49,7 +49,8 @@ export const API_ENDPOINTS = {
 // Legacy endpoints for reference (no longer used)
 export const LEGACY_ENDPOINTS = {
   API_GATEWAY: 'https://uonwc77x38.execute-api.us-east-1.amazonaws.com/production',
-  DJANGO_BASE: 'http://dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com'
+  DJANGO_DIRECT: 'https://dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com',
+  DJANGO_CUSTOM: 'https://api.dottapps.com'
 };
 
 export default API_ENDPOINTS; 
