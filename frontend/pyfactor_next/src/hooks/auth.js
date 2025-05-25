@@ -16,6 +16,7 @@ import {
   updateUserAttributes
 } from '@/config/amplifyUnified';
 import { SafeHub } from '@/utils/safeHub';
+import { CognitoNetworkDiagnostic } from '@/utils/cognitoNetworkDiagnostic';
 import { useSession } from './useSession';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
@@ -258,12 +259,20 @@ export const useAuth = () => {
     }
   };
 
-  const handleSignIn = useCallback(async (email, password) => {
+    const handleSignIn = useCallback(async (email, password) => {
     setIsLoading(true);
     setAuthError(null);
 
     try {
-      // Regular sign-in flow for production
+      // Quick connectivity test before attempting sign-in
+      const connectivityTest = await CognitoNetworkDiagnostic.quickConnectivityTest();
+      if (connectivityTest.status === 'failed') {
+        logger.warn('[Auth] Network connectivity issue detected:', connectivityTest);
+        setAuthError('Network connectivity issue. Please check your internet connection and try again.');
+        return { success: false, error: connectivityTest.message };
+      }
+
+      // Regular sign-in flow with enhanced error handling
       const signInData = await retryOperation(async () => {
         try {
           const flowResult = await authSignIn({
@@ -295,6 +304,13 @@ export const useAuth = () => {
             code: error.code,
             name: error.name
           });
+          
+          // Run network diagnostic on error
+          if (error.message?.includes('network') || error.name === 'NetworkError') {
+            logger.info('[Auth] Running network diagnostic due to network error...');
+            const diagnostic = await CognitoNetworkDiagnostic.runFullDiagnostic();
+            logger.debug('[Auth] Network diagnostic results:', diagnostic);
+          }
           
           return {
             success: false,

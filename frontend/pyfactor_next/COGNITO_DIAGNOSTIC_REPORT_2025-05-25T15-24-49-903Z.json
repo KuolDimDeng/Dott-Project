@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-05-25T15:24:49.903Z",
+  "cognitoConfig": {
+    "region": "us-east-1",
+    "userPoolId": "us-east-1_JPL8vGfb6",
+    "clientId": "1o5v84mrgn4gt87khtr179uc5b"
+  },
+  "environment": "production-test",
+  "awsConnectivity": [
+    {
+      "endpoint": "cognito-idp.us-east-1.amazonaws.com",
+      "status": "SUCCESS",
+      "dns": "OK",
+      "https": "400"
+    },
+    {
+      "endpoint": "cognito-identity.us-east-1.amazonaws.com",
+      "status": "SUCCESS",
+      "dns": "OK",
+      "https": "400"
+    },
+    {
+      "endpoint": "s3.us-east-1.amazonaws.com",
+      "status": "SUCCESS",
+      "dns": "OK",
+      "https": "405"
+    },
+    {
+      "endpoint": "sts.us-east-1.amazonaws.com",
+      "status": "SUCCESS",
+      "dns": "OK",
+      "https": "302"
+    }
+  ],
+  "cognitoEndpoints": [
+    {
+      "endpoint": "https://cognito-idp.us-east-1.amazonaws.com/",
+      "status": "REACHABLE",
+      "httpStatus": "400"
+    },
+    {
+      "endpoint": "https://cognito-identity.us-east-1.amazonaws.com/",
+      "status": "REACHABLE",
+      "httpStatus": "400"
+    }
+  ],
+  "recommendations": [
+    "✅ All endpoints reachable - issue may be in Amplify configuration or request headers"
+  ]
+}

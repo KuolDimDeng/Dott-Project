@@ -1,11 +1,41 @@
 'use client';
 
-// Minimal safe imports for Amplify v6 - with Hub for compatibility
-import { Amplify, Hub as AmplifyHub } from 'aws-amplify';
-import { signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
+// Enhanced Amplify v6 configuration with network error resilience
+import { Amplify } from 'aws-amplify';
+import { 
+  signIn, 
+  signOut, 
+  getCurrentUser, 
+  fetchUserAttributes, 
+  fetchAuthSession,
+  signUp,
+  confirmSignUp,
+  resendSignUpCode,
+  resetPassword,
+  confirmResetPassword,
+  updateUserAttributes
+} from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
-// Create a bulletproof Hub wrapper that prevents undefined errors
+// Try to import Hub from aws-amplify, but handle gracefully if not available
+let AmplifyHub = null;
+try {
+  const { Hub } = require('aws-amplify');
+  AmplifyHub = Hub;
+} catch (error) {
+  logger.warn('[AmplifyUnified] Hub not available in this Amplify version, using fallback');
+}
+
+// Network error handling configuration
+const NETWORK_CONFIG = {
+  maxRetries: 5,
+  baseDelay: 1000,
+  maxDelay: 10000,
+  timeout: 30000,
+  userAgent: 'Dottapps-Web-Auth/1.0'
+};
+
+// Create enhanced Hub wrapper
 const SafeHub = {
   listen: (...args) => {
     try {
@@ -13,11 +43,11 @@ const SafeHub = {
         return AmplifyHub.listen(...args);
       } else {
         logger.warn('[Hub] AmplifyHub.listen not available, returning noop unsubscribe');
-        return () => {}; // Return noop unsubscribe function
+        return () => {};
       }
     } catch (error) {
       logger.error('[Hub] Error in listen:', error);
-      return () => {}; // Return noop unsubscribe function
+      return () => {};
     }
   },
   dispatch: (...args) => {
@@ -48,44 +78,165 @@ const SafeHub = {
   }
 };
 
-// Export the safe Hub wrapper immediately
 export const Hub = SafeHub;
 
-// Also create additional export patterns for compatibility
-export const AmplifyHubSafe = SafeHub;
-
-// Get values from environment for debugging only
+// Environment configuration with fallbacks
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
 
-// Track configuration state
 let isConfigured = false;
+let configurationAttempts = 0;
 
-// Minimal working Amplify v6 configuration
+// Network error detection and categorization
+const categorizeNetworkError = (error) => {
+  if (!error) return 'unknown';
+  
+  const message = error.message?.toLowerCase() || '';
+  const name = error.name?.toLowerCase() || '';
+  
+  // Network connectivity issues
+  if (name.includes('networkerror') || message.includes('network error')) {
+    return 'network_connectivity';
+  }
+  
+  // DNS resolution issues
+  if (message.includes('dns') || message.includes('resolve') || message.includes('enotfound')) {
+    return 'dns_resolution';
+  }
+  
+  // CORS issues
+  if (message.includes('cors') || message.includes('cross-origin')) {
+    return 'cors_policy';
+  }
+  
+  // Timeout issues
+  if (message.includes('timeout') || name.includes('timeout')) {
+    return 'request_timeout';
+  }
+  
+  // SSL/TLS issues
+  if (message.includes('ssl') || message.includes('tls') || message.includes('certificate')) {
+    return 'ssl_certificate';
+  }
+  
+  // Firewall/proxy issues
+  if (message.includes('blocked') || message.includes('filtered') || message.includes('proxy')) {
+    return 'firewall_proxy';
+  }
+  
+  return 'unknown_network';
+};
+
+// Enhanced retry logic with exponential backoff and jitter
+const retryWithBackoff = async (operation, operationName = 'auth') => {
+  let lastError;
+  
+  for (let attempt = 0; attempt <= NETWORK_CONFIG.maxRetries; attempt++) {
+    try {
+      logger.debug(`[AmplifyUnified] Attempting ${operationName}, attempt ${attempt + 1}/${NETWORK_CONFIG.maxRetries + 1}`);
+      
+      const result = await Promise.race([
+        operation(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Operation timeout')), NETWORK_CONFIG.timeout)
+        )
+      ]);
+      
+      if (attempt > 0) {
+        logger.info(`[AmplifyUnified] ${operationName} succeeded on attempt ${attempt + 1}`);
+      }
+      
+      return result;
+    } catch (error) {
+      lastError = error;
+      const errorCategory = categorizeNetworkError(error);
+      
+      logger.warn(`[AmplifyUnified] ${operationName} failed on attempt ${attempt + 1}: ${errorCategory}`, {
+        error: error.message,
+        category: errorCategory
+      });
+      
+      // Don't retry on certain error types
+      if (errorCategory === 'cors_policy' || 
+          errorCategory === 'ssl_certificate' ||
+          error.code === 'NotAuthorizedException' ||
+          error.code === 'UserNotFoundException') {
+        logger.debug(`[AmplifyUnified] Not retrying ${errorCategory} error`);
+        break;
+      }
+      
+      if (attempt < NETWORK_CONFIG.maxRetries) {
+        // Exponential backoff with jitter
+        const baseDelay = Math.min(NETWORK_CONFIG.baseDelay * Math.pow(2, attempt), NETWORK_CONFIG.maxDelay);
+        const jitter = Math.random() * 1000; // Up to 1 second jitter
+        const delay = baseDelay + jitter;
+        
+        logger.debug(`[AmplifyUnified] Waiting ${Math.round(delay)}ms before retry`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  // Enhanced error message with troubleshooting hints
+  const errorCategory = categorizeNetworkError(lastError);
+  let enhancedMessage = lastError.message;
+  
+  switch (errorCategory) {
+    case 'network_connectivity':
+      enhancedMessage = 'Unable to connect to authentication service. Please check your internet connection and try again.';
+      break;
+    case 'dns_resolution':
+      enhancedMessage = 'DNS resolution failed. Please check your network settings or try a different DNS server.';
+      break;
+    case 'cors_policy':
+      enhancedMessage = 'Browser security policy prevented the request. Please try refreshing the page.';
+      break;
+    case 'request_timeout':
+      enhancedMessage = 'Request timed out. Please check your connection speed and try again.';
+      break;
+    case 'ssl_certificate':
+      enhancedMessage = 'SSL certificate error. Please check your system date/time settings.';
+      break;
+    case 'firewall_proxy':
+      enhancedMessage = 'Request blocked by firewall or proxy. Please check your network settings.';
+      break;
+  }
+  
+  const enhancedError = new Error(enhancedMessage);
+  enhancedError.originalError = lastError;
+  enhancedError.category = errorCategory;
+  enhancedError.attempts = NETWORK_CONFIG.maxRetries + 1;
+  
+  throw enhancedError;
+};
+
+// Enhanced Amplify configuration with network resilience
 export const configureAmplify = (forceReconfigure = false) => {
-  if (isConfigured && !forceReconfigure) {
+  if (isConfigured && !forceReconfigure && configurationAttempts < 3) {
     return true;
   }
   
+  configurationAttempts++;
+  
   try {
-    // Verify we're in a browser environment
     if (typeof window === 'undefined') {
       return false;
     }
     
-    // Get configuration values
     const userPoolId = COGNITO_USER_POOL_ID;
     const userPoolClientId = COGNITO_CLIENT_ID;
     const region = AWS_REGION;
     
-    // Validate required values
     if (!userPoolId || !userPoolClientId) {
-      logger.error('[AmplifyUnified] Missing required configuration');
+      logger.error('[AmplifyUnified] Missing required configuration', {
+        hasUserPoolId: !!userPoolId,
+        hasClientId: !!userPoolClientId
+      });
       return false;
     }
     
-    // MINIMAL Amplify v6 configuration
+    // Enhanced Amplify v6 configuration with network optimizations
     const amplifyConfig = {
       Auth: {
         Cognito: {
@@ -112,7 +263,11 @@ export const configureAmplify = (forceReconfigure = false) => {
     }
     
     isConfigured = true;
-    logger.info('[AmplifyUnified] Amplify configured successfully');
+    logger.info('[AmplifyUnified] Amplify configured successfully', {
+      attempt: configurationAttempts,
+      userPoolId: userPoolId.substring(0, 15) + '...',
+      region: region
+    });
     
     return true;
   } catch (error) {
@@ -126,6 +281,94 @@ if (typeof window !== 'undefined') {
   configureAmplify();
 }
 
+// Enhanced auth functions with network error handling
+const enhancedSignIn = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return signIn(...args);
+  }, 'signIn');
+};
+
+const enhancedSignOut = async (...args) => {
+  return retryWithBackoff(async () => {
+    return signOut(...args);
+  }, 'signOut');
+};
+
+const enhancedGetCurrentUser = async (...args) => {
+  return retryWithBackoff(async () => {
+    return getCurrentUser(...args);
+  }, 'getCurrentUser');
+};
+
+const enhancedFetchUserAttributes = async (...args) => {
+  return retryWithBackoff(async () => {
+    return fetchUserAttributes(...args);
+  }, 'fetchUserAttributes');
+};
+
+const enhancedFetchAuthSession = async (...args) => {
+  return retryWithBackoff(async () => {
+    return fetchAuthSession(...args);
+  }, 'fetchAuthSession');
+};
+
+const enhancedSignUp = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return signUp(...args);
+  }, 'signUp');
+};
+
+const enhancedConfirmSignUp = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return confirmSignUp(...args);
+  }, 'confirmSignUp');
+};
+
+const enhancedResendSignUpCode = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return resendSignUpCode(...args);
+  }, 'resendSignUpCode');
+};
+
+const enhancedResetPassword = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return resetPassword(...args);
+  }, 'resetPassword');
+};
+
+const enhancedConfirmResetPassword = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return confirmResetPassword(...args);
+  }, 'confirmResetPassword');
+};
+
+const enhancedUpdateUserAttributes = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return updateUserAttributes(...args);
+  }, 'updateUserAttributes');
+};
+
 // Check if configured
 export const isAmplifyConfigured = () => {
   if (!isConfigured) return false;
@@ -133,44 +376,42 @@ export const isAmplifyConfigured = () => {
   return !!(config?.Auth?.Cognito?.userPoolId);
 };
 
-// Simple wrapper for auth functions
-const safeAuthCall = async (authFunction, ...args) => {
-  try {
-    if (!isAmplifyConfigured()) {
-      configureAmplify(true);
-    }
-    return await authFunction(...args);
-  } catch (error) {
-    logger.error(`[AmplifyUnified] Auth error in ${authFunction.name}:`, error);
-    throw error;
-  }
+// Export enhanced auth functions with both enhanced and original names
+export {
+  enhancedSignIn as signIn,
+  enhancedSignOut as signOut,
+  enhancedGetCurrentUser as getCurrentUser,
+  enhancedFetchUserAttributes as fetchUserAttributes,
+  enhancedFetchAuthSession as fetchAuthSession,
+  enhancedSignUp as signUp,
+  enhancedConfirmSignUp as confirmSignUp,
+  enhancedResendSignUpCode as resendSignUpCode,
+  enhancedResetPassword as resetPassword,
+  enhancedConfirmResetPassword as confirmResetPassword,
+  enhancedUpdateUserAttributes as updateUserAttributes,
+  Amplify
 };
 
-// Export enhanced auth functions
-export const signInWithConfig = (...args) => safeAuthCall(signIn, ...args);
-export const signOutWithConfig = (...args) => safeAuthCall(signOut, ...args);
-export const getCurrentUserWithConfig = (...args) => safeAuthCall(getCurrentUser, ...args);
-export const fetchUserAttributesWithConfig = (...args) => safeAuthCall(fetchUserAttributes, ...args);
-export const fetchAuthSessionWithConfig = (...args) => safeAuthCall(fetchAuthSession, ...args);
+// Export additional expected named exports
+export const signInWithConfig = enhancedSignIn;
+export const signOutWithConfig = enhancedSignOut;
+export const getCurrentUserWithConfig = enhancedGetCurrentUser;
+export const fetchUserAttributesWithConfig = enhancedFetchUserAttributes;
+export const fetchAuthSessionWithConfig = enhancedFetchAuthSession;
 
-// Export direct auth functions for compatibility
-export {
-  signIn,
-  signOut,
-  getCurrentUser,
-  fetchUserAttributes,
-  fetchAuthSession,
-  Amplify
+// For compatibility with OAuth - create a placeholder since we don't use OAuth
+export const signInWithRedirect = async (...args) => {
+  throw new Error('OAuth sign-in not configured for this application');
 };
 
 // Simple safe sign out
 export const safeSignOut = async (options = { global: true }) => {
   try {
-    await signOut(options);
+    await enhancedSignOut(options);
     return true;
   } catch (error) {
     logger.error('[AmplifyUnified] Sign out error:', error);
-    return true; // Return true to allow UI to proceed
+    return true;
   }
 };
 
@@ -182,5 +423,4 @@ export const initAmplify = () => {
   return false;
 };
 
-// Single default export
 export default configureAmplify;
