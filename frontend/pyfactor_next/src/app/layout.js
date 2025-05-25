@@ -166,19 +166,7 @@ export default async function RootLayout({ children, params }) {
                 try {
                   // Add extremely high priority style
                   const style = document.createElement('style');
-                  style.innerHTML = \`
-                    /* Force all second spans in menu buttons to be visible */
-                    body #main-menu-container button span + span,
-                    body nav[aria-label="Main Navigation"] button span + span {
-                      display: inline-block !important;
-                      visibility: visible !important;
-                      opacity: 1 !important;
-                      position: static !important;
-                      color: #1f2937 !important;
-                      font-weight: 500 !important;
-                      margin-left: 12px !important;
-                    }
-                  \`;
+                  style.innerHTML = '/* Force all second spans in menu buttons to be visible */ body #main-menu-container button span + span, body nav[aria-label="Main Navigation"] button span + span { display: inline-block !important; visibility: visible !important; opacity: 1 !important; position: static !important; color: #1f2937 !important; font-weight: 500 !important; margin-left: 12px !important; }';
                   document.head.appendChild(style);
                   console.log('[InlineMenuFix] Applied emergency inline fix');
                 } catch(e) {
