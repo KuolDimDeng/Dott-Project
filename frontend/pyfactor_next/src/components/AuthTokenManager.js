@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 import { tokenService } from '@/services/tokenService';
 import { getTenantIdFromCognito, setTenantId } from '@/utils/tenantUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { Hub } from 'aws-amplify/utils';
+import { Hub } from '@/config/amplifyUnified';
 
 /**
  * AuthTokenManager
