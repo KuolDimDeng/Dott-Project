@@ -1,15 +1,59 @@
 'use client';
 
 // Minimal safe imports for Amplify v6 - with Hub for compatibility
-import { Amplify, Hub } from 'aws-amplify';
+import { Amplify, Hub as AmplifyHub } from 'aws-amplify';
 import { signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
-// Ensure Hub is available and export it immediately
-export { Hub };
+// Create a bulletproof Hub wrapper that prevents undefined errors
+const SafeHub = {
+  listen: (...args) => {
+    try {
+      if (AmplifyHub && typeof AmplifyHub.listen === 'function') {
+        return AmplifyHub.listen(...args);
+      } else {
+        logger.warn('[Hub] AmplifyHub.listen not available, returning noop unsubscribe');
+        return () => {}; // Return noop unsubscribe function
+      }
+    } catch (error) {
+      logger.error('[Hub] Error in listen:', error);
+      return () => {}; // Return noop unsubscribe function
+    }
+  },
+  dispatch: (...args) => {
+    try {
+      if (AmplifyHub && typeof AmplifyHub.dispatch === 'function') {
+        return AmplifyHub.dispatch(...args);
+      } else {
+        logger.warn('[Hub] AmplifyHub.dispatch not available, ignoring dispatch');
+        return;
+      }
+    } catch (error) {
+      logger.error('[Hub] Error in dispatch:', error);
+      return;
+    }
+  },
+  remove: (...args) => {
+    try {
+      if (AmplifyHub && typeof AmplifyHub.remove === 'function') {
+        return AmplifyHub.remove(...args);
+      } else {
+        logger.warn('[Hub] AmplifyHub.remove not available, ignoring remove');
+        return;
+      }
+    } catch (error) {
+      logger.error('[Hub] Error in remove:', error);
+      return;
+    }
+  }
+};
 
-// Also create a default export for Hub in case there are import issues
-export const AmplifyHub = Hub;
+// Export the safe Hub wrapper immediately
+export const Hub = SafeHub;
+
+// Also create additional export patterns for compatibility
+export const AmplifyHubSafe = SafeHub;
+export default SafeHub;
 
 // Get values from environment for debugging only
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
