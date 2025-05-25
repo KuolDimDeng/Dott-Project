@@ -1,0 +1,12 @@
+[
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:proxy",
+        "OptionName": "ProxyServer",
+        "Value": "nginx"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:environment:proxy:staticfiles",
+        "OptionName": "/static",
+        "Value": "/app/static"
+    }
+]

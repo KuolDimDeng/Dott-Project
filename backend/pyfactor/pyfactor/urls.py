@@ -78,6 +78,10 @@ urlpatterns = [
     path('health/', health_check, name='health_check'),
     path('health-check/', health_check, name='health_check_alt'),
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
+    
+    # Add health check endpoints with trailing slashes for ALB compatibility
+    path('health/', health_check, name='health_check_trailing'),
+    path('health-check/', health_check, name='health_check_alt_trailing'),
 ]
 
 # Handle debug configuration properly

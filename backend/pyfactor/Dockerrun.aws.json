@@ -3,14 +3,14 @@
   "Ports": [
     {
       "ContainerPort": 8080,
-      "HostPort": 80
+      "HostPort": 8080
     }
   ],
   "Volumes": [
     {
       "HostDirectory": "/var/app/current/logs",
-      "ContainerDirectory": "/var/app/logs"
+      "ContainerDirectory": "/var/log/app"
     }
   ],
-  "Logging": "/var/app/logs"
+  "Logging": "/var/log/app"
 }

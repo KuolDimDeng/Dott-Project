@@ -97,11 +97,40 @@ export default async function RootLayout({ children, params }) {
                   loginWith: {
                     email: true,
                     username: true
+                  },
+                  // Add HTTPS enforcement
+                  endpoint: 'https://cognito-idp.${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}.amazonaws.com',
+                  // Domain configuration for cookies
+                  cookieStorage: {
+                    domain: '.dottapps.com',
+                    path: '/',
+                    expires: 365,
+                    secure: true,
+                    sameSite: 'strict'
+                  },
+                  // Network options
+                  httpOptions: {
+                    timeout: 30000,
+                    retryable: true,
+                    maxRetries: 3
                   }
                 }
               }
             };
             console.log('[Layout] AWS Config initialized:', window.aws_config);
+            
+            // HTTPS enforcement for all AWS requests
+            if (location.protocol === 'https:') {
+              console.log('[Layout] HTTPS detected, configuring for self-signed certificates');
+              // Override fetch to ensure HTTPS for AWS endpoints
+              const originalFetch = window.fetch;
+              window.fetch = function(url, options) {
+                if (typeof url === 'string' && url.includes('amazonaws.com')) {
+                  url = url.replace('http://', 'https://');
+                }
+                return originalFetch(url, options);
+              };
+            }
             
             // Add reconfiguration function for auth operations
             window.ensureAmplifyAuth = function() {

@@ -11,7 +11,7 @@ import os
 import django
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings_eb')
 django.setup()
 
 # Initialize the WSGI application

@@ -1,0 +1,67 @@
+[
+    {
+        "Namespace": "aws:elasticbeanstalk:environment",
+        "OptionName": "LoadBalancerType",
+        "Value": "application"
+    },
+    {
+        "Namespace": "aws:elbv2:loadbalancer",
+        "OptionName": "SecurityGroups",
+        "Value": ""
+    },
+    {
+        "Namespace": "aws:elbv2:loadbalancer",
+        "OptionName": "ManagedSecurityGroup",
+        "Value": ""
+    },
+    {
+        "Namespace": "aws:elbv2:listener:443",
+        "OptionName": "ListenerEnabled",
+        "Value": "true"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:443",
+        "OptionName": "Protocol",
+        "Value": "HTTPS"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:443",
+        "OptionName": "SSLCertificateArns",
+        "Value": "arn:aws:acm:us-east-1:471112661935:certificate/e7526d2d-484b-4b91-a594-cdcbf8df5810"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:443",
+        "OptionName": "SSLPolicy",
+        "Value": "ELBSecurityPolicy-TLS-1-2-2017-01"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:80",
+        "OptionName": "ListenerEnabled",
+        "Value": "true"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:80",
+        "OptionName": "Protocol",
+        "Value": "HTTP"
+    },
+    {
+        "Namespace": "aws:elbv2:listener:80",
+        "OptionName": "Rules",
+        "Value": "default"
+    },
+    {
+        "Namespace": "aws:elasticbeanstalk:healthreporting:system",
+        "OptionName": "SystemType",
+        "Value": "enhanced"
+    },
+    {
+        "Namespace": "aws:autoscaling:launchconfiguration",
+        "OptionName": "InstanceType",
+        "Value": "t3.small"
+    },
+    {
+        "Namespace": "aws:autoscaling:launchconfiguration",
+        "OptionName": "SecurityGroups",
+        "Value": ""
+    }
+]

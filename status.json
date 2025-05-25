@@ -1,0 +1,27 @@
+{
+    "Environments": [
+        {
+            "EnvironmentName": "DottApps-Max-Security-Fixed",
+            "EnvironmentId": "e-7eutqfxdvd",
+            "ApplicationName": "Dott",
+            "VersionLabel": "vDott-20250523202843",
+            "SolutionStackName": "64bit Amazon Linux 2023 v4.5.2 running Docker",
+            "PlatformArn": "arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux 2023/4.5.2",
+            "EndpointURL": "awseb--AWSEB-r6oC7ldghH32-211535558.us-east-1.elb.amazonaws.com",
+            "CNAME": "DottApps-Max-Security-Fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com",
+            "DateCreated": "2025-05-24T13:07:23.115000+00:00",
+            "DateUpdated": "2025-05-24T16:23:57.627000+00:00",
+            "Status": "Ready",
+            "AbortableOperationInProgress": false,
+            "Health": "Red",
+            "HealthStatus": "Severe",
+            "Tier": {
+                "Name": "WebServer",
+                "Type": "Standard",
+                "Version": "1.0"
+            },
+            "EnvironmentLinks": [],
+            "EnvironmentArn": "arn:aws:elasticbeanstalk:us-east-1:471112661935:environment/Dott/DottApps-Max-Security-Fixed"
+        }
+    ]
+}

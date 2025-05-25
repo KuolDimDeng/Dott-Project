@@ -1,0 +1,97 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "ServiceRole",
+    "Value": "arn:aws:iam::471112661935:role/aws-elasticbeanstalk-service-role"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "EnvironmentType",
+    "Value": "LoadBalanced"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "LoadBalancerType",
+    "Value": "application"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "IamInstanceProfile",
+    "Value": "aws-elasticbeanstalk-ec2-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "InstanceType",
+    "Value": "t3.medium"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DJANGO_SETTINGS_MODULE",
+    "Value": "pyfactor.settings_eb"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DEBUG",
+    "Value": "False"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "VPCId",
+    "Value": "vpc-0564a66b550c7063e"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "AssociatePublicIpAddress",
+    "Value": "true"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "Subnets",
+    "Value": "subnet-0cc4a92e849ff4b13,subnet-08cd4e29bf37927d4"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "ELBSubnets",
+    "Value": "subnet-0cc4a92e849ff4b13,subnet-08cd4e29bf37927d4"
+  },
+  {
+    "Namespace": "aws:autoscaling:asg",
+    "OptionName": "MinSize",
+    "Value": "1"
+  },
+  {
+    "Namespace": "aws:autoscaling:asg",
+    "OptionName": "MaxSize",
+    "Value": "2"
+  },
+  {
+    "Namespace": "aws:elbv2:listener:80",
+    "OptionName": "Protocol",
+    "Value": "HTTP"
+  },
+  {
+    "Namespace": "aws:elbv2:listener:443",
+    "OptionName": "Protocol",
+    "Value": "HTTPS"
+  },
+  {
+    "Namespace": "aws:elbv2:listener:443",
+    "OptionName": "SSLCertificateArns",
+    "Value": "arn:aws:acm:us-east-1:471112661935:certificate/e7526d2d-484b-4b91-a594-cdcbf8df5810"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "Port",
+    "Value": "8080"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "Protocol",
+    "Value": "HTTP"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "HealthCheckPath",
+    "Value": "/health/"
+  }
+] 

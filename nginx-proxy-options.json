@@ -1,0 +1,7 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:container:nginx",
+    "OptionName": "ProxyServer",
+    "Value": "apache"
+  }
+]
