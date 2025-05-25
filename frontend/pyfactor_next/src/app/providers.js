@@ -51,8 +51,28 @@ export default function Providers({ children }) {
   // Add error boundary using useEffect
   useEffect(() => {
     const handleError = (event) => {
+      const errorMessage = event.error?.message || '';
+      const errorName = event.error?.name || '';
+      
+      // Log all errors for debugging
       console.error('[Providers] Caught unhandled error:', event.error);
-      setError(event.error);
+      
+      // Only set error state for critical errors that should break the app
+      // Don't break the app for Hub-related warnings or non-critical errors
+      const isCriticalError = 
+        !errorMessage.includes('Hub') && 
+        !errorMessage.includes('not available') &&
+        !errorMessage.includes('fallback') &&
+        !errorName.includes('Warning') &&
+        errorMessage !== 'ResizeObserver loop limit exceeded';
+      
+      if (isCriticalError) {
+        console.error('[Providers] Critical error detected, setting error state:', event.error);
+        setError(event.error);
+      } else {
+        console.warn('[Providers] Non-critical error ignored:', errorMessage);
+      }
+      
       // Prevent the error from propagating further
       event.preventDefault();
     };
