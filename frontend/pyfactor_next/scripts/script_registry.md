@@ -51,5 +51,24 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Deployment Method**: Git push → GitHub → Vercel automatic deployment
 - **All 34 Conditions**: ✅ SATISFIED
 
+### Version0008_fix_network_errors_comprehensive.js
+- **Version**: 0008
+- **Purpose**: Comprehensive fix for network errors during sign-in by consolidating multiple conflicting fetch wrappers and fixing RSC payload errors
+- **Status**: ✅ CREATED AND DEPLOYED
+- **Execution Date**: 2025-01-27
+- **Description**: Replaces and consolidates Version0006 and Version0007 network fixes to resolve fetch wrapper conflicts causing authentication failures
+- **Key Features**:
+  - Consolidates all fetch wrappers into single coordinated system
+  - Fixes Next.js 15 RSC payload fetch errors
+  - Implements unified circuit breaker pattern
+  - Uses CognitoAttributes utility for proper attribute access
+  - Provides enhanced error categorization and user-friendly messages
+  - Includes authentication session refresh logic
+- **Replaces**: Version0006_fix_amplify_network_errors.js, Version0007_fix_amplify_signin_network_errors.js
+- **Files Modified**: 
+  - `/src/app/layout.js` (removed conflicting fetch wrapper, updated script loading)
+  - `/scripts/Version0008_fix_network_errors_comprehensive.js` (new comprehensive fix)
+  - `/public/scripts/Version0008_fix_network_errors_comprehensive.js` (deployed version)
+
 ## Files That Will Be Modified
 - `.env.local`

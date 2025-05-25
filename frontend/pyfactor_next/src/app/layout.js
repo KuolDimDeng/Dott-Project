@@ -122,14 +122,8 @@ export default async function RootLayout({ children, params }) {
             // HTTPS enforcement for all AWS requests
             if (location.protocol === 'https:') {
               console.log('[Layout] HTTPS detected, configuring for self-signed certificates');
-              // Override fetch to ensure HTTPS for AWS endpoints
-              const originalFetch = window.fetch;
-              window.fetch = function(url, options) {
-                if (typeof url === 'string' && url.includes('amazonaws.com')) {
-                  url = url.replace('http://', 'https://');
-                }
-                return originalFetch(url, options);
-              };
+              // Note: Fetch wrapper will be handled by comprehensive network fix script
+              window.__HTTPS_ENABLED = true;
             }
             
             // Add reconfiguration function for auth operations
@@ -306,14 +300,8 @@ export default async function RootLayout({ children, params }) {
         />
         
         <Script 
-          id="amplify-network-error-fix-script" 
-          src="/scripts/Version0006_fix_amplify_network_errors.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="amplify-signin-network-error-fix-script" 
-          src="/scripts/Version0007_fix_amplify_signin_network_errors.js"
+          id="comprehensive-network-error-fix-script" 
+          src="/scripts/Version0008_fix_network_errors_comprehensive.js"
           strategy="afterInteractive"
         />
       </body>
