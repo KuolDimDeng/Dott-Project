@@ -312,14 +312,14 @@ ${leakyComponents.map((comp, i) =>
 ## High Risk Issues
 ${findings
   .filter(f => f.risk === 'high')
-  .map(f => `### ${f.file}:${f.line}\n\`\`\`javascript\n${f.code}\n\`\`\`\n${f.description}`)
+  .map(f => '### ' + f.file + ':' + f.line + '\n```javascript\n' + f.code + '\n```\n' + f.description)
   .join('\n\n')}
 
 ## All Issues by File
 ${Object.entries(byFile).map(([file, fileFindings]) => `
 ### ${file}
 ${fileFindings.map(f => `- Line ${f.line}: ${f.description} (${f.risk} risk)
-  \`${f.code.replace(/\n/g, ' ')}\``).join('\n')}
+  '`' + f.code.replace(/\n/g, ' ') + '`').join('\n')}
 `).join('\n')}
 
 ## Recommendations
