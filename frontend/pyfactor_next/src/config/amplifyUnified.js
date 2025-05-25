@@ -5,6 +5,12 @@ import { Amplify, Hub } from 'aws-amplify';
 import { signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
+// Ensure Hub is available and export it immediately
+export { Hub };
+
+// Also create a default export for Hub in case there are import issues
+export const AmplifyHub = Hub;
+
 // Get values from environment for debugging only
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
@@ -134,6 +140,3 @@ export const initAmplify = () => {
 };
 
 export default configureAmplify;
-
-// Export Hub for other components that need it
-export { Hub };
