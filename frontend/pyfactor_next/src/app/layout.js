@@ -304,6 +304,12 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0008_fix_network_errors_comprehensive.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="signin-redirect-debug-script" 
+          src="/scripts/Version0009_fix_signin_redirect_debug.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
