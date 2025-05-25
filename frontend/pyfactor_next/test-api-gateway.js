@@ -321,9 +321,9 @@ async function runAllTests() {
   console.log('🔧 Next Steps for Full Testing:');
   console.log('1. Get a valid Cognito JWT token from your authentication flow');
   console.log('2. Test authenticated requests:');
-  console.log(`   curl -X POST "${API_GATEWAY_URL}/payroll/reports" \\`);
-  console.log(`     -H "Authorization: Bearer YOUR_COGNITO_TOKEN" \\`);
-  console.log(`     -H "Content-Type: application/json" \\`);
+  console.log('   curl -X POST "' + API_GATEWAY_URL + '/payroll/reports" \\');
+  console.log('     -H "Authorization: Bearer YOUR_COGNITO_TOKEN" \\');
+  console.log('     -H "Content-Type: application/json" \\');
   console.log(`     -d '{"period": "2024-01"}'`);
   console.log('3. Monitor CloudWatch metrics for API usage');
   console.log('4. Test frontend integration with updated API endpoints');
