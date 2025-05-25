@@ -3,7 +3,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { Hub } from '@/config/amplifyUnified';
 import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 
 const AmplifyContext = createSafeContext({
@@ -36,11 +35,6 @@ export function AmplifyProvider({ children }) {
         attempts: attempt
       }));
 
-      // Emit configured event
-      Hub.dispatch('auth', {
-        event: 'configured'
-      });
-
     } catch (error) {
       logger.error('[AmplifyProvider] Error checking Amplify configuration:', {
         error: error.message,
@@ -55,12 +49,6 @@ export function AmplifyProvider({ children }) {
         error: 'Failed to initialize authentication. Please try again later.',
         attempts: attempt
       }));
-
-      // Emit configuration error event
-      Hub.dispatch('auth', {
-        event: 'configurationError',
-        data: error
-      });
     }
   };
 
@@ -76,11 +64,6 @@ export function AmplifyProvider({ children }) {
       error: null,
       attempts: 1
     }));
-    
-    // Emit configured event
-    Hub.dispatch('auth', {
-      event: 'configured'
-    });
 
     return () => {
       logger.debug('[AmplifyProvider] Component unmounting');

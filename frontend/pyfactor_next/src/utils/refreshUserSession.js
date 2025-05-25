@@ -1,8 +1,16 @@
 import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
-import { Hub } from '@/config/amplifyUnified';
 import { setCacheValue, getCacheValue } from './appCache';
+
+// Safe Hub import with fallback
+let Hub = null;
+try {
+  const amplifyModule = require('@/config/amplifyUnified');
+  Hub = amplifyModule.Hub;
+} catch (error) {
+  logger.warn('[Auth] Hub not available, continuing without Hub functionality');
+}
 
 /**
  * Migration function to convert ID tokens to access tokens
@@ -73,7 +81,7 @@ const REFRESH_ATTEMPT_RESET_INTERVAL = 5 * 60 * 1000; // 5 minutes
 // Add this new function to better manage the Hub listener issue
 // This will patch the AWS Amplify Hub system to deduplicate tokenRefresh events
 export function setupHubDeduplication() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !Hub) return;
   
   // Initialize our Hub protection if it doesn't exist
   if (!window.__hubProtectionInitialized) {
