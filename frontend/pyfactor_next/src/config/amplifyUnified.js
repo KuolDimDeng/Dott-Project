@@ -53,7 +53,6 @@ export const Hub = SafeHub;
 
 // Also create additional export patterns for compatibility
 export const AmplifyHubSafe = SafeHub;
-export default SafeHub;
 
 // Get values from environment for debugging only
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
@@ -183,4 +182,5 @@ export const initAmplify = () => {
   return false;
 };
 
+// Single default export
 export default configureAmplify;

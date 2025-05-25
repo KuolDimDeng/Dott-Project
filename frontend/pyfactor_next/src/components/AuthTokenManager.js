@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 import { tokenService } from '@/services/tokenService';
 import { getTenantIdFromCognito, setTenantId } from '@/utils/tenantUtils';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import { Hub } from '@/config/amplifyUnified';
+import { SafeHub } from '@/utils/safeHub';
 
 /**
  * AuthTokenManager
@@ -47,8 +47,8 @@ export default function AuthTokenManager({ children }) {
       }
     };
     
-    // Register Hub listener
-    Hub.listen('auth', hubListener);
+    // Register Hub listener using SafeHub
+    const hubUnsubscribe = SafeHub.listen('auth', hubListener);
     
     // Initialize token management
     initializeTokenManagement();
@@ -56,7 +56,7 @@ export default function AuthTokenManager({ children }) {
     // Cleanup
     return () => {
       unsubscribe();
-      Hub.remove('auth', hubListener);
+      hubUnsubscribe();
     };
   }, []);
   

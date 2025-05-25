@@ -18,6 +18,7 @@
     "monitor": "node scripts/monitor-memory.js",
     "memory-analysis": "node src/scripts/find-memory-leaks.js",
     "optimize-component": "node src/scripts/optimize-component.js",
+    "test:console": "node scripts/test_console_logs.mjs",
     "build": "next build",
     "build:production": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "build:production-fast": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build --no-lint",
@@ -85,7 +86,6 @@
     "postcss-import": "^16.1.0",
     "postcss-loader": "^8.1.1",
     "prisma": "^6.5.0",
-    "puppeteer": "^24.7.2",
     "qrcode.react": "^4.2.0",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.2.0",
@@ -127,6 +127,7 @@
     "null-loader": "^4.0.1",
     "prettier": "^3.2.4",
     "prettier-plugin-tailwindcss": "^0.5.11",
+    "puppeteer": "^24.7.2",
     "typescript": "5.8.3"
   },
   "resolutions": {
@@ -155,8 +156,15 @@
       "canvas"
     ],
     "supportedArchitectures": {
-      "os": ["linux", "darwin", "win32"],
-      "cpu": ["x64", "arm64"]
+      "os": [
+        "linux",
+        "darwin",
+        "win32"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
     },
     "installConfig": {
       "optional": false

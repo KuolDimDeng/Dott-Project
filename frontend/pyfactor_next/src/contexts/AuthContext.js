@@ -10,9 +10,9 @@ import {
   fetchAuthSession,
   getCurrentUser,
   fetchUserAttributes,
-  signOut,
-  Hub
+  signOut
 } from '@/config/amplifyUnified';
+import { SafeHub } from '@/utils/safeHub';
 import { createSafeContext, useSafeContext } from '@/utils/ContextFix';
 import { logMemoryUsage, trackMemory, detectMemorySpike, clearMemoryTracking } from '@/utils/memoryDebug';
 import { setTokens } from '@/utils/tenantUtils';
@@ -394,7 +394,7 @@ export function AuthProvider({ children }) {
 
   // Set up auth event listener
   useEffect(() => {
-    const unsubscribe = Hub.listen('auth', handleAuthEvents);
+    const unsubscribe = SafeHub.listen('auth', handleAuthEvents);
     
     // Initial session check
     checkSession();

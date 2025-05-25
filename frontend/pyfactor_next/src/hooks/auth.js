@@ -11,11 +11,11 @@ import {
   confirmResetPassword as authConfirmResetPassword,
   getCurrentUser as authGetCurrentUser,
   fetchAuthSession as authFetchAuthSession,
-  Hub,
   signOut as authSignOut,
   resendSignUpCode as authResendSignUpCode,
   updateUserAttributes
 } from '@/config/amplifyUnified';
+import { SafeHub } from '@/utils/safeHub';
 import { useSession } from './useSession';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
@@ -831,7 +831,7 @@ export const useAuth = () => {
       }
     };
 
-    const unsubscribe = Hub.listen('auth', handleAuthEvents);
+    const unsubscribe = SafeHub.listen('auth', handleAuthEvents);
     return () => unsubscribe();
   }, [router, refreshSession]);
 
