@@ -4,10 +4,18 @@ const path = require('path');
 // Get environment variables with fallbacks
 const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
+// Load dotenv to access .env files (workaround for dotenv package interference)
+require('dotenv').config();
+
 const nextConfig = {
   // Basic Next.js settings optimized for Vercel deployment
   reactStrictMode: true,
   trailingSlash: false,
+  
+  // Environment variables (workaround for dotenv package interference)
+  env: {
+    NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
+  },
   
   // Page extensions
   pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
