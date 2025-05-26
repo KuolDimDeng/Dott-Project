@@ -60,26 +60,14 @@ export default async function RootLayout({ children, params }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="/scripts/emergency-menu-fix.js" defer></script>
 
-        {/* Production Dashboard Diagnostics */}
-        <Script
-          id="dashboard-diagnostics"
-          strategy="afterInteractive"
-          src="/scripts/Version0023_diagnose_production_dashboard_issues.js"
-        />
         
-        {/* Immediate Dashboard Fix */}
-        <Script
-          id="immediate-dashboard-fix"
-          strategy="afterInteractive"
-          src="/scripts/Version0024_immediate_production_dashboard_fix.js"
-        />
         
-        {/* Authentication and Real Tenant Fix */}
-        <Script
-          id="auth-tenant-fix"
-          strategy="afterInteractive"
-          src="/scripts/Version0025_fix_authentication_and_real_tenant.js"
-        />
+        
+        
+        
+        
+        
+        
         
         {/* Dynamic script for supporting older browsers */}
         <Script
