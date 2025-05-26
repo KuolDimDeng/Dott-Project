@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg width="150" height="40" viewBox="0 0 150 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M20 10L40 30H0L20 10Z" fill="#4F46E5"/>
-  <path d="M20 30L40 10H0L20 30Z" fill="#818CF8"/>
-  <text x="50" y="25" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#333333">PyFactor</text>
-</svg> 
