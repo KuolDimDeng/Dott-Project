@@ -298,6 +298,12 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0009_fix_signin_redirect_debug.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="script-registry-update-production" 
+          src="/scripts/Version0010_update_script_registry_production.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
