@@ -310,6 +310,12 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0011_fix_signin_form_submission_production.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="signin-direct-auth-fix" 
+          src="/scripts/Version0012_fix_signin_direct_auth_production.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
