@@ -99,7 +99,7 @@ export default async function RootLayout({ children, params }) {
                     username: true
                   },
                   // Add HTTPS enforcement
-                  endpoint: 'https://cognito-idp.${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}.amazonaws.com',
+                  endpoint: 'https://cognito-idp.' + '${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}' + '.amazonaws.com',
                   // Domain configuration for cookies
                   cookieStorage: {
                     domain: '.dottapps.com',
