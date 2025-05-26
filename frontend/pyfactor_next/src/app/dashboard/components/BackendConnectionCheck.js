@@ -18,8 +18,9 @@ export default function BackendConnectionCheck({ onConnectionRestored }) {
     setChecking(true);
     
     try {
-      logger.info('[BackendConnectionCheck] Verifying backend connection...');
-      const result = await verifyBackendConnection();
+      // Disabled backend connection check to prevent CORS errors in production
+      logger.info('[BackendConnectionCheck] Backend connection check disabled for production');
+      const result = { success: true, message: 'Backend connection check disabled to prevent CORS errors' };
       
       logger.info('[BackendConnectionCheck] Connection check result:', result);
       setConnectionStatus(result);

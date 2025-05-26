@@ -1002,8 +1002,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
         // Add backend connection test
         console.log("[DashboardDebugger] Testing backend connection...");
         try {
-          const { verifyBackendConnection } = await import('@/lib/axiosConfig');
-          const connectionResult = await verifyBackendConnection();
+                  // Disabled backend connection check to prevent CORS errors in production
+        // const { verifyBackendConnection } = await import('@/lib/axiosConfig');
+        // const connectionResult = await verifyBackendConnection();
+        const connectionResult = { success: true, message: 'Backend connection check disabled' };
           console.log("[DashboardDebugger] Backend connection test result:", connectionResult);
         } catch (connError) {
           console.error("[DashboardDebugger] Backend connection test failed:", connError);

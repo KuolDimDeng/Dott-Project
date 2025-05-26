@@ -58,23 +58,7 @@ export default async function RootLayout({ children, params }) {
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <script src="/scripts/emergency-menu-fix.js" defer></script>
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        {/* Dynamic script for supporting older browsers */}
-        <Script
-          id="browser-env-polyfill"
-          strategy="beforeInteractive"
-          src="/scripts/browser-env-polyfill.js"
-        />
+        {/* Removed problematic script references that cause MIME type errors */}
         
         {/* Direct inline menu fix - highest priority */}
         <script 

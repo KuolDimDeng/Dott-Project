@@ -75,8 +75,12 @@ const DashAppBar = ({
   handleCloseCreateMenu,
   setUserData, // Add setUserData to the component props
 }) => {
-  // Log that this component only uses Cognito and AppCache
-  logger.info('[DashAppBar] Component initialized - Using ONLY Cognito and AppCache for data sources (NO GRAPHQL)');
+  // Reduced logging for production - only log once per mount
+  const hasLoggedInit = useRef(false);
+  if (!hasLoggedInit.current) {
+    logger.debug('[DashAppBar] Component initialized - Using ONLY Cognito and AppCache for data sources (NO GRAPHQL)');
+    hasLoggedInit.current = true;
+  }
   
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
@@ -297,35 +301,27 @@ const DashAppBar = ({
     // Check if we have a valid business name from any source
     const newBusinessName = cognitoName || userDataName || profileDataName || cachedName || '';
     
-    // Log the source of the business name for debugging
-    if (cognitoName) {
-      logger.info('[DashAppBar] Setting business name from data source:', { name: cognitoName, source: 'cognito' });
-    } else if (userDataName) {
-      logger.info('[DashAppBar] Setting business name from data source:', { name: userDataName, source: 'userData' });
-    } else if (profileDataName) {
-      logger.info('[DashAppBar] Setting business name from data source:', { name: profileDataName, source: 'profileData' });
-    } else if (cachedName) {
-      logger.info('[DashAppBar] Setting business name from data source:', { name: cachedName, source: 'cachedData' });
-    } else {
-      logger.warn('[DashAppBar] No business name found in any data source, using default');
+    // Reduced logging for production
+    if (process.env.NODE_ENV !== 'production') {
+      logger.debug('[DashAppBar] Business name sources:', {
+        cognitoName,
+        userDataName,
+        profileDataName,
+        cachedName,
+        current: businessName
+      });
     }
     
-    logger.info('[DashAppBar] Business name sources:', {
-      cognitoName,
-      userDataName,
-      profileDataName,
-      cachedName,
-      current: businessName
-    });
-    
     if (newBusinessName && newBusinessName !== '') {
-      logger.info('[DashAppBar] Setting business name from data source:', {
-        name: newBusinessName,
-        source: cognitoName ? 'cognito' : 
-                userDataName ? 'userData' : 
-                profileDataName ? 'profileData' : 
-                'cachedData'
-      });
+      if (process.env.NODE_ENV !== 'production') {
+        logger.debug('[DashAppBar] Setting business name from data source:', {
+          name: newBusinessName,
+          source: cognitoName ? 'cognito' : 
+                  userDataName ? 'userData' : 
+                  profileDataName ? 'profileData' : 
+                  'cachedData'
+        });
+      }
       
       setBusinessName(newBusinessName);
       
@@ -383,26 +379,21 @@ const DashAppBar = ({
     logger.debug('[DashAppBar] Fetching user profile data for tenant:', tenantId);
     const result = await fetchProfile(tenantId);
     
-    // Log what attributes we actually received in the profile
-    if (result) {
-      logger.info('[DashAppBar] Received profile data with attributes:', {
-        firstName: result?.profile?.firstName,
-        lastName: result?.profile?.lastName,
-        first_name: result?.profile?.first_name,
-        last_name: result?.profile?.last_name,
-        email: result?.profile?.email,
-        businessName: result?.profile?.businessName,
-        tenantId: result?.profile?.tenantId,
-        rawProfileKeys: result?.profile ? Object.keys(result.profile) : 'no profile'
-      });
+          // Reduced logging for production
+      if (result && process.env.NODE_ENV !== 'production') {
+        logger.debug('[DashAppBar] Received profile data with attributes:', {
+          firstName: result?.profile?.firstName,
+          lastName: result?.profile?.lastName,
+          email: result?.profile?.email,
+          businessName: result?.profile?.businessName,
+          tenantId: result?.profile?.tenantId
+        });
+      }
       
       // Set business name from profile data if available
-      if (result.profile?.businessName) {
+      if (result?.profile?.businessName) {
         setBusinessName(result.profile.businessName);
       }
-    } else {
-      logger.warn('[DashAppBar] No profile data received from fetchProfile');
-    }
     
   }, [profileData, hasAttemptedFetch, isCacheValid, tenantId, fetchProfile]);
 
