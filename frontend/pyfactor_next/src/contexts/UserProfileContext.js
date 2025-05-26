@@ -27,12 +27,21 @@ export const useUserProfile = () => {
   return context;
 };
 
-// Debounce function to prevent multiple API calls
+// Debounce function to prevent multiple API calls - returns a Promise
 const debounce = (func, wait) => {
   let timeout;
   return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    return new Promise((resolve, reject) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(async () => {
+        try {
+          const result = await func(...args);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      }, wait);
+    });
   };
 };
 
@@ -632,11 +641,22 @@ export function UserProfileProvider({ children }) {
       window.__profileFetchInProgress = true;
     }
     
-    debouncedFetchProfile(localTenantId).finally(() => {
+    // Safely call debouncedFetchProfile with error handling
+    const fetchPromise = debouncedFetchProfile(localTenantId);
+    if (fetchPromise && typeof fetchPromise.finally === 'function') {
+      fetchPromise.finally(() => {
+        if (typeof window !== 'undefined') {
+          window.__profileFetchInProgress = false;
+        }
+      });
+    } else {
+      // Fallback if promise is not returned
       if (typeof window !== 'undefined') {
-        window.__profileFetchInProgress = false;
+        setTimeout(() => {
+          window.__profileFetchInProgress = false;
+        }, 1000);
       }
-    });
+    }
   }, [debouncedFetchProfile, profileCache.data, profileCache.loading]);
   
   // Exposed context value
