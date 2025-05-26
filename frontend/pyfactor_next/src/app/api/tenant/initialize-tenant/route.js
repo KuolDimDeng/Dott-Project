@@ -38,23 +38,23 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // Initialize database connection pool with fallback
+    // Initialize database connection pool with much shorter timeout for faster sign-in
     try {
       logger.debug('[InitializeTenant] Creating database connection pool');
       pool = await createDbPool();
       
-      // Test connection with timeout
+      // Test connection with very short timeout (2 seconds max)
       const testQuery = pool.query('SELECT 1 AS connection_test');
       await Promise.race([
         testQuery,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 5000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 2000))
       ]);
       
       logger.debug('[InitializeTenant] Database connection successful');
     } catch (dbError) {
-      logger.warn('[InitializeTenant] Database connection failed, returning success for resilience:', dbError.message);
+      logger.warn('[InitializeTenant] Database connection failed (fast timeout), returning success for resilience:', dbError.message);
       
-      // Return success to prevent blocking the sign-in flow
+      // Return success immediately to prevent blocking the sign-in flow
       return NextResponse.json({ 
         success: true, 
         message: 'Database temporarily unavailable, tenant initialization will be retried later',

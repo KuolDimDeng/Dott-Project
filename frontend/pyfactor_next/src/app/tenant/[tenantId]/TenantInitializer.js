@@ -37,60 +37,38 @@ export default function TenantInitializer({ tenantId }) {
           }
         });
         
-        // Update Cognito custom attributes directly
-        try {
-          const userAttributes = await fetchUserAttributes();
-          const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'] || userAttributes['custom:businessid'];
-          
-          // If tenant ID in Cognito doesn't match, update it directly
-          if (cognitoTenantId !== tenantId) {
-            logger.info('[TenantInitializer] Updating Cognito tenant ID:', { 
-              from: cognitoTenantId || 'none', 
-              to: tenantId 
-            });
-            
-            // Update Cognito directly without API call
-            await updateUserAttributes({
-              userAttributes: {
-                'custom:tenant_ID': tenantId,
-                'custom:updated_at': new Date().toISOString()
-              }
-            });
-            
-            // Also update database record via API
-            await fetch('/api/tenant/ensure-db-record', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                tenantId: tenantId,
-                email: userAttributes.email,
-                forceUpdate: true
-              })
-            });
-            
-            logger.info('[TenantInitializer] Cognito and database updated with tenant ID:', tenantId);
-          }
-        } catch (attributeError) {
-          logger.error('[TenantInitializer] Error updating Cognito attributes:', attributeError);
-          
-          // Fallback to API for updating tenant ID if direct update fails
+        // Optimize Cognito calls - only update if necessary and make it async
+        const updateCognitoAsync = async () => {
           try {
-            await fetch('/api/user/update-attributes', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                attributes: {
-                  'custom:tenant_ID': tenantId
+            const userAttributes = await fetchUserAttributes();
+            const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'] || userAttributes['custom:businessid'];
+            
+            // Only update if tenant ID doesn't match (avoid redundant calls)
+            if (cognitoTenantId !== tenantId) {
+              logger.debug('[TenantInitializer] Async Cognito tenant ID update:', { 
+                from: cognitoTenantId || 'none', 
+                to: tenantId 
+              });
+              
+              // Update Cognito directly (async, non-blocking)
+              await updateUserAttributes({
+                userAttributes: {
+                  'custom:tenant_ID': tenantId,
+                  'custom:updated_at': new Date().toISOString()
                 }
-              })
-            });
-            logger.info('[TenantInitializer] Tenant ID updated via API fallback');
-          } catch (apiFallbackError) {
-            logger.error('[TenantInitializer] API fallback also failed:', apiFallbackError);
+              });
+              
+              logger.debug('[TenantInitializer] Async Cognito update completed');
+            } else {
+              logger.debug('[TenantInitializer] Cognito tenant ID already matches, skipping update');
+            }
+          } catch (attributeError) {
+            logger.debug('[TenantInitializer] Async Cognito update failed (non-blocking):', attributeError.message);
           }
-        }
+        };
+        
+        // Start async update but don't wait for it (faster initialization)
+        updateCognitoAsync();
         
         logger.info('[TenantInitializer] Tenant initialized successfully:', tenantId);
       } catch (error) {

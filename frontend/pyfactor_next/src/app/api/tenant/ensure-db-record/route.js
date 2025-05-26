@@ -36,21 +36,21 @@ export async function POST(request) {
     
     logger.info(`[EnsureDBRecord][${requestId}] Starting database operations for tenant: ${tenantId}`);
     
-    // Try to connect to database with timeout and fallback
+    // Try to connect to database with much shorter timeout for faster sign-in
     try {
       pool = await createDbPool();
       
-      // Test connection with timeout
-      const testQuery = pool.query('SELECT 1', [], { timeout: 5000 });
+      // Test connection with very short timeout (2 seconds max)
+      const testQuery = pool.query('SELECT 1', [], { timeout: 2000 });
       await Promise.race([
         testQuery,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 5000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Database connection timeout')), 2000))
       ]);
       
     } catch (dbError) {
-      logger.warn(`[EnsureDBRecord][${requestId}] Database connection failed, returning success for resilience:`, dbError.message);
+      logger.warn(`[EnsureDBRecord][${requestId}] Database connection failed (fast timeout), returning success for resilience:`, dbError.message);
       
-      // Return success to prevent blocking the sign-in flow
+      // Return success immediately to prevent blocking the sign-in flow
       // The tenant record will be created later when the database is available
       return NextResponse.json({
         success: true,

@@ -202,40 +202,7 @@ export default async function RootLayout({ children, params }) {
           `}
         </Script>
         
-        {/* HTTPS Configuration Script - Accept self-signed certificates */}
-        <Script id="https-config" strategy="afterInteractive">
-          {`
-            // Reset circuit breakers and configure HTTPS
-            try {
-              // Detect HTTPS mode
-              const isHttps = window.location.protocol === 'https:';
-              if (isHttps) {
-                console.log('[Layout] HTTPS detected, configuring for self-signed certificates');
-                
-                // Set a flag to let components know we're using HTTPS
-                window.__HTTPS_ENABLED = true;
-                
-                // Reset circuit breakers that may have been triggered when switching protocols
-                if (window.__resetCircuitBreakers) {
-                  window.__resetCircuitBreakers();
-                  console.log('[Layout] Circuit breakers reset for HTTPS mode');
-                }
-                
-                // Add ability to force reset circuit breakers when needed
-                window.resetCircuitBreakers = function() {
-                  if (window.__resetCircuitBreakers) {
-                    window.__resetCircuitBreakers();
-                    console.log('[Layout] Circuit breakers manually reset');
-                    return true;
-                  }
-                  return false;
-                };
-              }
-            } catch (e) {
-              console.error('Error configuring HTTPS:', e);
-            }
-          `}
-        </Script>
+        {/* HTTPS is handled by AWS Certificate Manager and Vercel - no self-signed certificates needed */}
         
         {/* Dashboard redirect fix script initialization */}
         <Script id="dashboard-redirect-fix" strategy="beforeInteractive">

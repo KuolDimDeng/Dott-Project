@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { logger } from '@/utils/logger';
 import { fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
 
-// Initial time to live for cache in milliseconds (5 minutes)
-const CACHE_TTL = 5 * 60 * 1000; 
+// Initial time to live for cache in milliseconds (15 minutes for faster sign-in)
+const CACHE_TTL = 15 * 60 * 1000; 
 
 // Create the context
 const UserProfileContext = createContext();
@@ -601,15 +601,23 @@ export function UserProfileProvider({ children }) {
     debounce((tenantId, forceRefresh) => fetchProfileData(tenantId, forceRefresh), 300),
   [fetchProfileData]);
   
-  // Fetch profile data on mount to ensure it's always available
+  // Fetch profile data on mount to ensure it's always available (optimized)
   useEffect(() => {
-    // Try to determine tenant ID from localStorage
-    const localTenantId = typeof window !== 'undefined' 
-      ? localStorage.getItem('tenantId') || localStorage.getItem('businessid')
-      : null;
-    
-    // Initial fetch of profile data
+    // Only fetch if we don't have data and aren't already loading
     if (!profileCache.data && !profileCache.loading) {
+      // Try to determine tenant ID from localStorage
+      const localTenantId = typeof window !== 'undefined' 
+        ? localStorage.getItem('tenantId') || localStorage.getItem('businessid')
+        : null;
+      
+      // Check if we're in a sign-up flow where profile fetching should be minimal
+      const inSignUpFlow = isInSignUpFlow();
+      
+      if (inSignUpFlow) {
+        logger.debug('[UserProfileContext] In sign-up flow, skipping initial profile fetch');
+        return;
+      }
+      
       logger.debug('[UserProfileContext] Initial profile fetch with tenantId:', localTenantId);
       debouncedFetchProfile(localTenantId);
     }

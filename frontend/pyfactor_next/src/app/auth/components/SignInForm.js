@@ -277,96 +277,60 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         // Continue anyway
       }
       
-      // First ensure the tenant record exists in database - with proper RLS headers
-      try {
-        logger.info('[SignInForm] Ensuring tenant record exists:', tenantId);
-        const createResponse = await fetch('/api/tenant/ensure-db-record', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-tenant-id': tenantId,
-            'x-user-id': userId,
-            'Authorization': idToken ? `Bearer ${idToken}` : ''
-          },
-          body: JSON.stringify({
-            tenantId: tenantId,
-            userId: userId,
-            email: userEmail,
-            businessName: businessName,
-            businessType: businessType,
-            businessCountry: businessCountry
-          })
-        });
-        
-        if (!createResponse.ok) {
-          logger.warn('[SignInForm] Warning creating tenant record:', await createResponse.text());
-        } else {
-          logger.info('[SignInForm] Tenant record creation successful');
-          const result = await createResponse.json();
-          if (result && result.rls && result.rls.enabled) {
-            logger.info('[SignInForm] RLS is enabled for this tenant');
-          }
-        }
-      } catch (createError) {
-        logger.warn('[SignInForm] Error ensuring tenant record:', createError);
-        // Continue anyway as this is non-fatal
-      }
-      
-      // Now initialize the tenant database - with proper RLS headers
-      try {
-        logger.info('[SignInForm] Ensuring tenant database is initialized:', tenantId);
-        const initResponse = await fetch('/api/tenant/initialize-tenant', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'x-tenant-id': tenantId,
-            'x-user-id': userId,
-            'Authorization': idToken ? `Bearer ${idToken}` : '',
-            'x-rls-version': '2' // Add version header to help backend determine SQL format
-          },
-          body: JSON.stringify({
-            tenantId: tenantId,
-            userId: userId,
-            skipRlsParams: true, // Add flag to help backend avoid the SQL syntax error
-            useQuotedParams: true // Add flag to use quoted literal instead of parameters
-          })
-        });
-        
-        if (!initResponse.ok) {
-          logger.warn('[SignInForm] Warning initializing tenant database:', await initResponse.text());
+      // Make database calls asynchronous to not block sign-in (fire and forget)
+      // This dramatically speeds up sign-in by not waiting for database operations
+      const initializeTenantAsync = async () => {
+        try {
+          logger.debug('[SignInForm] Starting async tenant initialization:', tenantId);
           
-          // Fallback attempt if the first one fails
-          if (initResponse.status === 500) {
-            logger.info('[SignInForm] Trying alternate RLS initialization method');
-            const fallbackResponse = await fetch('/api/tenant/initialize-tenant', {
+          // First ensure the tenant record exists
+          const createResponse = await fetch('/api/tenant/ensure-db-record', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-tenant-id': tenantId,
+              'x-user-id': userId,
+              'Authorization': idToken ? `Bearer ${idToken}` : ''
+            },
+            body: JSON.stringify({
+              tenantId: tenantId,
+              userId: userId,
+              email: userEmail,
+              businessName: businessName,
+              businessType: businessType,
+              businessCountry: businessCountry
+            })
+          });
+          
+          if (createResponse.ok) {
+            logger.debug('[SignInForm] Async tenant record creation successful');
+            
+            // Then initialize the database
+            const initResponse = await fetch('/api/tenant/initialize-tenant', {
               method: 'POST',
               headers: { 
                 'Content-Type': 'application/json',
                 'x-tenant-id': tenantId,
                 'x-user-id': userId,
-                'Authorization': idToken ? `Bearer ${idToken}` : '',
-                'x-rls-alternate': 'true'
+                'Authorization': idToken ? `Bearer ${idToken}` : ''
               },
               body: JSON.stringify({
                 tenantId: tenantId,
-                userId: userId,
-                alternateRlsMethod: true
+                userId: userId
               })
             });
             
-            if (fallbackResponse.ok) {
-              logger.info('[SignInForm] Alternate tenant initialization successful');
-            } else {
-              logger.warn('[SignInForm] All tenant initialization methods failed, continuing anyway');
+            if (initResponse.ok) {
+              logger.debug('[SignInForm] Async tenant database initialization successful');
             }
           }
-        } else {
-          logger.info('[SignInForm] Tenant database initialization successful');
+        } catch (error) {
+          logger.debug('[SignInForm] Async tenant initialization failed (non-blocking):', error.message);
         }
-      } catch (initError) {
-        logger.warn('[SignInForm] Error initializing tenant database:', initError);
-        // Continue anyway as this is non-fatal
-      }
+      };
+      
+      // Start async initialization but don't wait for it
+      initializeTenantAsync();
       
       // Store tenant info in browser storage for client-side access
       try {
@@ -436,10 +400,10 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         logger.warn('[SignInForm] Could not store tenant data in sessionStorage:', e);
       }
       
-      // Use a small delay to ensure storage operations complete
+      // Use minimal delay to ensure storage operations complete (faster sign-in)
       setTimeout(() => {
         router.push(url);
-      }, 500);
+      }, 100);
     } else {
       // No tenant ID, redirect to regular dashboard
       const params = new URLSearchParams();
@@ -457,7 +421,7 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
       
       setTimeout(() => {
         router.push(url);
-      }, 500);
+      }, 100);
     }
   } catch (error) {
     logger.error('[SignInForm] Error during dashboard redirect:', error);
@@ -722,89 +686,73 @@ export default function SignInForm() {
                 window.__APP_CACHE.user.setup_done = setupDone;
               }
               
-              // Improved tenant verification and creation
-              // More robust tenant creation with retries and status tracking
+              // Improved tenant verification and creation (async for faster sign-in)
               const ensureTenant = async (businessId) => {
                 try {
-                  logger.info('[SignInForm] Creating tenant for user with business ID:', businessId);
+                  logger.debug('[SignInForm] Starting async tenant creation for business ID:', businessId);
                   
-                  // Call the improved tenant API endpoint that ensures schema creation
-                  const tenantResponse = await fetch('/api/tenant/ensure-db-record', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      tenantId: businessId, // Use businessId as tenantId for consistency
-                      userId: userAttributes.sub,
-                      email: userAttributes.email || formData.username,
-                      businessName: userAttributes['custom:businessname'] || 
-                        (userAttributes['given_name'] ? `${userAttributes['given_name']}'s Business` : 
-                         userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : ''),
-                      businessType: userAttributes['custom:businesstype'] || 'Other',
-                      businessCountry: userAttributes['custom:businesscountry'] || 'US'
-                    })
-                  });
+                  // Store tenant ID immediately for faster sign-in
+                  if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                    window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                    window.__APP_CACHE.tenant.id = businessId;
+                    window.__APP_CACHE.tenantId = businessId;
+                  }
                   
-                  if (tenantResponse.ok) {
-                    const tenantResult = await tenantResponse.json();
-                    logger.info('[SignInForm] Tenant creation result:', tenantResult);
-                    
-                    if (tenantResult.success && tenantResult.tenantId) {
-                      // Store tenantId in all storage locations for consistency
-                      try {
-                        // First ensure tenant namespace is initialized
-                        if (typeof window !== 'undefined' && window.__APP_CACHE) {
-                          window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-                          window.__APP_CACHE.tenant.id = tenantResult.tenantId;
-                          window.__APP_CACHE.tenantId = tenantResult.tenantId;
-                        }
-                        
-                        // Store using the utility function
-                        await storeTenantId(tenantResult.tenantId);
-                        
-                        // Add a manual backup approach
-                        setCacheValue('tenantId', tenantResult.tenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
-                        
-                        logger.debug('[SignInForm] Successfully stored tenant ID in all locations:', tenantResult.tenantId);
-                      } catch (storeError) {
-                        logger.error('[SignInForm] Error storing tenant ID, but continuing:', storeError);
-                        // Continue anyway as we've stored it in AppCache directly
-                      }
+                  try {
+                    await storeTenantId(businessId);
+                    setCacheValue('tenantId', businessId, { ttl: 24 * 60 * 60 * 1000 });
+                  } catch (storeError) {
+                    logger.debug('[SignInForm] Error storing tenant ID, but continuing:', storeError);
+                  }
+                  
+                  // Make database calls async (fire and forget for faster sign-in)
+                  const createTenantAsync = async () => {
+                    try {
+                      const tenantResponse = await fetch('/api/tenant/ensure-db-record', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          tenantId: businessId,
+                          userId: userAttributes.sub,
+                          email: userAttributes.email || formData.username,
+                          businessName: userAttributes['custom:businessname'] || 
+                            (userAttributes['given_name'] ? `${userAttributes['given_name']}'s Business` : 
+                             userAttributes.email ? `${userAttributes.email.split('@')[0]}'s Business` : ''),
+                          businessType: userAttributes['custom:businesstype'] || 'Other',
+                          businessCountry: userAttributes['custom:businesscountry'] || 'US'
+                        })
+                      });
                       
-                      // Initialize the database schema for the tenant
-                      try {
+                      if (tenantResponse.ok) {
+                        logger.debug('[SignInForm] Async tenant creation successful');
+                        
+                        // Initialize database async
                         const initResponse = await fetch('/api/tenant/initialize-tenant', {
                           method: 'POST',
                           headers: { 
                             'Content-Type': 'application/json',
-                            'x-tenant-id': tenantResult.tenantId
+                            'x-tenant-id': businessId
                           },
-                          body: JSON.stringify({
-                            tenantId: tenantResult.tenantId
-                          })
+                          body: JSON.stringify({ tenantId: businessId })
                         });
                         
                         if (initResponse.ok) {
-                          logger.info('[SignInForm] Tenant database initialized successfully');
-                        } else {
-                          logger.warn('[SignInForm] Tenant database initialization warning:', await initResponse.text());
-                          // Continue anyway as this is non-fatal
+                          logger.debug('[SignInForm] Async tenant database initialization successful');
                         }
-                      } catch (initError) {
-                        logger.error('[SignInForm] Error initializing tenant database:', initError);
-                        // Continue anyway as this is non-fatal
                       }
-                      
-                      // Return the tenant ID for further use
-                      return tenantResult.tenantId;
+                    } catch (error) {
+                      logger.debug('[SignInForm] Async tenant creation failed (non-blocking):', error.message);
                     }
-                  }
+                  };
                   
-                  // If we got here, tenant creation failed but we can continue
-                  logger.warn('[SignInForm] Tenant creation did not return a valid ID');
-                  return businessId; // Return original business ID as fallback
+                  // Start async creation but don't wait for it
+                  createTenantAsync();
+                  
+                  // Return immediately for faster sign-in
+                  return businessId;
                 } catch (error) {
-                  logger.error('[SignInForm] Error creating tenant:', error);
-                  return null;
+                  logger.error('[SignInForm] Error in tenant creation setup:', error);
+                  return businessId; // Return business ID as fallback
                 }
               };
               
