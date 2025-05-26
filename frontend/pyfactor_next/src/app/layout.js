@@ -322,6 +322,12 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0013_fix_signin_amplify_import_production.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="signin-comprehensive-auth-fix" 
+          src="/scripts/Version0014_fix_signin_comprehensive_production.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
