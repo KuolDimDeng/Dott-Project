@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from 'aws-amplify/auth';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 import CrispErrorBoundary from './CrispErrorBoundary';
 
 function CrispChat({ isAuthenticated }) {
@@ -42,55 +41,31 @@ function CrispChat({ isAuthenticated }) {
 
         const { attributes } = user;
 
-        // Set email if available using CognitoAttributes utility
-        const email = CognitoAttributes.getValue(attributes, CognitoAttributes.EMAIL);
-        if (email) {
-          window.$crisp.push(['set', 'user:email', email]);
+        // Set email if available
+        if (attributes.email) {
+          window.$crisp.push(['set', 'user:email', attributes.email]);
           logger.debug('Set Crisp user email');
         }
 
-        // Set nickname from first and last name using CognitoAttributes utility
-        const firstName = CognitoAttributes.getValue(attributes, CognitoAttributes.GIVEN_NAME);
-        const lastName = CognitoAttributes.getValue(attributes, CognitoAttributes.FAMILY_NAME);
+        // Set nickname from first and last name
+        const firstName = attributes['custom:firstname'];
+        const lastName = attributes['custom:lastname'];
         if (firstName || lastName) {
           const nickname = [firstName, lastName].filter(Boolean).join(' ');
           if (nickname) {
             window.$crisp.push(['set', 'user:nickname', nickname]);
-            logger.debug('Set Crisp user nickname:', nickname);
+            logger.debug('Set Crisp user nickname');
           }
         }
 
-        // Set company name if available using CognitoAttributes utility
-        const businessName = CognitoAttributes.getBusinessName(attributes);
-        if (businessName) {
+        // Set company name if available
+        if (attributes['custom:business_name']) {
           window.$crisp.push([
             'set',
             'user:company',
-            [businessName],
+            [attributes['custom:business_name']],
           ]);
-          logger.debug('Set Crisp user company:', businessName);
-        }
-
-        // Set tenant ID as custom data using CognitoAttributes utility
-        const tenantId = CognitoAttributes.getTenantId(attributes);
-        if (tenantId) {
-          window.$crisp.push([
-            'set',
-            'session:data',
-            [['tenant_id', tenantId]]
-          ]);
-          logger.debug('Set Crisp tenant ID:', tenantId);
-        }
-
-        // Set user role if available using CognitoAttributes utility
-        const userRole = CognitoAttributes.getUserRole(attributes);
-        if (userRole) {
-          window.$crisp.push([
-            'set',
-            'session:data',
-            [['user_role', userRole]]
-          ]);
-          logger.debug('Set Crisp user role:', userRole);
+          logger.debug('Set Crisp user company');
         }
 
         logger.debug('Crisp user data set successfully');
@@ -113,7 +88,9 @@ function CrispChat({ isAuthenticated }) {
         let attempts = 0;
         const maxAttempts = 10;
         while (!window.$crisp?.push && attempts < maxAttempts) {
-          logger.debug('Waiting for Crisp to be ready (attempt ' + (attempts + 1) + '/' + maxAttempts + ')...');
+          logger.debug(
+            `Waiting for Crisp to be ready (attempt ${attempts + 1}/${maxAttempts})...`
+          );
           await new Promise((resolve) => setTimeout(resolve, 100));
           attempts++;
         }
@@ -146,15 +123,11 @@ function CrispChat({ isAuthenticated }) {
     };
 
     try {
-      // Add minimal CSS to ensure proper z-index
+      // Add minimal CSS to ensure cookie banner is above Crisp
       const style = document.createElement('style');
       style.textContent = `
-        /* Ensure Crisp chat has proper z-index */
-        #crisp-chatbox {
-          z-index: 9999 !important;
-        }
-        /* Ensure cookie banner is above Crisp */
-        .cookie-banner {
+        /* Ensure the cookie banner is above everything */
+        .MuiPaper-root[style*="position: fixed"] {
           z-index: 99999 !important;
         }
       `;
