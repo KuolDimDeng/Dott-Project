@@ -304,6 +304,12 @@ export default async function RootLayout({ children, params }) {
           src="/scripts/Version0010_update_script_registry_production.js"
           strategy="afterInteractive"
         />
+        
+        <Script 
+          id="signin-form-submission-fix" 
+          src="/scripts/Version0011_fix_signin_form_submission_production.js"
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );
