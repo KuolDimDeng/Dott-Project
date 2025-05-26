@@ -478,15 +478,19 @@
   // Fix Cognito attribute access using CognitoAttributes utility
   async function fixCognitoAttributeAccess() {
     if (typeof window === 'undefined') return;
-    
-    // Load CognitoAttributes utility dynamically
-    if (!window.CognitoAttributes) {
+
+    // If CognitoAttributes is already globally available, don't try to re-import.
+    if (window.CognitoAttributes) {
+      log('info', 'CognitoAttributes utility already available globally, skipping dynamic import.');
+    } else {
+      // Load CognitoAttributes utility dynamically
       try {
-        const { default: CognitoAttributes } = await import('/src/utils/CognitoAttributes.js');
+        // Attempting a relative path, though this is not ideal for public scripts importing from src
+        const { default: CognitoAttributes } = await import('../../src/utils/CognitoAttributes.js'); 
         window.CognitoAttributes = CognitoAttributes;
         log('info', 'CognitoAttributes utility loaded and made globally available');
       } catch (error) {
-        log('warn', 'Could not load CognitoAttributes utility, creating fallback', error);
+        log('warn', 'Could not load CognitoAttributes utility dynamically, creating fallback', error);
         
         // Create fallback CognitoAttributes utility
         window.CognitoAttributes = {
@@ -504,7 +508,7 @@
         };
         log('info', 'Fallback CognitoAttributes utility created');
       }
-    }
+    } // This closes the else block
     
     // Create helper function for safe attribute access
     window.getSafeCognitoAttribute = function(attributes, attributeName, defaultValue = null) {
