@@ -300,6 +300,12 @@ export default async function RootLayout({ children, params }) {
         />
         
         <Script 
+          id="signin-robust-fallback-fix" 
+          src="/scripts/Version0016_fix_signin_robust_fallback_production.js"
+          strategy="afterInteractive"
+        />
+        
+        <Script 
           id="signin-redirect-debug-script" 
           src="/scripts/Version0009_fix_signin_redirect_debug.js"
           strategy="afterInteractive"
