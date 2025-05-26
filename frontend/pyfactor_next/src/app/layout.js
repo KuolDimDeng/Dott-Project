@@ -1,13 +1,10 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import '../lib/amplifyConfig'; // Import Amplify config early
 // Add reconfiguration script for Amplify
-import { configureAmplify } from '@/config/amplifyUnified';
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
 import Providers from './providers';
 import Script from 'next/script';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 import TenantRecoveryWrapper from '@/components/TenantRecoveryWrapper';
 import AuthInitializer from '@/components/AuthInitializer';
@@ -28,37 +25,10 @@ export const metadata = {
 
 // Root layout component (Server Component)
 export default async function RootLayout({ children, params }) {
-  // Extract path from params or request
-  const pathname = params?.pathname || '';
-  
-  // Check if we're already on a tenant path
-  const isTenantPath = pathname.startsWith('tenant/');
-  
-  // Use AppCache instead of cookies for better security
-  // This approach is async-compatible and more secure than cookies
-  
-  let tenantId = null;
-  try {
-    // Check if there's a tenant ID in AppCache
-    const { getFromAppCache } = await import('@/utils/appCacheUtils');
-    const tenantIdFromCache = await getFromAppCache('tenantId');
-    const businessIdFromCache = await getFromAppCache('businessid');
-    tenantId = tenantIdFromCache || businessIdFromCache;
-    
-    // Only redirect on root route, not on all routes
-    // This prevents redirect loops and unnecessary redirects
-    if (tenantId && !isTenantPath && pathname === '') {
-      return redirect(`/tenant/${tenantId}`);
-    }
-  } catch (error) {
-    console.error('Error accessing AppCache:', error);
-  }
-  
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        {/* Removed problematic script references that cause MIME type errors */}
         
         {/* Direct inline menu fix - highest priority */}
         <script 
@@ -80,11 +50,11 @@ export default async function RootLayout({ children, params }) {
           }}
         />
         
-        {/* IMMEDIATE TEST-TENANT PREVENTION - HIGHEST PRIORITY */}
+        {/* Simplified tenant initialization */}
         <script 
           dangerouslySetInnerHTML={{ 
             __html: `
-                          // Clean tenant ID extraction using CognitoAttributes utility
+            // Clean tenant ID extraction using CognitoAttributes utility
             // Replaces test-tenant prevention with proper dynamic extraction
             async function initializeTenantFromCognito() {
               try {
@@ -133,9 +103,9 @@ export default async function RootLayout({ children, params }) {
                 }
                 
                 // Reduced logging frequency for production
-    if (Math.random() < 0.1) { // Only log 10% of the time
-      console.debug('[Layout] No tenant ID found in Cognito attributes');
-    }
+                if (Math.random() < 0.1) { // Only log 10% of the time
+                  console.debug('[Layout] No tenant ID found in Cognito attributes');
+                }
                 return null;
               } catch (error) {
                 console.error('[Layout] Error initializing tenant from Cognito:', error);
