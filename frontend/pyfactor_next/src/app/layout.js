@@ -294,6 +294,12 @@ export default async function RootLayout({ children, params }) {
         />
         
         <Script 
+          id="signin-auth-exposure-fix" 
+          src="/scripts/Version0015_fix_signin_expose_auth_production.js"
+          strategy="afterInteractive"
+        />
+        
+        <Script 
           id="signin-redirect-debug-script" 
           src="/scripts/Version0009_fix_signin_redirect_debug.js"
           strategy="afterInteractive"
