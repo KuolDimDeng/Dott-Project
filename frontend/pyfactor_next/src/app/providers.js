@@ -5,48 +5,23 @@ import { AuthProvider } from '@/context/AuthContext';
 import { TenantProvider } from '@/context/TenantContext';
 import { SessionProvider } from 'next-auth/react';
 import { CookiesProvider } from 'react-cookie';
-import dynamic from 'next/dynamic';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 
 // Import auth initializer to ensure Amplify is configured correctly
 import '@/lib/authInitializer';
 
-// Simple fallback component in case the dynamic import fails
-const FallbackTenantMiddleware = () => {
-  useEffect(() => {
-    console.log('[TenantMiddleware] Using fallback tenant middleware');
-    
-    // Try to get tenant ID from localStorage as a basic initialization
-    try {
-      const tenantId = localStorage.getItem('tenantId');
-      if (tenantId) {
-        console.info(`[TenantMiddleware] Found tenant ID in storage: ${tenantId}`);
-      }
-    } catch (e) {
-      console.warn('[TenantMiddleware] Error checking localStorage:', e);
-    }
-  }, []);
-  
-  return null;
-};
-
-// Lazy load the tenant middleware to avoid client/server issues
-const TenantMiddleware = dynamic(() => import('@/components/TenantMiddlewareComponent'), {
-  ssr: false,
-  loading: () => null,
-  // Use the fallback component if the import fails
-  onError: (err) => {
-    console.error('[TenantMiddleware] Error loading middleware component:', err);
-    return <FallbackTenantMiddleware />;
-  }
-});
-
 /**
- * Providers component that wraps the application with necessary context providers
+ * Simplified Providers component that wraps the application with necessary context providers
  */
 export default function Providers({ children }) {
   // Add error handling for the whole provider tree
   const [error, setError] = useState(null);
+  const [mounted, setMounted] = useState(false);
+  
+  // Only render on client-side to avoid hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Add error boundary using useEffect
   useEffect(() => {
@@ -64,7 +39,8 @@ export default function Providers({ children }) {
         !errorMessage.includes('not available') &&
         !errorMessage.includes('fallback') &&
         !errorName.includes('Warning') &&
-        errorMessage !== 'ResizeObserver loop limit exceeded';
+        errorMessage !== 'ResizeObserver loop limit exceeded' &&
+        !errorMessage.includes('I(...) is undefined'); // Ignore this specific error for now
       
       if (isCriticalError) {
         console.error('[Providers] Critical error detected, setting error state:', event.error);
@@ -78,7 +54,14 @@ export default function Providers({ children }) {
     };
     
     window.addEventListener('error', handleError);
-    return () => window.removeEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', (event) => {
+      handleError({ error: event.reason });
+    });
+    
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleError);
+    };
   }, []);
   
   // If there's a severe error, render a simple error message
@@ -97,13 +80,17 @@ export default function Providers({ children }) {
     );
   }
   
+  // Don't render until mounted to avoid hydration issues
+  if (!mounted) {
+    return null;
+  }
+  
   return (
     <CookiesProvider>
       <SessionProvider>
         <AuthProvider>
           <TenantProvider>
             <UserProfileProvider>
-              <TenantMiddleware />
               {children}
             </UserProfileProvider>
           </TenantProvider>
