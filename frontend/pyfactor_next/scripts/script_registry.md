@@ -99,6 +99,24 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - Proper custom:tenant_ID attribute priority
 - **Requirements Addressed**: Conditions 7, 8, 9, 10, 12, 29
 
+
+### Version0028_fix_user_initials_dashappbar.mjs
+- **Version**: 0028 v1.0
+- **Purpose**: Fix user initials not displaying in DashAppBar by ensuring proper given_name and family_name attribute handling
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2024-12-19
+- **Target Files**: 
+  - /src/utils/CognitoAttributes.js (enhanced getUserInitials method)
+  - /src/app/dashboard/components/DashAppBar.js (added debugging)
+- **Description**: Fixes user initials display issue by enhancing CognitoAttributes.getUserInitials() method with comprehensive debugging and fallback handling
+- **Key Features**:
+  - Enhanced debugging for production troubleshooting
+  - Improved error handling and validation
+  - Uses standard given_name and family_name attributes as requested
+  - Comprehensive fallback logic for edge cases
+- **Requirements Addressed**: Conditions 10, 12, 15, 17, 25
+
+
 ## Files That Will Be Modified
 - `.env.local`
 - `/src/app/api/test-connection/route.js` (Version0026)

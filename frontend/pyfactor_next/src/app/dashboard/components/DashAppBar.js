@@ -917,6 +917,32 @@ const DashAppBar = ({
     
     fetchAttributes();
   }, [userAttributes, isAuthenticated]);
+  // Enhanced debugging for user initials issue
+  useEffect(() => {
+    const debugUserInitials = () => {
+      console.group('[DashAppBar] User Initials Debug');
+      console.log('Current userInitials state:', userInitials);
+      console.log('userAttributes available:', !!userAttributes);
+      console.log('isAuthenticated:', isAuthenticated);
+      
+      if (userAttributes) {
+        console.log('userAttributes keys:', Object.keys(userAttributes));
+        console.log('given_name:', userAttributes.given_name);
+        console.log('family_name:', userAttributes.family_name);
+        console.log('email:', userAttributes.email);
+        
+        // Test CognitoAttributes.getUserInitials directly
+        const testInitials = CognitoAttributes.getUserInitials(userAttributes);
+        console.log('CognitoAttributes.getUserInitials result:', testInitials);
+      } else {
+        console.log('No userAttributes available for debugging');
+      }
+      console.groupEnd();
+    };
+    
+    // Run debug on mount and when dependencies change
+    debugUserInitials();
+  }, [userInitials, userAttributes, isAuthenticated]);
 
   // Only use tenant-specific fetch when tenant ID changes
   useEffect(() => {

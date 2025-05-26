@@ -202,23 +202,70 @@ const CognitoAttributes = {
    * @returns {String} User initials (2 characters)
    */
   getUserInitials(attributes) {
-    // Only use documented attribute names and always trim whitespace
+    // Enhanced debugging for production troubleshooting
+    if (typeof window !== 'undefined' && window.console) {
+      console.debug('[CognitoAttributes] getUserInitials called with attributes:', {
+        hasAttributes: !!attributes,
+        attributeKeys: attributes ? Object.keys(attributes) : [],
+        givenName: attributes ? attributes[this.GIVEN_NAME] : 'undefined',
+        familyName: attributes ? attributes[this.FAMILY_NAME] : 'undefined',
+        email: attributes ? attributes[this.EMAIL] : 'undefined'
+      });
+    }
+    
+    // Validate input
+    if (!attributes || typeof attributes !== 'object') {
+      console.warn('[CognitoAttributes] getUserInitials: Invalid or missing attributes object');
+      return 'U'; // Default fallback
+    }
+    
+    // Get standard Cognito attributes with proper trimming
     const firstName = this.getValue(attributes, this.GIVEN_NAME, '').trim();
     const lastName = this.getValue(attributes, this.FAMILY_NAME, '').trim();
-    if (firstName && lastName) {
-      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
-    }
-    if (firstName) {
-      return firstName.charAt(0).toUpperCase();
-    }
-    if (lastName) {
-      return lastName.charAt(0).toUpperCase();
-    }
     const email = this.getValue(attributes, this.EMAIL, '').trim();
+    
+    // Debug log the extracted values
+    if (typeof window !== 'undefined' && window.console) {
+      console.debug('[CognitoAttributes] Extracted values:', {
+        firstName: firstName || 'empty',
+        lastName: lastName || 'empty',
+        email: email || 'empty'
+      });
+    }
+    
+         // Primary: Both first and last name available
+     if (firstName && lastName) {
+       const initials = firstName.charAt(0).toUpperCase() + lastName.charAt(0).toUpperCase();
+       console.debug('[CognitoAttributes] Generated initials from first+last name:', initials);
+       return initials;
+     }
+    
+    // Secondary: Only first name available
+    if (firstName) {
+      const initial = firstName.charAt(0).toUpperCase();
+      console.debug('[CognitoAttributes] Generated initial from first name only:', initial);
+      return initial;
+    }
+    
+    // Tertiary: Only last name available
+    if (lastName) {
+      const initial = lastName.charAt(0).toUpperCase();
+      console.debug('[CognitoAttributes] Generated initial from last name only:', initial);
+      return initial;
+    }
+    
+    // Quaternary: Extract from email
     if (email && email.includes('@')) {
       const namePart = email.split('@')[0];
-      return namePart.charAt(0).toUpperCase();
+      if (namePart && namePart.length > 0) {
+        const initial = namePart.charAt(0).toUpperCase();
+        console.debug('[CognitoAttributes] Generated initial from email:', initial);
+        return initial;
+      }
     }
+    
+    // Final fallback
+    console.warn('[CognitoAttributes] No usable name data found, using default fallback');
     return 'U'; // Default fallback
   },
   
