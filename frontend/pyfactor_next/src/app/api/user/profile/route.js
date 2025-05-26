@@ -90,73 +90,62 @@ export async function GET(request) {
         { status: 401 }
       );
     }
-      
-      const { user } = sessionData;
-      const userAttributes = user.attributes || {};
-      
-      // Prepare tenant ID - ensure it's a valid UUID
-      let tenantId = userAttributes['custom:tenant_ID'] ||
-                     userAttributes['custom:tenantId'] ||
-                     userAttributes['custom:businessid'] ||
-                     userAttributes['custom:tenant_id'] ||
-                     null;
-      
-      if (tenantId && !isValidUUID(tenantId)) {
-        logger.warn(`[UserProfile API] Invalid tenant ID format: "${tenantId}", using null instead`);
-        tenantId = null;
-      }
-      
-      // Map available attributes to profile response
-      const profile = {
-        userId: userAttributes.sub || user.userId,
-        email: userAttributes.email,
-        firstName: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
-        lastName: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
-        tenantId: tenantId,
-        businessName: userAttributes['custom:businessname'] || '',
-        businessType: userAttributes['custom:businesstype'] || '',
-        legalStructure: userAttributes['custom:legalstructure'] || '',
-        subscriptionPlan: userAttributes['custom:subplan'] || '',
-        subscriptionStatus: userAttributes['custom:subscriptionstatus'] || 'pending',
-        onboardingStatus: userAttributes['custom:onboarding'] || 'not_started',
-        setupDone: userAttributes['custom:setupdone'] === 'TRUE' || userAttributes['custom:setupdone'] === 'true',
-        currency: userAttributes['custom:currency'] || 'USD',
-        timezone: userAttributes['custom:timezone'] || 'America/New_York',
-        language: userAttributes['custom:language'] || 'en',
-        userRole: userAttributes['custom:userrole'] || 'user',
-        createdAt: userAttributes['custom:created_at'] || null,
-        updatedAt: userAttributes['custom:updated_at'] || null
-      };
-      
-      // Add flags to help the frontend with state decisions
-      profile.isOnboarded = profile.setupDone === true;
-      profile.requiresOnboarding = !profile.isOnboarded;
-      
-      // Determine onboarding progress
-      profile.onboardingSteps = {
-        businessInfo: Boolean(profile.businessName && profile.businessType),
-        subscription: Boolean(profile.subscriptionPlan),
-        payment: profile.subscriptionPlan === 'free' || userAttributes['custom:payverified'] === 'TRUE'
-      };
-      
-      logger.info(`[UserProfile API] Profile fetched successfully from session for ${profile.email}`);
-      
-      return NextResponse.json({
-        profile,
-        source: 'session',
-        requestId
-      });
-      
-    } catch (sessionError) {
-      logger.error(`[UserProfile API] Session validation failed: ${sessionError.message}`);
-      
-      // Return a response that triggers client-side fallback
-      return NextResponse.json({
-        error: 'use_client_fallback',
-        message: 'Session validation failed, use client-side fallback',
-        requestId
-      }, { status: 503 });
+    
+    const { user } = sessionData;
+    const userAttributes = user.attributes || {};
+    
+    // Prepare tenant ID - ensure it's a valid UUID
+    let tenantId = userAttributes['custom:tenant_ID'] ||
+                   userAttributes['custom:tenantId'] ||
+                   userAttributes['custom:businessid'] ||
+                   userAttributes['custom:tenant_id'] ||
+                   null;
+    
+    if (tenantId && !isValidUUID(tenantId)) {
+      logger.warn(`[UserProfile API] Invalid tenant ID format: "${tenantId}", using null instead`);
+      tenantId = null;
     }
+    
+    // Map available attributes to profile response
+    const profile = {
+      userId: userAttributes.sub || user.userId,
+      email: userAttributes.email,
+      firstName: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
+      lastName: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
+      tenantId: tenantId,
+      businessName: userAttributes['custom:businessname'] || '',
+      businessType: userAttributes['custom:businesstype'] || '',
+      legalStructure: userAttributes['custom:legalstructure'] || '',
+      subscriptionPlan: userAttributes['custom:subplan'] || '',
+      subscriptionStatus: userAttributes['custom:subscriptionstatus'] || 'pending',
+      onboardingStatus: userAttributes['custom:onboarding'] || 'not_started',
+      setupDone: userAttributes['custom:setupdone'] === 'TRUE' || userAttributes['custom:setupdone'] === 'true',
+      currency: userAttributes['custom:currency'] || 'USD',
+      timezone: userAttributes['custom:timezone'] || 'America/New_York',
+      language: userAttributes['custom:language'] || 'en',
+      userRole: userAttributes['custom:userrole'] || 'user',
+      createdAt: userAttributes['custom:created_at'] || null,
+      updatedAt: userAttributes['custom:updated_at'] || null
+    };
+    
+    // Add flags to help the frontend with state decisions
+    profile.isOnboarded = profile.setupDone === true;
+    profile.requiresOnboarding = !profile.isOnboarded;
+    
+    // Determine onboarding progress
+    profile.onboardingSteps = {
+      businessInfo: Boolean(profile.businessName && profile.businessType),
+      subscription: Boolean(profile.subscriptionPlan),
+      payment: profile.subscriptionPlan === 'free' || userAttributes['custom:payverified'] === 'TRUE'
+    };
+    
+    logger.info(`[UserProfile API] Profile fetched successfully from session for ${profile.email}`);
+    
+    return NextResponse.json({
+      profile,
+      source: 'session',
+      requestId
+    });
   } catch (error) {
     logger.error(`[UserProfile API] Error fetching profile: ${error.message}`);
     
