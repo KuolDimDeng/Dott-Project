@@ -158,10 +158,10 @@ const getTenantIdFromSources = async () => {
       if (currentUser) {
         const userAttributes = await fetchUserAttributes();
         
-        // Check all possible tenant ID attribute names
-        const tenantId = userAttributes?.['custom:tenantId'] || 
+        // Check all possible tenant ID attribute names - prioritize the correct one
+        const tenantId = userAttributes?.['custom:tenant_ID'] ||
+                         userAttributes?.['custom:tenantId'] || 
                          userAttributes?.['custom:tenant_id'] || 
-                         userAttributes?.['custom:tenant_ID'] ||
                          userAttributes?.['tenantId'];
                          
         if (tenantId) {
@@ -180,9 +180,9 @@ const getTenantIdFromSources = async () => {
       
       if (session && session.tokens) {
         const claims = session.tokens.idToken?.payload || {};
-        const tenantId = claims['custom:tenantId'] || 
+        const tenantId = claims['custom:tenant_ID'] ||
+                         claims['custom:tenantId'] || 
                          claims['custom:tenant_id'] || 
-                         claims['custom:tenant_ID'] ||
                          claims['tenantId'];
                          
         if (tenantId) {

@@ -40,7 +40,7 @@ export default function TenantInitializer({ tenantId }) {
         // Update Cognito custom attributes directly
         try {
           const userAttributes = await fetchUserAttributes();
-          const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'];
+          const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'] || userAttributes['custom:businessid'];
           
           // If tenant ID in Cognito doesn't match, update it directly
           if (cognitoTenantId !== tenantId) {

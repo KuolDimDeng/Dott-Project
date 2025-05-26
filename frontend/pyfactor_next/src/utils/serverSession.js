@@ -63,10 +63,11 @@ export async function getSession(request) {
     const email = decodedToken.email;
     
     // Extract tenant ID from token custom attributes
-    const tenantId = decodedToken['custom:tenant_ID'] || 
-                    decodedToken['custom:businessid'] || 
-                    decodedToken['custom:tenantId'] || 
-                    decodedToken['custom:tenant_id'];
+    const tenantId = decodedToken['custom:tenant_ID'] ||
+                     decodedToken['custom:tenantId'] ||
+                     decodedToken['custom:businessid'] ||
+                     decodedToken['custom:tenant_id'] ||
+                     null;
 
     // Extract all custom attributes for convenience
     const attributes = {};

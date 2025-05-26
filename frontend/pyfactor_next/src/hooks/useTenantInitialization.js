@@ -134,7 +134,7 @@ const getSafeTenantId = () => {
         // Use the Auth API to get the current user's attributes directly
         fetchUserAttributes()
           .then(attributes => {
-            const cognitoTenantId = attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
+            const cognitoTenantId = attributes?.['custom:tenant_ID'] || attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
             if (cognitoTenantId && !tenantId) {
               // Store for future use
               if (window.__APP_CACHE && window.__APP_CACHE.tenant) {

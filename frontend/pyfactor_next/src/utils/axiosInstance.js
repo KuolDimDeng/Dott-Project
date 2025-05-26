@@ -66,8 +66,8 @@ const getTenantAndTokenInfo = async () => {
               Buffer.from(token.split('.')[1], 'base64').toString()
             );
             
-            tenantId = payload['custom:businessid'] || 
-                      payload['custom:tenant_ID'] || 
+            tenantId = payload['custom:tenant_ID'] || 
+                      payload['custom:businessid'] || 
                       payload['custom:tenantId'];
             
             if (tenantId) {

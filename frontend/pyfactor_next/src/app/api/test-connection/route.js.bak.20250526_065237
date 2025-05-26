@@ -4,28 +4,6 @@ import { logger } from '@/utils/logger';
 import https from 'https';
 
 /**
- * Extract tenant ID from request headers or authentication context
- * Uses dynamic extraction instead of hardcoded values
- * @param {Request} request - The incoming request object  
- * @returns {string} - The tenant ID or fallback value
- */
-function extractTenantIdFromRequest(request) {
-  // Check for tenant ID in headers first
-  const tenantIdHeader = request.headers.get('X-Tenant-ID') || 
-                        request.headers.get('x-tenant-id') ||
-                        request.headers.get('Tenant-ID');
-  
-  if (tenantIdHeader && tenantIdHeader !== 'test-tenant-id') {
-    return tenantIdHeader;
-  }
-  
-  // Fallback for testing - in production this should extract from JWT
-  console.warn('[TestConnection] No tenant ID in headers, using fallback');
-  return 'tenant-id-required';
-}
-
-
-/**
  * GET handler for testing backend connection
  */
 export async function GET(request) {
@@ -89,7 +67,7 @@ export async function GET(request) {
           timeout: 5000,
           headers: {
             'X-Test-Mode': 'true',
-            'X-Tenant-ID': extractTenantIdFromRequest(request)
+            'X-Tenant-ID': 'f25a8e7f-2b43-5798-ae3d-51d803089261'
           }
         });
         

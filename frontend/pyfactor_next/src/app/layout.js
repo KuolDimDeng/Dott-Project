@@ -59,96 +59,27 @@ export default async function RootLayout({ children, params }) {
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <script src="/scripts/emergency-menu-fix.js" defer></script>
+
+        {/* Production Dashboard Diagnostics */}
         <Script
-          id="emergency-menu-fix-loader"
-          strategy="beforeInteractive" 
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  console.log('[EmergencyLoader] Trying to load emergency menu fix...');
-                  const script = document.createElement('script');
-                  script.src = '/scripts/emergency-menu-fix.js';
-                  script.async = true;
-                  script.onload = function() {
-                    console.log('[EmergencyLoader] Emergency menu fix loaded successfully');
-                  };
-                  script.onerror = function() {
-                    console.error('[EmergencyLoader] Failed to load emergency menu fix');
-                  };
-                  document.head.appendChild(script);
-                } catch(e) {
-                  console.error('[EmergencyLoader] Error setting up fix:', e);
-                }
-              })();
-            `
-          }}
+          id="dashboard-diagnostics"
+          strategy="afterInteractive"
+          src="/scripts/Version0023_diagnose_production_dashboard_issues.js"
         />
-        {/* Add inline script to configure AWS Amplify early */}
-        <script dangerouslySetInnerHTML={{
-          __html: `
-            // Load AWS Amplify configuration from environment variables
-            window.aws_config = {
-              Auth: {
-                Cognito: {
-                  region: '${process.env.NEXT_PUBLIC_AWS_REGION || process.env.NEXT_PUBLIC_COGNITO_REGION || 'us-east-1'}',
-                  userPoolId: '${process.env.NEXT_PUBLIC_USER_POOL_ID || process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6'}',
-                  userPoolClientId: '${process.env.NEXT_PUBLIC_USER_POOL_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b'}',
-                  loginWith: {
-                    email: true,
-                    username: true
-                  },
-                  // Add HTTPS enforcement
-                  endpoint: 'https://cognito-idp.' + '${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}' + '.amazonaws.com',
-                  // Domain configuration for cookies
-                  cookieStorage: {
-                    domain: '.dottapps.com',
-                    path: '/',
-                    expires: 365,
-                    secure: true,
-                    sameSite: 'strict'
-                  },
-                  // Network options
-                  httpOptions: {
-                    timeout: 30000,
-                    retryable: true,
-                    maxRetries: 3
-                  }
-                }
-              }
-            };
-            console.log('[Layout] AWS Config initialized:', window.aws_config);
-            
-            // HTTPS enforcement for all AWS requests
-            if (location.protocol === 'https:') {
-              console.log('[Layout] HTTPS detected, configuring for self-signed certificates');
-              // Note: Fetch wrapper will be handled by comprehensive network fix script
-              window.__HTTPS_ENABLED = true;
-            }
-            
-            // Add reconfiguration function for auth operations
-            window.ensureAmplifyAuth = function() {
-              if (window.reconfigureAmplify) {
-                console.log('[Layout] Ensuring Amplify auth configuration');
-                return window.reconfigureAmplify();
-              }
-              return false;
-            };
-            
-            // Initialize AppCache structure for dashboard redirect fix
-            if (!window.__APP_CACHE) {
-              window.__APP_CACHE = { 
-                auth: { provider: 'cognito', initialized: true }, 
-                user: {}, 
-                tenant: {},
-                tenants: {}
-              };
-              console.log('[Layout] AppCache initialized for dashboard redirect fix');
-            }
-          `
-        }} />
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
+        
+        {/* Immediate Dashboard Fix */}
+        <Script
+          id="immediate-dashboard-fix"
+          strategy="afterInteractive"
+          src="/scripts/Version0024_immediate_production_dashboard_fix.js"
+        />
+        
+        {/* Authentication and Real Tenant Fix */}
+        <Script
+          id="auth-tenant-fix"
+          strategy="afterInteractive"
+          src="/scripts/Version0025_fix_authentication_and_real_tenant.js"
+        />
         
         {/* Dynamic script for supporting older browsers */}
         <Script
@@ -173,6 +104,85 @@ export default async function RootLayout({ children, params }) {
                   console.error('[InlineMenuFix] Error applying inline fix:', e);
                 }
               })();
+            `
+          }}
+        />
+        
+        {/* IMMEDIATE TEST-TENANT PREVENTION - HIGHEST PRIORITY */}
+        <script 
+          dangerouslySetInnerHTML={{ 
+            __html: `
+                          // Clean tenant ID extraction using CognitoAttributes utility
+            // Replaces test-tenant prevention with proper dynamic extraction
+            async function initializeTenantFromCognito() {
+              try {
+                console.log('[Layout] Initializing tenant ID from Cognito attributes');
+                
+                // Wait for Amplify to be available
+                let attempts = 0;
+                while (!window.Amplify && attempts < 10) {
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  attempts++;
+                }
+                
+                if (window.Amplify && window.Amplify.Auth) {
+                  try {
+                    const session = await window.Amplify.Auth.currentSession();
+                    if (session && session.idToken && session.idToken.payload) {
+                      const payload = session.idToken.payload;
+                      
+                      // Use proper attribute priority as defined in CognitoAttributes
+                      const tenantId = payload['custom:tenant_ID'] || 
+                                      payload['custom:businessid'] ||
+                                      payload['custom:tenant_id'] ||
+                                      payload['custom:tenantId'];
+                      
+                      if (tenantId) {
+                        console.log('[Layout] Found tenant ID from Cognito:', tenantId);
+                        
+                        // Store in AppCache (no localStorage per requirements)
+                        if (window.__APP_CACHE) {
+                          window.__APP_CACHE.tenantId = tenantId;
+                          window.__APP_CACHE.tenant = { id: tenantId };
+                        }
+                        
+                        // Redirect to tenant-specific URL if on root
+                        const path = window.location.pathname;
+                        if (path === '/' || path === '') {
+                          window.location.href = '/tenant/' + tenantId;
+                        }
+                        
+                        return tenantId;
+                      }
+                    }
+                  } catch (error) {
+                    console.log('[Layout] Could not get Cognito session:', error.message);
+                  }
+                }
+                
+                console.log('[Layout] No tenant ID found in Cognito attributes');
+                return null;
+              } catch (error) {
+                console.error('[Layout] Error initializing tenant from Cognito:', error);
+                return null;
+              }
+            }
+            
+            // Initialize tenant ID on page load
+            if (typeof window !== 'undefined') {
+              // Initialize AppCache if not present
+              if (!window.__APP_CACHE) {
+                window.__APP_CACHE = { 
+                  auth: { provider: 'cognito', initialized: true }, 
+                  user: {}, 
+                  tenant: {},
+                  tenants: {}
+                };
+              }
+              
+              // Initialize tenant after a short delay to allow Amplify to load
+              setTimeout(initializeTenantFromCognito, 1000);
+            }
             `
           }}
         />
@@ -268,84 +278,7 @@ export default async function RootLayout({ children, params }) {
           `}
         </Script>
         
-        {/* Load fix scripts directly in the browser */}
-        <Script 
-          id="dashboard-redirect-fix-script" 
-          src="/scripts/Version0001_fix_dashboard_redirect_appCache.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="cognito-attributes-fix-script" 
-          src="/scripts/Version0002_fix_cognito_attributes_permissions.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="dashboard-multiple-render-fix-script" 
-          src="/scripts/Version0005_fix_dashboard_multiple_renders.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="comprehensive-network-error-fix-script" 
-          src="/scripts/Version0008_fix_network_errors_comprehensive.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-auth-exposure-fix" 
-          src="/scripts/Version0015_fix_signin_expose_auth_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-robust-fallback-fix" 
-          src="/scripts/Version0016_fix_signin_robust_fallback_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-redirect-completion-fix" 
-          src="/scripts/Version0017_fix_signin_redirect_completion_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-redirect-debug-script" 
-          src="/scripts/Version0009_fix_signin_redirect_debug.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="script-registry-update-production" 
-          src="/scripts/Version0010_update_script_registry_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-form-submission-fix" 
-          src="/scripts/Version0011_fix_signin_form_submission_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-direct-auth-fix" 
-          src="/scripts/Version0012_fix_signin_direct_auth_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-fixed-direct-auth" 
-          src="/scripts/Version0013_fix_signin_amplify_import_production.js"
-          strategy="afterInteractive"
-        />
-        
-        <Script 
-          id="signin-comprehensive-auth-fix" 
-          src="/scripts/Version0014_fix_signin_comprehensive_production.js"
-          strategy="afterInteractive"
-        />
+        {/* All interfering scripts removed - using direct code fixes instead */}
       </body>
     </html>
   );

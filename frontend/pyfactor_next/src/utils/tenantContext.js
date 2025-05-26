@@ -239,9 +239,10 @@ export function getTenantFromToken(token) {
     const payload = JSON.parse(atob(parts[1]));
     
     // Look for the tenant ID in common JWT claim locations
-    const tenantId = payload['custom:tenantId'] || 
-                     payload.tenantId || 
-                     (payload['https://pyfactor.com/'] && payload['https://pyfactor.com/'].tenantId) ||
+    const tenantId = payload['custom:tenant_ID'] ||
+                     payload['custom:tenantId'] ||
+                     payload['custom:businessid'] ||
+                     payload['custom:tenant_id'] ||
                      null;
     
     if (tenantId) {

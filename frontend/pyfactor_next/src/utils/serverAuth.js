@@ -189,22 +189,60 @@ export function decodeToken(token) {
  * Validate server session from tokens
  * Prioritizes extracting user info from tokens rather than cookies
  */
-export async function validateServerSession() {
+export async function validateServerSession(request = null) {
   try {
-    const cookieStore = cookies();
+    let idToken = null;
+    let accessToken = null;
     
-    // Get tokens from cookies
-    const idToken = cookieStore.get('idToken')?.value;
-    const accessToken = cookieStore.get('accessToken')?.value;
+    // Try to get tokens from request headers first (if request provided)
+    if (request) {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader?.startsWith('Bearer ')) {
+        accessToken = authHeader.substring(7);
+      }
+      
+      idToken = request.headers.get('X-Id-Token') || 
+                request.headers.get('x-id-token');
+    }
+    
+    // Fallback to cookies if no tokens in headers
+    if (!idToken || !accessToken) {
+      const cookieStore = cookies();
+      idToken = idToken || cookieStore.get('idToken')?.value;
+      accessToken = accessToken || cookieStore.get('accessToken')?.value;
+    }
+    
+    // Check for Cognito-formatted cookies as last resort
+    if (!idToken) {
+      const cookieStore = cookies();
+      const allCookies = cookieStore.getAll();
+      
+      // Look for Cognito IdToken cookie
+      const cognitoIdTokenCookie = allCookies.find(cookie => 
+        cookie.name.includes('CognitoIdentityServiceProvider') && 
+        cookie.name.includes('.idToken')
+      );
+      
+      if (cognitoIdTokenCookie) {
+        idToken = cognitoIdTokenCookie.value;
+        logger.debug('[ServerAuth] Found ID token in Cognito cookie');
+      }
+    }
     
     if (!idToken) {
-      throw new Error('No valid ID token found');
+      throw new Error('No valid ID token found in headers or cookies');
     }
     
     // Decode the ID token to get user information
     const decodedToken = decodeToken(idToken);
     if (!decodedToken) {
       throw new Error('Failed to decode ID token');
+    }
+    
+    // Check if token is expired
+    const currentTime = Math.floor(Date.now() / 1000);
+    if (decodedToken.exp && decodedToken.exp < currentTime) {
+      throw new Error('ID token has expired');
     }
     
     // Extract user attributes directly from the token
@@ -214,7 +252,7 @@ export async function validateServerSession() {
     const attributes = {};
     Object.entries(decodedToken).forEach(([key, value]) => {
       if (key.startsWith('custom:') || 
-          ['email', 'email_verified', 'sub', 'cognito:username'].includes(key)) {
+          ['email', 'email_verified', 'sub', 'cognito:username', 'given_name', 'family_name'].includes(key)) {
         attributes[key] = value;
       }
     });
@@ -225,10 +263,13 @@ export async function validateServerSession() {
     
     logger.debug('[ServerAuth] Validated session with token data', {
       userId,
-      attributes: Object.keys(attributes).filter(k => !!attributes[k])
+      tenantId: attributes['custom:tenant_ID'] || 'none',
+      email: attributes.email,
+      tokenSource: request ? 'headers' : 'cookies'
     });
     
     return {
+      verified: true,
       tokens: {
         idToken,
         accessToken
@@ -240,8 +281,13 @@ export async function validateServerSession() {
     };
     
   } catch (error) {
-    logger.error('[ServerAuth] Failed to validate session:', error);
-    throw error;
+    logger.error('[ServerAuth] Failed to validate session:', error.message);
+    return {
+      verified: false,
+      error: error.message,
+      tokens: null,
+      user: null
+    };
   }
 }
 
@@ -306,7 +352,7 @@ export async function getCurrentUser(request) {
       email: attributes.email,
       firstName: attributes.given_name || attributes['custom:firstName'] || '',
       lastName: attributes.family_name || attributes['custom:lastName'] || '',
-      tenantId: attributes['custom:tenantId'] || attributes['custom:businessId'],
+      tenantId: attributes['custom:tenant_ID'] || attributes['custom:tenantId'] || attributes['custom:businessid'],
       onboarding: attributes['custom:onboarding'],
       setupDone: attributes['custom:setupdone'] === 'true'
     };

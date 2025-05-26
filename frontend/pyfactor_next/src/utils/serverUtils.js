@@ -96,10 +96,11 @@ export async function validateServerSession(providedTokens) {
     });
     
     // Extract tenant ID from token claims
-    tenantId = idTokenDecoded['custom:tenant_ID'] || 
-              idTokenDecoded['custom:businessid'] || 
-              idTokenDecoded['custom:tenantId'] || 
-              idTokenDecoded['custom:tenant_id'];
+    tenantId = idTokenDecoded['custom:tenant_ID'] ||
+              idTokenDecoded['custom:tenantId'] ||
+              idTokenDecoded['custom:businessid'] ||
+              idTokenDecoded['custom:tenant_id'] ||
+              null;
     
     // Skip token verification in development mode if configured
     if (process.env.SKIP_TOKEN_VERIFICATION === 'true' && process.env.NODE_ENV === 'development') {

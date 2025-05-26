@@ -70,5 +70,36 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - `/scripts/Version0008_fix_network_errors_comprehensive.js` (new comprehensive fix)
   - `/public/scripts/Version0008_fix_network_errors_comprehensive.js` (deployed version)
 
+### Version0026_remove_test_tenant_dynamic_tenant_id_test_connection.mjs
+- **Version**: 0026 v1.0
+- **Purpose**: Remove hardcoded tenant ID from test-connection route and implement dynamic tenant ID extraction using CognitoAttributes utility
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2024-12-19
+- **Target File**: `/src/app/api/test-connection/route.js`
+- **Description**: Removes hardcoded 'f25a8e7f-2b43-5798-ae3d-51d803089261' and implements dynamic tenant ID extraction from request headers/auth
+- **Key Features**:
+  - Dynamic tenant ID extraction from request headers
+  - Fallback handling for missing tenant ID
+  - Production-ready implementation
+  - No hardcoded values per requirements
+- **Requirements Addressed**: Conditions 9, 10, 12, 19
+
+### Version0027_remove_test_tenant_prevention_layout.mjs
+- **Version**: 0027 v1.0
+- **Purpose**: Remove all test-tenant prevention code from layout.js and replace with clean, dynamic tenant ID handling using CognitoAttributes utility
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2024-12-19
+- **Target File**: `/src/app/layout.js`
+- **Description**: Removes all test-tenant prevention inline scripts and replaces with clean CognitoAttributes-based tenant initialization
+- **Key Features**:
+  - Removes duplicate inline scripts
+  - Clean CognitoAttributes-based tenant extraction
+  - Uses AppCache instead of localStorage
+  - Simplified authentication flow
+  - Proper custom:tenant_ID attribute priority
+- **Requirements Addressed**: Conditions 7, 8, 9, 10, 12, 29
+
 ## Files That Will Be Modified
 - `.env.local`
+- `/src/app/api/test-connection/route.js` (Version0026)
+- `/src/app/layout.js` (Version0027)

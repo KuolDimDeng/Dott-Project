@@ -144,7 +144,7 @@ export const getAuthSession = async () => {
       id: payload.sub,
       email: payload.email,
       name: payload.name,
-      tenantId: payload['custom:businessid'] || payload['custom:tenantId']
+      tenantId: payload['custom:tenant_ID'] || payload['custom:businessid'] || payload['custom:tenantId']
     };
     
     return {

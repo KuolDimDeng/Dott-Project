@@ -209,8 +209,8 @@ const SettingsManagement = () => {
         currentTenantId = CognitoAttributes.getTenantId(user.attributes) || 
                          CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID) ||
                          user.attributes['custom:tenant_ID'] ||
-                         user.attributes['custom:tenantID'] ||
                          user.attributes['custom:tenantId'] ||
+                         user.attributes['custom:tenantID'] ||
                          user.attributes['custom:tenant_id'] ||
                          user.attributes['custom:businessid'];
       } else {

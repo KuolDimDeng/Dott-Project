@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { isValidUUID } from '@/utils/tenantUtils';
-import { getUserAttributes } from '@/utils/cognito'; // Import the Cognito utility
+import { validateServerSession } from '@/utils/serverAuth';
 
 /**
  * API endpoint for fetching user profile data
- * Falls back to direct Cognito attribute access when needed
+ * Uses proper token-based authentication instead of server-side Cognito calls
  */
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 9);
@@ -13,25 +13,31 @@ export async function GET(request) {
   try {
     logger.debug(`[UserProfile API] Fetching profile, request ${requestId}`);
     
-    // Get user attributes directly from Cognito
+    // Use server session validation instead of direct Cognito calls
     try {
-      const userAttributes = await getUserAttributes();
+      const sessionData = await validateServerSession(request);
       
-      if (!userAttributes || Object.keys(userAttributes).length === 0) {
-        logger.warn(`[UserProfile API] No user attributes found, request ${requestId}`);
+      if (!sessionData.verified || !sessionData.user) {
+        logger.warn(`[UserProfile API] Session validation failed, request ${requestId}:`, sessionData.error);
         return NextResponse.json(
           { 
             error: 'Not authenticated',
+            message: sessionData.error || 'Session validation failed',
             requestId 
           },
           { status: 401 }
         );
       }
       
+      const { user } = sessionData;
+      const userAttributes = user.attributes || {};
+      
       // Prepare tenant ID - ensure it's a valid UUID
-      let tenantId = userAttributes['custom:tenant_ID'] || 
-                      userAttributes['custom:tenantId'] || 
-                      userAttributes['custom:businessid'] || null;
+      let tenantId = userAttributes['custom:tenant_ID'] ||
+                     userAttributes['custom:tenantId'] ||
+                     userAttributes['custom:businessid'] ||
+                     userAttributes['custom:tenant_id'] ||
+                     null;
       
       if (tenantId && !isValidUUID(tenantId)) {
         logger.warn(`[UserProfile API] Invalid tenant ID format: "${tenantId}", using null instead`);
@@ -40,7 +46,7 @@ export async function GET(request) {
       
       // Map available attributes to profile response
       const profile = {
-        userId: userAttributes.sub,
+        userId: userAttributes.sub || user.userId,
         email: userAttributes.email,
         firstName: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
         lastName: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
@@ -71,22 +77,21 @@ export async function GET(request) {
         payment: profile.subscriptionPlan === 'free' || userAttributes['custom:payverified'] === 'TRUE'
       };
       
-      logger.info(`[UserProfile API] Profile fetched successfully from Cognito for ${profile.email}`);
+      logger.info(`[UserProfile API] Profile fetched successfully from session for ${profile.email}`);
       
       return NextResponse.json({
         profile,
-        source: 'cognito',
+        source: 'session',
         requestId
       });
       
-    } catch (cognitoError) {
-      logger.error(`[UserProfile API] Error fetching from Cognito: ${cognitoError.message}`);
+    } catch (sessionError) {
+      logger.error(`[UserProfile API] Session validation failed: ${sessionError.message}`);
       
-      // Try fallback to localStorage/AppCache on client side
       // Return a response that triggers client-side fallback
       return NextResponse.json({
         error: 'use_client_fallback',
-        message: 'Unable to fetch profile from server, use client-side fallback',
+        message: 'Session validation failed, use client-side fallback',
         requestId
       }, { status: 503 });
     }
