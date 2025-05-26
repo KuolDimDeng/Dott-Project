@@ -9,8 +9,11 @@ import CrispErrorBoundary from './CrispErrorBoundary';
 function CrispChat({ isAuthenticated }) {
   const [mounted, setMounted] = useState(false);
 
+  // Log immediately when component is created
+  logger.debug('CrispChat component created with props:', { isAuthenticated });
+
   useEffect(() => {
-    logger.debug('CrispChat component mounting');
+    logger.debug('CrispChat component mounting with isAuthenticated:', isAuthenticated);
 
     if (typeof window === 'undefined') return;
 

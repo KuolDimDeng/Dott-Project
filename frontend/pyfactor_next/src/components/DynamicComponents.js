@@ -33,6 +33,11 @@ export default function DynamicComponents({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Add initial mount logging
+  useEffect(() => {
+    logger.debug('[DynamicComponents] Component mounting...');
+  }, []);
+
   // Check authentication status for Crisp Chat
   useEffect(() => {
     async function checkAuthStatus() {
@@ -43,7 +48,7 @@ export default function DynamicComponents({ children }) {
         const user = await getCurrentUser();
         if (user) {
           setIsAuthenticated(true);
-          logger.debug('[DynamicComponents] User authenticated for Crisp Chat');
+          logger.debug('[DynamicComponents] User authenticated for Crisp Chat', { userId: user.userId });
         } else {
           setIsAuthenticated(false);
           logger.debug('[DynamicComponents] User not authenticated for Crisp Chat');
@@ -51,9 +56,10 @@ export default function DynamicComponents({ children }) {
       } catch (error) {
         // User not authenticated
         setIsAuthenticated(false);
-        logger.debug('[DynamicComponents] Authentication check failed, user not authenticated');
+        logger.debug('[DynamicComponents] Authentication check failed, user not authenticated', { error: error.message });
       } finally {
         setAuthChecked(true);
+        logger.debug('[DynamicComponents] Auth check completed', { isAuthenticated, authChecked: true });
       }
     }
 
@@ -62,12 +68,16 @@ export default function DynamicComponents({ children }) {
 
   // Only render components after client-side hydration is complete
   useEffect(() => {
+    logger.debug('[DynamicComponents] Setting components mounted to true');
     setComponentsMounted(true);
   }, []);
 
   if (!componentsMounted || !authChecked) {
+    logger.debug('[DynamicComponents] Not ready to render', { componentsMounted, authChecked });
     return null;
   }
+
+  logger.debug('[DynamicComponents] Rendering components', { isAuthenticated, componentsMounted, authChecked });
 
   return (
     <>
