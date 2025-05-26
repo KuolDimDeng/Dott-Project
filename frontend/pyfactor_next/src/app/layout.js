@@ -132,7 +132,10 @@ export default async function RootLayout({ children, params }) {
                   }
                 }
                 
-                console.log('[Layout] No tenant ID found in Cognito attributes');
+                // Reduced logging frequency for production
+    if (Math.random() < 0.1) { // Only log 10% of the time
+      console.debug('[Layout] No tenant ID found in Cognito attributes');
+    }
                 return null;
               } catch (error) {
                 console.error('[Layout] Error initializing tenant from Cognito:', error);

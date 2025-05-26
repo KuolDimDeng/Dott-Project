@@ -75,17 +75,34 @@ export async function getCacheValue(key) {
         const item = window.sessionStorage.getItem(key);
         if (!item) return null;
 
-        const { value, timestamp, ttl } = JSON.parse(item);
-        
-        // Check if item has expired
-        if (ttl && Date.now() - timestamp > ttl) {
-          window.sessionStorage.removeItem(key);
-          logger.debug(`[appCache] Removed expired value for key: ${key}`);
-          return null;
-        }
+        try {
+          // Try to parse as JSON first (for structured cache entries)
+          const parsed = JSON.parse(item);
+          
+          // If it's a structured cache entry with metadata
+          if (parsed && typeof parsed === 'object' && parsed.value !== undefined) {
+            const { value, timestamp, ttl } = parsed;
+            
+            // Check if item has expired
+            if (ttl && Date.now() - timestamp > ttl) {
+              window.sessionStorage.removeItem(key);
+              logger.debug(`[appCache] Removed expired value for key: ${key}`);
+              return null;
+            }
 
-        logger.debug(`[appCache] Retrieved value from sessionStorage for key: ${key}`);
-        return value;
+            logger.debug(`[appCache] Retrieved structured value from sessionStorage for key: ${key}`);
+            return value;
+          } else {
+            // If it's a simple JSON value, return the parsed result
+            logger.debug(`[appCache] Retrieved JSON value from sessionStorage for key: ${key}`);
+            return parsed;
+          }
+        } catch (parseError) {
+          // If JSON parsing fails, it's likely a plain string (like a token)
+          // Return the raw string value
+          logger.debug(`[appCache] Retrieved raw string value from sessionStorage for key: ${key}`);
+          return item;
+        }
       }
     }
     return null;
