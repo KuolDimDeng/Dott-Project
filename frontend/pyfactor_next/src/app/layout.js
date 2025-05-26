@@ -9,6 +9,7 @@ import { Toaster } from 'react-hot-toast';
 import TenantRecoveryWrapper from '@/components/TenantRecoveryWrapper';
 import AuthInitializer from '@/components/AuthInitializer';
 import ClientSideScripts from '@/components/ClientSideScripts';
+import DynamicComponents from '@/components/DynamicComponents';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
@@ -139,7 +140,9 @@ export default async function RootLayout({ children, params }) {
         <ClientSideScripts />
         <TenantRecoveryWrapper showRecoveryState={true}>
           <Providers>
-            {children}
+            <DynamicComponents>
+              {children}
+            </DynamicComponents>
           </Providers>
         </TenantRecoveryWrapper>
         <Toaster position="top-right" />
