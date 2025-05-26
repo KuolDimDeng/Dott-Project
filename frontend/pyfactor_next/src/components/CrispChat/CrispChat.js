@@ -165,9 +165,11 @@ function CrispChat({ isAuthenticated }) {
       logger.debug('Added custom CSS to control Crisp z-index');
 
       window.$crisp = [];
-      const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
+      // Try to get from environment variable first, with hardcoded fallback
+      const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID || '02ce1965-8acf-4c6e-b8c0-a543ead8004e';
       logger.debug('Environment check:', { 
         CRISP_WEBSITE_ID, 
+        fromEnv: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
         allEnvVars: Object.keys(process.env).filter(key => key.includes('CRISP')),
         NODE_ENV: process.env.NODE_ENV 
       });

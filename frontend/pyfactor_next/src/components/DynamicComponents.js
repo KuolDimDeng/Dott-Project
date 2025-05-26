@@ -18,13 +18,24 @@ const CookieBanner = dynamic(
 );
 
 const CrispChat = dynamic(
-  () => import('@/components/CrispChat/CrispChat').catch(err => {
-    logger.error('[DynamicComponents] Error loading CrispChat:', err);
-    return () => null; // Return empty component on error
-  }),
+  () => {
+    logger.debug('[DynamicComponents] Attempting to load CrispChat component...');
+    return import('@/components/CrispChat/CrispChat')
+      .then(module => {
+        logger.debug('[DynamicComponents] CrispChat component loaded successfully');
+        return module;
+      })
+      .catch(err => {
+        logger.error('[DynamicComponents] Error loading CrispChat:', err);
+        return () => null; // Return empty component on error
+      });
+  },
   {
     ssr: false,
-    loading: () => null,
+    loading: () => {
+      logger.debug('[DynamicComponents] CrispChat is loading...');
+      return null;
+    },
   }
 );
 
@@ -85,6 +96,7 @@ export default function DynamicComponents({ children }) {
   return (
     <>
       <CookieBanner />
+      {logger.debug('[DynamicComponents] About to render CrispChat with isAuthenticated:', isAuthenticated)}
       <CrispChat isAuthenticated={isAuthenticated} />
       {children}
     </>
