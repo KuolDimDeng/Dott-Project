@@ -6,8 +6,8 @@ import { getTokens, storeTokens, areTokensExpired } from '@/utils/tokenManager';
 
 // Increase token refresh interval from default
 const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
-// Increase loading timeout to prevent premature session loading failure
-const LOADING_TIMEOUT = 20000; // Increased from 10s to 20s // 10 seconds instead of 5
+// Reduce loading timeout for faster dashboard loading
+const LOADING_TIMEOUT = 5000; // Reduced from 20s to 5s for faster sign-in
 // Maximum number of consecutive refresh failures before entering cooldown
 const MAX_REFRESH_FAILURES = 5;
 // Cooldown period after exceeding max failures (milliseconds)

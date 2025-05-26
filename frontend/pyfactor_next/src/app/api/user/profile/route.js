@@ -13,21 +13,83 @@ export async function GET(request) {
   try {
     logger.debug(`[UserProfile API] Fetching profile, request ${requestId}`);
     
-    // Use server session validation instead of direct Cognito calls
+    // Try multiple authentication methods for better compatibility
+    let sessionData = null;
+    
+    // Method 1: Try server session validation
     try {
-      const sessionData = await validateServerSession(request);
-      
-      if (!sessionData.verified || !sessionData.user) {
-        logger.warn(`[UserProfile API] Session validation failed, request ${requestId}:`, sessionData.error);
-        return NextResponse.json(
-          { 
-            error: 'Not authenticated',
-            message: sessionData.error || 'Session validation failed',
-            requestId 
-          },
-          { status: 401 }
-        );
+      sessionData = await validateServerSession(request);
+      if (sessionData.verified && sessionData.user) {
+        logger.debug(`[UserProfile API] Server session validation successful, request ${requestId}`);
+      } else {
+        throw new Error(sessionData.error || 'Session validation failed');
       }
+    } catch (sessionError) {
+      logger.debug(`[UserProfile API] Server session validation failed: ${sessionError.message}`);
+      
+      // Method 2: Try extracting from headers (for client-side auth)
+      const authHeader = request.headers.get('authorization');
+      const idToken = request.headers.get('x-id-token') || request.cookies.get('idToken')?.value;
+      
+      if (authHeader || idToken) {
+        try {
+          // Extract token from Authorization header or direct token
+          const token = authHeader ? authHeader.replace('Bearer ', '') : idToken;
+          
+          if (token) {
+            // Decode the JWT token to get user info
+            const { jwtDecode } = await import('jwt-decode');
+            const decoded = jwtDecode(token);
+            
+            // Create a session-like object from the token
+            sessionData = {
+              verified: true,
+              user: {
+                userId: decoded.sub,
+                attributes: {
+                  sub: decoded.sub,
+                  email: decoded.email,
+                  given_name: decoded.given_name,
+                  family_name: decoded.family_name,
+                  'custom:tenant_ID': decoded['custom:tenant_ID'],
+                  'custom:tenantId': decoded['custom:tenantId'],
+                  'custom:businessid': decoded['custom:businessid'],
+                  'custom:businessname': decoded['custom:businessname'],
+                  'custom:businesstype': decoded['custom:businesstype'],
+                  'custom:userrole': decoded['custom:userrole'],
+                  'custom:onboarding': decoded['custom:onboarding'],
+                  'custom:setupdone': decoded['custom:setupdone'],
+                  'custom:subplan': decoded['custom:subplan'],
+                  'custom:subscriptionstatus': decoded['custom:subscriptionstatus'],
+                  'custom:created_at': decoded['custom:created_at'],
+                  'custom:updated_at': decoded['custom:updated_at']
+                }
+              }
+            };
+            
+            logger.debug(`[UserProfile API] Token-based authentication successful, request ${requestId}`);
+          } else {
+            throw new Error('No valid token found');
+          }
+        } catch (tokenError) {
+          logger.warn(`[UserProfile API] Token-based authentication failed: ${tokenError.message}`);
+          sessionData = null;
+        }
+      }
+    }
+    
+    // If all authentication methods failed
+    if (!sessionData || !sessionData.verified || !sessionData.user) {
+      logger.warn(`[UserProfile API] All authentication methods failed, request ${requestId}`);
+      return NextResponse.json(
+        { 
+          error: 'Not authenticated',
+          message: 'Authentication required - please sign in again',
+          requestId 
+        },
+        { status: 401 }
+      );
+    }
       
       const { user } = sessionData;
       const userAttributes = user.attributes || {};

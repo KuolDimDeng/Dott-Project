@@ -14,8 +14,18 @@ import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
 export default function TenantInitializer({ tenantId }) {
   const { setTenantId } = useTenantContext();
   
-  // Initialize tenant context when component mounts
+  // Initialize tenant context when component mounts (with deduplication)
   useEffect(() => {
+    // Prevent multiple initializations for the same tenant
+    if (typeof window !== 'undefined') {
+      const lastInitialized = window.__lastTenantInitialized;
+      if (lastInitialized === tenantId) {
+        logger.debug('[TenantInitializer] Tenant already initialized, skipping:', tenantId);
+        return;
+      }
+      window.__lastTenantInitialized = tenantId;
+    }
+    
     const initTenant = async () => {
       if (!tenantId) {
         logger.warn('[TenantInitializer] No tenant ID provided');
@@ -37,9 +47,19 @@ export default function TenantInitializer({ tenantId }) {
           }
         });
         
+        // Skip Cognito update if we're already in the process of updating
+        if (typeof window !== 'undefined' && window.__cognitoUpdateInProgress) {
+          logger.debug('[TenantInitializer] Cognito update already in progress, skipping');
+          return;
+        }
+        
         // Optimize Cognito calls - only update if necessary and make it async
         const updateCognitoAsync = async () => {
           try {
+            if (typeof window !== 'undefined') {
+              window.__cognitoUpdateInProgress = true;
+            }
+            
             const userAttributes = await fetchUserAttributes();
             const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:tenantId'] || userAttributes['custom:businessid'];
             
@@ -64,6 +84,10 @@ export default function TenantInitializer({ tenantId }) {
             }
           } catch (attributeError) {
             logger.debug('[TenantInitializer] Async Cognito update failed (non-blocking):', attributeError.message);
+          } finally {
+            if (typeof window !== 'undefined') {
+              window.__cognitoUpdateInProgress = false;
+            }
           }
         };
         

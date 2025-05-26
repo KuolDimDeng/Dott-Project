@@ -601,26 +601,42 @@ export function UserProfileProvider({ children }) {
     debounce((tenantId, forceRefresh) => fetchProfileData(tenantId, forceRefresh), 300),
   [fetchProfileData]);
   
-  // Fetch profile data on mount to ensure it's always available (optimized)
+  // Fetch profile data on mount to ensure it's always available (optimized with deduplication)
   useEffect(() => {
-    // Only fetch if we don't have data and aren't already loading
-    if (!profileCache.data && !profileCache.loading) {
-      // Try to determine tenant ID from localStorage
-      const localTenantId = typeof window !== 'undefined' 
-        ? localStorage.getItem('tenantId') || localStorage.getItem('businessid')
-        : null;
-      
-      // Check if we're in a sign-up flow where profile fetching should be minimal
-      const inSignUpFlow = isInSignUpFlow();
-      
+    // Check if we're in a sign-up flow where profile fetching should be minimal
+    const inSignUpFlow = isInSignUpFlow();
+    
+    // Skip if we're in sign-up flow or already have data
+    if (inSignUpFlow || profileCache.data || profileCache.loading) {
       if (inSignUpFlow) {
         logger.debug('[UserProfileContext] In sign-up flow, skipping initial profile fetch');
-        return;
       }
-      
-      logger.debug('[UserProfileContext] Initial profile fetch with tenantId:', localTenantId);
-      debouncedFetchProfile(localTenantId);
+      return;
     }
+    
+    // Prevent multiple simultaneous fetches
+    if (typeof window !== 'undefined' && window.__profileFetchInProgress) {
+      logger.debug('[UserProfileContext] Profile fetch already in progress, skipping');
+      return;
+    }
+    
+    // Try to determine tenant ID from localStorage
+    const localTenantId = typeof window !== 'undefined' 
+      ? localStorage.getItem('tenantId') || localStorage.getItem('businessid')
+      : null;
+    
+    logger.debug('[UserProfileContext] Initial profile fetch with tenantId:', localTenantId);
+    
+    // Mark fetch as in progress
+    if (typeof window !== 'undefined') {
+      window.__profileFetchInProgress = true;
+    }
+    
+    debouncedFetchProfile(localTenantId).finally(() => {
+      if (typeof window !== 'undefined') {
+        window.__profileFetchInProgress = false;
+      }
+    });
   }, [debouncedFetchProfile, profileCache.data, profileCache.loading]);
   
   // Exposed context value
