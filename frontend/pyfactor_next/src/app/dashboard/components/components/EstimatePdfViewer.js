@@ -13,7 +13,10 @@ const EstimatePdfViewer = ({ pdfBlob }) => {
         const ReactPDF = await loadReactPdfRenderer();
         // Set up worker if needed
         if (ReactPDF.pdfjs && ReactPDF.pdfjs.GlobalWorkerOptions) {
-          ReactPDF.pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
+          // Always use CDN version to avoid syntax errors in minified file
+          const pdfVersion = ReactPDF.pdfjs.version || '2.16.105'; // fallback version
+          ReactPDF.pdfjs.GlobalWorkerOptions.workerSrc = 
+            `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfVersion}/pdf.worker.min.js`;
         }
         setDocument(ReactPDF.Document);
         setPage(ReactPDF.Page);
