@@ -29,6 +29,9 @@ const CrispChat = dynamic(
 );
 
 export default function DynamicComponents({ children }) {
+  console.log('[DynamicComponents] Component created - this should appear in console');
+  logger.debug('[DynamicComponents] Component created');
+  
   const [componentsMounted, setComponentsMounted] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);

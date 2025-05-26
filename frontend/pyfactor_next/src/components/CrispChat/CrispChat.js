@@ -166,6 +166,11 @@ function CrispChat({ isAuthenticated }) {
 
       window.$crisp = [];
       const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID;
+      logger.debug('Environment check:', { 
+        CRISP_WEBSITE_ID, 
+        allEnvVars: Object.keys(process.env).filter(key => key.includes('CRISP')),
+        NODE_ENV: process.env.NODE_ENV 
+      });
       if (!CRISP_WEBSITE_ID) {
         logger.error('CRISP_WEBSITE_ID not found in environment variables');
         return;
