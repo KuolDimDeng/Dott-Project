@@ -117,6 +117,23 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Requirements Addressed**: Conditions 10, 12, 15, 17, 25
 
 
+
+### Version0029_fix_userattributes_prop_passing.mjs
+- **Version**: 0029 v1.0
+- **Purpose**: Fix userAttributes not being passed to DashboardContent component from TenantDashboard page
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2024-12-19
+- **Target Files**: 
+  - /src/app/tenant/[tenantId]/dashboard/page.js (added userAttributes state and prop passing)
+- **Description**: Fixes user initials display issue by ensuring userAttributes are properly passed from TenantDashboard page to DashboardContent component
+- **Key Features**:
+  - Added userAttributes state to TenantDashboard page
+  - Updated userAttributes fetching to store in state
+  - Added userAttributes prop to DashboardContent component
+  - Maintains all existing authentication and validation logic
+- **Requirements Addressed**: Fixes userAttributes prop passing for user initials display
+
+
 ## Files That Will Be Modified
 - `.env.local`
 - `/src/app/api/test-connection/route.js` (Version0026)

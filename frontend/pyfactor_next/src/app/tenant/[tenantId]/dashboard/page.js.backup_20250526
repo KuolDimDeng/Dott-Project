@@ -78,7 +78,6 @@ export default function TenantDashboard() {
   const [error, setError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [tenantStatus, setTenantStatus] = useState('pending');
-  const [userAttributes, setUserAttributes] = useState(null);
 
   // Initialize dashboard
   useEffect(() => {
@@ -106,16 +105,15 @@ export default function TenantDashboard() {
         // Normal authentication flow
         try {
           // First try Cognito
-          const fetchedUserAttributes = await fetchUserAttributes();
-          setUserAttributes(fetchedUserAttributes);
-          logger.debug('[TenantDashboard] User attributes:', fetchedUserAttributes);
+          const userAttributes = await fetchUserAttributes();
+          logger.debug('[TenantDashboard] User attributes:', userAttributes);
           
           // If the fetch succeeds, we're authenticated
           setAuthChecked(true);
           
           // Check if tenant ID matches what's in Cognito
-          const cognitoTenantId = fetchedUserAttributes['custom:tenant_ID'] || 
-                                 fetchedUserAttributes['custom:businessid'] || 
+          const cognitoTenantId = userAttributes['custom:tenant_ID'] || 
+                                 userAttributes['custom:businessid'] || 
                                  getFallbackTenantId();
           
           // If tenant IDs don't match, either store the new one or redirect
@@ -236,7 +234,6 @@ export default function TenantDashboard() {
               plan={dashboardParams.plan}
               mockData={dashboardParams.mockData}
               setupStatus={dashboardParams.setupStatus}
-              userAttributes={userAttributes}
               tenantId={effectiveTenantId}
               fromSignIn={fromSignIn}
               fromSubscription={fromSubscription}
