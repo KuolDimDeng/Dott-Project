@@ -91,7 +91,8 @@ const OAUTH_SCOPES = process.env.NEXT_PUBLIC_OAUTH_SCOPES;`;
             phone: false,
             oauth: {
               domain: \`\${COGNITO_DOMAIN}.auth.\${region}.amazoncognito.com\`,
-              scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['email', 'profile', 'openid'],
+              scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['
+              email', 'profile', 'openid'],
               redirectSignIn: OAUTH_REDIRECT_SIGN_IN || (typeof window !== 'undefined' ? \`\${window.location.origin}/auth/callback\` : 'http://localhost:3000/auth/callback'),
               redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || (typeof window !== 'undefined' ? \`\${window.location.origin}/auth/signin\` : 'http://localhost:3000/auth/signin'),
               responseType: 'code'
