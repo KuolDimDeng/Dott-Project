@@ -13,7 +13,7 @@ export NEXT_PUBLIC_COGNITO_DOMAIN=us-east-1jpl8vgfb6
 # OAuth Configuration for Google Sign-In (Local Development)
 export NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN=http://localhost:3000/auth/callback
 export NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT=http://localhost:3000/auth/signin
-export NEXT_PUBLIC_OAUTH_SCOPES=email,profile,openid
+export NEXT_PUBLIC_OAUTH_SCOPES=openid,profile,email
 
 echo "✅ OAuth environment variables set:"
 echo "   COGNITO_DOMAIN: $NEXT_PUBLIC_COGNITO_DOMAIN"

@@ -179,12 +179,15 @@ const getOAuthRedirectSignOut = () => {
 
 const getOAuthScopes = () => {
   if (OAUTH_SCOPES) {
+    console.log('[OAuth] Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
     const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
     console.log('[OAuth] Using env var scopes:', scopes);
+    console.log('[OAuth] Scopes joined with spaces:', scopes.join(' '));
     return scopes;
   }
   
-  const defaultScopes = ['email', 'profile', 'openid'];
+  // Standard OAuth scope order: openid first, then profile, then email
+  const defaultScopes = ['openid', 'profile', 'email'];
   console.log('[OAuth] Using default scopes:', defaultScopes);
   return defaultScopes;
 };
@@ -479,6 +482,33 @@ if (typeof window !== 'undefined') {
   // Initial configuration
   configureAmplify();
   
+  // Add a test function to verify OAuth URL generation
+  window.testOAuthURL = () => {
+    const scopes = getOAuthScopes();
+    const domain = `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
+    const clientId = COGNITO_CLIENT_ID;
+    const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
+    
+    console.log('=== OAuth URL Test ===');
+    console.log('Raw scopes array:', scopes);
+    console.log('Scopes joined with spaces:', scopes.join(' '));
+    console.log('Scopes URL encoded:', encodeURIComponent(scopes.join(' ')));
+    console.log('Domain:', domain);
+    console.log('Client ID:', clientId);
+    console.log('Redirect URI:', redirectUri);
+    
+    const testUrl = `https://${domain}/oauth2/authorize?` +
+      `identity_provider=Google&` +
+      `redirect_uri=${redirectUri}&` +
+      `response_type=code&` +
+      `client_id=${clientId}&` +
+      `scope=${encodeURIComponent(scopes.join(' '))}&` +
+      `state=test`;
+    
+    console.log('Generated OAuth URL:', testUrl);
+    return testUrl;
+  };
+  
   // Add a global function to ensure Amplify is ready for OAuth
   window.ensureAmplifyOAuthReady = async () => {
     try {
@@ -681,7 +711,7 @@ const enhancedSignInWithRedirect = async (...args) => {
         const domain = config?.Auth?.Cognito?.loginWith?.oauth?.domain || `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
         const clientId = config?.Auth?.Cognito?.userPoolClientId || COGNITO_CLIENT_ID;
         const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
-        const scopes = getOAuthScopes().join('+');
+        const scopes = getOAuthScopes(); // Get scopes as array, don't join yet
         
         // Log the domain for debugging
         logger.info('[AmplifyUnified] OAuth domain configuration:', {
@@ -711,6 +741,13 @@ const enhancedSignInWithRedirect = async (...args) => {
           `scope=${encodeURIComponent(scopes.join(' '))}&` +
           `state=${encodeURIComponent(customState || '')}`;
         
+        logger.info('[AmplifyUnified] OAuth URL construction:', {
+          scopes: scopes,
+          scopesJoined: scopes.join(' '),
+          scopesEncoded: encodeURIComponent(scopes.join(' ')),
+          fullUrl: oauthUrl
+        });
+        
         logger.info('[AmplifyUnified] Redirecting manually to OAuth URL');
         window.location.href = oauthUrl;
         
@@ -733,7 +770,7 @@ export const directOAuthSignIn = async (provider = 'Google', customState = '') =
     const domain = `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
     const clientId = COGNITO_CLIENT_ID;
     const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
-    const scopes = getOAuthScopes().join('+');
+    const scopes = getOAuthScopes(); // Get scopes as array, don't join yet
     
     // Log the domain for debugging
     logger.info('[AmplifyUnified] OAuth domain configuration:', {
@@ -762,6 +799,13 @@ export const directOAuthSignIn = async (provider = 'Google', customState = '') =
       `client_id=${clientId}&` +
       `scope=${encodeURIComponent(scopes.join(' '))}&` +
       `state=${encodeURIComponent(customState)}`;
+    
+    logger.info('[AmplifyUnified] Direct OAuth URL construction:', {
+      scopes: scopes,
+      scopesJoined: scopes.join(' '),
+      scopesEncoded: encodeURIComponent(scopes.join(' ')),
+      fullUrl: oauthUrl
+    });
     
     logger.info('[AmplifyUnified] Direct OAuth redirect to:', oauthUrl);
     
