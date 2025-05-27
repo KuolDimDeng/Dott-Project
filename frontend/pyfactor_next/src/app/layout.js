@@ -134,6 +134,8 @@ export default async function RootLayout({ children, params }) {
         />
       </head>
       <body className={inter.className}>
+        <AuthInitializer />
+        <ClientSideScripts />
         <Providers>
           {children}
         </Providers>
