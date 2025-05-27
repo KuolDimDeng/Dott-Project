@@ -47,43 +47,46 @@ export default function SignUp() {
 
   const leftContent = (
     <div>
-      <h2 className="text-4xl font-bold mb-6">
+      <h2 className="text-4xl font-bold mb-6 text-white">
         {t('auth.signup.welcome', { defaultValue: 'Start Your Journey' })}
       </h2>
-      <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+      <p className="text-xl text-slate-200 mb-8 leading-relaxed">
         {t('auth.signup.description', { defaultValue: 'Join thousands of businesses that trust PyFactor to manage their operations efficiently.' })}
       </p>
       
       {/* Benefits List */}
-      <div className="space-y-4 mb-8">
+      <div className="space-y-5 mb-10">
         {[
           { icon: '🚀', text: t('auth.signup.benefit1', { defaultValue: 'Quick setup in minutes' }) },
           { icon: '💼', text: t('auth.signup.benefit2', { defaultValue: 'Professional business tools' }) },
           { icon: '📊', text: t('auth.signup.benefit3', { defaultValue: 'Advanced reporting & analytics' }) },
           { icon: '🔒', text: t('auth.signup.benefit4', { defaultValue: 'Bank-level security' }) }
         ].map((benefit, index) => (
-          <div key={index} className="flex items-center space-x-3">
-            <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+          <div key={index} className="flex items-center space-x-4 group">
+            <div className="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/15 transition-all duration-300">
               <span className="text-lg">{benefit.icon}</span>
             </div>
-            <span className="text-blue-100">{benefit.text}</span>
+            <span className="text-slate-200 font-medium">{benefit.text}</span>
           </div>
         ))}
       </div>
 
-      {/* Social Proof */}
-      <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
-        <div className="flex items-center space-x-2 mb-2">
+      {/* Modern Social Proof */}
+      <div className="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10">
+        <div className="flex items-center space-x-3 mb-3">
           <div className="flex -space-x-2">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="w-8 h-8 bg-white/30 rounded-full border-2 border-white"></div>
+              <div key={i} className="w-8 h-8 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-full border-2 border-white shadow-sm"></div>
             ))}
           </div>
-          <span className="text-white font-medium">+10,000 businesses</span>
+          <span className="text-white font-semibold">+10,000 businesses</span>
         </div>
-        <p className="text-blue-100 text-sm">
+        <p className="text-slate-200 text-sm leading-relaxed">
           "{t('auth.signup.testimonial', { defaultValue: 'PyFactor transformed how we manage our business operations.' })}"
         </p>
+        <div className="mt-3 text-xs text-slate-300">
+          — Sarah Chen, CEO at TechFlow Solutions
+        </div>
       </div>
     </div>
   );
@@ -94,7 +97,7 @@ export default function SignUp() {
       subtitle={
         <span>
           {t('auth.signup.subtitle', { defaultValue: 'Already have an account?' })}{' '}
-          <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+          <Link href="/auth/signin" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
             {t('auth.signup.signIn', { defaultValue: 'Sign in here' })}
           </Link>
         </span>

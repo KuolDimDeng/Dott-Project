@@ -34,40 +34,38 @@ export default function SignInPage() {
 
   const leftContent = (
     <div>
-      <h2 className="text-4xl font-bold mb-6">
+      <h2 className="text-4xl font-bold mb-6 text-white">
         {t('auth.signin.welcome', { defaultValue: 'Welcome Back' })}
       </h2>
-      <p className="text-xl text-blue-100 mb-8 leading-relaxed">
+      <p className="text-xl text-slate-200 mb-8 leading-relaxed">
         {t('auth.signin.description', { defaultValue: 'Access your business dashboard and continue growing your company with our comprehensive tools.' })}
       </p>
       
       {/* Features List */}
-      <div className="space-y-4 mb-8">
+      <div className="space-y-5 mb-10">
         {[
-          t('auth.signin.feature1', { defaultValue: 'Real-time business analytics' }),
-          t('auth.signin.feature2', { defaultValue: 'Secure data management' }),
-          t('auth.signin.feature3', { defaultValue: '24/7 customer support' })
+          { icon: '📊', text: t('auth.signin.feature1', { defaultValue: 'Real-time business analytics' }) },
+          { icon: '🔒', text: t('auth.signin.feature2', { defaultValue: 'Secure data management' }) },
+          { icon: '🎯', text: t('auth.signin.feature3', { defaultValue: '24/7 customer support' }) }
         ].map((feature, index) => (
-          <div key={index} className="flex items-center space-x-3">
-            <div className="flex-shrink-0 w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
+          <div key={index} className="flex items-center space-x-4 group">
+            <div className="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/15 transition-all duration-300">
+              <span className="text-lg">{feature.icon}</span>
             </div>
-            <span className="text-blue-100">{feature}</span>
+            <span className="text-slate-200 font-medium">{feature.text}</span>
           </div>
         ))}
       </div>
 
-      {/* Stats */}
+      {/* Modern Stats */}
       <div className="grid grid-cols-2 gap-6">
-        <div>
-          <div className="text-3xl font-bold text-white">10,000+</div>
-          <div className="text-blue-200 text-sm">{t('auth.signin.businesses', { defaultValue: 'Businesses trust us' })}</div>
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div className="text-3xl font-bold text-white mb-1">10,000+</div>
+          <div className="text-slate-300 text-sm font-medium">{t('auth.signin.businesses', { defaultValue: 'Businesses trust us' })}</div>
         </div>
-        <div>
-          <div className="text-3xl font-bold text-white">99.9%</div>
-          <div className="text-blue-200 text-sm">{t('auth.signin.uptime', { defaultValue: 'Uptime guarantee' })}</div>
+        <div className="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+          <div className="text-3xl font-bold text-white mb-1">99.9%</div>
+          <div className="text-slate-300 text-sm font-medium">{t('auth.signin.uptime', { defaultValue: 'Uptime guarantee' })}</div>
         </div>
       </div>
     </div>
@@ -79,7 +77,7 @@ export default function SignInPage() {
       subtitle={
         <span>
           {t('auth.signin.subtitle', { defaultValue: "Don't have an account?" })}{' '}
-          <Link href="/auth/signup" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
+          <Link href="/auth/signup" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
             {t('auth.signin.createAccount', { defaultValue: 'Create one here' })}
           </Link>
         </span>
