@@ -635,73 +635,103 @@ export const fetchAuthSessionWithConfig = enhancedFetchAuthSession;
 // Enhanced signInWithRedirect with network error handling and OAuth validation
 const enhancedSignInWithRedirect = async (...args) => {
   return retryWithBackoff(async () => {
-    // Always ensure configuration before OAuth operations
-    if (!isConfigured || !isAmplifyConfigured()) {
-      logger.warn('[AmplifyUnified] Amplify not configured before OAuth, forcing reconfiguration');
-      const configSuccess = configureAmplify(true);
-      if (!configSuccess) {
-        throw new Error('Failed to configure Amplify for OAuth operation');
-      }
+    try {
+      // Force reconfiguration before OAuth to ensure fresh config
+      logger.info('[AmplifyUnified] Forcing fresh configuration for OAuth operation');
+      configureAmplify(true);
       
-      // Add a small delay to ensure configuration is applied
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-    
-    // Additional validation for OAuth configuration
-    let config = Amplify.getConfig();
-    if (!config?.Auth?.Cognito?.loginWith?.oauth) {
-      logger.error('[AmplifyUnified] OAuth configuration missing in Amplify config');
+      // Wait for configuration to settle
+      await new Promise(resolve => setTimeout(resolve, 300));
       
-      // Log the current configuration for debugging
-      logger.debug('[AmplifyUnified] Current Amplify config:', {
+      // Verify configuration is present
+      const config = Amplify.getConfig();
+      logger.debug('[AmplifyUnified] Current config before OAuth:', {
         hasAuth: !!config?.Auth,
         hasCognito: !!config?.Auth?.Cognito,
-        hasLoginWith: !!config?.Auth?.Cognito?.loginWith,
-        loginWithKeys: config?.Auth?.Cognito?.loginWith ? Object.keys(config.Auth.Cognito.loginWith) : []
+        hasUserPool: !!config?.Auth?.Cognito?.userPoolId,
+        hasClientId: !!config?.Auth?.Cognito?.userPoolClientId,
+        hasOAuth: !!config?.Auth?.Cognito?.loginWith?.oauth,
+        oauthDomain: config?.Auth?.Cognito?.loginWith?.oauth?.domain
       });
       
-      // Try to reconfigure with OAuth
-      logger.warn('[AmplifyUnified] Attempting to reconfigure Amplify with OAuth');
-      const reconfig = configureAmplify(true);
-      if (!reconfig) {
-        throw new Error('OAuth not configured in Amplify and reconfiguration failed');
+      if (!config?.Auth?.Cognito?.userPoolId || !config?.Auth?.Cognito?.userPoolClientId) {
+        throw new Error('UserPool configuration missing after reconfiguration');
       }
       
-      // Wait for reconfiguration to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      // Check again after reconfiguration
-      config = Amplify.getConfig();
       if (!config?.Auth?.Cognito?.loginWith?.oauth) {
-        throw new Error('OAuth not configured in Amplify after reconfiguration');
+        throw new Error('OAuth configuration missing after reconfiguration');
       }
       
-      logger.info('[AmplifyUnified] OAuth reconfiguration successful');
+      // Try to use the signInWithRedirect function
+      logger.info('[AmplifyUnified] Calling signInWithRedirect with provider:', args[0]?.provider);
+      const result = await signInWithRedirect(...args);
+      
+      logger.info('[AmplifyUnified] signInWithRedirect completed successfully');
+      return result;
+    } catch (error) {
+      // If we get "Auth UserPool not configured", it means Amplify lost its configuration
+      if (error.message && error.message.includes('Auth UserPool not configured')) {
+        logger.error('[AmplifyUnified] Amplify lost configuration, attempting direct OAuth redirect');
+        
+        // As a fallback, construct the OAuth URL manually
+        const provider = args[0]?.provider || 'Google';
+        const customState = args[0]?.customState || '';
+        
+        const config = Amplify.getConfig();
+        const domain = config?.Auth?.Cognito?.loginWith?.oauth?.domain || `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
+        const clientId = config?.Auth?.Cognito?.userPoolClientId || COGNITO_CLIENT_ID;
+        const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
+        const scopes = getOAuthScopes().join('+');
+        
+        // Construct OAuth URL manually
+        const oauthUrl = `https://${domain}/oauth2/authorize?` +
+          `identity_provider=${provider}&` +
+          `redirect_uri=${redirectUri}&` +
+          `response_type=code&` +
+          `client_id=${clientId}&` +
+          `scope=${scopes}&` +
+          `state=${encodeURIComponent(customState || '')}`;
+        
+        logger.info('[AmplifyUnified] Redirecting manually to OAuth URL');
+        window.location.href = oauthUrl;
+        
+        // Return a promise that never resolves (since we're redirecting)
+        return new Promise(() => {});
+      }
+      
+      // Re-throw other errors
+      throw error;
     }
-    
-    // Validate OAuth domain
-    const oauthDomain = config.Auth.Cognito.loginWith.oauth.domain;
-    if (!oauthDomain || !oauthDomain.includes('amazoncognito.com')) {
-      logger.error('[AmplifyUnified] Invalid OAuth domain:', oauthDomain);
-      throw new Error('Invalid OAuth domain configuration');
-    }
-    
-    // Validate UserPool configuration specifically
-    if (!config?.Auth?.Cognito?.userPoolId || !config?.Auth?.Cognito?.userPoolClientId) {
-      logger.error('[AmplifyUnified] UserPool configuration missing:', {
-        hasUserPoolId: !!config?.Auth?.Cognito?.userPoolId,
-        hasClientId: !!config?.Auth?.Cognito?.userPoolClientId
-      });
-      throw new Error('Auth UserPool not configured');
-    }
-    
-    logger.debug('[AmplifyUnified] OAuth configuration validated, proceeding with signInWithRedirect');
-    return signInWithRedirect(...args);
   }, 'signInWithRedirect');
 };
 
 // Export signInWithRedirect for OAuth functionality
 export { enhancedSignInWithRedirect as signInWithRedirect };
+
+// Direct OAuth redirect function that bypasses Amplify
+export const directOAuthSignIn = (provider = 'Google', customState = '') => {
+  try {
+    const domain = `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
+    const clientId = COGNITO_CLIENT_ID;
+    const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
+    const scopes = getOAuthScopes().join('+');
+    
+    // Construct OAuth URL
+    const oauthUrl = `https://${domain}/oauth2/authorize?` +
+      `identity_provider=${provider}&` +
+      `redirect_uri=${redirectUri}&` +
+      `response_type=code&` +
+      `client_id=${clientId}&` +
+      `scope=${scopes}&` +
+      `state=${encodeURIComponent(customState)}`;
+    
+    logger.info('[AmplifyUnified] Direct OAuth redirect to:', oauthUrl);
+    window.location.href = oauthUrl;
+  } catch (error) {
+    logger.error('[AmplifyUnified] Error in direct OAuth redirect:', error);
+    throw error;
+  }
+};
 
 // Simple safe sign out
 export const safeSignOut = async (options = { global: true }) => {

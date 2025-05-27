@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   signInWithConfig as amplifySignIn,
-  signInWithRedirect
+  signInWithRedirect,
+  directOAuthSignIn
 } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
@@ -940,7 +941,13 @@ export default function SignInForm() {
         logger.debug('[SignInForm] Ensuring Amplify OAuth is ready');
         const isReady = await window.ensureAmplifyOAuthReady();
         if (!isReady) {
-          throw new Error('Failed to configure OAuth for Google Sign-In');
+          logger.warn('[SignInForm] Amplify OAuth not ready, using direct OAuth redirect');
+          // Use direct OAuth redirect as fallback
+          directOAuthSignIn('Google', JSON.stringify({
+            redirectUrl: '/dashboard',
+            source: 'signin_form'
+          }));
+          return;
         }
       }
       
@@ -961,7 +968,18 @@ export default function SignInForm() {
       
       // Handle specific error cases
       if (error.message && error.message.includes('Auth UserPool not configured')) {
-        setErrors({ general: 'Authentication system is initializing. Please wait a moment and try again.' });
+        logger.warn('[SignInForm] Amplify configuration lost, using direct OAuth redirect');
+        // Use direct OAuth redirect as ultimate fallback
+        try {
+          directOAuthSignIn('Google', JSON.stringify({
+            redirectUrl: '/dashboard',
+            source: 'signin_form'
+          }));
+          return;
+        } catch (directError) {
+          logger.error('[SignInForm] Direct OAuth redirect also failed:', directError);
+          setErrors({ general: 'Google Sign-In is temporarily unavailable. Please use email sign-in.' });
+        }
       } else if (error.message && error.message.includes('OAuth not configured')) {
         setErrors({ general: 'Google Sign-In is not properly configured. Please use email sign-in or contact support.' });
       } else if (error.message && error.message.includes('Failed to configure Amplify')) {
