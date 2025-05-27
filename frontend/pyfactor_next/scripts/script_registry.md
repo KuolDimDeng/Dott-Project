@@ -218,5 +218,22 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - ✅ No dependency on dynamic pricing for USA
   - ✅ Immediate fix regardless of cache issues
 
+### Version0037_fix_pricing_monthly_default_annual_calculation.mjs
+- **Date**: 2025-01-27
+- **Purpose**: Fix pricing component default tab and annual pricing calculation
+- **Status**: ✅ COMPLETED
+- **Changes**: 
+  - Changed default tab from Annual to Monthly for better UX
+  - Fixed annual pricing to show yearly totals with 14% discount
+  - Updated billing description text for clarity
+  - Created comprehensive documentation
+- **Files Modified**: 
+  - `/src/app/components/Pricing.js` - Updated default state, pricing calculations, billing text
+- **Results**: 
+  - ✅ Monthly Default: Better user experience
+  - ✅ Annual Pricing: $154.80/year (Professional), $361.20/year (Enterprise)
+  - ✅ Developing Countries: $77.40/year (Professional), $180.60/year (Enterprise)
+  - ✅ Clear billing descriptions for both cycles
+
 ## Files That Will Be Modified
 - `.env.local`

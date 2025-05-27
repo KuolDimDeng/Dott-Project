@@ -9,7 +9,7 @@ import Link from 'next/link';
 
 export default function Pricing() {
   const { t } = useTranslation();
-  const [annual, setAnnual] = useState(true);
+  const [annual, setAnnual] = useState(false);
   const [dynamicPricing, setDynamicPricing] = useState(null);
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
@@ -144,8 +144,8 @@ export default function Pricing() {
           '$15/mo',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted}/mo` : '$7.50/mo') :
-          '$15/mo'
+            `${dynamicPricing.professional.annual.formatted}/mo` : '$77.40/year') :
+          '$154.80/year'
       },
       savings: 'Save 14%',
       features: [
@@ -215,8 +215,8 @@ export default function Pricing() {
           '$35/mo',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted}/mo` : '$17.50/mo') :
-          '$35/mo'
+            `${dynamicPricing.enterprise.annual.formatted}/mo` : '$180.60/year') :
+          '$361.20/year'
       },
       savings: 'Save 14%',
       features: [
@@ -371,7 +371,7 @@ export default function Pricing() {
                 <div className="mt-8">
                   <p className="flex items-baseline">
                     <span className="text-4xl font-extrabold text-gray-900">{annual ? plan.price.annual : plan.price.monthly}</span>
-                    {plan.name !== 'Basic' && <span className="ml-1 text-gray-500">{annual ? 'per month, billed annually' : ''}</span>}
+                    {plan.name !== 'Basic' && <span className="ml-1 text-gray-500">{annual ? 'billed annually' : 'per month'}</span>}
                   </p>
                   {plan.name !== 'Basic' && annual && (
                     <p className="mt-1 text-sm text-green-600 font-medium">{plan.savings}</p>
