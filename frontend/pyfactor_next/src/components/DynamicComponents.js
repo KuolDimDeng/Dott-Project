@@ -54,12 +54,43 @@ export default function DynamicComponents({ children }) {
 
   // Check authentication status for Crisp Chat
   useEffect(() => {
+    // Skip auth check during build/SSR
+    if (typeof window === 'undefined') {
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+      return;
+    }
+
     async function checkAuthStatus() {
       try {
         logger.debug('[DynamicComponents] Checking authentication status for Crisp Chat');
         
-        // Check if user is authenticated
-        const user = await getCurrentUser();
+        // Check if we're on a public page
+        const isPublicPage = () => {
+          const path = window.location.pathname;
+          const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
+          return publicPaths.includes(path) || path.startsWith('/auth/');
+        };
+        
+        // Skip auth check on public pages
+        if (isPublicPage()) {
+          logger.debug('[DynamicComponents] On public page, skipping auth check');
+          setIsAuthenticated(false);
+          setAuthChecked(true);
+          return;
+        }
+        
+        // Add a timeout to prevent hanging on auth check
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth check timeout')), 1000)
+        );
+        
+        // Race between auth check and timeout
+        const user = await Promise.race([
+          getCurrentUser(),
+          timeoutPromise
+        ]);
+        
         if (user) {
           setIsAuthenticated(true);
           logger.debug('[DynamicComponents] User authenticated for Crisp Chat', { userId: user.userId });
@@ -68,16 +99,18 @@ export default function DynamicComponents({ children }) {
           logger.debug('[DynamicComponents] User not authenticated for Crisp Chat');
         }
       } catch (error) {
-        // User not authenticated
+        // User not authenticated or timeout
         setIsAuthenticated(false);
-        logger.debug('[DynamicComponents] Authentication check failed, user not authenticated', { error: error.message });
+        logger.debug('[DynamicComponents] Authentication check failed or timed out', { error: error.message });
       } finally {
         setAuthChecked(true);
         logger.debug('[DynamicComponents] Auth check completed', { isAuthenticated, authChecked: true });
       }
     }
 
-    checkAuthStatus();
+    // Add a small delay to ensure the page has loaded
+    const timer = setTimeout(checkAuthStatus, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   // Only render components after client-side hydration is complete
@@ -86,19 +119,21 @@ export default function DynamicComponents({ children }) {
     setComponentsMounted(true);
   }, []);
 
-  if (!componentsMounted || !authChecked) {
-    logger.debug('[DynamicComponents] Not ready to render', { componentsMounted, authChecked });
-    return null;
-  }
-
   logger.debug('[DynamicComponents] Rendering components', { isAuthenticated, componentsMounted, authChecked });
 
   return (
     <>
-      <CookieBanner />
-      {logger.debug('[DynamicComponents] About to render CrispChat with isAuthenticated:', isAuthenticated)}
-      <CrispChat isAuthenticated={isAuthenticated} />
+      {/* Render children immediately to avoid blocking page content */}
       {children}
+      
+      {/* Only render dynamic components after mount and auth check */}
+      {componentsMounted && authChecked && (
+        <>
+          <CookieBanner />
+          {logger.debug('[DynamicComponents] About to render CrispChat with isAuthenticated:', isAuthenticated)}
+          <CrispChat isAuthenticated={isAuthenticated} />
+        </>
+      )}
     </>
   );
 }

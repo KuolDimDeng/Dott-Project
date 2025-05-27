@@ -309,13 +309,32 @@ export function getCognitoLanguageDetector() {
     
     lookup: async function() {
       try {
+        // Check if we're on a public page - skip Cognito lookup
+        if (typeof window !== 'undefined') {
+          const path = window.location.pathname;
+          const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
+          if (publicPaths.includes(path) || path.startsWith('/auth/')) {
+            // On public pages, just check local cache/storage
+            const cachedLang = getCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`);
+            if (cachedLang) return cachedLang;
+            
+            // Check localStorage as fallback
+            if (typeof localStorage !== 'undefined') {
+              const localLang = localStorage.getItem('i18nextLng');
+              if (localLang) return localLang;
+            }
+            
+            return null; // Let other detectors handle it
+          }
+        }
+        
         // Check AppCache first
         const cachedLang = getCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`);
         if (cachedLang) {
           return cachedLang;
         }
         
-        // If not in cache, get from Cognito
+        // If not in cache, get from Cognito (only for authenticated pages)
         const langPref = await getLanguagePreference();
         if (langPref) {
           return langPref;

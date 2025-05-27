@@ -134,17 +134,9 @@ export default async function RootLayout({ children, params }) {
         />
       </head>
       <body className={inter.className}>
-        <AuthInitializer />
-        {/* Menu privilege system has been replaced with page privileges */}
-        {/* <MenuPrivilegeInitializer /> */}
-        <ClientSideScripts />
-        <TenantRecoveryWrapper showRecoveryState={true}>
-          <Providers>
-            <DynamicComponents>
-              {children}
-            </DynamicComponents>
-          </Providers>
-        </TenantRecoveryWrapper>
+        <Providers>
+          {children}
+        </Providers>
         <Toaster position="top-right" />
         <Script id="user-session-info" strategy="afterInteractive">
           {`

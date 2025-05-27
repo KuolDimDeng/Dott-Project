@@ -138,87 +138,130 @@ const resources = {
 // Create a single i18n instance to be used throughout the app
 const i18nInstance = i18next.createInstance();
 
-// Create custom Cognito language detector
-const cognitoDetector = getCognitoLanguageDetector();
-
-// Initialize i18next for client-side
+// Initialize i18next for client-side only
 if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
-  i18nInstance
-    .use(LanguageDetector)
-    .use(initReactI18next)
-    .init({
-      resources,
-      fallbackLng: i18nConfig.defaultLocale,
-      supportedLngs: i18nConfig.locales,
-      ns: ['common', 'onboarding'],
-      defaultNS: 'common',
-      detection: {
-        order: ['cognitoDetector', 'countryDetector', 'navigator', 'htmlTag'],
-        lookupFromPathIndex: 0,
-        checkWhitelist: true,
-        caches: [], // Removed 'localStorage' and 'cookie' from caches
-      },
-      interpolation: {
-        escapeValue: false, // React already protects from XSS
-      },
-      react: {
-        useSuspense: false, // Disable suspense for SSR
-      },
-    });
-
-  
-// Create custom country-based language detector
-const countryDetector = {
-  name: 'countryDetector',
-  
-  lookup() {
-    try {
-      // Get country from cache if available
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        const country = window.__APP_CACHE.user_country;
-        if (country) {
-          const language = getLanguageForCountry(country);
-          console.log(`🌍 Country detector: ${country} -> ${language}`);
-          return language;
+  try {
+    // Create custom Cognito language detector
+    const cognitoDetector = getCognitoLanguageDetector();
+    
+    // Create custom country-based language detector
+    const countryDetector = {
+      name: 'countryDetector',
+      
+      lookup() {
+        try {
+          // Get country from cache if available
+          if (typeof window !== 'undefined' && window.__APP_CACHE) {
+            const country = window.__APP_CACHE.user_country;
+            if (country) {
+              const language = getLanguageForCountry(country);
+              console.log(`🌍 Country detector: ${country} -> ${language}`);
+              return language;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Country language detector error:', error);
         }
-      }
-    } catch (error) {
-      console.error('❌ Country language detector error:', error);
-    }
-    return null;
-  },
-  
-  cacheUserLanguage(lng) {
-    // This will be called by i18next when language changes
-    console.log(`🌍 Country detector caching language: ${lng}`);
-  }
-};
-
-  // Register the custom detectors
-  i18nInstance.services.languageDetector.addDetector(cognitoDetector);
-  i18nInstance.services.languageDetector.addDetector(countryDetector);
-
-  // Add a language change listener to force re-render of components
-  i18nInstance.on('languageChanged', async (lng) => {
-    // Update HTML lang attribute and text direction for RTL languages
-    if (typeof document !== 'undefined') {
-      document.documentElement.lang = lng;
-      document.documentElement.dir = ['ar', 'he', 'fa', 'ur'].includes(lng) ? 'rtl' : 'ltr';
+        return null;
+      },
       
-      // Store the language in AWS Cognito attributes
-      try {
-        await saveLanguagePreference(lng);
+      cacheUserLanguage(lng) {
+        // This will be called by i18next when language changes
+        console.log(`🌍 Country detector caching language: ${lng}`);
+      }
+    };
+    
+    i18nInstance
+      .use(LanguageDetector)
+      .use(initReactI18next)
+      .init({
+        resources,
+        fallbackLng: i18nConfig.defaultLocale,
+        supportedLngs: i18nConfig.locales,
+        ns: ['common', 'onboarding'],
+        defaultNS: 'common',
+        detection: {
+          order: ['localStorage', 'navigator', 'htmlTag'],
+          lookupFromPathIndex: 0,
+          checkWhitelist: true,
+          caches: ['localStorage'], // Use localStorage for faster access
+        },
+        interpolation: {
+          escapeValue: false, // React already protects from XSS
+        },
+        react: {
+          useSuspense: false, // Disable suspense for SSR
+        },
+      });
+
+    // Register the custom detectors
+    i18nInstance.services.languageDetector.addDetector(cognitoDetector);
+    i18nInstance.services.languageDetector.addDetector(countryDetector);
+
+    // Add a language change listener to force re-render of components
+    i18nInstance.on('languageChanged', async (lng) => {
+      // Update HTML lang attribute and text direction for RTL languages
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = lng;
+        document.documentElement.dir = ['ar', 'he', 'fa', 'ur'].includes(lng) ? 'rtl' : 'ltr';
         
-        // Also store in AppCache for faster access
-        setCacheValue('user_pref_custom:language', lng);
-      } catch (error) {
-        console.error('Failed to save language preference to Cognito:', error);
+        // Check if we're on a public page
+        const isPublicPage = () => {
+          const path = window.location.pathname;
+          const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
+          return publicPaths.includes(path) || path.startsWith('/auth/');
+        };
+        
+        // Store the language in AWS Cognito attributes (only for authenticated pages)
+        if (!isPublicPage()) {
+          try {
+            await saveLanguagePreference(lng);
+            
+            // Also store in AppCache for faster access
+            setCacheValue('user_pref_custom:language', lng);
+          } catch (error) {
+            console.error('Failed to save language preference to Cognito:', error);
+          }
+        } else {
+          // On public pages, just store in localStorage and AppCache
+          try {
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem('i18nextLng', lng);
+            }
+            setCacheValue('user_pref_custom:language', lng);
+          } catch (error) {
+            console.error('Failed to save language preference locally:', error);
+          }
+        }
+        
+        // Force re-render by dispatching a custom event
+        window.dispatchEvent(new Event('languageChange'));
       }
-      
-      // Force re-render by dispatching a custom event
-      window.dispatchEvent(new Event('languageChange'));
-    }
-  });
+    });
+  } catch (error) {
+    console.error('[i18n] Error initializing i18next:', error);
+  }
+} else if (typeof window === 'undefined') {
+  // Server-side initialization with minimal config
+  try {
+    i18nInstance
+      .use(initReactI18next)
+      .init({
+        resources,
+        fallbackLng: i18nConfig.defaultLocale,
+        supportedLngs: i18nConfig.locales,
+        ns: ['common', 'onboarding'],
+        defaultNS: 'common',
+        interpolation: {
+          escapeValue: false,
+        },
+        react: {
+          useSuspense: false,
+        },
+      });
+  } catch (error) {
+    console.error('[i18n] Error initializing i18next on server:', error);
+  }
 }
 
 export default i18nInstance;
