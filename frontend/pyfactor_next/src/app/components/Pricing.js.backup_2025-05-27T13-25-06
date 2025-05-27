@@ -57,24 +57,13 @@ export default function Pricing() {
     loadDynamicPricing();
   }, []);
   
-  // Debug pricing logic
-  console.log('🎯 Pricing Component Debug:', {
-    userCountry,
-    hasDiscount,
-    isDeveloping: hasDiscount,
-    professionalPrice: hasDiscount && userCountry !== 'US' ? 
-      (dynamicPricing?.professional?.monthly?.formatted || '$7.50') : '$15',
-    enterprisePrice: hasDiscount && userCountry !== 'US' ? 
-      (dynamicPricing?.enterprise?.monthly?.formatted || '$17.50') : '$35'
-  });
-
   const plans = [
     {
       name: 'Basic',
       description: 'Perfect for small businesses just getting started',
       price: { 
-        monthly: 'FREE', 
-        annual: 'FREE' 
+        monthly: dynamicPricing?.basic?.monthly?.formatted || 'FREE', 
+        annual: dynamicPricing?.basic?.annual?.formatted || 'FREE' 
       },
       savings: '',
       features: [
@@ -138,14 +127,10 @@ export default function Pricing() {
       name: 'Professional',
       description: 'Everything growing businesses need to thrive',
       price: { 
-        monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.monthly?.formatted ? 
-            `${dynamicPricing.professional.monthly.formatted}/mo` : '$7.50/mo') :
-          '$15/mo',
-        annual: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted}/mo` : '$7.50/mo') :
-          '$15/mo'
+        monthly: dynamicPricing?.professional?.monthly?.formatted ? 
+          `${dynamicPricing.professional.monthly.formatted}/mo` : '$15/mo',
+        annual: dynamicPricing?.professional?.annual?.formatted ? 
+          `${dynamicPricing.professional.annual.formatted}/mo` : '$15/mo'
       },
       savings: 'Save 14%',
       features: [
@@ -209,14 +194,10 @@ export default function Pricing() {
       name: 'Enterprise',
       description: 'Customized solutions for large organizations',
       price: { 
-        monthly: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.monthly?.formatted ? 
-            `${dynamicPricing.enterprise.monthly.formatted}/mo` : '$17.50/mo') :
-          '$35/mo',
-        annual: hasDiscount && userCountry !== 'US' ? 
-          (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted}/mo` : '$17.50/mo') :
-          '$35/mo'
+        monthly: dynamicPricing?.enterprise?.monthly?.formatted ? 
+          `${dynamicPricing.enterprise.monthly.formatted}/mo` : '$35/mo',
+        annual: dynamicPricing?.enterprise?.annual?.formatted ? 
+          `${dynamicPricing.enterprise.annual.formatted}/mo` : '$35/mo'
       },
       savings: 'Save 14%',
       features: [

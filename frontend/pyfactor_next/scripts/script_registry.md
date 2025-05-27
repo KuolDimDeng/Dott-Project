@@ -201,8 +201,22 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - No localStorage or cookies usage per requirements
 - **Requirements Addressed**: Conditions 6, 7, 9, 12, 17, 22, 25, 28
 
+### Version0036_fix_pricing_display_final.mjs
+- **Date**: 2025-01-27
+- **Purpose**: Final fix for pricing display issue with hardcoded USA pricing
+- **Status**: ✅ COMPLETED
+- **Changes**: 
+  - Added hardcoded USA pricing logic to Pricing component
+  - USA users always see $15 and $35 regardless of dynamic pricing
+  - Developing countries still get 50% discount
+  - Added comprehensive debug logging
+- **Files Modified**: 
+  - `/src/app/components/Pricing.js` - Hardcoded USA pricing logic
+- **Results**: 
+  - ✅ USA: Professional $15/mo, Enterprise $35/mo
+  - ✅ Developing Countries: Professional $7.50/mo, Enterprise $17.50/mo
+  - ✅ No dependency on dynamic pricing for USA
+  - ✅ Immediate fix regardless of cache issues
 
 ## Files That Will Be Modified
 - `.env.local`
-- `/src/app/api/test-connection/route.js` (Version0026)
-- `/src/app/layout.js` (Version0027)
