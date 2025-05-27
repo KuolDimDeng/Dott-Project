@@ -271,7 +271,7 @@ export default function Pricing() {
           { name: 'HR & CRM modules', value: 'Discounted' },
         ]},
       ],
-      cta: 'Contact Sales',
+      cta: 'Choose Enterprise',
       highlight: false,
       badge: 'Premium',
       color: 'bg-gradient-to-b from-purple-50 to-white border-secondary-main',
@@ -380,7 +380,7 @@ export default function Pricing() {
                 
                 <div className="mt-8 mb-8">
                   <Link
-                    href="/auth/signin"
+                    href="/auth/signup"
                     className={`block w-full text-center px-6 py-3 border border-transparent rounded-lg ${
                       plan.highlight
                         ? 'bg-primary-main hover:bg-primary-dark text-white shadow-md'
