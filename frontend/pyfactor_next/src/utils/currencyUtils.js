@@ -88,8 +88,10 @@ export async function calculatePricingForCountry(countryCode, isDeveloping = fal
  * @returns {Promise<Object>} Current pricing object
  */
 export async function getCurrentUserPricing() {
-  const country = getCacheValue('user_country') || 'US';
-  const isDeveloping = getCacheValue('user_is_developing_country') || false;
+  const country = await getCacheValue('user_country') || 'US';
+  const isDeveloping = await getCacheValue('user_is_developing_country') || false;
+  
+  console.log('💰 Getting user pricing:', { country, isDeveloping });
   
   return await calculatePricingForCountry(country, isDeveloping);
 }
