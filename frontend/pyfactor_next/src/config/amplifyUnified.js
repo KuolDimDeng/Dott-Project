@@ -16,16 +16,8 @@ import {
   updateUserAttributes,
   signInWithRedirect
 } from 'aws-amplify/auth';
+import { Hub as AmplifyHub } from 'aws-amplify/utils';
 import { logger } from '@/utils/logger';
-
-// Try to import Hub from aws-amplify, but handle gracefully if not available
-let AmplifyHub = null;
-try {
-  const { Hub } = require('aws-amplify');
-  AmplifyHub = Hub;
-} catch (error) {
-  logger.warn('[AmplifyUnified] Hub not available in this Amplify version, using fallback');
-}
 
 // Network error handling configuration
 const NETWORK_CONFIG = {

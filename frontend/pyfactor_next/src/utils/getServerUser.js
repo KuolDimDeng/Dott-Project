@@ -1,5 +1,3 @@
-import { getCurrentUser, fetchAuthSession  } from '@/config/amplifyUnified';
-import { Amplify } from 'aws-amplify';
 import { cookies } from 'next/headers';
 
 // Import Amplify config
@@ -18,6 +16,22 @@ const amplifyConfig = {
   }
 };
 
+// Dynamic imports for server-side Amplify functions
+const getAmplifyAuth = async () => {
+  try {
+    const { Amplify } = await import('aws-amplify');
+    const { getCurrentUser, fetchAuthSession } = await import('aws-amplify/auth');
+    
+    // Configure Amplify in server environment
+    Amplify.configure(amplifyConfig);
+    
+    return { getCurrentUser, fetchAuthSession };
+  } catch (error) {
+    console.warn('[getServerUser] Error importing Amplify server functions:', error);
+    return null;
+  }
+};
+
 /**
  * Gets the authenticated user from server-side context
  * Returns null for unauthenticated users instead of throwing errors
@@ -27,8 +41,14 @@ const amplifyConfig = {
  */
 export async function getServerUser(request) {
   try {
-    // Configure Amplify in server environment
-    Amplify.configure(amplifyConfig);
+    // Get Amplify auth functions dynamically
+    const amplifyAuth = await getAmplifyAuth();
+    if (!amplifyAuth) {
+      console.warn('[getServerUser] Could not load Amplify auth functions');
+      return null;
+    }
+    
+    const { getCurrentUser, fetchAuthSession } = amplifyAuth;
     
     // Check if this is a request from an auth flow
     const isFromAuthFlow = request?.headers?.get('x-from-auth-flow') === 'true';
