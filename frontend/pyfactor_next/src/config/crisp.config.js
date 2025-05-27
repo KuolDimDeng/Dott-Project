@@ -7,7 +7,7 @@
 
 const crispConfig = {
   // Crisp Website ID - this is your unique identifier for Crisp Chat
-  websiteId: '02ce1965-8acf-4c6e-b8c0-a543ead8004e',
+  websiteId: '82ce1965-8acf-4c6e-b8c0-a543ead8004e',
   
   // Configuration options
   options: {
