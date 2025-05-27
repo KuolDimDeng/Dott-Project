@@ -179,7 +179,7 @@ const getOAuthRedirectSignOut = () => {
 
 const getOAuthScopes = () => {
   if (OAUTH_SCOPES) {
-    const scopes = OAUTH_SCOPES.split(',').map(s => s.trim());
+    const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
     console.log('[OAuth] Using env var scopes:', scopes);
     return scopes;
   }
@@ -708,7 +708,7 @@ const enhancedSignInWithRedirect = async (...args) => {
           `redirect_uri=${redirectUri}&` +
           `response_type=code&` +
           `client_id=${clientId}&` +
-          `scope=${scopes}&` +
+          `scope=${encodeURIComponent(scopes.join(' '))}&` +
           `state=${encodeURIComponent(customState || '')}`;
         
         logger.info('[AmplifyUnified] Redirecting manually to OAuth URL');
@@ -760,7 +760,7 @@ export const directOAuthSignIn = async (provider = 'Google', customState = '') =
       `redirect_uri=${redirectUri}&` +
       `response_type=code&` +
       `client_id=${clientId}&` +
-      `scope=${scopes}&` +
+      `scope=${encodeURIComponent(scopes.join(' '))}&` +
       `state=${encodeURIComponent(customState)}`;
     
     logger.info('[AmplifyUnified] Direct OAuth redirect to:', oauthUrl);
