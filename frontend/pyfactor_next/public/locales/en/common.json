@@ -29,13 +29,11 @@
   "aboutDescription2": "What sets Dott apart is our deep understanding of the unique challenges faced by small businesses, especially in emerging markets.",
   "missionStatement": "At Dott, our mission is to empower small businesses to thrive by providing them with affordable, accessible, and powerful management tools that simplify day-to-day operations.",
   "visionStatement": "We envision a world where small businesses have access to the same quality of management tools as large corporations, but tailored to their specific needs and scale.",
-  
   "heroTitle": "Manage your business like a boss.",
   "heroDescription": "Global business management with advanced inventory, barcode scanning, and regional payment solutions—all in one intuitive platform for businesses worldwide.",
   "heroImageAlt": "Business Management Illustration",
   "heroVideoTitle": "Dott Software Demo",
   "searchLanguages": "Search languages...",
-  
   "featuresTitle": "Global Business Features",
   "featuresSubtitle": "Everything you need to run your business efficiently across 100+ countries",
   "countriesSupported": "100+ Countries Supported",
@@ -44,7 +42,6 @@
   "new": "New",
   "pricingTitle": "All included in our Professional plan for just $15/month",
   "pricingDescription": "No hidden fees. No extra charges for barcode printing or scanner integration.",
-  
   "feature_global_accounting": "Global Accounting",
   "feature_global_accounting_desc": "Easy-to-use accounting tools supporting multiple currencies and tax systems for businesses anywhere in the world.",
   "feature_inventory_&_barcode_management": "Inventory & Barcode Management",
@@ -61,35 +58,26 @@
   "feature_invoicing_&_factoring_desc": "Create professional invoices in multiple currencies with factoring options for US and Canada businesses.",
   "feature_cross-border_commerce": "Cross-Border Commerce",
   "feature_cross-border_commerce_desc": "Manage international sales, imports, exports, and comply with regional tax regulations seamlessly.",
-
   "highlights_title": "Why Choose Our Global Platform",
   "highlights_subtitle": "Designed to support businesses across borders with powerful inventory management",
-  
   "highlight_title_global_business_solution": "Global Business Solution",
   "highlight_desc_global_business_solution": "Designed for businesses worldwide with support for 100+ countries, multiple currencies, and region-specific payment methods.",
-  
   "highlight_title_advanced_inventory_tools": "Advanced Inventory Tools",
   "highlight_desc_advanced_inventory_tools": "Barcode printing and Bluetooth scanner integration included in our Professional plan with no extra fees.",
-  
   "highlight_title_fast_&_efficient": "Fast & Efficient",
   "highlight_desc_fast_&_efficient": "Cloud-based platform optimized for speed and efficiency, helping you run your business faster wherever you are.",
-  
   "highlight_title_secure_&_compliant": "Secure & Compliant",
   "highlight_desc_secure_&_compliant": "Bank-level security and regional compliance features ensure your business data is secure and meets local regulations.",
-  
   "highlight_title_global_support": "Global Support",
   "highlight_desc_global_support": "Our dedicated support team understands local business environments and is available across multiple time zones and languages.",
-  
   "highlights_pricing_title": "All features, including barcode printing and scanner integration, included in our Professional plan for just $15/month",
   "highlights_pricing_subtitle": "No hidden fees. No complicated pricing tiers. Just one simple plan for global businesses.",
-
   "faq_title": "Frequently Asked Questions",
   "faq_subtitle": "Have questions about our global business platform? We have answers.",
   "chip_countries": "100+ Countries",
   "chip_barcode": "Barcode Integration",
   "chip_currency": "Multi-Currency",
   "key_info": "Key Info",
-  
   "faq_category_general": "General",
   "faq_category_pricing": "Pricing & Plans",
   "faq_category_global": "Global Business",
@@ -97,59 +85,43 @@
   "faq_category_payments": "Payment Options",
   "faq_category_security": "Security & Compliance",
   "faq_category_support": "Support & Help",
-  
   "faq_q_what_is_dott": "What is Dott?",
   "faq_a_what_is_dott": "Dott is a global business management platform that supports businesses in over 100 countries. It combines accounting, payroll, HR, inventory management with barcode functionality, and various payment options, including mobile money, in one intuitive solution.",
-  
   "faq_q_how_much_does_it_cost": "How much does it cost?",
   "faq_a_how_much_does_it_cost": "We offer a free Basic plan for startups and a Professional plan at $15/month ($150/year). The Professional plan includes all features, including barcode printing and scanner integration, with no hidden fees. You can upgrade or downgrade at any time.",
-  
   "faq_q_which_countries_do_you_support": "Which countries do you support?",
   "faq_a_which_countries_do_you_support": "Dott supports businesses in over 100 countries worldwide, with special features for specific regions such as mobile money integration in Africa, invoice factoring in the US and Canada, and compliance tools for various regulatory environments.",
-  
   "faq_q_does_dott_support_mobile_money_payments": "Does Dott support mobile money payments?",
   "faq_a_does_dott_support_mobile_money_payments": "Yes! We support integration with popular mobile money platforms like M-Pesa, MTN Mobile Money, Airtel Money, and others across Africa and Asia. This allows your business to easily accept and process local payment methods.",
-  
   "faq_q_how_does_the_barcode_and_inventory_scanner_feature_work": "How does the barcode and inventory scanner feature work?",
   "faq_a_how_does_the_barcode_and_inventory_scanner_feature_work": "Our Professional plan includes the ability to generate and print barcodes for your inventory items and sync with Bluetooth barcode scanners for faster inventory management. This feature is included at no extra cost and works seamlessly with our inventory management system.",
-  
   "faq_q_is_my_data_secure": "Is my data secure?",
   "faq_a_is_my_data_secure": "Absolutely. We use bank-level security encryption and follow industry best practices to protect your data. Our platform is hosted on secure cloud infrastructure with multiple layers of security, regional compliance features, and regular backups.",
-  
   "faq_q_can_i_import_data_from_other_systems": "Can I import data from other systems?",
   "faq_a_can_i_import_data_from_other_systems": "Yes, you can import data from various formats, including Excel, CSV, and other accounting platforms. We also provide migration assistance for businesses switching from other platforms, with support for international data formats.",
-  
   "faq_q_what_kind_of_support_do_you_offer": "What kind of support do you offer?",
   "faq_a_what_kind_of_support_do_you_offer": "We provide customer support across multiple time zones via chat, email, and scheduled calls. Our team includes experts familiar with regional business practices to provide relevant assistance, no matter where your business operates.",
-  
   "faq_q_how_does_multi-currency_support_work": "How does multi-currency support work?",
   "faq_a_how_does_multi-currency_support_work": "Dott allows you to operate in multiple currencies simultaneously, with automatic exchange rate updates. You can invoice your customers in their local currency, track expenses in different currencies, and generate reports in your preferred base currency.",
-  
   "still_have_questions": "Still have questions?",
   "contact_support": "Contact our global support team at support@dottapps.com",
-  
   "copyright_text": "Dott, LLC. All rights reserved.",
-  
   "footer_product": "Product",
   "footer_company": "Company",
   "footer_legal": "Legal",
-  
   "footer_link_features": "Features",
   "footer_link_testimonials": "Testimonials",
   "footer_link_highlights": "Highlights",
   "footer_link_pricing": "Pricing",
   "footer_link_faqs": "FAQs",
-  
   "footer_link_about_us": "About Us",
   "footer_link_careers": "Careers",
   "footer_link_press": "Press",
   "footer_link_blog": "Blog",
-  
   "footer_link_terms_of_use": "Terms of Use",
   "footer_link_privacy_policy": "Privacy Policy",
   "footer_link_cookie_policy": "Cookie Policy",
   "footer_link_contact": "Contact",
-  
   "pricing_title": "Simple, transparent pricing",
   "pricing_subtitle": "Choose the plan that's right for your business",
   "regional_pricing": "Regional pricing applied: Enhanced free tier and 50% off Enterprise ({0})",
@@ -157,35 +129,28 @@
   "compare_features_title": "Compare Full Plan Features",
   "developing_country_notice": "Enhanced features available for your region! Prices in {0}",
   "currency_notice_compare": "Comparing all plans (Prices in {0})",
-  
   "features_column": "Features",
   "tier_basic": "Basic",
   "tier_professional": "Professional",
   "tier_enterprise": "Enterprise",
   "tier_recommended": "Recommended",
   "tier_complete_solution": "Complete Solution",
-  
   "select_basic": "Select Basic",
   "select_professional": "Select Professional",
   "select_enterprise": "Select Enterprise",
-  
   "period_month": "month",
   "period_year": "year",
   "free": "Free",
   "discount_applied": "50% Regional Discount",
-  
   "billing_monthly": "Monthly",
   "billing_annual": "Annual",
   "save_percentage": "Save 17%",
-  
   "available_addons": "Available Add-ons:",
   "pricing_footer": "Prices do not include applicable tax. Subscriptions auto-renew. Cancel anytime.",
   "developing_country_discount": "Special regional pricing applied: 50% discount on Enterprise tier",
-  
   "button_get_started_for_free": "GET STARTED FOR FREE",
   "button_start_professional": "Start Professional",
   "button_start_enterprise": "Start Enterprise",
-  
   "category_core_business_tools": "Core Business Tools",
   "category_global_payment_solutions": "Global Payment Solutions",
   "category_inventory_management": "Inventory Management",
@@ -195,7 +160,6 @@
   "category_business_tools": "Business Tools",
   "category_storage_&_access": "Storage & Access",
   "category_support": "Support",
-  
   "feature_unlimited_users": "Unlimited users",
   "feature_advanced_inventory_management_with_forecasting": "Advanced inventory management with forecasting",
   "feature_automated_invoicing_and_payment_reminders": "Automated invoicing and payment reminders",
@@ -206,7 +170,6 @@
   "feature_advanced_reporting_and_analytics": "Advanced reporting and analytics",
   "feature_ai-powered_business_insights": "AI-powered business insights",
   "feature_priority_support_with_dedicated_account_manager": "Priority support with dedicated account manager",
-  
   "feature_1_user_included": "1 user included",
   "feature_track_income_and_expenses": "Track income and expenses",
   "feature_basic_inventory_management": "Basic inventory management",
@@ -215,7 +178,6 @@
   "feature_2_gb_of_storage": "2 GB of storage",
   "feature_basic_reporting": "Basic reporting",
   "feature_email_support": "Email support",
-  
   "feature_unlimited_users_with_custom_roles": "Unlimited users with custom roles",
   "feature_advanced_inventory_management_with_custom_categories": "Advanced inventory management with custom categories",
   "feature_fully_branded_invoicing_with_automation": "Fully branded invoicing with automation",
@@ -224,7 +186,6 @@
   "feature_unlimited_storage": "Unlimited storage",
   "feature_custom_reporting_and_analytics": "Custom reporting and analytics",
   "feature_advanced_ai_business_insights_with_forecasting": "Advanced AI business insights with forecasting",
-  
   "feature_income_and_expense_tracking": "Income and expense tracking",
   "feature_invoice_creation": "Invoice creation",
   "feature_automated_invoice_reminders": "Automated invoice reminders",
@@ -248,13 +209,11 @@
   "feature_dedicated_account_manager": "Dedicated account manager",
   "feature_payroll_&_tax_processing": "Payroll & tax processing",
   "feature_hr_&_crm_modules": "HR & CRM modules",
-  
   "feature_value_2gb": "2 GB",
   "feature_value_30gb": "30 GB",
   "feature_value_unlimited": "Unlimited",
   "feature_value_add-on": "Add-on",
   "feature_value_discounted": "Discounted",
-  
   "choose_your_plan": "Choose Your Plan",
   "select_plan_description": "Select the plan that best fits your business needs",
   "best_value": "BEST VALUE",
@@ -279,7 +238,6 @@
   "custom_roles_&_permissions": "Custom roles & permissions",
   "advanced_security_features": "Advanced security features",
   "preferential_transaction_rates": "Preferential transaction rates",
-  
   "feature_single_user_account_with_view-only_accountant_access": "Single user account with view-only accountant access",
   "feature_basic_income_and_expense_tracking": "Basic income and expense tracking",
   "feature_up_to_5_customizable_invoice_templates": "Up to 5 customizable invoice templates",
@@ -307,10 +265,49 @@
   "feature_basic_offline_mode": "Basic offline mode",
   "feature_mobile-optimized_experience": "Mobile-optimized experience",
   "feature_knowledge_base_access": "Knowledge base access",
-  
   "feature_value_5gb": "5 GB",
-  
   "complete_onboarding": "COMPLETE ONBOARDING",
   "your_dashboard": "YOUR DASHBOARD",
-  "sign_in": "SIGN IN"
+  "sign_in": "SIGN IN",
+  "auth": {
+    "step": "Step",
+    "of": "of",
+    "secure": "Secure",
+    "trusted": "Trusted",
+    "signin": {
+      "welcome": "Welcome Back",
+      "title": "Sign in to your account",
+      "subtitle": "Don't have an account?",
+      "createAccount": "Create one here",
+      "description": "Access your business dashboard and continue growing your company with our comprehensive tools.",
+      "feature1": "Real-time business analytics",
+      "feature2": "Secure data management",
+      "feature3": "24/7 customer support",
+      "businesses": "Businesses trust us",
+      "uptime": "Uptime guarantee"
+    },
+    "signup": {
+      "welcome": "Start Your Journey",
+      "title": "Create your account",
+      "subtitle": "Already have an account?",
+      "signIn": "Sign in here",
+      "description": "Join thousands of businesses that trust PyFactor to manage their operations efficiently.",
+      "benefit1": "Quick setup in minutes",
+      "benefit2": "Professional business tools",
+      "benefit3": "Advanced reporting & analytics",
+      "benefit4": "Bank-level security",
+      "testimonial": "PyFactor transformed how we manage our business operations."
+    },
+    "verify": {
+      "title": "Verify Your Email",
+      "pageTitle": "Check your email",
+      "pageSubtitle": "We've sent a verification code to your email address",
+      "description": "We've sent a verification code to your email. Please check your inbox and enter the code below.",
+      "step1": "Check your email inbox",
+      "step2": "Find the verification email",
+      "step3": "Enter the 6-digit code",
+      "securityTitle": "Why verify?",
+      "securityNote": "Email verification helps us ensure your account security and prevents unauthorized access."
+    }
+  }
 }

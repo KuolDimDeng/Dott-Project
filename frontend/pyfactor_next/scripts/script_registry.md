@@ -178,6 +178,39 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Base Pricing**: Basic (FREE), Professional ($15 USD), Enterprise ($35 USD)
 - **Requirements Addressed**: Conditions 6, 7, 9, 12, 17, 22, 25, 28
 
+### Version0038_enhance_auth_flow_split_screen_layout_fixed.mjs
+- **Version**: 0038 v1.0
+- **Purpose**: Enhance authentication flow with split-screen layouts, improved UX, and modern design
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-05-27
+- **Execution Date**: 2025-05-27T14:08:05.192Z
+- **Target Files**: 
+  - /src/app/auth/components/AuthLayout.js (created new split-screen layout component)
+  - /src/app/auth/signin/page.js (enhanced with split-screen design)
+  - /src/app/auth/signup/page.js (enhanced with progress indicators and benefits)
+  - /src/app/auth/verify-email/page.js (enhanced with step-by-step guidance)
+  - /public/locales/en/common.json (added comprehensive auth translations)
+  - /src/app/auth/AUTH_ENHANCEMENT_DOCUMENTATION.md (created documentation)
+- **Description**: Implements modern split-screen layout for authentication pages similar to business info page design, with informational content on left and forms on right
+- **Key Features**:
+  - Split-screen layout (40% left info, 60% right form)
+  - Progress indicators for onboarding flow
+  - Mobile-responsive stacked design
+  - Trust indicators and security badges
+  - Business statistics and social proof
+  - Step-by-step verification guidance
+  - Enhanced visual hierarchy and micro-interactions
+  - Comprehensive internationalization support
+  - Accessibility improvements (ARIA, keyboard navigation)
+  - Maintains all existing functionality
+- **Design Improvements**:
+  - Modern gradient backgrounds
+  - Better typography hierarchy
+  - Enhanced form styling with focus states
+  - Loading states and animations
+  - Professional trust signals
+- **Requirements Addressed**: Conditions 1-33 (all user requirements), ES modules, Cognito Attributes, AWS App Cache, Tailwind CSS only
+
 
 ### Version0031_fix_language_menu_comprehensive.mjs
 - **Version**: 0031 v1.0

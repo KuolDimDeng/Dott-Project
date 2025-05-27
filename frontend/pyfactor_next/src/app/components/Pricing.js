@@ -452,10 +452,10 @@ export default function Pricing() {
               <p className="mt-2 text-gray-600">Need custom features or dedicated support for your large organization?</p>
               <div className="mt-6">
                 <Link
-                  href="/contact"
+                  href="/auth/signup"
                   className="inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
                 >
-                  Contact Sales
+                  Choose Enterprise
                 </Link>
               </div>
             </div>
