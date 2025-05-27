@@ -1,6 +1,7 @@
 'use client';
 
 // Enhanced Amplify v6 configuration with network error resilience
+// Updated: Environment variables refreshed for OAuth scope fix
 import { Amplify } from 'aws-amplify';
 
 // Try v6 imports first, fallback to v5 if needed
