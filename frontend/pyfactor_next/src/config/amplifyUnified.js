@@ -683,6 +683,25 @@ const enhancedSignInWithRedirect = async (...args) => {
         const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
         const scopes = getOAuthScopes().join('+');
         
+        // Log the domain for debugging
+        logger.info('[AmplifyUnified] OAuth domain configuration:', {
+          cognitoDomain: COGNITO_DOMAIN,
+          fullDomain: domain,
+          region: AWS_REGION,
+          clientId: clientId
+        });
+        
+        // Validate that we have required configuration
+        if (!COGNITO_DOMAIN) {
+          logger.error('[AmplifyUnified] Missing Cognito domain configuration');
+          throw new Error('Cognito OAuth domain not configured. Please set NEXT_PUBLIC_COGNITO_DOMAIN environment variable.');
+        }
+        
+        if (!clientId) {
+          logger.error('[AmplifyUnified] Missing Cognito client ID');
+          throw new Error('Cognito client ID not configured.');
+        }
+        
         // Construct OAuth URL manually
         const oauthUrl = `https://${domain}/oauth2/authorize?` +
           `identity_provider=${provider}&` +
@@ -709,12 +728,31 @@ const enhancedSignInWithRedirect = async (...args) => {
 export { enhancedSignInWithRedirect as signInWithRedirect };
 
 // Direct OAuth redirect function that bypasses Amplify
-export const directOAuthSignIn = (provider = 'Google', customState = '') => {
+export const directOAuthSignIn = async (provider = 'Google', customState = '') => {
   try {
     const domain = `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
     const clientId = COGNITO_CLIENT_ID;
     const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
     const scopes = getOAuthScopes().join('+');
+    
+    // Log the domain for debugging
+    logger.info('[AmplifyUnified] OAuth domain configuration:', {
+      cognitoDomain: COGNITO_DOMAIN,
+      fullDomain: domain,
+      region: AWS_REGION,
+      clientId: clientId
+    });
+    
+    // Validate that we have required configuration
+    if (!COGNITO_DOMAIN) {
+      logger.error('[AmplifyUnified] Missing Cognito domain configuration');
+      throw new Error('Cognito OAuth domain not configured. Please set NEXT_PUBLIC_COGNITO_DOMAIN environment variable.');
+    }
+    
+    if (!clientId) {
+      logger.error('[AmplifyUnified] Missing Cognito client ID');
+      throw new Error('Cognito client ID not configured.');
+    }
     
     // Construct OAuth URL
     const oauthUrl = `https://${domain}/oauth2/authorize?` +
@@ -726,6 +764,26 @@ export const directOAuthSignIn = (provider = 'Google', customState = '') => {
       `state=${encodeURIComponent(customState)}`;
     
     logger.info('[AmplifyUnified] Direct OAuth redirect to:', oauthUrl);
+    
+    // Attempt to validate the domain exists before redirecting
+    // Note: This is a best-effort check, may not work in all browsers due to CORS
+    try {
+      const testUrl = `https://${domain}/oauth2/authorize`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      
+      await fetch(testUrl, {
+        method: 'HEAD',
+        mode: 'no-cors',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      // If fetch fails, it might be CORS or the domain doesn't exist
+      logger.warn('[AmplifyUnified] Could not validate OAuth domain, proceeding anyway:', fetchError.message);
+    }
+    
     window.location.href = oauthUrl;
   } catch (error) {
     logger.error('[AmplifyUnified] Error in direct OAuth redirect:', error);

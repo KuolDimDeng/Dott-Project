@@ -986,6 +986,8 @@ export default function SignInForm() {
         setErrors({ general: 'Authentication system is temporarily unavailable. Please try again in a moment.' });
       } else if (error.message && error.message.includes('Failed to configure OAuth')) {
         setErrors({ general: 'Google Sign-In configuration failed. Please try again or use email sign-in.' });
+      } else if (error.message && error.message.includes('Cognito OAuth domain not properly configured')) {
+        setErrors({ general: 'Google Sign-In is not available. The OAuth domain needs to be configured in AWS Cognito. Please use email sign-in.' });
       } else if (error.name === 'UserNotConfirmedException') {
         setErrors({ general: 'Please verify your email before signing in with Google.' });
       } else if (error.name === 'NotAuthorizedException') {
