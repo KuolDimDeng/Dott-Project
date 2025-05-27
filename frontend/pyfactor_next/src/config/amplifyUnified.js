@@ -178,12 +178,20 @@ const getOAuthRedirectSignOut = () => {
 };
 
 const getOAuthScopes = () => {
-  if (OAUTH_SCOPES) {
-    console.log('[OAuth] Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
-    const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    console.log('[OAuth] Using env var scopes:', scopes);
-    console.log('[OAuth] Scopes joined with spaces:', scopes.join(' '));
-    return scopes;
+  try {
+    if (OAUTH_SCOPES) {
+      console.log('[OAuth] Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
+      const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      console.log('[OAuth] Using env var scopes:', scopes);
+      console.log('[OAuth] Scopes joined with spaces:', scopes.join(' '));
+      
+      // Ensure we have valid scopes
+      if (Array.isArray(scopes) && scopes.length > 0) {
+        return scopes;
+      }
+    }
+  } catch (error) {
+    console.error('[OAuth] Error parsing OAUTH_SCOPES:', error);
   }
   
   // Standard OAuth scope order: openid first, then profile, then email
@@ -491,8 +499,9 @@ if (typeof window !== 'undefined') {
     
     console.log('=== OAuth URL Test ===');
     console.log('Raw scopes array:', scopes);
-    console.log('Scopes joined with spaces:', scopes.join(' '));
-    console.log('Scopes URL encoded:', encodeURIComponent(scopes.join(' ')));
+    console.log('Scopes is array:', Array.isArray(scopes));
+    console.log('Scopes joined with spaces:', Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email');
+    console.log('Scopes URL encoded:', encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email'));
     console.log('Domain:', domain);
     console.log('Client ID:', clientId);
     console.log('Redirect URI:', redirectUri);
@@ -502,7 +511,7 @@ if (typeof window !== 'undefined') {
       `redirect_uri=${redirectUri}&` +
       `response_type=code&` +
       `client_id=${clientId}&` +
-      `scope=${encodeURIComponent(scopes.join(' '))}&` +
+      `scope=${encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email')}&` +
       `state=test`;
     
     console.log('Generated OAuth URL:', testUrl);
@@ -738,13 +747,14 @@ const enhancedSignInWithRedirect = async (...args) => {
           `redirect_uri=${redirectUri}&` +
           `response_type=code&` +
           `client_id=${clientId}&` +
-          `scope=${encodeURIComponent(scopes.join(' '))}&` +
+          `scope=${encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email')}&` +
           `state=${encodeURIComponent(customState || '')}`;
         
         logger.info('[AmplifyUnified] OAuth URL construction:', {
           scopes: scopes,
-          scopesJoined: scopes.join(' '),
-          scopesEncoded: encodeURIComponent(scopes.join(' ')),
+          scopesIsArray: Array.isArray(scopes),
+          scopesJoined: Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email',
+          scopesEncoded: encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email'),
           fullUrl: oauthUrl
         });
         
@@ -797,13 +807,14 @@ export const directOAuthSignIn = async (provider = 'Google', customState = '') =
       `redirect_uri=${redirectUri}&` +
       `response_type=code&` +
       `client_id=${clientId}&` +
-      `scope=${encodeURIComponent(scopes.join(' '))}&` +
+      `scope=${encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email')}&` +
       `state=${encodeURIComponent(customState)}`;
     
     logger.info('[AmplifyUnified] Direct OAuth URL construction:', {
       scopes: scopes,
-      scopesJoined: scopes.join(' '),
-      scopesEncoded: encodeURIComponent(scopes.join(' ')),
+      scopesIsArray: Array.isArray(scopes),
+      scopesJoined: Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email',
+      scopesEncoded: encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email'),
       fullUrl: oauthUrl
     });
     
