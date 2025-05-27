@@ -13,7 +13,8 @@ import {
   resendSignUpCode,
   resetPassword,
   confirmResetPassword,
-  updateUserAttributes
+  updateUserAttributes,
+  signInWithRedirect
 } from 'aws-amplify/auth';
 import { logger } from '@/utils/logger';
 
@@ -84,6 +85,7 @@ export const Hub = SafeHub;
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
+const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'issunc';
 
 let isConfigured = false;
 let configurationAttempts = 0;
@@ -236,7 +238,7 @@ export const configureAmplify = (forceReconfigure = false) => {
       return false;
     }
     
-    // Enhanced Amplify v6 configuration with network optimizations
+    // Enhanced Amplify v6 configuration with network optimizations and OAuth
     const amplifyConfig = {
       Auth: {
         Cognito: {
@@ -246,7 +248,14 @@ export const configureAmplify = (forceReconfigure = false) => {
           loginWith: {
             email: true,
             username: true,
-            phone: false
+            phone: false,
+            oauth: {
+              domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
+              scopes: ['email', 'profile', 'openid'],
+              redirectSignIn: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'http://localhost:3000/auth/callback',
+              redirectSignOut: typeof window !== 'undefined' ? `${window.location.origin}/auth/signin` : 'http://localhost:3000/auth/signin',
+              responseType: 'code'
+            }
           }
         }
       }
@@ -399,10 +408,18 @@ export const getCurrentUserWithConfig = enhancedGetCurrentUser;
 export const fetchUserAttributesWithConfig = enhancedFetchUserAttributes;
 export const fetchAuthSessionWithConfig = enhancedFetchAuthSession;
 
-// For compatibility with OAuth - create a placeholder since we don't use OAuth
-export const signInWithRedirect = async (...args) => {
-  throw new Error('OAuth sign-in not configured for this application');
+// Enhanced signInWithRedirect with network error handling
+const enhancedSignInWithRedirect = async (...args) => {
+  return retryWithBackoff(async () => {
+    if (!isConfigured) {
+      configureAmplify(true);
+    }
+    return signInWithRedirect(...args);
+  }, 'signInWithRedirect');
 };
+
+// Export signInWithRedirect for OAuth functionality
+export { enhancedSignInWithRedirect as signInWithRedirect };
 
 // Simple safe sign out
 export const safeSignOut = async (options = { global: true }) => {
