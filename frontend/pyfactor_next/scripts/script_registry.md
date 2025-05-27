@@ -465,4 +465,26 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - Documentation: ✅ Complete
 - **Requirements Addressed**: All Google Sign-In implementation conditions
 
+
+### Version0043_fix_google_signin_oauth_config.mjs
+- **Version**: Version0043 v1.0
+- **Purpose**: Fix Google Sign-In OAuth configuration issues
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-05-27
+- **Execution Date**: 2025-05-27T14:57:53.853Z
+- **Target Files**: 
+  - /src/config/amplifyUnified.js (fixed OAuth environment variable reading)
+- **Description**: Fixes "oauth param not configured" error by ensuring environment variables are properly read
+- **Key Features**:
+  - Added proper OAuth environment variable reading
+  - Fixed OAuth scopes configuration to use environment variables
+  - Added OAuth configuration validation and debugging
+  - Enhanced error logging for OAuth configuration issues
+- **Issues Fixed**:
+  - OAuth parameters not being read from environment variables
+  - Hardcoded OAuth scopes instead of using NEXT_PUBLIC_OAUTH_SCOPES
+  - Missing OAuth configuration validation
+  - Insufficient debugging information for OAuth setup
+- **Requirements Addressed**: Google Sign-In OAuth functionality
+
 - `.env.local`

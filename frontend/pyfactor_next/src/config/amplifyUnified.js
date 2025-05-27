@@ -87,6 +87,11 @@ const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
 const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'issunc';
 
+// OAuth environment variables
+const OAUTH_REDIRECT_SIGN_IN = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN;
+const OAUTH_REDIRECT_SIGN_OUT = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT;
+const OAUTH_SCOPES = process.env.NEXT_PUBLIC_OAUTH_SCOPES;
+
 let isConfigured = false;
 let configurationAttempts = 0;
 
@@ -213,6 +218,29 @@ const retryWithBackoff = async (operation, operationName = 'auth') => {
   throw enhancedError;
 };
 
+
+// OAuth configuration validation
+const validateOAuthConfig = () => {
+  const requiredVars = {
+    COGNITO_DOMAIN,
+    OAUTH_REDIRECT_SIGN_IN,
+    OAUTH_REDIRECT_SIGN_OUT,
+    OAUTH_SCOPES
+  };
+  
+  const missing = Object.entries(requiredVars)
+    .filter(([key, value]) => !value)
+    .map(([key]) => key);
+  
+  if (missing.length > 0) {
+    logger.warn('[AmplifyUnified] Missing OAuth environment variables:', missing);
+    return false;
+  }
+  
+  logger.debug('[AmplifyUnified] OAuth environment variables validated successfully');
+  return true;
+};
+
 // Enhanced Amplify configuration with network resilience
 export const configureAmplify = (forceReconfigure = false) => {
   if (isConfigured && !forceReconfigure && configurationAttempts < 3) {
@@ -230,6 +258,12 @@ export const configureAmplify = (forceReconfigure = false) => {
     const userPoolClientId = COGNITO_CLIENT_ID;
     const region = AWS_REGION;
     
+    // Validate OAuth configuration
+    const oauthValid = validateOAuthConfig();
+    if (!oauthValid) {
+      logger.warn('[AmplifyUnified] OAuth configuration incomplete, Google Sign-In may not work');
+    }
+    
     if (!userPoolId || !userPoolClientId) {
       logger.error('[AmplifyUnified] Missing required configuration', {
         hasUserPoolId: !!userPoolId,
@@ -238,7 +272,7 @@ export const configureAmplify = (forceReconfigure = false) => {
       return false;
     }
     
-    // Enhanced Amplify v6 configuration with network optimizations and OAuth
+        // Enhanced Amplify v6 configuration with network optimizations and OAuth
     const amplifyConfig = {
       Auth: {
         Cognito: {
@@ -251,15 +285,31 @@ export const configureAmplify = (forceReconfigure = false) => {
             phone: false,
             oauth: {
               domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-              scopes: ['email', 'profile', 'openid'],
-              redirectSignIn: typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'http://localhost:3000/auth/callback',
-              redirectSignOut: typeof window !== 'undefined' ? `${window.location.origin}/auth/signin` : 'http://localhost:3000/auth/signin',
+              scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['email', 'profile', 'openid'],
+              redirectSignIn: OAUTH_REDIRECT_SIGN_IN || (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'http://localhost:3000/auth/callback'),
+              redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || (typeof window !== 'undefined' ? `${window.location.origin}/auth/signin` : 'http://localhost:3000/auth/signin'),
               responseType: 'code'
             }
           }
         }
       }
     };
+    
+    // Debug OAuth configuration
+    if (typeof window !== 'undefined') {
+      logger.debug('[AmplifyUnified] OAuth Configuration:', {
+        domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
+        scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['email', 'profile', 'openid'],
+        redirectSignIn: OAUTH_REDIRECT_SIGN_IN || `${window.location.origin}/auth/callback`,
+        redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || `${window.location.origin}/auth/signin`,
+        hasOAuthVars: {
+          OAUTH_REDIRECT_SIGN_IN: !!OAUTH_REDIRECT_SIGN_IN,
+          OAUTH_REDIRECT_SIGN_OUT: !!OAUTH_REDIRECT_SIGN_OUT,
+          OAUTH_SCOPES: !!OAUTH_SCOPES,
+          COGNITO_DOMAIN: !!COGNITO_DOMAIN
+        }
+      });
+    }
     
     // Apply configuration
     Amplify.configure(amplifyConfig);
