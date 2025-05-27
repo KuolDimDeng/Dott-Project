@@ -2,7 +2,7 @@
 
 // Enhanced Amplify v6 configuration with network error resilience
 // Updated: Environment variables refreshed for OAuth scope fix - Force rebuild
-// Build timestamp: 20250527 - OAuth scope fix: Google invalid_scope error resolved-01-15T17:15:00Z - OAuth scopes fix: array to string conversion
+// Build timestamp: 2025-01-15T17:15:00Z - OAuth scopes fix: array to string conversion
 import { Amplify } from 'aws-amplify';
 
 // Try v6 imports first, fallback to v5 if needed
@@ -183,28 +183,13 @@ const getOAuthScopes = () => {
   try {
     if (OAUTH_SCOPES) {
       console.log('[OAuth] Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
-      
-      // Enhanced scope parsing to prevent newline issues
-      const scopes = OAUTH_SCOPES
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(s => s.replace(/[\r\n\t]/g, '')) // Remove any newlines, tabs, or carriage returns
-        .filter(s => ['openid', 'profile', 'email'].includes(s)); // Validate allowed scopes only
-      
+      const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
       console.log('[OAuth] Using env var scopes:', scopes);
       console.log('[OAuth] Scopes joined with spaces:', scopes.join(' '));
       
-      // Ensure we have valid scopes and they're in the correct order
+      // Ensure we have valid scopes
       if (Array.isArray(scopes) && scopes.length > 0) {
-        // Force correct OpenID Connect scope order
-        const orderedScopes = [];
-        if (scopes.includes('openid')) orderedScopes.push('openid');
-        if (scopes.includes('profile')) orderedScopes.push('profile');
-        if (scopes.includes('email')) orderedScopes.push('email');
-        
-        console.log('[OAuth] Ordered scopes for Google OAuth:', orderedScopes);
-        return orderedScopes;
+        return scopes;
       }
     }
   } catch (error) {
@@ -540,52 +525,6 @@ if (typeof window !== 'undefined') {
     return testUrl;
   };
   
-  // Add comprehensive OAuth scope debugging function
-  window.debugOAuthScopes = () => {
-    const scopes = getOAuthScopes();
-    const scopesString = Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email';
-    const cleanScopesString = scopesString.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
-    
-    console.log('=== OAuth Scope Debug - 20250527 ===');
-    console.log('Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
-    console.log('Parsed scopes array:', scopes);
-    console.log('Scopes string (joined):', scopesString);
-    console.log('Clean scopes string:', cleanScopesString);
-    console.log('URL encoded scopes:', encodeURIComponent(cleanScopesString));
-    console.log('Expected by Google: "openid profile email"');
-    console.log('Scope order correct:', JSON.stringify(scopes) === JSON.stringify(['openid', 'profile', 'email']));
-    
-    // Test for potential issues
-    const hasNewlines = /[\r\n]/.test(scopesString);
-    const hasExtraSpaces = /\s{2,}/.test(scopesString);
-    const hasCorrectOrder = scopes[0] === 'openid' && scopes[1] === 'profile' && scopes[2] === 'email';
-    
-    console.log('Issue Detection:');
-    console.log('  - Contains newlines:', hasNewlines);
-    console.log('  - Contains extra spaces:', hasExtraSpaces);
-    console.log('  - Correct order:', hasCorrectOrder);
-    
-    if (hasNewlines || hasExtraSpaces || !hasCorrectOrder) {
-      console.warn('⚠️  OAuth scope issues detected! This may cause Google Sign-In to fail.');
-    } else {
-      console.log('✅ OAuth scopes appear to be configured correctly.');
-    }
-    
-    return {
-      rawScopes: OAUTH_SCOPES,
-      parsedScopes: scopes,
-      scopesString,
-      cleanScopesString,
-      encodedScopes: encodeURIComponent(cleanScopesString),
-      hasIssues: hasNewlines || hasExtraSpaces || !hasCorrectOrder,
-      issues: {
-        hasNewlines,
-        hasExtraSpaces,
-        incorrectOrder: !hasCorrectOrder
-      }
-    };
-  };
-
   // Add environment variable debug function
   window.debugEnvVars = () => {
     console.log('=== Environment Variables Debug ===');
@@ -775,191 +714,4 @@ const enhancedSignInWithRedirect = async (...args) => {
       
       // Verify configuration is present
       const config = Amplify.getConfig();
-      logger.debug('[AmplifyUnified] Current config before OAuth:', {
-        hasAuth: !!config?.Auth,
-        hasCognito: !!config?.Auth?.Cognito,
-        hasUserPool: !!config?.Auth?.Cognito?.userPoolId,
-        hasClientId: !!config?.Auth?.Cognito?.userPoolClientId,
-        hasOAuth: !!config?.Auth?.Cognito?.loginWith?.oauth,
-        oauthDomain: config?.Auth?.Cognito?.loginWith?.oauth?.domain
-      });
-      
-      if (!config?.Auth?.Cognito?.userPoolId || !config?.Auth?.Cognito?.userPoolClientId) {
-        throw new Error('UserPool configuration missing after reconfiguration');
-      }
-      
-      if (!config?.Auth?.Cognito?.loginWith?.oauth) {
-        throw new Error('OAuth configuration missing after reconfiguration');
-      }
-      
-      // Try to use the signInWithRedirect function
-      logger.info('[AmplifyUnified] Calling signInWithRedirect with provider:', args[0]?.provider);
-      const result = await signInWithRedirect(...args);
-      
-      logger.info('[AmplifyUnified] signInWithRedirect completed successfully');
-      return result;
-    } catch (error) {
-      // If we get "Auth UserPool not configured", it means Amplify lost its configuration
-      if (error.message && error.message.includes('Auth UserPool not configured')) {
-        logger.error('[AmplifyUnified] Amplify lost configuration, attempting direct OAuth redirect');
-        
-        // As a fallback, construct the OAuth URL manually
-        const provider = args[0]?.provider || 'Google';
-        const customState = args[0]?.customState || '';
-        
-        const config = Amplify.getConfig();
-        const domain = config?.Auth?.Cognito?.loginWith?.oauth?.domain || `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
-        const clientId = config?.Auth?.Cognito?.userPoolClientId || COGNITO_CLIENT_ID;
-        const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
-        const scopes = getOAuthScopes(); // Get scopes as array, don't join yet
-        
-        // Log the domain for debugging
-        logger.info('[AmplifyUnified] OAuth domain configuration:', {
-          cognitoDomain: COGNITO_DOMAIN,
-          fullDomain: domain,
-          region: AWS_REGION,
-          clientId: clientId
-        });
-        
-        // Validate that we have required configuration
-        if (!COGNITO_DOMAIN) {
-          logger.error('[AmplifyUnified] Missing Cognito domain configuration');
-          throw new Error('Cognito OAuth domain not configured. Please set NEXT_PUBLIC_COGNITO_DOMAIN environment variable.');
-        }
-        
-        if (!clientId) {
-          logger.error('[AmplifyUnified] Missing Cognito client ID');
-          throw new Error('Cognito client ID not configured.');
-        }
-        
-                // Construct OAuth URL manually with enhanced encoding
-        const scopesArray = getOAuthScopes();
-        const scopesString = Array.isArray(scopesArray) ? scopesArray.join(' ') : 'openid profile email';
-        
-        // Double-check: ensure no newlines in scopes string
-        const cleanScopesString = scopesString.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
-        
-        const oauthUrl = `https://${domain}/oauth2/authorize?` +
-          `identity_provider=${provider}&` +
-          `redirect_uri=${redirectUri}&` +
-          `response_type=code&` +
-          `client_id=${clientId}&` +
-          `scope=${encodeURIComponent(cleanScopesString)}&` +
-          `state=${encodeURIComponent(customState || '')}`;;
-        
-        logger.info('[AmplifyUnified] OAuth URL construction:', {
-          scopes: scopes,
-          scopesIsArray: Array.isArray(scopes),
-          scopesJoined: Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email',
-          scopesEncoded: encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email'),
-          fullUrl: oauthUrl
-        });
-        
-        logger.info('[AmplifyUnified] Redirecting manually to OAuth URL');
-        window.location.href = oauthUrl;
-        
-        // Return a promise that never resolves (since we're redirecting)
-        return new Promise(() => {});
-      }
-      
-      // Re-throw other errors
-      throw error;
-    }
-  }, 'signInWithRedirect');
-};
-
-// Export signInWithRedirect for OAuth functionality
-export { enhancedSignInWithRedirect as signInWithRedirect };
-
-// Direct OAuth redirect function that bypasses Amplify
-export const directOAuthSignIn = async (provider = 'Google', customState = '') => {
-  try {
-    const domain = `${COGNITO_DOMAIN}.auth.${AWS_REGION}.amazoncognito.com`;
-    const clientId = COGNITO_CLIENT_ID;
-    const redirectUri = encodeURIComponent(getOAuthRedirectSignIn());
-    const scopes = getOAuthScopes(); // Get scopes as array, don't join yet
-    
-    // Log the domain for debugging
-    logger.info('[AmplifyUnified] OAuth domain configuration:', {
-      cognitoDomain: COGNITO_DOMAIN,
-      fullDomain: domain,
-      region: AWS_REGION,
-      clientId: clientId
-    });
-    
-    // Validate that we have required configuration
-    if (!COGNITO_DOMAIN) {
-      logger.error('[AmplifyUnified] Missing Cognito domain configuration');
-      throw new Error('Cognito OAuth domain not configured. Please set NEXT_PUBLIC_COGNITO_DOMAIN environment variable.');
-    }
-    
-    if (!clientId) {
-      logger.error('[AmplifyUnified] Missing Cognito client ID');
-      throw new Error('Cognito client ID not configured.');
-    }
-    
-    // Construct OAuth URL
-    const oauthUrl = `https://${domain}/oauth2/authorize?` +
-      `identity_provider=${provider}&` +
-      `redirect_uri=${redirectUri}&` +
-      `response_type=code&` +
-      `client_id=${clientId}&` +
-      `scope=${encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email')}&` +
-      `state=${encodeURIComponent(customState)}`;
-    
-    logger.info('[AmplifyUnified] Direct OAuth URL construction:', {
-      scopes: scopes,
-      scopesIsArray: Array.isArray(scopes),
-      scopesJoined: Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email',
-      scopesEncoded: encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email'),
-      fullUrl: oauthUrl
-    });
-    
-    logger.info('[AmplifyUnified] Direct OAuth redirect to:', oauthUrl);
-    
-    // Attempt to validate the domain exists before redirecting
-    // Note: This is a best-effort check, may not work in all browsers due to CORS
-    try {
-      const testUrl = `https://${domain}/oauth2/authorize`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      
-      await fetch(testUrl, {
-        method: 'HEAD',
-        mode: 'no-cors',
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      // If fetch fails, it might be CORS or the domain doesn't exist
-      logger.warn('[AmplifyUnified] Could not validate OAuth domain, proceeding anyway:', fetchError.message);
-    }
-    
-    window.location.href = oauthUrl;
-  } catch (error) {
-    logger.error('[AmplifyUnified] Error in direct OAuth redirect:', error);
-    throw error;
-  }
-};
-
-// Simple safe sign out
-export const safeSignOut = async (options = { global: true }) => {
-  try {
-    await enhancedSignOut(options);
-    return true;
-  } catch (error) {
-    logger.error('[AmplifyUnified] Sign out error:', error);
-    return true;
-  }
-};
-
-// Initialize function
-export const initAmplify = () => {
-  if (typeof window !== 'undefined') {
-    return configureAmplify();
-  }
-  return false;
-};
-
-export default configureAmplify;
+      logger

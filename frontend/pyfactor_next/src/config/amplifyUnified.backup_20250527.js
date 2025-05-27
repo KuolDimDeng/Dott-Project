@@ -2,7 +2,7 @@
 
 // Enhanced Amplify v6 configuration with network error resilience
 // Updated: Environment variables refreshed for OAuth scope fix - Force rebuild
-// Build timestamp: 20250527 - OAuth scope fix: Google invalid_scope error resolved-01-15T17:15:00Z - OAuth scopes fix: array to string conversion
+// Build timestamp: 2025-01-15T17:15:00Z - OAuth scopes fix: array to string conversion
 import { Amplify } from 'aws-amplify';
 
 // Try v6 imports first, fallback to v5 if needed
@@ -183,28 +183,13 @@ const getOAuthScopes = () => {
   try {
     if (OAUTH_SCOPES) {
       console.log('[OAuth] Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
-      
-      // Enhanced scope parsing to prevent newline issues
-      const scopes = OAUTH_SCOPES
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0)
-        .map(s => s.replace(/[\r\n\t]/g, '')) // Remove any newlines, tabs, or carriage returns
-        .filter(s => ['openid', 'profile', 'email'].includes(s)); // Validate allowed scopes only
-      
+      const scopes = OAUTH_SCOPES.split(',').map(s => s.trim()).filter(s => s.length > 0);
       console.log('[OAuth] Using env var scopes:', scopes);
       console.log('[OAuth] Scopes joined with spaces:', scopes.join(' '));
       
-      // Ensure we have valid scopes and they're in the correct order
+      // Ensure we have valid scopes
       if (Array.isArray(scopes) && scopes.length > 0) {
-        // Force correct OpenID Connect scope order
-        const orderedScopes = [];
-        if (scopes.includes('openid')) orderedScopes.push('openid');
-        if (scopes.includes('profile')) orderedScopes.push('profile');
-        if (scopes.includes('email')) orderedScopes.push('email');
-        
-        console.log('[OAuth] Ordered scopes for Google OAuth:', orderedScopes);
-        return orderedScopes;
+        return scopes;
       }
     }
   } catch (error) {
@@ -540,52 +525,6 @@ if (typeof window !== 'undefined') {
     return testUrl;
   };
   
-  // Add comprehensive OAuth scope debugging function
-  window.debugOAuthScopes = () => {
-    const scopes = getOAuthScopes();
-    const scopesString = Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email';
-    const cleanScopesString = scopesString.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
-    
-    console.log('=== OAuth Scope Debug - 20250527 ===');
-    console.log('Raw OAUTH_SCOPES env var:', OAUTH_SCOPES);
-    console.log('Parsed scopes array:', scopes);
-    console.log('Scopes string (joined):', scopesString);
-    console.log('Clean scopes string:', cleanScopesString);
-    console.log('URL encoded scopes:', encodeURIComponent(cleanScopesString));
-    console.log('Expected by Google: "openid profile email"');
-    console.log('Scope order correct:', JSON.stringify(scopes) === JSON.stringify(['openid', 'profile', 'email']));
-    
-    // Test for potential issues
-    const hasNewlines = /[\r\n]/.test(scopesString);
-    const hasExtraSpaces = /\s{2,}/.test(scopesString);
-    const hasCorrectOrder = scopes[0] === 'openid' && scopes[1] === 'profile' && scopes[2] === 'email';
-    
-    console.log('Issue Detection:');
-    console.log('  - Contains newlines:', hasNewlines);
-    console.log('  - Contains extra spaces:', hasExtraSpaces);
-    console.log('  - Correct order:', hasCorrectOrder);
-    
-    if (hasNewlines || hasExtraSpaces || !hasCorrectOrder) {
-      console.warn('⚠️  OAuth scope issues detected! This may cause Google Sign-In to fail.');
-    } else {
-      console.log('✅ OAuth scopes appear to be configured correctly.');
-    }
-    
-    return {
-      rawScopes: OAUTH_SCOPES,
-      parsedScopes: scopes,
-      scopesString,
-      cleanScopesString,
-      encodedScopes: encodeURIComponent(cleanScopesString),
-      hasIssues: hasNewlines || hasExtraSpaces || !hasCorrectOrder,
-      issues: {
-        hasNewlines,
-        hasExtraSpaces,
-        incorrectOrder: !hasCorrectOrder
-      }
-    };
-  };
-
   // Add environment variable debug function
   window.debugEnvVars = () => {
     console.log('=== Environment Variables Debug ===');
@@ -832,20 +771,14 @@ const enhancedSignInWithRedirect = async (...args) => {
           throw new Error('Cognito client ID not configured.');
         }
         
-                // Construct OAuth URL manually with enhanced encoding
-        const scopesArray = getOAuthScopes();
-        const scopesString = Array.isArray(scopesArray) ? scopesArray.join(' ') : 'openid profile email';
-        
-        // Double-check: ensure no newlines in scopes string
-        const cleanScopesString = scopesString.replace(/[\r\n\t]/g, ' ').replace(/\s+/g, ' ').trim();
-        
+        // Construct OAuth URL manually
         const oauthUrl = `https://${domain}/oauth2/authorize?` +
           `identity_provider=${provider}&` +
           `redirect_uri=${redirectUri}&` +
           `response_type=code&` +
           `client_id=${clientId}&` +
-          `scope=${encodeURIComponent(cleanScopesString)}&` +
-          `state=${encodeURIComponent(customState || '')}`;;
+          `scope=${encodeURIComponent(Array.isArray(scopes) ? scopes.join(' ') : 'openid profile email')}&` +
+          `state=${encodeURIComponent(customState || '')}`;
         
         logger.info('[AmplifyUnified] OAuth URL construction:', {
           scopes: scopes,

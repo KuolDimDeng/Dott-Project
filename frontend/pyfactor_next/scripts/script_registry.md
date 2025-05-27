@@ -488,3 +488,16 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Requirements Addressed**: Google Sign-In OAuth functionality
 
 - `.env.local`
+## Version0044_fix_google_oauth_scope_error_amplifyUnified (20250527)
+**Status**: ✅ EXECUTED  
+**Purpose**: Fix Google OAuth "invalid_scope" error with newline-separated scopes  
+**Files Modified**: 
+- `frontend/pyfactor_next/.env.local` (OAuth scope order and Cognito domain)
+- `frontend/pyfactor_next/src/config/amplifyUnified.js` (scope handling and validation)
+**Issues Fixed**: 
+- Wrong OAuth scope order (email,profile,openid → openid,profile,email)
+- Wrong Cognito domain (issunc → us-east-1jpl8vgfb6) 
+- Scope encoding causing newlines in OAuth URLs
+- Missing scope validation and error prevention
+**Expected Result**: Google Sign-In works without "invalid_scope" errors
+**Documentation**: `GOOGLE_OAUTH_SCOPE_FIX_20250527.md`
