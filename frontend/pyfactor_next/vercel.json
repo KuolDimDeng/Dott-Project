@@ -11,7 +11,5 @@
     "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT": "https://dottapps.com/auth/signin",
     "NEXT_PUBLIC_OAUTH_SCOPES": "openid,profile,email",
     "NODE_ENV": "production"
-  },
-  "version": 2,
-  "comment": "Updated 2025-05-27: Google OAuth scope fix deployed"
+  }
 }
