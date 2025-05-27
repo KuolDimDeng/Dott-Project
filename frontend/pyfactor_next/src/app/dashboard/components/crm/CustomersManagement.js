@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import { appCache } from '@/utils/awsAppCache';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 import { Dialog } from '@headlessui/react';
 import { 
   AddIcon, 

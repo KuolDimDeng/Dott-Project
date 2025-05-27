@@ -6,7 +6,7 @@ import { logger } from '@/utils/logger';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Dashboard from './DashboardContent';
-import { updateUserAttributes, fetchUserAttributes } from 'aws-amplify/auth';
+import { updateUserAttributes, fetchUserAttributes } from '@/config/amplifyUnified';
 import { COGNITO_ATTRIBUTES } from '@/constants/onboarding';
 import { storeTenantId, isValidUUID } from '@/utils/tenantUtils';
 

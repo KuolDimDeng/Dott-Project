@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/authStore';
 import { logger } from '@/utils/logger';
 import { appCache } from '@/utils/awsAppCache';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 
 const CRMDashboard = () => {
   const [loading, setLoading] = useState(true);
