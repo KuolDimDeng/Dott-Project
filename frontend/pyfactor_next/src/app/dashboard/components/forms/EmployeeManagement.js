@@ -586,7 +586,7 @@ const EmployeeManagement = () => {
       // 2. If that fails, try to get current user as a fallback
       if (!refreshed) {
         try {
-          const { getCurrentUser, fetchAuthSession } = await import('aws-amplify/auth');
+          const { getCurrentUser, fetchAuthSession } = await import('@/config/amplifyUnified');
           const currentUser = await getCurrentUser();
           if (currentUser) {
             // Get a fresh auth session
@@ -938,7 +938,7 @@ const EmployeeManagement = () => {
       
       // Try to get token directly from Amplify before failing
       try {
-        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const { fetchAuthSession } = await import('@/config/amplifyUnified');
         const session = await fetchAuthSession();
         
         if (session?.tokens?.idToken) {
@@ -1219,7 +1219,7 @@ const EmployeeManagement = () => {
         const checkSessionStatus = async () => {
           try {
             // Import and use getCurrentUser to verify session
-            const { getCurrentUser } = await import('aws-amplify/auth');
+            const { getCurrentUser } = await import('@/config/amplifyUnified');
             await getCurrentUser();
             setIsAuthenticated(true);
             fetchEmployees();

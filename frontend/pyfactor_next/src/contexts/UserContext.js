@@ -45,7 +45,7 @@ export const UserProvider = ({ children }) => {
         if (isInDashboard) {
           // In dashboard, exclusively use Cognito
           try {
-            const { fetchUserAttributes } = await import('aws-amplify/auth');
+            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
             const cognitoAttributes = await fetchUserAttributes();
             
             if (cognitoAttributes) {
@@ -112,7 +112,7 @@ export const UserProvider = ({ children }) => {
           if (typeof window !== 'undefined' && (!email || !firstName)) {
             try {
               // Try to fetch from Cognito and update app cache
-              import('aws-amplify/auth')
+              import('@/config/amplifyUnified')
                 .then(({ fetchUserAttributes }) => {
                   fetchUserAttributes()
                     .then(attributes => {

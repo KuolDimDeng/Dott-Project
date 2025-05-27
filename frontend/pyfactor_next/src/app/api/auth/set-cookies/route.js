@@ -57,7 +57,7 @@ export async function POST(request) {
     if (updateCognito) {
       try {
         // Dynamically import Amplify auth to ensure it only runs client-side
-        const { updateUserAttributes } = await import('aws-amplify/auth');
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         
         // Build attributes object based on provided values
         const userAttributes = {};
@@ -177,7 +177,7 @@ export async function POST(request) {
         // Update the Cognito attribute if we're fixing this issue
         if (updateCognito) {
           try {
-            const { updateUserAttributes } = await import('aws-amplify/auth');
+            const { updateUserAttributes } = await import('@/config/amplifyUnified');
             await updateUserAttributes({ 
               userAttributes: {
                 'custom:onboarding': 'complete',

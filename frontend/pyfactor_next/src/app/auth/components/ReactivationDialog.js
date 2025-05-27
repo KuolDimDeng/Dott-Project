@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signIn } from '@aws-amplify/auth';
+import { signIn  } from '@/config/amplifyUnified';
 import { checkDisabledAccount, reactivateAccount } from '@/lib/account-reactivation';
 
 /**

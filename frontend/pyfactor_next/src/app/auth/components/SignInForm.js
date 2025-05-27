@@ -268,7 +268,7 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
       // Get an ID token for authenticated API requests
       let idToken = '';
       try {
-        const { getCurrentUser, getIdToken } = await import('@aws-amplify/auth');
+        const { getCurrentUser, getIdToken } = await import('@/config/amplifyUnified');
         const currentUser = await getCurrentUser();
         idToken = await getIdToken(currentUser);
         

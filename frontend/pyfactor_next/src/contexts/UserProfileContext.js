@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { logger } from '@/utils/logger';
-import { fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
+import { fetchUserAttributes, fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Initial time to live for cache in milliseconds (15 minutes for faster sign-in)
 const CACHE_TTL = 15 * 60 * 1000; 

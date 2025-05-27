@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { isValidUUID } from '@/utils/tenantUtils';
 import axiosInstance from '@/lib/axiosConfig';
 import { serverLogger } from '@/utils/serverLogger';
-import { updateUserAttributes } from 'aws-amplify/auth';
+import { updateUserAttributes  } from '@/config/amplifyUnified';
 import { API_ERROR_CODES } from '@/constants/errors';
 
 /**

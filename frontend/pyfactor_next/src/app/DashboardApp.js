@@ -208,7 +208,7 @@ const DashboardApp = ({ children, params }) => {
             // Then try server API
             try {
               // Force refresh the auth session first
-              const { fetchAuthSession } = await import('aws-amplify/auth');
+              const { fetchAuthSession } = await import('@/config/amplifyUnified');
               await fetchAuthSession({ forceRefresh: true });
               
               const apiResponse = await fetch('/api/user/update-attributes', {
@@ -248,7 +248,7 @@ const DashboardApp = ({ children, params }) => {
       try {
         // Get the user attributes from Cognito
         logger.debug('[DashboardApp] Checking Cognito attributes for onboarding status');
-        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
         const userAttributes = await fetchUserAttributes();
         
         // Basic validation to check if the onboarding flow needs to be completed

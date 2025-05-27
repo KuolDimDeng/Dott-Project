@@ -21,7 +21,7 @@ export default function OnboardingPage() {
     const checkAuth = async () => {
       // First try Cognito authentication
       try {
-        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const { fetchAuthSession } = await import('@/config/amplifyUnified');
         const session = await fetchAuthSession();
         
         if (session?.tokens?.idToken) {

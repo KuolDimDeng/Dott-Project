@@ -56,7 +56,7 @@ export async function POST(request) {
       
       try {
         // Fix via direct Cognito update
-        const { updateUserAttributes } = await import('aws-amplify/auth');
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         const timestamp = new Date().toISOString();
         
         // Create the attributes object with all required fields - consistent lowercase

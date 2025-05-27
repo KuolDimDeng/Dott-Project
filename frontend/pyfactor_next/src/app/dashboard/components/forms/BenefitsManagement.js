@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tab } from '@headlessui/react';
-import { fetchAuthSession } from '@aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { getCacheValue } from '@/utils/appCache';
 
 // Import components for tabs

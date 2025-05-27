@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { getAmplifyConfig } from '@/config/amplifyServer';
 import { v4 as uuidv4 } from 'uuid';
-import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 
 // Helper to get token from cookie string
 function getTokenFromCookie(cookieString, tokenName) {
@@ -113,7 +113,7 @@ async function updateCognitoAttributes(requestId, token) {
     let tenantId = '';
     
     try {
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const userAttributes = await fetchUserAttributes();
       
       // Extract values from existing attributes

@@ -152,7 +152,7 @@ export async function getServerSideTenantId(req) {
     
     // If server-side rendering with auth, try to get from Cognito
     try {
-      const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth/server');
+      const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       if (user) {
         const userAttributes = await fetchUserAttributes();

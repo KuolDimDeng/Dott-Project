@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 
 // Initialize Stripe with your secret key (use environment variable in production)

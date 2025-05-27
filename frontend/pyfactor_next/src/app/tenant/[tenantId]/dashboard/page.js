@@ -11,12 +11,12 @@ import DashboardLoader from '@/components/DashboardLoader';
 import { storeTenantId, getTenantIdFromCognito } from '@/utils/tenantUtils';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes } from '@/config/amplifyUnified';
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
 
 // Import needed for recovery
-import { signIn } from '@aws-amplify/auth';
+import { signIn } from '@/config/amplifyUnified';
 import Cookies from 'js-cookie';
 
 // Emergency recovery functions

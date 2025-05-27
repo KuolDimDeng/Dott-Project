@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useTenantContext } from '@/context/TenantContext';
 import { storeTenantInfo } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes, updateUserAttributes } from '@/config/amplifyUnified';
 
 /**
  * Client component that initializes tenant context 

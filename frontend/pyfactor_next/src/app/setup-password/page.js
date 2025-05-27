@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { useRouter } from 'next/navigation';
-import { signIn } from 'aws-amplify/auth';
+import { signIn } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 
 /**

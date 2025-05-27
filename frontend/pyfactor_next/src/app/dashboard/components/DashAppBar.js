@@ -477,7 +477,7 @@ const DashAppBar = ({
       }
 
       // Try to get attributes from Cognito
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const attributes = await fetchUserAttributes();
       
       // Validate current tenant ID matches the attribute tenant ID (for security)
@@ -538,7 +538,7 @@ const DashAppBar = ({
       const validateTenantAccess = async () => {
         try {
           // Try to get attributes from Cognito
-          const { fetchUserAttributes } = await import('aws-amplify/auth');
+          const { fetchUserAttributes } = await import('@/config/amplifyUnified');
           const attributes = await fetchUserAttributes();
           
           // Get the tenant ID from attributes
@@ -803,7 +803,7 @@ const DashAppBar = ({
       }
       
       // Last resort - try to get email from Cognito (async, will update later)
-      import('aws-amplify/auth')
+      import('@/config/amplifyUnified')
         .then(({ fetchUserAttributes }) => {
           fetchUserAttributes()
             .then(attributes => {
@@ -876,7 +876,7 @@ const DashAppBar = ({
           logger.info('[DashAppBar] No userAttributes prop provided, fetching from Cognito');
           
           // Import auth utilities
-            const { fetchUserAttributes } = await import('aws-amplify/auth');
+            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
             
           // Get user attributes
             const attributes = await fetchUserAttributes();
@@ -963,7 +963,7 @@ const DashAppBar = ({
       } else {
         // Try to get from auth session
         try {
-          const { fetchAuthSession } = await import('aws-amplify/auth');
+          const { fetchAuthSession } = await import('@/config/amplifyUnified');
           const session = await fetchAuthSession();
           if (session?.tokens?.idToken) {
             idToken = session.tokens.idToken.toString();

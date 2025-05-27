@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 
 /**
@@ -68,7 +68,7 @@ export async function POST(request) {
     }
     
     // Import Amplify auth to update user attributes
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Update the tenant ID in Cognito attributes
     await updateUserAttributes({

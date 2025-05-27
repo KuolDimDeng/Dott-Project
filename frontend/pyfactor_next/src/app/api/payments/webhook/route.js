@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import { logger } from '@/utils/logger';
-import { updateUserAttributes } from 'aws-amplify/auth';
+import { updateUserAttributes  } from '@/config/amplifyUnified';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

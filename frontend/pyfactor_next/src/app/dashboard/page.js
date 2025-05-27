@@ -77,7 +77,7 @@ export default function DashboardPage() {
             // Try to create a permanent tenant
             try {
               // Get business info for API call
-              const { fetchUserAttributes } = await import('aws-amplify/auth');
+              const { fetchUserAttributes } = await import('@/config/amplifyUnified');
               const userAttributes = await fetchUserAttributes();
               
               const createResponse = await fetch('/api/tenant/create', {
