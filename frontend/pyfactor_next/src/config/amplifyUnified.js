@@ -113,7 +113,7 @@ export const Hub = SafeHub;
 const COGNITO_CLIENT_ID = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b';
 const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6';
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
-const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'issunc';
+const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'us-east-1jpl8vgfb6';
 
 // OAuth environment variables with fallbacks
 const OAUTH_REDIRECT_SIGN_IN = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN;

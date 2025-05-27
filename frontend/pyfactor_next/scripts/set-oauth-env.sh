@@ -8,7 +8,7 @@ echo "🔧 Setting OAuth environment variables for local development..."
 export NEXT_PUBLIC_AWS_REGION=us-east-1
 export NEXT_PUBLIC_COGNITO_USER_POOL_ID=us-east-1_JPL8vGfb6
 export NEXT_PUBLIC_COGNITO_CLIENT_ID=1o5v84mrgn4gt87khtr179uc5b
-export NEXT_PUBLIC_COGNITO_DOMAIN=issunc
+export NEXT_PUBLIC_COGNITO_DOMAIN=us-east-1jpl8vgfb6
 
 # OAuth Configuration for Google Sign-In (Local Development)
 export NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN=http://localhost:3000/auth/callback
