@@ -48,10 +48,10 @@ For **Local Development**:
 - `NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT=http://localhost:3000/auth/signin`
 - `NEXT_PUBLIC_OAUTH_SCOPES=email,profile,openid`
 
-For **Production** (already configured in production.env):
+For **Production** (configured for dottapps.com):
 - `NEXT_PUBLIC_COGNITO_DOMAIN=issunc`
-- `NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN=https://projectx-4bl3cb0l0-kuol-dengs-projects.vercel.app/auth/callback`
-- `NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT=https://projectx-4bl3cb0l0-kuol-dengs-projects.vercel.app/auth/signin`
+- `NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN=https://dottapps.com/auth/callback`
+- `NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT=https://dottapps.com/auth/signin`
 - `NEXT_PUBLIC_OAUTH_SCOPES=email,profile,openid`
 
 ## Files Modified
@@ -72,6 +72,12 @@ For **Production** (already configured in production.env):
 
 5. **package.json**
    - Added `dev:oauth` script
+
+6. **vercel.json**
+   - Added OAuth environment variables for Vercel deployment
+
+7. **production.env**
+   - Updated OAuth redirect URLs to use dottapps.com domain
 
 ## Testing
 
