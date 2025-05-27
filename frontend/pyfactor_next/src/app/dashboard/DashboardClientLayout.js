@@ -6,7 +6,7 @@ import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import ErrorBoundaryHandler from '@/components/ErrorBoundaryHandler';
 import { useRouter } from 'next/navigation';
-import { fetchAuthSession, signOut } from 'aws-amplify/auth';
+import { fetchAuthSession, signOut } from '@/config/amplifyUnified';
 import { SessionProvider } from '@/contexts/SessionContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { ClientDataSync } from '@/app/dashboard/DashboardClient';

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'aws-amplify/auth';
+import { signOut } from '@/config/amplifyUnified';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
 

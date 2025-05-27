@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signOut } from 'aws-amplify/auth';
+import { signOut } from '@/config/amplifyUnified';
 
 export default function AccountClosed() {
   const router = useRouter();

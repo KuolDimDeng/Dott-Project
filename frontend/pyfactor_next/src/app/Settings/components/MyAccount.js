@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from '../../dashboard/components/SubscriptionPopup';
 import { useNotification } from '@/context/NotificationContext';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes } from '@/config/amplifyUnified';
 
 const MyAccount = ({ userData }) => {
   console.log('MyAccount component rendered with userData:', userData);
