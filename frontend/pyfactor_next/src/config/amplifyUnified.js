@@ -1,7 +1,8 @@
 'use client';
 
 // Enhanced Amplify v6 configuration with network error resilience
-// Updated: Environment variables refreshed for OAuth scope fix
+// Updated: Environment variables refreshed for OAuth scope fix - Force rebuild
+// Build timestamp: 2025-01-15T17:02:00Z
 import { Amplify } from 'aws-amplify';
 
 // Try v6 imports first, fallback to v5 if needed
@@ -517,6 +518,29 @@ if (typeof window !== 'undefined') {
     
     console.log('Generated OAuth URL:', testUrl);
     return testUrl;
+  };
+  
+  // Add environment variable debug function
+  window.debugEnvVars = () => {
+    console.log('=== Environment Variables Debug ===');
+    console.log('OAUTH_SCOPES raw:', OAUTH_SCOPES);
+    console.log('COGNITO_DOMAIN:', COGNITO_DOMAIN);
+    console.log('AWS_REGION:', AWS_REGION);
+    console.log('COGNITO_CLIENT_ID:', COGNITO_CLIENT_ID);
+    console.log('Build timestamp: 2025-01-15T17:02:00Z');
+    
+    // Test scope parsing
+    const parsedScopes = getOAuthScopes();
+    console.log('Parsed scopes:', parsedScopes);
+    console.log('Expected scopes: ["openid", "profile", "email"]');
+    console.log('Scopes match expected:', JSON.stringify(parsedScopes) === JSON.stringify(['openid', 'profile', 'email']));
+    
+    return {
+      rawScopes: OAUTH_SCOPES,
+      parsedScopes,
+      expectedScopes: ['openid', 'profile', 'email'],
+      scopesCorrect: JSON.stringify(parsedScopes) === JSON.stringify(['openid', 'profile', 'email'])
+    };
   };
   
   // Add a global function to ensure Amplify is ready for OAuth
