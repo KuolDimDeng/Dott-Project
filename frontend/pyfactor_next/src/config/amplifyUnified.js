@@ -87,19 +87,55 @@ const COGNITO_USER_POOL_ID = process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us
 const AWS_REGION = process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1';
 const COGNITO_DOMAIN = process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'issunc';
 
-// OAuth environment variables
+// OAuth environment variables with fallbacks
 const OAUTH_REDIRECT_SIGN_IN = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN;
 const OAUTH_REDIRECT_SIGN_OUT = process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT;
 const OAUTH_SCOPES = process.env.NEXT_PUBLIC_OAUTH_SCOPES;
 
+// Fallback OAuth configuration for production
+const getOAuthRedirectSignIn = () => {
+  if (OAUTH_REDIRECT_SIGN_IN) return OAUTH_REDIRECT_SIGN_IN;
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (origin.includes('dottapps.com')) {
+      return 'https://dottapps.com/auth/callback';
+    }
+    return `${origin}/auth/callback`;
+  }
+  return 'http://localhost:3000/auth/callback';
+};
+
+const getOAuthRedirectSignOut = () => {
+  if (OAUTH_REDIRECT_SIGN_OUT) return OAUTH_REDIRECT_SIGN_OUT;
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin;
+    if (origin.includes('dottapps.com')) {
+      return 'https://dottapps.com/auth/signin';
+    }
+    return `${origin}/auth/signin`;
+  }
+  return 'http://localhost:3000/auth/signin';
+};
+
 // Debug environment variables
 if (typeof window !== 'undefined') {
+  console.log('[AmplifyUnified] Environment Variables Debug:', {
+    COGNITO_DOMAIN,
+    OAUTH_REDIRECT_SIGN_IN,
+    OAUTH_REDIRECT_SIGN_OUT,
+    OAUTH_SCOPES,
+    NODE_ENV: process.env.NODE_ENV,
+    currentDomain: window.location.origin,
+    allEnvVars: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_'))
+  });
+  
   logger.debug('[AmplifyUnified] Environment Variables Debug:', {
     COGNITO_DOMAIN,
     OAUTH_REDIRECT_SIGN_IN,
     OAUTH_REDIRECT_SIGN_OUT,
     OAUTH_SCOPES,
     NODE_ENV: process.env.NODE_ENV,
+    currentDomain: window.location.origin,
     allEnvVars: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_'))
   });
 }
@@ -298,8 +334,8 @@ export const configureAmplify = (forceReconfigure = false) => {
             oauth: {
               domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
               scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',').map(s => s.trim()) : ['email', 'profile', 'openid'],
-              redirectSignIn: OAUTH_REDIRECT_SIGN_IN || (typeof window !== 'undefined' ? `${window.location.origin}/auth/callback` : 'http://localhost:3000/auth/callback'),
-              redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || (typeof window !== 'undefined' ? `${window.location.origin}/auth/signin` : 'http://localhost:3000/auth/signin'),
+              redirectSignIn: getOAuthRedirectSignIn(),
+              redirectSignOut: getOAuthRedirectSignOut(),
               responseType: 'code',
               providers: ['Google']
             }
@@ -310,18 +346,21 @@ export const configureAmplify = (forceReconfigure = false) => {
     
     // Debug OAuth configuration
     if (typeof window !== 'undefined') {
-      logger.debug('[AmplifyUnified] OAuth Configuration:', {
+      const resolvedConfig = {
         domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-        scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['email', 'profile', 'openid'],
-        redirectSignIn: OAUTH_REDIRECT_SIGN_IN || `${window.location.origin}/auth/callback`,
-        redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || `${window.location.origin}/auth/signin`,
+        scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',').map(s => s.trim()) : ['email', 'profile', 'openid'],
+        redirectSignIn: getOAuthRedirectSignIn(),
+        redirectSignOut: getOAuthRedirectSignOut(),
         hasOAuthVars: {
           OAUTH_REDIRECT_SIGN_IN: !!OAUTH_REDIRECT_SIGN_IN,
           OAUTH_REDIRECT_SIGN_OUT: !!OAUTH_REDIRECT_SIGN_OUT,
           OAUTH_SCOPES: !!OAUTH_SCOPES,
           COGNITO_DOMAIN: !!COGNITO_DOMAIN
         }
-      });
+      };
+      
+      console.log('[AmplifyUnified] OAuth Configuration:', resolvedConfig);
+      logger.debug('[AmplifyUnified] OAuth Configuration:', resolvedConfig);
     }
     
     // Apply configuration

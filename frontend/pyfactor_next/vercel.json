@@ -1,5 +1,12 @@
 {
-  "buildCommand": "pnpm build:production",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "framework": "nextjs"
+  "buildCommand": "npm run build:production",
+  "env": {
+    "NEXT_PUBLIC_AWS_REGION": "us-east-1",
+    "NEXT_PUBLIC_COGNITO_USER_POOL_ID": "us-east-1_JPL8vGfb6",
+    "NEXT_PUBLIC_COGNITO_CLIENT_ID": "1o5v84mrgn4gt87khtr179uc5b",
+    "NEXT_PUBLIC_COGNITO_DOMAIN": "issunc",
+    "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN": "https://dottapps.com/auth/callback",
+    "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT": "https://dottapps.com/auth/signin",
+    "NEXT_PUBLIC_OAUTH_SCOPES": "email,profile,openid"
+  }
 }
