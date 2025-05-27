@@ -5,7 +5,7 @@ import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 import { Amplify } from 'aws-amplify';
 import { appCache } from '@/utils/awsAppCache';
 

@@ -5,7 +5,7 @@ import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 import { appCache } from '@/utils/awsAppCache';
 
 const ContactsPage = () => {
