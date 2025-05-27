@@ -25,7 +25,7 @@ const AuthLayout = ({
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-gray-50 to-stone-50">
       <div className="flex min-h-screen">
         {/* Left Side - Informational Content */}
-        <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-slate-800 via-slate-700 to-gray-800 relative overflow-hidden">
+        <div className="hidden lg:flex lg:w-2/5 bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900 relative overflow-hidden">
           {/* Modern Background Pattern */}
           <div className="absolute inset-0">
             {/* Subtle geometric pattern */}
@@ -41,7 +41,7 @@ const AuthLayout = ({
             </div>
             
             {/* Elegant gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800/90 via-slate-700/95 to-gray-800/90"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-blue-800/95 to-slate-900/90"></div>
             
             {/* Modern wave pattern */}
             <svg className="absolute bottom-0 left-0 w-full h-32 opacity-10" viewBox="0 0 400 100" fill="none">
@@ -71,16 +71,16 @@ const AuthLayout = ({
             {showProgress && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-slate-300">
+                  <span className="text-sm font-medium text-blue-200">
                     {t('auth.step', { defaultValue: 'Step' })} {currentStep} {t('auth.of', { defaultValue: 'of' })} {totalSteps}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-blue-300">
                     {Math.round((currentStep / totalSteps) * 100)}% complete
                   </span>
                 </div>
-                <div className="w-full bg-slate-600/30 rounded-full h-2 backdrop-blur-sm">
+                <div className="w-full bg-blue-700/30 rounded-full h-2 backdrop-blur-sm">
                   <div 
-                    className="bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full h-2 transition-all duration-700 ease-out shadow-sm"
+                    className="bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full h-2 transition-all duration-700 ease-out shadow-sm"
                     style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                   ></div>
                 </div>
@@ -93,19 +93,19 @@ const AuthLayout = ({
             </div>
 
             {/* Modern Trust Indicators */}
-            <div className="mt-8 pt-6 border-t border-slate-600/30">
+            <div className="mt-8 pt-6 border-t border-blue-700/30">
               <div className="flex items-center space-x-8 text-sm">
-                <div className="flex items-center space-x-2 text-slate-300">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center space-x-2 text-blue-200">
+                  <div className="w-8 h-8 rounded-lg bg-blue-400/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-blue-300" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <span className="font-medium">{t('auth.secure', { defaultValue: 'Bank-level Security' })}</span>
                 </div>
-                <div className="flex items-center space-x-2 text-slate-300">
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center">
-                    <svg className="w-4 h-4 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center space-x-2 text-blue-200">
+                  <div className="w-8 h-8 rounded-lg bg-cyan-400/20 flex items-center justify-center">
+                    <svg className="w-4 h-4 text-cyan-300" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   </div>
@@ -144,9 +144,9 @@ const AuthLayout = ({
                   {Math.round((currentStep / totalSteps) * 100)}% complete
                 </span>
               </div>
-              <div className="w-full bg-slate-200 rounded-full h-2">
+              <div className="w-full bg-blue-200 rounded-full h-2">
                 <div 
-                  className="bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full h-2 transition-all duration-700 ease-out"
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full h-2 transition-all duration-700 ease-out"
                   style={{ width: `${(currentStep / totalSteps) * 100}%` }}
                 ></div>
               </div>
@@ -171,17 +171,17 @@ const AuthLayout = ({
           </div>
 
           {/* Mobile Trust Indicators */}
-          <div className="lg:hidden mt-10 pt-6 border-t border-slate-200">
+          <div className="lg:hidden mt-10 pt-6 border-t border-blue-200">
             <div className="flex items-center justify-center space-x-6 text-sm">
-              <div className="flex items-center space-x-2 text-slate-500">
-                <div className="w-6 h-6 rounded-md bg-emerald-100 flex items-center justify-center">
-                  <svg className="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              <div className="flex items-center space-x-2 text-blue-600">
+                <div className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center">
+                  <svg className="w-3 h-3 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 616 0z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <span className="font-medium">{t('auth.secure', { defaultValue: 'Secure' })}</span>
               </div>
-              <div className="flex items-center space-x-2 text-slate-500">
+              <div className="flex items-center space-x-2 text-blue-600">
                 <div className="w-6 h-6 rounded-md bg-cyan-100 flex items-center justify-center">
                   <svg className="w-3 h-3 text-cyan-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />

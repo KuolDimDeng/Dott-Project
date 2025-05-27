@@ -43,7 +43,7 @@ export default function VerifyEmail() {
       <h2 className="text-4xl font-bold mb-6 text-white">
         {t('auth.verify.title', { defaultValue: 'Verify Your Email' })}
       </h2>
-      <p className="text-xl text-slate-200 mb-8 leading-relaxed">
+      <p className="text-xl text-blue-100 mb-8 leading-relaxed">
         {t('auth.verify.description', { defaultValue: "We've sent a verification code to your email. Please check your inbox and enter the code below." })}
       </p>
       
@@ -58,7 +58,7 @@ export default function VerifyEmail() {
             <div className="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/15 transition-all duration-300">
               <span className="text-white font-bold text-sm">{item.step}</span>
             </div>
-            <p className="text-slate-200 pt-2 font-medium leading-relaxed">{item.text}</p>
+            <p className="text-blue-100 pt-2 font-medium leading-relaxed">{item.text}</p>
           </div>
         ))}
       </div>
@@ -73,7 +73,7 @@ export default function VerifyEmail() {
           </div>
           <span className="text-white font-semibold">{t('auth.verify.securityTitle', { defaultValue: 'Why verify?' })}</span>
         </div>
-        <p className="text-slate-200 text-sm leading-relaxed">
+        <p className="text-blue-100 text-sm leading-relaxed">
           {t('auth.verify.securityNote', { defaultValue: 'Email verification helps us ensure your account security and prevents unauthorized access.' })}
         </p>
       </div>

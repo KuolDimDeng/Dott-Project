@@ -50,7 +50,7 @@ export default function SignUp() {
       <h2 className="text-4xl font-bold mb-6 text-white">
         {t('auth.signup.welcome', { defaultValue: 'Start Your Journey' })}
       </h2>
-      <p className="text-xl text-slate-200 mb-8 leading-relaxed">
+      <p className="text-xl text-blue-100 mb-8 leading-relaxed">
         {t('auth.signup.description', { defaultValue: 'Join thousands of businesses that trust PyFactor to manage their operations efficiently.' })}
       </p>
       
@@ -66,7 +66,7 @@ export default function SignUp() {
             <div className="flex-shrink-0 w-10 h-10 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/20 group-hover:bg-white/15 transition-all duration-300">
               <span className="text-lg">{benefit.icon}</span>
             </div>
-            <span className="text-slate-200 font-medium">{benefit.text}</span>
+            <span className="text-blue-100 font-medium">{benefit.text}</span>
           </div>
         ))}
       </div>
@@ -81,10 +81,10 @@ export default function SignUp() {
           </div>
           <span className="text-white font-semibold">+10,000 businesses</span>
         </div>
-        <p className="text-slate-200 text-sm leading-relaxed">
+        <p className="text-blue-100 text-sm leading-relaxed">
           "{t('auth.signup.testimonial', { defaultValue: 'PyFactor transformed how we manage our business operations.' })}"
         </p>
-        <div className="mt-3 text-xs text-slate-300">
+        <div className="mt-3 text-xs text-blue-200">
           — Sarah Chen, CEO at TechFlow Solutions
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function SignUp() {
       subtitle={
         <span>
           {t('auth.signup.subtitle', { defaultValue: 'Already have an account?' })}{' '}
-          <Link href="/auth/signin" className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors">
+          <Link href="/auth/signin" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
             {t('auth.signup.signIn', { defaultValue: 'Sign in here' })}
           </Link>
         </span>
