@@ -1,143 +1,107 @@
 /**
- * Currency utility functions for handling exchange rates and conversions
- **/
+ * currencyUtils.js
+ * 
+ * Utility functions for currency handling and pricing calculations
+ */
 
-// Map of language codes to their default currency codes
-export const languageToCurrencyMap = {
-  en: { code: 'USD', symbol: '$' },      // English - US Dollar
-  es: { code: 'EUR', symbol: '€' },      // Spanish - Euro
-  fr: { code: 'EUR', symbol: '€' },      // French - Euro
-  pt: { code: 'EUR', symbol: '€' },      // Portuguese - Euro
-  de: { code: 'EUR', symbol: '€' },      // German - Euro
-  zh: { code: 'CNY', symbol: '¥' },      // Chinese - Yuan
-  ar: { code: 'AED', symbol: 'د.إ' },    // Arabic - UAE Dirham
-  hi: { code: 'INR', symbol: '₹' },      // Hindi - Indian Rupee
-  ru: { code: 'RUB', symbol: '₽' },      // Russian - Ruble
-  ja: { code: 'JPY', symbol: '¥' },      // Japanese - Yen
-  sw: { code: 'KES', symbol: 'KSh' },    // Swahili - Kenyan Shilling
-  tr: { code: 'TRY', symbol: '₺' },      // Turkish - Lira
-  id: { code: 'IDR', symbol: 'Rp' },     // Indonesian - Rupiah
-  vi: { code: 'VND', symbol: '₫' },      // Vietnamese - Dong
-  nl: { code: 'EUR', symbol: '€' },      // Dutch - Euro
-  ha: { code: 'NGN', symbol: '₦' },      // Hausa - Nigerian Naira
-  yo: { code: 'NGN', symbol: '₦' },      // Yoruba - Nigerian Naira
-  am: { code: 'ETB', symbol: 'Br' },     // Amharic - Ethiopian Birr
-  zu: { code: 'ZAR', symbol: 'R' },      // Zulu - South African Rand
-  ko: { code: 'KRW', symbol: '₩' }       // Korean - Won
+import { getCurrencyForCountry, convertFromUSD, formatCurrency } from '@/services/wiseApiService';
+import { getCacheValue } from '@/utils/appCache';
+
+// Base pricing in USD
+export const BASE_PRICING_USD = {
+  basic: { monthly: 0, annual: 0 },
+  professional: { monthly: 15, annual: 15 },
+  enterprise: { monthly: 35, annual: 35 }
 };
 
 /**
- * Get currency info based on language code
- * @param {string} languageCode - The language code
- * @returns {Object} - Currency info object with code and symbol
+ * Calculate pricing for user's country with discounts
+ * @param {string} countryCode - User's country code
+ * @param {boolean} isDeveloping - Whether country is developing
+ * @returns {Promise<Object>} Pricing object with converted amounts
  */
-export function getCurrencyFromLanguage(languageCode) {
-  return languageToCurrencyMap[languageCode] || { code: 'USD', symbol: '$' };
-}
-
-// Cache for exchange rates to avoid unnecessary API calls
-let exchangeRatesCache = {
-  rates: null,
-  timestamp: 0,
-  baseCurrency: 'USD'
-};
-
-// Cache expiration time (1 hour in milliseconds)
-const CACHE_EXPIRATION = 60 * 60 * 1000;
-
-/**
- * Fetch exchange rates from the API
- * @param {string} baseCurrency - The base currency code (default: USD)
- * @returns {Promise<Object>} - Exchange rates data
- */
-export async function fetchExchangeRates(baseCurrency = 'USD') {
-  // Check if we have cached rates that are still valid
-  const now = Date.now();
-  if (
-    exchangeRatesCache.rates &&
-    exchangeRatesCache.baseCurrency === baseCurrency &&
-    now - exchangeRatesCache.timestamp < CACHE_EXPIRATION
-  ) {
-    return exchangeRatesCache.rates;
-  }
-
+export async function calculatePricingForCountry(countryCode, isDeveloping = false) {
   try {
-    const response = await fetch(`/api/exchange-rates?base=${baseCurrency}`);
+    const currency = getCurrencyForCountry(countryCode);
+    const discount = isDeveloping ? 0.5 : 1.0; // 50% discount for developing countries
     
-    if (!response.ok) {
-      throw new Error(`Failed to fetch exchange rates: ${response.status}`);
-    }
+    const pricing = {
+      currency,
+      discount: isDeveloping ? 50 : 0,
+      basic: {
+        monthly: { amount: 0, formatted: formatCurrency(0, currency) },
+        annual: { amount: 0, formatted: formatCurrency(0, currency) }
+      },
+      professional: {
+        monthly: {
+          amount: await convertFromUSD(BASE_PRICING_USD.professional.monthly * discount, currency),
+          formatted: ''
+        },
+        annual: {
+          amount: await convertFromUSD(BASE_PRICING_USD.professional.annual * discount, currency),
+          formatted: ''
+        }
+      },
+      enterprise: {
+        monthly: {
+          amount: await convertFromUSD(BASE_PRICING_USD.enterprise.monthly * discount, currency),
+          formatted: ''
+        },
+        annual: {
+          amount: await convertFromUSD(BASE_PRICING_USD.enterprise.annual * discount, currency),
+          formatted: ''
+        }
+      }
+    };
     
-    const data = await response.json();
+    // Format the amounts
+    pricing.professional.monthly.formatted = formatCurrency(pricing.professional.monthly.amount, currency);
+    pricing.professional.annual.formatted = formatCurrency(pricing.professional.annual.amount, currency);
+    pricing.enterprise.monthly.formatted = formatCurrency(pricing.enterprise.monthly.amount, currency);
+    pricing.enterprise.annual.formatted = formatCurrency(pricing.enterprise.annual.amount, currency);
     
-    if (data.result === 'success') {
-      // Update the cache
-      exchangeRatesCache = {
-        rates: data,
-        timestamp: now,
-        baseCurrency
-      };
-      
-      return data;
-    } else {
-      throw new Error(`API returned error: ${data.error || 'Unknown error'}`);
-    }
+    return pricing;
   } catch (error) {
-    console.error('Error fetching exchange rates:', error);
-    // If we have cached rates, return them even if expired
-    if (exchangeRatesCache.rates) {
-      return exchangeRatesCache.rates;
-    }
-    throw error;
+    console.error('❌ Error calculating pricing for country:', error);
+    // Return USD pricing as fallback
+    return {
+      currency: 'USD',
+      discount: 0,
+      basic: {
+        monthly: { amount: 0, formatted: '$0' },
+        annual: { amount: 0, formatted: '$0' }
+      },
+      professional: {
+        monthly: { amount: 15, formatted: '$15' },
+        annual: { amount: 15, formatted: '$15' }
+      },
+      enterprise: {
+        monthly: { amount: 35, formatted: '$35' },
+        annual: { amount: 35, formatted: '$35' }
+      }
+    };
   }
 }
 
 /**
- * Convert an amount from one currency to another
- * @param {number} amount - The amount to convert
- * @param {string} fromCurrency - The source currency code
- * @param {string} toCurrency - The target currency code
- * @returns {Promise<number>} - The converted amount
+ * Get user's current pricing based on cached country data
+ * @returns {Promise<Object>} Current pricing object
  */
-export async function convertCurrency(amount, fromCurrency = 'USD', toCurrency) {
-  if (fromCurrency === toCurrency) {
-    return amount;
-  }
+export async function getCurrentUserPricing() {
+  const country = getCacheValue('user_country') || 'US';
+  const isDeveloping = getCacheValue('user_is_developing_country') || false;
   
-  try {
-    const ratesData = await fetchExchangeRates(fromCurrency);
-    const rates = ratesData.conversion_rates;
-    
-    if (!rates[toCurrency]) {
-      throw new Error(`Exchange rate not available for ${toCurrency}`);
-    }
-    
-    return amount * rates[toCurrency];
-  } catch (error) {
-    console.error('Currency conversion error:', error);
-    // Return the original amount if conversion fails
-    return amount;
-  }
+  return await calculatePricingForCountry(country, isDeveloping);
 }
 
 /**
- * Format a currency amount according to the locale
- * @param {number} amount - The amount to format
- * @param {string} currencyCode - The currency code
- * @param {string} locale - The locale to use for formatting
- * @returns {string} - The formatted currency string
+ * Format price with proper currency symbol and discount indication
+ * @param {number} amount - Price amount
+ * @param {string} currency - Currency code
+ * @param {boolean} hasDiscount - Whether price has discount applied
+ * @returns {string} Formatted price string
  */
-export function formatCurrency(amount, currencyCode, locale = navigator.language) {
-  try {
-    return new Intl.NumberFormat(locale, {
-      style: 'currency',
-      currency: currencyCode,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    }).format(amount);
-  } catch (error) {
-    console.error('Currency formatting error:', error);
-    // Fallback to a simple format
-    return `${currencyCode} ${amount.toFixed(2)}`;
-  }
+export function formatPriceWithDiscount(amount, currency, hasDiscount = false) {
+  const formatted = formatCurrency(amount, currency);
+  return hasDiscount ? `${formatted} (50% off)` : formatted;
 }

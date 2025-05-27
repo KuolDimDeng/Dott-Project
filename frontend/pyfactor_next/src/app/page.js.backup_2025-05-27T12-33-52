@@ -4,7 +4,6 @@ import { I18nextProvider } from 'react-i18next';
 import i18nInstance from '@/i18n';
 
 import { useEffect } from 'react';
-import { initializeCountryDetection } from '@/services/countryDetectionService';
 import AppBar from '@/app/components/AppBar';
 import Hero from '@/app/components/Hero';
 import Features from '@/app/components/Features';
@@ -34,17 +33,6 @@ const clearTenantData = () => {
 export default function Home() {
   // Run the cleanup on page load
   useEffect(() => {
-    // Initialize country detection for dynamic pricing and language
-    async function initCountryDetection() {
-      try {
-        const { country, language, isDeveloping } = await initializeCountryDetection();
-        console.log('✅ Country detection initialized:', { country, language, isDeveloping });
-      } catch (error) {
-        console.error('❌ Error initializing country detection:', error);
-      }
-    }
-    
-    initCountryDetection();
     const urlParams = new URLSearchParams(window.location.search);
     const isReset = urlParams.get('reset') === 'true';
     

@@ -152,33 +152,6 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Requirements Addressed**: Conditions 6, 9, 11, 12, 17, 19, 22, 28
 
 
-
-### Version0032_implement_country_detection_dynamic_pricing.mjs
-- **Version**: 0032 v1.0
-- **Purpose**: Implement intelligent country detection, language auto-selection, and dynamic pricing with Wise API integration
-- **Status**: ✅ EXECUTED SUCCESSFULLY
-- **Creation Date**: 2025-05-27
-- **Target Files**: 
-  - /src/services/countryDetectionService.js (created country detection service)
-  - /src/services/wiseApiService.js (created Wise API integration)
-  - /src/utils/currencyUtils.js (created currency utilities)
-  - /src/app/components/Pricing.js (enhanced with dynamic pricing)
-  - /src/app/page.js (added country detection initialization)
-  - /src/i18n.js (enhanced with country-based language detection)
-- **Description**: Implements automatic country detection, language selection for English-speaking countries, dynamic currency pricing with real-time exchange rates, and 50% discount for developing countries
-- **Key Features**:
-  - Multi-method country detection (IP, timezone, language)
-  - Automatic language selection for English-speaking countries
-  - Dynamic pricing in local currency using Wise API
-  - 50% discount for developing countries (100+ countries)
-  - Real-time exchange rate conversion
-  - Cognito integration for user preferences
-  - AppCache for performance optimization
-  - Comprehensive fallback mechanisms
-- **Base Pricing**: Basic (FREE), Professional ($15 USD), Enterprise ($35 USD)
-- **Requirements Addressed**: Conditions 6, 7, 9, 12, 17, 22, 25, 28
-
-
 ### Version0031_fix_language_menu_comprehensive.mjs
 - **Version**: 0031 v1.0
 - **Purpose**: Fix language menu functionality on home page by adding all 20 supported languages and integrating proper Cognito attribute storage

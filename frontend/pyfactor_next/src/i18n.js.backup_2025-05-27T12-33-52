@@ -5,7 +5,6 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
 import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
-import { getLanguageForCountry } from '@/services/countryDetectionService';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Import translation resources for all languages
@@ -153,7 +152,7 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       ns: ['common', 'onboarding'],
       defaultNS: 'common',
       detection: {
-        order: ['cognitoDetector', 'countryDetector', 'navigator', 'htmlTag'],
+        order: ['cognitoDetector', 'navigator', 'htmlTag'],
         lookupFromPathIndex: 0,
         checkWhitelist: true,
         caches: [], // Removed 'localStorage' and 'cookie' from caches
@@ -166,37 +165,8 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       },
     });
 
-  
-// Create custom country-based language detector
-const countryDetector = {
-  name: 'countryDetector',
-  
-  lookup() {
-    try {
-      // Get country from cache if available
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        const country = window.__APP_CACHE.user_country;
-        if (country) {
-          const language = getLanguageForCountry(country);
-          console.log(`🌍 Country detector: ${country} -> ${language}`);
-          return language;
-        }
-      }
-    } catch (error) {
-      console.error('❌ Country language detector error:', error);
-    }
-    return null;
-  },
-  
-  cacheUserLanguage(lng) {
-    // This will be called by i18next when language changes
-    console.log(`🌍 Country detector caching language: ${lng}`);
-  }
-};
-
-  // Register the custom detectors
+  // Register the custom Cognito detector
   i18nInstance.services.languageDetector.addDetector(cognitoDetector);
-  i18nInstance.services.languageDetector.addDetector(countryDetector);
 
   // Add a language change listener to force re-render of components
   i18nInstance.on('languageChanged', async (lng) => {
