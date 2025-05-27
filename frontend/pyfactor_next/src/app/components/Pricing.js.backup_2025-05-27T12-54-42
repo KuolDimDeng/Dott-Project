@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
 import { getCacheValue } from '@/utils/appCache';
-import { debugCacheState, forceRefreshCountryDetection } from '@/utils/cacheCleaner';
 import Link from 'next/link';
 
 export default function Pricing() {
@@ -18,30 +17,15 @@ export default function Pricing() {
   useEffect(() => {
     async function loadDynamicPricing() {
       try {
-        // Debug current cache state
-        console.log('🔍 Debug: Current cache state before loading pricing:');
-        debugCacheState();
-        
         const pricing = await getCurrentUserPricing();
         const country = getCacheValue('user_country') || 'US';
         const isDeveloping = getCacheValue('user_is_developing_country') || false;
-        
-        // Special check for USA - should NEVER have discount
-        if (country === 'US' && isDeveloping) {
-          console.warn('⚠️ WARNING: USA incorrectly marked as developing country! Forcing refresh...');
-          const refreshResult = await forceRefreshCountryDetection();
-          setDynamicPricing(await getCurrentUserPricing());
-          setUserCountry(refreshResult.country);
-          setHasDiscount(refreshResult.isDeveloping);
-          console.log('✅ Fixed USA discount issue:', refreshResult);
-          return;
-        }
         
         setDynamicPricing(pricing);
         setUserCountry(country);
         setHasDiscount(isDeveloping);
         
-        console.log('✅ Loaded dynamic pricing:', { pricing, country, isDeveloping, hasDiscount: isDeveloping });
+        console.log('✅ Loaded dynamic pricing:', { pricing, country, isDeveloping });
       } catch (error) {
         console.error('❌ Error loading dynamic pricing:', error);
       }
