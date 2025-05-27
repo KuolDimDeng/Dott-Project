@@ -325,6 +325,25 @@ export function UserProfileProvider({ children }) {
     // Generate a unique request ID
     const requestId = `profile_${tenantId || 'default'}_${Date.now()}`;
     
+    // Check if we're on a public page that doesn't need authentication
+    const isPublicPage = () => {
+      if (typeof window === 'undefined') return false;
+      const path = window.location.pathname;
+      const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
+      return publicPaths.includes(path) || path.startsWith('/auth/');
+    };
+    
+    // If we're on a public page, don't make API calls
+    if (isPublicPage()) {
+      logger.debug('[UserProfileContext] Skipping profile fetch on public page');
+      setProfileCache(prev => ({
+        ...prev,
+        loading: false,
+        error: null
+      }));
+      return null;
+    }
+    
     // If we're in sign-up flow, use minimal profile
     const inSignUpFlow = isInSignUpFlow();
     if (inSignUpFlow) {
@@ -612,12 +631,22 @@ export function UserProfileProvider({ children }) {
   
   // Fetch profile data on mount to ensure it's always available (optimized with deduplication)
   useEffect(() => {
+    // Check if we're on a public page that doesn't need authentication
+    const isPublicPage = () => {
+      if (typeof window === 'undefined') return false;
+      const path = window.location.pathname;
+      const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
+      return publicPaths.includes(path) || path.startsWith('/auth/');
+    };
+    
     // Check if we're in a sign-up flow where profile fetching should be minimal
     const inSignUpFlow = isInSignUpFlow();
     
-    // Skip if we're in sign-up flow or already have data
-    if (inSignUpFlow || profileCache.data || profileCache.loading) {
-      if (inSignUpFlow) {
+    // Skip if we're on a public page, in sign-up flow, or already have data
+    if (isPublicPage() || inSignUpFlow || profileCache.data || profileCache.loading) {
+      if (isPublicPage()) {
+        logger.debug('[UserProfileContext] On public page, skipping initial profile fetch');
+      } else if (inSignUpFlow) {
         logger.debug('[UserProfileContext] In sign-up flow, skipping initial profile fetch');
       }
       return;

@@ -159,10 +159,10 @@ export default function Providers({ children }) {
     );
   }
   
-  // Don't render until mounted to avoid hydration issues
-  if (!mounted) {
-    return null;
-  }
+  // Render immediately to avoid blank page - hydration issues are handled by error boundaries
+  // if (!mounted) {
+  //   return null;
+  // }
   
   return (
     <ComponentErrorBoundary componentName="CookiesProvider">
