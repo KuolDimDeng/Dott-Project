@@ -167,8 +167,6 @@ function CrispChat({ isAuthenticated }) {
       document.head.appendChild(style);
       logger.debug('Added custom CSS to control Crisp z-index with config values');
 
-      window.$crisp = [];
-      
       // Get website ID from config (with environment variable override)
       const CRISP_WEBSITE_ID = process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID || crispConfig.websiteId;
       
@@ -185,43 +183,43 @@ function CrispChat({ isAuthenticated }) {
         return;
       }
       
-      // Set the website ID globally for Crisp
+      // Initialize Crisp following the official pattern
+      window.$crisp = [];
       window.CRISP_WEBSITE_ID = CRISP_WEBSITE_ID;
 
-      const existingScript = document.querySelector(
-        'script[src="https://client.crisp.chat/l.js"]'
-      );
+      // Load Crisp script following the official pattern
+      const existingScript = document.querySelector('script[src="https://client.crisp.chat/l.js"]');
       if (!existingScript) {
-        const script = document.createElement('script');
-        script.src = 'https://client.crisp.chat/l.js';
-        script.async = true;
+        logger.debug('Loading Crisp script with website ID:', CRISP_WEBSITE_ID);
         
-        // Add a delay before initializing to ensure the script has time to load properly
-        script.onload = () => {
-          logger.debug('Crisp script loaded successfully, waiting before initialization');
+        // Use the exact pattern from Crisp's official code
+        const d = document;
+        const s = d.createElement('script');
+        s.src = 'https://client.crisp.chat/l.js';
+        s.async = 1;
+        
+        s.onload = () => {
+          logger.debug('Crisp script loaded successfully, initializing...');
           setTimeout(initializeCrisp, crispConfig.delays.initDelay);
         };
         
-        script.onerror = (error) => {
+        s.onerror = (error) => {
           logger.error('Failed to load Crisp script:', error);
-          // Attempt to reload after a delay
           setTimeout(() => {
-            logger.debug('Attempting to reload Crisp script after failure');
+            logger.debug('Retrying Crisp script load...');
             const retryScript = document.createElement('script');
             retryScript.src = 'https://client.crisp.chat/l.js';
-            retryScript.async = true;
-            retryScript.onload = initializeCrisp;
+            retryScript.async = 1;
+            retryScript.onload = () => setTimeout(initializeCrisp, crispConfig.delays.initDelay);
             document.head.appendChild(retryScript);
           }, crispConfig.delays.retryDelay);
         };
         
-        document.head.appendChild(script);
+        d.getElementsByTagName('head')[0].appendChild(s);
         logger.debug('Crisp script appended to head');
       } else {
-        logger.debug('Crisp script already exists');
-        // Only initialize if Crisp is not already initialized
+        logger.debug('Crisp script already exists, checking initialization...');
         if (!window.$crisp?.is) {
-          // Add a delay before initializing to ensure the script is fully loaded
           setTimeout(initializeCrisp, crispConfig.delays.initDelay);
         }
       }
