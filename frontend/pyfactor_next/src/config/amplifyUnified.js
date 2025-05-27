@@ -2,7 +2,7 @@
 
 // Enhanced Amplify v6 configuration with network error resilience
 // Updated: Environment variables refreshed for OAuth scope fix - Force rebuild
-// Build timestamp: 2025-01-15T17:02:00Z
+// Build timestamp: 2025-01-15T17:15:00Z - OAuth scopes fix: array to string conversion
 import { Amplify } from 'aws-amplify';
 
 // Try v6 imports first, fallback to v5 if needed
@@ -408,7 +408,7 @@ export const configureAmplify = (forceReconfigure = false) => {
     // Always include OAuth configuration, even if environment variables are missing
     const oauthConfig = {
       domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-      scopes: getOAuthScopes(),
+      scopes: getOAuthScopes().join(' '),
       redirectSignIn: getOAuthRedirectSignIn(),
       redirectSignOut: getOAuthRedirectSignOut(),
       responseType: 'code',
@@ -434,9 +434,14 @@ export const configureAmplify = (forceReconfigure = false) => {
     
     // Debug OAuth configuration
     if (typeof window !== 'undefined') {
+      const scopesArray = getOAuthScopes();
+      const scopesString = scopesArray.join(' ');
+      
       const resolvedConfig = {
         domain: oauthConfig.domain,
         scopes: oauthConfig.scopes,
+        scopesArray: scopesArray,
+        scopesString: scopesString,
         redirectSignIn: oauthConfig.redirectSignIn,
         redirectSignOut: oauthConfig.redirectSignOut,
         hasOAuthVars: {
@@ -527,7 +532,7 @@ if (typeof window !== 'undefined') {
     console.log('COGNITO_DOMAIN:', COGNITO_DOMAIN);
     console.log('AWS_REGION:', AWS_REGION);
     console.log('COGNITO_CLIENT_ID:', COGNITO_CLIENT_ID);
-    console.log('Build timestamp: 2025-01-15T17:02:00Z');
+    console.log('Build timestamp: 2025-01-15T17:15:00Z - OAuth scopes fix: array to string conversion');
     
     // Test scope parsing
     const parsedScopes = getOAuthScopes();
