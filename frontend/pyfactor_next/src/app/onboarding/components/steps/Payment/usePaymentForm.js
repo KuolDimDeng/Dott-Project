@@ -177,7 +177,7 @@ export const usePaymentForm = () => {
       // Directly update Cognito attributes to ensure they are properly set
       try {
         // Import updateUserAttributes
-        const { updateUserAttributes } = await import('aws-amplify/auth');
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         
         // Prepare the attributes to update
         const userAttributes = {

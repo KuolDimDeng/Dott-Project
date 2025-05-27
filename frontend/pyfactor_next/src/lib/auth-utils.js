@@ -14,7 +14,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
+import { getCurrentUser, fetchAuthSession  } from '@/config/amplifyUnified';
 import CognitoAttributes from '@/utils/CognitoAttributes';
 import { logger } from '@/utils/logger';
 import { 

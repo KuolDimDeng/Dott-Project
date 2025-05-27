@@ -5,7 +5,7 @@
  * Uses AppCache for better performance with Cognito for persistence
  */
 
-import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes, updateUserAttributes  } from '@/config/amplifyUnified';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 

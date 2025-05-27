@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { ONBOARDING_STATES } from '@/app/onboarding/state/OnboardingStateManager';
-import { fetchAuthSession, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';

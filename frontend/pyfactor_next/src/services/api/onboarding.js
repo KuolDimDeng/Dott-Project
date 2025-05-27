@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { refreshUserSession } from '@/utils/refreshUserSession';
 

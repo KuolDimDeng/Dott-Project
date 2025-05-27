@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
 import CrispChat from './CrispChat';
 import { logger } from '@/utils/logger';
 

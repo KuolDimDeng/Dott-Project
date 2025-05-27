@@ -632,7 +632,7 @@ export async function resilientUpdateUserAttributes(params) {
       }
       
       // Import on-demand to avoid SSR issues
-      const { updateUserAttributes } = await import('aws-amplify/auth');
+      const { updateUserAttributes } = await import('@/config/amplifyUnified');
       
       // Call the actual updateUserAttributes function
       await updateUserAttributes(filteredParams);

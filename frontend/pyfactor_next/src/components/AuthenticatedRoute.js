@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import LoadingScreen from '@/components/LoadingScreen';
 

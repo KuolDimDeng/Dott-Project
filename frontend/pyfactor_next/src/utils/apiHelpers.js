@@ -43,7 +43,7 @@ export const getApiHeaders = async () => {
     if (typeof window !== 'undefined') {
       try {
         // Dynamically import to avoid server-side errors
-        const { fetchAuthSession } = await import('aws-amplify/auth');
+        const { fetchAuthSession } = await import('@/config/amplifyUnified');
         const session = await fetchAuthSession();
         
         if (session?.tokens?.idToken) {

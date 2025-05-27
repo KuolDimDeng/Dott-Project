@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
 import CrispErrorBoundary from './CrispErrorBoundary';
 
 function CrispChat({ isAuthenticated }) {

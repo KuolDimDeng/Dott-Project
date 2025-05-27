@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from './logger';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
 
@@ -48,7 +48,7 @@ export async function completeOnboarding() {
     logger.debug(`[completeOnboarding:${requestId}] Attempting direct Amplify update`);
     
     // Dynamically import to avoid SSR issues
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Make the API call
     await updateUserAttributes({ userAttributes });

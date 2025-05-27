@@ -1,4 +1,4 @@
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { generateClient } from 'aws-amplify/api';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';

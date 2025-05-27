@@ -245,7 +245,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       // Trigger attribute update in the background
       try {
         setTimeout(async () => {
-          const { updateUserAttributes } = await import('aws-amplify/auth');
+          const { updateUserAttributes } = await import('@/config/amplifyUnified');
           await updateUserAttributes({
             userAttributes: {
               'custom:onboarding': 'complete',
@@ -529,7 +529,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
       
       try {
         // Import required function
-        const { updateUserAttributes } = await import('aws-amplify/auth');
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         
         // Update the attributes
         await updateUserAttributes({
@@ -753,7 +753,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           // Trigger attribute update in the background
           setTimeout(async () => {
             try {
-              const { updateUserAttributes } = await import('aws-amplify/auth');
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
               await updateUserAttributes({
                 userAttributes: {
                   'custom:onboarding': 'complete',

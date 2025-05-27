@@ -2,7 +2,7 @@
  * Cognito utility functions for managing user attributes and onboarding state
  */
 
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 

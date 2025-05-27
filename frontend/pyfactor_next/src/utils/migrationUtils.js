@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
-import { getCurrentUser, fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
+import { getCurrentUser, fetchUserAttributes, updateUserAttributes  } from '@/config/amplifyUnified';
 import { removeCacheValue, setCacheValue } from './appCache';
 import { resilientUpdateUserAttributes } from './amplifyResiliency';
 

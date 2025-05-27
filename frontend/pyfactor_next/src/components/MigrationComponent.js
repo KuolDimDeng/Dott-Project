@@ -117,7 +117,7 @@ export async function migrateToSingleTruthSource() {
     logger.info('[migrateToSingleTruthSource] Starting data migration to Cognito');
     
     // Import Cognito utilities
-    const { fetchUserAttributes, updateUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes, updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get current Cognito attributes
     const attributes = await fetchUserAttributes();

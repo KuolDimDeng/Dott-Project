@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 import { tokenService } from '@/services/tokenService';
 import { getTenantIdFromCognito, setTenantId } from '@/utils/tenantUtils';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { SafeHub } from '@/utils/safeHub';
 
 /**

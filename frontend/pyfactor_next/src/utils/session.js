@@ -1,4 +1,4 @@
-import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
+import { getCurrentUser, fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from './logger';
 
 /**

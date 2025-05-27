@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 
 const ONBOARDING_STEPS = {

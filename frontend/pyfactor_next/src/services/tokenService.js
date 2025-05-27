@@ -2,7 +2,7 @@
 
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
-import { fetchAuthSession, signOut } from 'aws-amplify/auth';
+import { fetchAuthSession, signOut  } from '@/config/amplifyUnified';
 
 // Token cache keys
 const TOKEN_CACHE_KEY = 'auth_tokens';

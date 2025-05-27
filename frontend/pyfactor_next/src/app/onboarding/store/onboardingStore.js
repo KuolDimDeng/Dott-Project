@@ -2,7 +2,7 @@
 'use client';
 
 import { create } from 'zustand';
-import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
 import { setCacheValue } from '@/utils/appCache';

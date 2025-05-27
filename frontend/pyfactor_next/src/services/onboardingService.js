@@ -1,6 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/services/onboardingService.js
 import { logger } from '@/utils/logger';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { refreshUserSession } from '@/utils/refreshUserSession';
 
 const BASE_URL = '/api/onboarding'
@@ -749,7 +749,7 @@ export const onboardingService = {
       logger.debug('[OnboardingService] Updating onboarding status:', updates);
       
       // Import dynamically to avoid SSR issues
-      const { updateUserAttributes } = await import('aws-amplify/auth');
+      const { updateUserAttributes } = await import('@/config/amplifyUnified');
       
       // Prepare the attribute updates
       const userAttributes = {};

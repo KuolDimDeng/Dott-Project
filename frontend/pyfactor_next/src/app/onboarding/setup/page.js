@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { refreshUserSession } from '@/utils/auth';
 import { updateOnboardingStep } from '@/utils/onboardingUtils';
 import { completeOnboarding } from '@/utils/onboardingUtils';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 import CompletionStep from './components/CompletionStep';
 import { ArrowPathIcon, ExclamationTriangleIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { setCacheValue } from '@/utils/appCache';

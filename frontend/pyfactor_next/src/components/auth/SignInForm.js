@@ -192,7 +192,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   // Replace the setOnboardingCookies function with a function that updates Cognito
   const updateOnboardingStatusInCognito = async (status, isComplete = false) => {
     try {
-      const { updateUserAttributes } = await import('aws-amplify/auth');
+      const { updateUserAttributes } = await import('@/config/amplifyUnified');
       
       // Normalize status to standard format
       const normalizedStatus = status.toLowerCase().replace(/-/g, '_');
@@ -585,7 +585,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
           // Create an async IIFE to support await
           (async () => {
             try {
-              const { updateUserAttributes } = await import('aws-amplify/auth');
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
               updateUserAttributes({
                 userAttributes: {
                   'custom:tenant_ID': fallback,

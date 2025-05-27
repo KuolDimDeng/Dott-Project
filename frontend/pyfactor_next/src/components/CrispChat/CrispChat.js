@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
 import CognitoAttributes from '@/utils/CognitoAttributes';
 import CrispErrorBoundary from './CrispErrorBoundary';
 import crispConfig from '@/config/crisp.config';

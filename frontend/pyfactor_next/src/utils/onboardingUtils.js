@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
 import { jwtDecode } from 'jwt-decode';
@@ -460,7 +460,7 @@ export const getCurrentOnboardingStep = async () => {
 export async function getBusinessInfo() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes from Cognito
     const attributes = await fetchUserAttributes();

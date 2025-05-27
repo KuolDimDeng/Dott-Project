@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { resilientUpdateUserAttributes } from './amplifyResiliency';
 

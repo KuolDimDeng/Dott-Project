@@ -1,4 +1,4 @@
-import { fetchAuthSession, getCurrentUser, signOut } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, signOut  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 import { setCacheValue, getCacheValue } from './appCache';

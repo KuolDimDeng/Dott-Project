@@ -3,8 +3,8 @@
  * Handles tenant-related operations and storage
  */
 
-import { getCurrentUser } from 'aws-amplify/auth';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { Cache as cache } from '@aws-amplify/core';
 
 // Constants
@@ -287,7 +287,7 @@ export const fixOnboardingStatusCase = (status) => {
 export const updateTenantIdInCognito = async (tenantId) => {
   try {
     // In Amplify v6, updateUserAttributes is a separate function import, not a method on user
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Call the standalone function with userAttributes object
     await updateUserAttributes({
@@ -441,7 +441,7 @@ export const getTenantHeaders = async () => {
     
     // Try to get user ID if available
     try {
-      const { getCurrentUser } = await import('aws-amplify/auth');
+      const { getCurrentUser } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       if (user && user.userId) {
         headers['x-user-id'] = user.userId;

@@ -388,7 +388,7 @@ axiosInstance.interceptors.request.use(
         try {
           // Dynamically import client-side only modules
           const { getTenantId } = await import('@/utils/tenantUtils');
-          const { fetchAuthSession } = await import('aws-amplify/auth');
+          const { fetchAuthSession } = await import('@/config/amplifyUnified');
           
           // Use AWS AppCache for tenant ID - prioritize this over other sources
           if (window.__APP_CACHE?.tenant?.id) {

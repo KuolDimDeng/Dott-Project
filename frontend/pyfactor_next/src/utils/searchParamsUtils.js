@@ -43,7 +43,7 @@ export function useSafeSearchParams() {
             // If still no tenant ID, try to get it from Cognito
             if (!urlParams.tenantId) {
               try {
-                const { fetchUserAttributes } = await import('aws-amplify/auth');
+                const { fetchUserAttributes } = await import('@/config/amplifyUnified');
                 const userAttributes = await fetchUserAttributes();
                 const cognitoTenantId = userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid'];
                 

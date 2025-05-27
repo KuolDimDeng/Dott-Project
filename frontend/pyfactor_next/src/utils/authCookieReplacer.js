@@ -11,7 +11,7 @@ import { resilientUpdateUserAttributes } from './amplifyResiliency';
 export async function getAuthTokens() {
   try {
     // Import auth utilities
-    const { fetchAuthSession } = await import('aws-amplify/auth');
+    const { fetchAuthSession } = await import('@/config/amplifyUnified');
     
     // Get current session
     const session = await fetchAuthSession();
@@ -41,7 +41,7 @@ export async function getAuthTokens() {
 export async function getUserEmail() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     const attributes = await fetchUserAttributes();
@@ -60,7 +60,7 @@ export async function getUserEmail() {
 export async function getUserName() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     const attributes = await fetchUserAttributes();
@@ -83,7 +83,7 @@ export async function getUserName() {
 export async function getBusinessName() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     const attributes = await fetchUserAttributes();
@@ -102,7 +102,7 @@ export async function getBusinessName() {
 export async function getBusinessType() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     const attributes = await fetchUserAttributes();
@@ -121,7 +121,7 @@ export async function getBusinessType() {
 export async function signOut() {
   try {
     // Import auth utilities
-    const { signOut } = await import('aws-amplify/auth');
+    const { signOut } = await import('@/config/amplifyUnified');
     
     // Sign out completely
     await signOut({ global: true });
@@ -141,7 +141,7 @@ export async function signOut() {
 export async function isAuthenticated() {
   try {
     // Import auth utilities
-    const { getCurrentUser } = await import('aws-amplify/auth');
+    const { getCurrentUser } = await import('@/config/amplifyUnified');
     
     // Attempt to get current user - will throw if not authenticated
     const user = await getCurrentUser();
@@ -160,7 +160,7 @@ export async function isAuthenticated() {
 export async function getCurrentUser() {
   try {
     // Import auth utilities
-    const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth');
+    const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Attempt to get current user - will throw if not authenticated
     const user = await getCurrentUser();
@@ -192,7 +192,7 @@ export async function getCurrentUser() {
 export async function getAllUserAttributes() {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     return await fetchUserAttributes();

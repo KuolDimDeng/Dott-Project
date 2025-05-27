@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { isPublicRoute } from '@/lib/authUtils';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { refreshUserSession } from '@/utils/refreshUserSession';
 import { initializeTenant } from '@/utils/tenantUtils';
 import { initializeTenantContext } from '@/utils/tenantContext';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setCacheValue, getCacheValue } from '@/utils/appCache';
 import { getTokens, storeTokens, areTokensExpired } from '@/utils/tokenManager';

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { useSession } from '@/hooks/useSession';
 import { useOnboardingPolling } from '@/hooks/useOnboardingPolling';

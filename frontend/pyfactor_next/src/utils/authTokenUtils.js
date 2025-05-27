@@ -2,7 +2,7 @@
  * Auth token utilities for managing tokens and checking expiration
  */
 
-import { fetchAuthSession, fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 

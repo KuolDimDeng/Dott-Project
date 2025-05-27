@@ -5,7 +5,7 @@ import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Helper function to get a cookie by name
 const getCookie = (name) => {

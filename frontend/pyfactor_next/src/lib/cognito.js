@@ -1,10 +1,9 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/lib/cognito.js
-import { 
-  getCurrentUser,
+import { getCurrentUser,
   fetchAuthSession,
   updateUserAttributes as amplifyUpdateAttributes,
   fetchUserAttributes
-} from 'aws-amplify/auth';
+ } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { cookies } from 'next/headers';
 import { isServerSide } from '@/utils/env-helpers';

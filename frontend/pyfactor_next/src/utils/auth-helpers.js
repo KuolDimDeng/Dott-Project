@@ -4,7 +4,7 @@
  */
 import { cookies } from 'next/headers';
 import { logger } from './logger-stub';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Create logger for this module
 const log = logger;

@@ -30,7 +30,7 @@ export async function getAccessToken() {
 async function getClientAccessToken() {
   try {
     // Get token from Auth service
-    const { fetchAuthSession } = await import('aws-amplify/auth');
+    const { fetchAuthSession } = await import('@/config/amplifyUnified');
     const session = await fetchAuthSession();
     
     if (!session || !session.tokens) {
@@ -88,7 +88,7 @@ export async function getIdToken() {
 async function getClientIdToken() {
   try {
     // Import auth utilities
-    const { fetchAuthSession } = await import('aws-amplify/auth');
+    const { fetchAuthSession } = await import('@/config/amplifyUnified');
     
     // Get current session
     const session = await fetchAuthSession();
@@ -137,7 +137,7 @@ export function setTokens(tokens) {
 export async function clearTokens() {
   try {
     // Import auth utilities
-    const { signOut } = await import('aws-amplify/auth');
+    const { signOut } = await import('@/config/amplifyUnified');
     
     // Sign out completely
     await signOut({ global: true });

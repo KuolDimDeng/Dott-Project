@@ -130,7 +130,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     try {
       console.log('[DashboardLoader] Refreshing auth session');
       // Dynamically import to support SSR
-      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const { fetchAuthSession } = await import('@/config/amplifyUnified');
       const session = await fetchAuthSession({ forceRefresh: true });
       
       // Store the tokens in APP_CACHE for resilience

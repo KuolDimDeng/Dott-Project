@@ -1,6 +1,6 @@
 'use client';
 
-import { updateUserAttributes as amplifyUpdateAttributes, fetchAuthSession } from 'aws-amplify/auth';
+import { updateUserAttributes as amplifyUpdateAttributes, fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { getFallbackTenantId, storeReliableTenantId } from './tenantFallback';
 import { 
@@ -10,7 +10,7 @@ import {
   cacheUserAttributes
 } from './amplifyResiliency';
 import { getCacheValue, setCacheValue } from './appCache';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes  } from '@/config/amplifyUnified';
 
 // Define a list of allowed attributes that users can modify
 // This will be used as a fallback when the standard update fails

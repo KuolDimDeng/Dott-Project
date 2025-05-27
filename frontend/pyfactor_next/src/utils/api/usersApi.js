@@ -6,7 +6,7 @@
 
 import axios from 'axios';
 import { logger } from '@/utils/logger';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 /**
  * Create an axios instance for users API

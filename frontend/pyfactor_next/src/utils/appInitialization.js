@@ -53,7 +53,7 @@ export async function initializeApp() {
 async function checkAuthentication() {
   try {
     // Import auth utilities
-    const { getCurrentUser } = await import('aws-amplify/auth');
+    const { getCurrentUser } = await import('@/config/amplifyUnified');
     
     // Attempt to get current user - will throw if not authenticated
     const user = await getCurrentUser();

@@ -7,7 +7,7 @@ import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
 import userService from './userService';
 import { getTenantHeaders } from '@/utils/tenantUtils';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 // Add initialization of global app cache after imports

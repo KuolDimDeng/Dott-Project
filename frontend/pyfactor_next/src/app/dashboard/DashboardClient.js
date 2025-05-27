@@ -5,7 +5,7 @@ import { logger } from '@/utils/logger';
 import DashboardWrapper from './DashboardWrapper';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { COOKIE_NAMES, ONBOARDING_STATUS } from '@/constants/onboarding';
-import { fetchAuthSession, fetchUserAttributes } from '@aws-amplify/auth';
+import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
 import dynamic from 'next/dynamic';
 import React from 'react';
 import DashboardLoader from '@/components/DashboardLoader';
@@ -31,7 +31,7 @@ function checkForUserOnboardingData() {
     // Check Cognito attributes first
     return new Promise(async (resolve) => {
       try {
-        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
         const userAttributes = await fetchUserAttributes();
         
         // Check for business name in user attributes
@@ -59,7 +59,7 @@ function checkForUserOnboardingData() {
 function getUserBusinessName() {
   return new Promise(async (resolve) => {
     try {
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const userAttributes = await fetchUserAttributes();
       
       // Try to get business name from Cognito attributes
@@ -77,7 +77,7 @@ function getUserBusinessName() {
 function getUserBusinessType() {
   return new Promise(async (resolve) => {
     try {
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const userAttributes = await fetchUserAttributes();
       
       // Try to get business type from Cognito attributes
@@ -165,7 +165,7 @@ const syncTenantIDs = async (isAuthFlow = false) => {
     let cognitoTenantId = null;
     
     try {
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const userAttributes = await fetchUserAttributes();
       cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
       
@@ -200,7 +200,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
     
     // First try to get tenant directly from Cognito attributes
     try {
-      const { fetchUserAttributes, fetchAuthSession } = await import('aws-amplify/auth');
+      const { fetchUserAttributes, fetchAuthSession } = await import('@/config/amplifyUnified');
       
       // Get the user attributes directly from Cognito
       const userAttributes = await fetchUserAttributes();
@@ -220,7 +220,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
     
     try {
       // Try to get the session for auth
-      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const { fetchAuthSession } = await import('@/config/amplifyUnified');
       const session = await fetchAuthSession();
       if (session?.tokens?.idToken) {
         headers['Authorization'] = `Bearer ${session.tokens.idToken.toString()}`;
@@ -254,7 +254,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
             
             // Save this to Cognito attributes for future use
             try {
-              const { updateUserAttributes } = await import('aws-amplify/auth');
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
               await updateUserAttributes({
                 userAttributes: {
                   'custom:businessid': fallbackData.tenantId
@@ -280,7 +280,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
       
       // Save this to Cognito attributes for future use
       try {
-        const { updateUserAttributes } = await import('aws-amplify/auth');
+        const { updateUserAttributes } = await import('@/config/amplifyUnified');
         await updateUserAttributes({
           userAttributes: {
             'custom:businessid': data.tenantId
@@ -485,7 +485,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       async function getBestBusinessName() {
         try {
           // Try to get business name from Cognito attributes
-          const { fetchUserAttributes } = await import('aws-amplify/auth');
+          const { fetchUserAttributes } = await import('@/config/amplifyUnified');
           const userAttributes = await fetchUserAttributes();
           
           // Look for business name in custom attributes
@@ -633,7 +633,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       
       try {
         // Check Cognito identity and attributes
-        const { fetchAuthSession, fetchUserAttributes } = await import('aws-amplify/auth');
+        const { fetchAuthSession, fetchUserAttributes } = await import('@/config/amplifyUnified');
         
         try {
           // Get Cognito session
@@ -667,7 +667,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
             
             if (tenantId) {
               // Update Cognito with the tenant ID
-              const { updateUserAttributes } = await import('aws-amplify/auth');
+              const { updateUserAttributes } = await import('@/config/amplifyUnified');
               await updateUserAttributes({
                 userAttributes: {
                   'custom:tenant_ID': tenantId,
@@ -749,7 +749,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       let tenantId = null;
       
       try {
-        const { fetchUserAttributes } = await import('aws-amplify/auth');
+        const { fetchUserAttributes } = await import('@/config/amplifyUnified');
         const userAttributes = await fetchUserAttributes();
         tenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
         
@@ -816,7 +816,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
         let cognitoTenantId = null;
         
         try {
-          const { fetchUserAttributes } = await import('aws-amplify/auth');
+          const { fetchUserAttributes } = await import('@/config/amplifyUnified');
           const userAttributes = await fetchUserAttributes();
           cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
           
@@ -852,7 +852,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               
               // Update Cognito with this tenant ID
               try {
-                const { updateUserAttributes } = await import('aws-amplify/auth');
+                const { updateUserAttributes } = await import('@/config/amplifyUnified');
                 await updateUserAttributes({
                   userAttributes: {
                     'custom:businessid': data.tenantId
@@ -891,7 +891,7 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               
               // Update Cognito with this tenant ID
               try {
-                const { updateUserAttributes } = await import('aws-amplify/auth');
+                const { updateUserAttributes } = await import('@/config/amplifyUnified');
                 await updateUserAttributes({
                   userAttributes: {
                     'custom:businessid': tenantId
@@ -1213,7 +1213,7 @@ const isValidUUID = (id) => {
 async function getBusinessNameFromCognito() {
   try {
     // Get attributes from Cognito
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     const attributes = await fetchUserAttributes();
     
     // Check for business name in various attributes
@@ -1252,7 +1252,7 @@ async function getBusinessNameFromCognito() {
 async function getOnboardingStatusFromCognito() {
   try {
     // Get attributes from Cognito
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     const attributes = await fetchUserAttributes();
     
     // Get onboarding status
@@ -1305,7 +1305,7 @@ async function getOnboardingStatusFromCognito() {
 const generateBusinessName = async () => {
   try {
     // Get attributes from Cognito
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     const attributes = await fetchUserAttributes();
     
     // Try to find business name in user attributes

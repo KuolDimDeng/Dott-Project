@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import { fetchAuthSession, updateUserAttributes } from 'aws-amplify/auth';
+import { fetchAuthSession, updateUserAttributes  } from '@/config/amplifyUnified';
 import { jwtDecode } from 'jwt-decode';
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';

@@ -92,77 +92,12 @@ const OAUTH_SCOPES = process.env.NEXT_PUBLIC_OAUTH_SCOPES;`;
             oauth: {
               domain: \`\${COGNITO_DOMAIN}.auth.\${region}.amazoncognito.com\`,
               scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['
-              email', 'profile', 'openid'],
+                    x    x  v   ,email', 'profile', 'openid'],
               redirectSignIn: OAUTH_REDIRECT_SIGN_IN || (typeof window !== 'undefined' ? \`\${window.location.origin}/auth/callback\` : 'http://localhost:3000/auth/callback'),
               redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || (typeof window !== 'undefined' ? \`\${window.location.origin}/auth/signin\` : 'http://localhost:3000/auth/signin'),
               responseType: 'code'
             }
-          }
-        }
-      }
-    };
-    
-    // Debug OAuth configuration
-    if (typeof window !== 'undefined') {
-      logger.debug('[AmplifyUnified] OAuth Configuration:', {
-        domain: \`\${COGNITO_DOMAIN}.auth.\${region}.amazoncognito.com\`,
-        scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',') : ['email', 'profile', 'openid'],
-        redirectSignIn: OAUTH_REDIRECT_SIGN_IN || \`\${window.location.origin}/auth/callback\`,
-        redirectSignOut: OAUTH_REDIRECT_SIGN_OUT || \`\${window.location.origin}/auth/signin\`,
-        hasOAuthVars: {
-          OAUTH_REDIRECT_SIGN_IN: !!OAUTH_REDIRECT_SIGN_IN,
-          OAUTH_REDIRECT_SIGN_OUT: !!OAUTH_REDIRECT_SIGN_OUT,
-          OAUTH_SCOPES: !!OAUTH_SCOPES,
-          COGNITO_DOMAIN: !!COGNITO_DOMAIN
-        }
-      });
-    }`;
-
-    // Replace the existing OAuth configuration
-    content = content.replace(
-      /\/\/ Enhanced Amplify v6 configuration with network optimizations and OAuth[\s\S]*?};/,
-      oauthConfigSection
-    );
-    
-    // Write the updated content
-    fs.writeFileSync(filePath, content, 'utf8');
-    console.log('✅ Fixed Amplify OAuth configuration');
-    
-  } catch (error) {
-    console.error('❌ Error fixing Amplify OAuth configuration:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Add OAuth configuration validation
- */
-function addOAuthValidation() {
-  const filePath = path.join(projectRoot, 'src/config/amplifyUnified.js');
-  
-  try {
-    let content = fs.readFileSync(filePath, 'utf8');
-    
-    // Add OAuth validation function before configureAmplify
-    const validationFunction = `
-// OAuth configuration validation
-const validateOAuthConfig = () => {
-  const requiredVars = {
-    COGNITO_DOMAIN,
-    OAUTH_REDIRECT_SIGN_IN,
-    OAUTH_REDIRECT_SIGN_OUT,
-    OAUTH_SCOPES
-  };
-  
-  const missing = Object.entries(requiredVars)
-    .filter(([key, value]) => !value)
-    .map(([key]) => key);
-  
-  if (missing.length > 0) {
-    logger.warn('[AmplifyUnified] Missing OAuth environment variables:', missing);
-    return false;
-  }
-  
+          }    x    x  v   ,
   logger.debug('[AmplifyUnified] OAuth environment variables validated successfully');
   return true;
 };

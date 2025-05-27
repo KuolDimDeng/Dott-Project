@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';
 import { logger } from '@/utils/logger';
 import { useCallback, useEffect, useState } from 'react';
-import { updateUserAttributes, fetchUserAttributes } from 'aws-amplify/auth';
+import { updateUserAttributes, fetchUserAttributes } from '@/config/amplifyUnified';
 import { ONBOARDING_STATES } from '../state/OnboardingStateManager';
 
 /**

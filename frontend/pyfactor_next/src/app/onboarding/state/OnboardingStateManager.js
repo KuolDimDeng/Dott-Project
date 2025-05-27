@@ -417,7 +417,7 @@ export class OnboardingStateManager extends FormStateManager {
 
   async updateOnboardingState(updates) {
     const operationId = generateRequestId();
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+          const { updateUserAttributes } = await import('@/config/amplifyUnified');
 
     try {
       const previousState = { ...this.state.onboarding };

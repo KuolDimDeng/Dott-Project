@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from 'aws-amplify/auth';
+import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from '@/config/amplifyUnified';
 import { authenticatedRoute } from '@/components/AuthenticatedRoute';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';

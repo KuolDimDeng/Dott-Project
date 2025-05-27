@@ -33,7 +33,7 @@ export const setAuthCookies = async (tokens, userAttributes = null) => {
     
     // Store token expiration in Cognito for refresh handling
     try {
-      const { updateUserAttributes } = await import('aws-amplify/auth');
+      const { updateUserAttributes } = await import('@/config/amplifyUnified');
       
       await updateUserAttributes({
         userAttributes: {
@@ -100,7 +100,7 @@ export const setOnboardingAttributes = async (attributes) => {
                     (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
     
     // Update Cognito attributes
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     await updateUserAttributes({
       userAttributes: {
@@ -141,7 +141,7 @@ export const setOnboardingAttributes = async (attributes) => {
 export const getAuthToken = async () => {
   try {
     // Import auth utilities
-    const { fetchAuthSession } = await import('aws-amplify/auth');
+    const { fetchAuthSession } = await import('@/config/amplifyUnified');
     
     // Get current session
     const session = await fetchAuthSession();
@@ -167,7 +167,7 @@ export const getAuthToken = async () => {
 export const clearAuthCookies = async () => {
   try {
     // Import auth utilities
-    const { signOut } = await import('aws-amplify/auth');
+    const { signOut } = await import('@/config/amplifyUnified');
     
     // Sign out completely
     await signOut({ global: true });
@@ -189,7 +189,7 @@ export const clearAuthCookies = async () => {
 export const setTokenExpiredFlag = async () => {
   try {
     // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Set token expired flag in Cognito
     await updateUserAttributes({
@@ -258,7 +258,7 @@ export const updateOnboardingStatus = async (status) => {
     }
     
     // Import auth utilities
-    const { updateUserAttributes } = await import('aws-amplify/auth');
+    const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Update onboarding status in Cognito
     await updateUserAttributes({
@@ -285,7 +285,7 @@ export const updateOnboardingStatus = async (status) => {
 export const getUserAttributes = async () => {
   try {
     // Import auth utilities
-    const { fetchUserAttributes } = await import('aws-amplify/auth');
+    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get user attributes
     const attributes = await fetchUserAttributes();

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { logger } from '@/utils/logger';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser  } from '@/config/amplifyUnified';
 
 // Dynamically import components to avoid SSR issues with error handling
 const CookieBanner = dynamic(

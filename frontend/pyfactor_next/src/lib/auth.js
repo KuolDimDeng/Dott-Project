@@ -4,7 +4,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { axiosInstance } from './axiosConfig';
 import { logger } from './logger';
 import { cookies } from 'next/headers';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Fix issue with cookies() not being callable directly in some contexts
 const getCookieStore = async () => {

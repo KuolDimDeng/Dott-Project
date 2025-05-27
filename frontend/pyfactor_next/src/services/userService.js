@@ -3,7 +3,7 @@
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { getUserAttributesFromCognito } from '../hooks/useSession';
-import { signOut } from 'aws-amplify/auth';
+import { signOut  } from '@/config/amplifyUnified';
 
 // Add global window-level cache to ensure cross-component deduplication
 if (typeof window !== 'undefined') {

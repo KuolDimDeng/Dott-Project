@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useLandingPageStatus } from '@/hooks/useLandingPageStatus';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 const BUTTON_CONFIGS = {
   [ONBOARDING_STATES.NOT_STARTED]: {

@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchUserAttributes, updateUserAttributes } from 'aws-amplify/auth';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from '@/config/amplifyUnified';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/utils/logger';
 import { setCacheValue, getCacheValue } from '@/utils/appCache';
 import { isValidUUID } from '@/utils/tenantUtils';
 import { getFallbackTenantId, createFallbackApiResponse, storeReliableTenantId } from '@/utils/tenantFallback';
-import { fetchAuthSession } from 'aws-amplify/auth';
+import { fetchAuthSession } from '@/config/amplifyUnified';
 
 // Header component with sign out option
 const Header = ({ showSignOut = false, showBackButton = false }) => {

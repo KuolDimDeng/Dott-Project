@@ -1,6 +1,6 @@
 'use client';
 
-import { fetchAuthSession, signIn, signOut, getCurrentUser } from 'aws-amplify/auth';
+import { fetchAuthSession, signIn, signOut, getCurrentUser  } from '@/config/amplifyUnified';
 import { Amplify } from 'aws-amplify';
 import { logger } from './logger';
 import { jwtDecode } from 'jwt-decode';
@@ -553,7 +553,7 @@ export async function clearAllAuthData() {
 export async function ensureUserCreatedAt(userInfo) {
   try {
     // Import required functions
-    const { getCurrentUser, updateUserAttributes } = await import('aws-amplify/auth');
+    const { getCurrentUser, updateUserAttributes } = await import('@/config/amplifyUnified');
     
     // Get current user
     const currentUser = await getCurrentUser();
@@ -637,7 +637,7 @@ export async function prepareForSignIn() {
     
     try {
       // Check if user is already signed in
-      const { getCurrentUser } = await import('aws-amplify/auth');
+      const { getCurrentUser } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       
       if (user) {
@@ -677,7 +677,7 @@ export async function ensureAuthTokenInCache() {
     
     // Try to get the token from session
     try {
-      const { fetchAuthSession } = await import('aws-amplify/auth');
+      const { fetchAuthSession } = await import('@/config/amplifyUnified');
       const session = await fetchAuthSession({ forceRefresh: true });
       
       if (session?.tokens?.idToken) {

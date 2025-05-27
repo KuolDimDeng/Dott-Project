@@ -521,11 +521,11 @@ export const getUserAttributes = async () => {
   if (typeof window === 'undefined') {
     // Server-side: Try to load dynamically
     try {
-      const { getCurrentUser } = await import('aws-amplify/auth');
+      const { getCurrentUser } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       if (!user) return {};
       
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       return await fetchUserAttributes();
     } catch (error) {
       logger.error('[Cognito] Server-side fetchUserAttributes error:', error);
@@ -534,7 +534,7 @@ export const getUserAttributes = async () => {
   } else {
     // Client-side: Use standard import approach
     try {
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       return await fetchUserAttributes();
     } catch (error) {
       // Check if it's a not authenticated error
@@ -559,13 +559,13 @@ export const getCurrentUser = async () => {
   try {
     if (typeof window === 'undefined') {
       // Server-side
-      const { getCurrentUser } = await import('aws-amplify/auth');
+      const { getCurrentUser } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       
       if (!user) return null;
       
       // Get additional attributes
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const attributes = await fetchUserAttributes();
       
       return {
@@ -575,13 +575,13 @@ export const getCurrentUser = async () => {
       };
     } else {
       // Client-side
-      const { getCurrentUser } = await import('aws-amplify/auth');
+      const { getCurrentUser } = await import('@/config/amplifyUnified');
       const user = await getCurrentUser();
       
       if (!user) return null;
       
       // Get additional attributes
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
+      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
       const attributes = await fetchUserAttributes();
       
       return {
