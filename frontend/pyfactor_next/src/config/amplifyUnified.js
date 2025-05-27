@@ -392,7 +392,17 @@ export const configureAmplify = (forceReconfigure = false) => {
       return false;
     }
     
-        // Enhanced Amplify v6 configuration with network optimizations and OAuth
+    // Always include OAuth configuration, even if environment variables are missing
+    const oauthConfig = {
+      domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
+      scopes: getOAuthScopes(),
+      redirectSignIn: getOAuthRedirectSignIn(),
+      redirectSignOut: getOAuthRedirectSignOut(),
+      responseType: 'code',
+      providers: ['Google']
+    };
+    
+    // Enhanced Amplify v6 configuration with network optimizations and OAuth
     const amplifyConfig = {
       Auth: {
         Cognito: {
@@ -403,14 +413,7 @@ export const configureAmplify = (forceReconfigure = false) => {
             email: true,
             username: true,
             phone: false,
-            oauth: {
-              domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-              scopes: getOAuthScopes(),
-              redirectSignIn: getOAuthRedirectSignIn(),
-              redirectSignOut: getOAuthRedirectSignOut(),
-              responseType: 'code',
-              providers: ['Google']
-            }
+            oauth: oauthConfig
           }
         }
       }
@@ -419,10 +422,10 @@ export const configureAmplify = (forceReconfigure = false) => {
     // Debug OAuth configuration
     if (typeof window !== 'undefined') {
       const resolvedConfig = {
-        domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-        scopes: getOAuthScopes(),
-        redirectSignIn: getOAuthRedirectSignIn(),
-        redirectSignOut: getOAuthRedirectSignOut(),
+        domain: oauthConfig.domain,
+        scopes: oauthConfig.scopes,
+        redirectSignIn: oauthConfig.redirectSignIn,
+        redirectSignOut: oauthConfig.redirectSignOut,
         hasOAuthVars: {
           OAUTH_REDIRECT_SIGN_IN: !!OAUTH_REDIRECT_SIGN_IN,
           OAUTH_REDIRECT_SIGN_OUT: !!OAUTH_REDIRECT_SIGN_OUT,
@@ -443,10 +446,16 @@ export const configureAmplify = (forceReconfigure = false) => {
     // Apply configuration
     Amplify.configure(amplifyConfig);
     
-    // Verify configuration
+    // Verify configuration including OAuth
     const configVerification = Amplify.getConfig();
     if (!configVerification?.Auth?.Cognito?.userPoolId) {
       logger.error('[AmplifyUnified] Configuration verification failed');
+      return false;
+    }
+    
+    // Verify OAuth configuration specifically
+    if (!configVerification?.Auth?.Cognito?.loginWith?.oauth) {
+      logger.error('[AmplifyUnified] OAuth configuration verification failed');
       return false;
     }
     
@@ -454,7 +463,8 @@ export const configureAmplify = (forceReconfigure = false) => {
     logger.info('[AmplifyUnified] Amplify configured successfully', {
       attempt: configurationAttempts,
       userPoolId: userPoolId.substring(0, 15) + '...',
-      region: region
+      region: region,
+      hasOAuth: !!configVerification.Auth.Cognito.loginWith.oauth
     });
     
     return true;
@@ -603,7 +613,27 @@ const enhancedSignInWithRedirect = async (...args) => {
     const config = Amplify.getConfig();
     if (!config?.Auth?.Cognito?.loginWith?.oauth) {
       logger.error('[AmplifyUnified] OAuth configuration missing in Amplify config');
-      throw new Error('OAuth not configured in Amplify');
+      
+      // Log the current configuration for debugging
+      logger.debug('[AmplifyUnified] Current Amplify config:', {
+        hasAuth: !!config?.Auth,
+        hasCognito: !!config?.Auth?.Cognito,
+        hasLoginWith: !!config?.Auth?.Cognito?.loginWith,
+        loginWithKeys: config?.Auth?.Cognito?.loginWith ? Object.keys(config.Auth.Cognito.loginWith) : []
+      });
+      
+      // Try to reconfigure with OAuth
+      logger.warn('[AmplifyUnified] Attempting to reconfigure Amplify with OAuth');
+      const reconfig = configureAmplify(true);
+      if (!reconfig) {
+        throw new Error('OAuth not configured in Amplify and reconfiguration failed');
+      }
+      
+      // Check again after reconfiguration
+      const newConfig = Amplify.getConfig();
+      if (!newConfig?.Auth?.Cognito?.loginWith?.oauth) {
+        throw new Error('OAuth not configured in Amplify after reconfiguration');
+      }
     }
     
     // Validate OAuth domain
