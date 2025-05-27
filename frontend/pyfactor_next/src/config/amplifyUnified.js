@@ -2,21 +2,57 @@
 
 // Enhanced Amplify v6 configuration with network error resilience
 import { Amplify } from 'aws-amplify';
-import { 
-  signIn, 
-  signOut, 
-  getCurrentUser, 
-  fetchUserAttributes, 
-  fetchAuthSession,
-  signUp,
-  confirmSignUp,
-  resendSignUpCode,
-  resetPassword,
-  confirmResetPassword,
-  updateUserAttributes,
-  signInWithRedirect
-} from 'aws-amplify/auth';
-import { Hub as AmplifyHub } from 'aws-amplify/utils';
+
+// Try v6 imports first, fallback to v5 if needed
+let signIn, signOut, getCurrentUser, fetchUserAttributes, fetchAuthSession;
+let signUp, confirmSignUp, resendSignUpCode, resetPassword, confirmResetPassword;
+let updateUserAttributes, signInWithRedirect, AmplifyHub;
+
+try {
+  // AWS Amplify v6 imports
+  const authModule = require('aws-amplify/auth');
+  const utilsModule = require('aws-amplify/utils');
+  
+  signIn = authModule.signIn;
+  signOut = authModule.signOut;
+  getCurrentUser = authModule.getCurrentUser;
+  fetchUserAttributes = authModule.fetchUserAttributes;
+  fetchAuthSession = authModule.fetchAuthSession;
+  signUp = authModule.signUp;
+  confirmSignUp = authModule.confirmSignUp;
+  resendSignUpCode = authModule.resendSignUpCode;
+  resetPassword = authModule.resetPassword;
+  confirmResetPassword = authModule.confirmResetPassword;
+  updateUserAttributes = authModule.updateUserAttributes;
+  signInWithRedirect = authModule.signInWithRedirect;
+  AmplifyHub = utilsModule.Hub;
+} catch (v6Error) {
+  console.warn('[AmplifyUnified] v6 imports failed, trying v5 fallback:', v6Error.message);
+  
+  try {
+    // AWS Amplify v5 fallback imports
+    const { Auth, Hub } = require('aws-amplify');
+    
+    // Map v5 Auth methods to v6-style functions
+    signIn = (params) => Auth.signIn(params.username, params.password);
+    signOut = (options) => Auth.signOut(options);
+    getCurrentUser = () => Auth.currentAuthenticatedUser();
+    fetchUserAttributes = () => Auth.currentUserInfo();
+    fetchAuthSession = () => Auth.currentSession();
+    signUp = (params) => Auth.signUp(params);
+    confirmSignUp = (params) => Auth.confirmSignUp(params.username, params.confirmationCode);
+    resendSignUpCode = (params) => Auth.resendSignUp(params.username);
+    resetPassword = (params) => Auth.forgotPassword(params.username);
+    confirmResetPassword = (params) => Auth.forgotPasswordSubmit(params.username, params.confirmationCode, params.newPassword);
+    updateUserAttributes = (params) => Auth.updateUserAttributes(Auth.currentAuthenticatedUser(), params.userAttributes);
+    signInWithRedirect = (params) => Auth.federatedSignIn(params);
+    AmplifyHub = Hub;
+  } catch (v5Error) {
+    console.error('[AmplifyUnified] Both v6 and v5 imports failed:', { v6Error: v6Error.message, v5Error: v5Error.message });
+    throw new Error('Unable to import AWS Amplify auth functions');
+  }
+}
+
 import { logger } from '@/utils/logger';
 
 // Network error handling configuration

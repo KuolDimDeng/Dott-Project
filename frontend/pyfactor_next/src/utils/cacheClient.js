@@ -1,7 +1,23 @@
 import { fetchAuthSession  } from '@/config/amplifyUnified';
-import { generateClient } from 'aws-amplify/api';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';
+
+// Try to import generateClient with fallback
+let generateClient;
+try {
+  // Try v6 import first
+  const apiModule = require('aws-amplify/api');
+  generateClient = apiModule.generateClient;
+} catch (v6Error) {
+  try {
+    // Try v5 fallback
+    const { API } = require('aws-amplify');
+    generateClient = () => API;
+  } catch (v5Error) {
+    console.warn('[CacheClient] Could not import generateClient, using fallback');
+    generateClient = () => null;
+  }
+}
 
 // In-memory cache storage
 const memoryCache = new Map();
