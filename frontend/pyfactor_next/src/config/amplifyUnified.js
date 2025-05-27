@@ -94,27 +94,71 @@ const OAUTH_SCOPES = process.env.NEXT_PUBLIC_OAUTH_SCOPES;
 
 // Fallback OAuth configuration for production
 const getOAuthRedirectSignIn = () => {
-  if (OAUTH_REDIRECT_SIGN_IN) return OAUTH_REDIRECT_SIGN_IN;
+  // First try environment variable
+  if (OAUTH_REDIRECT_SIGN_IN) {
+    console.log('[OAuth] Using env var for redirectSignIn:', OAUTH_REDIRECT_SIGN_IN);
+    return OAUTH_REDIRECT_SIGN_IN;
+  }
+  
+  // Then try window location
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
-    if (origin.includes('dottapps.com')) {
-      return 'https://dottapps.com/auth/callback';
+    console.log('[OAuth] Using window origin for redirectSignIn:', origin);
+    
+    // Explicit check for production domains
+    if (origin.includes('dottapps.com') || origin.includes('vercel.app')) {
+      const redirectUrl = origin.includes('dottapps.com') 
+        ? 'https://dottapps.com/auth/callback'
+        : `${origin}/auth/callback`;
+      console.log('[OAuth] Production redirectSignIn:', redirectUrl);
+      return redirectUrl;
     }
     return `${origin}/auth/callback`;
   }
+  
+  // Fallback for localhost
+  console.log('[OAuth] Using localhost fallback for redirectSignIn');
   return 'http://localhost:3000/auth/callback';
 };
 
 const getOAuthRedirectSignOut = () => {
-  if (OAUTH_REDIRECT_SIGN_OUT) return OAUTH_REDIRECT_SIGN_OUT;
+  // First try environment variable
+  if (OAUTH_REDIRECT_SIGN_OUT) {
+    console.log('[OAuth] Using env var for redirectSignOut:', OAUTH_REDIRECT_SIGN_OUT);
+    return OAUTH_REDIRECT_SIGN_OUT;
+  }
+  
+  // Then try window location
   if (typeof window !== 'undefined') {
     const origin = window.location.origin;
-    if (origin.includes('dottapps.com')) {
-      return 'https://dottapps.com/auth/signin';
+    console.log('[OAuth] Using window origin for redirectSignOut:', origin);
+    
+    // Explicit check for production domains
+    if (origin.includes('dottapps.com') || origin.includes('vercel.app')) {
+      const redirectUrl = origin.includes('dottapps.com') 
+        ? 'https://dottapps.com/auth/signin'
+        : `${origin}/auth/signin`;
+      console.log('[OAuth] Production redirectSignOut:', redirectUrl);
+      return redirectUrl;
     }
     return `${origin}/auth/signin`;
   }
+  
+  // Fallback for localhost
+  console.log('[OAuth] Using localhost fallback for redirectSignOut');
   return 'http://localhost:3000/auth/signin';
+};
+
+const getOAuthScopes = () => {
+  if (OAUTH_SCOPES) {
+    const scopes = OAUTH_SCOPES.split(',').map(s => s.trim());
+    console.log('[OAuth] Using env var scopes:', scopes);
+    return scopes;
+  }
+  
+  const defaultScopes = ['email', 'profile', 'openid'];
+  console.log('[OAuth] Using default scopes:', defaultScopes);
+  return defaultScopes;
 };
 
 // Debug environment variables
@@ -333,7 +377,7 @@ export const configureAmplify = (forceReconfigure = false) => {
             phone: false,
             oauth: {
               domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-              scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',').map(s => s.trim()) : ['email', 'profile', 'openid'],
+              scopes: getOAuthScopes(),
               redirectSignIn: getOAuthRedirectSignIn(),
               redirectSignOut: getOAuthRedirectSignOut(),
               responseType: 'code',
@@ -348,7 +392,7 @@ export const configureAmplify = (forceReconfigure = false) => {
     if (typeof window !== 'undefined') {
       const resolvedConfig = {
         domain: `${COGNITO_DOMAIN}.auth.${region}.amazoncognito.com`,
-        scopes: OAUTH_SCOPES ? OAUTH_SCOPES.split(',').map(s => s.trim()) : ['email', 'profile', 'openid'],
+        scopes: getOAuthScopes(),
         redirectSignIn: getOAuthRedirectSignIn(),
         redirectSignOut: getOAuthRedirectSignOut(),
         hasOAuthVars: {
@@ -356,6 +400,11 @@ export const configureAmplify = (forceReconfigure = false) => {
           OAUTH_REDIRECT_SIGN_OUT: !!OAUTH_REDIRECT_SIGN_OUT,
           OAUTH_SCOPES: !!OAUTH_SCOPES,
           COGNITO_DOMAIN: !!COGNITO_DOMAIN
+        },
+        usingFallbacks: {
+          redirectSignIn: !OAUTH_REDIRECT_SIGN_IN,
+          redirectSignOut: !OAUTH_REDIRECT_SIGN_OUT,
+          scopes: !OAUTH_SCOPES
         }
       };
       
