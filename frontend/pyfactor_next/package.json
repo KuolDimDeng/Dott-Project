@@ -5,6 +5,7 @@
   "packageManager": "pnpm@8.10.0",
   "scripts": {
     "dev": "USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NEXT_PUBLIC_API_URL=https://127.0.0.1:8000 BACKEND_API_URL=https://127.0.0.1:8000 NODE_OPTIONS='--max-old-space-size=4096' next dev",
+    "dev:oauth": "./scripts/dev-with-oauth.sh",
     "dev:https": "PORT=3000 NODE_TLS_REJECT_UNAUTHORIZED=0 HTTPS=true SSL_CRT_FILE=../../certificates/localhost+1.pem SSL_KEY_FILE=../../certificates/localhost+1-key.pem USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NEXT_PUBLIC_API_URL=https://127.0.0.1:8000 BACKEND_API_URL=https://127.0.0.1:8000 NODE_OPTIONS='--max-old-space-size=4096' next dev --experimental-https -p 3000",
     "dev:db": "USE_DATABASE=true MOCK_DATA_DISABLED=true NODE_OPTIONS='--max-old-space-size=4096' next dev",
     "dev:prod": "USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS='--max-old-space-size=4096' next dev",
