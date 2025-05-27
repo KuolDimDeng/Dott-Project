@@ -20,13 +20,11 @@ export default function Pricing() {
       try {
         // Debug current cache state
         console.log('🔍 Debug: Current cache state before loading pricing:');
-        const cacheState = await debugCacheState();
+        debugCacheState();
         
         const pricing = await getCurrentUserPricing();
-        const country = await getCacheValue('user_country') || 'US';
-        const isDeveloping = await getCacheValue('user_is_developing_country') || false;
-        
-        console.log('🌍 Resolved values:', { country, isDeveloping });
+        const country = getCacheValue('user_country') || 'US';
+        const isDeveloping = getCacheValue('user_is_developing_country') || false;
         
         // Special check for USA - should NEVER have discount
         if (country === 'US' && isDeveloping) {
@@ -39,16 +37,11 @@ export default function Pricing() {
           return;
         }
         
-        // Additional safety check for developed countries
-        const developedCountries = ['US', 'GB', 'CA', 'AU', 'NZ', 'IE', 'DE', 'FR', 'IT', 'ES', 'NL', 'BE', 'AT', 'PT', 'LU', 'MC', 'CH', 'NO', 'SE', 'DK', 'FI', 'IS', 'JP', 'KR', 'SG', 'HK', 'TW', 'IL', 'AE', 'QA', 'KW', 'BH', 'SA', 'OM', 'BN', 'CY', 'MT', 'SI', 'CZ', 'SK', 'EE', 'LV', 'LT', 'PL', 'HU', 'HR', 'GR'];
-        
-        const shouldHaveDiscount = !developedCountries.includes(country) && isDeveloping;
-        
         setDynamicPricing(pricing);
         setUserCountry(country);
-        setHasDiscount(shouldHaveDiscount);
+        setHasDiscount(isDeveloping);
         
-        console.log('✅ Loaded dynamic pricing:', { pricing, country, isDeveloping, hasDiscount: shouldHaveDiscount });
+        console.log('✅ Loaded dynamic pricing:', { pricing, country, isDeveloping, hasDiscount: isDeveloping });
       } catch (error) {
         console.error('❌ Error loading dynamic pricing:', error);
       }

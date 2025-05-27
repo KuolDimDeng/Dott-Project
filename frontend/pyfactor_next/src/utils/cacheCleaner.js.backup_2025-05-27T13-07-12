@@ -47,24 +47,14 @@ export async function forceRefreshCountryDetection() {
 /**
  * Debug current cache state
  */
-export async function debugCacheState() {
-  try {
-    const cacheState = {
-      detectedCountry: await getCacheValue('user_detected_country'),
-      country: await getCacheValue('user_country'),
-      language: await getCacheValue('user_language'),
-      isDeveloping: await getCacheValue('user_is_developing_country')
-    };
-    
-    console.log('🔍 Current cache state:', cacheState);
-    return cacheState;
-  } catch (error) {
-    console.error('❌ Error getting cache state:', error);
-    return {
-      detectedCountry: null,
-      country: null,
-      language: null,
-      isDeveloping: null
-    };
-  }
+export function debugCacheState() {
+  const cacheState = {
+    detectedCountry: getCacheValue('user_detected_country'),
+    country: getCacheValue('user_country'),
+    language: getCacheValue('user_language'),
+    isDeveloping: getCacheValue('user_is_developing_country')
+  };
+  
+  console.log('🔍 Current cache state:', cacheState);
+  return cacheState;
 }

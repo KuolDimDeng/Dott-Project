@@ -74,10 +74,14 @@ export async function detectUserCountry() {
       console.log('⚠️ Using default country fallback: US');
     }
 
-    // Ensure we have a valid country code
-    if (!detectedCountry || detectedCountry === 'null' || detectedCountry.length !== 2) {
-      detectedCountry = 'US';
-      console.log('⚠️ Invalid country code detected, using US as fallback');
+    // Cache the result
+    setCacheValue('user_detected_country', detectedCountry, { ttl: COUNTRY_CACHE_TTL });
+    
+    // Save to user preferences for future visits
+    try {
+      await saveUserPreference('custom:country', detectedCountry);
+    } catch (error) {
+      console.error('❌ Failed to save country preference:', error);
     }
 
     console.log('✅ Detected user country:', detectedCountry);
