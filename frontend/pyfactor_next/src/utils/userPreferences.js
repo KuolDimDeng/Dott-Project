@@ -5,7 +5,7 @@
  * Uses AppCache for better performance with Cognito for persistence
  */
 
-import { fetchUserAttributes, updateUserAttributes  } from '@/config/amplifyUnified';
+import { fetchUserAttributes, updateUserAttributes } from '@/config/amplifyUnified';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
@@ -98,19 +98,48 @@ export async function saveUserPreference(prefKey, value) {
       throw new Error('Preference key must start with "custom:"');
     }
     
-    // Update AppCache immediately
+    // Update AppCache immediately (this always works)
     const cacheKey = `user_pref_${prefKey}`;
     setCacheValue(cacheKey, value, { ttl: CACHE_TTL });
     
-    // Save to Cognito
-    await updateUserAttributes({
-      userAttributes: {
-        [prefKey]: value !== null && value !== undefined ? String(value) : ''
+    // Try to save to Cognito, but handle auth errors gracefully
+    try {
+      // Import the enhanced functions that ensure configuration
+      const { updateUserAttributes, isAmplifyConfigured, configureAmplify } = await import('@/config/amplifyUnified');
+      
+      // Ensure Amplify is configured before attempting to save
+      if (!isAmplifyConfigured()) {
+        logger.warn('[userPreferences] Amplify not configured, attempting to configure');
+        const configSuccess = configureAmplify(true);
+        if (!configSuccess) {
+          logger.warn('[userPreferences] Failed to configure Amplify, skipping Cognito save');
+          return true; // Return true since AppCache was updated
+        }
       }
-    });
-    
-    logger.debug(`[userPreferences] Preference saved: ${prefKey}=${value}`);
-    return true;
+      
+      // Save to Cognito
+      await updateUserAttributes({
+        userAttributes: {
+          [prefKey]: value !== null && value !== undefined ? String(value) : ''
+        }
+      });
+      
+      logger.debug(`[userPreferences] Preference saved: ${prefKey}=${value}`);
+      return true;
+    } catch (cognitoError) {
+      // Handle specific Cognito/Auth errors gracefully
+      if (cognitoError.message && 
+          (cognitoError.message.includes('UserPool not configured') ||
+           cognitoError.message.includes('not authenticated') ||
+           cognitoError.name === 'NotAuthorizedException')) {
+        logger.warn(`[userPreferences] User not authenticated or Cognito not configured, preference saved to cache only: ${prefKey}`);
+        return true; // Return true since AppCache was updated
+      }
+      
+      // For other errors, log but don't fail
+      logger.error(`[userPreferences] Error saving preference "${prefKey}" to Cognito:`, cognitoError);
+      return true; // Return true since AppCache was updated
+    }
   } catch (error) {
     logger.error(`[userPreferences] Error saving preference "${prefKey}":`, error);
     return false;
@@ -132,7 +161,7 @@ export async function saveUserPreferences(preferences) {
     // Format attributes for Cognito
     const userAttributes = {};
     
-    // Update AppCache for each preference
+    // Update AppCache for each preference (this always works)
     Object.entries(preferences).forEach(([key, value]) => {
       const prefKey = key.startsWith('custom:') ? key : `custom:${key}`;
       userAttributes[prefKey] = value !== null && value !== undefined ? String(value) : '';
@@ -142,11 +171,40 @@ export async function saveUserPreferences(preferences) {
       setCacheValue(cacheKey, value, { ttl: CACHE_TTL });
     });
     
-    // Save to Cognito in a single call
-    await updateUserAttributes({ userAttributes });
-    
-    logger.debug(`[userPreferences] Multiple preferences saved: ${Object.keys(preferences).join(', ')}`);
-    return true;
+    // Try to save to Cognito, but handle auth errors gracefully
+    try {
+      // Import the enhanced functions that ensure configuration
+      const { updateUserAttributes, isAmplifyConfigured, configureAmplify } = await import('@/config/amplifyUnified');
+      
+      // Ensure Amplify is configured before attempting to save
+      if (!isAmplifyConfigured()) {
+        logger.warn('[userPreferences] Amplify not configured for batch save, attempting to configure');
+        const configSuccess = configureAmplify(true);
+        if (!configSuccess) {
+          logger.warn('[userPreferences] Failed to configure Amplify, skipping Cognito batch save');
+          return true; // Return true since AppCache was updated
+        }
+      }
+      
+      // Save to Cognito in a single call
+      await updateUserAttributes({ userAttributes });
+      
+      logger.debug(`[userPreferences] Multiple preferences saved: ${Object.keys(preferences).join(', ')}`);
+      return true;
+    } catch (cognitoError) {
+      // Handle specific Cognito/Auth errors gracefully
+      if (cognitoError.message && 
+          (cognitoError.message.includes('UserPool not configured') ||
+           cognitoError.message.includes('not authenticated') ||
+           cognitoError.name === 'NotAuthorizedException')) {
+        logger.warn(`[userPreferences] User not authenticated or Cognito not configured, batch preferences saved to cache only`);
+        return true; // Return true since AppCache was updated
+      }
+      
+      // For other errors, log but don't fail
+      logger.error('[userPreferences] Error saving batch preferences to Cognito:', cognitoError);
+      return true; // Return true since AppCache was updated
+    }
   } catch (error) {
     logger.error('[userPreferences] Error saving multiple preferences:', error);
     return false;

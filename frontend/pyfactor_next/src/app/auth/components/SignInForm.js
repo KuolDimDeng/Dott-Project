@@ -951,7 +951,13 @@ export default function SignInForm() {
       logger.error('[SignInForm] Google Sign-In error:', error);
       
       // Handle specific error cases
-      if (error.name === 'UserNotConfirmedException') {
+      if (error.message && error.message.includes('Auth UserPool not configured')) {
+        setErrors({ general: 'Authentication system is initializing. Please wait a moment and try again.' });
+      } else if (error.message && error.message.includes('OAuth not configured')) {
+        setErrors({ general: 'Google Sign-In is not properly configured. Please use email sign-in or contact support.' });
+      } else if (error.message && error.message.includes('Failed to configure Amplify')) {
+        setErrors({ general: 'Authentication system is temporarily unavailable. Please try again in a moment.' });
+      } else if (error.name === 'UserNotConfirmedException') {
         setErrors({ general: 'Please verify your email before signing in with Google.' });
       } else if (error.name === 'NotAuthorizedException') {
         setErrors({ general: 'Google Sign-In is not authorized. Please contact support.' });

@@ -587,12 +587,33 @@ export const getCurrentUserWithConfig = enhancedGetCurrentUser;
 export const fetchUserAttributesWithConfig = enhancedFetchUserAttributes;
 export const fetchAuthSessionWithConfig = enhancedFetchAuthSession;
 
-// Enhanced signInWithRedirect with network error handling
+// Enhanced signInWithRedirect with network error handling and OAuth validation
 const enhancedSignInWithRedirect = async (...args) => {
   return retryWithBackoff(async () => {
-    if (!isConfigured) {
-      configureAmplify(true);
+    // Always ensure configuration before OAuth operations
+    if (!isConfigured || !isAmplifyConfigured()) {
+      logger.warn('[AmplifyUnified] Amplify not configured before OAuth, forcing reconfiguration');
+      const configSuccess = configureAmplify(true);
+      if (!configSuccess) {
+        throw new Error('Failed to configure Amplify for OAuth operation');
+      }
     }
+    
+    // Additional validation for OAuth configuration
+    const config = Amplify.getConfig();
+    if (!config?.Auth?.Cognito?.loginWith?.oauth) {
+      logger.error('[AmplifyUnified] OAuth configuration missing in Amplify config');
+      throw new Error('OAuth not configured in Amplify');
+    }
+    
+    // Validate OAuth domain
+    const oauthDomain = config.Auth.Cognito.loginWith.oauth.domain;
+    if (!oauthDomain || !oauthDomain.includes('amazoncognito.com')) {
+      logger.error('[AmplifyUnified] Invalid OAuth domain:', oauthDomain);
+      throw new Error('Invalid OAuth domain configuration');
+    }
+    
+    logger.debug('[AmplifyUnified] OAuth configuration validated, proceeding with signInWithRedirect');
     return signInWithRedirect(...args);
   }, 'signInWithRedirect');
 };
