@@ -476,7 +476,42 @@ export const configureAmplify = (forceReconfigure = false) => {
 
 // Execute configuration on load
 if (typeof window !== 'undefined') {
+  // Initial configuration
   configureAmplify();
+  
+  // Add a global function to ensure Amplify is ready for OAuth
+  window.ensureAmplifyOAuthReady = async () => {
+    try {
+      const config = Amplify.getConfig();
+      
+      // Check if basic configuration exists
+      if (!config?.Auth?.Cognito?.userPoolId) {
+        logger.warn('[AmplifyUnified] Basic Amplify config missing, reconfiguring');
+        configureAmplify(true);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      
+      // Check if OAuth configuration exists
+      const updatedConfig = Amplify.getConfig();
+      if (!updatedConfig?.Auth?.Cognito?.loginWith?.oauth) {
+        logger.warn('[AmplifyUnified] OAuth config missing, forcing reconfiguration');
+        configureAmplify(true);
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      // Final verification
+      const finalConfig = Amplify.getConfig();
+      const isReady = !!(finalConfig?.Auth?.Cognito?.userPoolId && 
+                        finalConfig?.Auth?.Cognito?.userPoolClientId &&
+                        finalConfig?.Auth?.Cognito?.loginWith?.oauth);
+      
+      logger.debug('[AmplifyUnified] OAuth readiness check:', { isReady });
+      return isReady;
+    } catch (error) {
+      logger.error('[AmplifyUnified] Error in OAuth readiness check:', error);
+      return false;
+    }
+  };
 }
 
 // Enhanced auth functions with network error handling
@@ -607,10 +642,13 @@ const enhancedSignInWithRedirect = async (...args) => {
       if (!configSuccess) {
         throw new Error('Failed to configure Amplify for OAuth operation');
       }
+      
+      // Add a small delay to ensure configuration is applied
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     // Additional validation for OAuth configuration
-    const config = Amplify.getConfig();
+    let config = Amplify.getConfig();
     if (!config?.Auth?.Cognito?.loginWith?.oauth) {
       logger.error('[AmplifyUnified] OAuth configuration missing in Amplify config');
       
@@ -629,11 +667,16 @@ const enhancedSignInWithRedirect = async (...args) => {
         throw new Error('OAuth not configured in Amplify and reconfiguration failed');
       }
       
+      // Wait for reconfiguration to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       // Check again after reconfiguration
-      const newConfig = Amplify.getConfig();
-      if (!newConfig?.Auth?.Cognito?.loginWith?.oauth) {
+      config = Amplify.getConfig();
+      if (!config?.Auth?.Cognito?.loginWith?.oauth) {
         throw new Error('OAuth not configured in Amplify after reconfiguration');
       }
+      
+      logger.info('[AmplifyUnified] OAuth reconfiguration successful');
     }
     
     // Validate OAuth domain
@@ -641,6 +684,15 @@ const enhancedSignInWithRedirect = async (...args) => {
     if (!oauthDomain || !oauthDomain.includes('amazoncognito.com')) {
       logger.error('[AmplifyUnified] Invalid OAuth domain:', oauthDomain);
       throw new Error('Invalid OAuth domain configuration');
+    }
+    
+    // Validate UserPool configuration specifically
+    if (!config?.Auth?.Cognito?.userPoolId || !config?.Auth?.Cognito?.userPoolClientId) {
+      logger.error('[AmplifyUnified] UserPool configuration missing:', {
+        hasUserPoolId: !!config?.Auth?.Cognito?.userPoolId,
+        hasClientId: !!config?.Auth?.Cognito?.userPoolClientId
+      });
+      throw new Error('Auth UserPool not configured');
     }
     
     logger.debug('[AmplifyUnified] OAuth configuration validated, proceeding with signInWithRedirect');

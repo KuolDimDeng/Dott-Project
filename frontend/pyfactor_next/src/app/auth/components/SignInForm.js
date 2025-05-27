@@ -935,6 +935,15 @@ export default function SignInForm() {
     try {
       logger.debug('[SignInForm] Initiating Google Sign-In with Cognito');
       
+      // Ensure Amplify OAuth is ready before proceeding
+      if (typeof window !== 'undefined' && window.ensureAmplifyOAuthReady) {
+        logger.debug('[SignInForm] Ensuring Amplify OAuth is ready');
+        const isReady = await window.ensureAmplifyOAuthReady();
+        if (!isReady) {
+          throw new Error('Failed to configure OAuth for Google Sign-In');
+        }
+      }
+      
       // Use Amplify's signInWithRedirect for Google OAuth
       await signInWithRedirect({ 
         provider: 'Google',
@@ -957,6 +966,8 @@ export default function SignInForm() {
         setErrors({ general: 'Google Sign-In is not properly configured. Please use email sign-in or contact support.' });
       } else if (error.message && error.message.includes('Failed to configure Amplify')) {
         setErrors({ general: 'Authentication system is temporarily unavailable. Please try again in a moment.' });
+      } else if (error.message && error.message.includes('Failed to configure OAuth')) {
+        setErrors({ general: 'Google Sign-In configuration failed. Please try again or use email sign-in.' });
       } else if (error.name === 'UserNotConfirmedException') {
         setErrors({ general: 'Please verify your email before signing in with Google.' });
       } else if (error.name === 'NotAuthorizedException') {
