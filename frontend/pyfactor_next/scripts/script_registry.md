@@ -501,3 +501,15 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - Missing scope validation and error prevention
 **Expected Result**: Google Sign-In works without "invalid_scope" errors
 **Documentation**: `GOOGLE_OAUTH_SCOPE_FIX_20250527.md`
+
+## v0043 - remove_cognito_admin_scope (2025-05-28)
+**Purpose**: Remove aws.cognito.signin.user.admin scope to match AWS Console changes
+**Status**: ✅ Executed
+**Files Modified**: 
+- .env.local
+- src/config/amplifyUnified.js
+- scripts/set-oauth-env.sh
+- scripts/dev-with-oauth.sh
+**Issue**: AWS-specific scope causing Google OAuth "invalid_scope" error
+**Solution**: Use only standard OAuth scopes: openid,profile,email
+**Next Step**: Update Vercel environment variable
