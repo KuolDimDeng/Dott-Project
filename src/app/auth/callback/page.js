@@ -116,6 +116,7 @@ export default function Callback() {
         
         logger.debug('[OAuth Callback] Step 4: Starting enhanced token retrieval...');
         console.log('[OAuth Callback] Step 4: Starting enhanced token retrieval...');
+        // Force deployment update - Enhanced OAuth callback with proper timing
         setStatus('Completing sign in...');
         
         // CRITICAL: Wait for Cognito to process the OAuth callback
