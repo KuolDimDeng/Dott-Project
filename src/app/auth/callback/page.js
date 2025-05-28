@@ -15,6 +15,7 @@ export default function Callback() {
 
   // Deployment identifier for tracking
   const DEPLOYMENT_VERSION = 'v2.0-enhanced-oauth-callback-' + Date.now();
+  const FORCE_DEPLOY_TRIGGER = 'VERCEL_DEPLOY_' + new Date().toISOString();
   
   useEffect(() => {
     const handleCallback = async () => {
