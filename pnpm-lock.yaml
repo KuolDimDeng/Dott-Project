@@ -4,11 +4,15 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+neverBuiltDependencies:
+  - canvas
+
 overrides:
-  '@aws-amplify/auth': ^6.10.0
-  '@aws-amplify/core': ^6.10.0
-  '@aws-amplify/adapter-nextjs': ^1.5.0
+  '@aws-amplify/auth': ^6.12.1
+  '@aws-amplify/core': ^6.11.1
+  '@aws-amplify/adapter-nextjs': ^1.6.0
   aws-amplify: ^6.10.0
+  debug: ^4.3.7
 
 importers:
 
@@ -31,7 +35,7 @@ importers:
         version: 5.0.1(react-hook-form@7.55.0)
       axios:
         specifier: ^1.5.1
-        version: 1.8.4(debug@4.4.0)
+        version: 1.8.4(debug@4.4.1)
       country-state-city:
         specifier: ^3.2.1
         version: 3.2.1
@@ -76,13 +80,13 @@ importers:
   frontend/pyfactor_next:
     dependencies:
       '@aws-amplify/adapter-nextjs':
-        specifier: ^1.5.0
-        version: 1.5.8(aws-amplify@6.14.1)(next@15.3.1)
+        specifier: ^1.6.0
+        version: 1.6.3(aws-amplify@6.14.1)(next@15.3.1)
       '@aws-amplify/auth':
-        specifier: ^6.10.0
+        specifier: ^6.12.1
         version: 6.12.1(@aws-amplify/core@6.11.1)
       '@aws-amplify/core':
-        specifier: ^6.10.0
+        specifier: ^6.11.1
         version: 6.11.1
       '@aws-amplify/ui-react':
         specifier: ^5.3.1
@@ -146,7 +150,7 @@ importers:
         version: 2.1692.0
       axios:
         specifier: ^1.5.1
-        version: 1.8.4(debug@4.4.0)
+        version: 1.8.4(debug@4.4.1)
       chart.js:
         specifier: ^4.4.0
         version: 4.4.9
@@ -160,8 +164,8 @@ importers:
         specifier: 2.30.0
         version: 2.30.0
       debug:
-        specifier: ^4.3.4
-        version: 4.4.0
+        specifier: ^4.3.7
+        version: 4.4.1
       file-saver:
         specifier: ^2.0.5
         version: 2.0.5
@@ -374,8 +378,8 @@ packages:
       - encoding
     dev: false
 
-  /@aws-amplify/adapter-nextjs@1.5.8(aws-amplify@6.14.1)(next@15.3.1):
-    resolution: {integrity: sha512-r/u4D4aLjgPxMlCdXlIFlJsQdDh+XIwSt9pBRR39T6YOe4rZQZ1afTBgYE0fvASoiljRiPEA5jToRMrAHKXTFA==}
+  /@aws-amplify/adapter-nextjs@1.6.3(aws-amplify@6.14.1)(next@15.3.1):
+    resolution: {integrity: sha512-G6x2ZyRcqhirdQNngE8CGah8CwF4RpBgg2Bkoeg8XvplqLK65lmlAWAMlk3QII6Fx831KTQ7F2n5iNYEkjIIYg==}
     peerDependencies:
       aws-amplify: ^6.10.0
       next: '>=13.5.0 <16.0.0'
@@ -388,7 +392,7 @@ packages:
   /@aws-amplify/analytics@7.0.77(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-iahOh4HdPa0D8pJo1+BWQ8g1+iFnKe9UAHJ2ks9HAQ14utbV39OG57onhkBA5bTSXYS9zSEjVgMreC0Wg67NIQ==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/core': 6.11.1
       '@aws-sdk/client-firehose': 3.621.0
@@ -416,7 +420,7 @@ packages:
   /@aws-amplify/api-rest@4.1.1(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-OHtkZRAYZJBwFEoI1Tgcue3hbegNX0VvRolYb/qpsJIVfYTMfOZVD7JwQfRDFinuzHn1v6FBKI3Eo1q2apiLog==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/core': 6.11.1
       tslib: 2.8.1
@@ -425,7 +429,7 @@ packages:
   /@aws-amplify/api@6.3.8(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-AtYbdrniz6SHWTgz/v4H3FODHfq+0q5aNY5P9O9DVWQkqkIwwkMGVGt5e//nuiF10e80qTPesg4g6ygPNIUtwA==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/api-graphql': 4.7.12
       '@aws-amplify/api-rest': 4.1.1(@aws-amplify/core@6.11.1)
@@ -438,7 +442,7 @@ packages:
   /@aws-amplify/auth@6.12.1(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-VjFJPVOWBAzcoW/DoNADPNBT5Map6oeuR4w5H8uQHBaNTp/QOzgTB2pUt4YZRnf2z1G7AcHNB/xUyzTHV+8gtg==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/core': 6.11.1
       '@aws-crypto/sha256-js': 5.2.0
@@ -479,7 +483,7 @@ packages:
   /@aws-amplify/datastore@5.0.79(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-88LizSmytd6pZWqCf0mET0Qj5xMb6pRPjfDrJ0hjY4zE0V25UAxb0HPmLmSFYvW+G6SFzYYkEfehWyIDfIBHUw==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/api': 6.3.8(@aws-amplify/core@6.11.1)
       '@aws-amplify/api-graphql': 4.7.12
@@ -494,7 +498,7 @@ packages:
   /@aws-amplify/notifications@2.0.77(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-mI48rwrJyQSihIGDWfcA3YP7LVHZPtUjWahatyySsJhcS+aHjrw7L4mrfyQ2SHw9NIeHx3o4KvkFgDi/yLplqQ==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/core': 6.11.1
       '@aws-sdk/types': 3.398.0
@@ -505,7 +509,7 @@ packages:
   /@aws-amplify/storage@6.8.1(@aws-amplify/core@6.11.1):
     resolution: {integrity: sha512-ZMrbsFRokxANSHwdXcBAFoOwsHhWvuweQUdMbuJXxelRM0Hk3v44j0BVFGggWZ3VaqHPJJxfPNU1LfufqIAKdg==}
     peerDependencies:
-      '@aws-amplify/core': ^6.10.0
+      '@aws-amplify/core': ^6.11.1
     dependencies:
       '@aws-amplify/core': 6.11.1
       '@aws-sdk/types': 3.398.0
@@ -1903,7 +1907,7 @@ packages:
       '@babel/traverse': 7.27.0
       '@babel/types': 7.27.0
       convert-source-map: 2.0.0
-      debug: 4.4.0
+      debug: 4.4.1
       gensync: 1.0.0-beta.2
       json5: 2.2.3
       semver: 6.3.1
@@ -1986,7 +1990,7 @@ packages:
       '@babel/core': 7.26.10
       '@babel/helper-compilation-targets': 7.27.0
       '@babel/helper-plugin-utils': 7.26.5
-      debug: 4.4.0
+      debug: 4.4.1
       lodash.debounce: 4.0.8
       resolve: 1.22.10
     transitivePeerDependencies:
@@ -3082,7 +3086,7 @@ packages:
       '@babel/parser': 7.27.0
       '@babel/template': 7.27.0
       '@babel/types': 7.27.0
-      debug: 4.4.0
+      debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -3096,7 +3100,7 @@ packages:
       '@babel/parser': 7.27.3
       '@babel/template': 7.27.2
       '@babel/types': 7.27.3
-      debug: 4.4.0
+      debug: 4.4.1
       globals: 11.12.0
     transitivePeerDependencies:
       - supports-color
@@ -3483,7 +3487,7 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dependencies:
       ajv: 6.12.6
-      debug: 4.4.0
+      debug: 4.4.1
       espree: 9.6.1
       globals: 13.24.0
       ignore: 5.3.2
@@ -3632,7 +3636,7 @@ packages:
     deprecated: Use @eslint/config-array instead
     dependencies:
       '@humanwhocodes/object-schema': 2.0.3
-      debug: 4.4.0
+      debug: 4.4.1
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -6121,7 +6125,7 @@ packages:
       '@typescript-eslint/types': 6.21.0
       '@typescript-eslint/typescript-estree': 6.21.0(typescript@5.8.3)
       '@typescript-eslint/visitor-keys': 6.21.0
-      debug: 4.4.0
+      debug: 4.4.1
       eslint: 8.57.1
       typescript: 5.8.3
     transitivePeerDependencies:
@@ -6153,7 +6157,7 @@ packages:
     dependencies:
       '@typescript-eslint/typescript-estree': 8.31.0(typescript@5.8.3)
       '@typescript-eslint/utils': 8.31.0(eslint@8.57.1)(typescript@5.8.3)
-      debug: 4.4.0
+      debug: 4.4.1
       eslint: 8.57.1
       ts-api-utils: 2.1.0(typescript@5.8.3)
       typescript: 5.8.3
@@ -6182,7 +6186,7 @@ packages:
     dependencies:
       '@typescript-eslint/types': 6.21.0
       '@typescript-eslint/visitor-keys': 6.21.0
-      debug: 4.4.0
+      debug: 4.4.1
       globby: 11.1.0
       is-glob: 4.0.3
       minimatch: 9.0.3
@@ -6201,7 +6205,7 @@ packages:
     dependencies:
       '@typescript-eslint/types': 8.31.0
       '@typescript-eslint/visitor-keys': 8.31.0
-      debug: 4.4.0
+      debug: 4.4.1
       fast-glob: 3.3.3
       is-glob: 4.0.3
       minimatch: 9.0.5
@@ -6832,10 +6836,10 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /axios@1.8.4(debug@4.4.0):
+  /axios@1.8.4(debug@4.4.1):
     resolution: {integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==}
     dependencies:
-      follow-redirects: 1.15.9(debug@4.4.0)
+      follow-redirects: 1.15.9(debug@4.4.1)
       form-data: 4.0.2
       proxy-from-env: 1.1.0
     transitivePeerDependencies:
@@ -7612,40 +7616,6 @@ packages:
     resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
     dev: false
 
-  /debug@3.2.7:
-    resolution: {integrity: sha512-CFjzYYAi4ThfiQvizrFQevTTXHtnCqWfe7x1AhgEscTz6ZbLbfoLRLPugTQyBth6f8ZERVUSyWHFD/7Wu4t1XQ==}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-    dependencies:
-      ms: 2.1.3
-    dev: true
-
-  /debug@4.3.7:
-    resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-    dependencies:
-      ms: 2.1.3
-    dev: false
-
-  /debug@4.4.0:
-    resolution: {integrity: sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==}
-    engines: {node: '>=6.0'}
-    peerDependencies:
-      supports-color: '*'
-    peerDependenciesMeta:
-      supports-color:
-        optional: true
-    dependencies:
-      ms: 2.1.3
-
   /debug@4.4.1:
     resolution: {integrity: sha512-KcKCqiftBJcZr++7ykoDIEwSa3XWowTfNPo92BYxjXiyYEVrUQh2aLyhxBCwww+heortUFxEJYcRzosstTEBYQ==}
     engines: {node: '>=6.0'}
@@ -7656,7 +7626,6 @@ packages:
         optional: true
     dependencies:
       ms: 2.1.3
-    dev: false
 
   /decamelize@1.2.0:
     resolution: {integrity: sha512-z2S+W9X73hAUUki+N+9Za2lBlun89zigOyGrsax+KUQ6wKW4ZoWpEYBkGhQjwAjjDCkWxhY0VKEhk8wzY7F5cA==}
@@ -7889,7 +7858,7 @@ packages:
       base64id: 2.0.0
       cookie: 0.7.2
       cors: 2.8.5
-      debug: 4.3.7
+      debug: 4.4.1
       engine.io-parser: 5.2.3
       ws: 8.17.1
     transitivePeerDependencies:
@@ -8046,7 +8015,7 @@ packages:
     peerDependencies:
       esbuild: '>=0.12 <1'
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.1
       esbuild: 0.25.2
     transitivePeerDependencies:
       - supports-color
@@ -8134,7 +8103,7 @@ packages:
   /eslint-import-resolver-node@0.3.9:
     resolution: {integrity: sha512-WFj2isz22JahUv+B788TlO3N6zL3nNJGU8CcZbPZvVEkBPaJdCV4vy5wyghty5ROFbCRnm132v8BScu5/1BQ8g==}
     dependencies:
-      debug: 3.2.7
+      debug: 4.4.1
       is-core-module: 2.16.1
       resolve: 1.22.10
     transitivePeerDependencies:
@@ -8155,7 +8124,7 @@ packages:
         optional: true
     dependencies:
       '@nolyfill/is-core-module': 1.0.39
-      debug: 4.4.0
+      debug: 4.4.1
       eslint: 8.57.1
       eslint-plugin-import: 2.31.0(@typescript-eslint/parser@6.21.0)(eslint-import-resolver-typescript@3.10.0)(eslint@8.57.1)
       get-tsconfig: 4.10.0
@@ -8189,7 +8158,7 @@ packages:
         optional: true
     dependencies:
       '@typescript-eslint/parser': 6.21.0(eslint@8.57.1)(typescript@5.8.3)
-      debug: 3.2.7
+      debug: 4.4.1
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.0(eslint-plugin-import@2.31.0)(eslint@8.57.1)
@@ -8213,7 +8182,7 @@ packages:
       array.prototype.findlastindex: 1.2.6
       array.prototype.flat: 1.3.3
       array.prototype.flatmap: 1.3.3
-      debug: 3.2.7
+      debug: 4.4.1
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
@@ -8336,7 +8305,7 @@ packages:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.6
-      debug: 4.4.0
+      debug: 4.4.1
       doctrine: 3.0.0
       escape-string-regexp: 4.0.0
       eslint-scope: 7.2.2
@@ -8573,7 +8542,7 @@ packages:
     resolution: {integrity: sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg==}
     dev: true
 
-  /follow-redirects@1.15.9(debug@4.4.0):
+  /follow-redirects@1.15.9(debug@4.4.1):
     resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
     engines: {node: '>=4.0'}
     peerDependencies:
@@ -8582,7 +8551,7 @@ packages:
       debug:
         optional: true
     dependencies:
-      debug: 4.4.0
+      debug: 4.4.1
     dev: false
 
   /fontkit@2.0.4:
@@ -8970,8 +8939,8 @@ packages:
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     dependencies:
       '@types/http-proxy': 1.17.16
-      debug: 4.4.0
-      http-proxy: 1.18.1(debug@4.4.0)
+      debug: 4.4.1
+      http-proxy: 1.18.1(debug@4.4.1)
       is-glob: 4.0.3
       is-plain-object: 5.0.0
       micromatch: 4.0.8
@@ -8979,12 +8948,12 @@ packages:
       - supports-color
     dev: false
 
-  /http-proxy@1.18.1(debug@4.4.0):
+  /http-proxy@1.18.1(debug@4.4.1):
     resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.9(debug@4.4.0)
+      follow-redirects: 1.15.9(debug@4.4.1)
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -11441,7 +11410,7 @@ packages:
   /socket.io-adapter@2.5.5:
     resolution: {integrity: sha512-eLDQas5dzPgOWCk9GuuJC2lBqItuhKI4uxGgo9aIV7MYbk2h9Q6uULEh8WBzThoI7l+qU9Ast9fVUmkqPP9wYg==}
     dependencies:
-      debug: 4.3.7
+      debug: 4.4.1
       ws: 8.17.1
     transitivePeerDependencies:
       - bufferutil
@@ -11454,7 +11423,7 @@ packages:
     engines: {node: '>=10.0.0'}
     dependencies:
       '@socket.io/component-emitter': 3.1.2
-      debug: 4.3.7
+      debug: 4.4.1
     transitivePeerDependencies:
       - supports-color
     dev: false
@@ -11466,7 +11435,7 @@ packages:
       accepts: 1.3.8
       base64id: 2.0.0
       cors: 2.8.5
-      debug: 4.3.7
+      debug: 4.4.1
       engine.io: 6.6.4
       socket.io-adapter: 2.5.5
       socket.io-parser: 4.2.4

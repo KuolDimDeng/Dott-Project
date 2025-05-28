@@ -33,10 +33,44 @@
     "tailwind-scrollbar": "^4.0.1"
   },
   "resolutions": {
-    "@aws-amplify/auth": "^6.10.0",
-    "@aws-amplify/core": "^6.10.0",
-    "@aws-amplify/adapter-nextjs": "^1.5.0",
+    "@aws-amplify/auth": "^6.12.1",
+    "@aws-amplify/core": "^6.11.1",
+    "@aws-amplify/adapter-nextjs": "^1.6.0",
     "aws-amplify": "^6.10.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@aws-amplify/auth": "^6.12.1",
+      "@aws-amplify/core": "^6.11.1",
+      "@aws-amplify/adapter-nextjs": "^1.6.0",
+      "aws-amplify": "^6.10.0",
+      "debug": "^4.3.7"
+    },
+    "peerDependencyRules": {
+      "allowAny": [
+        "debug"
+      ],
+      "ignoreMissing": [
+        "canvas"
+      ]
+    },
+    "neverBuiltDependencies": [
+      "canvas"
+    ],
+    "supportedArchitectures": {
+      "os": [
+        "linux",
+        "darwin",
+        "win32"
+      ],
+      "cpu": [
+        "x64",
+        "arm64"
+      ]
+    },
+    "installConfig": {
+      "optional": false
+    }
   },
   "packageManager": "pnpm@8.15.3"
 }
