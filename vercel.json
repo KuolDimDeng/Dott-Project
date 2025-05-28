@@ -3,7 +3,7 @@
   "name": "dottapps-oauth-fixed",
   "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
-  "installCommand": "cd .. && pnpm install --frozen-lockfile",
+  "installCommand": "pnpm install --frozen-lockfile",
   "env": {
     "ENABLE_EXPERIMENTAL_COREPACK": "1",
     "NEXT_PUBLIC_AWS_REGION": "us-east-1",
