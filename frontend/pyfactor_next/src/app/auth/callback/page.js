@@ -16,6 +16,7 @@ export default function Callback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log('[OAuth Callback] Starting OAuth callback processing...');
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         setStatus('Completing authentication...');
         setProgress(25);
@@ -24,6 +25,16 @@ export default function Callback() {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
+        
+        console.log('[OAuth Callback] URL parameters:', { 
+          hasCode: !!code, 
+          hasState: !!state, 
+          hasError: !!error,
+          codeLength: code?.length,
+          stateValue: state,
+          errorValue: error,
+          fullURL: window.location.href
+        });
         
         logger.debug('[OAuth Callback] URL parameters:', { 
           hasCode: !!code, 
@@ -35,14 +46,18 @@ export default function Callback() {
         
         // If there's an error parameter, handle it
         if (error) {
+          console.error('[OAuth Callback] OAuth error in URL:', error, searchParams.get('error_description'));
           throw new Error(`OAuth error: ${error} - ${searchParams.get('error_description') || 'Authentication failed'}`);
         }
         
         // If we don't have a code, something went wrong
         if (!code) {
+          console.error('[OAuth Callback] No authorization code in URL!');
           logger.error('[OAuth Callback] No authorization code in URL');
           throw new Error('No authorization code received from OAuth provider');
         }
+        
+        console.log('[OAuth Callback] Authorization code received, length:', code.length);
         
         // Add debug function to window for testing onboarding logic
         if (typeof window !== 'undefined') {
@@ -78,11 +93,13 @@ export default function Callback() {
         
         // IMPORTANT: With OAuth code in URL, Amplify should process it automatically
         // But we need to give it time and potentially trigger it
+        console.log('[OAuth Callback] Waiting for Amplify to process OAuth code...');
         logger.debug('[OAuth Callback] Waiting for OAuth processing...');
         
         // First, let's make sure Amplify processes the current URL
         // In some cases, we might need to manually handle the OAuth response
         if (typeof window !== 'undefined' && window.location.href.includes('code=')) {
+          console.log('[OAuth Callback] OAuth code detected in URL, configuring Amplify...');
           logger.debug('[OAuth Callback] OAuth code detected in URL, ensuring Amplify processes it');
           
           // For Amplify v6, the OAuth flow should be handled automatically when the page loads
@@ -91,11 +108,19 @@ export default function Callback() {
           // Ensure Amplify is configured
           const { configureAmplify } = await import('@/config/amplifyUnified');
           const configured = configureAmplify();
+          console.log('[OAuth Callback] Amplify configuration status:', configured);
           logger.debug('[OAuth Callback] Amplify configuration status:', configured);
         }
         
         // Listen for auth events to know when OAuth is complete
+        console.log('[OAuth Callback] Setting up Hub listeners...');
         const authListener = Hub.listen('auth', async (data) => {
+          console.log('[OAuth Callback] Auth Hub event received:', { 
+            event: data.payload.event,
+            hasData: !!data.payload.data,
+            message: data.payload.message
+          });
+          
           logger.debug('[OAuth Callback] Auth Hub event:', { 
             event: data.payload.event,
             data: data.payload.data,
@@ -109,11 +134,13 @@ export default function Callback() {
               data.payload.event === 'cognitoHostedUI_failure') {
             
             if (data.payload.event === 'signIn_failure' || data.payload.event === 'cognitoHostedUI_failure') {
+              console.error('[OAuth Callback] Sign-in failure event:', data.payload);
               Hub.remove('auth', authListener);
               throw new Error(data.payload.data?.message || 'OAuth sign-in failed');
             }
             
             if (data.payload.event === 'signIn' || data.payload.event === 'cognitoHostedUI') {
+              console.log('[OAuth Callback] Sign-in success event received!');
               // OAuth sign-in successful, continue with the flow
               Hub.remove('auth', authListener);
               await completeOAuthFlow();
@@ -124,18 +151,23 @@ export default function Callback() {
         // Multiple attempts to check for session with increasing delays
         const checkForSession = async (attemptNumber = 1) => {
           try {
+            console.log(`[OAuth Callback] Checking for session, attempt ${attemptNumber}...`);
             logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber}`);
             const session = await fetchAuthSession({ forceRefresh: attemptNumber > 2 });
             
-            logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber} result:`, {
+            const sessionInfo = {
               hasSession: !!session,
               hasTokens: !!session?.tokens,
               hasAccessToken: !!session?.tokens?.accessToken,
               isSignedIn: session?.isSignedIn,
               userSub: session?.userSub
-            });
+            };
+            
+            console.log(`[OAuth Callback] Session check attempt ${attemptNumber} result:`, sessionInfo);
+            logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber} result:`, sessionInfo);
             
             if (session?.tokens) {
+              console.log('[OAuth Callback] ✅ Session found! OAuth completed successfully');
               logger.debug('[OAuth Callback] Session found, OAuth completed');
               Hub.remove('auth', authListener);
               await completeOAuthFlow();
@@ -143,6 +175,7 @@ export default function Callback() {
             }
             return false;
           } catch (err) {
+            console.log(`[OAuth Callback] Session check attempt ${attemptNumber} error:`, err.message);
             logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber} failed:`, err.message);
             return false;
           }
