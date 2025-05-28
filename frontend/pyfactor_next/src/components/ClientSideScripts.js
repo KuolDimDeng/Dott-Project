@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+// Import OAuth debugger to make functions available globally
+import '@/utils/oauthDebugger';
 
 /**
  * Client-side script initializer component
