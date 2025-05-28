@@ -88,9 +88,75 @@ export default function Callback() {
             };
           };
           
+          // Add manual OAuth processing function
+          window.processOAuthManually = async () => {
+            console.log('🔄 Processing OAuth callback manually...');
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            
+            if (!code) {
+              console.error('❌ No authorization code found in URL');
+              return;
+            }
+            
+            try {
+              // Import and configure Amplify
+              const { Amplify } = await import('aws-amplify');
+              const { fetchAuthSession } = await import('aws-amplify/auth');
+              
+              console.log('  1. Configuring Amplify...');
+              Amplify.configure({
+                Auth: {
+                  Cognito: {
+                    userPoolId: 'us-east-1_JPL8vGfb6',
+                    userPoolClientId: '1o5v84mrgn4gt87khtr179uc5b',
+                    region: 'us-east-1',
+                    loginWith: {
+                      email: true,
+                      username: true,
+                      phone: false,
+                      oauth: {
+                        domain: 'us-east-1jpl8vgfb6.auth.us-east-1.amazoncognito.com',
+                        scopes: 'openid profile email',
+                        redirectSignIn: 'https://dottapps.com/auth/callback',
+                        redirectSignOut: 'https://dottapps.com/auth/signin',
+                        responseType: 'code',
+                        providers: ['Google']
+                      }
+                    }
+                  }
+                }
+              });
+              
+              console.log('  2. Fetching auth session...');
+              const session = await fetchAuthSession({ forceRefresh: true });
+              console.log('  ✅ Session:', session);
+              console.log('  ✅ Tokens:', session.tokens);
+              
+              if (session.tokens) {
+                console.log('  3. Authentication successful!');
+                console.log('  Access Token:', session.tokens.accessToken?.toString().substring(0, 50) + '...');
+                console.log('  ID Token:', session.tokens.idToken?.toString().substring(0, 50) + '...');
+              } else {
+                console.error('  ❌ No tokens received');
+              }
+              
+              return session;
+            } catch (error) {
+              console.error('  ❌ Error:', error);
+              console.error('  Error details:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack
+              });
+              return null;
+            }
+          };
+          
           console.log('🧪 Debug functions added:');
           console.log('  - window.testOnboardingLogic(attributes)');
           console.log('  - window.debugOAuthCallback()');
+          console.log('  - window.processOAuthManually() [NEW]');
         }
         
         // Fix: Ensure Amplify is properly configured before any auth operations
@@ -123,6 +189,8 @@ export default function Callback() {
           // Import the raw auth function directly to bypass the enhanced wrapper
           const { fetchAuthSession: rawFetchAuthSession } = await import('aws-amplify/auth');
           
+          logger.debug('[OAuth Callback] Starting fetchAuthSession with raw function...');
+          
           const authResponse = await Promise.race([
             rawFetchAuthSession({ forceRefresh: true }),
             new Promise((_, reject) => 
@@ -130,21 +198,30 @@ export default function Callback() {
             )
           ]);
           
+          logger.debug('[OAuth Callback] fetchAuthSession completed, response:', authResponse);
+          
           tokens = authResponse?.tokens;
           
           logger.debug('[OAuth Callback] Auth response:', { 
             hasTokens: !!tokens,
             hasAccessToken: !!tokens?.accessToken,
             hasIdToken: !!tokens?.idToken,
-            isSignedIn: authResponse?.isSignedIn
+            isSignedIn: authResponse?.isSignedIn,
+            responseKeys: authResponse ? Object.keys(authResponse) : []
           });
         } catch (sessionError) {
           logger.error('[OAuth Callback] Session fetch error:', sessionError);
+          logger.error('[OAuth Callback] Error details:', {
+            message: sessionError.message,
+            name: sessionError.name,
+            stack: sessionError.stack
+          });
           
           // If it's the "Auth UserPool not configured" error, try direct configuration
           if (sessionError.message?.includes('Auth UserPool not configured') || 
-              sessionError.message?.includes('UserPool')) {
-            logger.warn('[OAuth Callback] Amplify lost configuration, attempting direct recovery...');
+              sessionError.message?.includes('UserPool') ||
+              sessionError.name === 'UserUnAuthenticatedException') {
+            logger.warn('[OAuth Callback] Amplify lost configuration or auth failed, attempting direct recovery...');
             
             // Try to configure Amplify directly
             try {
@@ -172,16 +249,35 @@ export default function Callback() {
                 }
               };
               
+              logger.debug('[OAuth Callback] Applying direct Amplify configuration...');
               AmplifyDirect.configure(amplifyConfig);
               await new Promise(resolve => setTimeout(resolve, 500));
               
               // Try once more with raw function
+              logger.debug('[OAuth Callback] Retrying fetchAuthSession after reconfiguration...');
               const { fetchAuthSession: rawRetry } = await import('aws-amplify/auth');
               const retryResponse = await rawRetry({ forceRefresh: true });
               tokens = retryResponse?.tokens;
+              logger.debug('[OAuth Callback] Retry response:', {
+                hasTokens: !!tokens,
+                hasAccessToken: !!tokens?.accessToken,
+                hasIdToken: !!tokens?.idToken
+              });
             } catch (recoveryError) {
               logger.error('[OAuth Callback] Direct recovery failed:', recoveryError);
-              throw sessionError;
+              logger.error('[OAuth Callback] Recovery error details:', {
+                message: recoveryError.message,
+                name: recoveryError.name,
+                stack: recoveryError.stack
+              });
+              
+              // Last resort: Check if we're in a redirect loop
+              const urlParams = new URLSearchParams(window.location.search);
+              if (urlParams.get('error') || urlParams.get('error_description')) {
+                throw new Error(`OAuth provider error: ${urlParams.get('error')} - ${urlParams.get('error_description')}`);
+              }
+              
+              throw new Error('Authentication failed - unable to retrieve tokens from OAuth callback');
             }
           } else {
             throw sessionError;
