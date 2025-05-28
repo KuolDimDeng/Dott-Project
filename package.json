@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "prepare": "husky",
+    "prepare": "husky || true",
     "start": "pnpm node script.js",
     "dev": "cd frontend/pyfactor_next && pnpm run dev",
     "dev:frontend": "cd frontend/pyfactor_next && pnpm run dev",
