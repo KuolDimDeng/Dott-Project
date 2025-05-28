@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchAuthSession, fetchUserAttributes } from '@/config/amplifyUnified';
+import { fetchAuthSession, fetchUserAttributes, configureAmplify, isAmplifyConfigured } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 
@@ -112,12 +112,27 @@ export default function Callback() {
         const baseDelay = 1000; // 1 second base delay
         const maxDelay = 8000; // Maximum 8 seconds delay
         
+        // Ensure Amplify is configured before attempting OAuth callback
+        if (!isAmplifyConfigured()) {
+          logger.debug('[OAuth Callback] Amplify not configured, configuring now...');
+          configureAmplify(true);
+          // Wait for configuration to settle
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
         // Add initial delay to allow Cognito to process the OAuth callback
         logger.debug('[OAuth Callback] Adding initial delay for Cognito processing...');
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         while (retryCount < maxRetries) {
           try {
+            // Ensure Amplify is still configured (it can lose config during OAuth flow)
+            if (!isAmplifyConfigured()) {
+              logger.debug(`[OAuth Callback] Amplify lost configuration on attempt ${retryCount + 1}, reconfiguring...`);
+              configureAmplify(true);
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
             logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} to fetch auth session`);
             
             const authResponse = await fetchAuthSession({ forceRefresh: true });
@@ -153,6 +168,15 @@ export default function Callback() {
           } catch (authError) {
             logger.error(`[OAuth Callback] Error on attempt ${retryCount + 1}:`, authError);
             
+            // Special handling for Amplify configuration loss
+            if (authError.message?.includes('Auth UserPool not configured')) {
+              logger.warn('[OAuth Callback] Amplify lost UserPool configuration, forcing reconfiguration...');
+              configureAmplify(true);
+              await new Promise(resolve => setTimeout(resolve, 500));
+              retryCount++;
+              continue;
+            }
+            
             // If it's a network error or temporary issue, retry
             if (retryCount < maxRetries - 1 && (
               authError.message?.includes('network') ||
@@ -174,6 +198,14 @@ export default function Callback() {
           // Final attempt: Check if user is actually authenticated despite token retrieval failure
           try {
             logger.debug('[OAuth Callback] Final attempt: checking current user status');
+            
+            // Ensure Amplify is configured for fallback check
+            if (!isAmplifyConfigured()) {
+              logger.debug('[OAuth Callback] Amplify not configured for fallback check, reconfiguring...');
+              configureAmplify(true);
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            
             const userAttributes = await fetchUserAttributes();
             if (userAttributes && userAttributes.email) {
               logger.debug('[OAuth Callback] User appears to be authenticated despite token retrieval issues');
