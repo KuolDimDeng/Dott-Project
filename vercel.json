@@ -15,11 +15,6 @@
     "NEXT_PUBLIC_OAUTH_SCOPES": "openid,profile,email",
     "NODE_ENV": "production"
   },
-  "functions": {
-    "frontend/pyfactor_next/src/app/**/*.js": {
-      "maxDuration": 30
-    }
-  },
   "regions": ["iad1"],
   "github": {
     "silent": true
