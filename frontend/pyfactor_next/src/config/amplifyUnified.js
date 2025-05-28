@@ -607,6 +607,28 @@ if (typeof window !== 'undefined') {
       expectedScopes: ['openid', 'profile', 'email'],
       scopesCorrect: JSON.stringify(parsedScopes) === JSON.stringify(['openid', 'profile', 'email'])
     };
+  // Add OAuth callback debugging function
+  window.debugOAuthCallback = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authCode = urlParams.get('code');
+    const state = urlParams.get('state');
+    const error = urlParams.get('error');
+    
+    console.log('=== OAuth Callback Debug ===');
+    console.log('Current URL:', window.location.href);
+    console.log('Authorization Code:', authCode ? `${authCode.substring(0, 20)}...` : 'None');
+    console.log('State:', state);
+    console.log('Error:', error);
+    console.log('Error Description:', urlParams.get('error_description'));
+    
+    return {
+      hasCode: !!authCode,
+      codeLength: authCode?.length,
+      hasState: !!state,
+      hasError: !!error,
+      allParams: Object.fromEntries(urlParams.entries())
+    };
+  };
   };
   
   // Add a global function to ensure Amplify is ready for OAuth
@@ -674,7 +696,45 @@ const enhancedFetchUserAttributes = async (...args) => {
 
 const enhancedFetchAuthSession = async (...args) => {
   return retryWithBackoff(async () => {
-    return fetchAuthSession(...args);
+    // Enhanced token retrieval with timeout support
+    const options = args[0] || {};
+    const timeout = options.timeout || 15000; // Default 15 second timeout
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('fetchAuthSession timeout')), timeout);
+    });
+    
+    // Race between fetchAuthSession and timeout
+    const sessionPromise = fetchAuthSession(options);
+    
+    try {
+      const result = await Promise.race([sessionPromise, timeoutPromise]);
+      
+      // Validate the result has proper token structure
+      if (result?.tokens) {
+        const { accessToken, idToken } = result.tokens;
+        
+        // Check if tokens are valid (not empty strings or null)
+        const hasValidAccessToken = accessToken && accessToken.toString().length > 50;
+        const hasValidIdToken = idToken && idToken.toString().length > 50;
+        
+        if (hasValidAccessToken || hasValidIdToken) {
+          logger.debug('[AmplifyUnified] Valid tokens retrieved successfully');
+          return result;
+        } else {
+          logger.debug('[AmplifyUnified] Tokens received but appear invalid');
+          throw new Error('Invalid token format received');
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      if (error.message === 'fetchAuthSession timeout') {
+        logger.warn('[AmplifyUnified] fetchAuthSession timed out, this may indicate Cognito processing delays');
+      }
+      throw error;
+    }
   }, 'fetchAuthSession');
 };
 

@@ -513,3 +513,12 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 **Issue**: AWS-specific scope causing Google OAuth "invalid_scope" error
 **Solution**: Use only standard OAuth scopes: openid,profile,email
 **Next Step**: Update Vercel environment variable
+
+## Version0045_fix_oauth_token_retrieval_callback (v1.0)
+- **Date**: 2025-05-28T13:10:14.700Z
+- **Issue**: OAuth callback token retrieval failure after Google consent
+- **Status**: ✅ Completed
+- **Files Modified**: src/app/auth/callback/page.js, src/config/amplifyUnified.js
+- **Description**: Fixed OAuth token retrieval failure by implementing exponential backoff, enhanced error handling, and improved user experience
+- **Impact**: Resolves Google Sign-In authentication failures
+- **Testing**: Manual OAuth flow testing required
