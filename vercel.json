@@ -1,5 +1,7 @@
 {
-  "buildCommand": "rm -rf .next && pnpm run build:production",
+  "version": 2,
+  "name": "dottapps-oauth-fixed",
+  "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "env": {
@@ -17,5 +19,9 @@
     "src/app/**/*.js": {
       "maxDuration": 30
     }
+  },
+  "regions": ["iad1"],
+  "github": {
+    "silent": true
   }
 } 

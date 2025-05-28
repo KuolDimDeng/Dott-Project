@@ -1,8 +1,11 @@
 {
-  "buildCommand": "npm run build:production",
+  "version": 2,
+  "name": "dottapps-oauth-enhanced",
+  "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
-  "installCommand": "npm install",
+  "installCommand": "pnpm install --frozen-lockfile",
   "env": {
+    "ENABLE_EXPERIMENTAL_COREPACK": "1",
     "NEXT_PUBLIC_AWS_REGION": "us-east-1",
     "NEXT_PUBLIC_COGNITO_USER_POOL_ID": "us-east-1_JPL8vGfb6",
     "NEXT_PUBLIC_COGNITO_CLIENT_ID": "1o5v84mrgn4gt87khtr179uc5b",
@@ -11,5 +14,11 @@
     "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT": "https://dottapps.com/auth/signin",
     "NEXT_PUBLIC_OAUTH_SCOPES": "openid,profile,email",
     "NODE_ENV": "production"
-  }
+  },
+  "functions": {
+    "src/app/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "regions": ["iad1"]
 }

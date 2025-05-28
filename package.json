@@ -6,7 +6,8 @@
     "start": "pnpm node script.js",
     "dev": "cd frontend/pyfactor_next && pnpm run dev",
     "dev:frontend": "cd frontend/pyfactor_next && pnpm run dev",
-    "dev:https": "cd frontend/pyfactor_next && pnpm run dev:https"
+    "dev:https": "cd frontend/pyfactor_next && pnpm run dev:https",
+    "build:production": "echo '🚨 FORCING PNPM BUILD - Enhanced OAuth v2.2 - CACHE CLEAR' && rm -rf .next && rm -rf node_modules/.cache && NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
