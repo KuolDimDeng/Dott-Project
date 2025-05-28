@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchAuthSession, fetchUserAttributes } from '@/config/amplifyUnified';
+import { fetchAuthSession, fetchUserAttributes, Hub } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 
@@ -52,10 +52,70 @@ export default function Callback() {
           console.log('🧪 Debug function added: window.testOnboardingLogic(attributes)');
         }
         
+        // IMPORTANT: Wait for Amplify to process the OAuth callback
+        // In Amplify v6, the OAuth flow is handled automatically
+        // We need to give it time to process the response and exchange tokens
+        logger.debug('[OAuth Callback] Waiting for OAuth processing...');
+        
+        // Listen for auth events to know when OAuth is complete
+        const authListener = Hub.listen('auth', async (data) => {
+          logger.debug('[OAuth Callback] Auth Hub event:', data);
+          
+          if (data.payload.event === 'signIn' || data.payload.event === 'signIn_failure') {
+            Hub.remove('auth', authListener);
+            
+            if (data.payload.event === 'signIn_failure') {
+              throw new Error(data.payload.data?.message || 'OAuth sign-in failed');
+            }
+            
+            // OAuth sign-in successful, continue with the flow
+            await completeOAuthFlow();
+          }
+        });
+        
+        // Also try to fetch session after a delay to handle cases where Hub event might not fire
+        setTimeout(async () => {
+          try {
+            const session = await fetchAuthSession();
+            if (session?.tokens) {
+              Hub.remove('auth', authListener);
+              await completeOAuthFlow();
+            }
+          } catch (err) {
+            logger.debug('[OAuth Callback] Session check failed, waiting for Hub event');
+          }
+        }, 2000);
+        
+        // Set a timeout for the entire OAuth process
+        setTimeout(() => {
+          Hub.remove('auth', authListener);
+          if (!error) {
+            setError('OAuth authentication timeout. Please try again.');
+            setStatus('Authentication timeout. Redirecting to sign in...');
+            setTimeout(() => {
+              router.push('/auth/signin?error=timeout');
+            }, 3000);
+          }
+        }, 30000); // 30 second timeout
+        
+      } catch (error) {
+        logger.error('[OAuth Callback] OAuth process failed:', error);
+        setError(error.message || 'Authentication failed');
+        setStatus('Authentication error. Redirecting to sign in...');
+        
+        // Redirect to sign in page after a short delay
+        setTimeout(() => {
+          router.push('/auth/signin?error=oauth');
+        }, 3000);
+      }
+    };
+    
+    const completeOAuthFlow = async () => {
+      try {
         // Handle the OAuth callback with retry mechanism
         let tokens;
         let retryCount = 0;
-        const maxRetries = 10; // Try for up to 10 seconds
+        const maxRetries = 5; // Reduced from 10 since we already waited
         
         while (retryCount < maxRetries) {
           try {
@@ -81,7 +141,7 @@ export default function Callback() {
             if (retryCount < maxRetries - 1) {
               logger.debug(`[OAuth Callback] No tokens yet, waiting 1 second before retry ${retryCount + 2}`);
               setStatus(`Waiting for authentication to complete... (${retryCount + 1}/${maxRetries})`);
-              setProgress(25 + (retryCount * 3)); // Gradually increase progress
+              setProgress(25 + (retryCount * 5)); // Gradually increase progress
               await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
@@ -197,7 +257,7 @@ export default function Callback() {
           }, 2000);
         }
       } catch (error) {
-        logger.error('[OAuth Callback] OAuth process failed:', error);
+        logger.error('[OAuth Callback] OAuth completion failed:', error);
         setError(error.message || 'Authentication failed');
         setStatus('Authentication error. Redirecting to sign in...');
         
