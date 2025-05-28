@@ -794,9 +794,33 @@ const enhancedUpdateUserAttributes = async (...args) => {
 
 // Check if configured
 export const isAmplifyConfigured = () => {
-  if (!isConfigured) return false;
-  const config = Amplify.getConfig();
-  return !!(config?.Auth?.Cognito?.userPoolId);
+  try {
+    if (!isConfigured) return false;
+    
+    const config = Amplify.getConfig();
+    
+    // Check basic configuration
+    if (!config?.Auth?.Cognito?.userPoolId) return false;
+    if (!config?.Auth?.Cognito?.userPoolClientId) return false;
+    if (!config?.Auth?.Cognito?.region) return false;
+    
+    // Check OAuth configuration specifically
+    if (!config?.Auth?.Cognito?.loginWith?.oauth) return false;
+    if (!config?.Auth?.Cognito?.loginWith?.oauth?.domain) return false;
+    if (!config?.Auth?.Cognito?.loginWith?.oauth?.redirectSignIn) return false;
+    if (!config?.Auth?.Cognito?.loginWith?.oauth?.redirectSignOut) return false;
+    
+    // Verify OAuth scopes are properly configured
+    const oauthScopes = config?.Auth?.Cognito?.loginWith?.oauth?.scopes;
+    if (!oauthScopes || typeof oauthScopes !== 'string' || !oauthScopes.includes('openid')) {
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('[AmplifyUnified] Error checking configuration:', error);
+    return false;
+  }
 };
 
 // Export enhanced auth functions with both enhanced and original names

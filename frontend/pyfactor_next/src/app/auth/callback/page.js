@@ -163,12 +163,15 @@ export default function Callback() {
         const baseDelay = 1000; // 1 second base delay
         const maxDelay = 8000; // Maximum 8 seconds delay
         
-        // Ensure Amplify is configured before attempting OAuth callback
-        if (!isAmplifyConfigured()) {
-          logger.debug('[OAuth Callback] Amplify not configured, configuring now...');
+        // Force complete Amplify reconfiguration before starting
+        logger.debug('[OAuth Callback] Force complete Amplify reconfiguration...');
+        for (let i = 0; i < 5; i++) {
           configureAmplify(true);
-          // Wait for configuration to settle
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 300));
+          if (isAmplifyConfigured()) {
+            logger.debug(`[OAuth Callback] Amplify configured successfully on attempt ${i + 1}`);
+            break;
+          }
         }
         
         // Add initial delay to allow Cognito to process the OAuth callback
@@ -177,14 +180,35 @@ export default function Callback() {
         
         while (retryCount < maxRetries) {
           try {
-            // Ensure Amplify is still configured (it can lose config during OAuth flow)
-            if (!isAmplifyConfigured()) {
-              logger.debug(`[OAuth Callback] Amplify lost configuration on attempt ${retryCount + 1}, reconfiguring...`);
-              configureAmplify(true);
-              await new Promise(resolve => setTimeout(resolve, 300));
+            // Force complete reconfiguration on every attempt to prevent config loss
+            logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} - Force reconfiguring Amplify...`);
+            
+            // Clear any existing configuration first
+            if (typeof window !== 'undefined' && window.Amplify) {
+              try {
+                // Try to clear existing config
+                window.Amplify.configure({});
+                await new Promise(resolve => setTimeout(resolve, 100));
+              } catch (clearError) {
+                logger.debug('[OAuth Callback] Could not clear existing config:', clearError.message);
+              }
             }
             
-            logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} to fetch auth session`);
+            // Force fresh configuration
+            configureAmplify(true);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Verify configuration is actually working
+            const config = window.Amplify?.getConfig();
+            if (!config?.Auth?.Cognito?.userPoolId) {
+              throw new Error('Amplify configuration verification failed - no userPoolId');
+            }
+            
+            if (!config?.Auth?.Cognito?.loginWith?.oauth) {
+              throw new Error('Amplify OAuth configuration verification failed');
+            }
+            
+            logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} - Configuration verified, fetching auth session`);
             
             const authResponse = await fetchAuthSession({ forceRefresh: true });
             tokens = authResponse?.tokens;
@@ -220,10 +244,32 @@ export default function Callback() {
             logger.error(`[OAuth Callback] Error on attempt ${retryCount + 1}:`, authError);
             
             // Special handling for Amplify configuration loss
-            if (authError.message?.includes('Auth UserPool not configured')) {
-              logger.warn('[OAuth Callback] Amplify lost UserPool configuration, forcing reconfiguration...');
-              configureAmplify(true);
-              await new Promise(resolve => setTimeout(resolve, 500));
+            if (authError.message?.includes('Auth UserPool not configured') || 
+                authError.message?.includes('configuration verification failed')) {
+              logger.warn('[OAuth Callback] Amplify configuration issue detected, forcing complete reconfiguration...');
+              
+              // Try to completely reset and reconfigure Amplify
+              try {
+                if (typeof window !== 'undefined' && window.Amplify) {
+                  window.Amplify.configure({});
+                  await new Promise(resolve => setTimeout(resolve, 200));
+                }
+                
+                // Force multiple configuration attempts
+                for (let configAttempt = 0; configAttempt < 3; configAttempt++) {
+                  configureAmplify(true);
+                  await new Promise(resolve => setTimeout(resolve, 300));
+                  
+                  const testConfig = window.Amplify?.getConfig();
+                  if (testConfig?.Auth?.Cognito?.userPoolId) {
+                    logger.debug(`[OAuth Callback] Reconfiguration successful on attempt ${configAttempt + 1}`);
+                    break;
+                  }
+                }
+              } catch (reconfigError) {
+                logger.error('[OAuth Callback] Reconfiguration failed:', reconfigError);
+              }
+              
               retryCount++;
               continue;
             }
