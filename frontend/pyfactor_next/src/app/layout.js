@@ -187,7 +187,222 @@ export default async function RootLayout({ children, params }) {
           `}
         </Script>
         
-        {/* All interfering scripts removed - using direct code fixes instead */}
+        {/* OAuth debugging functions - available globally */}
+        <script 
+          dangerouslySetInnerHTML={{ 
+            __html: `
+              // OAuth Debugging Functions - Available Globally
+              (function() {
+                console.log('🧪 Initializing OAuth debugging functions...');
+                
+                // Manual OAuth retry function
+                window.manualOAuthRetry = async function() {
+                  console.log('🔄 Manual OAuth Retry Started...');
+                  
+                  try {
+                    // Check if Amplify is available
+                    if (!window.Amplify || !window.Amplify.Auth) {
+                      console.error('  ❌ Amplify not available');
+                      return { success: false, error: 'Amplify not available' };
+                    }
+                    
+                    console.log('  1. Amplify is available, attempting to get current session...');
+                    
+                    try {
+                      const session = await window.Amplify.Auth.currentSession();
+                      console.log('  ✅ Current session retrieved:', {
+                        isValid: session && session.isValid(),
+                        hasAccessToken: !!(session && session.getAccessToken()),
+                        hasIdToken: !!(session && session.getIdToken()),
+                        accessTokenLength: session?.getAccessToken()?.getJwtToken()?.length,
+                        idTokenLength: session?.getIdToken()?.getJwtToken()?.length
+                      });
+                      
+                      if (session && session.isValid()) {
+                        console.log('  2. Session is valid, getting user attributes...');
+                        
+                        try {
+                          const user = await window.Amplify.Auth.currentAuthenticatedUser();
+                          const userAttributes = user.attributes;
+                          console.log('  ✅ User attributes:', userAttributes);
+                          
+                          // Determine next step based on onboarding status
+                          let nextStep = 'business-info'; // Default
+                          
+                          if (userAttributes['custom:onboarding']?.toLowerCase() === 'complete') {
+                            nextStep = 'complete';
+                          } else if (userAttributes['custom:setupdone'] === 'true') {
+                            nextStep = 'complete';
+                          } else if (userAttributes['custom:payverified'] === 'true') {
+                            nextStep = 'setup';
+                          } else if (userAttributes['custom:subplan']) {
+                            nextStep = 'payment';
+                          } else if (userAttributes['custom:tenant_ID']) {
+                            nextStep = 'subscription';
+                          }
+                          
+                          let redirectUrl = nextStep === 'complete' ? '/dashboard' : '/onboarding/' + nextStep;
+                          redirectUrl += '?from=oauth_manual_retry';
+                          
+                          console.log('  📍 Next step determined:', {
+                            nextStep,
+                            redirectUrl,
+                            userAttributes: {
+                              onboarding: userAttributes['custom:onboarding'],
+                              tenantId: userAttributes['custom:tenant_ID'],
+                              subplan: userAttributes['custom:subplan'],
+                              payverified: userAttributes['custom:payverified'],
+                              setupdone: userAttributes['custom:setupdone']
+                            }
+                          });
+                          
+                          console.log('  🎯 Call window.oauthRedirect() to complete the redirect');
+                          
+                          // Store redirect URL for manual execution
+                          window.oauthRedirectUrl = redirectUrl;
+                          window.oauthRedirect = function() {
+                            console.log('🚀 Redirecting to ' + window.oauthRedirectUrl + '...');
+                            window.location.href = window.oauthRedirectUrl;
+                          };
+                          
+                          return { 
+                            success: true, 
+                            session, 
+                            userAttributes, 
+                            nextStep, 
+                            redirectUrl,
+                            message: 'OAuth retry successful! Call window.oauthRedirect() to complete.'
+                          };
+                        } catch (userError) {
+                          console.error('  ❌ Error getting user attributes:', userError);
+                          return { success: false, error: 'Error getting user attributes: ' + userError.message };
+                        }
+                      } else {
+                        console.error('  ❌ Session is not valid');
+                        return { success: false, error: 'Session is not valid' };
+                      }
+                    } catch (sessionError) {
+                      console.error('  ❌ Error getting current session:', sessionError);
+                      return { success: false, error: 'Error getting session: ' + sessionError.message };
+                    }
+                  } catch (error) {
+                    console.error('  ❌ Manual OAuth retry failed:', error);
+                    return { success: false, error: error.message };
+                  }
+                };
+                
+                // Debug OAuth state function
+                window.debugOAuthState = function() {
+                  console.log('🔍 OAuth State Debug Info:');
+                  
+                  const currentUrl = window.location.href;
+                  const urlParams = new URLSearchParams(window.location.search);
+                  
+                  console.log('  📍 Current Location:', {
+                    url: currentUrl,
+                    pathname: window.location.pathname,
+                    search: window.location.search
+                  });
+                  
+                  const oauthParams = {
+                    code: urlParams.get('code'),
+                    state: urlParams.get('state'),
+                    error: urlParams.get('error'),
+                    errorDescription: urlParams.get('error_description')
+                  };
+                  
+                  console.log('  🔑 OAuth Parameters:', oauthParams);
+                  
+                  console.log('  ⚙️ Amplify Availability:', {
+                    amplifyAvailable: !!(window.Amplify),
+                    authAvailable: !!(window.Amplify && window.Amplify.Auth),
+                    configuredUserPoolId: window.Amplify?.Auth?._config?.userPoolId,
+                    configuredRegion: window.Amplify?.Auth?._config?.region
+                  });
+                  
+                  const cookies = document.cookie.split(';').reduce(function(acc, cookie) {
+                    const parts = cookie.trim().split('=');
+                    const key = parts[0];
+                    const value = parts[1];
+                    if (key && (key.includes('auth') || key.includes('onboarding'))) {
+                      acc[key] = value;
+                    }
+                    return acc;
+                  }, {});
+                  
+                  console.log('  🍪 Auth-related Cookies:', cookies);
+                  
+                  return {
+                    currentUrl: currentUrl,
+                    oauthParams: oauthParams,
+                    amplifyAvailable: !!(window.Amplify),
+                    cookies: cookies
+                  };
+                };
+                
+                // Test onboarding logic function
+                window.testOnboardingLogic = function(testAttributes) {
+                  console.log('🧪 Testing Onboarding Logic...');
+                  
+                  if (testAttributes) {
+                    console.log('  📊 Testing with provided attributes:', testAttributes);
+                    // Simple onboarding logic test
+                    let step = 'business-info';
+                    if (testAttributes['custom:onboarding']?.toLowerCase() === 'complete') {
+                      step = 'complete';
+                    } else if (testAttributes['custom:setupdone'] === 'true') {
+                      step = 'complete';
+                    } else if (testAttributes['custom:payverified'] === 'true') {
+                      step = 'setup';
+                    } else if (testAttributes['custom:subplan']) {
+                      step = 'payment';
+                    } else if (testAttributes['custom:tenant_ID']) {
+                      step = 'subscription';
+                    }
+                    console.log('  📍 Determined step:', step);
+                    return step;
+                  }
+                  
+                  const scenarios = [
+                    { name: 'New User (no attributes)', attrs: {} },
+                    { name: 'Has Tenant ID only', attrs: { 'custom:tenant_ID': 'test-tenant-123' } },
+                    { name: 'Has Subscription', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional' } },
+                    { name: 'Paid Plan + Payment', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional', 'custom:payverified': 'true' } },
+                    { name: 'Setup Done', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional', 'custom:payverified': 'true', 'custom:setupdone': 'true' } },
+                    { name: 'Complete', attrs: { 'custom:onboarding': 'complete' } }
+                  ];
+                  
+                  console.log('  🔍 Testing all scenarios:');
+                  const results = {};
+                  scenarios.forEach(function(scenario) {
+                    let step = 'business-info';
+                    if (scenario.attrs['custom:onboarding']?.toLowerCase() === 'complete') {
+                      step = 'complete';
+                    } else if (scenario.attrs['custom:setupdone'] === 'true') {
+                      step = 'complete';
+                    } else if (scenario.attrs['custom:payverified'] === 'true') {
+                      step = 'setup';
+                    } else if (scenario.attrs['custom:subplan']) {
+                      step = 'payment';
+                    } else if (scenario.attrs['custom:tenant_ID']) {
+                      step = 'subscription';
+                    }
+                    console.log('    ' + scenario.name + ': ' + step);
+                    results[scenario.name] = step;
+                  });
+                  
+                  return results;
+                };
+                
+                console.log('🧪 OAuth Debugger Functions Available:');
+                console.log('  - window.manualOAuthRetry() - Manually retry OAuth authentication');
+                console.log('  - window.debugOAuthState() - Debug current OAuth state');
+                console.log('  - window.testOnboardingLogic(attrs) - Test onboarding logic');
+                console.log('  - window.oauthRedirect() - Complete redirect after successful retry');
+              })();
+            `
+          }}
+        />
       </body>
     </html>
   );
