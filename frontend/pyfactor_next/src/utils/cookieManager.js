@@ -1,5 +1,20 @@
+/**
+ * cookieManager.js
+ * 
+ * Manages user authentication state and onboarding flow using AWS Cognito attributes.
+ * This module determines the appropriate redirect path based on user's onboarding status.
+ * 
+ * CRITICAL: Always use CognitoAttributes utility for attribute access to ensure
+ * consistent naming and prevent casing issues.
+ * 
+ * VERSION: Updated by Version0001_FixCognitoAttributesOnboarding script
+ * LAST UPDATED: 2025-05-28
+ */
+
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
+import CognitoAttributes from '@/utils/CognitoAttributes';
+import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 
 /**
  * Sets authentication data in Cognito user attributes
@@ -64,7 +79,7 @@ export const setAuthCookies = async (tokens, userAttributes = null) => {
 };
 
 /**
- * Sets onboarding-related attributes in Cognito
+ * Sets onboarding-related attributes in Cognito using correct attribute names
  * @param {Object} attributes - User attributes from Cognito or API
  * @returns {Promise<boolean>} - Success status
  */
@@ -75,51 +90,34 @@ export const setOnboardingAttributes = async (attributes) => {
       return false;
     }
     
-    logger.debug('[cookieManager] Setting onboarding data in Cognito');
+    logger.debug('[cookieManager] Setting onboarding data in Cognito using correct attribute names');
     
-    // Extract onboarding status from attributes
+    // Extract onboarding status from attributes using correct names
     const onboardingStatus = 
-      attributes['custom:onboarding'] || 
+      CognitoAttributes.getValue(attributes, CognitoAttributes.ONBOARDING) || 
       attributes.onboarding || 
       'PENDING';
       
-    // Extract step completion flags
-    const businessInfoDone = attributes['custom:business_info_done'] === 'TRUE' || 
-                             attributes.businessInfoDone === 'true' || 
-                             attributes.businessInfoDone === true;
-                             
-    const subscriptionDone = attributes['custom:subscription_done'] === 'TRUE' || 
-                             attributes.subscriptionDone === 'true' || 
-                             attributes.subscriptionDone === true;
-                             
-    const paymentDone = attributes['custom:payment_done'] === 'TRUE' || 
-                         attributes.paymentDone === 'true' || 
-                         attributes.paymentDone === true;
-                         
-    const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
-                    (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
+    // Extract setup completion status using correct attribute name
+    const setupDone = CognitoAttributes.getValue(attributes, CognitoAttributes.SETUP_DONE, 'false').toLowerCase() === 'true';
     
-    // Update Cognito attributes
+    // Update Cognito attributes using correct names
     const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
     await updateUserAttributes({
       userAttributes: {
-        'custom:onboarding': onboardingStatus,
-        'custom:business_info_done': businessInfoDone ? 'TRUE' : 'FALSE',
-        'custom:subscription_done': subscriptionDone ? 'TRUE' : 'FALSE',
-        'custom:payment_done': paymentDone ? 'TRUE' : 'FALSE',
-        'custom:setupdone': setupDone ? 'true' : 'false'
+        [CognitoAttributes.ONBOARDING]: onboardingStatus,
+        [CognitoAttributes.SETUP_DONE]: setupDone ? 'true' : 'false'
       }
     });
     
-    // Store tenant ID if available
-    const tenantId = attributes['custom:tenant_ID'] || attributes.tenantId;
+    // Store tenant ID if available using correct attribute name
+    const tenantId = CognitoAttributes.getTenantId(attributes);
     if (tenantId) {
       await updateUserAttributes({
         userAttributes: {
-          'custom:tenant_ID': tenantId,
-          'custom:tenant_ID': tenantId, // Uppercase version for consistency
-          'custom:businessid': tenantId // Legacy attribute
+          [CognitoAttributes.TENANT_ID]: tenantId,
+          [CognitoAttributes.BUSINESS_ID]: tenantId // Legacy support
         }
       });
     }
@@ -183,7 +181,7 @@ export const clearAuthCookies = async () => {
 };
 
 /**
- * Sets a token expired flag in Cognito
+ * Sets a token expired flag in Cognito using correct attribute names
  * @returns {Promise<boolean>} - Success status
  */
 export const setTokenExpiredFlag = async () => {
@@ -191,7 +189,7 @@ export const setTokenExpiredFlag = async () => {
     // Import auth utilities
     const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
-    // Set token expired flag in Cognito
+    // Set token expired flag in Cognito using proper attribute structure
     await updateUserAttributes({
       userAttributes: {
         'custom:token_expired': 'true',
@@ -210,68 +208,129 @@ export const setTokenExpiredFlag = async () => {
 };
 
 /**
- * Determines the next onboarding step based on user attributes
- * @param {Object} attributes - User attributes
- * @returns {string} - The next onboarding step
+ * Enhanced onboarding step determination with proper Cognito attribute usage
+ * 
+ * @param {Object} userAttributes - User attributes from Cognito
+ * @returns {String} The next onboarding step or 'dashboard' if complete
  */
-export const determineOnboardingStep = (attributes) => {
-  if (!attributes) return 'business-info';
-  
-  const businessInfoDone = attributes['custom:business_info_done'] === 'TRUE' || 
-                           attributes.businessInfoDone === 'true' || 
-                           attributes.businessInfoDone === true;
-  
-  const subscriptionDone = attributes['custom:subscription_done'] === 'TRUE' || 
-                           attributes.subscriptionDone === 'true' || 
-                           attributes.subscriptionDone === true;
-  
-  const paymentDone = attributes['custom:payment_done'] === 'TRUE' || 
-                       attributes.paymentDone === 'true' || 
-                       attributes.paymentDone === true;
-  
-  const setupDone = (attributes['custom:setupdone'] || '').toLowerCase() === 'true' ||
-                    (attributes['custom:onboarding'] || '').toLowerCase() === 'complete';
-  
-  if (!businessInfoDone) {
+export function determineOnboardingStep(userAttributes) {
+  console.log('🔍 [cookieManager] determineOnboardingStep called with attributes:', {
+    hasAttributes: !!userAttributes,
+    attributeKeys: userAttributes ? Object.keys(userAttributes) : [],
+    onboarding: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.ONBOARDING) : 'undefined',
+    setupDone: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.SETUP_DONE) : 'undefined',
+    tenantId: userAttributes ? CognitoAttributes.getTenantId(userAttributes) : 'undefined',
+    subPlan: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.SUBSCRIPTION_PLAN) : 'undefined',
+    payVerified: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.PAYMENT_VERIFIED) : 'undefined'
+  });
+
+  // Validate input
+  if (!userAttributes || typeof userAttributes !== 'object') {
+    console.warn('⚠️ [cookieManager] Invalid or missing userAttributes, defaulting to business-info');
     return 'business-info';
-  } else if (!subscriptionDone) {
-    return 'subscription';
-  } else if (!paymentDone) {
-    return 'payment';
-  } else if (!setupDone) {
-    return 'setup';
-  } else {
-    return 'complete';
   }
-};
+
+  // Get all relevant attributes using CognitoAttributes utility
+  const onboardingStatus = CognitoAttributes.getOnboardingStatus(userAttributes);
+  const isSetupDone = CognitoAttributes.isSetupDone(userAttributes);
+  const tenantId = CognitoAttributes.getTenantId(userAttributes);
+  const subscriptionPlan = CognitoAttributes.getSubscriptionPlan(userAttributes);
+  const isPaymentVerified = CognitoAttributes.isPaymentVerified(userAttributes);
+
+  console.log('📊 [cookieManager] Extracted onboarding data:', {
+    onboardingStatus: onboardingStatus || 'null',
+    isSetupDone,
+    tenantId: tenantId || 'null',
+    subscriptionPlan: subscriptionPlan || 'null',
+    isPaymentVerified
+  });
+
+  // Check if user has completed all onboarding steps
+  if (isSetupDone && tenantId && subscriptionPlan && isPaymentVerified) {
+    console.log('✅ [cookieManager] User has completed all onboarding steps → dashboard');
+    return 'dashboard';
+  }
+
+  // Determine next step based on onboarding status
+  switch (onboardingStatus) {
+    case 'business-info':
+    case 'business_info':
+      if (!tenantId) {
+        console.log('📝 [cookieManager] Business info not complete → business-info');
+        return 'business-info';
+      }
+      // Fall through to next step
+      
+    case 'subscription':
+      if (!subscriptionPlan) {
+        console.log('💳 [cookieManager] Subscription not selected → subscription');
+        return 'subscription';
+      }
+      // Fall through to next step
+      
+    case 'payment':
+      if (!isPaymentVerified) {
+        console.log('💰 [cookieManager] Payment not verified → payment');
+        return 'payment';
+      }
+      // Fall through to next step
+      
+    case 'setup':
+      if (!isSetupDone) {
+        console.log('⚙️ [cookieManager] Setup not complete → setup');
+        return 'setup';
+      }
+      break;
+      
+    case 'complete':
+    case 'completed':
+      console.log('✅ [cookieManager] Onboarding marked as complete → dashboard');
+      return 'dashboard';
+      
+    default:
+      // If no onboarding status is set, start from the beginning
+      console.log('🆕 [cookieManager] No onboarding status found → business-info');
+      return 'business-info';
+  }
+
+  // Final check - if we reach here, user should be complete
+  if (tenantId && subscriptionPlan && isPaymentVerified && isSetupDone) {
+    console.log('✅ [cookieManager] All steps verified complete → dashboard');
+    return 'dashboard';
+  }
+
+  // Default fallback
+  console.log('⚠️ [cookieManager] Fallback to business-info');
+  return 'business-info';
+}
 
 /**
- * Updates onboarding status in Cognito attributes
+ * Updates onboarding status in Cognito attributes using correct attribute names
  * @param {string} status - Onboarding status to set
  * @returns {Promise<boolean>} - Success status
  */
 export const updateOnboardingStatus = async (status) => {
   try {
     if (!status) {
-      logger.warn('[cookieManager] No status provided for onboarding update');
+      console.warn('[cookieManager] No status provided for onboarding update');
       return false;
     }
     
     // Import auth utilities
     const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
-    // Update onboarding status in Cognito
+    // Update onboarding status in Cognito using correct attribute names
     await updateUserAttributes({
       userAttributes: {
-        'custom:onboarding': status,
-        'custom:updated_at': new Date().toISOString()
+        [CognitoAttributes.ONBOARDING]: status,
+        [CognitoAttributes.UPDATED_AT]: new Date().toISOString()
       }
     });
     
-    logger.debug(`[cookieManager] Onboarding status updated to: ${status}`);
+    console.log(`[cookieManager] Onboarding status updated to: ${status}`);
     return true;
   } catch (error) {
-    logger.error('[cookieManager] Error updating onboarding status:', {
+    console.error('[cookieManager] Error updating onboarding status:', {
       error: error.message
     });
     return false;
@@ -291,7 +350,7 @@ export const getUserAttributes = async () => {
     const attributes = await fetchUserAttributes();
     return attributes || null;
   } catch (error) {
-    logger.error('[cookieManager] Error getting user attributes:', {
+    console.error('[cookieManager] Error getting user attributes:', {
       error: error.message
     });
     return null;
