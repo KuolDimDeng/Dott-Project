@@ -14,18 +14,20 @@ export default function Callback() {
   const [status, setStatus] = useState('Processing authentication...');
 
   // Deployment identifier for tracking
-  const DEPLOYMENT_VERSION = 'v2.1-FORCE-DEPLOY-' + Date.now();
-  const FORCE_DEPLOY_TRIGGER = 'CRITICAL_OAUTH_FIX_' + new Date().toISOString();
+  const DEPLOYMENT_VERSION = 'v2.2-FORCE-REBUILD-' + Date.now();
+  const FORCE_DEPLOY_TRIGGER = 'PNPM_CACHE_CLEAR_' + new Date().toISOString();
+  const UNIQUE_BUILD_ID = 'BUILD_' + Math.random().toString(36).substring(7);
   
   useEffect(() => {
-    console.log('🚨 CRITICAL OAUTH FIX DEPLOYED - v2.1 with 8 retries');
+    console.log('🚨 CRITICAL OAUTH FIX DEPLOYED - v2.2 with 8 retries and cache clear');
     console.log('🔥 DEPLOYMENT VERSION:', DEPLOYMENT_VERSION);
     console.log('⚡ FORCE TRIGGER:', FORCE_DEPLOY_TRIGGER);
+    console.log('🆔 UNIQUE BUILD ID:', UNIQUE_BUILD_ID);
     
     const handleCallback = async () => {
       try {
         console.log('🚀 [ENHANCED OAUTH CALLBACK] Version:', DEPLOYMENT_VERSION);
-        console.log('🔥 FORCE BUILD UPDATE - Enhanced OAuth v2.1 with 8 retries and 3-second delay - CRITICAL FIX');
+        console.log('🔥 FORCE BUILD UPDATE - Enhanced OAuth v2.2 with 8 retries, cache clear, and pnpm - CRITICAL FIX');
         logger.debug('[OAuth Callback] Enhanced version loaded:', DEPLOYMENT_VERSION);
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         logger.debug('[OAuth Callback] Current URL:', window.location.href);
