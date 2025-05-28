@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { Amplify } from '@/config/amplifyUnified';
 import { fetchAuthSession, fetchUserAttributes, configureAmplify, isAmplifyConfigured } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
@@ -11,14 +12,11 @@ export default function Callback() {
   const searchParams = useSearchParams();
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Processing authentication...');
-  const [progress, setProgress] = useState(10);
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
-        setStatus('Completing authentication...');
-        setProgress(25);
         
         // Extract URL parameters for debugging
         const urlParams = new URLSearchParams(window.location.search);
@@ -95,45 +93,108 @@ export default function Callback() {
           console.log('  - window.debugOAuthCallback()');
         }
         
-        // Simplified OAuth token retrieval - no complex retry logic
+        // Fix: Ensure Amplify is properly configured before any auth operations
         logger.debug('[OAuth Callback] Ensuring Amplify is configured...');
         
         // Force fresh configuration
         configureAmplify(true);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Give it time to settle
         
-        // Verify configuration
-        if (!isAmplifyConfigured()) {
-          throw new Error('Amplify configuration failed');
+        // Wait a moment for configuration to settle
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Double-check configuration by accessing Amplify directly
+        try {
+          const config = Amplify.getConfig();
+          if (!config?.Auth?.Cognito?.userPoolId) {
+            logger.warn('[OAuth Callback] Amplify config missing after configuration, retrying...');
+            configureAmplify(true);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (configError) {
+          logger.error('[OAuth Callback] Error checking Amplify config:', configError);
         }
         
         logger.debug('[OAuth Callback] Fetching auth session...');
-        setStatus('Retrieving authentication tokens...');
-        setProgress(50);
+        setStatus('Completing sign in...');
         
         // Simple token retrieval with timeout
-        const authResponse = await Promise.race([
-          fetchAuthSession({ forceRefresh: true }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Token retrieval timeout')), 10000)
-          )
-        ]);
-        
-        const tokens = authResponse?.tokens;
-        
-        logger.debug('[OAuth Callback] Auth response:', { 
-          hasTokens: !!tokens,
-          hasAccessToken: !!tokens?.accessToken,
-          hasIdToken: !!tokens?.idToken,
-          isSignedIn: authResponse?.isSignedIn
-        });
+        let tokens;
+        try {
+          // Import the raw auth function directly to bypass the enhanced wrapper
+          const { fetchAuthSession: rawFetchAuthSession } = await import('aws-amplify/auth');
+          
+          const authResponse = await Promise.race([
+            rawFetchAuthSession({ forceRefresh: true }),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Token retrieval timeout')), 10000)
+            )
+          ]);
+          
+          tokens = authResponse?.tokens;
+          
+          logger.debug('[OAuth Callback] Auth response:', { 
+            hasTokens: !!tokens,
+            hasAccessToken: !!tokens?.accessToken,
+            hasIdToken: !!tokens?.idToken,
+            isSignedIn: authResponse?.isSignedIn
+          });
+        } catch (sessionError) {
+          logger.error('[OAuth Callback] Session fetch error:', sessionError);
+          
+          // If it's the "Auth UserPool not configured" error, try direct configuration
+          if (sessionError.message?.includes('Auth UserPool not configured') || 
+              sessionError.message?.includes('UserPool')) {
+            logger.warn('[OAuth Callback] Amplify lost configuration, attempting direct recovery...');
+            
+            // Try to configure Amplify directly
+            try {
+              const { Amplify: AmplifyDirect } = await import('aws-amplify');
+              const amplifyConfig = {
+                Auth: {
+                  Cognito: {
+                    userPoolId: process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 'us-east-1_JPL8vGfb6',
+                    userPoolClientId: process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID || '1o5v84mrgn4gt87khtr179uc5b',
+                    region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1',
+                    loginWith: {
+                      email: true,
+                      username: true,
+                      phone: false,
+                      oauth: {
+                        domain: `${process.env.NEXT_PUBLIC_COGNITO_DOMAIN || 'us-east-1jpl8vgfb6'}.auth.${process.env.NEXT_PUBLIC_AWS_REGION || 'us-east-1'}.amazoncognito.com`,
+                        scopes: 'openid profile email',
+                        redirectSignIn: 'https://dottapps.com/auth/callback',
+                        redirectSignOut: 'https://dottapps.com/auth/signin',
+                        responseType: 'code',
+                        providers: ['Google']
+                      }
+                    }
+                  }
+                }
+              };
+              
+              AmplifyDirect.configure(amplifyConfig);
+              await new Promise(resolve => setTimeout(resolve, 500));
+              
+              // Try once more with raw function
+              const { fetchAuthSession: rawRetry } = await import('aws-amplify/auth');
+              const retryResponse = await rawRetry({ forceRefresh: true });
+              tokens = retryResponse?.tokens;
+            } catch (recoveryError) {
+              logger.error('[OAuth Callback] Direct recovery failed:', recoveryError);
+              throw sessionError;
+            }
+          } else {
+            throw sessionError;
+          }
+        }
         
         // Check if we have valid tokens
         if (!tokens || (!tokens.accessToken && !tokens.idToken)) {
           // Try fallback: check if user is authenticated despite token issues
           try {
             logger.debug('[OAuth Callback] Checking user attributes as fallback...');
-            const userAttributes = await fetchUserAttributes();
+            const { fetchUserAttributes: rawFetchUserAttributes } = await import('aws-amplify/auth');
+            const userAttributes = await rawFetchUserAttributes();
             if (userAttributes && userAttributes.email) {
               logger.debug('[OAuth Callback] User is authenticated, proceeding with minimal tokens');
               // Create minimal token object for cookie setting
@@ -152,11 +213,11 @@ export default function Callback() {
         }
         
         logger.debug('[OAuth Callback] OAuth callback successful');
-        setStatus('Checking account status...');
-        setProgress(75);
+        setStatus('Loading your account...');
         
         // Get user attributes to check onboarding status
-        const userAttributes = await fetchUserAttributes();
+        const { fetchUserAttributes: rawFetchUserAttributes } = await import('aws-amplify/auth');
+        const userAttributes = await rawFetchUserAttributes();
         logger.debug('[OAuth Callback] User attributes retrieved:', {
           onboardingStatus: userAttributes['custom:onboarding'],
           businessId: userAttributes['custom:business_id'],
@@ -182,8 +243,6 @@ export default function Callback() {
           isComplete: nextStep === 'complete'
         });
         
-        setProgress(90);
-        
         if (nextStep === 'business-info') {
           redirectUrl = '/onboarding/business-info';
         } else if (nextStep === 'subscription') {
@@ -202,8 +261,7 @@ export default function Callback() {
         // Add from parameter to prevent redirect loops
         redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'from=oauth';
         
-        setStatus(`Redirecting to ${redirectUrl.split('?')[0]}...`);
-        setProgress(100);
+        setStatus('Redirecting...');
         
         // Set a timeout to ensure cookies are set before redirect
         setTimeout(() => {
@@ -257,38 +315,8 @@ export default function Callback() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen space-y-6">
-      <div className="relative h-16 w-16">
-        {/* Progress Circle */}
-        <svg className="w-full h-full" viewBox="0 0 100 100">
-          {/* Background Circle */}
-          <circle 
-            className="text-gray-200" 
-            strokeWidth="8"
-            stroke="currentColor"
-            fill="transparent"
-            r="46" 
-            cx="50" 
-            cy="50" 
-          />
-          {/* Progress Circle */}
-          <circle 
-            className="text-blue-600" 
-            strokeWidth="8" 
-            strokeDasharray={289}
-            strokeDashoffset={289 - (289 * progress) / 100}
-            strokeLinecap="round" 
-            stroke="currentColor" 
-            fill="transparent" 
-            r="46" 
-            cx="50" 
-            cy="50" 
-          />
-        </svg>
-        {/* Percentage */}
-        <div className="absolute top-0 left-0 flex items-center justify-center w-full h-full">
-          <span className="text-sm font-medium text-blue-700">{progress}%</span>
-        </div>
-      </div>
+      {/* Simple spinner instead of percentage */}
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       <p className="text-gray-600">{status}</p>
     </div>
   );
