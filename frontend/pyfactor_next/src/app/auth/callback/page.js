@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchAuthSession, fetchUserAttributes, Hub } from '@/config/amplifyUnified';
+import { fetchAuthSession, fetchUserAttributes, Hub, signInWithRedirect } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 
@@ -19,6 +19,30 @@ export default function Callback() {
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         setStatus('Completing authentication...');
         setProgress(25);
+        
+        // Check if we have OAuth parameters in the URL
+        const code = searchParams.get('code');
+        const state = searchParams.get('state');
+        const error = searchParams.get('error');
+        
+        logger.debug('[OAuth Callback] URL parameters:', { 
+          hasCode: !!code, 
+          hasState: !!state, 
+          hasError: !!error,
+          codeLength: code?.length,
+          error: error 
+        });
+        
+        // If there's an error parameter, handle it
+        if (error) {
+          throw new Error(`OAuth error: ${error} - ${searchParams.get('error_description') || 'Authentication failed'}`);
+        }
+        
+        // If we don't have a code, something went wrong
+        if (!code) {
+          logger.error('[OAuth Callback] No authorization code in URL');
+          throw new Error('No authorization code received from OAuth provider');
+        }
         
         // Add debug function to window for testing onboarding logic
         if (typeof window !== 'undefined') {
@@ -52,39 +76,115 @@ export default function Callback() {
           console.log('🧪 Debug function added: window.testOnboardingLogic(attributes)');
         }
         
-        // IMPORTANT: Wait for Amplify to process the OAuth callback
-        // In Amplify v6, the OAuth flow is handled automatically
-        // We need to give it time to process the response and exchange tokens
+        // IMPORTANT: With OAuth code in URL, Amplify should process it automatically
+        // But we need to give it time and potentially trigger it
         logger.debug('[OAuth Callback] Waiting for OAuth processing...');
+        
+        // First, let's make sure Amplify processes the current URL
+        // In some cases, we might need to manually handle the OAuth response
+        if (typeof window !== 'undefined' && window.location.href.includes('code=')) {
+          logger.debug('[OAuth Callback] OAuth code detected in URL, ensuring Amplify processes it');
+          
+          // For Amplify v6, the OAuth flow should be handled automatically when the page loads
+          // But we'll set up listeners to know when it's complete
+          
+          // Ensure Amplify is configured
+          const { configureAmplify } = await import('@/config/amplifyUnified');
+          const configured = configureAmplify();
+          logger.debug('[OAuth Callback] Amplify configuration status:', configured);
+        }
         
         // Listen for auth events to know when OAuth is complete
         const authListener = Hub.listen('auth', async (data) => {
-          logger.debug('[OAuth Callback] Auth Hub event:', data);
+          logger.debug('[OAuth Callback] Auth Hub event:', { 
+            event: data.payload.event,
+            data: data.payload.data,
+            message: data.payload.message
+          });
           
-          if (data.payload.event === 'signIn' || data.payload.event === 'signIn_failure') {
-            Hub.remove('auth', authListener);
+          // Listen for various auth events
+          if (data.payload.event === 'signIn' || 
+              data.payload.event === 'signIn_failure' ||
+              data.payload.event === 'cognitoHostedUI' ||
+              data.payload.event === 'cognitoHostedUI_failure') {
             
-            if (data.payload.event === 'signIn_failure') {
+            if (data.payload.event === 'signIn_failure' || data.payload.event === 'cognitoHostedUI_failure') {
+              Hub.remove('auth', authListener);
               throw new Error(data.payload.data?.message || 'OAuth sign-in failed');
             }
             
-            // OAuth sign-in successful, continue with the flow
-            await completeOAuthFlow();
+            if (data.payload.event === 'signIn' || data.payload.event === 'cognitoHostedUI') {
+              // OAuth sign-in successful, continue with the flow
+              Hub.remove('auth', authListener);
+              await completeOAuthFlow();
+            }
           }
         });
+        
+        // Multiple attempts to check for session with increasing delays
+        const checkForSession = async (attemptNumber = 1) => {
+          try {
+            logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber}`);
+            const session = await fetchAuthSession({ forceRefresh: attemptNumber > 2 });
+            
+            logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber} result:`, {
+              hasSession: !!session,
+              hasTokens: !!session?.tokens,
+              hasAccessToken: !!session?.tokens?.accessToken,
+              isSignedIn: session?.isSignedIn,
+              userSub: session?.userSub
+            });
+            
+            if (session?.tokens) {
+              logger.debug('[OAuth Callback] Session found, OAuth completed');
+              Hub.remove('auth', authListener);
+              await completeOAuthFlow();
+              return true;
+            }
+            return false;
+          } catch (err) {
+            logger.debug(`[OAuth Callback] Session check attempt ${attemptNumber} failed:`, err.message);
+            return false;
+          }
+        };
+        
+        // Check immediately
+        if (await checkForSession(1)) return;
+        
+        // Then check with delays
+        setTimeout(() => checkForSession(2), 1000);
+        setTimeout(() => checkForSession(3), 3000);
+        setTimeout(() => checkForSession(4), 5000);
+        setTimeout(() => checkForSession(5), 10000);
         
         // Also try to fetch session after a delay to handle cases where Hub event might not fire
         setTimeout(async () => {
           try {
             const session = await fetchAuthSession();
             if (session?.tokens) {
+              logger.debug('[OAuth Callback] Session found after delay, OAuth completed');
               Hub.remove('auth', authListener);
               await completeOAuthFlow();
+            } else {
+              logger.debug('[OAuth Callback] No session after delay, still waiting...');
             }
           } catch (err) {
-            logger.debug('[OAuth Callback] Session check failed, waiting for Hub event');
+            logger.debug('[OAuth Callback] Session check failed, waiting for Hub event:', err.message);
           }
         }, 2000);
+        
+        // Additional check - sometimes the OAuth might complete very quickly
+        try {
+          const immediateSession = await fetchAuthSession();
+          if (immediateSession?.tokens) {
+            logger.debug('[OAuth Callback] Session already available, OAuth completed immediately');
+            Hub.remove('auth', authListener);
+            await completeOAuthFlow();
+            return;
+          }
+        } catch (err) {
+          logger.debug('[OAuth Callback] Immediate session check failed, will wait for events');
+        }
         
         // Set a timeout for the entire OAuth process
         setTimeout(() => {
