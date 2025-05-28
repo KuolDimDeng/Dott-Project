@@ -20,6 +20,13 @@ export default function Callback() {
         setStatus('Completing authentication...');
         setProgress(25);
         
+        // Aggressive Amplify configuration - configure multiple times to ensure it sticks
+        logger.debug('[OAuth Callback] Ensuring Amplify configuration...');
+        for (let i = 0; i < 3; i++) {
+          configureAmplify(true);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
         // Extract URL parameters for debugging
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
@@ -99,10 +106,54 @@ export default function Callback() {
             };
           };
           
+          // Add manual retry function for OAuth callback
+          window.retryOAuthCallback = async () => {
+            console.log('🔄 Manually retrying OAuth callback...');
+            
+            // Force Amplify configuration
+            console.log('  1. Configuring Amplify...');
+            configureAmplify(true);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check configuration
+            if (!isAmplifyConfigured()) {
+              console.error('  ❌ Amplify configuration failed!');
+              return;
+            }
+            
+            console.log('  2. Fetching auth session...');
+            try {
+              const authResponse = await fetchAuthSession({ forceRefresh: true });
+              const tokens = authResponse?.tokens;
+              
+              if (tokens && (tokens.accessToken || tokens.idToken)) {
+                console.log('  ✅ Tokens retrieved successfully!');
+                console.log('  3. Fetching user attributes...');
+                
+                const userAttributes = await fetchUserAttributes();
+                console.log('  ✅ User attributes:', userAttributes);
+                
+                // Set cookies and redirect
+                setAuthCookies(tokens, userAttributes);
+                const nextStep = determineOnboardingStep(userAttributes);
+                let redirectUrl = nextStep === 'complete' ? '/dashboard' : `/onboarding/${nextStep}`;
+                redirectUrl += '?from=oauth_manual';
+                
+                console.log(`  4. Redirecting to ${redirectUrl}...`);
+                window.location.href = redirectUrl;
+              } else {
+                console.error('  ❌ No tokens received');
+              }
+            } catch (error) {
+              console.error('  ❌ Error:', error);
+            }
+          };
+          
           console.log('🧪 Debug functions added:');
           console.log('  - window.testOnboardingLogic(attributes)');
           console.log('  - window.debugOAuthCallback()');
           console.log('  - window.debugOAuthScopes()');
+          console.log('  - window.retryOAuthCallback() [NEW]');
         }
         
         // Handle the OAuth callback with retry mechanism
