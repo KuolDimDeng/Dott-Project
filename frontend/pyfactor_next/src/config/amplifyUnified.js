@@ -476,13 +476,56 @@ export const configureAmplify = (forceReconfigure = false) => {
       logger.debug('[AmplifyUnified] OAuth Configuration:', resolvedConfig);
     }
     
-    // Apply configuration
-    Amplify.configure(amplifyConfig);
+    // Apply configuration with error handling
+    try {
+      Amplify.configure(amplifyConfig);
+    } catch (configError) {
+      logger.error('[AmplifyUnified] Error applying configuration:', configError);
+      
+      // Try to clear and reconfigure
+      try {
+        Amplify.configure({});
+        // Use setTimeout instead of await for synchronous function
+        setTimeout(() => {
+          try {
+            Amplify.configure(amplifyConfig);
+          } catch (retryError) {
+            logger.error('[AmplifyUnified] Delayed retry configuration failed:', retryError);
+          }
+        }, 100);
+      } catch (retryError) {
+        logger.error('[AmplifyUnified] Retry configuration failed:', retryError);
+        return false;
+      }
+    }
     
-    // Verify configuration including OAuth
-    const configVerification = Amplify.getConfig();
+    // Verify configuration including OAuth with retry
+    let configVerification;
+    for (let i = 0; i < 3; i++) {
+      try {
+        configVerification = Amplify.getConfig();
+        if (configVerification?.Auth?.Cognito?.userPoolId) {
+          break;
+        }
+        // Use synchronous delay for verification
+        if (i < 2) {
+          // Simple synchronous delay
+          const start = Date.now();
+          while (Date.now() - start < 100) {
+            // Busy wait for 100ms
+          }
+        }
+      } catch (verifyError) {
+        logger.warn(`[AmplifyUnified] Configuration verification attempt ${i + 1} failed:`, verifyError);
+        if (i === 2) {
+          logger.error('[AmplifyUnified] Configuration verification failed after 3 attempts');
+          return false;
+        }
+      }
+    }
+    
     if (!configVerification?.Auth?.Cognito?.userPoolId) {
-      logger.error('[AmplifyUnified] Configuration verification failed');
+      logger.error('[AmplifyUnified] Configuration verification failed - no userPoolId');
       return false;
     }
     

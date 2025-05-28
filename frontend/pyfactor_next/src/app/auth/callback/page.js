@@ -20,13 +20,6 @@ export default function Callback() {
         setStatus('Completing authentication...');
         setProgress(25);
         
-        // Aggressive Amplify configuration - configure multiple times to ensure it sticks
-        logger.debug('[OAuth Callback] Ensuring Amplify configuration...');
-        for (let i = 0; i < 3; i++) {
-          configureAmplify(true);
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-        
         // Extract URL parameters for debugging
         const urlParams = new URLSearchParams(window.location.search);
         const authCode = urlParams.get('code');
@@ -50,7 +43,7 @@ export default function Callback() {
           throw new Error('No authorization code received from OAuth provider');
         }
         
-        // Add debug function to window for testing onboarding logic
+        // Add debug functions to window for testing
         if (typeof window !== 'undefined') {
           window.testOnboardingLogic = (testAttributes) => {
             console.log('🧪 Testing onboarding logic with attributes:', testAttributes);
@@ -97,316 +90,126 @@ export default function Callback() {
             };
           };
           
-          // Add OAuth scopes debugging function
-          window.debugOAuthScopes = () => {
-            console.log('🔍 OAuth Scopes Debug Info:');
-            console.log('  Raw OAUTH_SCOPES env:', process.env.NEXT_PUBLIC_OAUTH_SCOPES);
-            return {
-              raw: process.env.NEXT_PUBLIC_OAUTH_SCOPES
-            };
-          };
-          
-          // Add manual retry function for OAuth callback
-          window.retryOAuthCallback = async () => {
-            console.log('🔄 Manually retrying OAuth callback...');
-            
-            // Force Amplify configuration
-            console.log('  1. Configuring Amplify...');
-            configureAmplify(true);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Check configuration
-            if (!isAmplifyConfigured()) {
-              console.error('  ❌ Amplify configuration failed!');
-              return;
-            }
-            
-            console.log('  2. Fetching auth session...');
-            try {
-              const authResponse = await fetchAuthSession({ forceRefresh: true });
-              const tokens = authResponse?.tokens;
-              
-              if (tokens && (tokens.accessToken || tokens.idToken)) {
-                console.log('  ✅ Tokens retrieved successfully!');
-                console.log('  3. Fetching user attributes...');
-                
-                const userAttributes = await fetchUserAttributes();
-                console.log('  ✅ User attributes:', userAttributes);
-                
-                // Set cookies and redirect
-                setAuthCookies(tokens, userAttributes);
-                const nextStep = determineOnboardingStep(userAttributes);
-                let redirectUrl = nextStep === 'complete' ? '/dashboard' : `/onboarding/${nextStep}`;
-                redirectUrl += '?from=oauth_manual';
-                
-                console.log(`  4. Redirecting to ${redirectUrl}...`);
-                window.location.href = redirectUrl;
-              } else {
-                console.error('  ❌ No tokens received');
-              }
-            } catch (error) {
-              console.error('  ❌ Error:', error);
-            }
-          };
-          
           console.log('🧪 Debug functions added:');
           console.log('  - window.testOnboardingLogic(attributes)');
           console.log('  - window.debugOAuthCallback()');
-          console.log('  - window.debugOAuthScopes()');
-          console.log('  - window.retryOAuthCallback() [NEW]');
         }
         
-        // Handle the OAuth callback with retry mechanism
-        let tokens;
-        let retryCount = 0;
-        const maxRetries = 15; // Increased from 10 to 15 attempts
-        const baseDelay = 1000; // 1 second base delay
-        const maxDelay = 8000; // Maximum 8 seconds delay
+        // Simplified OAuth token retrieval - no complex retry logic
+        logger.debug('[OAuth Callback] Ensuring Amplify is configured...');
         
-        // Force complete Amplify reconfiguration before starting
-        logger.debug('[OAuth Callback] Force complete Amplify reconfiguration...');
-        for (let i = 0; i < 5; i++) {
-          configureAmplify(true);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          if (isAmplifyConfigured()) {
-            logger.debug(`[OAuth Callback] Amplify configured successfully on attempt ${i + 1}`);
-            break;
-          }
+        // Force fresh configuration
+        configureAmplify(true);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Give it time to settle
+        
+        // Verify configuration
+        if (!isAmplifyConfigured()) {
+          throw new Error('Amplify configuration failed');
         }
         
-        // Add initial delay to allow Cognito to process the OAuth callback
-        logger.debug('[OAuth Callback] Adding initial delay for Cognito processing...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        logger.debug('[OAuth Callback] Fetching auth session...');
+        setStatus('Retrieving authentication tokens...');
+        setProgress(50);
         
-        while (retryCount < maxRetries) {
-          try {
-            // Force complete reconfiguration on every attempt to prevent config loss
-            logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} - Force reconfiguring Amplify...`);
-            
-            // Clear any existing configuration first
-            if (typeof window !== 'undefined' && window.Amplify) {
-              try {
-                // Try to clear existing config
-                window.Amplify.configure({});
-                await new Promise(resolve => setTimeout(resolve, 100));
-              } catch (clearError) {
-                logger.debug('[OAuth Callback] Could not clear existing config:', clearError.message);
-              }
-            }
-            
-            // Force fresh configuration
-            configureAmplify(true);
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Verify configuration is actually working
-            const config = window.Amplify?.getConfig();
-            if (!config?.Auth?.Cognito?.userPoolId) {
-              throw new Error('Amplify configuration verification failed - no userPoolId');
-            }
-            
-            if (!config?.Auth?.Cognito?.loginWith?.oauth) {
-              throw new Error('Amplify OAuth configuration verification failed');
-            }
-            
-            logger.debug(`[OAuth Callback] Attempt ${retryCount + 1}/${maxRetries} - Configuration verified, fetching auth session`);
-            
-            const authResponse = await fetchAuthSession({ forceRefresh: true });
-            tokens = authResponse?.tokens;
-            
-            logger.debug('[OAuth Callback] Auth response:', { 
-              hasTokens: !!tokens,
-              hasAccessToken: !!tokens?.accessToken,
-              hasIdToken: !!tokens?.idToken,
-              accessTokenLength: tokens?.accessToken?.toString()?.length,
-              idTokenLength: tokens?.idToken?.toString()?.length,
-              isSignedIn: authResponse?.isSignedIn,
-              attempt: retryCount + 1
-            });
-            
-            // Enhanced token validation - check both existence and length
-            if (tokens && 
-                (tokens.accessToken?.toString()?.length > 50 || tokens.idToken?.toString()?.length > 50)) {
-              logger.debug('[OAuth Callback] Valid tokens successfully retrieved');
-              break; // Success! Exit the retry loop
-            }
-            
-            // If no valid tokens yet, wait with exponential backoff and retry
-            if (retryCount < maxRetries - 1) {
-              const delay = Math.min(baseDelay * Math.pow(1.5, retryCount), maxDelay);
-              logger.debug(`[OAuth Callback] No valid tokens yet, waiting ${delay}ms before retry ${retryCount + 2}`);
-              setStatus(`Waiting for authentication to complete... (${retryCount + 1}/${maxRetries})`);
-              setProgress(25 + (retryCount * 2)); // Gradually increase progress
-              await new Promise(resolve => setTimeout(resolve, delay));
-            }
-            
-            retryCount++;
-          } catch (authError) {
-            logger.error(`[OAuth Callback] Error on attempt ${retryCount + 1}:`, authError);
-            
-            // Special handling for Amplify configuration loss
-            if (authError.message?.includes('Auth UserPool not configured') || 
-                authError.message?.includes('configuration verification failed')) {
-              logger.warn('[OAuth Callback] Amplify configuration issue detected, forcing complete reconfiguration...');
-              
-              // Try to completely reset and reconfigure Amplify
-              try {
-                if (typeof window !== 'undefined' && window.Amplify) {
-                  window.Amplify.configure({});
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                }
-                
-                // Force multiple configuration attempts
-                for (let configAttempt = 0; configAttempt < 3; configAttempt++) {
-                  configureAmplify(true);
-                  await new Promise(resolve => setTimeout(resolve, 300));
-                  
-                  const testConfig = window.Amplify?.getConfig();
-                  if (testConfig?.Auth?.Cognito?.userPoolId) {
-                    logger.debug(`[OAuth Callback] Reconfiguration successful on attempt ${configAttempt + 1}`);
-                    break;
-                  }
-                }
-              } catch (reconfigError) {
-                logger.error('[OAuth Callback] Reconfiguration failed:', reconfigError);
-              }
-              
-              retryCount++;
-              continue;
-            }
-            
-            // If it's a network error or temporary issue, retry
-            if (retryCount < maxRetries - 1 && (
-              authError.message?.includes('network') ||
-              authError.message?.includes('timeout') ||
-              authError.message?.includes('fetch')
-            )) {
-              logger.debug('[OAuth Callback] Retrying due to network error');
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              retryCount++;
-              continue;
-            }
-            
-            // For other errors, throw immediately
-            throw authError;
-          }
-        }
+        // Simple token retrieval with timeout
+        const authResponse = await Promise.race([
+          fetchAuthSession({ forceRefresh: true }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Token retrieval timeout')), 10000)
+          )
+        ]);
         
+        const tokens = authResponse?.tokens;
+        
+        logger.debug('[OAuth Callback] Auth response:', { 
+          hasTokens: !!tokens,
+          hasAccessToken: !!tokens?.accessToken,
+          hasIdToken: !!tokens?.idToken,
+          isSignedIn: authResponse?.isSignedIn
+        });
+        
+        // Check if we have valid tokens
         if (!tokens || (!tokens.accessToken && !tokens.idToken)) {
-          // Final attempt: Check if user is actually authenticated despite token retrieval failure
+          // Try fallback: check if user is authenticated despite token issues
           try {
-            logger.debug('[OAuth Callback] Final attempt: checking current user status');
-            
-            // Ensure Amplify is configured for fallback check
-            if (!isAmplifyConfigured()) {
-              logger.debug('[OAuth Callback] Amplify not configured for fallback check, reconfiguring...');
-              configureAmplify(true);
-              await new Promise(resolve => setTimeout(resolve, 300));
-            }
-            
+            logger.debug('[OAuth Callback] Checking user attributes as fallback...');
             const userAttributes = await fetchUserAttributes();
             if (userAttributes && userAttributes.email) {
-              logger.debug('[OAuth Callback] User appears to be authenticated despite token retrieval issues');
-              // Continue with the flow using a minimal token object
+              logger.debug('[OAuth Callback] User is authenticated, proceeding with minimal tokens');
+              // Create minimal token object for cookie setting
               tokens = { 
                 accessToken: 'authenticated', 
                 idToken: 'authenticated',
                 _fallback: true 
               };
             } else {
-              throw new Error(`No tokens received from OAuth callback after ${maxRetries} attempts. AWS Cognito may be experiencing delays.`);
+              throw new Error('No valid authentication found');
             }
           } catch (fallbackError) {
-            logger.error('[OAuth Callback] Fallback authentication check failed:', fallbackError);
-            throw new Error(`No tokens received from OAuth callback after ${maxRetries} attempts. This may indicate an issue with the OAuth flow or AWS Cognito processing.`);
+            logger.error('[OAuth Callback] Fallback check failed:', fallbackError);
+            throw new Error('Authentication failed - no tokens received');
           }
         }
         
         logger.debug('[OAuth Callback] OAuth callback successful');
         setStatus('Checking account status...');
-        setProgress(60);
+        setProgress(75);
         
         // Get user attributes to check onboarding status
-        try {
-          const userAttributes = await fetchUserAttributes();
-          logger.debug('[OAuth Callback] User attributes retrieved:', {
-            onboardingStatus: userAttributes['custom:onboarding'],
-            businessId: userAttributes['custom:business_id'],
-            subscription: userAttributes['custom:subscription_plan'],
-            businessInfoDone: userAttributes['custom:business_info_done'],
-            subscriptionDone: userAttributes['custom:subscription_done'],
-            paymentDone: userAttributes['custom:payment_done'],
-            setupDone: userAttributes['custom:setupdone'],
-            tenantId: userAttributes['custom:tenant_ID'],
-            email: userAttributes.email,
-            isNewUser: !userAttributes['custom:onboarding'] // Check if this is a new user
-          });
-          
-          // Set all auth and onboarding cookies using the cookieManager
-          setAuthCookies(tokens, userAttributes);
-          
-          // Determine where to redirect based on onboarding status
-          const nextStep = determineOnboardingStep(userAttributes);
-          let redirectUrl = '/dashboard'; // Default if complete
-          
-          logger.debug('[OAuth Callback] Onboarding step determination:', {
-            nextStep,
-            isComplete: nextStep === 'complete',
-            userAttributes: {
-              businessInfoDone: userAttributes['custom:business_info_done'],
-              subscriptionDone: userAttributes['custom:subscription_done'],
-              paymentDone: userAttributes['custom:payment_done'],
-              setupDone: userAttributes['custom:setupdone'],
-              onboardingStatus: userAttributes['custom:onboarding']
-            }
-          });
-          
-          setProgress(75);
-          
-          if (nextStep === 'business-info') {
-            redirectUrl = '/onboarding/business-info';
-            logger.debug('[OAuth Callback] New user or incomplete business info - redirecting to business-info');
-          } else if (nextStep === 'subscription') {
-            redirectUrl = '/onboarding/subscription';
-            logger.debug('[OAuth Callback] Business info complete, need subscription - redirecting to subscription');
-          } else if (nextStep === 'payment') {
-            redirectUrl = '/onboarding/payment';
-            logger.debug('[OAuth Callback] Subscription complete, need payment - redirecting to payment');
-          } else if (nextStep === 'setup') {
-            redirectUrl = '/onboarding/setup';
-            logger.debug('[OAuth Callback] Payment complete, need setup - redirecting to setup');
-          } else if (nextStep === 'complete') {
-            redirectUrl = '/dashboard';
-            logger.debug('[OAuth Callback] Onboarding complete - redirecting to dashboard');
-          } else {
-            // Any other status that isn't recognized - redirect to business info
-            redirectUrl = '/onboarding/business-info';
-            logger.debug('[OAuth Callback] Unknown onboarding status - redirecting to business-info as fallback');
-          }
-          
-          // Add from parameter to prevent redirect loops
-          redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'from=oauth';
-          logger.debug('[OAuth Callback] Final redirect decision:', {
-            redirectUrl,
-            nextStep,
-            isNewUser: !userAttributes['custom:onboarding']
-          });
-          
-          setStatus(`Redirecting to ${redirectUrl.split('?')[0]}...`);
-          setProgress(90);
-          
-          // Set a timeout to ensure cookies are set before redirect
-          setTimeout(() => {
-            // Use window.location for a clean redirect
-            window.location.href = redirectUrl;
-          }, 800);
-        } catch (attributesError) {
-          logger.error('[OAuth Callback] Error fetching user attributes:', attributesError);
-          // Fall back to safe default
-          setError('Unable to determine account status. Redirecting to start of onboarding.');
-          setTimeout(() => {
-            window.location.href = '/onboarding/business-info?from=oauth&error=attributes';
-          }, 2000);
+        const userAttributes = await fetchUserAttributes();
+        logger.debug('[OAuth Callback] User attributes retrieved:', {
+          onboardingStatus: userAttributes['custom:onboarding'],
+          businessId: userAttributes['custom:business_id'],
+          subscription: userAttributes['custom:subscription_plan'],
+          businessInfoDone: userAttributes['custom:business_info_done'],
+          subscriptionDone: userAttributes['custom:subscription_done'],
+          paymentDone: userAttributes['custom:payment_done'],
+          setupDone: userAttributes['custom:setupdone'],
+          tenantId: userAttributes['custom:tenant_ID'],
+          email: userAttributes.email,
+          isNewUser: !userAttributes['custom:onboarding']
+        });
+        
+        // Set all auth and onboarding cookies using the cookieManager
+        setAuthCookies(tokens, userAttributes);
+        
+        // Determine where to redirect based on onboarding status
+        const nextStep = determineOnboardingStep(userAttributes);
+        let redirectUrl = '/dashboard'; // Default if complete
+        
+        logger.debug('[OAuth Callback] Onboarding step determination:', {
+          nextStep,
+          isComplete: nextStep === 'complete'
+        });
+        
+        setProgress(90);
+        
+        if (nextStep === 'business-info') {
+          redirectUrl = '/onboarding/business-info';
+        } else if (nextStep === 'subscription') {
+          redirectUrl = '/onboarding/subscription';
+        } else if (nextStep === 'payment') {
+          redirectUrl = '/onboarding/payment';
+        } else if (nextStep === 'setup') {
+          redirectUrl = '/onboarding/setup';
+        } else if (nextStep === 'complete') {
+          redirectUrl = '/dashboard';
+        } else {
+          // Fallback to business info
+          redirectUrl = '/onboarding/business-info';
         }
+        
+        // Add from parameter to prevent redirect loops
+        redirectUrl += (redirectUrl.includes('?') ? '&' : '?') + 'from=oauth';
+        
+        setStatus(`Redirecting to ${redirectUrl.split('?')[0]}...`);
+        setProgress(100);
+        
+        // Set a timeout to ensure cookies are set before redirect
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+        
       } catch (error) {
         logger.error('[OAuth Callback] OAuth process failed:', error);
         setError(error.message || 'Authentication failed');
@@ -416,7 +219,7 @@ export default function Callback() {
         let errorParam = 'oauth';
         if (error.message?.includes('authorization code')) {
           errorParam = 'no_code';
-        } else if (error.message?.includes('Token retrieval failed')) {
+        } else if (error.message?.includes('timeout')) {
           errorParam = 'token_timeout';
         } else if (error.message?.includes('OAuth error')) {
           errorParam = 'oauth_provider';
