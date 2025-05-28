@@ -21,6 +21,7 @@ export default function Callback() {
     const handleCallback = async () => {
       try {
         console.log('🚀 [ENHANCED OAUTH CALLBACK] Version:', DEPLOYMENT_VERSION);
+        console.log('🔥 FORCE BUILD UPDATE - Enhanced OAuth v2.0 with 8 retries and 3-second delay');
         logger.debug('[OAuth Callback] Enhanced version loaded:', DEPLOYMENT_VERSION);
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         logger.debug('[OAuth Callback] Current URL:', window.location.href);
