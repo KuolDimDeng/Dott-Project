@@ -1,9 +1,10 @@
 {
   "version": 2,
   "name": "dottapps-oauth-fixed",
-  "buildCommand": "pnpm run build:production",
+  "buildCommand": "echo '🚨 FORCING PNPM BUILD - Enhanced OAuth v2.2 - CACHE CLEAR' && rm -rf .next && rm -rf node_modules/.cache && NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
   "framework": "nextjs",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "cd .. && pnpm install --frozen-lockfile && cd frontend/pyfactor_next",
+  "rootDirectory": "frontend/pyfactor_next",
   "env": {
     "ENABLE_EXPERIMENTAL_COREPACK": "1",
     "NEXT_PUBLIC_AWS_REGION": "us-east-1",
