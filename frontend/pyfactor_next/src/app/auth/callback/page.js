@@ -17,6 +17,7 @@ export default function Callback() {
     const handleCallback = async () => {
       try {
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
+        logger.debug('[OAuth Callback] Current URL:', window.location.href);
         
         // Extract URL parameters for debugging
         const urlParams = new URLSearchParams(window.location.search);
@@ -27,19 +28,26 @@ export default function Callback() {
         logger.debug('[OAuth Callback] URL parameters:', {
           hasCode: !!authCode,
           codeLength: authCode?.length,
+          codePreview: authCode ? authCode.substring(0, 20) + '...' : null,
           hasState: !!state,
+          stateValue: state,
           hasError: !!urlError,
-          errorDescription: urlParams.get('error_description')
+          errorDescription: urlParams.get('error_description'),
+          allParams: Array.from(urlParams.entries())
         });
         
         // Check for OAuth errors in URL
         if (urlError) {
+          logger.error('[OAuth Callback] OAuth error in URL:', urlError, urlParams.get('error_description'));
           throw new Error(`OAuth error: ${urlError} - ${urlParams.get('error_description') || 'Unknown error'}`);
         }
         
         if (!authCode) {
+          logger.error('[OAuth Callback] No authorization code in URL');
           throw new Error('No authorization code received from OAuth provider');
         }
+        
+        logger.debug('[OAuth Callback] Authorization code present, proceeding with token exchange');
         
         // Add debug functions to window for testing
         if (typeof window !== 'undefined') {
@@ -160,17 +168,29 @@ export default function Callback() {
         }
         
         // Fix: Ensure Amplify is properly configured before any auth operations
-        logger.debug('[OAuth Callback] Ensuring Amplify is configured...');
+        logger.debug('[OAuth Callback] Step 1: Ensuring Amplify is configured...');
         
         // Force fresh configuration
         configureAmplify(true);
         
         // Wait a moment for configuration to settle
+        logger.debug('[OAuth Callback] Step 2: Waiting for configuration to settle...');
         await new Promise(resolve => setTimeout(resolve, 500));
         
         // Double-check configuration by accessing Amplify directly
+        logger.debug('[OAuth Callback] Step 3: Verifying Amplify configuration...');
         try {
           const config = Amplify.getConfig();
+          logger.debug('[OAuth Callback] Amplify config check:', {
+            hasConfig: !!config,
+            hasAuth: !!config?.Auth,
+            hasCognito: !!config?.Auth?.Cognito,
+            hasUserPoolId: !!config?.Auth?.Cognito?.userPoolId,
+            userPoolId: config?.Auth?.Cognito?.userPoolId,
+            hasOAuth: !!config?.Auth?.Cognito?.loginWith?.oauth,
+            oauthDomain: config?.Auth?.Cognito?.loginWith?.oauth?.domain
+          });
+          
           if (!config?.Auth?.Cognito?.userPoolId) {
             logger.warn('[OAuth Callback] Amplify config missing after configuration, retrying...');
             configureAmplify(true);
@@ -180,42 +200,56 @@ export default function Callback() {
           logger.error('[OAuth Callback] Error checking Amplify config:', configError);
         }
         
-        logger.debug('[OAuth Callback] Fetching auth session...');
+        logger.debug('[OAuth Callback] Step 4: Starting token retrieval...');
+        console.log('[OAuth Callback] Step 4: Starting token retrieval...');
         setStatus('Completing sign in...');
         
         // Simple token retrieval with timeout
         let tokens;
         try {
           // Import the raw auth function directly to bypass the enhanced wrapper
+          logger.debug('[OAuth Callback] Step 4a: Importing raw fetchAuthSession...');
+          console.log('[OAuth Callback] Step 4a: Importing raw fetchAuthSession...');
           const { fetchAuthSession: rawFetchAuthSession } = await import('aws-amplify/auth');
           
-          logger.debug('[OAuth Callback] Starting fetchAuthSession with raw function...');
+          logger.debug('[OAuth Callback] Step 4b: Starting fetchAuthSession with raw function...');
+          console.log('[OAuth Callback] Step 4b: Starting fetchAuthSession with raw function...');
           
-          const authResponse = await Promise.race([
-            rawFetchAuthSession({ forceRefresh: true }),
-            new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Token retrieval timeout')), 10000)
-            )
-          ]);
+          const authPromise = rawFetchAuthSession({ forceRefresh: true });
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Token retrieval timeout')), 10000)
+          );
           
-          logger.debug('[OAuth Callback] fetchAuthSession completed, response:', authResponse);
+          logger.debug('[OAuth Callback] Step 4c: Waiting for auth response or timeout...');
+          console.log('[OAuth Callback] Step 4c: Waiting for auth response or timeout...');
+          const authResponse = await Promise.race([authPromise, timeoutPromise]);
+          
+          logger.debug('[OAuth Callback] Step 4d: fetchAuthSession completed, response:', authResponse);
+          console.log('[OAuth Callback] Step 4d: fetchAuthSession completed, response:', authResponse);
           
           tokens = authResponse?.tokens;
           
-          logger.debug('[OAuth Callback] Auth response:', { 
+          logger.debug('[OAuth Callback] Step 4e: Auth response analysis:', { 
             hasTokens: !!tokens,
             hasAccessToken: !!tokens?.accessToken,
             hasIdToken: !!tokens?.idToken,
             isSignedIn: authResponse?.isSignedIn,
-            responseKeys: authResponse ? Object.keys(authResponse) : []
+            responseKeys: authResponse ? Object.keys(authResponse) : [],
+            tokensType: tokens ? typeof tokens : 'undefined'
           });
+          console.log('[OAuth Callback] Step 4e: Tokens received?', !!tokens);
         } catch (sessionError) {
-          logger.error('[OAuth Callback] Session fetch error:', sessionError);
+          logger.error('[OAuth Callback] Step 4f: Session fetch error:', sessionError);
+          console.error('[OAuth Callback] Step 4f: Session fetch error:', sessionError);
           logger.error('[OAuth Callback] Error details:', {
             message: sessionError.message,
             name: sessionError.name,
-            stack: sessionError.stack
+            stack: sessionError.stack,
+            code: sessionError.code,
+            statusCode: sessionError.statusCode
           });
+          console.error('[OAuth Callback] Error name:', sessionError.name);
+          console.error('[OAuth Callback] Error message:', sessionError.message);
           
           // If it's the "Auth UserPool not configured" error, try direct configuration
           if (sessionError.message?.includes('Auth UserPool not configured') || 
