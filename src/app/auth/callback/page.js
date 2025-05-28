@@ -13,9 +13,14 @@ export default function Callback() {
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Processing authentication...');
 
+  // Deployment identifier for tracking
+  const DEPLOYMENT_VERSION = 'v2.0-enhanced-oauth-callback-' + Date.now();
+  
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        console.log('🚀 [ENHANCED OAUTH CALLBACK] Version:', DEPLOYMENT_VERSION);
+        logger.debug('[OAuth Callback] Enhanced version loaded:', DEPLOYMENT_VERSION);
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         logger.debug('[OAuth Callback] Current URL:', window.location.href);
         
