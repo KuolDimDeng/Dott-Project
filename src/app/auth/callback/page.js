@@ -14,14 +14,18 @@ export default function Callback() {
   const [status, setStatus] = useState('Processing authentication...');
 
   // Deployment identifier for tracking
-  const DEPLOYMENT_VERSION = 'v2.0-enhanced-oauth-callback-' + Date.now();
-  const FORCE_DEPLOY_TRIGGER = 'VERCEL_DEPLOY_' + new Date().toISOString();
+  const DEPLOYMENT_VERSION = 'v2.1-FORCE-DEPLOY-' + Date.now();
+  const FORCE_DEPLOY_TRIGGER = 'CRITICAL_OAUTH_FIX_' + new Date().toISOString();
   
   useEffect(() => {
+    console.log('🚨 CRITICAL OAUTH FIX DEPLOYED - v2.1 with 8 retries');
+    console.log('🔥 DEPLOYMENT VERSION:', DEPLOYMENT_VERSION);
+    console.log('⚡ FORCE TRIGGER:', FORCE_DEPLOY_TRIGGER);
+    
     const handleCallback = async () => {
       try {
         console.log('🚀 [ENHANCED OAUTH CALLBACK] Version:', DEPLOYMENT_VERSION);
-        console.log('🔥 FORCE BUILD UPDATE - Enhanced OAuth v2.0 with 8 retries and 3-second delay');
+        console.log('🔥 FORCE BUILD UPDATE - Enhanced OAuth v2.1 with 8 retries and 3-second delay - CRITICAL FIX');
         logger.debug('[OAuth Callback] Enhanced version loaded:', DEPLOYMENT_VERSION);
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         logger.debug('[OAuth Callback] Current URL:', window.location.href);
@@ -256,7 +260,7 @@ export default function Callback() {
             }
           } catch (fallbackError) {
             logger.error('[OAuth Callback] Fallback check failed:', fallbackError);
-            throw new Error(`Authentication failed - no tokens received after ${maxAttempts} attempts`);
+            throw new Error(`Authentication failed - no tokens received after ${maxAttempts} attempts (Enhanced OAuth v2.1)`);
           }
         }
         

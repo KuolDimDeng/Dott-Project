@@ -1,0 +1,15 @@
+{
+  "buildCommand": "pnpm run build:production",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "env": {
+    "NEXT_PUBLIC_AWS_REGION": "us-east-1",
+    "NEXT_PUBLIC_COGNITO_USER_POOL_ID": "us-east-1_JPL8vGfb6",
+    "NEXT_PUBLIC_COGNITO_CLIENT_ID": "1o5v84mrgn4gt87khtr179uc5b",
+    "NEXT_PUBLIC_COGNITO_DOMAIN": "us-east-1jpl8vgfb6",
+    "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN": "https://dottapps.com/auth/callback",
+    "NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT": "https://dottapps.com/auth/signin",
+    "NEXT_PUBLIC_OAUTH_SCOPES": "openid,profile,email",
+    "NODE_ENV": "production"
+  }
+} 
