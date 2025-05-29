@@ -1,7 +1,27 @@
 # OAuth Configuration for Google Sign-In
 
+## ⚠️ **IMPORTANT: Direct Cognito Implementation**
+
+**This application uses DIRECT AWS Cognito OAuth integration, NOT AWS Amplify.**
+
+### Architecture Decision:
+- **Implementation**: Custom direct JWT token exchange with Cognito OAuth endpoints
+- **Library**: `src/lib/cognitoDirectAuth.js` (NOT AWS Amplify)
+- **Callback Route**: `/auth/callback-direct` (NOT `/auth/callback`)
+- **Token Management**: Direct localStorage storage and JWT decoding
+- **Custom Attributes**: Direct extraction of `custom:tenant_ID` from JWT tokens
+
+### Why Direct Cognito:
+1. **Reliability**: No Amplify Hub listeners or session complexity
+2. **Custom Attributes**: Direct JWT decoding for tenant ID extraction
+3. **Performance**: Faster flow without Amplify initialization
+4. **Error Handling**: Predictable error states and debugging
+5. **Simplicity**: Fewer dependencies and abstractions
+
+---
+
 ## Overview
-This document describes the OAuth configuration required for Google Sign-In functionality using AWS Cognito.
+This document describes the OAuth configuration required for Google Sign-In functionality using direct AWS Cognito integration.
 
 ## Environment Variables
 

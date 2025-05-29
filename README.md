@@ -2,6 +2,35 @@
 
 This repo contains changes to implement row-level multi-tenancy, replacing the previous schema-based approach.
 
+## 🔐 Authentication Architecture
+
+**IMPORTANT**: This application uses **Direct AWS Cognito OAuth** integration, NOT AWS Amplify.
+
+### Key Implementation Details:
+- **Authentication Method**: Direct JWT token exchange with AWS Cognito OAuth endpoints
+- **No Amplify Dependencies**: Bypasses Amplify v6 OAuth limitations and complexities  
+- **Direct Token Management**: Custom implementation in `src/lib/cognitoDirectAuth.js`
+- **Custom Attribute Extraction**: Directly extracts `custom:tenant_ID` and other Cognito attributes from JWT tokens
+- **Callback Handler**: Uses `/auth/callback-direct` for OAuth flow completion
+
+### Why Direct Cognito Instead of Amplify:
+1. **Reliability**: No dependency on Amplify Hub listeners or session management
+2. **Custom Attributes**: Direct JWT token decoding for `custom:tenant_ID` extraction
+3. **Simpler Flow**: Direct token exchange without Amplify initialization delays
+4. **Better Error Handling**: Clear, predictable error states
+5. **Performance**: Faster authentication flow with fewer abstractions
+
+### Authentication Flow:
+1. User clicks Google Sign-In → Direct Cognito OAuth URL
+2. Google authentication → Callback to `/auth/callback-direct`
+3. Authorization code → JWT token exchange
+4. Custom attribute extraction (`custom:tenant_ID`) from JWT payload
+5. User routing based on tenant ID and onboarding status
+
+See `DIRECT_OAUTH_SETUP.md` for detailed implementation documentation.
+
+---
+
 ## Why Row-Level Multi-Tenancy?
 
 Row-level multi-tenancy offers several advantages over schema-based approaches:

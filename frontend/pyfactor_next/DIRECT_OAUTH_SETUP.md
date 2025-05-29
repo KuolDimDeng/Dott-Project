@@ -1,7 +1,15 @@
 # Direct OAuth Implementation Setup Guide
 
 ## Overview
-This implementation bypasses AWS Amplify v6's OAuth limitations by directly integrating with AWS Cognito OAuth endpoints.
+**This is the PRIMARY authentication implementation for the application.**
+
+This implementation provides direct integration with AWS Cognito OAuth endpoints, specifically designed to replace AWS Amplify v6 for reliable authentication and custom attribute handling.
+
+### ✅ **Production Authentication Method**
+- **Status**: Production-ready and actively used
+- **Purpose**: Primary authentication system (NOT a fallback)
+- **Reason**: Direct control over JWT tokens and custom Cognito attributes like `custom:tenant_ID`
+- **Performance**: Faster and more reliable than Amplify abstractions
 
 ## Implementation Details
 
