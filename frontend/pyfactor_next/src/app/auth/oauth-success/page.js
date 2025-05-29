@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { cognitoAuth } from '@/lib/cognitoDirectAuth';
 
 export default function OAuthSuccessPage() {
   const router = useRouter();
@@ -12,114 +13,117 @@ export default function OAuthSuccessPage() {
   useEffect(() => {
     const completeOAuthFlow = async () => {
       try {
-        // Get OAuth user info from cache
-        const oauthEmail = getCacheValue('oauth_user_email');
-        const oauthProvider = getCacheValue('oauth_provider');
-        
-        logger.debug('[OAuth Success] Processing OAuth user:', { email: oauthEmail, provider: oauthProvider });
+        // Check if user is authenticated with direct OAuth
+        if (!cognitoAuth.isAuthenticated()) {
+          logger.error('[OAuth Success] No authentication tokens found');
+          router.push('/auth/signin?error=' + encodeURIComponent('Authentication failed'));
+          return;
+        }
+
+        // Get user info from direct OAuth
+        const user = cognitoAuth.getCurrentUser();
+        if (!user) {
+          logger.error('[OAuth Success] No user information found');
+          router.push('/auth/signin?error=' + encodeURIComponent('User information not found'));
+          return;
+        }
+
+        logger.debug('[OAuth Success] User authenticated via direct OAuth:', user.email);
 
         setStatus('Checking account status...');
 
-        // Configure Amplify if needed
-        if (typeof window !== 'undefined' && window.reconfigureAmplify) {
-          logger.debug('[OAuth Success] Ensuring Amplify is configured');
-          window.reconfigureAmplify();
-        }
-
-        // Import Amplify functions
-        const { getCurrentUser, fetchUserAttributes, signIn } = await import('@/config/amplifyUnified');
-
+        // Try to get additional user information from the API
         try {
-          // Try to get current user - this should work if OAuth properly synced
-          const currentUser = await getCurrentUser();
-          logger.debug('[OAuth Success] Current user found:', currentUser);
-
-          // Get user attributes
-          const userAttributes = await fetchUserAttributes();
-          logger.debug('[OAuth Success] User attributes:', {
-            email: userAttributes.email,
-            onboarding: userAttributes['custom:onboarding'],
-            tenantId: userAttributes['custom:tenant_ID'],
-            setupDone: userAttributes['custom:setupdone']
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+          const response = await fetch(`${apiUrl}/api/users/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('idToken')}`,
+              'Content-Type': 'application/json'
+            }
           });
 
-          // Store user attributes in cache
-          setCacheValue('user_attributes', userAttributes, { ttl: 3600000 });
-          
-          if (typeof window !== 'undefined' && window.__APP_CACHE) {
-            window.__APP_CACHE.user = window.__APP_CACHE.user || {};
-            window.__APP_CACHE.user.attributes = userAttributes;
-            window.__APP_CACHE.user.email = userAttributes.email;
-          }
-
-          // Check onboarding status
-          const onboardingStatus = (userAttributes['custom:onboarding'] || '').toLowerCase();
-          const setupDone = (userAttributes['custom:setupdone'] || '').toLowerCase() === 'true';
-          const tenantId = userAttributes['custom:tenant_ID'];
-
-          logger.info('[OAuth Success] User status:', { onboardingStatus, setupDone, tenantId });
-
-          // Store tenant ID if available
-          if (tenantId) {
+          if (response.ok) {
+            const userProfile = await response.json();
+            logger.debug('[OAuth Success] User profile from API:', userProfile);
+            
+            // Store user profile in cache
+            setCacheValue('user_profile', userProfile, { ttl: 3600000 });
+            
             if (typeof window !== 'undefined' && window.__APP_CACHE) {
-              window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-              window.__APP_CACHE.tenant.id = tenantId;
-              window.__APP_CACHE.tenantId = tenantId;
+              window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+              window.__APP_CACHE.user.profile = userProfile;
+              window.__APP_CACHE.user.email = user.email;
             }
-            localStorage.setItem('tenant_id', tenantId);
-            setCacheValue('tenantId', tenantId, { ttl: 24 * 60 * 60 * 1000 });
-          }
 
-          // Redirect based on onboarding status
-          if (onboardingStatus === 'complete' || setupDone) {
-            logger.debug('[OAuth Success] User is fully onboarded, redirecting to dashboard');
+            // Check if user has a tenant ID or needs onboarding
+            const tenantId = userProfile.tenant_id || userProfile.tenantId;
+            const onboardingStatus = userProfile.onboarding_status || userProfile.onboardingStatus;
+            const setupDone = userProfile.setup_done || userProfile.setupDone;
+
+            // Store tenant ID if available
             if (tenantId) {
-              router.push(`/tenant/${tenantId}/dashboard?fromAuth=true`);
-            } else {
-              router.push('/dashboard?fromAuth=true');
+              if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                window.__APP_CACHE.tenant.id = tenantId;
+                window.__APP_CACHE.tenantId = tenantId;
+              }
+              localStorage.setItem('tenant_id', tenantId);
+              setCacheValue('tenantId', tenantId, { ttl: 24 * 60 * 60 * 1000 });
             }
-          } else if (onboardingStatus) {
-            // Handle specific onboarding steps
-            logger.debug('[OAuth Success] User needs to complete onboarding:', onboardingStatus);
-            switch(onboardingStatus) {
-              case 'business_info':
-              case 'business-info':
-                router.push('/onboarding/subscription');
-                break;
-              case 'subscription':
-                router.push('/onboarding/subscription');
-                break;
-              case 'payment':
-                // Check for free/basic plans
-                const subplan = userAttributes['custom:subplan']?.toLowerCase();
-                if (subplan === 'free' || subplan === 'basic') {
-                  logger.info('[OAuth Success] Free/Basic plan user, redirecting to dashboard');
-                  if (tenantId) {
-                    router.push(`/tenant/${tenantId}/dashboard?fromAuth=true`);
-                  } else {
-                    router.push('/dashboard?fromAuth=true');
-                  }
-                } else {
+
+            // Redirect based on onboarding status
+            if (onboardingStatus === 'complete' || setupDone) {
+              logger.debug('[OAuth Success] User is fully onboarded, redirecting to dashboard');
+              if (tenantId) {
+                router.push(`/tenant/${tenantId}/dashboard?fromAuth=true`);
+              } else {
+                router.push('/dashboard?fromAuth=true');
+              }
+            } else if (onboardingStatus) {
+              // Handle specific onboarding steps
+              logger.debug('[OAuth Success] User needs to complete onboarding:', onboardingStatus);
+              switch(onboardingStatus) {
+                case 'business_info':
+                case 'business-info':
+                  router.push('/onboarding/subscription');
+                  break;
+                case 'subscription':
+                  router.push('/onboarding/subscription');
+                  break;
+                case 'payment':
                   router.push('/onboarding/setup');
-                }
-                break;
-              case 'setup':
-                router.push('/onboarding/setup');
-                break;
-              default:
-                router.push('/onboarding');
+                  break;
+                case 'setup':
+                  router.push('/onboarding/setup');
+                  break;
+                default:
+                  router.push('/onboarding');
+              }
+            } else {
+              // No onboarding status, start onboarding
+              logger.debug('[OAuth Success] No onboarding status, starting onboarding');
+              router.push('/onboarding');
             }
+
           } else {
-            // No onboarding status, start onboarding
-            logger.debug('[OAuth Success] No onboarding status, starting onboarding');
+            logger.warn('[OAuth Success] Could not fetch user profile from API, proceeding with limited info');
+            // Fallback: redirect to onboarding if we can't get user profile
             router.push('/onboarding');
           }
 
-        } catch (userError) {
-          logger.warn('[OAuth Success] No Amplify user found, likely a new OAuth user:', userError.message);
+        } catch (apiError) {
+          logger.warn('[OAuth Success] API call failed, proceeding with OAuth-only info:', apiError.message);
           
-          // This is likely a new OAuth user who needs to be created in Cognito
-          // For now, send them to onboarding
+          // Fallback: For new OAuth users who might not exist in our system yet
+          // Store basic user info from OAuth and redirect to onboarding
+          if (typeof window !== 'undefined' && window.__APP_CACHE) {
+            window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+            window.__APP_CACHE.user.email = user.email;
+            window.__APP_CACHE.user.name = user.name;
+            window.__APP_CACHE.user.picture = user.picture;
+          }
+
           logger.info('[OAuth Success] New OAuth user, redirecting to onboarding');
           router.push('/onboarding');
         }
