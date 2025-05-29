@@ -96,9 +96,41 @@ This registry tracks all scripts in the backend/pyfactor/scripts directory, thei
 - ✅ Backend health status: "Ok"
 - ✅ API endpoint accessible at https://dottapps-env.eba-3m4eq7bw.us-east-1.elasticbeanstalk.com/health/
 
+### Version0074_deploy_oauth_api_endpoints.sh
+- **Version**: 0074
+- **Purpose**: Deploy OAuth API endpoints to existing Dott-env-fixed Elastic Beanstalk environment
+- **Status**: ✅ EXECUTED SUCCESSFULLY (2025-05-29 06:36:37)
+- **Issues Fixed**:
+  - Added missing OAuth API endpoints for Google OAuth onboarding flow
+  - Created SignUpView, UserProfileView, and auth verification endpoints
+  - Updated URL routing in Django backend
+  - Deployed to production Elastic Beanstalk environment
+- **Files Modified**:
+  - custom_auth/api/views/auth_views.py (new OAuth endpoints)
+  - custom_auth/api/urls.py (URL routing updates)
+- **Deployment Target**: Dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com
+- **New Endpoints Available**:
+  - POST /api/auth/signup/ (OAuth user creation)
+  - GET /api/auth/profile/ (user profile retrieval)
+  - GET /api/auth/verify-session/ (session validation)
+  - POST /api/auth/check-attributes/ (user attributes)
+  - POST /api/auth/verify-tenant/ (tenant verification)
+- **Package Created**: oauth-api-endpoints-20250529063637.zip (75M)
+- **Application Version**: OAuth-API-V20250529063637
+- **Deployment Status**: ✅ COMPLETE (Environment Ready)
+
 ## Notes
 - All scripts use version control naming convention: Version####_<description>_<target>
 - Comprehensive documentation included within each script
 - Backup strategy implemented for all modified files
 - Production environment targeting with no development dependencies
 - Docker platform compatibility ensured for all configurations
+- Latest deployment: OAuth API endpoints successfully deployed to production
+
+## Version0077_deploy_oauth_api_fixed.sh
+- **Purpose**: Deploy OAuth API endpoints with corrected S3 upload order
+- **Date**: 2025-05-29 07:02:43
+- **Status**: ✅ Completed
+- **Version**: OAuth-API-Fixed-20250529-070113
+- **Package Size**:  16K
+- **Changes**: Added OAuth API endpoints (/api/auth/profile/, /api/auth/signup/)

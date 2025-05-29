@@ -131,5 +131,4 @@ WooCommerce==3.0.0
 XlsxWriter==3.2.0
 gunicorn==21.2.0
 
-# Added for PostgreSQL support
-psycopg2-binary==2.9.6
+# PostgreSQL support provided by psycopg2-binary==2.9.9 above
