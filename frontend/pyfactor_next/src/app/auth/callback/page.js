@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchAuthSession, fetchUserAttributes, getCurrentUser, Hub } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { setAuthCookies, determineOnboardingStep } from '@/utils/cookieManager';
 
@@ -19,9 +18,6 @@ export default function Callback() {
         logger.debug('[OAuth Callback] Auth callback page loaded, handling response');
         setStatus('Completing authentication...');
         setProgress(25);
-        
-        // For OAuth callback, Amplify v6 needs to process the URL with the authorization code
-        // This happens automatically when the Hub listener detects the 'signInWithRedirect' event
         
         // Check if we have OAuth parameters in the URL
         const urlParams = new URLSearchParams(window.location.search);
@@ -54,24 +50,49 @@ export default function Callback() {
         
         console.log('[OAuth Callback] Authorization code received, length:', code.length);
         
-        // IMPORTANT: In Amplify v6, we need to ensure Amplify is properly configured
-        // and then wait for it to process the OAuth callback
-        const { configureAmplify } = await import('@/config/amplifyUnified');
-        const configured = configureAmplify();
-        console.log('[OAuth Callback] Amplify configuration status:', configured);
+        // IMPORTANT: Import Amplify functions directly without reconfiguring
+        // This ensures we use the same Amplify instance that was configured in layout
+        const { 
+          fetchAuthSession, 
+          fetchUserAttributes, 
+          getCurrentUser, 
+          Hub, 
+          isAmplifyConfigured 
+        } = await import('@/config/amplifyUnified');
+        
+        // Check if Amplify is configured
+        const isConfigured = isAmplifyConfigured();
+        console.log('[OAuth Callback] Amplify configuration status:', isConfigured);
+        
+        if (!isConfigured) {
+          console.error('[OAuth Callback] Amplify not configured!');
+          throw new Error('Authentication service not configured');
+        }
         
         // Set up Hub listener to detect when OAuth sign-in completes
         let hubListenerActive = true;
+        let authCompleted = false;
+        
         const hubListener = (data) => {
           console.log('[OAuth Callback] Hub event received:', data);
           const { payload } = data;
           console.log('[OAuth Callback] Hub event type:', payload.event);
           
-          if (payload.event === 'signInWithRedirect' || payload.event === 'signIn' || payload.event === 'cognitoHostedUI') {
+          if (payload.event === 'signInWithRedirect' || 
+              payload.event === 'signIn' || 
+              payload.event === 'cognitoHostedUI' ||
+              payload.event === 'signInWithRedirect_success') {
             console.log('[OAuth Callback] OAuth sign-in event detected, processing...');
             hubListenerActive = false;
+            authCompleted = true;
             completeOAuthFlow();
-          } else if (payload.event === 'signInWithRedirect_failure' || payload.event === 'cognitoHostedUI_failure') {
+          } else if (payload.event === 'signInWithRedirect_failure' || 
+                     payload.event === 'cognitoHostedUI_failure' ||
+                     payload.event === 'parsingCallbackUrl') {
+            if (payload.event === 'parsingCallbackUrl') {
+              console.log('[OAuth Callback] Amplify is parsing callback URL...');
+              return; // This is expected, wait for completion
+            }
             console.error('[OAuth Callback] OAuth sign-in failed:', payload);
             hubListenerActive = false;
             setError(payload.data?.message || 'OAuth sign-in failed');
@@ -86,34 +107,54 @@ export default function Callback() {
         Hub.listen('auth', hubListener);
         console.log('[OAuth Callback] Hub listener registered');
         
-        // Try to get the current session - in some cases, the sign-in might already be complete
+        // Give Amplify time to process the OAuth callback
+        // This is crucial - Amplify needs time to parse the URL and exchange the code
+        setStatus('Verifying authentication...');
+        setProgress(40);
+        
+        // Wait a bit before checking session to allow Amplify to process
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Try to get the current session with retries
         let sessionCheckCount = 0;
         const maxSessionChecks = 30; // 30 seconds total
         
         const checkSession = async () => {
-          if (!hubListenerActive) return; // Stop checking if hub event was received
+          if (!hubListenerActive || authCompleted) return; // Stop if auth completed
           
           try {
             sessionCheckCount++;
             console.log(`[OAuth Callback] Checking session (attempt ${sessionCheckCount}/${maxSessionChecks})...`);
             
-            // First try to get the current user
             try {
-              const user = await getCurrentUser();
-              console.log('[OAuth Callback] Current user found:', { username: user.username, userId: user.userId });
+              // Try to get the session first
+              const session = await fetchAuthSession({ forceRefresh: true });
+              console.log('[OAuth Callback] Session check result:', {
+                hasTokens: !!session?.tokens,
+                hasAccessToken: !!session?.tokens?.accessToken,
+                hasIdToken: !!session?.tokens?.idToken,
+                userSub: session?.userSub
+              });
               
-              // If we have a user, check for valid session
-              const session = await fetchAuthSession();
               if (session?.tokens?.accessToken) {
                 console.log('[OAuth Callback] ✅ Valid session found! User is authenticated');
                 hubListenerActive = false;
+                authCompleted = true;
                 Hub.remove('auth', hubListener);
                 await completeOAuthFlow();
                 return;
               }
-            } catch (err) {
-              // No current user yet, this is expected during OAuth processing
-              console.log('[OAuth Callback] No current user yet:', err.message);
+            } catch (sessionErr) {
+              console.log('[OAuth Callback] Session check error:', sessionErr.message);
+              
+              // If it's a "User does not exist" error, the OAuth flow hasn't completed yet
+              if (sessionErr.message?.includes('User does not exist') || 
+                  sessionErr.message?.includes('No current user')) {
+                // This is expected during OAuth processing, continue checking
+              } else {
+                // Log unexpected errors
+                console.error('[OAuth Callback] Unexpected session error:', sessionErr);
+              }
             }
             
             // Continue checking
@@ -132,9 +173,7 @@ export default function Callback() {
         };
         
         // Start checking for session
-        setStatus('Verifying authentication...');
-        setProgress(40);
-        setTimeout(checkSession, 1500); // Start checking after 1.5 seconds
+        checkSession();
         
         // Add debug function to window for testing
         if (typeof window !== 'undefined') {
@@ -161,6 +200,9 @@ export default function Callback() {
             const urlParams = new URLSearchParams(window.location.search);
             console.log('URL Params:', Object.fromEntries(urlParams.entries()));
             
+            const isConfigured = isAmplifyConfigured();
+            console.log('Amplify Configured:', isConfigured);
+            
             return 'Debug info logged to console';
           };
           
@@ -186,8 +228,11 @@ export default function Callback() {
         setStatus('Retrieving user information...');
         setProgress(60);
         
+        // Import functions we need
+        const { fetchAuthSession, fetchUserAttributes } = await import('@/config/amplifyUnified');
+        
         // Get the authenticated user's session
-        const session = await fetchAuthSession();
+        const session = await fetchAuthSession({ forceRefresh: true });
         console.log('[OAuth Callback] Session retrieved:', {
           hasTokens: !!session?.tokens,
           hasAccessToken: !!session?.tokens?.accessToken,
