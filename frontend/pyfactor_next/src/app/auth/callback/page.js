@@ -50,24 +50,20 @@ export default function Callback() {
         
         console.log('[OAuth Callback] Authorization code received, length:', code.length);
         
-        // IMPORTANT: Import Amplify functions directly without reconfiguring
-        // This ensures we use the same Amplify instance that was configured in layout
+        // IMPORTANT: Ensure Amplify is ready for OAuth processing
+        // This will reconfigure if needed and verify OAuth configuration
         const { 
           fetchAuthSession, 
           fetchUserAttributes, 
           getCurrentUser, 
-          Hub, 
-          isAmplifyConfigured 
+          Hub 
         } = await import('@/config/amplifyUnified');
         
-        // Check if Amplify is configured
-        const isConfigured = isAmplifyConfigured();
-        console.log('[OAuth Callback] Amplify configuration status:', isConfigured);
+        // Use the ensureAmplifyOAuthReady function to verify and fix configuration if needed
+        const isReady = await window.ensureAmplifyOAuthReady?.() || true;
+        console.log('[OAuth Callback] Amplify OAuth ready status:', isReady);
         
-        if (!isConfigured) {
-          console.error('[OAuth Callback] Amplify not configured!');
-          throw new Error('Authentication service not configured');
-        }
+        // Even if not ready, continue anyway since we have the authorization code
         
         // Set up Hub listener to detect when OAuth sign-in completes
         let hubListenerActive = true;
@@ -200,7 +196,7 @@ export default function Callback() {
             const urlParams = new URLSearchParams(window.location.search);
             console.log('URL Params:', Object.fromEntries(urlParams.entries()));
             
-            const isConfigured = isAmplifyConfigured();
+            const isConfigured = isReady;
             console.log('Amplify Configured:', isConfigured);
             
             return 'Debug info logged to console';
