@@ -17,16 +17,38 @@ export default function DirectOAuthCallback() {
       try {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
-        const error = searchParams.get('error');
+        const errorParam = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
 
-        console.log('[Direct OAuth] Callback params:', { code: code?.slice(0, 10) + '...', state: !!state, error });
+        console.log('[Direct OAuth] Callback params:', { 
+          code: code ? code.slice(0, 10) + '...' : 'none', 
+          state: !!state, 
+          error: errorParam,
+          hasParams: searchParams.toString() !== ''
+        });
 
-        if (error) {
-          throw new Error(`OAuth error: ${error}`);
+        // Check if this is an OAuth error response
+        if (errorParam) {
+          const errorMessage = errorDescription || errorParam;
+          throw new Error(`OAuth error: ${errorMessage}`);
         }
 
+        // Check if we have any parameters at all
+        if (!searchParams.toString()) {
+          console.error('[Direct OAuth] No parameters received - page accessed directly');
+          setError('Invalid request. Please sign in with Google from the sign-in page.');
+          setStatus('');
+          
+          // Redirect to sign-in page after a delay
+          setTimeout(() => {
+            router.push('/auth/signin');
+          }, 3000);
+          return;
+        }
+
+        // Check if we have the authorization code
         if (!code) {
-          throw new Error('No authorization code received');
+          throw new Error('No authorization code received. Please try signing in again.');
         }
 
         setStatus('Exchanging code for tokens...');
@@ -83,17 +105,29 @@ export default function DirectOAuthCallback() {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Completing Sign In
+            {error ? 'Authentication Error' : 'Completing Sign In'}
           </h2>
           <div className="mt-8 space-y-4">
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-            <p className="text-sm text-gray-600">{status}</p>
+            {!error && (
+              <div className="flex justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            )}
+            {status && <p className="text-sm text-gray-600">{status}</p>}
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <p className="text-sm">{error}</p>
+                <p className="text-sm font-medium">{error}</p>
                 <p className="text-xs mt-2">Redirecting to sign-in page...</p>
+              </div>
+            )}
+            {error && (
+              <div className="mt-4">
+                <a
+                  href="/auth/signin"
+                  className="text-blue-600 hover:text-blue-500 text-sm font-medium"
+                >
+                  Go to Sign In →
+                </a>
               </div>
             )}
           </div>
