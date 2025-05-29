@@ -56,7 +56,7 @@ export const manualOAuthRetry = async () => {
         setAuthCookies(tokens, userAttributes);
         const nextStep = determineOnboardingStep(userAttributes);
         
-        let redirectUrl = nextStep === 'complete' ? '/dashboard' : `/onboarding/${nextStep}`;
+        let redirectUrl = nextStep === 'dashboard' ? '/dashboard' : `/onboarding/${nextStep}`;
         redirectUrl += '?from=oauth_manual_retry';
         
         console.log('  📍 Next step determined:', {

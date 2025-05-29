@@ -8,8 +8,11 @@
  * IMPORTANT: Always use this module when accessing Cognito attributes
  * to prevent casing and naming inconsistencies.
  * 
- * VERSION: Updated by Version0001_FixCognitoAttributesOnboarding script
- * LAST UPDATED: 2025-05-28T12:50:38.973Z
+ * Updated with complete and correct Cognito User Pool custom attributes.
+ * All custom attribute names match exactly with AWS Cognito configuration.
+ * 
+ * VERSION: Updated with complete attribute list
+ * LAST UPDATED: 2025-01-08
  */
 
 /**
@@ -25,8 +28,10 @@ export const StandardAttributes = {
 /**
  * Custom Cognito attribute names with correct casing
  * CRITICAL: These names must match exactly with AWS Cognito configuration
+ * Updated with complete list from Cognito User Pool configuration
  */
 export const CustomAttributes = {
+  ACCESSIBLE_PAGES: 'custom:accessiblePages',
   ACCOUNT_STATUS: 'custom:acctstatus',
   ATTR_VERSION: 'custom:attrversion',
   BUSINESS_COUNTRY: 'custom:businesscountry',
@@ -35,6 +40,7 @@ export const CustomAttributes = {
   BUSINESS_STATE: 'custom:businessstate',
   BUSINESS_SUBTYPES: 'custom:businesssubtypes',
   BUSINESS_TYPE: 'custom:businesstype',
+  CAN_MANAGE_USERS: 'custom:canManageUsers',
   CREATED_AT: 'custom:created_at',
   CURRENCY: 'custom:currency',
   DATE_FORMAT: 'custom:dateformat',
@@ -43,6 +49,7 @@ export const CustomAttributes = {
   LANGUAGE: 'custom:language',
   LAST_LOGIN: 'custom:lastlogin',
   LEGAL_STRUCTURE: 'custom:legalstructure',
+  MANAGEABLE_PAGES: 'custom:managablePages',
   ONBOARDING: 'custom:onboarding',
   PAYMENT_ID: 'custom:paymentid',
   PAYMENT_METHOD: 'custom:paymentmethod',
@@ -53,14 +60,14 @@ export const CustomAttributes = {
   SUBSCRIPTION_PLAN: 'custom:subplan',
   SUBSCRIPTION_INTERVAL: 'custom:subscriptioninterval',
   SUBSCRIPTION_STATUS: 'custom:subscriptionstatus',
-  TENANT_ID: 'custom:tenant_ID', // Note the uppercase ID - This matches server configuration
+  TENANT_ID: 'custom:tenant_ID', // Note: This is the primary tenant ID
   TIMEZONE: 'custom:timezone',
   UPDATED_AT: 'custom:updated_at',
   USER_ROLE: 'custom:userrole',
 };
 
 /**
- * Validation rules for Cognito attributes
+ * Validation rules for Cognito attributes based on actual Cognito User Pool configuration
  */
 export const ValidationRules = {
   "sub": {
@@ -84,6 +91,12 @@ export const ValidationRules = {
     "mutable": true,
     "minLength": 1,
     "maxLength": 256
+  },
+  "custom:accessiblePages": {
+    "required": false,
+    "mutable": true,
+    "minLength": 0,
+    "maxLength": 2048
   },
   "custom:acctstatus": {
     "required": false,
@@ -133,6 +146,12 @@ export const ValidationRules = {
     "minLength": 1,
     "maxLength": 256
   },
+  "custom:canManageUsers": {
+    "required": false,
+    "mutable": true,
+    "minLength": 0,
+    "maxLength": 2048
+  },
   "custom:created_at": {
     "required": false,
     "mutable": true,
@@ -180,6 +199,12 @@ export const ValidationRules = {
     "mutable": true,
     "minLength": 1,
     "maxLength": 256
+  },
+  "custom:managablePages": {
+    "required": false,
+    "mutable": true,
+    "minLength": 0,
+    "maxLength": 2048
   },
   "custom:onboarding": {
     "required": false,
@@ -457,7 +482,6 @@ const CognitoAttributes = {
     // Check common incorrect variations for backward compatibility
     const fallbacks = [
       'custom:tenant_id',
-      'custom:tenantId', 
       'custom:tenantID',
       'custom:tenant-id'
     ];
@@ -544,6 +568,148 @@ const CognitoAttributes = {
   isPaymentVerified(attributes) {
     const paymentStatus = this.getValue(attributes, this.PAYMENT_VERIFIED, 'false');
     return paymentStatus.toLowerCase() === 'true';
+  },
+  
+  /**
+   * Get accessible pages for the user
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The accessible pages string or null if not found
+   */
+  getAccessiblePages(attributes) {
+    return this.getValue(attributes, this.ACCESSIBLE_PAGES);
+  },
+  
+  /**
+   * Get manageable pages for the user
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The manageable pages string or null if not found
+   */
+  getManageablePages(attributes) {
+    return this.getValue(attributes, this.MANAGEABLE_PAGES);
+  },
+  
+  /**
+   * Check if user can manage other users
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {Boolean} True if user can manage users
+   */
+  canManageUsers(attributes) {
+    const canManage = this.getValue(attributes, this.CAN_MANAGE_USERS, 'false');
+    return canManage.toLowerCase() === 'true';
+  },
+  
+  /**
+   * Get business country
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The business country or null if not found
+   */
+  getBusinessCountry(attributes) {
+    return this.getValue(attributes, this.BUSINESS_COUNTRY);
+  },
+  
+  /**
+   * Get business state
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The business state or null if not found
+   */
+  getBusinessState(attributes) {
+    return this.getValue(attributes, this.BUSINESS_STATE);
+  },
+  
+  /**
+   * Get business type
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The business type or null if not found
+   */
+  getBusinessType(attributes) {
+    return this.getValue(attributes, this.BUSINESS_TYPE);
+  },
+  
+  /**
+   * Get legal structure
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The legal structure or null if not found
+   */
+  getLegalStructure(attributes) {
+    return this.getValue(attributes, this.LEGAL_STRUCTURE);
+  },
+  
+  /**
+   * Get date founded
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The date founded or null if not found
+   */
+  getDateFounded(attributes) {
+    return this.getValue(attributes, this.DATE_FOUNDED);
+  },
+  
+  /**
+   * Get employee ID
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The employee ID or null if not found
+   */
+  getEmployeeId(attributes) {
+    return this.getValue(attributes, this.EMPLOYEE_ID);
+  },
+  
+  /**
+   * Get account status
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The account status or null if not found
+   */
+  getAccountStatus(attributes) {
+    return this.getValue(attributes, this.ACCOUNT_STATUS);
+  },
+  
+  /**
+   * Get subscription status
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The subscription status or null if not found
+   */
+  getSubscriptionStatus(attributes) {
+    return this.getValue(attributes, this.SUBSCRIPTION_STATUS);
+  },
+  
+  /**
+   * Get subscription interval
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The subscription interval or null if not found
+   */
+  getSubscriptionInterval(attributes) {
+    return this.getValue(attributes, this.SUBSCRIPTION_INTERVAL);
+  },
+  
+  /**
+   * Check if payment is required
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {Boolean} True if payment is required
+   */
+  isPaymentRequired(attributes) {
+    const requiresPayment = this.getValue(attributes, this.REQUIRES_PAYMENT, 'false');
+    return requiresPayment.toLowerCase() === 'true';
+  },
+  
+  /**
+   * Get user preferences
+   * 
+   * @param {Object} attributes - User attributes object
+   * @returns {String|null} The user preferences or null if not found
+   */
+  getPreferences(attributes) {
+    return this.getValue(attributes, this.PREFERENCES);
   },
   
   /**

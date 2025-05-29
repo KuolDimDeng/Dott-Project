@@ -294,7 +294,23 @@ export default function Callback() {
         
         logger.debug('[OAuth Callback] Onboarding step determination:', {
           nextStep,
-          isComplete: nextStep === 'complete'
+          isComplete: nextStep === 'dashboard',
+          userEmail: userAttributes.email,
+          userOnboardingState: {
+            onboarding: userAttributes['custom:onboarding'],
+            setupDone: userAttributes['custom:setupdone'],
+            tenantId: userAttributes['custom:tenant_ID'],
+            subplan: userAttributes['custom:subplan'],
+            payverified: userAttributes['custom:payverified']
+          }
+        });
+        
+        console.log('🚨 [OAuth Callback] REDIRECT DETERMINATION:', {
+          email: userAttributes.email,
+          nextStep,
+          willRedirectToDashboard: nextStep === 'dashboard',
+          onboardingStatus: userAttributes['custom:onboarding'],
+          setupDone: userAttributes['custom:setupdone']
         });
         
         if (nextStep === 'business-info') {
@@ -305,7 +321,7 @@ export default function Callback() {
           redirectUrl = '/onboarding/payment';
         } else if (nextStep === 'setup') {
           redirectUrl = '/onboarding/setup';
-        } else if (nextStep === 'complete') {
+        } else if (nextStep === 'dashboard') {
           redirectUrl = '/dashboard';
         } else {
           // Fallback to business info
