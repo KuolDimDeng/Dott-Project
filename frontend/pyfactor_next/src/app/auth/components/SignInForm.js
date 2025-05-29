@@ -934,31 +934,18 @@ export default function SignInForm() {
     setSuccessMessage(null);
     
     try {
-      logger.debug('[SignInForm] Initiating Google Sign-In with Cognito');
+      logger.debug('[SignInForm] Initiating Google Sign-In with Direct Cognito OAuth');
       
-      // Ensure Amplify OAuth is ready before proceeding
-      if (typeof window !== 'undefined' && window.ensureAmplifyOAuthReady) {
-        logger.debug('[SignInForm] Ensuring Amplify OAuth is ready');
-        const isReady = await window.ensureAmplifyOAuthReady();
-        if (!isReady) {
-          logger.warn('[SignInForm] Amplify OAuth not ready, using direct OAuth redirect');
-          // Use direct OAuth redirect as fallback
-          directOAuthSignIn('Google', JSON.stringify({
-            redirectUrl: '/dashboard',
-            source: 'signin_form'
-          }));
-          return;
-        }
-      }
+      // Import the direct Cognito auth module
+      const { cognitoAuth } = await import('@/lib/cognitoDirectAuth');
       
-      // Use Amplify's signInWithRedirect for Google OAuth
-      await signInWithRedirect({ 
-        provider: 'Google',
-        customState: JSON.stringify({
-          redirectUrl: '/dashboard',
-          source: 'signin_form'
-        })
-      });
+      // Get the Google sign-in URL
+      const googleSignInUrl = cognitoAuth.getGoogleSignInUrl();
+      
+      logger.debug('[SignInForm] Redirecting to Google OAuth:', googleSignInUrl);
+      
+      // Redirect to Google OAuth
+      window.location.href = googleSignInUrl;
       
       // The browser will redirect to Google OAuth, so no code after this executes
       logger.debug('[SignInForm] Google Sign-In redirect initiated');
@@ -966,37 +953,8 @@ export default function SignInForm() {
     } catch (error) {
       logger.error('[SignInForm] Google Sign-In error:', error);
       
-      // Handle specific error cases
-      if (error.message && error.message.includes('Auth UserPool not configured')) {
-        logger.warn('[SignInForm] Amplify configuration lost, using direct OAuth redirect');
-        // Use direct OAuth redirect as ultimate fallback
-        try {
-          directOAuthSignIn('Google', JSON.stringify({
-            redirectUrl: '/dashboard',
-            source: 'signin_form'
-          }));
-          return;
-        } catch (directError) {
-          logger.error('[SignInForm] Direct OAuth redirect also failed:', directError);
-          setErrors({ general: 'Google Sign-In is temporarily unavailable. Please use email sign-in.' });
-        }
-      } else if (error.message && error.message.includes('OAuth not configured')) {
-        setErrors({ general: 'Google Sign-In is not properly configured. Please use email sign-in or contact support.' });
-      } else if (error.message && error.message.includes('Failed to configure Amplify')) {
-        setErrors({ general: 'Authentication system is temporarily unavailable. Please try again in a moment.' });
-      } else if (error.message && error.message.includes('Failed to configure OAuth')) {
-        setErrors({ general: 'Google Sign-In configuration failed. Please try again or use email sign-in.' });
-      } else if (error.message && error.message.includes('Cognito OAuth domain not properly configured')) {
-        setErrors({ general: 'Google Sign-In is not available. The OAuth domain needs to be configured in AWS Cognito. Please use email sign-in.' });
-      } else if (error.name === 'UserNotConfirmedException') {
-        setErrors({ general: 'Please verify your email before signing in with Google.' });
-      } else if (error.name === 'NotAuthorizedException') {
-        setErrors({ general: 'Google Sign-In is not authorized. Please contact support.' });
-      } else if (error.message && error.message.includes('network')) {
-        setErrors({ general: 'Network error during Google Sign-In. Please check your connection and try again.' });
-      } else {
-        setErrors({ general: 'Google Sign-In is temporarily unavailable. Please use email sign-in or try again later.' });
-      }
+      // Generic error message for any failures
+      setErrors({ general: 'Google Sign-In is temporarily unavailable. Please use email sign-in or try again later.' });
       
       setIsSubmitting(false);
     }
