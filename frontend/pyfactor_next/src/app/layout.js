@@ -55,61 +55,129 @@ export default async function RootLayout({ children, params }) {
         <script 
           dangerouslySetInnerHTML={{ 
             __html: `
-            // Clean tenant ID extraction using CognitoAttributes utility
-            // Replaces test-tenant prevention with proper dynamic extraction
-            async function initializeTenantFromCognito() {
+            // Direct OAuth tenant ID extraction - works with localStorage tokens
+            // Replaces Amplify-based extraction with direct token approach
+            async function initializeTenantFromDirectOAuth() {
               try {
-                console.log('[Layout] Initializing tenant ID from Cognito attributes');
+                console.log('[Layout] Initializing tenant ID from direct OAuth tokens');
                 
-                // Wait for Amplify to be available
-                let attempts = 0;
-                while (!window.Amplify && attempts < 10) {
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                  attempts++;
+                // Check if we have direct OAuth tokens
+                const idToken = localStorage.getItem('idToken');
+                const accessToken = localStorage.getItem('accessToken');
+                
+                if (!idToken && !accessToken) {
+                  // Check AppCache for cached user profile
+                  const cachedProfile = window.__APP_CACHE?.user?.profile;
+                  const cachedTenantId = window.__APP_CACHE?.tenantId || window.__APP_CACHE?.tenant?.id;
+                  
+                  if (cachedTenantId) {
+                    console.log('[Layout] Found cached tenant ID:', cachedTenantId);
+                    return cachedTenantId;
+                  }
+                  
+                  if (Math.random() < 0.1) { // Only log 10% of the time
+                    console.debug('[Layout] No OAuth tokens or cached tenant ID found');
+                  }
+                  return null;
                 }
                 
-                if (window.Amplify && window.Amplify.Auth) {
-                  try {
-                    const session = await window.Amplify.Auth.currentSession();
-                    if (session && session.idToken && session.idToken.payload) {
-                      const payload = session.idToken.payload;
-                      
-                      // Use proper attribute priority as defined in CognitoAttributes
-                      const tenantId = payload['custom:tenant_ID'] || 
-                                      payload['custom:businessid'] ||
-                                      payload['custom:tenant_id'] ||
-                                      payload['custom:tenantId'];
-                      
-                      if (tenantId) {
-                        console.log('[Layout] Found tenant ID from Cognito:', tenantId);
-                        
-                        // Store in AppCache (no localStorage per requirements)
-                        if (window.__APP_CACHE) {
-                          window.__APP_CACHE.tenantId = tenantId;
-                          window.__APP_CACHE.tenant = { id: tenantId };
-                        }
-                        
-                        // Redirect to tenant-specific URL if on root
-                        const path = window.location.pathname;
-                        if (path === '/' || path === '') {
-                          window.location.href = '/tenant/' + tenantId;
-                        }
-                        
-                        return tenantId;
-                      }
+                // Try to get tenant ID from cached user profile first
+                let tenantId = window.__APP_CACHE?.tenantId || window.__APP_CACHE?.tenant?.id;
+                if (tenantId) {
+                  console.log('[Layout] Found tenant ID in AppCache:', tenantId);
+                  return tenantId;
+                }
+                
+                // If no cached tenant ID, try to get user profile from API
+                try {
+                  const apiUrl = 'https://api.dottapps.com';
+                  const response = await fetch(apiUrl + '/api/users/profile', {
+                    method: 'GET',
+                    headers: {
+                      'Authorization': 'Bearer ' + (idToken || accessToken),
+                      'Content-Type': 'application/json'
                     }
-                  } catch (error) {
-                    console.log('[Layout] Could not get Cognito session:', error.message);
+                  });
+                  
+                  if (response.ok) {
+                    const userProfile = await response.json();
+                    console.log('[Layout] Got user profile from API:', !!userProfile);
+                    
+                    // Extract tenant ID from profile using various possible field names
+                    tenantId = userProfile.tenant_id || 
+                              userProfile.tenantId || 
+                              userProfile['custom:tenant_ID'] ||
+                              userProfile['custom:tenant_id'] ||
+                              userProfile['custom:businessid'];
+                    
+                    if (tenantId) {
+                      console.log('[Layout] Found tenant ID from API profile:', tenantId);
+                      
+                      // Store in AppCache
+                      if (window.__APP_CACHE) {
+                        window.__APP_CACHE.tenantId = tenantId;
+                        window.__APP_CACHE.tenant = { id: tenantId };
+                        window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+                        window.__APP_CACHE.user.profile = userProfile;
+                      }
+                      
+                      // Redirect to tenant-specific URL if on root
+                      const path = window.location.pathname;
+                      if (path === '/' || path === '') {
+                        window.location.href = '/tenant/' + tenantId;
+                      }
+                      
+                      return tenantId;
+                    } else {
+                      console.log('[Layout] No tenant ID found in user profile - new user may need onboarding');
+                    }
+                  } else {
+                    console.log('[Layout] API call failed:', response.status, response.statusText);
+                  }
+                } catch (apiError) {
+                  console.log('[Layout] Error calling user profile API:', apiError.message);
+                }
+                
+                // If we have tokens but no tenant ID from API, decode the ID token to check for attributes
+                if (idToken) {
+                  try {
+                    // Basic JWT decode (not verification, just reading payload)
+                    const payload = JSON.parse(atob(idToken.split('.')[1]));
+                    
+                    tenantId = payload['custom:tenant_ID'] || 
+                              payload['custom:tenant_id'] ||
+                              payload['custom:businessid'] ||
+                              payload['custom:tenantId'];
+                    
+                    if (tenantId) {
+                      console.log('[Layout] Found tenant ID in JWT token:', tenantId);
+                      
+                      // Store in AppCache
+                      if (window.__APP_CACHE) {
+                        window.__APP_CACHE.tenantId = tenantId;
+                        window.__APP_CACHE.tenant = { id: tenantId };
+                      }
+                      
+                      // Redirect to tenant-specific URL if on root
+                      const path = window.location.pathname;
+                      if (path === '/' || path === '') {
+                        window.location.href = '/tenant/' + tenantId;
+                      }
+                      
+                      return tenantId;
+                    }
+                  } catch (jwtError) {
+                    console.log('[Layout] Error decoding JWT token:', jwtError.message);
                   }
                 }
                 
                 // Reduced logging frequency for production
                 if (Math.random() < 0.1) { // Only log 10% of the time
-                  console.debug('[Layout] No tenant ID found in Cognito attributes');
+                  console.debug('[Layout] No tenant ID found in OAuth tokens or API');
                 }
                 return null;
               } catch (error) {
-                console.error('[Layout] Error initializing tenant from Cognito:', error);
+                console.error('[Layout] Error initializing tenant from direct OAuth:', error);
                 return null;
               }
             }
@@ -119,15 +187,15 @@ export default async function RootLayout({ children, params }) {
               // Initialize AppCache if not present
               if (!window.__APP_CACHE) {
                 window.__APP_CACHE = { 
-                  auth: { provider: 'cognito', initialized: true }, 
+                  auth: { provider: 'direct-oauth', initialized: true }, 
                   user: {}, 
                   tenant: {},
                   tenants: {}
                 };
               }
               
-              // Initialize tenant after a short delay to allow Amplify to load
-              setTimeout(initializeTenantFromCognito, 1000);
+              // Initialize tenant after a short delay to allow tokens to be available
+              setTimeout(initializeTenantFromDirectOAuth, 1000);
             }
             `
           }}
@@ -177,7 +245,7 @@ export default async function RootLayout({ children, params }) {
             // Ensure script is loaded early for dashboard redirects
             if (typeof window !== 'undefined' && !window.__APP_CACHE) {
               window.__APP_CACHE = { 
-                auth: { provider: 'cognito', initialized: true }, 
+                auth: { provider: 'direct-oauth', initialized: true }, 
                 user: {}, 
                 tenant: {},
                 tenants: {}
@@ -191,212 +259,218 @@ export default async function RootLayout({ children, params }) {
         <script 
           dangerouslySetInnerHTML={{ 
             __html: `
-              // OAuth Debugging Functions - Available Globally
+              // Direct OAuth Debugging Functions - Available Globally
               (function() {
-                console.log('🧪 Initializing OAuth debugging functions...');
+                console.log('🧪 Initializing Direct OAuth debugging functions...');
                 
-                // Manual OAuth retry function
+                // Manual OAuth retry function for direct OAuth
                 window.manualOAuthRetry = async function() {
-                  console.log('🔄 Manual OAuth Retry Started...');
+                  console.log('🔄 Manual Direct OAuth Retry Started...');
                   
                   try {
-                    // Check if Amplify is available
-                    if (!window.Amplify || !window.Amplify.Auth) {
-                      console.error('  ❌ Amplify not available');
-                      return { success: false, error: 'Amplify not available' };
+                    // Check if we have direct OAuth tokens
+                    const idToken = localStorage.getItem('idToken');
+                    const accessToken = localStorage.getItem('accessToken');
+                    
+                    if (!idToken && !accessToken) {
+                      console.error('  ❌ No OAuth tokens found in localStorage');
+                      return { success: false, error: 'No OAuth tokens found' };
                     }
                     
-                    console.log('  1. Amplify is available, attempting to get current session...');
+                    console.log('  1. Direct OAuth tokens found:', {
+                      hasIdToken: !!idToken,
+                      hasAccessToken: !!accessToken,
+                      idTokenLength: idToken?.length,
+                      accessTokenLength: accessToken?.length
+                    });
                     
+                    // Try to get user profile from API
                     try {
-                      const session = await window.Amplify.Auth.currentSession();
-                      console.log('  ✅ Current session retrieved:', {
-                        isValid: session && session.isValid(),
-                        hasAccessToken: !!(session && session.getAccessToken()),
-                        hasIdToken: !!(session && session.getIdToken()),
-                        accessTokenLength: session?.getAccessToken()?.getJwtToken()?.length,
-                        idTokenLength: session?.getIdToken()?.getJwtToken()?.length
+                      const apiUrl = 'https://api.dottapps.com';
+                      const response = await fetch(apiUrl + '/api/users/profile', {
+                        method: 'GET',
+                        headers: {
+                          'Authorization': 'Bearer ' + (idToken || accessToken),
+                          'Content-Type': 'application/json'
+                        }
                       });
                       
-                      if (session && session.isValid()) {
-                        console.log('  2. Session is valid, getting user attributes...');
+                      if (response.ok) {
+                        const userProfile = await response.json();
+                        console.log('  ✅ User profile retrieved from API:', userProfile);
                         
-                        try {
-                          const user = await window.Amplify.Auth.currentAuthenticatedUser();
-                          const userAttributes = user.attributes;
-                          console.log('  ✅ User attributes:', userAttributes);
-                          
-                          // Determine next step based on onboarding status
-                          let nextStep = 'business-info'; // Default
-                          
-                          if (userAttributes['custom:onboarding']?.toLowerCase() === 'complete') {
-                            nextStep = 'complete';
-                          } else if (userAttributes['custom:setupdone'] === 'true') {
-                            nextStep = 'complete';
-                          } else if (userAttributes['custom:payverified'] === 'true') {
-                            nextStep = 'setup';
-                          } else if (userAttributes['custom:subplan']) {
-                            nextStep = 'payment';
-                          } else if (userAttributes['custom:tenant_ID']) {
-                            nextStep = 'subscription';
-                          }
-                          
-                          let redirectUrl = nextStep === 'complete' ? '/dashboard' : '/onboarding/' + nextStep;
-                          redirectUrl += '?from=oauth_manual_retry';
-                          
-                          console.log('  📍 Next step determined:', {
-                            nextStep,
-                            redirectUrl,
-                            userAttributes: {
-                              onboarding: userAttributes['custom:onboarding'],
-                              tenantId: userAttributes['custom:tenant_ID'],
-                              subplan: userAttributes['custom:subplan'],
-                              payverified: userAttributes['custom:payverified'],
-                              setupdone: userAttributes['custom:setupdone']
-                            }
-                          });
-                          
-                          console.log('  🎯 Call window.oauthRedirect() to complete the redirect');
-                          
-                          // Store redirect URL for manual execution
-                          window.oauthRedirectUrl = redirectUrl;
-                          window.oauthRedirect = function() {
-                            console.log('🚀 Redirecting to ' + window.oauthRedirectUrl + '...');
-                            window.location.href = window.oauthRedirectUrl;
-                          };
-                          
-                          return { 
-                            success: true, 
-                            session, 
-                            userAttributes, 
-                            nextStep, 
-                            redirectUrl,
-                            message: 'OAuth retry successful! Call window.oauthRedirect() to complete.'
-                          };
-                        } catch (userError) {
-                          console.error('  ❌ Error getting user attributes:', userError);
-                          return { success: false, error: 'Error getting user attributes: ' + userError.message };
+                        // Determine next step based on onboarding status
+                        let nextStep = 'business-info'; // Default
+                        const tenantId = userProfile.tenant_id || userProfile.tenantId;
+                        const onboardingStatus = userProfile.onboarding_status || userProfile.onboardingStatus;
+                        const subplan = userProfile.subplan || userProfile.subscription_plan;
+                        const paymentVerified = userProfile.payment_verified || userProfile.payverified;
+                        const setupDone = userProfile.setup_done || userProfile.setupDone;
+                        
+                        if (onboardingStatus === 'complete' || setupDone) {
+                          nextStep = 'complete';
+                        } else if (paymentVerified) {
+                          nextStep = 'setup';
+                        } else if (subplan) {
+                          nextStep = 'payment';
+                        } else if (tenantId) {
+                          nextStep = 'subscription';
                         }
+                        
+                        let redirectUrl = nextStep === 'complete' ? 
+                          (tenantId ? '/tenant/' + tenantId + '/dashboard' : '/dashboard') : 
+                          '/onboarding/' + nextStep;
+                        redirectUrl += '?from=oauth_manual_retry';
+                        
+                        console.log('  📍 Next step determined:', {
+                          nextStep,
+                          redirectUrl,
+                          userProfile: {
+                            onboarding: onboardingStatus,
+                            tenantId: tenantId,
+                            subplan: subplan,
+                            paymentVerified: paymentVerified,
+                            setupDone: setupDone
+                          }
+                        });
+                        
+                        console.log('  🎯 Call window.oauthRedirect() to complete the redirect');
+                        
+                        // Store redirect URL for manual execution
+                        window.oauthRedirectUrl = redirectUrl;
+                        window.oauthRedirect = function() {
+                          console.log('🚀 Redirecting to ' + window.oauthRedirectUrl + '...');
+                          window.location.href = window.oauthRedirectUrl;
+                        };
+                        
+                        return { 
+                          success: true, 
+                          userProfile, 
+                          nextStep, 
+                          redirectUrl,
+                          message: 'Direct OAuth retry successful! Call window.oauthRedirect() to complete.'
+                        };
                       } else {
-                        console.error('  ❌ Session is not valid');
-                        return { success: false, error: 'Session is not valid' };
+                        console.error('  ❌ API call failed:', response.status, response.statusText);
+                        
+                        // Fallback: decode JWT token for basic info
+                        if (idToken) {
+                          try {
+                            const payload = JSON.parse(atob(idToken.split('.')[1]));
+                            console.log('  📋 JWT token payload:', payload);
+                            
+                            const tenantId = payload['custom:tenant_ID'] || payload['custom:tenant_id'];
+                            const redirectUrl = tenantId ? '/tenant/' + tenantId + '/dashboard' : '/onboarding';
+                            
+                            window.oauthRedirectUrl = redirectUrl;
+                            window.oauthRedirect = function() {
+                              console.log('🚀 Redirecting to ' + window.oauthRedirectUrl + '...');
+                              window.location.href = window.oauthRedirectUrl;
+                            };
+                            
+                            return { 
+                              success: true, 
+                              tokenPayload: payload, 
+                              redirectUrl,
+                              message: 'Direct OAuth with JWT fallback! Call window.oauthRedirect() to complete.'
+                            };
+                          } catch (jwtError) {
+                            return { success: false, error: 'API call failed and JWT decode failed: ' + jwtError.message };
+                          }
+                        }
+                        
+                        return { success: false, error: 'API call failed: ' + response.status };
                       }
-                    } catch (sessionError) {
-                      console.error('  ❌ Error getting current session:', sessionError);
-                      return { success: false, error: 'Error getting session: ' + sessionError.message };
+                    } catch (apiError) {
+                      console.error('  ❌ Error calling API:', apiError);
+                      return { success: false, error: 'API error: ' + apiError.message };
                     }
                   } catch (error) {
-                    console.error('  ❌ Manual OAuth retry failed:', error);
+                    console.error('  ❌ OAuth retry failed:', error);
                     return { success: false, error: error.message };
                   }
                 };
                 
                 // Debug OAuth state function
                 window.debugOAuthState = function() {
-                  console.log('🔍 OAuth State Debug Info:');
+                  console.log('🔍 Direct OAuth State Debug:');
                   
-                  const currentUrl = window.location.href;
-                  const urlParams = new URLSearchParams(window.location.search);
+                  const idToken = localStorage.getItem('idToken');
+                  const accessToken = localStorage.getItem('accessToken');
+                  const refreshToken = localStorage.getItem('refreshToken');
                   
-                  console.log('  📍 Current Location:', {
-                    url: currentUrl,
-                    pathname: window.location.pathname,
-                    search: window.location.search
+                  console.log('  Tokens:', {
+                    hasIdToken: !!idToken,
+                    hasAccessToken: !!accessToken,
+                    hasRefreshToken: !!refreshToken,
+                    idTokenLength: idToken?.length,
+                    accessTokenLength: accessToken?.length,
+                    refreshTokenLength: refreshToken?.length
                   });
                   
-                  const oauthParams = {
-                    code: urlParams.get('code'),
-                    state: urlParams.get('state'),
-                    error: urlParams.get('error'),
-                    errorDescription: urlParams.get('error_description')
-                  };
-                  
-                  console.log('  🔑 OAuth Parameters:', oauthParams);
-                  
-                  console.log('  ⚙️ Amplify Availability:', {
-                    amplifyAvailable: !!(window.Amplify),
-                    authAvailable: !!(window.Amplify && window.Amplify.Auth),
-                    configuredUserPoolId: window.Amplify?.Auth?._config?.userPoolId,
-                    configuredRegion: window.Amplify?.Auth?._config?.region
-                  });
-                  
-                  const cookies = document.cookie.split(';').reduce(function(acc, cookie) {
-                    const parts = cookie.trim().split('=');
-                    const key = parts[0];
-                    const value = parts[1];
-                    if (key && (key.includes('auth') || key.includes('onboarding'))) {
-                      acc[key] = value;
+                  if (idToken) {
+                    try {
+                      const payload = JSON.parse(atob(idToken.split('.')[1]));
+                      console.log('  JWT Payload:', payload);
+                      console.log('  User Info:', {
+                        email: payload.email,
+                        name: payload.name,
+                        tenantId: payload['custom:tenant_ID'] || payload['custom:tenant_id'],
+                        onboarding: payload['custom:onboarding'],
+                        subplan: payload['custom:subplan']
+                      });
+                    } catch (e) {
+                      console.error('  Error decoding JWT:', e);
                     }
-                    return acc;
-                  }, {});
-                  
-                  console.log('  🍪 Auth-related Cookies:', cookies);
-                  
-                  return {
-                    currentUrl: currentUrl,
-                    oauthParams: oauthParams,
-                    amplifyAvailable: !!(window.Amplify),
-                    cookies: cookies
-                  };
-                };
-                
-                // Test onboarding logic function
-                window.testOnboardingLogic = function(testAttributes) {
-                  console.log('🧪 Testing Onboarding Logic...');
-                  
-                  if (testAttributes) {
-                    console.log('  📊 Testing with provided attributes:', testAttributes);
-                    // Simple onboarding logic test
-                    let step = 'business-info';
-                    if (testAttributes['custom:onboarding']?.toLowerCase() === 'complete') {
-                      step = 'complete';
-                    } else if (testAttributes['custom:setupdone'] === 'true') {
-                      step = 'complete';
-                    } else if (testAttributes['custom:payverified'] === 'true') {
-                      step = 'setup';
-                    } else if (testAttributes['custom:subplan']) {
-                      step = 'payment';
-                    } else if (testAttributes['custom:tenant_ID']) {
-                      step = 'subscription';
-                    }
-                    console.log('  📍 Determined step:', step);
-                    return step;
                   }
                   
-                  const scenarios = [
-                    { name: 'New User (no attributes)', attrs: {} },
-                    { name: 'Has Tenant ID only', attrs: { 'custom:tenant_ID': 'test-tenant-123' } },
-                    { name: 'Has Subscription', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional' } },
-                    { name: 'Paid Plan + Payment', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional', 'custom:payverified': 'true' } },
-                    { name: 'Setup Done', attrs: { 'custom:tenant_ID': 'test-tenant-123', 'custom:subplan': 'professional', 'custom:payverified': 'true', 'custom:setupdone': 'true' } },
-                    { name: 'Complete', attrs: { 'custom:onboarding': 'complete' } }
-                  ];
+                  console.log('  AppCache:', window.__APP_CACHE);
+                  console.log('  Current URL:', window.location.href);
                   
-                  console.log('  🔍 Testing all scenarios:');
-                  const results = {};
-                  scenarios.forEach(function(scenario) {
-                    let step = 'business-info';
-                    if (scenario.attrs['custom:onboarding']?.toLowerCase() === 'complete') {
-                      step = 'complete';
-                    } else if (scenario.attrs['custom:setupdone'] === 'true') {
-                      step = 'complete';
-                    } else if (scenario.attrs['custom:payverified'] === 'true') {
-                      step = 'setup';
-                    } else if (scenario.attrs['custom:subplan']) {
-                      step = 'payment';
-                    } else if (scenario.attrs['custom:tenant_ID']) {
-                      step = 'subscription';
-                    }
-                    console.log('    ' + scenario.name + ': ' + step);
-                    results[scenario.name] = step;
-                  });
-                  
-                  return results;
+                  return {
+                    tokens: { hasIdToken: !!idToken, hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken },
+                    appCache: window.__APP_CACHE,
+                    url: window.location.href
+                  };
                 };
                 
-                console.log('🧪 OAuth Debugger Functions Available:');
-                console.log('  - window.manualOAuthRetry() - Manually retry OAuth authentication');
-                console.log('  - window.debugOAuthState() - Debug current OAuth state');
+                // Test onboarding logic function (updated for direct OAuth)
+                window.testOnboardingLogic = function(testAttributes) {
+                  console.log('🧪 Testing onboarding logic with attributes:', testAttributes);
+                  
+                  // Use the same logic as oauth-success page
+                  const tenantId = testAttributes.tenant_id || testAttributes.tenantId;
+                  const onboardingStatus = testAttributes.onboarding_status || testAttributes.onboardingStatus;
+                  const setupDone = testAttributes.setup_done || testAttributes.setupDone;
+                  const subplan = testAttributes.subplan || testAttributes.subscription_plan;
+                  const paymentVerified = testAttributes.payment_verified || testAttributes.payverified;
+                  
+                  let nextStep = 'business-info'; // Default
+                  let redirectUrl = '/onboarding';
+                  
+                  if (onboardingStatus === 'complete' || setupDone) {
+                    nextStep = 'complete';
+                    redirectUrl = tenantId ? '/tenant/' + tenantId + '/dashboard' : '/dashboard';
+                  } else if (paymentVerified) {
+                    nextStep = 'setup';
+                    redirectUrl = '/onboarding/setup';
+                  } else if (subplan) {
+                    nextStep = 'payment';
+                    redirectUrl = '/onboarding/setup';
+                  } else if (tenantId) {
+                    nextStep = 'subscription';
+                    redirectUrl = '/onboarding/subscription';
+                  }
+                  
+                  console.log('📍 Determined step:', nextStep);
+                  console.log('🎯 Redirect URL:', redirectUrl);
+                  
+                  return { nextStep, redirectUrl, analysis: { tenantId, onboardingStatus, setupDone, subplan, paymentVerified } };
+                };
+                
+                console.log('🧪 Direct OAuth Debugger Functions Available:');
+                console.log('  - window.manualOAuthRetry() - Manually retry Direct OAuth authentication');
+                console.log('  - window.debugOAuthState() - Debug current Direct OAuth state');
                 console.log('  - window.testOnboardingLogic(attrs) - Test onboarding logic');
                 console.log('  - window.oauthRedirect() - Complete redirect after successful retry');
               })();

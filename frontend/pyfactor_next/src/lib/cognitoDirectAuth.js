@@ -103,16 +103,46 @@ export const cognitoAuth = {
       localStorage.setItem('accessToken', tokens.access_token);
       localStorage.setItem('refreshToken', tokens.refresh_token);
       
-      // Decode ID token to get user info
+      // Decode ID token to get user info and custom attributes
       const idTokenPayload = JSON.parse(atob(tokens.id_token.split('.')[1]));
-      localStorage.setItem('userInfo', JSON.stringify({
+      
+      // Extract custom Cognito attributes
+      const customAttributes = {};
+      Object.keys(idTokenPayload).forEach(key => {
+        if (key.startsWith('custom:')) {
+          customAttributes[key] = idTokenPayload[key];
+        }
+      });
+      
+      const userInfo = {
         email: idTokenPayload.email,
         name: idTokenPayload.name,
         picture: idTokenPayload.picture,
-        sub: idTokenPayload.sub
-      }));
+        sub: idTokenPayload.sub,
+        // Include custom attributes
+        tenantId: idTokenPayload['custom:tenant_ID'] || 
+                 idTokenPayload['custom:tenant_id'] ||
+                 idTokenPayload['custom:businessid'],
+        onboarding: idTokenPayload['custom:onboarding'],
+        subplan: idTokenPayload['custom:subplan'],
+        payverified: idTokenPayload['custom:payverified'],
+        setupdone: idTokenPayload['custom:setupdone'],
+        customAttributes: customAttributes
+      };
       
-      console.log('[cognitoAuth] Tokens stored successfully');
+      localStorage.setItem('userInfo', JSON.stringify(userInfo));
+      
+      // Store tenant ID separately for easy access
+      if (userInfo.tenantId) {
+        localStorage.setItem('tenant_id', userInfo.tenantId);
+        console.log('[cognitoAuth] Tenant ID found and stored:', userInfo.tenantId);
+      }
+      
+      console.log('[cognitoAuth] Tokens and user info stored successfully:', {
+        hasCustomAttributes: Object.keys(customAttributes).length > 0,
+        tenantId: userInfo.tenantId,
+        onboarding: userInfo.onboarding
+      });
     } catch (error) {
       console.error('[cognitoAuth] Error storing tokens:', error);
       throw new Error('Failed to store authentication tokens');
@@ -128,6 +158,64 @@ export const cognitoAuth = {
   // Check if authenticated
   isAuthenticated: () => {
     return !!localStorage.getItem('idToken');
+  },
+
+  // Get custom attributes from stored user info
+  getCustomAttributes: () => {
+    const userInfo = localStorage.getItem('userInfo');
+    if (!userInfo) return {};
+    
+    try {
+      const parsed = JSON.parse(userInfo);
+      return parsed.customAttributes || {};
+    } catch (error) {
+      console.error('[cognitoAuth] Error parsing user info:', error);
+      return {};
+    }
+  },
+
+  // Get tenant ID from stored user info or JWT token
+  getTenantId: () => {
+    // First try from stored user info
+    const userInfo = localStorage.getItem('userInfo');
+    if (userInfo) {
+      try {
+        const parsed = JSON.parse(userInfo);
+        if (parsed.tenantId) return parsed.tenantId;
+      } catch (error) {
+        console.error('[cognitoAuth] Error parsing user info for tenant ID:', error);
+      }
+    }
+    
+    // Fallback: decode JWT token directly
+    const idToken = localStorage.getItem('idToken');
+    if (idToken) {
+      try {
+        const payload = JSON.parse(atob(idToken.split('.')[1]));
+        return payload['custom:tenant_ID'] || 
+               payload['custom:tenant_id'] ||
+               payload['custom:businessid'] ||
+               payload['custom:tenantId'];
+      } catch (error) {
+        console.error('[cognitoAuth] Error decoding JWT for tenant ID:', error);
+      }
+    }
+    
+    return null;
+  },
+
+  // Get all user attributes from JWT token (fresh decode)
+  getUserAttributes: () => {
+    const idToken = localStorage.getItem('idToken');
+    if (!idToken) return {};
+    
+    try {
+      const payload = JSON.parse(atob(idToken.split('.')[1]));
+      return payload;
+    } catch (error) {
+      console.error('[cognitoAuth] Error decoding JWT for attributes:', error);
+      return {};
+    }
   },
 
   // Sign out

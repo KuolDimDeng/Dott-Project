@@ -30,6 +30,14 @@ export default function OAuthSuccessPage() {
 
         logger.debug('[OAuth Success] User authenticated via direct OAuth:', user.email);
 
+        // Test the new tenant ID extraction function
+        const tenantIdFromAuth = cognitoAuth.getTenantId();
+        console.log('[OAuth Success] Tenant ID from cognitoAuth.getTenantId():', tenantIdFromAuth);
+        
+        // Test custom attributes extraction
+        const customAttributes = cognitoAuth.getCustomAttributes();
+        console.log('[OAuth Success] Custom attributes:', customAttributes);
+
         setStatus('Checking account status...');
 
         // Try to get additional user information from the API
@@ -57,7 +65,11 @@ export default function OAuthSuccessPage() {
             }
 
             // Check if user has a tenant ID or needs onboarding
-            const tenantId = userProfile.tenant_id || userProfile.tenantId;
+            const tenantId = userProfile.tenant_id || 
+                            userProfile.tenantId ||
+                            userProfile['custom:tenant_ID'] ||
+                            userProfile['custom:tenant_id'] ||
+                            userProfile['custom:businessid'];
             const onboardingStatus = userProfile.onboarding_status || userProfile.onboardingStatus;
             const setupDone = userProfile.setup_done || userProfile.setupDone;
 
@@ -115,8 +127,46 @@ export default function OAuthSuccessPage() {
         } catch (apiError) {
           logger.warn('[OAuth Success] API call failed, proceeding with OAuth-only info:', apiError.message);
           
-          // Fallback: For new OAuth users who might not exist in our system yet
-          // Store basic user info from OAuth and redirect to onboarding
+          // Fallback: Try to extract tenant ID from JWT token
+          let tenantIdFromToken = null;
+          try {
+            const idToken = localStorage.getItem('idToken');
+            if (idToken) {
+              // Basic JWT decode (not verification, just reading payload)
+              const payload = JSON.parse(atob(idToken.split('.')[1]));
+              tenantIdFromToken = payload['custom:tenant_ID'] || 
+                                payload['custom:tenant_id'] ||
+                                payload['custom:businessid'] ||
+                                payload['custom:tenantId'];
+              
+              logger.debug('[OAuth Success] Extracted tenant ID from JWT token:', tenantIdFromToken);
+              
+              if (tenantIdFromToken) {
+                // Store tenant ID in cache
+                if (typeof window !== 'undefined' && window.__APP_CACHE) {
+                  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+                  window.__APP_CACHE.tenant.id = tenantIdFromToken;
+                  window.__APP_CACHE.tenantId = tenantIdFromToken;
+                }
+                localStorage.setItem('tenant_id', tenantIdFromToken);
+                setCacheValue('tenantId', tenantIdFromToken, { ttl: 24 * 60 * 60 * 1000 });
+                
+                // Check onboarding status from token
+                const onboardingFromToken = payload['custom:onboarding'];
+                const setupDoneFromToken = payload['custom:setupdone'];
+                
+                if (onboardingFromToken === 'complete' || setupDoneFromToken === 'true') {
+                  logger.debug('[OAuth Success] User is complete from token, redirecting to dashboard');
+                  router.push(`/tenant/${tenantIdFromToken}/dashboard?fromAuth=true`);
+                  return;
+                }
+              }
+            }
+          } catch (jwtError) {
+            logger.warn('[OAuth Success] Could not decode JWT token:', jwtError.message);
+          }
+          
+          // Store basic user info from OAuth
           if (typeof window !== 'undefined' && window.__APP_CACHE) {
             window.__APP_CACHE.user = window.__APP_CACHE.user || {};
             window.__APP_CACHE.user.email = user.email;
@@ -124,8 +174,15 @@ export default function OAuthSuccessPage() {
             window.__APP_CACHE.user.picture = user.picture;
           }
 
-          logger.info('[OAuth Success] New OAuth user, redirecting to onboarding');
-          router.push('/onboarding');
+          // If we have a tenant ID from token but no complete status, determine next onboarding step
+          if (tenantIdFromToken) {
+            logger.info('[OAuth Success] User has tenant ID from token, checking onboarding status');
+            // User has tenant but needs to complete onboarding - start from subscription
+            router.push('/onboarding/subscription');
+          } else {
+            logger.info('[OAuth Success] New OAuth user, redirecting to onboarding');
+            router.push('/onboarding');
+          }
         }
 
       } catch (error) {
