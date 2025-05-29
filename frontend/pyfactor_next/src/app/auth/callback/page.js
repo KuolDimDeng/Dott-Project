@@ -31,6 +31,17 @@ export default function OAuthCallback() {
           throw new Error('No authorization code received');
         }
 
+        // Check for redirect loop by counting attempts in sessionStorage
+        const attemptKey = 'oauth_callback_attempts';
+        const attempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+        
+        if (attempts >= 3) {
+          sessionStorage.removeItem(attemptKey);
+          throw new Error('OAuth callback failed after 3 attempts. Please try signing in again.');
+        }
+        
+        sessionStorage.setItem(attemptKey, (attempts + 1).toString());
+
         setStatus('Processing authorization code...');
 
         // Method 1: Try to trigger OAuth completion with fetchAuthSession and forceRefresh
@@ -44,6 +55,9 @@ export default function OAuthCallback() {
           const currentUser = await getCurrentUser();
           console.log('[OAuth Callback] Successfully authenticated:', currentUser.username);
           
+          // Clear attempt counter on success
+          sessionStorage.removeItem(attemptKey);
+          
           setStatus('Authentication successful! Redirecting...');
           setTimeout(() => {
             router.push('/dashboard');
@@ -53,26 +67,44 @@ export default function OAuthCallback() {
         } catch (sessionError) {
           console.log('[OAuth Callback] fetchAuthSession failed:', sessionError.message);
           
-          // Method 2: Manual OAuth processing using private API (last resort)
-          if (window.Amplify && window.Amplify.Auth && window.Amplify.Auth._config) {
-            console.log('[OAuth Callback] Attempting manual OAuth processing...');
+          // Method 2: Try to process URL parameters manually using Amplify Auth
+          console.log('[OAuth Callback] Attempting manual OAuth processing...');
+          
+          try {
+            // Import the Auth module dynamically
+            const { Amplify } = await import('aws-amplify');
             
-            try {
-              // Get the current URL for processing
-              const currentUrl = window.location.href;
-              console.log('[OAuth Callback] Processing URL:', currentUrl);
+            // Get current URL
+            const currentUrl = window.location.href;
+            console.log('[OAuth Callback] Processing URL:', currentUrl);
+            
+            // Try to use Amplify's internal auth methods
+            if (Amplify && Amplify.getConfig) {
+              const config = Amplify.getConfig();
+              console.log('[OAuth Callback] Amplify config available:', !!config.Auth);
               
-              // Try to use Amplify's internal OAuth handler
-              const { Auth } = await import('aws-amplify');
+              // Try to manually complete the OAuth flow by processing the URL
+              const urlParams = new URLSearchParams(window.location.search);
+              const authCode = urlParams.get('code');
               
-              // Check if the internal OAuth handler exists
-              if (Auth._oAuthHandler && Auth._oAuthHandler.handleAuthResponse) {
-                console.log('[OAuth Callback] Using internal OAuth handler...');
-                await Auth._oAuthHandler.handleAuthResponse(currentUrl);
+              if (authCode) {
+                console.log('[OAuth Callback] Found auth code, attempting manual completion...');
                 
-                // Verify authentication
+                // Clear the URL to prevent processing the same code again
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Try to complete the OAuth flow
+                const { signInWithRedirect } = await import('aws-amplify/auth');
+                await signInWithRedirect({ provider: 'Google' });
+                
+                // Wait a bit and check authentication
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
                 const currentUser = await getCurrentUser();
                 console.log('[OAuth Callback] Manual OAuth successful:', currentUser.username);
+                
+                // Clear attempt counter on success
+                sessionStorage.removeItem(attemptKey);
                 
                 setStatus('Authentication successful! Redirecting...');
                 setTimeout(() => {
@@ -80,30 +112,35 @@ export default function OAuthCallback() {
                 }, 1000);
                 return;
               }
-              
-            } catch (manualError) {
-              console.error('[OAuth Callback] Manual OAuth processing failed:', manualError);
             }
+            
+          } catch (manualError) {
+            console.error('[OAuth Callback] Manual OAuth processing failed:', manualError);
           }
           
-          // Method 3: Redirect back to Cognito with the authorization code
-          console.log('[OAuth Callback] Attempting redirect to Cognito...');
-          
-          const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
-          const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
-          const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
-          
-          if (cognitoDomain && clientId) {
-            const cognitoUrl = `https://${cognitoDomain}.auth.us-east-1.amazoncognito.com/oauth2/authorize` +
-              `?client_id=${clientId}` +
-              `&response_type=code` +
-              `&scope=openid+profile+email` +
-              `&redirect_uri=${redirectUri}` +
-              `&code=${encodeURIComponent(code)}`;
+          // Method 3: Only redirect to Cognito if we haven't tried too many times
+          if (attempts < 2) {
+            console.log('[OAuth Callback] Attempting redirect to Cognito... (Attempt:', attempts + 1, ')');
             
-            console.log('[OAuth Callback] Redirecting to Cognito:', cognitoUrl);
-            window.location.href = cognitoUrl;
-            return;
+            const cognitoDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN;
+            const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
+            const redirectUri = encodeURIComponent(window.location.origin + '/auth/callback');
+            
+            if (cognitoDomain && clientId) {
+              const cognitoUrl = `https://${cognitoDomain}.auth.us-east-1.amazoncognito.com/oauth2/token` +
+                `?grant_type=authorization_code` +
+                `&client_id=${clientId}` +
+                `&code=${encodeURIComponent(code)}` +
+                `&redirect_uri=${redirectUri}`;
+              
+              console.log('[OAuth Callback] Redirecting to Cognito token endpoint:', cognitoUrl);
+              window.location.href = cognitoUrl;
+              return;
+            }
+          } else {
+            // Clear attempt counter and fail
+            sessionStorage.removeItem(attemptKey);
+            throw new Error('OAuth processing failed after multiple attempts. Please try signing in again.');
           }
           
           throw sessionError;
@@ -111,6 +148,10 @@ export default function OAuthCallback() {
 
       } catch (error) {
         console.error('[OAuth Callback] OAuth processing failed:', error);
+        
+        // Clear attempt counter on error
+        sessionStorage.removeItem('oauth_callback_attempts');
+        
         setError(error.message);
         setStatus('Authentication failed');
         
