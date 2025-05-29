@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cognitoAuth } from '@/lib/cognitoDirectAuth';
+import { logger } from '@/utils/logger';
+import { setCacheValue } from '@/utils/appCache';
 
 export default function DirectOAuthCallback() {
   const router = useRouter();
@@ -39,27 +41,29 @@ export default function DirectOAuthCallback() {
         // Store the tokens
         cognitoAuth.storeAuthTokens(tokens);
 
-        // Get user info
+        // Get user info from the stored tokens
         const user = cognitoAuth.getCurrentUser();
         console.log('[Direct OAuth] User authenticated:', user.email);
 
-        setStatus('Authentication successful! Redirecting...');
-
-        // Parse state to get redirect URL
-        let redirectUrl = '/dashboard';
-        if (state) {
-          try {
-            const stateObj = JSON.parse(decodeURIComponent(state));
-            redirectUrl = stateObj.redirectUrl || '/dashboard';
-          } catch (e) {
-            console.log('[Direct OAuth] Could not parse state, using default redirect');
-          }
+        // Store auth session flags
+        setCacheValue('auth_had_session', true);
+        setCacheValue('oauth_provider', 'google');
+        setCacheValue('oauth_user_email', user.email);
+        
+        if (typeof window !== 'undefined' && window.__APP_CACHE) {
+          window.__APP_CACHE = window.__APP_CACHE || {};
+          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          window.__APP_CACHE.auth.had_session = true;
+          window.__APP_CACHE.auth.last_login = new Date().toISOString();
+          window.__APP_CACHE.auth.provider = 'google';
+          window.__APP_CACHE.auth.oauth_user = user;
         }
 
-        // Redirect after a short delay
-        setTimeout(() => {
-          router.push(redirectUrl);
-        }, 1000);
+        setStatus('Completing sign in...');
+
+        // Redirect to a common auth handler that will check user status
+        // This handler will have access to Amplify functions to properly check the user
+        router.push('/auth/oauth-success');
 
       } catch (error) {
         console.error('[Direct OAuth] Authentication failed:', error);
