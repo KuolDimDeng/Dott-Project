@@ -50,7 +50,8 @@
       "Bash(./deploy-clean.sh:*)",
       "Bash(aws elasticbeanstalk describe-environments:*)",
       "Bash(aws elasticbeanstalk describe-events:*)",
-      "Bash(aws elasticbeanstalk retrieve-environment-info:*)"
+      "Bash(aws elasticbeanstalk retrieve-environment-info:*)",
+      "Bash(eb deploy:*)"
     ],
     "deny": []
   }
