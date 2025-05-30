@@ -43,7 +43,14 @@
       "Bash(aws elasticbeanstalk request-environment-info:*)",
       "Bash(./scripts/deploy_fixed_dottapps.sh:*)",
       "Bash(./scripts/deploy_optimized_dottapps.sh:*)",
-      "Bash(aws elasticbeanstalk list-available-solution-stacks:*)"
+      "Bash(aws elasticbeanstalk list-available-solution-stacks:*)",
+      "Bash(git push:*)",
+      "Bash(./deploy-to-eb.sh:*)",
+      "Bash(./deploy-with-aws-cli.sh)",
+      "Bash(./deploy-clean.sh:*)",
+      "Bash(aws elasticbeanstalk describe-environments:*)",
+      "Bash(aws elasticbeanstalk describe-events:*)",
+      "Bash(aws elasticbeanstalk retrieve-environment-info:*)"
     ],
     "deny": []
   }

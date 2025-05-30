@@ -8,7 +8,6 @@ import sys
 import logging
 import logging.config
 from datetime import timedelta
-from cryptography.fernet import Fernet
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -62,6 +61,7 @@ SHARED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'health',
     'django.contrib.sites',
     'django_celery_beat',
     'corsheaders',
@@ -165,7 +165,7 @@ CSRF_COOKIE_DOMAIN = '.dottapps.com'
 # Database settings for RDS
 DATABASES = {
     'default': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'ENGINE': 'django_db_connection_pool.backends.postgresql',
         'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
         'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
         'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
@@ -196,7 +196,7 @@ DATABASES = {
         }
     },
     'taxes': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'ENGINE': 'django_db_connection_pool.backends.postgresql',
         'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
         'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
         'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),

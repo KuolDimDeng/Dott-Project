@@ -1,0 +1,87 @@
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Development files
+*.sqlite3
+*.log
+node_modules/
+frontend/
+
+# Test files
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Backup files
+backups/
+*.backup
+*.bak
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Large deployment files
+*.zip
+*.tar.gz
+*.tar
+
+# Configuration backups
+configuration_backups/
+deployment_backups/
+deployment_package_oauth_fixed/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# Static files cache
+staticfiles/
+
+# Tax data files
+taxes/data/
+
+# Max security files
+max-security-*/
+final-max-security/
+
+# Docker compose files
+docker-compose.yml*
+
+# Scripts backups
+scripts/backups/
+scripts/logs/
+
+# Environment files
+.env*
+!.env.example 

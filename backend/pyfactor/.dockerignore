@@ -1,10 +1,3 @@
-# .dockerignore
-# Created by Version0025_docker_based_deployment.py
-
-# Version control
-.git
-.gitignore
-
 # Python
 __pycache__/
 *.py[cod]
@@ -12,62 +5,54 @@ __pycache__/
 *.so
 .Python
 env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Virtual environment
 venv/
-ENV/
-.env
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+.hypothesis/
 
-# Editor specific files
-.idea/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+media/
+staticfiles/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
+*~
 
-# Docker specific
-Dockerfile
-Dockerrun.aws.json
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
 .dockerignore
+Dockerfile*
+docker-compose*.yml
 
-# EB specific
+# AWS
 .elasticbeanstalk/
-.ebextensions/
+.ebignore
 
 # Backups
-backups/
-*.backup_*
-
-# Log files
-logs/
-*.log
-
-# Database
-*.sqlite3
-*.db
-
-# Temporary files
-tmp/
-temp/
-
-# Compiled bytecode
-**/__pycache__
-**/*.pyc
-**/*.pyo
-**/*.pyd
-**/.Python
-**/*.so
-**/*.dylib
-**/*.dll
+*.backup*
+*_backup*
