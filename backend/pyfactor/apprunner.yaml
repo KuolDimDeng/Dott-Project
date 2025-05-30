@@ -4,6 +4,7 @@ build:
   commands:
     pre-build:
       - echo "Installing Python dependencies..."
+      - cd backend/pyfactor
     build:
       - pip install --upgrade pip
       - pip install -r requirements-eb.txt
@@ -11,13 +12,15 @@ build:
       - echo "Build completed successfully"
 run:
   runtime-version: latest
-  command: gunicorn pyfactor.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+  command: cd backend/pyfactor && gunicorn pyfactor.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
   network:
     port: 8000
     env: PORT
   env:
     - name: PORT
       value: "8000"
+    - name: SECRET_KEY
+      value: "django-insecure-@m8k8z5p6^v3w#$x&9j2r4t!y7u8i9o0p1q3w5e6r8t0y2u4i6o8p1"
     - name: DJANGO_SETTINGS_MODULE
       value: "pyfactor.settings_eb"
     - name: PYTHONUNBUFFERED
