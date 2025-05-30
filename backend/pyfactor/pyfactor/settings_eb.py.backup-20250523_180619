@@ -8,6 +8,7 @@ import sys
 import logging
 import logging.config
 from datetime import timedelta
+from cryptography.fernet import Fernet
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,16 +18,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
-
-# AWS Configuration
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', '')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
-AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')  # Alias for cognito client
-
-# Stripe Configuration
-STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_dummy_key_for_development')
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_test_dummy_key_for_development')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
@@ -71,7 +62,6 @@ SHARED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'health',
     'django.contrib.sites',
     'django_celery_beat',
     'corsheaders',
@@ -119,7 +109,6 @@ if 'corsheaders' not in INSTALLED_APPS:
     INSTALLED_APPS = ['corsheaders'] + list(INSTALLED_APPS)
 
 MIDDLEWARE = [
-    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'pyfactor.health_check.HealthCheckMiddleware',  # Add health check middleware first
     'corsheaders.middleware.CorsMiddleware',  # Added at top
@@ -430,12 +419,3 @@ PORT = 8000
 EB_ENV_NAME = 'Dott-env-fixed'
 DOMAIN = 'dottapps.com'
 API_DOMAIN = 'api.dottapps.com'
-
-# Static files configuration for Docker deployment
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Whitenoise configuration
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_AUTOREFRESH = True

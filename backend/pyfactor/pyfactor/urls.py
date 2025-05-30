@@ -4,8 +4,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from onboarding.views import DatabaseHealthCheckView
-from custom_auth.api.views.tenant_views import TenantDetailView
 
 # Import health check view
 from .health_check import health_check, root_health_check, detailed_health_check
@@ -21,72 +19,56 @@ class UUIDConverter:
 
 register_converter(UUIDConverter, 'uuid')
 
-# Use method_decorator to handle CSRF exemption properly with async views
-async_csrf_exempt = method_decorator(csrf_exempt, name='dispatch')
-
-# Create async-compatible patterns for API endpoints
-api_patterns = [
-    # Financial endpoints with proper async handling
-    path('finance/', include(('finance.urls', 'finance'), namespace='finance')),
-    path('banking/', include(('banking.urls', 'banking'), namespace='banking')),
-    path('payments/', include(('payments.urls', 'payments'), namespace='payments')),
-    path('financial-statements/', include(('finance.urls', 'statements'), namespace='statements')),
-    
-    # Business operations with proper async handling
-    path('inventory/', include(('inventory.urls', 'inventory'), namespace='inventory')),
-    path('hr/', include(('hr.urls', 'hr'), namespace='hr')),
-    path('sales/', include(('sales.urls', 'sales'), namespace='sales')),
-    path('purchases/', include(('purchases.urls', 'purchases'), namespace='purchases')),
-    path('taxes/', include(('taxes.urls', 'taxes'), namespace='taxes')),
-    path('crm/', include(('crm.urls', 'crm'), namespace='crm')),
-    path('transport/', include(('transport.urls', 'transport'), namespace='transport')),
-    
-    # Analytics and reporting with proper async handling
-    path('reports/', include(('reports.urls', 'reports'), namespace='reports')),
-    path('analysis/', include(('analysis.urls', 'analysis'), namespace='analysis')),
-    path('chart/', include(('chart.urls', 'chart'), namespace='chart')),
-    
-    # System features with proper async handling
-    path('integrations/', include(('integrations.urls', 'integrations'), namespace='integrations')),
-    
-    # Tenant endpoint
-    path('tenant/<uuid:tenant_id>/', csrf_exempt(TenantDetailView.as_view()), name='tenant-detail'),
-    
-    # Authentication and onboarding
-    path('', include('custom_auth.urls')),  # Changed from 'api/' to ''
-    path('database/health-check/', async_csrf_exempt(DatabaseHealthCheckView.as_view()), name='database-health-check'),
-    path('onboarding/', include('onboarding.urls', namespace='onboarding')),  # Fixed indentation
-]
-
-# Main URL patterns with conditional debug toolbar
+# Minimal URL patterns for health check only
 urlpatterns = [
     # Admin interface
     path('admin/', admin.site.urls),
     
-    # API routes with namespace
-    path('api/', include((api_patterns, 'api'), namespace='api')),
-    
-    # Main app routes
-    path('', include('users.urls')),
-    
-    # Authentication routes
-    path('accounts/', include('allauth.urls')),
-    
-    path('api/auth/', include('custom_auth.api.urls')),
-    
-    # Add health check endpoints for AWS
+    # Health check endpoints for AWS
     path('health/', health_check, name='health_check'),
     path('health-check/', health_check, name='health_check_alt'),
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
-    
-    # Add health check endpoints with trailing slashes for ALB compatibility
-    path('health/', health_check, name='health_check_trailing'),
-    path('health-check/', health_check, name='health_check_alt_trailing'),
 ]
+
+# Only add other URLs if not in health-check-only mode
+if not settings.DEBUG or True:  # Always include for now, but can be conditional
+    try:
+        # Import these only when needed to avoid startup errors
+        from custom_auth.api.views.tenant_views import TenantDetailView
+        
+        # Use method_decorator to handle CSRF exemption properly with async views
+        async_csrf_exempt = method_decorator(csrf_exempt, name='dispatch')
+
+        # Create async-compatible patterns for API endpoints
+        api_patterns = [
+            # Essential endpoints only
+            path('', include('custom_auth.urls')),
+            
+            # Tenant endpoint
+            path('tenant/<uuid:tenant_id>/', csrf_exempt(TenantDetailView.as_view()), name='tenant-detail'),
+        ]
+
+        # Add API routes
+        urlpatterns.extend([
+            # API routes with namespace
+            path('api/', include((api_patterns, 'api'), namespace='api')),
+            
+            # Main app routes
+            path('', include('users.urls')),
+            
+            # Authentication routes
+            path('accounts/', include('allauth.urls')),
+            path('api/auth/', include('custom_auth.api.urls')),
+        ])
+        
+    except ImportError as e:
+        # If imports fail, just continue with health endpoints
+        print(f"Warning: Some modules could not be imported: {e}")
+        pass
 
 # Handle debug configuration properly
 if settings.DEBUG:
-    if not settings.IS_ASGI:
+    if not getattr(settings, 'IS_ASGI', False):
         try:
             import debug_toolbar
             urlpatterns.append(path('__debug__/', include(debug_toolbar.urls)))

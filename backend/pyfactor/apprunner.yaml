@@ -1,0 +1,50 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    pre-build:
+      - echo "Installing Python dependencies..."
+    build:
+      - pip install --upgrade pip
+      - pip install -r requirements-eb.txt
+    post-build:
+      - echo "Build completed successfully"
+run:
+  runtime-version: latest
+  command: gunicorn pyfactor.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 120 --access-logfile - --error-logfile -
+  network:
+    port: 8000
+    env: PORT
+  env:
+    - name: PORT
+      value: "8000"
+    - name: DJANGO_SETTINGS_MODULE
+      value: "pyfactor.settings_eb"
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: ALLOWED_HOSTS
+      value: "*"
+    - name: CORS_ALLOW_ALL_ORIGINS
+      value: "True"
+    - name: RDS_DB_NAME
+      value: "dott_main"
+    - name: RDS_USERNAME
+      value: "dott_admin"
+    - name: RDS_PASSWORD
+      value: "RRfXU6uPPUbBEg1JqGTJ"
+    - name: RDS_HOSTNAME
+      value: "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com"
+    - name: RDS_PORT
+      value: "5432"
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
+    - name: AWS_COGNITO_USER_POOL_ID
+      value: "us-east-1_JPL8vGfb6"
+    - name: AWS_COGNITO_CLIENT_ID
+      value: "1o5v84mrgn4gt87khtr179uc5b"
+    - name: AWS_COGNITO_DOMAIN
+      value: "pyfactor-dev.auth.us-east-1.amazoncognito.com"
+    - name: REDIS_HOST
+      value: "127.0.0.1"
+    - name: REDIS_PORT
+      value: "6379" 
