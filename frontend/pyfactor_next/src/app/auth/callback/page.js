@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from '@/services/userService';
@@ -10,21 +10,37 @@ import { getOnboardingStatus } from '@/utils/onboardingUtils_Auth0';
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
-  const { user, isLoading } = useUser();
+  const { user, error: auth0Error, isLoading } = useUser();
   const [error, setError] = useState(null);
   const [status, setStatus] = useState('Completing authentication...');
+  const [redirectHandled, setRedirectHandled] = useState(false);
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Prevent multiple redirects
+      if (redirectHandled) {
+        return;
+      }
+
       try {
         // Wait for Auth0 to complete loading
         if (isLoading) {
           return;
         }
 
-        if (!user) {
-          throw new Error('Authentication failed - no user data received');
+        // Handle Auth0 errors
+        if (auth0Error) {
+          throw new Error(auth0Error.message || 'Authentication failed');
         }
+
+        if (!user) {
+          // Still loading or no user - wait a bit more
+          logger.debug('[Auth0Callback] No user yet, waiting...');
+          return;
+        }
+
+        // Mark redirect as handled to prevent loops
+        setRedirectHandled(true);
 
         logger.debug('[Auth0Callback] Processing Auth0 callback for user:', {
           email: user.email,
@@ -34,13 +50,21 @@ export default function Auth0CallbackPage() {
         setStatus('Loading your profile...');
         
         // Get complete user profile from backend
-        const backendUser = await getCurrentUser();
-        
-        if (!backendUser) {
-          throw new Error('Failed to load user profile from backend');
+        let backendUser;
+        try {
+          backendUser = await getCurrentUser();
+        } catch (error) {
+          logger.error('[Auth0Callback] Failed to get backend user:', error);
+          // If backend fails, use Auth0 user data for basic routing
+          backendUser = {
+            email: user.email,
+            sub: user.sub,
+            needsOnboarding: true,
+            tenantId: null
+          };
         }
         
-        logger.debug('[Auth0Callback] Backend user profile loaded:', {
+        logger.debug('[Auth0Callback] User profile loaded:', {
           email: backendUser.email,
           needsOnboarding: backendUser.needsOnboarding,
           onboardingCompleted: backendUser.onboardingCompleted,
@@ -58,22 +82,26 @@ export default function Auth0CallbackPage() {
         }
         
         // 2. RETURNING USER WITH INCOMPLETE ONBOARDING
-        const onboardingStatus = await getOnboardingStatus();
-        
-        if (onboardingStatus.status !== 'completed') {
-          setStatus('Resuming your setup...');
-          const currentStep = onboardingStatus.currentStep || 'business_info';
-          const stepRoutes = {
-            business_info: '/onboarding/business-info',
-            subscription: '/onboarding/subscription', 
-            payment: '/onboarding/payment',
-            setup: '/onboarding/setup'
-          };
+        try {
+          const onboardingStatus = await getOnboardingStatus();
           
-          const resumeRoute = stepRoutes[currentStep] || '/onboarding/business-info';
-          logger.debug('[Auth0Callback] Resuming onboarding at step:', currentStep);
-          router.push(resumeRoute);
-          return;
+          if (onboardingStatus && onboardingStatus.status !== 'completed') {
+            setStatus('Resuming your setup...');
+            const currentStep = onboardingStatus.currentStep || 'business_info';
+            const stepRoutes = {
+              business_info: '/onboarding/business-info',
+              subscription: '/onboarding/subscription', 
+              payment: '/onboarding/payment',
+              setup: '/onboarding/setup'
+            };
+            
+            const resumeRoute = stepRoutes[currentStep] || '/onboarding/business-info';
+            logger.debug('[Auth0Callback] Resuming onboarding at step:', currentStep);
+            router.push(resumeRoute);
+            return;
+          }
+        } catch (error) {
+          logger.warn('[Auth0Callback] Could not check onboarding status:', error);
         }
         
         // 3. EXISTING USER (COMPLETE) - Go to tenant dashboard
@@ -92,6 +120,7 @@ export default function Auth0CallbackPage() {
       } catch (error) {
         logger.error('[Auth0Callback] Error in callback handler:', error);
         setError(error.message || 'Authentication failed');
+        setRedirectHandled(true);
         
         // Delay redirect to show error
         setTimeout(() => {
@@ -101,7 +130,7 @@ export default function Auth0CallbackPage() {
     };
 
     handleCallback();
-  }, [user, isLoading, router]);
+  }, [user, auth0Error, isLoading, router, redirectHandled]);
 
   // Show loading while Auth0 is still loading
   if (isLoading) {
@@ -110,7 +139,7 @@ export default function Auth0CallbackPage() {
         <div className="text-center space-y-4">
           <CircularProgress size={48} />
           <h2 className="text-xl font-semibold text-gray-900">Authenticating...</h2>
-          <p className="text-gray-600">Please wait while we sign you in...</p>
+          <p className="text-gray-600">Please wait while we complete your sign in...</p>
         </div>
       </div>
     );

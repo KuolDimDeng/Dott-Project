@@ -1,54 +1,44 @@
+import { getSession } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
-import { Amplify } from 'aws-amplify';
-import { getServerUser } from '@/utils/getServerUser';
-import { cookies } from 'next/headers';
+import { logger } from '@/utils/logger';
 
-/**
- * API endpoint to get current user information
- * This is used by the sign-in page to check authentication status
- */
 export async function GET(request) {
   try {
-    // Get user from session - will be null if not authenticated
-    const user = await getServerUser(request);
+    // Get the Auth0 session
+    const session = await getSession(request);
     
-    // If no user, return null response
-    if (!user) {
-      console.debug('[api/me] No authenticated user found');
+    if (!session || !session.user) {
+      logger.debug('[API /me] No authenticated user found');
       return NextResponse.json({ 
         user: null,
         authenticated: false
       });
     }
     
-    // Check cookies for onboarding status
-    const cookieStore = await cookies();
-    const onboardedStatus = cookieStore.get('onboardedStatus')?.value || 'not_started';
-    const setupCompleted = cookieStore.get('setupCompleted')?.value === 'true';
+    logger.debug('[API /me] Auth0 session user:', session.user);
     
-    // Return user information
-    console.debug('[api/me] Returning authenticated user:', { 
-      userId: user.id,
-      email: user.attributes?.email || user.username,
-      onboardedStatus, 
-      setupCompleted 
-    });
-    
+    // Return user data from Auth0 session
     return NextResponse.json({
       user: {
-        id: user.id || user.userId,
-        email: user.attributes?.email || user.username,
-        onboardedStatus,
-        setupCompleted
+        id: session.user.sub,
+        email: session.user.email,
+        name: session.user.name,
+        picture: session.user.picture,
+        // Add any custom claims from Auth0
+        tenantId: session.user.tenantId || session.user['https://dottapps.com/tenantId'],
+        businessName: session.user.businessName || session.user['https://dottapps.com/businessName'],
+        onboardingCompleted: session.user.onboardingCompleted || session.user['https://dottapps.com/onboardingCompleted'] || false,
+        needsOnboarding: session.user.needsOnboarding || session.user['https://dottapps.com/needsOnboarding'] || true,
       },
       authenticated: true
     });
+    
   } catch (error) {
-    console.error('[api/me] Unexpected error getting user information:', error);
+    logger.error('[API /me] Error getting user session:', error);
     return NextResponse.json({ 
       user: null, 
       authenticated: false,
-      error: 'Unexpected error retrieving user information' 
+      error: 'Failed to get user data' 
     });
   }
-} 
+}
