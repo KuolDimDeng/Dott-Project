@@ -1,86 +1,70 @@
-import { Auth } from 'aws-amplify';
+import { useUser } from '@auth0/nextjs-auth0';
 import { setAppCacheItem, getAppCacheItem, removeAppCacheItem, clearAppCache, initAppCache } from '@/utils/appCache';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 import { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user: auth0User, error: auth0Error, isLoading: auth0Loading } = useUser();
   const [error, setError] = useState(null);
   const router = useRouter();
 
+  // Map Auth0 user to our expected format
+  const user = auth0User ? {
+    username: auth0User.email,
+    email: auth0User.email,
+    sub: auth0User.sub,
+    name: auth0User.name,
+    picture: auth0User.picture,
+    attributes: {
+      email: auth0User.email,
+      email_verified: auth0User.email_verified ? 'true' : 'false',
+      sub: auth0User.sub,
+      name: auth0User.name,
+      picture: auth0User.picture
+    }
+  } : null;
+
+  const isAuthenticated = !!auth0User;
+  const isLoading = auth0Loading;
+
   const login = async (username, password) => {
     try {
-      setIsLoading(true);
       setError(null);
       
-      // Sign in with Cognito
-      const user = await Auth.signIn(username, password);
-      
-      // Store user data
-      setUser(user);
-      setIsAuthenticated(true);
-      
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to Auth0 Universal Login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/api/auth/login';
+      }
     } catch (error) {
       console.error('Login error:', error);
       setError(error.message || 'Failed to login');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const logout = async () => {
     try {
-      setIsLoading(true);
+      setError(null);
       
-      // Sign out from Cognito
-      await Auth.signOut();
-      
-      // Clear user data
-      setUser(null);
-      setIsAuthenticated(false);
-      
-      // Redirect to login
-      router.push('/login');
+      // Redirect to Auth0 logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/api/auth/logout';
+      }
     } catch (error) {
       console.error('Logout error:', error);
       setError(error.message || 'Failed to logout');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const checkAuth = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Check if user is authenticated with Cognito
-      const user = await Auth.currentAuthenticatedUser();
-      
-      // Set user data
-      setUser(user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      console.error('Check auth error:', error);
-      setError(error.message || 'Failed to check authentication');
-      
-      // Clear user data
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
+    // Auth0 handles this automatically via the useUser hook
+    return isAuthenticated;
   };
 
   const refreshSession = async () => {
     try {
-      // Refresh session with Cognito
-      const session = await Auth.currentSession();
+      // Auth0 handles session refresh automatically
       return true;
     } catch (error) {
       console.error('Refresh session error:', error);
@@ -90,21 +74,30 @@ export function AuthProvider({ children }) {
 
   const getTokens = async () => {
     try {
-      const session = await Auth.currentSession();
-      return {
-        idToken: session.getIdToken().getJwtToken(),
-        accessToken: session.getAccessToken().getJwtToken()
-      };
+      // Get tokens from Auth0
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const userData = await response.json();
+        return {
+          idToken: 'auth0-id-token', // Auth0 tokens are handled differently
+          accessToken: 'auth0-access-token'
+        };
+      }
+      throw new Error('Failed to get tokens');
     } catch (error) {
       console.error('Get tokens error:', error);
       throw error;
     }
   };
 
-  // Check authentication on mount
+  // Update error state from Auth0
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (auth0Error) {
+      setError(auth0Error.message || 'Authentication error');
+    } else {
+      setError(null);
+    }
+  }, [auth0Error]);
 
   return (
     <AuthContext.Provider

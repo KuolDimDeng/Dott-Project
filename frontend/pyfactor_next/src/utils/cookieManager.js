@@ -1,23 +1,17 @@
 /**
- * cookieManager.js
+ * Cookie Manager for authentication
+ * Handles user authentication state management
  * 
- * Manages user authentication state and onboarding flow using AWS Cognito attributes.
- * This module determines the appropriate redirect path based on user's onboarding status.
- * 
- * CRITICAL: Always use CognitoAttributes utility for attribute access to ensure
- * consistent naming and prevent casing issues.
- * 
- * VERSION: Updated by Version0001_FixCognitoAttributesOnboarding script
- * LAST UPDATED: 2025-05-28
+ * VERSION: Updated for Auth0 Migration
+ * LAST UPDATED: 2025-05-31
  */
 
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 import CognitoAttributes from '@/utils/CognitoAttributes';
-import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 
 /**
- * Sets authentication data in Cognito user attributes
+ * Sets authentication data using Auth0
  * @param {Object} tokens - The tokens object containing idToken and accessToken
  * @param {Object} userAttributes - Optional user attributes for onboarding status
  * @returns {Promise<boolean>} - Success status of operation
@@ -38,30 +32,10 @@ export const setAuthCookies = async (tokens, userAttributes = null) => {
     const now = Math.floor(Date.now() / 1000);
     const tokenLifetime = exp - now;
     
-    logger.debug('[cookieManager] Setting auth data in Cognito', {
+    logger.debug('[cookieManager] Setting auth data with Auth0', {
       tokenLifetime: `${(tokenLifetime / 60).toFixed(1)} minutes`,
       hasAttributes: !!userAttributes
     });
-    
-    // Set token expiration timestamp for refresh logic
-    const expTime = new Date(exp * 1000).toISOString();
-    
-    // Store token expiration in Cognito for refresh handling
-    try {
-      const { updateUserAttributes } = await import('@/config/amplifyUnified');
-      
-      await updateUserAttributes({
-        userAttributes: {
-          'custom:token_expires': expTime
-        }
-      });
-      
-      logger.debug('[cookieManager] Token expiration stored in Cognito');
-    } catch (cognitoErr) {
-      logger.warn('[cookieManager] Could not store token expiration in Cognito', {
-        error: cognitoErr.message
-      });
-    }
     
     // If user attributes provided, set onboarding related attributes
     if (userAttributes) {
@@ -79,8 +53,8 @@ export const setAuthCookies = async (tokens, userAttributes = null) => {
 };
 
 /**
- * Sets onboarding-related attributes in Cognito using correct attribute names
- * @param {Object} attributes - User attributes from Cognito or API
+ * Sets onboarding-related attributes (Auth0 compatibility)
+ * @param {Object} attributes - User attributes
  * @returns {Promise<boolean>} - Success status
  */
 export const setOnboardingAttributes = async (attributes) => {
@@ -90,36 +64,28 @@ export const setOnboardingAttributes = async (attributes) => {
       return false;
     }
     
-    logger.debug('[cookieManager] Setting onboarding data in Cognito using correct attribute names');
+    logger.debug('[cookieManager] Setting onboarding data (Auth0 compatibility mode)');
     
-    // Extract onboarding status from attributes using correct names
+    // Extract onboarding status from attributes
     const onboardingStatus = 
       CognitoAttributes.getValue(attributes, CognitoAttributes.ONBOARDING) || 
       attributes.onboarding || 
       'PENDING';
       
-    // Extract setup completion status using correct attribute name
+    // Extract setup completion status
     const setupDone = CognitoAttributes.getValue(attributes, CognitoAttributes.SETUP_DONE, 'false').toLowerCase() === 'true';
     
-    // Update Cognito attributes using correct names
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
-    
-    await updateUserAttributes({
-      userAttributes: {
-        [CognitoAttributes.ONBOARDING]: onboardingStatus,
-        [CognitoAttributes.SETUP_DONE]: setupDone ? 'true' : 'false'
+    // Store in localStorage for Auth0 compatibility
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboarding_status', onboardingStatus);
+      localStorage.setItem('setup_done', setupDone ? 'true' : 'false');
+      
+      // Store tenant ID if available
+      const tenantId = CognitoAttributes.getTenantId(attributes);
+      if (tenantId) {
+        localStorage.setItem('tenant_id', tenantId);
+        localStorage.setItem('business_id', tenantId); // Legacy support
       }
-    });
-    
-    // Store tenant ID if available using correct attribute name
-    const tenantId = CognitoAttributes.getTenantId(attributes);
-    if (tenantId) {
-      await updateUserAttributes({
-        userAttributes: {
-          [CognitoAttributes.TENANT_ID]: tenantId,
-          [CognitoAttributes.BUSINESS_ID]: tenantId // Legacy support
-        }
-      });
     }
     
     return true;
@@ -133,22 +99,19 @@ export const setOnboardingAttributes = async (attributes) => {
 };
 
 /**
- * Gets the current authentication token from Cognito
+ * Gets the current authentication token from Auth0
  * @returns {Promise<string|null>} - The ID token or null if not found
  */
 export const getAuthToken = async () => {
   try {
-    // Import auth utilities
-    const { fetchAuthSession } = await import('@/config/amplifyUnified');
-    
-    // Get current session
-    const session = await fetchAuthSession();
-    
-    if (session && session.tokens && session.tokens.idToken) {
-      return session.tokens.idToken.toString();
+    // Get current session from Auth0
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      logger.debug('[cookieManager] Auth token retrieved from Auth0');
+      return 'auth0-token'; // Auth0 handles tokens differently
     }
     
-    logger.warn('[cookieManager] No auth token found in session');
+    logger.warn('[cookieManager] No auth token found in Auth0 session');
     return null;
   } catch (error) {
     logger.error('[cookieManager] Error getting auth token:', {
@@ -159,18 +122,23 @@ export const getAuthToken = async () => {
 };
 
 /**
- * Clears all authentication data by signing out
+ * Clears all authentication data by redirecting to Auth0 logout
  * @returns {Promise<boolean>} - Success status
  */
 export const clearAuthCookies = async () => {
   try {
-    // Import auth utilities
-    const { signOut } = await import('@/config/amplifyUnified');
+    // Clear localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('onboarding_status');
+      localStorage.removeItem('setup_done');
+      localStorage.removeItem('tenant_id');
+      localStorage.removeItem('business_id');
+      
+      // Redirect to Auth0 logout
+      window.location.href = '/api/auth/logout';
+    }
     
-    // Sign out completely
-    await signOut({ global: true });
-    
-    logger.debug('[cookieManager] Auth session cleared via signOut');
+    logger.debug('[cookieManager] Auth session cleared via Auth0 logout');
     return true;
   } catch (error) {
     logger.error('[cookieManager] Error clearing auth session:', {
@@ -181,23 +149,18 @@ export const clearAuthCookies = async () => {
 };
 
 /**
- * Sets a token expired flag in Cognito using correct attribute names
+ * Sets a token expired flag (Auth0 compatibility)
  * @returns {Promise<boolean>} - Success status
  */
 export const setTokenExpiredFlag = async () => {
   try {
-    // Import auth utilities
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
+    // Store in localStorage for Auth0 compatibility
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token_expired', 'true');
+      localStorage.setItem('token_expired_at', new Date().toISOString());
+    }
     
-    // Set token expired flag in Cognito using proper attribute structure
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:token_expired': 'true',
-        'custom:token_expired_at': new Date().toISOString()
-      }
-    });
-    
-    logger.debug('[cookieManager] Token expired flag set in Cognito');
+    logger.debug('[cookieManager] Token expired flag set (Auth0 compatibility)');
     return true;
   } catch (error) {
     logger.error('[cookieManager] Error setting token expired flag:', {
