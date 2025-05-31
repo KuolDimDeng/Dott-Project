@@ -7,7 +7,6 @@ import { checkAndFixTenantId } from '@/utils/fixTenantId';
 import { axiosInstance } from '@/lib/axiosConfig';
 import userService from './userService';
 import { getTenantHeaders } from '@/utils/tenantUtils';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 // Add initialization of global app cache after imports
@@ -620,29 +619,9 @@ export const createProduct = async (productData) => {
       productData.product_code = generateProductCode(productData.name);
     }
     
-    // Force a session refresh before proceeding
-    try {
-      const sessionResult = await fetchAuthSession({ forceRefresh: true });
-      
-      if (!sessionResult.tokens?.idToken || !sessionResult.tokens?.accessToken) {
-        logger.error('Failed to get valid tokens from refreshed session');
-        // Redirect to login page
-        if (typeof window !== 'undefined' && window.location) {
-          window.location.href = '/auth/signin?error=session_expired';
-          throw new Error('Your session has expired. Please sign in again.');
-        }
-      } else {
-        logger.info('Session refreshed successfully before product creation');
-        // Update tokens in tenant utils
-        setTokens({
-          accessToken: sessionResult.tokens.accessToken.toString(),
-          idToken: sessionResult.tokens.idToken.toString()
-        });
-      }
-    } catch (sessionError) {
-      logger.error('Error refreshing session before product creation:', sessionError);
-      // Continue with request anyway, we'll handle errors below
-    }
+    // With Auth0, session is managed through cookies
+    // No need to refresh tokens manually
+    logger.info('Using Auth0 session for product creation');
     
     // Ensure we have a valid tenant ID and the schema is properly set up
     try {
@@ -761,35 +740,15 @@ export const createProduct = async (productData) => {
       
       logger.error('Authentication error when creating product:', error);
       
-      // Attempt to refresh the session
-      try {
-        const sessionResult = await fetchAuthSession({ forceRefresh: true });
-        
-        if (sessionResult.tokens?.idToken && sessionResult.tokens?.accessToken) {
-          // Update tokens in tenant utils
-          setTokens({
-            accessToken: sessionResult.tokens.accessToken.toString(),
-            idToken: sessionResult.tokens.idToken.toString()
-          });
-          
-          logger.info('Session refreshed successfully, retrying product creation');
-          // Wait a moment before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return createProduct(productData);
-        } else {
-          // If refresh failed, throw an authentication error
-          throw new Error('Authentication required - please log in again');
-        }
-      } catch (refreshError) {
-        logger.error('Failed to refresh session:', refreshError);
-        
-        // Redirect to login if in browser context
-        if (typeof window !== 'undefined' && window.location) {
-          window.location.href = '/auth/signin?error=session_expired';
-        }
-        
-        throw new Error('Your session has expired. Please sign in again.');
+      // With Auth0, redirect to login
+      logger.error('Authentication error, redirecting to login');
+      
+      // Redirect to login if in browser context
+      if (typeof window !== 'undefined' && window.location) {
+        window.location.href = '/api/auth/login';
       }
+      
+      throw new Error('Authentication required - please log in');
     }
     
     // Check if error is related to missing table or schema issues

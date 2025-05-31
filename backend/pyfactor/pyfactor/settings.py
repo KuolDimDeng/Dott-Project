@@ -17,7 +17,7 @@ import logging
 import logging.config
 from datetime import timedelta
 from dotenv import load_dotenv
-from cryptography.fernet import Fernet
+# from cryptography.fernet import Fernet  # Commented out to avoid import issues
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,7 +54,7 @@ if not PLAID_CLIENT_ID or not PLAID_SECRET:
 if not PLAID_CLIENT_ID or not PLAID_SECRET:
     raise ValueError("Plaid credentials are not set in the environment variables.")
 
-ENCRYPTION_KEY = Fernet.generate_key()
+# ENCRYPTION_KEY = Fernet.generate_key()  # Commented out to avoid import issues
 
 
 
@@ -95,6 +95,33 @@ if not all([COGNITO_USER_POOL_ID, COGNITO_APP_CLIENT_ID, COGNITO_DOMAIN]):
     COGNITO_DOMAIN = COGNITO_DOMAIN or 'pyfactor-dev.auth.us-east-1.amazoncognito.com'
     
     print("Using default Cognito settings for development.")
+
+# Auth0 Settings
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
+AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', None)  # Optional, for API audience
+
+# Check Auth0 configuration
+if not all([AUTH0_DOMAIN, AUTH0_CLIENT_ID]):
+    print("Warning: Auth0 credentials are not fully configured:")
+    print(f"Domain: {'Set' if AUTH0_DOMAIN else 'Missing'}")
+    print(f"Client ID: {'Set' if AUTH0_CLIENT_ID else 'Missing'}")
+    print(f"Client Secret: {'Set' if AUTH0_CLIENT_SECRET else 'Missing'}")
+    print(f"Audience: {'Set' if AUTH0_AUDIENCE else 'Not Set (optional)'}")
+else:
+    print("✅ Auth0 configuration loaded successfully")
+
+# Authentication Provider Selection
+USE_AUTH0 = os.getenv('USE_AUTH0', 'true').lower() in ('true', '1', 'yes')
+USE_COGNITO = os.getenv('USE_COGNITO', 'false').lower() in ('true', '1', 'yes')
+
+if USE_AUTH0:
+    print("🔐 Using Auth0 for authentication")
+elif USE_COGNITO:
+    print("🔐 Using AWS Cognito for authentication")
+else:
+    print("⚠️  No authentication provider specified, defaulting to Auth0")
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -514,32 +541,61 @@ if not DEBUG:
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
 # REST framework settings
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'custom_auth.jwt.CognitoJWTAuthentication',
-        'custom_auth.authentication.CognitoAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
-    ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'custom_auth.permissions.SetupEndpointPermission',
-    ],
-    'DEFAULT_PARSER_CLASSES': [
-        'rest_framework.parsers.JSONParser',
-    ],
-    'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/minute',
-        'user': '60/minute',
-        'tax_calculation': '100/day',  # Custom rate for tax calculations
-    },
-}
+if USE_AUTH0:
+    # Use Auth0 authentication
+    REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'custom_auth.auth0_authentication.Auth0JWTAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+        ],
+        'DEFAULT_PERMISSION_CLASSES': [
+            'custom_auth.permissions.SetupEndpointPermission',
+        ],
+        'DEFAULT_PARSER_CLASSES': [
+            'rest_framework.parsers.JSONParser',
+        ],
+        'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
+        'DEFAULT_RENDERER_CLASSES': [
+            'rest_framework.renderers.JSONRenderer',
+        ],
+        'DEFAULT_THROTTLE_CLASSES': [
+            'rest_framework.throttling.AnonRateThrottle',
+            'rest_framework.throttling.UserRateThrottle',
+        ],
+        'DEFAULT_THROTTLE_RATES': {
+            'anon': '5/minute',
+            'user': '60/minute',
+            'tax_calculation': '100/day',  # Custom rate for tax calculations
+        },
+    }
+else:
+    # Use Cognito authentication (legacy)
+    REST_FRAMEWORK = {
+        'DEFAULT_AUTHENTICATION_CLASSES': [
+            'custom_auth.jwt.CognitoJWTAuthentication',
+            'custom_auth.authentication.CognitoAuthentication',
+            'rest_framework.authentication.SessionAuthentication',
+        ],
+        'DEFAULT_PERMISSION_CLASSES': [
+            'custom_auth.permissions.SetupEndpointPermission',
+        ],
+        'DEFAULT_PARSER_CLASSES': [
+            'rest_framework.parsers.JSONParser',
+        ],
+        'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
+        'DEFAULT_RENDERER_CLASSES': [
+            'rest_framework.renderers.JSONRenderer',
+        ],
+        'DEFAULT_THROTTLE_CLASSES': [
+            'rest_framework.throttling.AnonRateThrottle',
+            'rest_framework.throttling.UserRateThrottle',
+        ],
+        'DEFAULT_THROTTLE_RATES': {
+            'anon': '5/minute',
+            'user': '60/minute',
+            'tax_calculation': '100/day',  # Custom rate for tax calculations
+        },
+    }
 
 # Add these JWT settings
 SIMPLE_JWT = {

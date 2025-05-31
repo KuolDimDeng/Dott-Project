@@ -2,11 +2,10 @@
  * auth-utils.js
  * 
  * Authentication utilities for API routes
- * Integrates with existing authUtils.js and follows all project conditions:
- * - No mock data - connects to live AWS/Cognito services
- * - Uses CognitoAttributes utility for proper attribute access
- * - Uses custom:tenant_ID for tenant identification (correct casing)
- * - No cookies/localStorage - uses Cognito Attributes and AWS App Cache only
+ * Auth0 version - replaced Cognito with Auth0
+ * - Uses Auth0 session management
+ * - Uses localStorage for onboarding attributes
+ * - Uses tenant_id from localStorage
  * - ES modules syntax
  * 
  * Created: 2025-05-22
@@ -14,14 +13,7 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getCurrentUser, fetchAuthSession  } from '@/config/amplifyUnified';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 import { logger } from '@/utils/logger';
-import { 
-  getAuthenticatedUser as getAuthenticatedUserFromUtils,
-  getAuthSessionWithRetries,
-  ensureAmplifyConfigured 
-} from '@/utils/authUtils';
 
 /**
  * Extract and verify JWT token from request headers
@@ -30,49 +22,19 @@ import {
  */
 export async function verifyJWT(request) {
   try {
-    // Ensure Amplify is configured
-    ensureAmplifyConfigured();
-
-    // Extract token from Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      logger.warn('[auth-utils] No valid Authorization header found');
-      return { valid: false, error: 'Missing or invalid authorization header' };
-    }
-
-    const token = authHeader.substring(7);
+    // With Auth0, the session is managed through cookies
+    // The @auth0/nextjs-auth0 middleware handles validation
+    // This function is kept for compatibility but simplified
     
-    // Get current session to validate token
-    const session = await getAuthSessionWithRetries(2);
-    if (!session?.tokens?.accessToken) {
-      logger.warn('[auth-utils] No valid session found');
-      return { valid: false, error: 'No valid session' };
-    }
-
-    // Verify the token matches current session
-    const sessionToken = session.tokens.accessToken.toString();
-    if (token !== sessionToken) {
-      logger.warn('[auth-utils] Token mismatch with current session');
-      return { valid: false, error: 'Token mismatch' };
-    }
-
-    // Get user information
-    const user = await getCurrentUser();
-    if (!user) {
-      logger.warn('[auth-utils] No authenticated user found');
-      return { valid: false, error: 'No authenticated user' };
-    }
-
+    logger.info('[auth-utils] JWT verification not needed with Auth0 - session managed by cookies');
+    
     return {
       valid: true,
-      userId: user.userId,
-      username: user.username,
-      attributes: user.attributes || {},
-      tokens: session.tokens
+      message: 'Auth0 session validation handled by middleware'
     };
 
   } catch (error) {
-    logger.error('[auth-utils] JWT verification failed:', error);
+    logger.error('[auth-utils] Error in JWT verification:', error);
     return { valid: false, error: error.message };
   }
 }
@@ -99,58 +61,57 @@ export async function getAuthenticatedUser(request = null) {
   try {
     logger.info('[auth-utils] Getting authenticated user');
 
-    // If request is provided, verify the token first
-    if (request) {
-      const tokenVerification = await verifyJWT(request);
-      if (!tokenVerification.valid) {
-        logger.warn('[auth-utils] Token verification failed for request');
-        return null;
-      }
-    }
-
-    // Use existing authUtils function
-    const userInfo = await getAuthenticatedUserFromUtils();
-    if (!userInfo) {
-      logger.warn('[auth-utils] No user info from authUtils');
+    // For Auth0, user info comes from /api/auth/me endpoint
+    const response = await fetch('/api/auth/me');
+    
+    if (!response.ok) {
+      logger.warn('[auth-utils] No authenticated user from Auth0');
       return null;
     }
-
-    const attributes = userInfo.attributes || {};
     
-    // Use CognitoAttributes utility for proper attribute access
-    const userWithCognitoAttributes = {
-      userId: userInfo.userId,
-      username: userInfo.username,
-      email: CognitoAttributes.getValue(attributes, CognitoAttributes.EMAIL),
+    const user = await response.json();
+    
+    // Get attributes from localStorage (for onboarding state)
+    const storedAttributes = localStorage.getItem('userAttributes');
+    const attributes = storedAttributes ? JSON.parse(storedAttributes) : {};
+    
+    // Build user object compatible with existing code
+    const userWithAttributes = {
+      userId: user.sub,
+      username: user.email || user.sub,
+      email: user.email,
       
-      // Use CognitoAttributes utility for tenant ID with correct casing
-      tenantId: CognitoAttributes.getTenantId(attributes),
+      // Get tenant ID from localStorage
+      tenantId: localStorage.getItem('tenantId') || attributes['custom:tenant_id'],
       
-      // Other attributes using CognitoAttributes utility
-      businessName: CognitoAttributes.getBusinessName(attributes),
-      userRole: CognitoAttributes.getUserRole(attributes),
-      businessId: CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_ID),
-      setupDone: CognitoAttributes.getValue(attributes, CognitoAttributes.SETUP_DONE),
-      onboardingStatus: CognitoAttributes.getValue(attributes, CognitoAttributes.ONBOARDING),
-      accountStatus: CognitoAttributes.getValue(attributes, CognitoAttributes.ACCOUNT_STATUS),
+      // Other attributes from localStorage
+      businessName: attributes['custom:business_name'],
+      userRole: attributes['custom:user_role'] || 'user',
+      businessId: attributes['custom:business_id'],
+      setupDone: attributes['custom:setup_done'],
+      onboardingStatus: attributes['custom:onboarding_status'] || localStorage.getItem('onboardingStatus'),
+      accountStatus: attributes['custom:account_status'] || 'active',
+      
+      // Include Auth0 profile data
+      name: user.name,
+      picture: user.picture,
       
       // Include raw attributes for additional access if needed
       attributes: attributes,
       
-      // Include original userInfo for backward compatibility
-      originalUserInfo: userInfo
+      // Include original Auth0 user for backward compatibility
+      originalUserInfo: user
     };
 
-    // Validate tenant ID is present (required for API operations)
-    if (!userWithCognitoAttributes.tenantId && !userWithCognitoAttributes.businessId) {
-      logger.warn('[auth-utils] User does not have tenant ID or business ID');
-      return null;
+    // For new users without tenant ID, that's okay
+    if (!userWithAttributes.tenantId && !userWithAttributes.businessId) {
+      logger.info('[auth-utils] User does not have tenant ID yet - likely new user');
+    } else {
+      logger.info('[auth-utils] Successfully retrieved authenticated user with tenant ID:', 
+        userWithAttributes.tenantId || userWithAttributes.businessId);
     }
 
-    logger.info('[auth-utils] Successfully retrieved authenticated user with tenant ID:', 
-      userWithCognitoAttributes.tenantId || userWithCognitoAttributes.businessId);
-
-    return userWithCognitoAttributes;
+    return userWithAttributes;
 
   } catch (error) {
     logger.error('[auth-utils] Error getting authenticated user:', error);

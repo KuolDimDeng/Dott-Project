@@ -1,29 +1,42 @@
-from django.urls import path
-from .views.auth_views import (
-    VerifyCredentialsView, VerifySessionView, CheckUserAttributesView, 
-    SignUpView, UserProfileView, VerifyTenantView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import auth_views, tenant_views
+from .views.auth0_views import (
+    Auth0UserProfileView,
+    Auth0OnboardingBusinessInfoView,
+    Auth0OnboardingSubscriptionView,
+    Auth0OnboardingPaymentView,
+    Auth0OnboardingCompleteView,
+    Auth0OnboardingStatusView
 )
-from .views.tenant_views import (
-    TenantDetailView, TenantExistsView, CurrentTenantView, ValidateTenantView, 
-    TenantByEmailView, VerifyTenantOwnerView
-)
+
+router = DefaultRouter()
 
 urlpatterns = [
     # Authentication endpoints
-    path('verify/', VerifyCredentialsView.as_view(), name='verify-credentials'),
-    path('verify-session/', VerifySessionView.as_view(), name='verify-session'),
-    path('check-attributes/', CheckUserAttributesView.as_view(), name='check-attributes'),
-    path('verify-tenant/', VerifyTenantView.as_view(), name='verify-tenant'),
+    path('auth/verify-credentials/', auth_views.VerifyCredentialsView.as_view(), name='verify-credentials'),
+    path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),
+    path('auth/user-profile/', auth_views.UserProfileView.as_view(), name='user-profile'),
+    path('auth/verify-session/', auth_views.VerifySessionView.as_view(), name='verify-session'),
+    path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
+    path('auth/verify-tenant/', auth_views.VerifyTenantView.as_view(), name='verify-tenant'),
     
-    # User management endpoints (CRITICAL for OAuth flow)
-    path('signup/', SignUpView.as_view(), name='user-signup'),
-    path('profile/', UserProfileView.as_view(), name='user-profile'),
+    # Auth0 endpoints
+    path('users/me/', Auth0UserProfileView.as_view(), name='auth0-user-profile'),
+    path('onboarding/business-info/', Auth0OnboardingBusinessInfoView.as_view(), name='auth0-onboarding-business-info'),
+    path('onboarding/subscription/', Auth0OnboardingSubscriptionView.as_view(), name='auth0-onboarding-subscription'),
+    path('onboarding/payment/', Auth0OnboardingPaymentView.as_view(), name='auth0-onboarding-payment'),
+    path('onboarding/complete/', Auth0OnboardingCompleteView.as_view(), name='auth0-onboarding-complete'),
+    path('onboarding/status/', Auth0OnboardingStatusView.as_view(), name='auth0-onboarding-status'),
     
-    # Tenant management endpoints  
-    path('tenant/<uuid:tenant_id>/', TenantDetailView.as_view(), name='tenant-detail'),
-    path('tenant/exists/', TenantExistsView.as_view(), name='tenant-exists'),
-    path('tenant/current/', CurrentTenantView.as_view(), name='current-tenant'),
-    path('tenant/validate/', ValidateTenantView.as_view(), name='validate-tenant'),
-    path('tenant/by-email/<str:email>/', TenantByEmailView.as_view(), name='tenant-by-email'),
-    path('tenant/verify-owner/', VerifyTenantOwnerView.as_view(), name='verify-tenant-owner'),
+    # Tenant endpoints
+    path('tenants/<uuid:tenant_id>/', tenant_views.TenantDetailView.as_view(), name='tenant-detail'),
+    path('tenants/exists/', tenant_views.TenantExistsView.as_view(), name='tenant-exists'),
+    path('tenants/current/', tenant_views.CurrentTenantView.as_view(), name='current-tenant'),
+    path('tenants/validate/', tenant_views.ValidateTenantView.as_view(), name='validate-tenant'),
+    path('tenants/by-email/<str:email>/', tenant_views.TenantByEmailView.as_view(), name='tenant-by-email'),
+    path('tenants/verify-owner/', tenant_views.VerifyTenantOwnerView.as_view(), name='verify-tenant-owner'),
+    
+    # Include router URLs
+    path('', include(router.urls)),
 ]

@@ -1,45 +1,20 @@
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { refreshUserSession } from '@/utils/refreshUserSession';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 const MAX_RETRIES = 2;
 
 async function getAuthHeaders(retryCount = 0) {
   try {
-    // Get current session using v6 API
-    const { tokens, hasValidSession } = await fetchAuthSession();
-    
-    // If no valid session, try to refresh immediately
-    if (!hasValidSession || !tokens?.idToken) {
-      if (retryCount < MAX_RETRIES) {
-        logger.debug('[OnboardingAPI] No valid session, attempting refresh:', {
-          attempt: retryCount + 1,
-          maxRetries: MAX_RETRIES
-        });
-        
-        const refreshed = await refreshUserSession();
-        if (refreshed) {
-          return getAuthHeaders(retryCount + 1);
-        }
-      }
-      throw new Error('No valid session and refresh failed');
-    }
-
-    // Add tenant ID to headers if available
+    // For Auth0, we rely on the session cookie set by @auth0/nextjs-auth0
+    // The backend should validate the session using the Auth0 middleware
     const headers = {
-      'Authorization': `Bearer ${tokens.idToken}`,
       'Content-Type': 'application/json'
     };
 
-    // Add tenant ID from token claims if available
-    try {
-      const payload = JSON.parse(atob(tokens.idToken.split('.')[1]));
-      if (payload['custom:tenant_ID']) {
-        headers['X-Tenant-ID'] = payload['custom:tenant_ID'];
-      }
-    } catch (e) {
-      logger.warn('[OnboardingAPI] Failed to parse token claims:', e);
+    // Add tenant ID from localStorage if available
+    const tenantId = localStorage.getItem('tenantId');
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
     }
 
     return headers;
@@ -81,17 +56,16 @@ async function makeRequest(url, options, retryCount = 0) {
       error.tenant_error = data.tenant_error;
       error.tenant_id = data.tenant_id;
       
-      // Handle 401/403 with token refresh
-      if ((response.status === 401 || response.status === 403) && retryCount < MAX_RETRIES) {
-        logger.debug('[OnboardingAPI] Auth error, attempting refresh:', {
-          attempt: retryCount + 1,
-          maxRetries: MAX_RETRIES,
+      // Handle 401/403 - with Auth0, user needs to re-authenticate
+      if (response.status === 401 || response.status === 403) {
+        logger.debug('[OnboardingAPI] Auth error - user needs to re-authenticate:', {
+          status: response.status,
           error: data
         });
-
-        const refreshed = await refreshUserSession();
-        if (refreshed) {
-          return makeRequest(url, options, retryCount + 1);
+        
+        // Redirect to login if unauthorized
+        if (typeof window !== 'undefined' && response.status === 401) {
+          window.location.href = '/api/auth/login';
         }
       }
 
@@ -142,36 +116,51 @@ export async function submitBusinessInfo(data) {
       throw new Error('API_BASE_URL is not configured');
     }
 
-    logger.debug('[OnboardingAPI] Submitting business info:', {
-      business_name: data.business_name,
-      business_type: data.business_type,
+    // Map frontend field names to backend expectations
+    const mappedData = {
+      businessName: data.businessName || data.business_name,
+      businessType: data.businessType || data.business_type,
+      businessSubtypeSelections: data.businessSubtypeSelections || data.business_subtypes,
       country: data.country,
-      business_state: data.business_state,
-      operation_id: data.operation_id,
-      requestUrl: `${API_BASE_URL}/api/onboarding/business-info`
+      businessState: data.businessState || data.business_state,
+      legalStructure: data.legalStructure || data.legal_structure,
+      dateFounded: data.dateFounded || data.date_founded,
+      firstName: data.firstName || data.first_name,
+      lastName: data.lastName || data.last_name,
+      industry: data.industry,
+      address: data.address,
+      phoneNumber: data.phoneNumber || data.phone_number,
+      taxId: data.taxId || data.tax_id
+    };
+
+    logger.debug('[OnboardingAPI] Submitting business info:', {
+      businessName: mappedData.businessName,
+      businessType: mappedData.businessType,
+      country: mappedData.country,
+      requestUrl: `${API_BASE_URL}/api/onboarding/business-info/`
     });
 
-    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/business-info`, {
+    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/business-info/`, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(mappedData)
     });
 
-    if (!response?.success) {
-      throw new Error(response?.error || 'Failed to save business information');
+    // Update localStorage with tenant info for compatibility
+    if (response?.tenant_id) {
+      localStorage.setItem('tenantId', response.tenant_id);
+      
+      // Store user attributes for compatibility with existing code
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:tenant_id'] = response.tenant_id;
+      userAttributes['custom:business_name'] = mappedData.businessName;
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
     }
 
     return response;
   } catch (error) {
     logger.error('[OnboardingAPI] Failed to submit business info:', {
       error: error.message,
-      stack: error.stack,
-      data: {
-        business_name: data.business_name,
-        business_type: data.business_type,
-        country: data.country,
-        business_state: data.business_state,
-        operation_id: data.operation_id
-      }
+      stack: error.stack
     });
     throw error;
   }
@@ -192,15 +181,33 @@ export async function getBusinessInfo() {
 
 export async function submitSubscription(data) {
   try {
+    // Map frontend field names to backend expectations
+    const mappedData = {
+      selected_plan: data.selected_plan || data.plan,
+      billingCycle: data.billingCycle || data.billing_cycle || data.interval || 'monthly',
+      tenant_id: data.tenant_id || localStorage.getItem('tenantId')
+    };
+
     logger.debug('[OnboardingAPI] Submitting subscription:', {
-      plan: data.plan,
-      interval: data.interval
+      plan: mappedData.selected_plan,
+      billingCycle: mappedData.billingCycle,
+      tenantId: mappedData.tenant_id
     });
 
-    return makeRequest(`${API_BASE_URL}/api/onboarding/subscription`, {
+    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/subscription/`, {
       method: 'POST',
-      body: JSON.stringify(data)
+      body: JSON.stringify(mappedData)
     });
+
+    // Update localStorage for compatibility
+    if (response?.success) {
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:subscription_plan'] = mappedData.selected_plan;
+      userAttributes['custom:billing_interval'] = mappedData.billingCycle;
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+    }
+
+    return response;
   } catch (error) {
     logger.error('[OnboardingAPI] Failed to submit subscription:', error);
     throw error;
@@ -227,9 +234,23 @@ export async function completeSetup() {
   try {
     logger.debug('[OnboardingAPI] Completing setup');
 
-    return makeRequest(`${API_BASE_URL}/api/onboarding/complete`, {
-      method: 'POST'
+    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/complete/`, {
+      method: 'POST',
+      body: JSON.stringify({
+        tenant_id: localStorage.getItem('tenantId')
+      })
     });
+
+    // Update localStorage for compatibility
+    if (response?.success) {
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:onboarding_status'] = 'completed';
+      userAttributes['custom:setup_done'] = 'true';
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+      localStorage.setItem('onboardingStatus', 'completed');
+    }
+
+    return response;
   } catch (error) {
     logger.error('[OnboardingAPI] Failed to complete setup:', error);
     throw error;
@@ -240,9 +261,27 @@ export async function getOnboardingStatus() {
   try {
     logger.debug('[OnboardingAPI] Fetching onboarding status');
 
-    return makeRequest(`${API_BASE_URL}/api/onboarding/status`, {
+    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/status/`, {
       method: 'GET'
     });
+
+    // Update localStorage for compatibility
+    if (response) {
+      if (response.tenant_id) {
+        localStorage.setItem('tenantId', response.tenant_id);
+      }
+      if (response.status) {
+        localStorage.setItem('onboardingStatus', response.status);
+      }
+      
+      // Update user attributes
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:onboarding_status'] = response.status;
+      userAttributes['custom:onboarding_step'] = response.current_step;
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+    }
+
+    return response;
   } catch (error) {
     logger.error('[OnboardingAPI] Failed to get onboarding status:', error);
     throw error;

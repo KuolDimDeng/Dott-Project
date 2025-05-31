@@ -2,8 +2,7 @@
 
 import { logger } from '@/utils/logger';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { getUserAttributesFromCognito } from '../hooks/useSession';
-import { signOut  } from '@/config/amplifyUnified';
+import { signOut } from '@/config/amplifyUnified';
 
 // Add global window-level cache to ensure cross-component deduplication
 if (typeof window !== 'undefined') {
@@ -38,11 +37,91 @@ export const getCurrentUser = async (isDashboardRoute = false) => {
   logger.debug('[UserService] Getting current user');
   
   try {
-    // Get user data from Cognito
-    const user = await getUserAttributesFromCognito();
-    return user;
+    // Check cache first
+    if (currentUserCache && (Date.now() - lastCacheTime) < CACHE_TTL) {
+      logger.debug('[UserService] Returning cached user');
+      return currentUserCache;
+    }
+    
+    // Fetch complete user profile from backend
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/users/me/`, {
+      credentials: 'include', // Include Auth0 session cookies
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Not authenticated
+        return null;
+      }
+      throw new Error('Failed to get user profile');
+    }
+    
+    const profileData = await response.json();
+    
+    // Transform backend response to expected format
+    const transformedUser = {
+      // Basic user info
+      id: profileData.user?.id,
+      sub: profileData.user?.auth0_id,
+      email: profileData.user?.email,
+      name: profileData.user?.name,
+      picture: profileData.user?.picture,
+      userId: profileData.user?.auth0_id,
+      
+      // Tenant info
+      tenantId: profileData.tenant?.id,
+      businessName: profileData.tenant?.name,
+      businessType: profileData.tenant?.business_type,
+      subscriptionPlan: profileData.tenant?.subscription_plan,
+      subscriptionStatus: profileData.tenant?.subscription_status,
+      
+      // Role and permissions
+      role: profileData.role,
+      isOwner: profileData.role === 'owner',
+      
+      // Onboarding status
+      onboardingCompleted: profileData.tenant?.onboarding_completed,
+      onboardingStep: profileData.tenant?.onboarding_step,
+      needsOnboarding: profileData.needs_onboarding || false,
+      
+      // Map to attributes for backward compatibility
+      attributes: {
+        'custom:tenant_id': profileData.tenant?.id,
+        'custom:business_name': profileData.tenant?.name,
+        'custom:user_role': profileData.role,
+        'custom:onboarding_status': profileData.tenant?.onboarding_completed ? 'completed' : 'in_progress',
+        'custom:subscription_plan': profileData.tenant?.subscription_plan
+      }
+    };
+    
+    // Update localStorage for compatibility with existing code
+    if (transformedUser.tenantId) {
+      localStorage.setItem('tenantId', transformedUser.tenantId);
+    }
+    if (transformedUser.attributes) {
+      localStorage.setItem('userAttributes', JSON.stringify(transformedUser.attributes));
+    }
+    
+    // Cache the user
+    currentUserCache = transformedUser;
+    lastCacheTime = Date.now();
+    
+    // Store in global cache if available
+    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+      window.__APP_CACHE.userProfile = transformedUser;
+    }
+    
+    return transformedUser;
   } catch (error) {
     logger.error('[UserService] Error getting current user:', error);
+    
+    // Clear cache on error
+    currentUserCache = null;
+    lastCacheTime = 0;
+    
     throw error;
   }
 };

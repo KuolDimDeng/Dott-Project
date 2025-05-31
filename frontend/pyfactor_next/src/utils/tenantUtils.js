@@ -3,9 +3,7 @@
  * Handles tenant-related operations and storage
  */
 
-import { getCurrentUser  } from '@/config/amplifyUnified';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
-import { Cache as cache } from '@aws-amplify/core';
+import { getCurrentUser } from '@/config/amplifyUnified';
 
 // Constants
 const TENANT_ID_KEY = 'tenantId';
@@ -19,27 +17,31 @@ const TENANT_CACHE_PREFIX = 'tenant_';
  */
 export const getTenantId = async () => {
   try {
-    // Try to get from cache first
-    const cachedTenantId = await cache.getItem(TENANT_ID_KEY);
-    if (cachedTenantId) {
-      return cachedTenantId;
+    // With Auth0, check localStorage first
+    const storedTenantId = localStorage.getItem(TENANT_ID_KEY);
+    if (storedTenantId) {
+      return storedTenantId;
     }
 
-    // If not in cache, get from user attributes
-    const user = await getCurrentUser();
-    const session = await fetchAuthSession();
-    const tenantId = user?.attributes?.['custom:tenant_ID'] || user?.attributes?.['custom:tenantId'] || session?.accessToken?.payload?.['custom:tenant_ID'] || session?.accessToken?.payload?.['custom:tenantId'];
-
-    if (!tenantId) {
-      throw new Error('Tenant ID not found in user attributes or session');
+    // If not in localStorage, check user attributes
+    const storedAttributes = localStorage.getItem('userAttributes');
+    if (storedAttributes) {
+      const attributes = JSON.parse(storedAttributes);
+      const tenantId = attributes['custom:tenant_ID'] || attributes['custom:tenant_id'] || attributes['custom:tenantId'];
+      
+      if (tenantId) {
+        // Store it directly for faster access
+        localStorage.setItem(TENANT_ID_KEY, tenantId);
+        return tenantId;
+      }
     }
 
-    // Cache the tenant ID
-    await cache.setItem(TENANT_ID_KEY, tenantId);
-    return tenantId;
+    // For new users, tenant ID might not exist yet
+    console.log('Tenant ID not found - user may need to complete onboarding');
+    return null;
   } catch (error) {
     console.error('Error getting tenant ID:', error);
-    throw error;
+    return null;
   }
 };
 
@@ -60,6 +62,10 @@ export const isValidUUID = (uuid) => {
  */
 export const getTenantCacheKey = async (key) => {
   const tenantId = await getTenantId();
+  if (!tenantId) {
+    // For users without tenant ID, use a default key
+    return `${TENANT_CACHE_PREFIX}default_${key}`;
+  }
   return `${TENANT_CACHE_PREFIX}${tenantId}_${key}`;
 };
 
@@ -69,25 +75,31 @@ export const getTenantCacheKey = async (key) => {
  */
 export const getTenantInfo = async () => {
   try {
+    const tenantId = await getTenantId();
+    if (!tenantId) {
+      console.log('No tenant ID available yet');
+      return null;
+    }
+    
+    // Check localStorage cache first
     const cacheKey = await getTenantCacheKey(TENANT_INFO_KEY);
-    const cachedInfo = await cache.getItem(cacheKey);
+    const cachedInfo = localStorage.getItem(cacheKey);
     if (cachedInfo) {
-      return cachedInfo;
+      return JSON.parse(cachedInfo);
     }
 
     // If not in cache, fetch from API
-    const tenantId = await getTenantId();
     const response = await fetch(`/api/tenants/${tenantId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch tenant info');
     }
 
     const tenantInfo = await response.json();
-    await cache.setItem(cacheKey, tenantInfo);
+    localStorage.setItem(cacheKey, JSON.stringify(tenantInfo));
     return tenantInfo;
   } catch (error) {
     console.error('Error getting tenant info:', error);
-    throw error;
+    return null;
   }
 };
 
@@ -97,21 +109,26 @@ export const getTenantInfo = async () => {
  */
 export const getTenantSettings = async () => {
   try {
+    const tenantId = await getTenantId();
+    if (!tenantId) {
+      console.log('No tenant ID available yet');
+      return {};
+    }
+    
     const cacheKey = await getTenantCacheKey(TENANT_SETTINGS_KEY);
-    const cachedSettings = await cache.getItem(cacheKey);
+    const cachedSettings = localStorage.getItem(cacheKey);
     if (cachedSettings) {
-      return cachedSettings;
+      return JSON.parse(cachedSettings);
     }
 
     // If not in cache, fetch from API
-    const tenantId = await getTenantId();
     const response = await fetch(`/api/tenants/${tenantId}/settings`);
     if (!response.ok) {
       throw new Error('Failed to fetch tenant settings');
     }
 
     const settings = await response.json();
-    await cache.setItem(cacheKey, settings);
+    localStorage.setItem(cacheKey, JSON.stringify(settings));
     return settings;
   } catch (error) {
     console.error('Error getting tenant settings:', error);
@@ -126,9 +143,17 @@ export const getTenantSettings = async () => {
 export const clearTenantCache = async () => {
   try {
     const tenantId = await getTenantId();
-    const keys = await cache.keys();
-    const tenantKeys = keys.filter(key => key.startsWith(`${TENANT_CACHE_PREFIX}${tenantId}_`));
-    await Promise.all(tenantKeys.map(key => cache.removeItem(key)));
+    if (!tenantId) return;
+    
+    // Clear localStorage items with tenant prefix
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`${TENANT_CACHE_PREFIX}${tenantId}_`)) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
   } catch (error) {
     console.error('Error clearing tenant cache:', error);
     throw error;
@@ -141,9 +166,9 @@ export const clearTenantCache = async () => {
  */
 export const clearTenantStorage = async () => {
   try {
-    // Clear Amplify cache
+    // Clear tenant cache
     await clearTenantCache();
-    await cache.removeItem(TENANT_ID_KEY);
+    localStorage.removeItem(TENANT_ID_KEY);
     
     // Clear browser storage if available
     if (typeof window !== 'undefined') {
@@ -216,7 +241,7 @@ export const hasTenantAccess = async (tenantId) => {
  */
 export const storeTenantId = async (tenantId) => {
   try {
-    await cache.setItem(TENANT_ID_KEY, tenantId);
+    localStorage.setItem(TENANT_ID_KEY, tenantId);
   } catch (error) {
     console.error('Error storing tenant ID:', error);
     throw error;
@@ -237,8 +262,8 @@ export const storeTenantInfo = async ({ tenantId, metadata = {} }) => {
       return;
     }
     
-    // Store in Amplify cache
-    await cache.setItem(TENANT_ID_KEY, tenantId);
+    // Store in localStorage
+    localStorage.setItem(TENANT_ID_KEY, tenantId);
     
     // Store in APP_CACHE for cross-component resilience
     if (typeof window !== 'undefined') {
@@ -286,24 +311,24 @@ export const fixOnboardingStatusCase = (status) => {
  */
 export const updateTenantIdInCognito = async (tenantId) => {
   try {
-    // In Amplify v6, updateUserAttributes is a separate function import, not a method on user
+    // With Auth0, we update localStorage instead of Cognito
     const { updateUserAttributes } = await import('@/config/amplifyUnified');
     
-    // Call the standalone function with userAttributes object
+    // Call the compatibility function which updates localStorage
     await updateUserAttributes({
       userAttributes: {
         'custom:tenant_ID': tenantId
       }
     });
     
-    // Update local cache
+    // Update local storage directly as well
     await storeTenantId(tenantId);
     
-    console.debug(`[TenantUtils] Updated tenant ID in Cognito: ${tenantId}`);
+    console.debug(`[TenantUtils] Updated tenant ID: ${tenantId}`);
   } catch (error) {
-    console.error('Error updating tenant ID in Cognito:', error);
+    console.error('Error updating tenant ID:', error);
     // Don't throw the error, just log it and continue
-    // Still update the local cache
+    // Still update the local storage
     await storeTenantId(tenantId);
   }
 };
@@ -313,29 +338,8 @@ export const updateTenantIdInCognito = async (tenantId) => {
  * @returns {Promise<string|null>} The tenant ID or null if not found
  */
 export const getTenantIdFromCognito = async () => {
-  try {
-    // Try to get from cache first
-    const cachedTenantId = await cache.getItem(TENANT_ID_KEY);
-    if (cachedTenantId) {
-      return cachedTenantId;
-    }
-
-    // If not in cache, get from user attributes
-    const user = await getCurrentUser();
-    const session = await fetchAuthSession();
-    const tenantId = user?.attributes?.['custom:tenant_ID'] || user?.attributes?.['custom:tenantId'] || session?.accessToken?.payload?.['custom:tenant_ID'] || session?.accessToken?.payload?.['custom:tenantId'];
-
-    if (!tenantId) {
-      return null;
-    }
-
-    // Cache the tenant ID
-    await cache.setItem(TENANT_ID_KEY, tenantId);
-    return tenantId;
-  } catch (error) {
-    console.error('Error getting tenant ID from Cognito:', error);
-    return null;
-  }
+  // With Auth0, this is now the same as getTenantId
+  return await getTenantId();
 };
 
 /**
@@ -345,9 +349,11 @@ export const getTenantIdFromCognito = async () => {
  */
 export const setTokens = async (tokens) => {
   try {
-    await cache.setItem('auth_tokens', tokens);
+    // With Auth0, tokens are managed through cookies
+    // This function is kept for compatibility
+    console.log('setTokens called - Auth0 manages tokens through cookies');
   } catch (error) {
-    console.error('Error setting tokens:', error);
+    console.error('Error in setTokens:', error);
     throw error;
   }
 };
@@ -429,25 +435,19 @@ export const getSchemaName = (tenantId) => {
 
 /**
  * Get tenant headers for API requests
- * @returns {Promise<Object>} The tenant headers
+ * @returns {Object} The tenant headers (synchronous version)
  */
-export const getTenantHeaders = async () => {
+export const getTenantHeaders = () => {
   try {
-    const tenantId = await getTenantId();
+    // Get tenant ID from localStorage (synchronous)
+    const tenantId = localStorage.getItem(TENANT_ID_KEY);
     const headers = {
-      'Content-Type': 'application/json',
-      'x-tenant-id': tenantId
+      'Content-Type': 'application/json'
     };
     
-    // Try to get user ID if available
-    try {
-      const { getCurrentUser } = await import('@/config/amplifyUnified');
-      const user = await getCurrentUser();
-      if (user && user.userId) {
-        headers['x-user-id'] = user.userId;
-      }
-    } catch (e) {
-      // Continue without user ID
+    if (tenantId) {
+      headers['X-Tenant-ID'] = tenantId;
+      headers['X-Schema-Name'] = getSchemaName(tenantId);
     }
     
     return headers;

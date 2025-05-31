@@ -1,7 +1,6 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
-import { Auth0Provider } from '@auth0/nextjs-auth0';
 import { Toaster } from 'react-hot-toast';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
@@ -17,7 +16,7 @@ export const metadata = {
   description: 'Streamline your business operations with Dott',
 };
 
-// Clean root layout with Auth0 instead of Cognito
+// Clean root layout with Auth0 - no UserProvider needed in v4
 export default async function RootLayout({ children, params }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
@@ -25,19 +24,17 @@ export default async function RootLayout({ children, params }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        <Auth0Provider>
-          {children}
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-            }}
-          />
-        </Auth0Provider>
+        {children}
+        <Toaster 
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+          }}
+        />
       </body>
     </html>
   );
