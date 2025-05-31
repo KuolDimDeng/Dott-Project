@@ -2,6 +2,7 @@
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
@@ -16,7 +17,7 @@ export const metadata = {
   description: 'Streamline your business operations with Dott',
 };
 
-// Clean root layout with Auth0 - no UserProvider needed in v4
+// Root layout with Auth0 UserProvider for client-side authentication
 export default async function RootLayout({ children, params }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
@@ -24,17 +25,19 @@ export default async function RootLayout({ children, params }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        {children}
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-          }}
-        />
+        <UserProvider>
+          {children}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </UserProvider>
       </body>
     </html>
   );
