@@ -268,7 +268,7 @@ export function determineOnboardingStep(userAttributes) {
 }
 
 /**
- * Updates onboarding status in Cognito attributes using correct attribute names
+ * Updates onboarding status (Auth0 compatibility)
  * @param {string} status - Onboarding status to set
  * @returns {Promise<boolean>} - Success status
  */
@@ -279,18 +279,13 @@ export const updateOnboardingStatus = async (status) => {
       return false;
     }
     
-    // Import auth utilities
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
+    // Store in localStorage for Auth0 compatibility
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('onboarding_status', status);
+      localStorage.setItem('updated_at', new Date().toISOString());
+    }
     
-    // Update onboarding status in Cognito using correct attribute names
-    await updateUserAttributes({
-      userAttributes: {
-        [CognitoAttributes.ONBOARDING]: status,
-        [CognitoAttributes.UPDATED_AT]: new Date().toISOString()
-      }
-    });
-    
-    console.log(`[cookieManager] Onboarding status updated to: ${status}`);
+    console.log(`[cookieManager] Onboarding status updated to: ${status} (Auth0 compatibility)`);
     return true;
   } catch (error) {
     console.error('[cookieManager] Error updating onboarding status:', {
@@ -301,17 +296,31 @@ export const updateOnboardingStatus = async (status) => {
 };
 
 /**
- * Gets user attributes from Cognito
+ * Gets user attributes (Auth0 compatibility)
  * @returns {Promise<Object|null>} - User attributes or null if not found
  */
 export const getUserAttributes = async () => {
   try {
-    // Import auth utilities
-    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-    
-    // Get user attributes
-    const attributes = await fetchUserAttributes();
-    return attributes || null;
+    // Get current user from Auth0
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const user = await response.json();
+      
+      // Return in Cognito-compatible format
+      return {
+        email: user.email,
+        email_verified: user.email_verified ? 'true' : 'false',
+        sub: user.sub,
+        name: user.name,
+        picture: user.picture,
+        // Include localStorage data for onboarding
+        onboarding: typeof window !== 'undefined' ? localStorage.getItem('onboarding_status') || 'PENDING' : 'PENDING',
+        setup_done: typeof window !== 'undefined' ? localStorage.getItem('setup_done') || 'false' : 'false',
+        tenant_id: typeof window !== 'undefined' ? localStorage.getItem('tenant_id') || '' : '',
+        business_id: typeof window !== 'undefined' ? localStorage.getItem('business_id') || '' : ''
+      };
+    }
+    return null;
   } catch (error) {
     console.error('[cookieManager] Error getting user attributes:', {
       error: error.message

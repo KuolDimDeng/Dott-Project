@@ -2,7 +2,6 @@
 
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
-import { fetchAuthSession, signOut  } from '@/config/amplifyUnified';
 
 // Token cache keys
 const TOKEN_CACHE_KEY = 'auth_tokens';
@@ -104,7 +103,7 @@ class TokenService {
       this.refreshPromise = (async () => {
         try {
           // Use Amplify Auth to refresh the session
-          const session = await fetchAuthSession({ forceRefresh: true });
+          const session = await fetchAuthSession();
           
           // Update last refresh timestamp
           this.lastRefreshTime = Date.now();
@@ -237,4 +236,43 @@ export function useTokenRefresh() {
     needsRefresh: () => tokenService.needsRefresh(),
     addRefreshListener: (listener) => tokenService.addListener(listener)
   };
-} 
+}
+
+/**
+ * Gets authentication session (Auth0 compatibility)
+ * @returns {Promise<Object|null>} Session object or null
+ */
+const fetchAuthSession = async () => {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const user = await response.json();
+      return {
+        tokens: {
+          accessToken: { toString: () => 'auth0-access-token' },
+          idToken: { toString: () => 'auth0-id-token' }
+        },
+        userSub: user.sub
+      };
+    }
+    return null;
+  } catch (error) {
+    logger.error('[tokenService] Error fetching session:', error);
+    return null;
+  }
+};
+
+/**
+ * Signs out user (Auth0 compatibility)
+ * @returns {Promise<void>}
+ */
+const signOut = async () => {
+  try {
+    if (typeof window !== 'undefined') {
+      window.location.href = '/api/auth/logout';
+    }
+  } catch (error) {
+    logger.error('[tokenService] Error signing out:', error);
+    throw error;
+  }
+}; 

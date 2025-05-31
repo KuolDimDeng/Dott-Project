@@ -1,8 +1,30 @@
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+/**
+ * Auth0 compatibility function
+ */
+const fetchAuthSession = async () => {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const user = await response.json();
+      return {
+        tokens: {
+          accessToken: { toString: () => 'auth0-access-token' },
+          idToken: { toString: () => 'auth0-id-token' }
+        },
+        userSub: user.sub
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('[api] Error fetching session:', error);
+    return null;
+  }
+};
 
 /**
  * Gets authentication headers from Cognito

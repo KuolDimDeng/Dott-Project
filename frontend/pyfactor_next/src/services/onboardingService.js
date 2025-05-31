@@ -1,9 +1,30 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/services/onboardingService.js
 import { logger } from '@/utils/logger';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
-import { refreshUserSession } from '@/utils/refreshUserSession';
 
 const BASE_URL = '/api/onboarding'
+
+/**
+ * Auth0 compatibility functions
+ */
+const fetchAuthSession = async () => {
+  try {
+    const response = await fetch('/api/auth/me');
+    if (response.ok) {
+      const user = await response.json();
+      return {
+        tokens: {
+          accessToken: { toString: () => 'auth0-access-token' },
+          idToken: { toString: () => 'auth0-id-token' }
+        },
+        userSub: user.sub
+      };
+    }
+    return null;
+  } catch (error) {
+    logger.error('[onboardingService] Error fetching session:', error);
+    return null;
+  }
+};
 
 /**
  * Enhanced fetch with session token handling
@@ -739,44 +760,38 @@ export const onboardingService = {
   },
 
   /**
-   * Update user's onboarding status in Cognito
+   * Update user's onboarding status (Auth0 compatibility)
    * @param {object} updates - The updates to apply
    */
   async updateOnboardingStatus(updates) {
     try {
       if (!updates) return;
       
-      logger.debug('[OnboardingService] Updating onboarding status:', updates);
+      logger.debug('[OnboardingService] Updating onboarding status (Auth0 compatibility):', updates);
       
-      // Import dynamically to avoid SSR issues
-      const { updateUserAttributes } = await import('@/config/amplifyUnified');
-      
-      // Prepare the attribute updates
-      const userAttributes = {};
-      
-      if (updates.status) {
-        userAttributes['custom:onboarding'] = updates.status.toLowerCase();
+      // Store in localStorage for Auth0 compatibility
+      if (typeof window !== 'undefined') {
+        if (updates.status) {
+          localStorage.setItem('onboarding_status', updates.status.toLowerCase());
+        }
+        
+        if (updates.step) {
+          localStorage.setItem('onboarding_step', updates.step);
+        }
+        
+        if (updates.businessName) {
+          localStorage.setItem('business_name', updates.businessName);
+        }
+        
+        if (updates.businessType) {
+          localStorage.setItem('business_type', updates.businessType);
+        }
+        
+        // Add updated timestamp
+        localStorage.setItem('updated_at', new Date().toISOString());
       }
       
-      if (updates.step) {
-        userAttributes['custom:onboarding_step'] = updates.step;
-      }
-      
-      if (updates.businessName) {
-        userAttributes['custom:businessname'] = updates.businessName;
-      }
-      
-      if (updates.businessType) {
-        userAttributes['custom:businesstype'] = updates.businessType;
-      }
-      
-      // Add updated timestamp
-      userAttributes['custom:updated_at'] = new Date().toISOString();
-      
-      // Update the Cognito attributes
-      await updateUserAttributes({ userAttributes });
-      
-      logger.info('[OnboardingService] Successfully updated onboarding status in Cognito');
+      logger.info('[OnboardingService] Successfully updated onboarding status (Auth0 compatibility)');
       return true;
     } catch (error) {
       logger.error('[OnboardingService] Error updating onboarding status:', error);
