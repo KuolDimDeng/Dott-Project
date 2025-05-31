@@ -2,7 +2,7 @@
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
-import { UserProvider } from '@auth0/nextjs-auth0';
+import { Auth0Provider } from '@auth0/nextjs-auth0';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
@@ -25,7 +25,7 @@ export default async function RootLayout({ children, params }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        <UserProvider>
+        <Auth0Provider>
           {children}
           <Toaster 
             position="top-right"
@@ -37,7 +37,7 @@ export default async function RootLayout({ children, params }) {
               },
             }}
           />
-        </UserProvider>
+        </Auth0Provider>
       </body>
     </html>
   );

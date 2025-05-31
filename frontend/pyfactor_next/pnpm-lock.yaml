@@ -160,7 +160,7 @@ importers:
         version: 6.5.0(typescript@5.8.3)
       puppeteer:
         specifier: ^24.7.2
-        version: 24.7.2
+        version: 24.7.2(typescript@5.8.3)
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.1.0)
@@ -8234,21 +8234,6 @@ packages:
       typescript: 5.8.3
     dev: true
 
-  /cosmiconfig@9.0.0:
-    resolution: {integrity: sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==}
-    engines: {node: '>=14'}
-    peerDependencies:
-      typescript: '>=4.9.5'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-    dependencies:
-      env-paths: 2.2.1
-      import-fresh: 3.3.1
-      js-yaml: 4.1.0
-      parse-json: 5.2.0
-    dev: false
-
   /cosmiconfig@9.0.0(typescript@5.8.3):
     resolution: {integrity: sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==}
     engines: {node: '>=14'}
@@ -11361,7 +11346,7 @@ packages:
       - utf-8-validate
     dev: false
 
-  /puppeteer@24.7.2:
+  /puppeteer@24.7.2(typescript@5.8.3):
     resolution: {integrity: sha512-ifYqoY6wGs0yZeFuFPn8BE9FhuveXkarF+eO18I2e/axdoCh4Qh1AE+qXdJBhdaeoPt6eRNTY4Dih29Jbq8wow==}
     engines: {node: '>=18'}
     hasBin: true
@@ -11369,7 +11354,7 @@ packages:
     dependencies:
       '@puppeteer/browsers': 2.10.2
       chromium-bidi: 4.1.1(devtools-protocol@0.0.1425554)
-      cosmiconfig: 9.0.0
+      cosmiconfig: 9.0.0(typescript@5.8.3)
       devtools-protocol: 0.0.1425554
       puppeteer-core: 24.7.2
       typed-query-selector: 2.12.0
@@ -11377,6 +11362,7 @@ packages:
       - bare-buffer
       - bufferutil
       - supports-color
+      - typescript
       - utf-8-validate
     dev: false
 
