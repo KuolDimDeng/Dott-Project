@@ -25,6 +25,19 @@ export default function TenantCatchAllPage({ params }) {
     const slug = params?.slug || [];
     
     try {
+      // IMPORTANT: Don't handle API routes - they should be handled by their respective API handlers
+      if (tenantId === 'api') {
+        logger.debug(`[TenantCatchAllPage] Ignoring API route: /api/${Array.isArray(slug) ? slug.join('/') : slug}`);
+        return; // Don't process API routes
+      }
+      
+      // Also check for other system routes that shouldn't be handled as tenant routes
+      const systemRoutes = ['_next', 'favicon.ico', 'robots.txt', 'sitemap.xml'];
+      if (systemRoutes.includes(tenantId)) {
+        logger.debug(`[TenantCatchAllPage] Ignoring system route: /${tenantId}`);
+        return;
+      }
+      
       // Log the tenant ID and slug
       logger.info(`[TenantCatchAllPage] Tenant ID: ${tenantId}, Slug: ${Array.isArray(slug) ? slug.join('/') : slug}`);
       

@@ -74,7 +74,10 @@
       "Bash(aws codebuild start-build:*)",
       "Bash(aws codebuild batch-get-builds:*)",
       "Bash(./create-root-dockerfile.sh:*)",
-      "Bash(./create-ultra-minimal.sh:*)"
+      "Bash(./create-ultra-minimal.sh:*)",
+      "Bash(pnpm list:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm build:*)"
     ],
     "deny": []
   }
