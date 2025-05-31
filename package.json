@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.6.1",
+    "@auth0/auth0-react": "^2.3.0",
+    "@auth0/nextjs-auth0": "^4.6.0",
     "@aws-sdk/client-cognito-identity-provider": "^3.782.0",
     "@headlessui/react": "^2.2.0",
     "@heroicons/react": "^2.2.0",
