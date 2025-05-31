@@ -6,7 +6,8 @@ import Link from 'next/link';
 import {
   signInWithConfig as amplifySignIn,
   signInWithRedirect,
-  directOAuthSignIn
+  directOAuthSignIn,
+  signIn
 } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
@@ -15,7 +16,6 @@ import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import ReactivationDialog from './ReactivationDialog';
 import { checkDisabledAccount } from '@/lib/account-reactivation';
 import { getCsrfToken } from 'next-auth/react';
-import { signIn } from 'next-auth/react';
 
 // Initialize global app cache for auth
 if (typeof window !== 'undefined') {
@@ -537,8 +537,46 @@ export default function SignInForm() {
         window.reconfigureAmplify();
       }
       
+      // Add debugging for configuration status
+      try {
+        const { isAmplifyConfigured, Amplify } = await import('@/config/amplifyUnified');
+        const configStatus = isAmplifyConfigured();
+        const currentConfig = Amplify.getConfig();
+        
+        logger.debug('[SignInForm] Configuration debug:', {
+          isConfigured: configStatus,
+          hasAuth: !!currentConfig?.Auth,
+          hasCognito: !!currentConfig?.Auth?.Cognito,
+          hasUserPool: !!currentConfig?.Auth?.Cognito?.userPoolId,
+          hasClientId: !!currentConfig?.Auth?.Cognito?.userPoolClientId,
+          userPoolId: currentConfig?.Auth?.Cognito?.userPoolId,
+          clientId: currentConfig?.Auth?.Cognito?.userPoolClientId,
+          region: currentConfig?.Auth?.Cognito?.region
+        });
+        
+        if (!configStatus) {
+          logger.error('[SignInForm] Amplify is not properly configured!');
+          
+          // Try to force reconfigure
+          logger.debug('[SignInForm] Attempting to force reconfigure Amplify...');
+          const { configureAmplify } = await import('@/config/amplifyUnified');
+          const reconfigResult = configureAmplify(true);
+          
+          if (!reconfigResult) {
+            logger.error('[SignInForm] Failed to reconfigure Amplify');
+            setErrors({ general: 'Authentication system configuration failed. Please refresh the page and try again.' });
+            setIsSubmitting(false);
+            return;
+          } else {
+            logger.debug('[SignInForm] Successfully reconfigured Amplify');
+          }
+        }
+      } catch (debugError) {
+        logger.error('[SignInForm] Error checking configuration:', debugError);
+      }
+      
       // Production authentication flow - using enhanced signIn function that ensures configuration
-      const authResult = await amplifySignIn({
+      const authResult = await signIn({
         username: formData.username,
         password: formData.password,
         options: {
