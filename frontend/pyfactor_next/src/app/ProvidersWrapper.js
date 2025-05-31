@@ -3,16 +3,14 @@
 import React from 'react';
 import { UserProvider } from '@/contexts/UserContext';
 import LanguageProvider from '@/components/LanguageProvider/LanguageProvider';
-import ConfigureAmplify from '@/components/ConfigureAmplify';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
 
 /**
- * Extremely simple providers wrapper
+ * Extremely simple providers wrapper - Auth0 compatible
  */
 export default function ProvidersWrapper({ children }) {
   return (
     <>
-      <ConfigureAmplify />
       <UserProvider>
         <UserProfileProvider>
           <LanguageProvider>
