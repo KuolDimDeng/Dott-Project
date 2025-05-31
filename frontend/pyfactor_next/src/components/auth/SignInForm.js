@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { logger } from '@/utils/logger';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
-import { signInWithSocialProvider } from '@/utils/auth';
 import {
   signIn,
   fetchAuthSession,
@@ -763,46 +762,6 @@ const [state, dispatch] = useReducer(reducer, initialState);
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      logger.debug('[SignInForm] Initiating Google sign in');
-      
-      // Call the utility function to handle social sign-in
-      await signInWithSocialProvider('Google');
-      
-      // The browser will redirect, no code after this will execute
-    } catch (error) {
-      logger.error('[SignInForm] Google sign in failed:', error);
-      
-      // User-friendly error message
-      setError('Google sign-in is not available at this moment. Please use email login.');
-      setIsLoading(false);
-    }
-  };
-  
-  const handleAppleSignIn = async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      logger.debug('[SignInForm] Initiating Apple sign in');
-      
-      // Call the utility function to handle social sign-in
-      await signInWithSocialProvider('Apple');
-      
-      // The browser will redirect, no code after this will execute
-    } catch (error) {
-      logger.error('[SignInForm] Apple sign in failed:', error);
-      
-      // User-friendly error message
-      setError('Apple sign-in is not available at this moment. Please use email login.');
-      setIsLoading(false);
-    }
-  };
-
   const handleSignOut = async () => {
     setIsLoading(true);
     
@@ -871,87 +830,6 @@ const [state, dispatch] = useReducer(reducer, initialState);
       } catch (routeError) {
         logger.error('[SignInForm] Even fallback redirect failed:', routeError);
       }
-    }
-  };
-
-  const handleSignIn = async () => {
-    setIsLoading(true);
-    setError('');
-    
-    try {
-      // Ensure Amplify is configured properly first
-      ensureAmplifyConfigured();
-      
-      // Use our utility for more reliable authentication
-      const { isSignedIn, nextStep } = await authenticateUser(email, password);
-      
-      if (isSignedIn) {
-        logger.debug('[SignInForm] Sign-in successful!');
-        
-        // Get the auth session to extract the token
-        const session = await getAuthSessionWithRetries();
-        
-        if (session?.tokens?.idToken) {
-          // Set tenant cookies based on token claims
-          const idToken = session.tokens.idToken;
-          const decodedToken = jwtDecode(idToken.toString()); 
-          
-          // Extract user and tenant information
-          const userId = decodedToken.sub;
-          let tenantId = decodedToken['custom:tenant_ID'] || decodedToken['custom:tenant_id'] || decodedToken.tenant_id;
-          
-          // Check if tenant ID exists
-          if (!tenantId) {
-            logger.error('[SignInForm] No tenant ID found in token claims');
-            setError('Your account does not have a tenant ID associated with it. Please contact support.');
-            setIsLoading(false);
-            return;
-          }
-          
-          // Set cookies and local storage for tenant information
-          setTenantIdCookies(tenantId);
-          
-          // Redirect to the dashboard or specified redirect path
-          const redirectTo = redirectPath || '/dashboard';
-          logger.debug(`[SignInForm] Redirecting to: ${redirectTo}`);
-          router.push(redirectTo);
-        } else {
-          setError('Unable to retrieve user token. Please try again.');
-          logger.error('[SignInForm] No tokens found in session after successful sign-in');
-        }
-      } else if (nextStep && nextStep.signInStep === 'CONFIRM_SIGN_IN_WITH_NEW_PASSWORD_REQUIRED') {
-        // Handle password change requirement
-        setError('You need to change your password. Redirecting...');
-        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}&mode=force`);
-      } else if (nextStep) {
-        // Handle other authentication challenges
-        setError(`Additional verification required: ${nextStep.signInStep}`);
-        logger.debug('[SignInForm] Authentication requires additional steps:', nextStep);
-      } else {
-        setError('Sign-in failed. Please check your credentials and try again.');
-        logger.error('[SignInForm] Sign-in failed without error');
-      }
-    } catch (error) {
-      logger.error('[SignInForm] Sign-in error:', error);
-      
-      // Handle specific error types
-      if (error.name === 'UserNotConfirmedException') {
-        setError('Please verify your email before signing in.');
-        // Save email to localStorage for verification flow
-        localStorage.setItem('verificationEmail', email);
-        router.push(`/auth/verify-email?email=${encodeURIComponent(email)}`);
-      } else if (error.name === 'NotAuthorizedException') {
-        setError('Incorrect username or password.');
-      } else if (error.name === 'UserNotFoundException') {
-        setError('User does not exist.');
-      } else if (error.name === 'PasswordResetRequiredException') {
-        setError('Password reset required. Redirecting...');
-        router.push(`/auth/reset-password?email=${encodeURIComponent(email)}`);
-      } else {
-        setError('An error occurred during sign-in. Please try again.');
-      }
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -1052,35 +930,6 @@ const [state, dispatch] = useReducer(reducer, initialState);
               )}
             </Button>
           </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">or continue with</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={handleGoogleSignIn}
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <img src="/google.svg" alt="Google" className="w-5 h-5" />
-              <span>Google</span>
-            </button>
-            
-            <button
-              onClick={handleAppleSignIn}
-              disabled={isLoading}
-              className="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <img src="/apple.svg" alt="Apple" className="w-5 h-5" />
-              <span>Apple</span>
-            </button>
-          </div>
 
           <p className="mt-4 text-center text-sm text-gray-600">
             By signing in, you agree to our{' '}
