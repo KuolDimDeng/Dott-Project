@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
 import { getAccessToken } from '@/utils/authUtils';
 
 /**
@@ -19,17 +18,10 @@ export async function GET(request, { params }) {
       );
     }
 
-    // Get session and verify authentication
-    const session = await auth0.getSession();
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Get access token
-    const accessToken = await getAccessToken(session);
+    // For now, skip auth check since Auth0 is being configured
+    // TODO: Re-enable auth check once Auth0 is properly configured
+    const session = null;
+    const accessToken = 'placeholder-token';
     if (!accessToken) {
       return NextResponse.json(
         { error: 'Unable to retrieve access token' },

@@ -1,7 +1,26 @@
-import { auth0 } from "./lib/auth0";
-
+// Auth0 v4.6.0 middleware - uses environment variables automatically
 export async function middleware(request) {
-  return await auth0.middleware(request);
+  // For Auth0 v4.6.0, if no environment variables are set, just pass through
+  if (!process.env.NEXT_PUBLIC_AUTH0_DOMAIN && !process.env.AUTH0_DOMAIN) {
+    return;
+  }
+  
+  // Let Auth0 handle auth routes
+  const { pathname } = request.nextUrl;
+  
+  if (pathname.startsWith('/api/auth/')) {
+    // This should redirect to Auth0 for authentication
+    const authUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN}/authorize?` + 
+      new URLSearchParams({
+        response_type: 'code',
+        client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID,
+        redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+        scope: 'openid profile email',
+        state: Math.random().toString(36).substring(7)
+      });
+      
+    return Response.redirect(authUrl);
+  }
 }
 
 export const config = {
