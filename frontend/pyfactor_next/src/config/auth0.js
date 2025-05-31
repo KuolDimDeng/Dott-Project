@@ -1,6 +1,6 @@
 'use client';
 
-import { UserProvider } from '@auth0/nextjs-auth0/client';
+import { Auth0Provider } from '@auth0/nextjs-auth0';
 
 // Auth0 configuration
 export const auth0Config = {
@@ -15,6 +15,9 @@ export const auth0Config = {
     logout: '/api/auth/logout',
     callback: '/api/auth/callback',
     postLogoutRedirect: '/auth/signin'
+  },
+  authorizationParams: {
+    redirect_uri: process.env.NEXT_PUBLIC_BASE_URL + '/api/auth/callback'
   }
 };
 
@@ -27,7 +30,8 @@ export const AUTH0_CONFIG = {
   scope: 'openid profile email',
 };
 
-export { UserProvider };
+// Re-export Auth0Provider for convenience
+export { Auth0Provider };
 
 // Export a function to validate Auth0 configuration
 export const validateAuth0Config = () => {
