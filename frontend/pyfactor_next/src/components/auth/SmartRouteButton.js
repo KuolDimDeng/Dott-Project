@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUser } from '@auth0/nextjs-auth0';
 import { smartNavigate, determineUserRoute, ROUTE_TYPES } from '@/utils/smartRouting';
 import { logger } from '@/utils/logger';
 

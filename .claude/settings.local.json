@@ -77,7 +77,8 @@
       "Bash(./create-ultra-minimal.sh:*)",
       "Bash(pnpm list:*)",
       "Bash(pnpm install:*)",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(npm view:*)"
     ],
     "deny": []
   }
