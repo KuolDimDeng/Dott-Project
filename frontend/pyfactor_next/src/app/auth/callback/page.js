@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUser } from '@auth0/nextjs-auth0';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from '@/services/userService';
