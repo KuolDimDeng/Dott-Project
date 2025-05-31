@@ -1,4 +1,4 @@
-import { handleAuth } from '@auth0/nextjs-auth0';
+import { handleAuth } from '@auth0/nextjs-auth0/server';
 
 // Export the default Auth0 handler
 // This will handle login, logout, callback, and me routes automatically
