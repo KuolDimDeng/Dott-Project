@@ -1,0 +1,131 @@
+{
+    "CallerReference": "DottApp-CloudFront-SSL",
+    "Aliases": {
+        "Quantity": 1,
+        "Items": [
+            "api.dottapps.com"
+        ]
+    },
+    "DefaultRootObject": "",
+    "Origins": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "Id": "DottApp-lb-origin",
+                "DomainName": "awseb--AWSEB-prqjjiyzqiVd-1482029172.us-east-1.elb.amazonaws.com",
+                "OriginPath": "",
+                "CustomHeaders": {
+                    "Quantity": 0
+                },
+                "CustomOriginConfig": {
+                    "HTTPPort": 80,
+                    "HTTPSPort": 443,
+                    "OriginProtocolPolicy": "http-only",
+                    "OriginSslProtocols": {
+                        "Quantity": 1,
+                        "Items": [
+                            "TLSv1.2"
+                        ]
+                    },
+                    "OriginReadTimeout": 30,
+                    "OriginKeepaliveTimeout": 5
+                },
+                "ConnectionAttempts": 3,
+                "ConnectionTimeout": 10,
+                "OriginShield": {
+                    "Enabled": false
+                }
+            }
+        ]
+    },
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "DottApp-lb-origin",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "MinTTL": 0,
+        "DefaultTTL": 0,
+        "MaxTTL": 31536000,
+        "ForwardedValues": {
+            "QueryString": true,
+            "Cookies": {
+                "Forward": "all"
+            },
+            "Headers": {
+                "Quantity": 6,
+                "Items": [
+                    "Authorization",
+                    "Origin", 
+                    "X-Requested-With",
+                    "User-Agent",
+                    "Host",
+                    "Content-Type"
+                ]
+            },
+            "QueryStringCacheKeys": {
+                "Quantity": 0
+            }
+        },
+        "TrustedSigners": {
+            "Enabled": false,
+            "Quantity": 0
+        },
+        "AllowedMethods": {
+            "Quantity": 7,
+            "Items": [
+                "HEAD",
+                "DELETE", 
+                "POST",
+                "GET",
+                "OPTIONS",
+                "PUT",
+                "PATCH"
+            ],
+            "CachedMethods": {
+                "Quantity": 2,
+                "Items": [
+                    "HEAD",
+                    "GET"
+                ]
+            }
+        },
+        "SmoothStreaming": false,
+        "Compress": true,
+        "LambdaFunctionAssociations": {
+            "Quantity": 0
+        },
+        "FunctionAssociations": {
+            "Quantity": 0
+        },
+        "FieldLevelEncryptionId": "",
+        "TrustedKeyGroups": {
+            "Enabled": false,
+            "Quantity": 0
+        }
+    },
+    "Comment": "DottApp API CloudFront Distribution with SSL - Fixed with Load Balancer endpoint",
+    "PriceClass": "PriceClass_All",
+    "Enabled": true,
+    "ViewerCertificate": {
+        "ACMCertificateArn": "arn:aws:acm:us-east-1:654654379014:certificate/9c5e678c-36cf-4b47-a31b-08db5a82ee58",
+        "SSLSupportMethod": "sni-only",
+        "MinimumProtocolVersion": "TLSv1.2_2021",
+        "Certificate": "arn:aws:acm:us-east-1:654654379014:certificate/9c5e678c-36cf-4b47-a31b-08db5a82ee58",
+        "CertificateSource": "acm"
+    },
+    "Logging": {
+        "Enabled": false,
+        "IncludeCookies": false,
+        "Bucket": "",
+        "Prefix": ""
+    },
+    "Restrictions": {
+        "GeoRestriction": {
+            "RestrictionType": "none",
+            "Quantity": 0
+        }
+    },
+    "WebACLId": "",
+    "HttpVersion": "http2",
+    "IsIPV6Enabled": true,
+    "ContinuousDeploymentPolicyId": "",
+    "Staging": false
+} 

@@ -181,26 +181,96 @@ export const cognitoAuth = {
     if (userInfo) {
       try {
         const parsed = JSON.parse(userInfo);
-        if (parsed.tenantId) return parsed.tenantId;
+        if (parsed.tenantId) {
+          console.log('[cognitoAuth] Tenant ID from stored userInfo:', parsed.tenantId);
+          return parsed.tenantId;
+        }
       } catch (error) {
         console.error('[cognitoAuth] Error parsing user info for tenant ID:', error);
       }
     }
     
-    // Fallback: decode JWT token directly
+    // Try from localStorage with various possible keys
+    const storageKeys = ['tenant_id', 'tenantId', 'businessId', 'business_id'];
+    for (const key of storageKeys) {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue && storedValue.trim() !== '') {
+        console.log(`[cognitoAuth] Tenant ID from localStorage key ${key}:`, storedValue);
+        return storedValue.trim();
+      }
+    }
+    
+    // Fallback: decode JWT token directly with comprehensive attribute checking
     const idToken = localStorage.getItem('idToken');
     if (idToken) {
       try {
         const payload = JSON.parse(atob(idToken.split('.')[1]));
-        return payload['custom:tenant_ID'] || 
-               payload['custom:tenant_id'] ||
-               payload['custom:businessid'] ||
-               payload['custom:tenantId'];
+        
+        // Comprehensive list of possible tenant ID attributes
+        const tenantAttributes = [
+          // Primary attributes
+          'custom:tenant_ID',
+          'custom:tenant_id',
+          'custom:businessid',
+          'custom:business_id',
+          
+          // Alternative naming
+          'custom:tenantId',
+          'custom:tenantID',
+          'custom:businessID',
+          'custom:business_ID',
+          'custom:tenant-id',
+          'custom:business-id',
+          
+          // Without custom prefix
+          'tenant_ID',
+          'tenant_id',
+          'tenantId',
+          'tenantID',
+          'businessid',
+          'business_id',
+          'businessID',
+          'business_ID',
+          
+          // Legacy naming
+          'custom:companyid',
+          'custom:company_id',
+          'custom:organizationid',
+          'custom:organization_id',
+          'custom:accountid',
+          'custom:account_id'
+        ];
+        
+        for (const attr of tenantAttributes) {
+          if (payload[attr] && payload[attr].trim() !== '') {
+            console.log(`[cognitoAuth] Tenant ID from JWT attribute ${attr}:`, payload[attr]);
+            return payload[attr].trim();
+          }
+        }
+        
+        // Last resort: look for any UUID-like value that could be a tenant ID
+        const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        
+        for (const [key, value] of Object.entries(payload)) {
+          if (typeof value === 'string' && uuidPattern.test(value.trim())) {
+            // Skip known non-tenant attributes
+            if (key.includes('sub') || key.includes('user') || key.includes('email') || 
+                key.includes('token') || key.includes('aud') || key.includes('iss') ||
+                key.includes('exp') || key.includes('iat') || key.includes('auth_time')) {
+              continue;
+            }
+            
+            console.warn(`[cognitoAuth] Found UUID-like value in JWT attribute ${key}, treating as potential tenant ID:`, value);
+            return value.trim();
+          }
+        }
+        
       } catch (error) {
         console.error('[cognitoAuth] Error decoding JWT for tenant ID:', error);
       }
     }
     
+    console.log('[cognitoAuth] No tenant ID found in any source');
     return null;
   },
 

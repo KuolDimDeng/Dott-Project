@@ -1,0 +1,18 @@
+{
+  "Comment": "Update api.dottapps.com to point to CloudFront for SSL",
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "api.dottapps.com",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "d1mqpovgvhz3al.cloudfront.net"
+          }
+        ]
+      }
+    }
+  ]
+} 

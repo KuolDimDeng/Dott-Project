@@ -1,13 +1,13 @@
 {
-  "CallerReference": "dott-api-1748090263",
-  "Comment": "HTTPS API for DottApps",
+  "CallerReference": "DottApp-CloudFront-SSL-Clean",
+  "Comment": "DottApp API CloudFront Distribution with SSL - Updated for DottApp-clean",
   "DefaultRootObject": "",
   "Origins": {
     "Quantity": 1,
     "Items": [
       {
-        "Id": "dott-backend",
-        "DomainName": "dott-env-fixed.eba-yek4sdqp.us-east-1.elasticbeanstalk.com",
+        "Id": "DottApp-clean-origin",
+        "DomainName": "DottApp-clean.eba-dua2f3pi.us-east-1.elasticbeanstalk.com",
         "CustomOriginConfig": {
           "HTTPPort": 80,
           "HTTPSPort": 443,
@@ -21,7 +21,7 @@
     ]
   },
   "DefaultCacheBehavior": {
-    "TargetOriginId": "dott-backend",
+    "TargetOriginId": "DottApp-clean-origin",
     "ViewerProtocolPolicy": "redirect-to-https",
     "TrustedSigners": {
       "Enabled": false,
@@ -33,13 +33,22 @@
         "Forward": "all"
       },
       "Headers": {
-        "Quantity": 4,
-        "Items": ["Authorization", "Content-Type", "Origin", "Accept"]
+        "Quantity": 6,
+        "Items": ["Authorization", "Content-Type", "X-Requested-With", "Origin", "Host", "User-Agent"]
       }
     },
     "MinTTL": 0,
     "DefaultTTL": 0,
-    "MaxTTL": 0
+    "MaxTTL": 31536000,
+    "Compress": true,
+    "AllowedMethods": {
+      "Quantity": 7,
+      "Items": ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"],
+      "CachedMethods": {
+        "Quantity": 2,
+        "Items": ["GET", "HEAD"]
+      }
+    }
   },
   "Enabled": true,
   "Aliases": {
@@ -47,9 +56,10 @@
     "Items": ["api.dottapps.com"]
   },
   "ViewerCertificate": {
-    "ACMCertificateArn": "arn:aws:acm:us-east-1:471112661935:certificate/e7526d2d-484b-4b91-a594-cdcbf8df5810",
+    "ACMCertificateArn": "arn:aws:acm:us-east-1:471112661935:certificate/dcb29b8e-d1de-48d3-8430-2d6ff2177d64",
     "SSLSupportMethod": "sni-only",
     "MinimumProtocolVersion": "TLSv1.2_2021"
   },
-  "PriceClass": "PriceClass_100"
+  "PriceClass": "PriceClass_100",
+  "HttpVersion": "http2"
 }

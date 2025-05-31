@@ -1,0 +1,18 @@
+{
+    "Comment": "Create backend.dottapps.com pointing to EB environment",
+    "Changes": [
+        {
+            "Action": "CREATE",
+            "ResourceRecordSet": {
+                "Name": "backend.dottapps.com",
+                "Type": "CNAME",
+                "TTL": 300,
+                "ResourceRecords": [
+                    {
+                        "Value": "DottApp-clean.eba-dua2f3pi.us-east-1.elasticbeanstalk.com"
+                    }
+                ]
+            }
+        }
+    ]
+} 

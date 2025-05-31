@@ -33,6 +33,7 @@ from django.core.signing import TimestampSigner
 
 from asgiref.sync import sync_to_async
 import requests
+import json
 
 from users.models import UserProfile
 from .models import User, Tenant
@@ -213,7 +214,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         
-        if response.status_code == 200:
+        if response.status_code == 200 and response.data:
             # Set refresh token cookie
             refresh_token = response.data.get('refresh')
             if refresh_token:
@@ -982,3 +983,197 @@ class UpdateSessionView(APIView):
         
         except Exception as e:
             return Response({"status": "error", "message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# Add missing OAuth authentication views that the frontend expects
+class OAuthSignUpView(APIView):
+    """
+    Handle OAuth user creation/verification after Google sign-in
+    This endpoint is called by the frontend oauth-success page
+    """
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        try:
+            request_id = str(uuid.uuid4())
+            logger.info("[OAuthSignUp:%s] New OAuth signup request", request_id)
+            
+            # Extract user data from request
+            email = request.data.get('email')
+            cognito_id = request.data.get('cognitoId')
+            first_name = request.data.get('firstName', '')
+            last_name = request.data.get('lastName', '')
+            user_role = request.data.get('userRole', 'owner')
+            is_verified = request.data.get('is_already_verified', True)
+            
+            logger.info("[OAuthSignUp:%s] Processing for email: %s, cognitoId: %s", request_id, email, cognito_id)
+            
+            if not email or not cognito_id:
+                logger.error("[OAuthSignUp:%s] Missing required fields", request_id)
+                return Response({
+                    'success': False,
+                    'error': 'Email and Cognito ID are required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                # Check if user already exists
+                existing_user = User.objects.filter(email=email).first()
+                if existing_user:
+                    logger.info("[OAuthSignUp:%s] User already exists, updating cognito_sub", request_id)
+                    # Update cognito_sub if needed
+                    if existing_user.cognito_sub != cognito_id:
+                        existing_user.cognito_sub = cognito_id
+                        existing_user.save(update_fields=['cognito_sub'])
+                    
+                    return Response({
+                        'success': True,
+                        'message': 'User already exists',
+                        'user_id': str(existing_user.id),
+                        'email': existing_user.email,
+                        'onboarding_status': getattr(existing_user, 'onboarding_status', 'not_started')
+                    })
+                
+                # Create new user
+                user_data = {
+                    'email': email,
+                    'cognito_sub': cognito_id,  # Use cognito_sub instead of cognito_id
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'is_active': True,
+                    'role': user_role,
+                    'date_joined': timezone.now()
+                }
+                
+                # Don't set password for OAuth users - they authenticate via Cognito
+                user = User(**user_data)
+                user.set_unusable_password()  # Mark as OAuth user
+                user.save()
+                
+                logger.info("[OAuthSignUp:%s] Created user %s for email %s", request_id, user.id, email)
+                
+                return Response({
+                    'success': True,
+                    'message': 'User created successfully',
+                    'user_id': str(user.id),
+                    'email': user.email,
+                    'onboarding_status': 'not_started'
+                })
+                
+        except IntegrityError as e:
+            logger.error("[OAuthSignUp:%s] IntegrityError: %s", request_id, str(e))
+            # Try to get the existing user
+            try:
+                existing_user = User.objects.get(email=email)
+                return Response({
+                    'success': True,
+                    'message': 'User already exists',
+                    'user_id': str(existing_user.id),
+                    'email': existing_user.email,
+                    'onboarding_status': getattr(existing_user, 'onboarding_status', 'not_started')
+                })
+            except User.DoesNotExist:
+                return Response({
+                    'success': False,
+                    'error': 'Database integrity error',
+                    'detail': str(e)
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+        except Exception as e:
+            logger.error("[OAuthSignUp:%s] Unexpected error: %s", request_id, str(e), exc_info=True)
+            return Response({
+                'success': False,
+                'error': 'Internal server error',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OAuthUserProfileView(APIView):
+    """
+    Get user profile information for OAuth authenticated users
+    This endpoint is called by the frontend oauth-success page
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            request_id = str(uuid.uuid4())
+            user = request.user
+            logger.info("[OAuthProfile:%s] Getting profile for user %s", request_id, user.id)
+            
+            # Get user's tenant if exists
+            tenant = None
+            tenant_id = None
+            try:
+                tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
+                if tenant:
+                    tenant_id = str(tenant.id)
+                    logger.info("[OAuthProfile:%s] Found tenant %s for user %s", request_id, tenant_id, user.id)
+            except Exception as e:
+                logger.warning("[OAuthProfile:%s] Error getting tenant: %s", request_id, str(e))
+            
+            # Get onboarding status from user or create default
+            onboarding_status = getattr(user, 'onboarding_status', 'not_started')
+            
+            # Check if user has completed onboarding
+            setup_done = (onboarding_status == 'complete')
+            
+            # Build profile response
+            profile_data = {
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'cognito_id': getattr(user, 'cognito_sub', None),  # Map cognito_sub to cognito_id for frontend
+                'user_role': getattr(user, 'role', 'owner'),
+                'onboarding_status': onboarding_status,
+                'is_verified': True,  # OAuth users are already verified
+                'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+                'last_login': user.last_login.isoformat() if user.last_login else None,
+                'tenant_id': tenant_id,
+                'tenantId': tenant_id,  # Alternative naming for frontend compatibility
+                'setup_done': setup_done
+            }
+            
+            logger.info("[OAuthProfile:%s] Profile retrieved successfully", request_id)
+            return Response(profile_data)
+            
+        except Exception as e:
+            logger.error("[OAuthProfile:%s] Error: %s", request_id, str(e), exc_info=True)
+            return Response({
+                'error': 'Failed to get user profile',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def patch(self, request):
+        """Update user profile information"""
+        try:
+            request_id = str(uuid.uuid4())
+            user = request.user
+            logger.info("[OAuthProfile:%s] Updating profile for user %s", request_id, user.id)
+            
+            # Fields that can be updated
+            updatable_fields = [
+                'first_name', 'last_name', 'onboarding_status'
+            ]
+            
+            updated_fields = []
+            for field in updatable_fields:
+                if field in request.data and hasattr(user, field):
+                    setattr(user, field, request.data[field])
+                    updated_fields.append(field)
+            
+            if updated_fields:
+                user.save(update_fields=updated_fields)
+                logger.info("[OAuthProfile:%s] Updated fields: %s", request_id, updated_fields)
+            
+            return Response({
+                'success': True,
+                'message': 'Profile updated successfully',
+                'updated_fields': updated_fields
+            })
+            
+        except Exception as e:
+            logger.error("[OAuthProfile:%s] Update error: %s", request_id, str(e), exc_info=True)
+            return Response({
+                'error': 'Failed to update user profile',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

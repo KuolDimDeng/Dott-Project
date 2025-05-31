@@ -1,0 +1,56 @@
+{
+  "ServiceName": "dott-backend-service",
+  "SourceConfiguration": {
+    "ImageRepository": {
+      "ImageIdentifier": "471112661935.dkr.ecr.us-east-1.amazonaws.com/dott-backend:latest",
+      "ImageConfiguration": {
+        "Port": "8000",
+        "RuntimeEnvironmentVariables": {
+          "DJANGO_SETTINGS_MODULE": "pyfactor.settings_eb",
+          "PYTHONUNBUFFERED": "1",
+          "PORT": "8000",
+          "PYTHONPATH": "/app",
+          "ALLOWED_HOSTS": "*",
+          "DEBUG": "False",
+          "SECRET_KEY": "t+3=29ifzne^^$626vnvq7w5f&ky7g%54=ca^q3$!#v&%ubjib",
+          "DATABASE_URL": "postgresql://dott_admin:RRfXU6uPPUbBEg1JqGTJ@dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com:5432/dott_main",
+          "DATABASE_HOST": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com",
+          "DATABASE_NAME": "dott_main",
+          "DATABASE_USER": "dott_admin",
+          "DATABASE_PASSWORD": "RRfXU6uPPUbBEg1JqGTJ",
+          "DATABASE_PORT": "5432",
+          "RDS_DB_NAME": "dott_main",
+          "RDS_HOSTNAME": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com",
+          "RDS_PASSWORD": "RRfXU6uPPUbBEg1JqGTJ",
+          "RDS_PORT": "5432",
+          "RDS_USERNAME": "dott_admin",
+          "CORS_ALLOW_ALL_ORIGINS": "True",
+          "CORS_ALLOW_CREDENTIALS": "True"
+        },
+        "StartCommand": "/app/start.sh"
+      },
+      "ImageRepositoryType": "ECR"
+    },
+    "AutoDeploymentsEnabled": true
+  },
+  "InstanceConfiguration": {
+    "Cpu": "1 vCPU",
+    "Memory": "2 GB",
+    "InstanceRoleArn": "arn:aws:iam::471112661935:role/AppRunnerInstanceRole"
+  },
+  "AutoScalingConfigurationArn": "arn:aws:apprunner:us-east-1:471112661935:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001",
+  "NetworkConfiguration": {
+    "EgressConfiguration": {
+      "EgressType": "VPC",
+      "VpcConnectorArn": "arn:aws:apprunner:us-east-1:471112661935:vpcconnector/pyfactor-vpc-connector/1/00000000000000000000000000000001"
+    }
+  },
+  "HealthCheckConfiguration": {
+    "Protocol": "HTTP",
+    "Path": "/health/",
+    "Interval": 10,
+    "Timeout": 5,
+    "HealthyThreshold": 1,
+    "UnhealthyThreshold": 5
+  }
+}

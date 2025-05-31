@@ -1,0 +1,53 @@
+{
+  "ServiceName": "dott-backend",
+  "SourceConfiguration": {
+    "ImageRepository": {
+      "ImageIdentifier": "471112661935.dkr.ecr.us-east-1.amazonaws.com/dott-backend:latest",
+      "ImageConfiguration": {
+        "Port": "8000",
+        "RuntimeEnvironmentVariables": {
+          "DJANGO_SETTINGS_MODULE": "pyfactor.settings_eb",
+          "PYTHONUNBUFFERED": "1",
+          "PORT": "8000",
+          "PYTHONPATH": "/app",
+          "ALLOWED_HOSTS": "*",
+          "DEBUG": "False",
+          "SECRET_KEY": "t+3=29ifzne^^$626vnvq7w5f&ky7g%54=ca^q3$!#v&%ubjib",
+          "DATABASE_URL": "postgresql://dott_admin:RRfXU6uPPUbBEg1JqGTJ@dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com:5432/dott_main",
+          "DATABASE_HOST": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com",
+          "DATABASE_NAME": "dott_main",
+          "DATABASE_USER": "dott_admin",
+          "DATABASE_PASSWORD": "RRfXU6uPPUbBEg1JqGTJ",
+          "DATABASE_PORT": "5432",
+          "CORS_ALLOW_ALL_ORIGINS": "True",
+          "CORS_ALLOW_CREDENTIALS": "True"
+        },
+        "StartCommand": "/app/start.sh"
+      },
+      "ImageRepositoryType": "ECR"
+    },
+    "AutoDeploymentsEnabled": false,
+    "AuthenticationConfiguration": {
+      "AccessRoleArn": "arn:aws:iam::471112661935:role/AppRunnerECRAccessRole"
+    }
+  },
+  "InstanceConfiguration": {
+    "Cpu": "1 vCPU",
+    "Memory": "2 GB",
+    "InstanceRoleArn": "arn:aws:iam::471112661935:role/AppRunnerInstanceRole"
+  },
+  "NetworkConfiguration": {
+    "EgressConfiguration": {
+      "EgressType": "VPC",
+      "VpcConnectorArn": "arn:aws:apprunner:us-east-1:471112661935:vpcconnector/dott-vpc-connector/1/ee660fc39b434b198ec75c1b563c0968"
+    }
+  },
+  "HealthCheckConfiguration": {
+    "Protocol": "HTTP",
+    "Path": "/health/",
+    "Interval": 10,
+    "Timeout": 5,
+    "HealthyThreshold": 1,
+    "UnhealthyThreshold": 5
+  }
+}

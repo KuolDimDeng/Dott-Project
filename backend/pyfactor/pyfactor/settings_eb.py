@@ -175,61 +175,35 @@ CSRF_COOKIE_DOMAIN = '.dottapps.com'
 # Database settings for RDS
 DATABASES = {
     'default': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
         'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
         'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
         'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': os.environ.get('RDS_PORT', '5432'),
-        'TIME_ZONE': 'UTC',
-        'CONN_MAX_AGE': 0,
-        'AUTOCOMMIT': True,
+        'CONN_MAX_AGE': 300,  # Keep connections for 5 minutes
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'application_name': 'dott',
             'sslmode': 'require',
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
         },
-        'POOL_OPTIONS': {
-            'POOL_SIZE': 5,
-            'MAX_OVERFLOW': 2,
-            'RECYCLE': 300,
-            'TIMEOUT': 30,
-            'RETRY': 3,
-            'RECONNECT': True,
-            'DISABLE_POOLING': False,
-        }
     },
     'taxes': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
         'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
         'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
         'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
         'PORT': os.environ.get('RDS_PORT', '5432'),
-        'CONN_MAX_AGE': 0,
+        'CONN_MAX_AGE': 300,
+        'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
             'connect_timeout': 10,
             'client_encoding': 'UTF8',
             'sslmode': 'require',
-            'keepalives': 1,
-            'keepalives_idle': 30,
-            'keepalives_interval': 10,
-            'keepalives_count': 5,
         },
-        'POOL_OPTIONS': {
-            'POOL_SIZE': 5,
-            'MAX_OVERFLOW': 2,
-            'RECYCLE': 300,
-            'TIMEOUT': 30,
-            'RETRY': 3,
-            'RECONNECT': True,
-        }
     }
 }
 

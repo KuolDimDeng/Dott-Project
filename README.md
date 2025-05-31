@@ -1,3 +1,19 @@
+# DottApp - Enterprise Financial Platform
+
+## 🚀 Deployment & Infrastructure
+
+**Production Environment**: [DottApp-env.eba-dua2f3pi.us-east-1.elasticbeanstalk.com](http://DottApp-env.eba-dua2f3pi.us-east-1.elasticbeanstalk.com)
+
+### AWS Elastic Beanstalk Optimization ✅
+- **Cost Reduction**: $244/month → $40/month (**83% savings**)
+- **Architecture**: Single t3.small instance with nginx proxy
+- **Status**: Production ready with green health status
+- **Docker**: dott-backend:v2 with all dependencies included
+
+📖 **Complete Setup Guide**: See [`DEPLOYMENT_GUIDE.md`](./DEPLOYMENT_GUIDE.md) for detailed deployment instructions, troubleshooting, and infrastructure documentation.
+
+---
+
 # Row-Level Multi-Tenancy Migration
 
 This repo contains changes to implement row-level multi-tenancy, replacing the previous schema-based approach.

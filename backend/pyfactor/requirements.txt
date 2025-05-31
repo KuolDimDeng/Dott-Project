@@ -33,3 +33,5 @@ idna==3.7
 
 # Web server
 gunicorn==22.0.0
+kombu[sqlalchemy]>=5.0.0
+django-celery-results>=2.5.0

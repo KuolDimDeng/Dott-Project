@@ -1,0 +1,58 @@
+EnvironmentConfigurationMetadata:
+  Description: Configuration created from the EB CLI using "eb config save".
+  DateCreated: '1732999028000'
+  DateModified: '1732999028000'
+SolutionStack: 64bit Amazon Linux 2023 v4.5.2 running Docker
+OptionSettings:
+  aws:elasticbeanstalk:environment:
+    EnvironmentType: LoadBalanced
+    LoadBalancerType: application
+  aws:elbv2:loadbalancer:
+    IdleTimeout: 60
+    ManagedSecurityGroup: null
+    SecurityGroups: null
+    AccessLogsS3Bucket: null
+    AccessLogsS3Enabled: 'false'
+    AccessLogsS3Prefix: null
+  aws:elbv2:listener:443:
+    DefaultProcess: default
+    ListenerEnabled: 'true'
+    Protocol: HTTPS
+    Rules: null
+    SSLCertificateArns: arn:aws:acm:us-east-1:471112661935:certificate/dcb29b8e-d1de-48d3-8430-2d6ff2177d64
+    SSLPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
+  aws:elbv2:listener:80:
+    DefaultProcess: default
+    ListenerEnabled: 'true'
+    Protocol: HTTP
+    Rules: null
+  aws:elasticbeanstalk:environment:process:default:
+    DeregistrationDelay: '20'
+    HealthCheckInterval: '15'
+    HealthCheckPath: /health/
+    HealthCheckTimeout: '5'
+    HealthyThresholdCount: '3'
+    UnhealthyThresholdCount: '5'
+    Port: '80'
+    Protocol: HTTP
+    StickinessEnabled: 'false'
+    StickinessLBCookieDuration: '86400'
+    StickinessType: lb_cookie
+    MatcherHTTPCode: '200'
+  aws:autoscaling:asg:
+    Availability Zones: Any
+    Cooldown: '360'
+    MaxSize: '2'
+    MinSize: '1'
+  aws:autoscaling:updatepolicy:rollingupdate:
+    MaxBatchSize: '1'
+    MinInstancesInService: '1'
+    RollingUpdateEnabled: 'true'
+    RollingUpdateType: Health
+    Timeout: PT30M
+  aws:ec2:instances:
+    InstanceTypes: t3.small
+    SupportedArchitectures: x86_64
+  aws:autoscaling:launchconfiguration:
+    RootVolumeType: gp3
+    RootVolumeSize: '20' 

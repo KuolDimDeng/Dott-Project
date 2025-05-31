@@ -464,36 +464,91 @@ const CognitoAttributes = {
   },
   
   /**
-   * Get tenant ID with correct casing - checks multiple possible attribute names
-   * CRITICAL: Always use custom:tenant_ID (uppercase ID) as primary
+   * Get tenant ID with comprehensive fallback logic
    * 
    * @param {Object} attributes - User attributes object
    * @returns {String|null} The tenant ID or null if not found
    */
   getTenantId(attributes) {
+    if (!attributes || typeof attributes !== 'object') {
+      console.warn('[CognitoAttributes] Invalid attributes object provided to getTenantId');
+      return null;
+    }
+
     // Check primary attribute first (correct casing)
     const primaryTenantId = this.getValue(attributes, this.TENANT_ID);
-    if (primaryTenantId) return primaryTenantId;
+    if (primaryTenantId) {
+      console.log('[CognitoAttributes] Found tenant ID in primary attribute:', this.TENANT_ID);
+      return primaryTenantId;
+    }
     
     // Check business ID as fallback
     const businessId = this.getValue(attributes, this.BUSINESS_ID);
-    if (businessId) return businessId;
+    if (businessId) {
+      console.log('[CognitoAttributes] Found tenant ID in business ID attribute:', this.BUSINESS_ID);
+      return businessId;
+    }
     
-    // Check common incorrect variations for backward compatibility
-    const fallbacks = [
+    // Comprehensive list of possible tenant ID attribute variations
+    const fallbackAttributes = [
+      // Standard variations
       'custom:tenant_id',
-      'custom:tenantID',
-      'custom:tenant-id'
+      'custom:tenantID', 
+      'custom:tenant-id',
+      'custom:tenantId',
+      
+      // Business ID variations
+      'custom:business_id',
+      'custom:businessID',
+      'custom:business_ID',
+      'custom:business-id',
+      
+      // Without custom prefix (in case they're stored differently)
+      'tenant_ID',
+      'tenant_id',
+      'tenantID',
+      'tenantId',
+      'tenant-id',
+      'businessid',
+      'business_id',
+      'businessID',
+      'business_ID',
+      'business-id',
+      
+      // Legacy or alternative naming
+      'custom:companyid',
+      'custom:company_id',
+      'custom:organizationid',
+      'custom:organization_id',
+      'custom:accountid',
+      'custom:account_id'
     ];
     
-    for (const fallback of fallbacks) {
+    // Try each fallback attribute
+    for (const fallback of fallbackAttributes) {
       const value = this.getValue(attributes, fallback);
-      if (value) {
-        console.warn(`[CognitoAttributes] Found tenant ID in incorrect attribute: ${fallback}. Should use: ${this.TENANT_ID}`);
-        return value;
+      if (value && value.trim() !== '') {
+        console.warn(`[CognitoAttributes] Found tenant ID in fallback attribute: ${fallback}. Consider using primary attribute: ${this.TENANT_ID}`);
+        return value.trim();
       }
     }
     
+    // Last resort: check if any attribute contains a UUID-like value that could be a tenant ID
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    for (const [key, value] of Object.entries(attributes)) {
+      if (typeof value === 'string' && uuidPattern.test(value.trim())) {
+        // Skip known non-tenant attributes
+        if (key.includes('sub') || key.includes('user') || key.includes('email') || key.includes('token')) {
+          continue;
+        }
+        
+        console.warn(`[CognitoAttributes] Found UUID-like value in attribute ${key}, treating as potential tenant ID: ${value}`);
+        return value.trim();
+      }
+    }
+    
+    console.log('[CognitoAttributes] No tenant ID found in any attribute');
     return null;
   },
   

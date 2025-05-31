@@ -64,7 +64,9 @@ urlpatterns = [
     re_path(r'^auth/_log/?$', AuthErrorView.as_view(), name='auth_log'),
     re_path(r'^auth/error/?$', AuthErrorView.as_view(), name='auth_error'),
 
-
+    # OAuth Authentication endpoints
+    # path('api/auth/signup/', OAuthSignUpView.as_view(), name='oauth_signup'),
+    # path('api/auth/profile/', OAuthUserProfileView.as_view(), name='oauth_profile'),
     
     # Registration and Signup
     path('register/', RegisterView.as_view(), name='register'),

@@ -61,6 +61,12 @@ export default async function RootLayout({ children, params }) {
               try {
                 console.log('[Layout] Initializing tenant ID from direct OAuth tokens');
                 
+                // Check if OAuth is in progress and skip to avoid interference
+                if (window.__OAUTH_IN_PROGRESS || (window.__APP_CACHE && window.__APP_CACHE.oauth_in_progress)) {
+                  console.log('[Layout] OAuth in progress, skipping tenant initialization to avoid interference');
+                  return null;
+                }
+                
                 // Check if we have direct OAuth tokens
                 const idToken = localStorage.getItem('idToken');
                 const accessToken = localStorage.getItem('accessToken');
@@ -88,7 +94,14 @@ export default async function RootLayout({ children, params }) {
                   return tenantId;
                 }
                 
-                // If no cached tenant ID, try to get user profile from API
+                // Skip API calls if we're on OAuth-related pages to prevent interference
+                const currentPath = window.location.pathname;
+                if (currentPath.includes('/auth/') || currentPath.includes('/oauth') || currentPath.includes('/callback')) {
+                  console.log('[Layout] Skipping API calls on auth pages to prevent OAuth interference');
+                  return null;
+                }
+                
+                // If no cached tenant ID, try to get user profile from API (only if not in OAuth flow)
                 try {
                   const apiUrl = 'https://api.dottapps.com';
                   const response = await fetch(apiUrl + '/api/users/profile', {
@@ -194,8 +207,22 @@ export default async function RootLayout({ children, params }) {
                 };
               }
               
-              // Initialize tenant after a short delay to allow tokens to be available
-              setTimeout(initializeTenantFromDirectOAuth, 1000);
+              // Initialize tenant after a longer delay to avoid OAuth interference
+              // Check if OAuth was recently completed before running
+              setTimeout(() => {
+                // Only run if OAuth is not in progress and hasn't been completed recently
+                const recentOAuthCompletion = window.__APP_CACHE?.oauth?.completed && 
+                  window.__APP_CACHE?.oauth?.timestamp &&
+                  (Date.now() - new Date(window.__APP_CACHE.oauth.timestamp).getTime()) < 10000; // 10 seconds
+                
+                if (!window.__OAUTH_IN_PROGRESS && 
+                    !(window.__APP_CACHE && window.__APP_CACHE.oauth_in_progress) &&
+                    !recentOAuthCompletion) {
+                  initializeTenantFromDirectOAuth();
+                } else {
+                  console.log('[Layout] Skipping tenant initialization - OAuth recently completed or in progress');
+                }
+              }, 3000); // Increased from 1000ms to 3000ms
             }
             `
           }}

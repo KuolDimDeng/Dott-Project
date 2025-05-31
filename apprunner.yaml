@@ -1,0 +1,21 @@
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Building Django Docker container for App Runner..."
+      - echo "Build completed successfully"
+run:
+  runtime-version: latest
+  command: /app/start.sh
+  network:
+    port: 8000
+  env:
+    - name: DJANGO_SETTINGS_MODULE
+      value: pyfactor.settings_eb
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: PORT
+      value: "8000"
+    - name: PYTHONPATH
+      value: "/app"

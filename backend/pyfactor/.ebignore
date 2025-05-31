@@ -14,3 +14,24 @@ backups/
 *.sqlite3
 .pytest_cache/
 .coverage
+
+# Exclude ALL backup and problematic directories
+.ebextensions_backup/
+.ebextensions.backup/
+.ebextensions.backup-*/
+docker_fixed_deployment_*/
+configuration_backups/
+backup_emergency_*/
+deployment_package_*/
+final-max-security/
+*nginx*
+complete-nginx-fix.sh
+test-package.zip
+emergency-fix-*.zip
+clean-deploy-*.zip
+
+# Exclude specific problematic files and directories
+*/migrations/
+*/backups/
+NGINX_*
+*_NGINX_*

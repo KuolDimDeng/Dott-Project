@@ -1,0 +1,152 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "ALLOWED_HOSTS",
+    "Value": "*"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DEBUG",
+    "Value": "False"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DJANGO_SETTINGS_MODULE",
+    "Value": "pyfactor.settings_eb"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "PORT",
+    "Value": "8000"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "PYTHONPATH",
+    "Value": "/app:$PYTHONPATH"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "PYTHONUNBUFFERED",
+    "Value": "1"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "SECRET_KEY",
+    "Value": "t+3=29ifzne^^$626vnvq7w5f&ky7g%54=ca^q3$!#v&%ubjib"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_URL",
+    "Value": "postgresql://dott_admin:RRfXU6uPPUbBEg1JqGTJ@dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com:5432/dott_main"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_HOST",
+    "Value": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_NAME",
+    "Value": "dott_main"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_USER",
+    "Value": "dott_admin"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_PASSWORD",
+    "Value": "RRfXU6uPPUbBEg1JqGTJ"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_PORT",
+    "Value": "5432"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_DB_NAME",
+    "Value": "dott_main"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_HOSTNAME",
+    "Value": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_PASSWORD",
+    "Value": "RRfXU6uPPUbBEg1JqGTJ"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_PORT",
+    "Value": "5432"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_USERNAME",
+    "Value": "dott_admin"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "CORS_ALLOW_ALL_ORIGINS",
+    "Value": "True"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "CORS_ALLOW_CREDENTIALS",
+    "Value": "True"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:command",
+    "OptionName": "DeploymentPolicy",
+    "Value": "AllAtOnce"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:proxy",
+    "OptionName": "ProxyServer",
+    "Value": "nginx"
+  },
+  {
+    "Namespace": "aws:ec2:instances",
+    "OptionName": "InstanceTypes",
+    "Value": "t3.small"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "IamInstanceProfile",
+    "Value": "aws-elasticbeanstalk-ec2-role"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "ServiceRole",
+    "Value": "arn:aws:iam::471112661935:role/aws-elasticbeanstalk-service-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "EC2KeyName",
+    "Value": "dott-key-pair"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "VPCId",
+    "Value": "vpc-0564a66b550c7063e"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "Subnets",
+    "Value": "subnet-0cc4a92e849ff4b13"
+  },
+  {
+    "Namespace": "aws:ec2:vpc",
+    "OptionName": "AssociatePublicIpAddress",
+    "Value": "true"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "SecurityGroups",
+    "Value": "sg-0d385b514eeee83dd"
+  }
+]
