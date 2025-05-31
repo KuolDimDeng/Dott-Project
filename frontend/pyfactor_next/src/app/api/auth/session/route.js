@@ -1,4 +1,4 @@
-import { auth0 } from '@/lib/auth0';
+import { getSession } from '@auth0/nextjs-auth0';
 
 /**
  * Custom session endpoint to ensure properly formatted JSON responses
@@ -7,7 +7,7 @@ import { auth0 } from '@/lib/auth0';
  */
 export async function GET(request) {
   try {
-    const session = await auth0.getSession(request);
+    const session = await getSession(request);
     
     if (!session) {
       return Response.json({ error: 'No session found' }, { status: 401 });

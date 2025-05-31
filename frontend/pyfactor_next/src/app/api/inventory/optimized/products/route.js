@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { getSession } from '@auth0/nextjs-auth0';
 import { getAccessToken } from '@/utils/authUtils';
 
 /**
@@ -10,7 +10,7 @@ import { getAccessToken } from '@/utils/authUtils';
 export async function GET(request) {
   try {
     // Get session and verify authentication
-    const session = await auth0.getSession();
+    const session = await getSession();
     if (!session) {
       return NextResponse.json(
         { error: 'Authentication required' },

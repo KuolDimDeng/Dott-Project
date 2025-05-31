@@ -1,14 +1,10 @@
 'use client';
 
 import { useEffect } from 'react';
-import ConfigureAmplify from "@/components/ConfigureAmplify";
 import { Providers } from "@/app/providers";
 import CircuitBreakerWrapper from "@/app/CircuitBreakerWrapper";
 import ClientProviders from "@/app/ClientProviders";
 import dynamic from 'next/dynamic';
-
-// Import auth config directly - remove dynamic imports
-import '@/config/amplifyConfig';
 
 // Dynamically import development tools (only in dev mode)
 const TenantControls = dynamic(
@@ -30,9 +26,6 @@ export default function ClientRootWrapper({ children }) {
   
   return (
     <>
-      {/* Authentication configuration */}
-      <ConfigureAmplify />
-      
       {/* Providers and app structure */}
       <Providers>
         <CircuitBreakerWrapper>

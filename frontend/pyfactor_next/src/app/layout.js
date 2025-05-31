@@ -1,9 +1,7 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
-import '../lib/amplifyConfig'; // Import Amplify config early
-// Add reconfiguration script for Amplify
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
-import Auth0Provider from '@/components/Auth0Provider';
+import { Auth0Provider } from '@auth0/nextjs-auth0';
 import { Toaster } from 'react-hot-toast';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
