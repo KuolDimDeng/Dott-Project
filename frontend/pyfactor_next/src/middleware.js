@@ -5,11 +5,15 @@ export async function middleware(request) {
     return;
   }
   
-  // Let Auth0 handle auth routes
   const { pathname } = request.nextUrl;
   
-  if (pathname.startsWith('/api/auth/')) {
-    // This should redirect to Auth0 for authentication
+  // IMPORTANT: Skip middleware for Auth0 callback to prevent redirect loop
+  if (pathname === '/api/auth/callback') {
+    return; // Let the callback route handle the authentication
+  }
+  
+  // Only redirect /api/auth/login to Auth0 authorization
+  if (pathname === '/api/auth/login') {
     const authUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN}/authorize?` + 
       new URLSearchParams({
         response_type: 'code',
