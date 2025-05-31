@@ -1,78 +1,104 @@
 /**
- * User Preferences Utility
+ * User Preferences Utility - Auth0 Compatible Version
  * 
  * Handles Cognito user attributes for all preferences
  * Uses AppCache for better performance with Cognito for persistence
  */
 
-import { fetchUserAttributes, updateUserAttributes } from '@/config/amplifyUnified';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
-// Cache TTL in milliseconds (30 days)
-const CACHE_TTL = 30 * 24 * 60 * 60 * 1000;
+// Cache configuration
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
-// Preference keys with Cognito custom: prefix
+// Preference keys
 export const PREF_KEYS = {
-  // User profile
-  LANGUAGE: 'custom:language',
   THEME: 'custom:theme',
-  BUSINESS_NAME: 'custom:businessname',
-  BUSINESS_TYPE: 'custom:businesstype',
-  TENANT_ID: 'custom:tenant_ID',
-  
-  // UI preferences
+  LANGUAGE: 'custom:detected_language',
+  COUNTRY: 'custom:country',
+  IS_DEVELOPING_COUNTRY: 'custom:is_developing_country',
   UI_SCALE: 'custom:ui_scale',
   UI_DENSITY: 'custom:ui_density',
   SIDEBAR_COLLAPSED: 'custom:sidebar_collapsed',
-  
-  // Feature preferences
-  ONBOARDING_STATUS: 'custom:onboarding',
+  ONBOARDING_STATUS: 'custom:onboarding_status',
   ONBOARDING_STEP: 'custom:onboarding_step',
-  SUBSCRIPTION_PLAN: 'custom:subscription',
-  
-  // Migration flags
-  PREFERENCES_MIGRATED: 'custom:preferences_migrated',
-  UI_PREFERENCES_MIGRATED: 'custom:ui_preferences_migrated',
-  
-  // Consent settings
-  COOKIE_CONSENT: 'custom:cookie_consent',
-  ANALYTICS_CONSENT: 'custom:analytics_consent',
-  MARKETING_CONSENT: 'custom:marketing_consent'
+  FREE_PLAN_ONBOARDING_COMPLETE: 'custom:free_plan_onboarding_complete',
+  LAST_TAB: 'custom:last_tab',
+  INVOICE_VIEW: 'custom:invoice_view',
+  RLS_MIGRATED: 'custom:rls_migrated',
+  MIGRATION_COMPLETED: 'custom:migration_completed'
 };
 
+// Storage helpers
+const STORAGE_PREFIX = 'dott_pref_';
+
+function getStorageKey(prefKey) {
+  return `${STORAGE_PREFIX}${prefKey.replace('custom:', '')}`;
+}
+
+function getFromStorage(key) {
+  try {
+    if (typeof window === 'undefined') return null;
+    const stored = localStorage.getItem(key);
+    if (!stored) return null;
+    
+    const parsed = JSON.parse(stored);
+    // Check if expired
+    if (parsed.expires && Date.now() > parsed.expires) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return parsed.value;
+  } catch (error) {
+    logger.error(`Error reading from storage: ${key}`, error);
+    return null;
+  }
+}
+
+function saveToStorage(key, value, ttl = CACHE_TTL) {
+  try {
+    if (typeof window === 'undefined') return;
+    const data = {
+      value,
+      expires: Date.now() + ttl
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (error) {
+    logger.error(`Error saving to storage: ${key}`, error);
+  }
+}
+
 /**
- * Get a user preference from Cognito
- * Uses AppCache for better performance
+ * Get a user preference from storage
  * 
- * @param {string} prefKey - The preference key (must include 'custom:' prefix)
- * @param {string} defaultValue - Default value if preference is not set
- * @returns {Promise<string>} The preference value
+ * @param {string} prefKey - The preference key (with custom: prefix)
+ * @param {*} defaultValue - Default value if preference is not set
+ * @returns {Promise<*>} The preference value
  */
 export async function getUserPreference(prefKey, defaultValue = null) {
   try {
-    if (!prefKey) {
-      throw new Error('Preference key is required');
-    }
-    
-    // Check AppCache first
+    // First check cache
     const cacheKey = `user_pref_${prefKey}`;
-    const cachedValue = getCacheValue(cacheKey);
+    let cachedValue = getCacheValue(cacheKey);
     
-    if (cachedValue !== undefined) {
+    if (cachedValue !== null && cachedValue !== undefined) {
       return cachedValue;
     }
     
-    // If not in cache, fetch from Cognito
-    const attributes = await fetchUserAttributes();
-    const value = attributes[prefKey] || defaultValue;
+    // Check localStorage
+    const storageKey = getStorageKey(prefKey);
+    const storedValue = getFromStorage(storageKey);
     
-    // Update AppCache
-    if (value !== null) {
-      setCacheValue(cacheKey, value, { ttl: CACHE_TTL });
+    if (storedValue !== null && storedValue !== undefined) {
+      // Update cache
+      setCacheValue(cacheKey, storedValue, { ttl: CACHE_TTL });
+      return storedValue;
     }
     
-    return value;
+    // Return default value
+    logger.debug(`[userPreferences] Using default value for ${prefKey}: ${defaultValue}`);
+    return defaultValue;
+    
   } catch (error) {
     logger.error(`[userPreferences] Error getting preference "${prefKey}":`, error);
     return defaultValue;
@@ -80,66 +106,30 @@ export async function getUserPreference(prefKey, defaultValue = null) {
 }
 
 /**
- * Save a user preference to Cognito
- * Updates AppCache and Cognito
+ * Save a user preference to storage
  * 
- * @param {string} prefKey - The preference key (must include 'custom:' prefix)
- * @param {string} value - The value to save
+ * @param {string} prefKey - The preference key (with custom: prefix)
+ * @param {*} value - The value to save
  * @returns {Promise<boolean>} True if successful
  */
 export async function saveUserPreference(prefKey, value) {
   try {
-    if (!prefKey) {
-      throw new Error('Preference key is required');
-    }
+    // Update localStorage
+    const storageKey = getStorageKey(prefKey);
+    saveToStorage(storageKey, value);
     
-    // Validate key has custom: prefix
-    if (!prefKey.startsWith('custom:')) {
-      throw new Error('Preference key must start with "custom:"');
-    }
-    
-    // Update AppCache immediately (this always works)
+    // Update cache
     const cacheKey = `user_pref_${prefKey}`;
     setCacheValue(cacheKey, value, { ttl: CACHE_TTL });
     
-    // Try to save to Cognito, but handle auth errors gracefully
-    try {
-      // Import the enhanced functions that ensure configuration
-      const { updateUserAttributes, isAmplifyConfigured, configureAmplify } = await import('@/config/amplifyUnified');
-      
-      // Ensure Amplify is configured before attempting to save
-      if (!isAmplifyConfigured()) {
-        logger.warn('[userPreferences] Amplify not configured, attempting to configure');
-        const configSuccess = configureAmplify(true);
-        if (!configSuccess) {
-          logger.warn('[userPreferences] Failed to configure Amplify, skipping Cognito save');
-          return true; // Return true since AppCache was updated
-        }
-      }
-      
-      // Save to Cognito
-      await updateUserAttributes({
-        userAttributes: {
-          [prefKey]: value !== null && value !== undefined ? String(value) : ''
-        }
-      });
-      
-      logger.debug(`[userPreferences] Preference saved: ${prefKey}=${value}`);
-      return true;
-    } catch (cognitoError) {
-      // Handle specific Cognito/Auth errors gracefully
-      if (cognitoError.message && 
-          (cognitoError.message.includes('UserPool not configured') ||
-           cognitoError.message.includes('not authenticated') ||
-           cognitoError.name === 'NotAuthorizedException')) {
-        logger.warn(`[userPreferences] User not authenticated or Cognito not configured, preference saved to cache only: ${prefKey}`);
-        return true; // Return true since AppCache was updated
-      }
-      
-      // For other errors, log but don't fail
-      logger.error(`[userPreferences] Error saving preference "${prefKey}" to Cognito:`, cognitoError);
-      return true; // Return true since AppCache was updated
-    }
+    logger.debug(`[userPreferences] Preference saved: ${prefKey}=${value}`);
+    
+    // Optionally sync to backend (non-blocking)
+    syncPreferenceToBackend(prefKey, value).catch(error => {
+      logger.debug('[userPreferences] Background sync failed:', error);
+    });
+    
+    return true;
   } catch (error) {
     logger.error(`[userPreferences] Error saving preference "${prefKey}":`, error);
     return false;
@@ -147,7 +137,7 @@ export async function saveUserPreference(prefKey, value) {
 }
 
 /**
- * Save multiple user preferences to Cognito in a single call
+ * Save multiple user preferences at once
  * 
  * @param {Object} preferences - Object with preference key/value pairs
  * @returns {Promise<boolean>} True if successful
@@ -158,56 +148,47 @@ export async function saveUserPreferences(preferences) {
       throw new Error('Preferences object is required');
     }
     
-    // Format attributes for Cognito
-    const userAttributes = {};
-    
-    // Update AppCache for each preference (this always works)
-    Object.entries(preferences).forEach(([key, value]) => {
+    // Save each preference
+    let allSuccessful = true;
+    for (const [key, value] of Object.entries(preferences)) {
       const prefKey = key.startsWith('custom:') ? key : `custom:${key}`;
-      userAttributes[prefKey] = value !== null && value !== undefined ? String(value) : '';
-      
-      // Update AppCache
-      const cacheKey = `user_pref_${prefKey}`;
-      setCacheValue(cacheKey, value, { ttl: CACHE_TTL });
-    });
-    
-    // Try to save to Cognito, but handle auth errors gracefully
-    try {
-      // Import the enhanced functions that ensure configuration
-      const { updateUserAttributes, isAmplifyConfigured, configureAmplify } = await import('@/config/amplifyUnified');
-      
-      // Ensure Amplify is configured before attempting to save
-      if (!isAmplifyConfigured()) {
-        logger.warn('[userPreferences] Amplify not configured for batch save, attempting to configure');
-        const configSuccess = configureAmplify(true);
-        if (!configSuccess) {
-          logger.warn('[userPreferences] Failed to configure Amplify, skipping Cognito batch save');
-          return true; // Return true since AppCache was updated
-        }
-      }
-      
-      // Save to Cognito in a single call
-      await updateUserAttributes({ userAttributes });
-      
-      logger.debug(`[userPreferences] Multiple preferences saved: ${Object.keys(preferences).join(', ')}`);
-      return true;
-    } catch (cognitoError) {
-      // Handle specific Cognito/Auth errors gracefully
-      if (cognitoError.message && 
-          (cognitoError.message.includes('UserPool not configured') ||
-           cognitoError.message.includes('not authenticated') ||
-           cognitoError.name === 'NotAuthorizedException')) {
-        logger.warn(`[userPreferences] User not authenticated or Cognito not configured, batch preferences saved to cache only`);
-        return true; // Return true since AppCache was updated
-      }
-      
-      // For other errors, log but don't fail
-      logger.error('[userPreferences] Error saving batch preferences to Cognito:', cognitoError);
-      return true; // Return true since AppCache was updated
+      const success = await saveUserPreference(prefKey, value);
+      if (!success) allSuccessful = false;
     }
+    
+    logger.debug(`[userPreferences] Multiple preferences saved: ${Object.keys(preferences).join(', ')}`);
+    return allSuccessful;
   } catch (error) {
     logger.error('[userPreferences] Error saving multiple preferences:', error);
     return false;
+  }
+}
+
+/**
+ * Sync preference to backend (optional, non-blocking)
+ */
+async function syncPreferenceToBackend(prefKey, value) {
+  try {
+    // Only sync if user is authenticated
+    const response = await fetch('/api/auth/session');
+    if (!response.ok) return; // Not authenticated, skip sync
+    
+    const sessionData = await response.json();
+    if (!sessionData.user) return; // Not authenticated, skip sync
+    
+    // Sync to backend
+    await fetch('/api/user/preferences', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        [prefKey]: value
+      })
+    });
+  } catch (error) {
+    // Silent fail for background sync
+    logger.debug('[userPreferences] Background sync error:', error);
   }
 }
 
@@ -217,9 +198,6 @@ export async function saveUserPreferences(preferences) {
 
 /**
  * Get the user's theme preference
- * 
- * @param {string} defaultTheme - Default theme if preference is not set
- * @returns {Promise<string>} The theme preference ('light', 'dark', or 'system')
  */
 export async function getThemePreference(defaultTheme = 'system') {
   return getUserPreference(PREF_KEYS.THEME, defaultTheme);
@@ -227,9 +205,6 @@ export async function getThemePreference(defaultTheme = 'system') {
 
 /**
  * Save the user's theme preference
- * 
- * @param {string} theme - The theme preference ('light', 'dark', or 'system')
- * @returns {Promise<boolean>} True if successful
  */
 export async function saveThemePreference(theme) {
   return saveUserPreference(PREF_KEYS.THEME, theme);
@@ -237,9 +212,6 @@ export async function saveThemePreference(theme) {
 
 /**
  * Get the user's language preference
- * 
- * @param {string} defaultLanguage - Default language if preference is not set
- * @returns {Promise<string>} The language code
  */
 export async function getLanguagePreference(defaultLanguage = 'en') {
   return getUserPreference(PREF_KEYS.LANGUAGE, defaultLanguage);
@@ -247,9 +219,6 @@ export async function getLanguagePreference(defaultLanguage = 'en') {
 
 /**
  * Save the user's language preference
- * 
- * @param {string} language - The language code
- * @returns {Promise<boolean>} True if successful
  */
 export async function saveLanguagePreference(language) {
   return saveUserPreference(PREF_KEYS.LANGUAGE, language);
@@ -257,9 +226,6 @@ export async function saveLanguagePreference(language) {
 
 /**
  * Get the user's UI scale preference
- * 
- * @param {string} defaultScale - Default scale if preference is not set
- * @returns {Promise<string>} The UI scale value ('75', '100', '125', or '150')
  */
 export async function getUIScalePreference(defaultScale = '100') {
   return getUserPreference(PREF_KEYS.UI_SCALE, defaultScale);
@@ -267,9 +233,6 @@ export async function getUIScalePreference(defaultScale = '100') {
 
 /**
  * Save the user's UI scale preference
- * 
- * @param {string} scale - The UI scale value ('75', '100', '125', or '150')
- * @returns {Promise<boolean>} True if successful
  */
 export async function saveUIScalePreference(scale) {
   return saveUserPreference(PREF_KEYS.UI_SCALE, scale);
@@ -277,9 +240,6 @@ export async function saveUIScalePreference(scale) {
 
 /**
  * Get the user's UI density preference
- * 
- * @param {string} defaultDensity - Default density if preference is not set
- * @returns {Promise<string>} The UI density value ('compact', 'normal', or 'comfortable')
  */
 export async function getUIDensityPreference(defaultDensity = 'normal') {
   return getUserPreference(PREF_KEYS.UI_DENSITY, defaultDensity);
@@ -287,9 +247,6 @@ export async function getUIDensityPreference(defaultDensity = 'normal') {
 
 /**
  * Save the user's UI density preference
- * 
- * @param {string} density - The UI density value ('compact', 'normal', or 'comfortable')
- * @returns {Promise<boolean>} True if successful
  */
 export async function saveUIDensityPreference(density) {
   return saveUserPreference(PREF_KEYS.UI_DENSITY, density);
@@ -297,30 +254,20 @@ export async function saveUIDensityPreference(density) {
 
 /**
  * Get the user's sidebar collapsed state
- * 
- * @param {boolean} defaultCollapsed - Default state if preference is not set
- * @returns {Promise<boolean>} True if sidebar is collapsed
  */
 export async function getSidebarCollapsedState(defaultCollapsed = false) {
-  const value = await getUserPreference(PREF_KEYS.SIDEBAR_COLLAPSED, String(defaultCollapsed));
-  return value === 'true';
+  return getUserPreference(PREF_KEYS.SIDEBAR_COLLAPSED, defaultCollapsed);
 }
 
 /**
  * Save the user's sidebar collapsed state
- * 
- * @param {boolean} isCollapsed - True if sidebar is collapsed
- * @returns {Promise<boolean>} True if successful
  */
 export async function saveSidebarCollapsedState(isCollapsed) {
-  return saveUserPreference(PREF_KEYS.SIDEBAR_COLLAPSED, String(isCollapsed));
+  return saveUserPreference(PREF_KEYS.SIDEBAR_COLLAPSED, isCollapsed);
 }
 
 /**
  * Get the user's onboarding status
- * 
- * @param {string} defaultStatus - Default status if preference is not set
- * @returns {Promise<string>} The onboarding status ('not_started', 'in_progress', or 'completed')
  */
 export async function getOnboardingStatus(defaultStatus = 'not_started') {
   return getUserPreference(PREF_KEYS.ONBOARDING_STATUS, defaultStatus);
@@ -328,111 +275,51 @@ export async function getOnboardingStatus(defaultStatus = 'not_started') {
 
 /**
  * Get the user's current onboarding step
- * 
- * @param {string} defaultStep - Default step if preference is not set
- * @returns {Promise<string>} The onboarding step
  */
 export async function getOnboardingStep(defaultStep = 'business_info') {
   return getUserPreference(PREF_KEYS.ONBOARDING_STEP, defaultStep);
 }
 
 /**
- * Update the user's onboarding data
- * 
- * @param {Object} data - Object with status and step properties
- * @returns {Promise<boolean>} True if successful
+ * Update onboarding data
  */
 export async function updateOnboardingData(data) {
   const attributes = {};
   
-  if (data.status) {
+  if (data.status !== undefined) {
     attributes[PREF_KEYS.ONBOARDING_STATUS] = data.status;
   }
-  
-  if (data.step) {
+  if (data.step !== undefined) {
     attributes[PREF_KEYS.ONBOARDING_STEP] = data.step;
+  }
+  if (data.freePlanComplete !== undefined) {
+    attributes[PREF_KEYS.FREE_PLAN_ONBOARDING_COMPLETE] = data.freePlanComplete;
   }
   
   return saveUserPreferences(attributes);
 }
 
 /**
- * Create a Cognito-based language detector for i18next
- * 
- * @returns {Object} A language detector compatible with i18next
+ * Get language detector for i18n (Auth0 compatible)
  */
 export function getCognitoLanguageDetector() {
   return {
-    name: 'cognitoDetector',
-    
-    lookup: async function() {
+    name: 'auth0LanguageDetector',
+    lookup: async () => {
       try {
-        // Check if we're on a public page - skip Cognito lookup
-        if (typeof window !== 'undefined') {
-          const path = window.location.pathname;
-          const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
-          if (publicPaths.includes(path) || path.startsWith('/auth/')) {
-            // On public pages, just check local cache/storage
-            const cachedLang = getCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`);
-            if (cachedLang) return cachedLang;
-            
-            // Check localStorage as fallback
-            if (typeof localStorage !== 'undefined') {
-              const localLang = localStorage.getItem('i18nextLng');
-              if (localLang) return localLang;
-            }
-            
-            return null; // Let other detectors handle it
-          }
-        }
-        
-        // Check AppCache first
-        const cachedLang = getCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`);
-        if (cachedLang) {
-          return cachedLang;
-        }
-        
-        // If not in cache, get from Cognito (only for authenticated pages)
-        const langPref = await getLanguagePreference();
-        if (langPref) {
-          return langPref;
-        }
-        
-        // Check for old localStorage preference (for migration)
-        if (typeof localStorage !== 'undefined') {
-          const localLang = localStorage.getItem('i18nextLng');
-          if (localLang) {
-            // Attempt to save to Cognito in the background
-            saveLanguagePreference(localLang)
-              .then(() => {
-                // Update AppCache
-                setCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`, localLang);
-              })
-              .catch(err => {
-                logger.error('[i18n] Error saving migrated language preference:', err);
-              });
-            
-            return localLang;
-          }
-        }
-        
-        return null;
+        const lang = await getLanguagePreference();
+        return lang || 'en';
       } catch (error) {
-        logger.error('[i18n] Error in Cognito language detector:', error);
-        return null;
+        logger.error('[languageDetector] Error getting language preference:', error);
+        return 'en';
       }
     },
-    
-    cacheUserLanguage: function(lng) {
-      // Save to Cognito
-      saveLanguagePreference(lng)
-        .then(() => {
-          // Update AppCache
-          setCacheValue(`user_pref_${PREF_KEYS.LANGUAGE}`, lng);
-        })
-        .catch(err => {
-          logger.error('[i18n] Error saving language preference:', err);
-        });
+    cacheUserLanguage: async (lng) => {
+      try {
+        await saveLanguagePreference(lng);
+      } catch (error) {
+        logger.error('[languageDetector] Error saving language preference:', error);
+      }
     }
   };
 } 

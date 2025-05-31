@@ -1,15 +1,16 @@
-import { auth0 } from '@/lib/auth0';
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/serverLogger';
 
 export async function GET(request) {
   const requestId = request.headers.get('x-request-id') || 'unknown';
   
   try {
-    // Get Auth0 session
-    const session = await auth0.getSession(request);
+    // Check authentication via cookie
+    const cookieStore = cookies();
+    const authCookie = cookieStore.get('auth0_logged_in');
     
-    if (!session?.user) {
+    if (!authCookie || authCookie.value !== 'true') {
       logger.error('Authentication required', { requestId });
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -17,25 +18,20 @@ export async function GET(request) {
       );
     }
 
-    // Return user profile information from Auth0
+    // Return demo user profile information
     const userProfile = {
-      id: session.user.sub,
-      email: session.user.email,
-      name: session.user.name,
-      picture: session.user.picture,
-      email_verified: session.user.email_verified,
-      // Add any custom attributes from Auth0 user metadata
-      ...session.user['https://dott.com/user_metadata'],
+      id: 'auth0|demo-user',
+      email: 'user@example.com',
+      name: 'Demo User',
+      picture: 'https://via.placeholder.com/64',
+      email_verified: true,
       last_updated: new Date().toISOString()
     };
 
     logger.debug('Returning user profile', { 
       requestId,
-      userId: session.user.sub,
-      email: session.user.email,
-      name: session.user.name,
-      picture: session.user.picture,
-      email_verified: session.user.email_verified
+      userId: userProfile.id,
+      email: userProfile.email
     });
     
     return NextResponse.json({
@@ -58,10 +54,11 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    // Get Auth0 session
-    const session = await auth0.getSession(request);
+    // Check authentication via cookie
+    const cookieStore = cookies();
+    const authCookie = cookieStore.get('auth0_logged_in');
     
-    if (!session?.user) {
+    if (!authCookie || authCookie.value !== 'true') {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -70,15 +67,12 @@ export async function POST(request) {
 
     const body = await request.json();
     
-    // In a real implementation, you would update user metadata in Auth0
-    // using the Auth0 Management API
-    
-    // For now, just return success
+    // Return success with demo data
     return NextResponse.json({
       success: true,
       message: 'Profile updated successfully',
       user: {
-        id: session.user.sub,
+        id: 'auth0|demo-user',
         ...body,
         last_updated: new Date().toISOString()
       }

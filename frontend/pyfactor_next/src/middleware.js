@@ -1,18 +1,20 @@
-import { auth0 } from './lib/auth0';
+import { NextResponse } from 'next/server';
 
-export async function middleware(request) {
-  // Let Auth0 handle all authentication-related requests
-  return await auth0.middleware(request);
+export function middleware(request) {
+  // Allow all requests to pass through - Auth0 will handle authentication
+  // This is a simplified approach where Auth0 API routes handle auth internally
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      */
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 }; 

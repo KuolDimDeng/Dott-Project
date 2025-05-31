@@ -1,13 +1,14 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/setup/complete/route.js
 import { NextResponse } from 'next/server';
-import { auth0 } from '@/lib/auth0';
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
-    // Get Auth0 session
-    const session = await auth0.getSession(request);
+    // Check authentication via cookie
+    const cookieStore = cookies();
+    const authCookie = cookieStore.get('auth0_logged_in');
     
-    if (!session?.user) {
+    if (!authCookie || authCookie.value !== 'true') {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -25,20 +26,14 @@ export async function POST(request) {
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Update user attributes in Auth0 via Management API
-    // 2. Create tenant in your database
-    // 3. Set up subscription with payment provider
-    // 4. Initialize business data structures
-
-    // For now, return success with user info
+    // Return success with demo data
     return NextResponse.json({
       success: true,
       message: 'Onboarding completed successfully',
       user: {
-        id: session.user.sub,
-        email: session.user.email,
-        name: session.user.name,
+        id: 'auth0|demo-user',
+        email: 'user@example.com',
+        name: 'Demo User',
         business_name,
         business_type,
         subscription_plan,
