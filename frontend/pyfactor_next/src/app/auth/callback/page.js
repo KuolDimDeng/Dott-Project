@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CircularProgress } from '@/components/ui/TailwindComponents';
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
@@ -75,7 +74,7 @@ export default function Auth0CallbackPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
-          <CircularProgress size={48} />
+          <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
           <h2 className="text-xl font-semibold text-gray-900">Authenticating...</h2>
           <p className="text-gray-600">{status}</p>
         </div>
@@ -99,7 +98,7 @@ export default function Auth0CallbackPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            <CircularProgress size={48} />
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
             <h2 className="text-xl font-semibold text-gray-900">{status}</h2>
             {user && (
               <div className="text-sm text-gray-600">
