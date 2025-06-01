@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 import { logger } from '@/utils/logger';
 import { getCurrentUser } from '@/services/userService';
@@ -10,8 +9,9 @@ import { getOnboardingStatus } from '@/utils/onboardingUtils_Auth0';
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
-  const { user, error: auth0Error, isLoading } = useUser();
+  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState('Completing authentication...');
   const [redirectHandled, setRedirectHandled] = useState(false);
 
@@ -23,28 +23,25 @@ export default function Auth0CallbackPage() {
       }
 
       try {
-        // Wait for Auth0 to complete loading
-        if (isLoading) {
-          return;
+        setStatus('Verifying authentication...');
+        
+        // Get session from our API route
+        const sessionResponse = await fetch('/api/auth/session');
+        const sessionData = await sessionResponse.json();
+        
+        if (!sessionData.user) {
+          throw new Error(sessionData.error || 'No user session found');
         }
-
-        // Handle Auth0 errors
-        if (auth0Error) {
-          throw new Error(auth0Error.message || 'Authentication failed');
-        }
-
-        if (!user) {
-          // Still loading or no user - wait a bit more
-          logger.debug('[Auth0Callback] No user yet, waiting...');
-          return;
-        }
-
+        
+        setUser(sessionData.user);
+        setIsLoading(false);
+        
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
 
         logger.debug('[Auth0Callback] Processing Auth0 callback for user:', {
-          email: user.email,
-          sub: user.sub
+          email: sessionData.user.email,
+          sub: sessionData.user.sub
         });
         
         setStatus('Loading your profile...');
@@ -57,8 +54,8 @@ export default function Auth0CallbackPage() {
           logger.error('[Auth0Callback] Failed to get backend user:', error);
           // If backend fails, use Auth0 user data for basic routing
           backendUser = {
-            email: user.email,
-            sub: user.sub,
+            email: sessionData.user.email,
+            sub: sessionData.user.sub,
             needsOnboarding: true,
             tenantId: null
           };
@@ -120,6 +117,7 @@ export default function Auth0CallbackPage() {
       } catch (error) {
         logger.error('[Auth0Callback] Error in callback handler:', error);
         setError(error.message || 'Authentication failed');
+        setIsLoading(false);
         setRedirectHandled(true);
         
         // Delay redirect to show error
@@ -130,16 +128,16 @@ export default function Auth0CallbackPage() {
     };
 
     handleCallback();
-  }, [user, auth0Error, isLoading, router, redirectHandled]);
+  }, [router, redirectHandled]);
 
-  // Show loading while Auth0 is still loading
+  // Show loading while checking session
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center space-y-4">
           <CircularProgress size={48} />
           <h2 className="text-xl font-semibold text-gray-900">Authenticating...</h2>
-          <p className="text-gray-600">Please wait while we complete your sign in...</p>
+          <p className="text-gray-600">{status}</p>
         </div>
       </div>
     );
@@ -163,6 +161,11 @@ export default function Auth0CallbackPage() {
           <div className="space-y-4">
             <CircularProgress size={48} />
             <h2 className="text-xl font-semibold text-gray-900">{status}</h2>
+            {user && (
+              <div className="text-sm text-gray-600">
+                <p>Welcome back, {user.name || user.email}!</p>
+              </div>
+            )}
             <div className="text-sm text-gray-500 space-y-1">
               <p>🎯 Smart routing in progress...</p>
               <div className="text-xs text-left bg-gray-100 p-2 rounded">

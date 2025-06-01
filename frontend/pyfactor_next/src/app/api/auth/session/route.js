@@ -1,5 +1,4 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * Custom session endpoint to ensure properly formatted JSON responses
@@ -8,37 +7,36 @@ import { cookies } from 'next/headers';
  */
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
-    const authCookie = cookieStore.get('auth0_logged_in');
-    const userCookie = cookieStore.get('auth0_user');
+    // Get session cookie
+    const sessionCookie = request.cookies.get('appSession');
     
-    if (!authCookie || authCookie.value !== 'true') {
-      return NextResponse.json({ user: null });
+    if (!sessionCookie) {
+      return NextResponse.json({ user: null }, { status: 200 });
     }
     
-    // Try to get user data from cookie, fallback to demo data
-    let userData;
     try {
-      userData = userCookie ? JSON.parse(userCookie.value) : null;
+      // Decode session data
+      const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      
+      // Check if session is expired
+      if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+        return NextResponse.json({ user: null, error: 'Session expired' }, { status: 200 });
+      }
+      
+      // Return user data (without sensitive tokens)
+      return NextResponse.json({
+        user: sessionData.user,
+        isAuthenticated: true,
+        expiresAt: sessionData.accessTokenExpiresAt
+      }, { status: 200 });
+      
     } catch (error) {
-      console.error('[Session] Error parsing user cookie:', error);
-      userData = null;
+      console.error('[Auth Session] Error decoding session:', error);
+      return NextResponse.json({ user: null, error: 'Invalid session' }, { status: 200 });
     }
     
-    // Return user data or demo user
-    const user = userData || {
-      sub: 'auth0|demo-user',
-      email: 'user@example.com',
-      name: 'Demo User',
-      picture: 'https://via.placeholder.com/64',
-      email_verified: true
-    };
-    
-    console.log('[Session] Returning user:', { id: user.sub, email: user.email });
-    
-    return NextResponse.json({ user });
   } catch (error) {
-    console.error('[Session] Error getting session:', error);
-    return NextResponse.json({ user: null });
+    console.error('[Auth Session] Error:', error);
+    return NextResponse.json({ user: null, error: 'Internal error' }, { status: 500 });
   }
 } 

@@ -46,9 +46,9 @@ export async function GET(request, { params }) {
           return NextResponse.redirect(new URL(`/auth/signin?error=${error}`, request.url));
         }
         
-        if (!code) {
-          console.error('[Auth0 Callback] No authorization code received');
-          return NextResponse.redirect(new URL('/auth/signin?error=no_code', request.url));
+        if (!code || !state) {
+          console.error('[Auth0 Callback] Missing code or state parameter');
+          return NextResponse.redirect(new URL('/auth/signin?error=missing_params', request.url));
         }
         
         try {
@@ -68,31 +68,71 @@ export async function GET(request, { params }) {
           });
           
           if (!tokenResponse.ok) {
+            const errorData = await tokenResponse.text();
+            console.error('[Auth0 Callback] Token exchange failed:', errorData);
             throw new Error('Failed to exchange code for tokens');
           }
           
           const tokens = await tokenResponse.json();
+          console.log('[Auth0 Callback] Token exchange successful');
           
-          // Create response with tokens in secure cookies
+          // Get user info from Auth0
+          const userResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/userinfo`, {
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`
+            }
+          });
+          
+          if (!userResponse.ok) {
+            throw new Error('Failed to get user info');
+          }
+          
+          const user = await userResponse.json();
+          console.log('[Auth0 Callback] User info retrieved:', { sub: user.sub, email: user.email });
+          
+          // Create a proper Auth0 session
+          const sessionData = {
+            user: user,
+            accessToken: tokens.access_token,
+            idToken: tokens.id_token,
+            refreshToken: tokens.refresh_token,
+            accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
+            state: state
+          };
+          
+          // Create response and set Auth0 session cookie
           const response = NextResponse.redirect(new URL('/auth/callback', request.url));
           
-          // Set secure, httpOnly cookies for tokens
-          response.cookies.set('access_token', tokens.access_token, {
+          // Set the Auth0 session cookie that the provider expects
+          const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+          response.cookies.set('appSession', sessionCookie, {
             httpOnly: true,
             secure: true,
             sameSite: 'lax',
-            maxAge: tokens.expires_in || 3600
+            maxAge: tokens.expires_in || 3600,
+            path: '/'
+          });
+          
+          // Also set individual tokens for easier access
+          response.cookies.set('auth0_access_token', tokens.access_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: tokens.expires_in || 3600,
+            path: '/'
           });
           
           if (tokens.id_token) {
-            response.cookies.set('id_token', tokens.id_token, {
+            response.cookies.set('auth0_id_token', tokens.id_token, {
               httpOnly: true,
               secure: true,
               sameSite: 'lax',
-              maxAge: tokens.expires_in || 3600
+              maxAge: tokens.expires_in || 3600,
+              path: '/'
             });
           }
           
+          console.log('[Auth0 Callback] Session created, redirecting to frontend callback');
           return response;
           
         } catch (error) {
@@ -110,9 +150,9 @@ export async function GET(request, { params }) {
         
         // Clear session cookies
         const response = NextResponse.redirect(logoutUrl);
-        response.cookies.delete('access_token');
-        response.cookies.delete('id_token');
         response.cookies.delete('appSession');
+        response.cookies.delete('auth0_access_token');
+        response.cookies.delete('auth0_id_token');
         return response;
         
       default:
