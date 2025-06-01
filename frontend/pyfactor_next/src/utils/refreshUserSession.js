@@ -154,10 +154,10 @@ export function ensureAuthProvider() {
         window.__APP_CACHE.auth = {};
       }
       
-      // Set provider to cognito if not already set
+      // Set provider to auth0 for the current authentication system
       if (!window.__APP_CACHE.auth.provider) {
-        logger.info('[Auth] Setting missing auth provider to "cognito" in APP_CACHE');
-        window.__APP_CACHE.auth.provider = 'cognito';
+        logger.info('[Auth] Setting missing auth provider to "auth0" in APP_CACHE');
+        window.__APP_CACHE.auth.provider = 'auth0';
       }
       
       return true;
@@ -332,8 +332,8 @@ function storeTokensInAppCache(tokens) {
       window.__APP_CACHE.auth.token = tokens.accessToken; // Use access token as the primary token
       setCacheValue('token', tokens.accessToken);
       
-      // Always set the auth provider to 'cognito' to prevent "No auth provider found" errors
-      window.__APP_CACHE.auth.provider = 'cognito';
+      // Set the auth provider to 'auth0' for the current authentication system
+      window.__APP_CACHE.auth.provider = 'auth0';
       
       // Parse and store token expiry
       const decodedToken = parseJwt(tokens.accessToken);

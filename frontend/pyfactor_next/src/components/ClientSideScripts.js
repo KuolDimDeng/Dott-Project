@@ -13,12 +13,12 @@ export default function ClientSideScripts() {
     // Initialize AppCache structure
     if (!window.__APP_CACHE) {
       window.__APP_CACHE = { 
-        auth: { provider: 'cognito', initialized: true }, 
+        auth: { provider: 'auth0', initialized: true }, 
         user: {}, 
         tenant: {},
         tenants: {}
       };
-      console.log('[ClientSideScripts] AppCache initialized');
+      console.log('[ClientSideScripts] AppCache initialized with Auth0 provider');
     }
 
     // Define global functions for cache access if not already defined

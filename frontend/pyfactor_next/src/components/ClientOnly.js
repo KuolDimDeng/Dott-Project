@@ -5,28 +5,16 @@ import { SafeWrapper } from '@/utils/ContextFix';
 import PropTypes from 'prop-types';
 
 /**
- * ClientOnly component 
- * Ensures children are only rendered on the client to prevent SSR issues with:
- * - useLayoutEffect warnings
- * - Components that depend on browser APIs
- * - Third-party components with client-side-only dependencies
+ * ClientOnly component to prevent hydration mismatches
+ * This renders content only after client-side hydration is complete
  */
-export function ClientOnly({ children, fallback = null, delay = 0 }) {
+export default function ClientOnly({ children, fallback = null }) {
   const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    // Use optional delay to ensure any mounting effects complete first
-    if (delay > 0) {
-      const timer = setTimeout(() => {
-        setHasMounted(true);
-      }, delay);
-      return () => clearTimeout(timer);
-    } else {
-      setHasMounted(true);
-    }
-  }, [delay]);
+    setHasMounted(true);
+  }, []);
 
-  // Return fallback during server-side rendering
   if (!hasMounted) {
     return fallback;
   }
@@ -46,9 +34,5 @@ ClientOnly.propTypes = {
     PropTypes.node,
     PropTypes.func
   ]).isRequired,
-  fallback: PropTypes.node,
-  delay: PropTypes.number
+  fallback: PropTypes.node
 };
-
-// Add named export and default export
-export default ClientOnly;

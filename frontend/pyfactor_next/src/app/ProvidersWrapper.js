@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { Auth0Provider } from '@auth0/nextjs-auth0';
 import { Toaster } from 'react-hot-toast';
@@ -12,6 +12,22 @@ import { UserProfileProvider } from '@/contexts/UserProfileContext';
  * Providers wrapper with CookiesProvider and Auth0Provider
  */
 export default function ProvidersWrapper({ children }) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after client-side mount
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // During SSR and before hydration, render a minimal version
+  if (!isMounted) {
+    return (
+      <div suppressHydrationWarning>
+        {children}
+      </div>
+    );
+  }
+
   return (
     <CookiesProvider>
       <Auth0Provider>
