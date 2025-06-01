@@ -1,11 +1,13 @@
-# Core Django
-Django==4.2.10
+# Core Django - Updated to 4.2.16 to resolve django-allauth dependency conflict
+Django==4.2.16
 gunicorn==20.1.0
 whitenoise==6.5.0
 
 # Database
 psycopg2-binary==2.9.9
 asyncpg==0.29.0
+
+# Database connection pool - using compatible version
 django-db-connection-pool==1.2.4
 
 # WebSocket and Channels
@@ -33,73 +35,57 @@ django-cors-headers==4.7.0
 # Additional Django packages
 django-countries==7.6.1
 django-phonenumber-field==8.1.0
-phonenumbers==9.0.6
+phonenumbers==8.13.45
 django-cryptography==1.1
 django-celery-beat==2.8.1
 django-extensions==4.1
 django-filter==24.3
 django-timezone-field==7.1
 
-# Logging - CRITICAL: This was missing and causing the pythonjsonlogger error
+# Logging - CRITICAL: This was missing and causing the original pythonjsonlogger error
 python-json-logger==2.0.7
 
-# Redis and Celery
+# Cache and message broker
 redis==6.2.0
+
+# Task queue
 celery==5.5.3
 
-# HTTP and Requests
+# Utilities and tools
 requests==2.32.3
-urllib3==2.4.0
+python-dotenv==1.1.0
 
-# Date and Time
-python-dateutil==2.9.0
-python-crontab==3.2.0
-
-# JSON processing
-orjson==3.10.7
-
-# Payments
-stripe==12.2.0
-
-# Google OAuth
-google-auth==2.35.0
-google-auth-oauthlib==1.2.1
-google-auth-httplib2==0.2.0
-
-# Additional message queue dependencies
-kombu==5.5.4
-
-# Utilities
-python-dotenv==1.0.1
-
-# Additional allauth dependencies
-requests-oauthlib==1.3.1
-oauthlib==3.2.2
-
-# Essential dependencies for common Django functionality
+# File handling
+Pillow==10.4.0
 python-barcode==0.15.1
-PyPDF2==3.0.1
-beautifulsoup4==4.12.2
-Pillow==11.2.1
 
-# Other dependencies
-six==1.17.0
-charset-normalizer==3.4.2
-idna==3.10
-pycparser==2.22
-cffi==1.17.1
-asgiref==3.8.1
-sqlparse==0.5.3
-typing-extensions==4.13.2
-django-appconf==1.1.0
+# Environment variables
+python-dotenv==1.1.0
+
+# Additional dependencies (from original requirements.txt)
+python-crontab==3.2.0
 cron-descriptor==1.4.5
+django-postgrespool2==2.0.5
 
-# Django REST framework dependencies
-pytz==2024.1
-tzdata==2025.2
-
-# Additional packages for stability
-jmespath==1.0.1
+# AWS and cloud storage
 s3transfer==0.13.0
+
+# Additional Python packages
+six==1.17.0
+sqlparse==0.5.3
+typing_extensions==4.13.2
+tzdata==2025.2
+urllib3==2.4.0
+wcwidth==0.2.13
+vine==5.1.0
+kombu==5.5.4
+billiard==4.2.1
+amqp==5.3.1
+click==8.2.1
+click-didyoumean==0.3.1
+click-plugins==1.1.1
+click-repl==0.3.0
+packaging==25.0
+prompt-toolkit==3.0.51
 msgpack==1.1.0
 certifi==2025.4.26
