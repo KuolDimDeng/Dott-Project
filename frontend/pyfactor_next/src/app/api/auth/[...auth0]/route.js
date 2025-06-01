@@ -16,6 +16,7 @@ export async function GET(request, { params }) {
   try {
     const { auth0: authParams } = await params;
     const authRoute = authParams?.join('/');
+    const url = new URL(request.url);
     
     console.log('[Auth0 Route] GET request:', { route: authRoute });
     
@@ -35,8 +36,69 @@ export async function GET(request, { params }) {
         return NextResponse.redirect(loginUrl);
         
       case 'callback':
-        // Handle callback - this should be handled by the callback route
-        return NextResponse.redirect(new URL('/auth/callback', request.url));
+        // Handle OAuth callback from Auth0
+        const code = url.searchParams.get('code');
+        const state = url.searchParams.get('state');
+        const error = url.searchParams.get('error');
+        
+        if (error) {
+          console.error('[Auth0 Callback] Error from Auth0:', error);
+          return NextResponse.redirect(new URL(`/auth/signin?error=${error}`, request.url));
+        }
+        
+        if (!code) {
+          console.error('[Auth0 Callback] No authorization code received');
+          return NextResponse.redirect(new URL('/auth/signin?error=no_code', request.url));
+        }
+        
+        try {
+          // Exchange code for tokens
+          const tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              grant_type: 'authorization_code',
+              client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+              client_secret: process.env.AUTH0_CLIENT_SECRET,
+              code: code,
+              redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+            }),
+          });
+          
+          if (!tokenResponse.ok) {
+            throw new Error('Failed to exchange code for tokens');
+          }
+          
+          const tokens = await tokenResponse.json();
+          
+          // Create response with tokens in secure cookies
+          const response = NextResponse.redirect(new URL('/auth/callback', request.url));
+          
+          // Set secure, httpOnly cookies for tokens
+          response.cookies.set('access_token', tokens.access_token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: tokens.expires_in || 3600
+          });
+          
+          if (tokens.id_token) {
+            response.cookies.set('id_token', tokens.id_token, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+              maxAge: tokens.expires_in || 3600
+            });
+          }
+          
+          return response;
+          
+        } catch (error) {
+          console.error('[Auth0 Callback] Token exchange failed:', error);
+          return NextResponse.redirect(new URL('/auth/signin?error=token_exchange_failed', request.url));
+        }
         
       case 'logout':
         // Handle logout
@@ -48,6 +110,8 @@ export async function GET(request, { params }) {
         
         // Clear session cookies
         const response = NextResponse.redirect(logoutUrl);
+        response.cookies.delete('access_token');
+        response.cookies.delete('id_token');
         response.cookies.delete('appSession');
         return response;
         
