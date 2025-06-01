@@ -24,9 +24,10 @@ urlpatterns = [
     # Admin interface
     path('admin/', admin.site.urls),
     
-    # Health check endpoints for AWS
+    # Health check endpoints for AWS and Render
     path('health/', health_check, name='health_check'),
     path('health-check/', health_check, name='health_check_alt'),
+    path('healthz', health_check, name='health_check_render'),  # Render health check endpoint
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
 ]
 

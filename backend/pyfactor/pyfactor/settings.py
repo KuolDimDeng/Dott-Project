@@ -435,7 +435,7 @@ CELERY_QUEUES = {
 # Define crontab function here to avoid import issues
 def get_crontab(*args, **kwargs):
     try:
-        from django_celery_beat.schedulers import crontab
+        from celery.schedules import crontab
         return crontab(*args, **kwargs)
     except ImportError:
         return None
@@ -864,11 +864,11 @@ if DEBUG and not IS_ASGI:  # Make sure DEBUG is True as well
 
 DATABASES = {
     'default': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'dott_main'),
-        'USER': os.getenv('DB_USER', 'dott_admin'),
-        'PASSWORD': os.getenv('DB_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
-        'HOST': os.getenv('DB_HOST', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
+        'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
+        'NAME': os.getenv('DB_NAME', 'dott_production'),
+        'USER': os.getenv('DB_USER', 'dott_user'),
+        'PASSWORD': os.getenv('DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'HOST': os.getenv('DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('DB_PORT', '5432'),
         'TIME_ZONE': 'UTC',
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
@@ -888,23 +888,23 @@ DATABASES = {
             
             
         },
-        'POOL_OPTIONS': {
-            'POOL_SIZE': 5,            # Reduced from 20
-            'MAX_OVERFLOW': 2,         # Reduced from 10
-            'RECYCLE': 300,            # Keep at 300 seconds
-            'TIMEOUT': 30,             # Keep at 30 seconds
-            'RETRY': 3,                # Keep at 3
-            'RECONNECT': True,
-            'DISABLE_POOLING': False,
-        }
+        # 'POOL_OPTIONS': {  # Commented out since we're not using connection pool temporarily
+        #     'POOL_SIZE': 5,            # Reduced from 20
+        #     'MAX_OVERFLOW': 2,         # Reduced from 10
+        #     'RECYCLE': 300,            # Keep at 300 seconds
+        #     'TIMEOUT': 30,             # Keep at 30 seconds
+        #     'RETRY': 3,                # Keep at 3
+        #     'RECONNECT': True,
+        #     'DISABLE_POOLING': False,
+        # }
     },
 
     'taxes': {
-        'ENGINE': 'dj_db_conn_pool.backends.postgresql',
-        'NAME': os.getenv('TAX_DB_NAME', 'dott_main'),
-        'USER': os.getenv('TAX_DB_USER', 'dott_admin'),
-        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
-        'HOST': os.getenv('TAX_DB_HOST', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
+        'ENGINE': 'django.db.backends.postgresql',  # Temporarily changed from dj_db_conn_pool.backends.postgresql
+        'NAME': os.getenv('TAX_DB_NAME', 'dott_production'),
+        'USER': os.getenv('TAX_DB_USER', 'dott_user'),
+        'PASSWORD': os.getenv('TAX_DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'HOST': os.getenv('TAX_DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
         'PORT': os.getenv('TAX_DB_PORT', '5432'),
         'CONN_MAX_AGE': 0,  # Set to 0 to let the pool manage connection lifetime
         'OPTIONS': {
@@ -921,14 +921,14 @@ DATABASES = {
             
             
         },
-        'POOL_OPTIONS': {
-            'POOL_SIZE': 10,
-            'MAX_OVERFLOW': 5,
-            'RECYCLE': 300,
-            'TIMEOUT': 30,
-            'RETRY': 3,
-            'RECONNECT': True,
-        }
+        # 'POOL_OPTIONS': {  # Commented out since we're not using connection pool temporarily
+        #     'POOL_SIZE': 10,
+        #     'MAX_OVERFLOW': 5,
+        #     'RECYCLE': 300,
+        #     'TIMEOUT': 30,
+        #     'RETRY': 3,
+        #     'RECONNECT': True,
+        # }
     }
 }
 

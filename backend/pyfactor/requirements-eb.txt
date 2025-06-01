@@ -1,5 +1,5 @@
 # Core Django
-Django==5.1.7
+Django==4.2.10
 gunicorn==20.1.0
 whitenoise==6.5.0
 
@@ -9,46 +9,51 @@ asyncpg==0.29.0
 django-db-connection-pool==1.2.4
 
 # WebSocket and Channels
-channels==4.1.0
-channels-redis==4.2.0
+channels==4.2.2
+channels-redis==4.2.1
 daphne==4.1.2
 
 # AWS SDK
-boto3==1.34.0
-botocore==1.34.0
+boto3==1.38.27
+botocore==1.38.27
 
 # Authentication and Security
-PyJWT==2.8.0
-cryptography==42.0.8
-django-allauth==0.62.1
+PyJWT==2.9.0
+cryptography==45.0.3
+django-allauth==65.8.1
 
 # REST Framework
-djangorestframework==3.14.0
-djangorestframework-simplejwt==5.3.1
-dj-rest-auth==6.0.0
+djangorestframework==3.16.0
+djangorestframework-simplejwt==5.5.0
+dj-rest-auth==7.0.1
 
 # CORS
-django-cors-headers==4.3.1
+django-cors-headers==4.7.0
 
 # Additional Django packages
 django-countries==7.6.1
-django-phonenumber-field==7.3.0
-phonenumbers==8.13.37
+django-phonenumber-field==8.1.0
+phonenumbers==9.0.6
 django-cryptography==1.1
-django-celery-beat==2.7.0
-django-extensions==3.2.3
+django-celery-beat==2.8.1
+django-extensions==4.1
 django-filter==24.3
+django-timezone-field==7.1
+
+# Logging - CRITICAL: This was missing and causing the pythonjsonlogger error
+python-json-logger==2.0.7
 
 # Redis and Celery
-redis==5.0.0
-celery==5.4.0
+redis==6.2.0
+celery==5.5.3
 
 # HTTP and Requests
 requests==2.32.3
-urllib3==2.0.7
+urllib3==2.4.0
 
 # Date and Time
 python-dateutil==2.9.0
+python-crontab==3.2.0
 
 # JSON processing
 orjson==3.10.7
@@ -62,7 +67,7 @@ google-auth-oauthlib==1.2.1
 google-auth-httplib2==0.2.0
 
 # Additional message queue dependencies
-kombu==5.3.4
+kombu==5.5.4
 
 # Utilities
 python-dotenv==1.0.1
@@ -75,17 +80,26 @@ oauthlib==3.2.2
 python-barcode==0.15.1
 PyPDF2==3.0.1
 beautifulsoup4==4.12.2
+Pillow==11.2.1
 
 # Other dependencies
-six==1.16.0
-charset-normalizer==3.3.2
+six==1.17.0
+charset-normalizer==3.4.2
 idna==3.10
 pycparser==2.22
-cffi==1.16.0
+cffi==1.17.1
 asgiref==3.8.1
-sqlparse==0.5.1
-typing-extensions==4.12.2
+sqlparse==0.5.3
+typing-extensions==4.13.2
+django-appconf==1.1.0
+cron-descriptor==1.4.5
 
 # Django REST framework dependencies
 pytz==2024.1
-tzdata==2024.1
+tzdata==2025.2
+
+# Additional packages for stability
+jmespath==1.0.1
+s3transfer==0.13.0
+msgpack==1.1.0
+certifi==2025.4.26
