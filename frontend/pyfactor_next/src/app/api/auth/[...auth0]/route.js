@@ -165,4 +165,4 @@ export async function GET(request, { params }) {
 export async function POST(request, { params }) {
   // Handle POST requests if needed
   return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
-}// Force deployment trigger Sun Jun  1 09:33:09 MDT 2025
+}// Force deployment trigger Sun Jun  1 09:39:45 MDT 2025
