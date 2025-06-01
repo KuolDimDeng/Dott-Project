@@ -35,22 +35,24 @@ const auth0Client = new Auth0Client({
 // Handle all Auth0 routes
 export async function GET(request, { params }) {
   try {
-    // Get client IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-    
-    // Check rate limit
-    if (!checkRateLimit(ip)) {
-      console.log('[Auth0 Route] Rate limit exceeded for IP:', ip);
-      return NextResponse.json(
-        { error: 'Too many requests. Please wait a moment and try again.' },
-        { status: 429 }
-      );
-    }
-
     const { auth0: authParams } = await params;
     const authRoute = authParams?.join('/');
     const url = new URL(request.url);
     
+    // Get client IP for rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    
+    // Only apply rate limiting to login route, not callback (callback is automated from Auth0)
+    if (authRoute === 'login') {
+      if (!checkRateLimit(ip)) {
+        console.log('[Auth0 Route] Rate limit exceeded for IP:', ip);
+        return NextResponse.json(
+          { error: 'Too many requests. Please wait a moment and try again.' },
+          { status: 429 }
+        );
+      }
+    }
+
     console.log('[Auth0 Route] GET request:', { route: authRoute, ip });
     
     // Handle different auth routes
@@ -72,7 +74,7 @@ export async function GET(request, { params }) {
         return NextResponse.redirect(loginUrl);
         
       case 'callback':
-        // Handle OAuth callback from Auth0
+        // Handle OAuth callback from Auth0 (no rate limiting - this is automated)
         const code = url.searchParams.get('code');
         const callbackState = url.searchParams.get('state');
         const error = url.searchParams.get('error');

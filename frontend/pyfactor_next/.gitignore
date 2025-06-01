@@ -107,3 +107,4 @@ logs
 .vscode-test
 certificatesdeploy-package/
 .next/
+.env*.local
