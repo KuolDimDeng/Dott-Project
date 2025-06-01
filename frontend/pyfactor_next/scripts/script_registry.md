@@ -1,5 +1,5 @@
 # Frontend Scripts Registry
-Last Updated: 2025-05-25 14:30:00
+Last Updated: 2025-06-01 11:15:00
 
 ## Purpose
 This registry tracks all scripts in the frontend/pyfactor_next/scripts directory, their purpose, and execution status.
@@ -292,6 +292,38 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - Percentage completion display for progress
 - **Design Philosophy**: Sophisticated over bold, better accessibility, modern aesthetics
 - **Requirements Addressed**: Conditions 1-33 (all user requirements), modern design, improved UX
+
+### Version0039_update_conditions_cognito_to_auth0_fixed.mjs
+- **Version**: 0039 v1.0
+- **Purpose**: Update AI model request conditions from AWS Cognito to Auth0 authentication
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-01
+- **Execution Date**: 2025-06-01T11:13:38.847Z
+- **Target Files**: 
+  - /scripts/updated_ai_conditions_auth0.md (new conditions document)
+  - /src/utils/Auth0Attributes.js (new utility replacing CognitoAttributes)
+  - /docs/Auth0AttributesReference.md (new reference documentation)
+- **Description**: Migrates AI model request conditions from Cognito to Auth0, replacing Cognito-specific references with Auth0 equivalents based on attribute mapping document
+- **Key Features**:
+  - Updated conditions document with Auth0 references
+  - Auth0Attributes utility replacing CognitoAttributes
+  - Auth0AttributesReference.md replacing CognitoAttributesReference.md
+  - API response structure documentation
+  - Migration notes and examples
+  - Backup of original conditions created
+- **Migration Changes**:
+  - custom:tenant_ID → current_tenant_id (from API response)
+  - CognitoAttributes → Auth0Attributes utility
+  - fetchUserAttributes() → /api/users/me API call
+  - AWS App Cache → Auth0 session + API cache
+- **Requirements Addressed**: Conditions migration from Cognito to Auth0 per Auth0 attribute mapping
+- **Files Created**:
+  - updated_ai_conditions_auth0.md (new AI conditions)
+  - Auth0Attributes.js (replaces CognitoAttributes.js)
+  - Auth0AttributesReference.md (replaces CognitoAttributesReference.md)
+- **Backups Created**:
+  - CognitoAttributes.js.backup_20250601
+  - CognitoAttributesReference.md.backup_20250601
 
 ## Files That Will Be Modified
 
