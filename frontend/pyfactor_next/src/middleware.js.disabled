@@ -1,3 +1,7 @@
+// TEMPORARILY DISABLED - This middleware is causing 500 errors
+// The auth0.middleware method doesn't exist in @auth0/nextjs-auth0 v4.6.0
+// File renamed to middleware.js.disabled
+
 import { NextResponse } from 'next/server';
 import { auth0 } from './lib/auth0';
 
