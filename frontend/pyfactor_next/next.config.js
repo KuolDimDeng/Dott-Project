@@ -53,10 +53,10 @@ const nextConfig = {
         '@/context/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
         '@/contexts/UserProfileContext': path.resolve(__dirname, 'src/utils/stubs/user-profile-context-stub.js'),
         '@/contexts/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
-        // Replace React providers that use createContext
-        'react-cookie': path.resolve(__dirname, 'src/utils/stubs/react-cookie-stub.js'),
-        '@auth0/nextjs-auth0': path.resolve(__dirname, 'src/utils/stubs/auth0-stub.js'),
-        'next-auth/react': path.resolve(__dirname, 'src/utils/stubs/next-auth-stub.js'),
+        // Replace React providers that use createContext (but not server modules)
+        'react-cookie$': path.resolve(__dirname, 'src/utils/stubs/react-cookie-stub.js'),
+        '@auth0/nextjs-auth0$': path.resolve(__dirname, 'src/utils/stubs/auth0-stub.js'),
+        'next-auth/react$': path.resolve(__dirname, 'src/utils/stubs/next-auth-stub.js'),
       };
 
       // Skip problematic static generation in production builds
