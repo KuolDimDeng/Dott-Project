@@ -1,6 +1,27 @@
 import { Auth0Client } from '@auth0/nextjs-auth0/server';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Rate limiting storage (in production, use Redis)
+const requestCounts = new Map();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS = 10; // Max 10 requests per minute per IP
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const userRequests = requestCounts.get(ip) || [];
+  
+  // Remove old requests outside the window
+  const validRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
+  
+  if (validRequests.length >= MAX_REQUESTS) {
+    return false; // Rate limited
+  }
+  
+  validRequests.push(now);
+  requestCounts.set(ip, validRequests);
+  return true; // Allowed
+}
+
 // Create Auth0 client instance
 const auth0Client = new Auth0Client({
   domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
@@ -14,16 +35,29 @@ const auth0Client = new Auth0Client({
 // Handle all Auth0 routes
 export async function GET(request, { params }) {
   try {
+    // Get client IP for rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    
+    // Check rate limit
+    if (!checkRateLimit(ip)) {
+      console.log('[Auth0 Route] Rate limit exceeded for IP:', ip);
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment and try again.' },
+        { status: 429 }
+      );
+    }
+
     const { auth0: authParams } = await params;
     const authRoute = authParams?.join('/');
     const url = new URL(request.url);
     
-    console.log('[Auth0 Route] GET request:', { route: authRoute });
+    console.log('[Auth0 Route] GET request:', { route: authRoute, ip });
     
     // Handle different auth routes
     switch (authRoute) {
       case 'login':
         // Redirect to Auth0 login
+        const loginState = Math.random().toString(36).substring(7);
         const loginUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/authorize?` +
           new URLSearchParams({
             response_type: 'code',
@@ -31,28 +65,38 @@ export async function GET(request, { params }) {
             redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
             scope: 'openid profile email',
             audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/api/v2/`,
-            state: Math.random().toString(36).substring(7)
+            state: loginState
           });
+        
+        console.log('[Auth0 Route] Redirecting to Auth0 login with state:', loginState);
         return NextResponse.redirect(loginUrl);
         
       case 'callback':
         // Handle OAuth callback from Auth0
         const code = url.searchParams.get('code');
-        const state = url.searchParams.get('state');
+        const callbackState = url.searchParams.get('state');
         const error = url.searchParams.get('error');
+        
+        console.log('[Auth0 Callback] Received callback:', { 
+          hasCode: !!code, 
+          hasState: !!callbackState, 
+          error,
+          fullUrl: url.toString()
+        });
         
         if (error) {
           console.error('[Auth0 Callback] Error from Auth0:', error);
           return NextResponse.redirect(new URL(`/auth/signin?error=${error}`, request.url));
         }
         
-        if (!code || !state) {
-          console.error('[Auth0 Callback] Missing code or state parameter');
-          return NextResponse.redirect(new URL('/auth/signin?error=missing_params', request.url));
+        if (!code) {
+          console.error('[Auth0 Callback] Missing authorization code');
+          return NextResponse.redirect(new URL('/auth/signin?error=missing_code', request.url));
         }
         
         try {
           // Exchange code for tokens
+          console.log('[Auth0 Callback] Exchanging code for tokens...');
           const tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
             method: 'POST',
             headers: {
@@ -97,7 +141,7 @@ export async function GET(request, { params }) {
             idToken: tokens.id_token,
             refreshToken: tokens.refresh_token,
             accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
-            state: state
+            state: callbackState
           };
           
           // Create response and set Auth0 session cookie
