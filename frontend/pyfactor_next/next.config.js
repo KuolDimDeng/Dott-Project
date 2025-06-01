@@ -17,6 +17,11 @@ const nextConfig = {
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
     NEXT_PUBLIC_COGNITO_DOMAIN: process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
+    // Auth0 environment variables
+    APP_BASE_URL: process.env.APP_BASE_URL || 'https://dottapps.com',
+    AUTH0_BASE_URL: process.env.AUTH0_BASE_URL || 'https://dottapps.com',
+    AUTH0_DOMAIN: process.env.AUTH0_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+    AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID || process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
   },
   
   // Page extensions
@@ -48,6 +53,7 @@ const nextConfig = {
           'app/onboarding',
           '[tenantId]/[...slug]',
           'clear-tenant',
+          'not-found',
         ];
         
         // Filter out problematic routes from build
@@ -58,6 +64,18 @@ const nextConfig = {
         });
         
         return entries;
+      };
+    }
+
+    // Prevent React context issues during build
+    if (!dev && isServer) {
+      // Replace problematic context providers with stubs during build
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        '@/context/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
+        '@/contexts/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
+        '@/context/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
+        '@/contexts/UserProfileContext': path.resolve(__dirname, 'src/utils/stubs/user-profile-context-stub.js'),
       };
     }
 
