@@ -23,47 +23,34 @@ export async function GET(request, { params }) {
     // Handle different auth routes
     switch (authRoute) {
       case 'login':
-        // Redirect to Auth0 login
+        // Redirect to Auth0 login with frontend callback
         const loginState = Math.random().toString(36).substring(7);
         const loginUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/authorize?` +
           new URLSearchParams({
             response_type: 'code',
             client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`, // Frontend page instead of API
             scope: 'openid profile email',
             audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/api/v2/`,
             state: loginState
           });
         
-        console.log('[Auth0 Route] Redirecting to Auth0 login with state:', loginState);
+        console.log('[Auth0 Route] Redirecting to Auth0 login with frontend callback');
         return NextResponse.redirect(loginUrl);
         
-      case 'callback':
-        // Handle OAuth callback from Auth0
+      case 'exchange':
+        // NEW: API endpoint for token exchange (called from frontend)
         const code = url.searchParams.get('code');
-        const callbackState = url.searchParams.get('state');
-        const error = url.searchParams.get('error');
-        
-        console.log('[Auth0 Callback] Received callback:', { 
-          hasCode: !!code, 
-          hasState: !!callbackState, 
-          error,
-          fullUrl: url.toString()
-        });
-        
-        if (error) {
-          console.error('[Auth0 Callback] Error from Auth0:', error);
-          return NextResponse.redirect(new URL(`/auth/signin?error=${error}`, request.url));
-        }
+        const exchangeState = url.searchParams.get('state');
         
         if (!code) {
-          console.error('[Auth0 Callback] Missing authorization code');
-          return NextResponse.redirect(new URL('/auth/signin?error=missing_code', request.url));
+          return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 });
         }
         
         try {
+          console.log('[Auth0 Exchange] Exchanging code for tokens...');
+          
           // Exchange code for tokens
-          console.log('[Auth0 Callback] Exchanging code for tokens...');
           const tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
             method: 'POST',
             headers: {
@@ -74,18 +61,18 @@ export async function GET(request, { params }) {
               client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
               client_secret: process.env.AUTH0_CLIENT_SECRET,
               code: code,
-              redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+              redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`,
             }),
           });
           
           if (!tokenResponse.ok) {
             const errorData = await tokenResponse.text();
-            console.error('[Auth0 Callback] Token exchange failed:', errorData);
-            throw new Error('Failed to exchange code for tokens');
+            console.error('[Auth0 Exchange] Token exchange failed:', errorData);
+            return NextResponse.json({ error: 'Token exchange failed' }, { status: 400 });
           }
           
           const tokens = await tokenResponse.json();
-          console.log('[Auth0 Callback] Token exchange successful');
+          console.log('[Auth0 Exchange] Token exchange successful');
           
           // Get user info from Auth0
           const userResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/userinfo`, {
@@ -95,26 +82,26 @@ export async function GET(request, { params }) {
           });
           
           if (!userResponse.ok) {
-            throw new Error('Failed to get user info');
+            return NextResponse.json({ error: 'Failed to get user info' }, { status: 400 });
           }
           
           const user = await userResponse.json();
-          console.log('[Auth0 Callback] User info retrieved:', { sub: user.sub, email: user.email });
+          console.log('[Auth0 Exchange] User info retrieved:', { sub: user.sub, email: user.email });
           
-          // Create a proper Auth0 session
+          // Create session data
           const sessionData = {
             user: user,
             accessToken: tokens.access_token,
             idToken: tokens.id_token,
             refreshToken: tokens.refresh_token,
             accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
-            state: callbackState
+            state: exchangeState
           };
           
-          // Create response and set Auth0 session cookie
-          const response = NextResponse.redirect(new URL('/auth/callback', request.url));
+          // Set session cookies and return success
+          const response = NextResponse.json({ success: true, user: user });
           
-          // Set the Auth0 session cookie that the provider expects
+          // Set the Auth0 session cookie
           const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
           response.cookies.set('appSession', sessionCookie, {
             httpOnly: true,
@@ -143,12 +130,12 @@ export async function GET(request, { params }) {
             });
           }
           
-          console.log('[Auth0 Callback] Session created, redirecting to frontend callback');
+          console.log('[Auth0 Exchange] Session created successfully');
           return response;
           
         } catch (error) {
-          console.error('[Auth0 Callback] Token exchange failed:', error);
-          return NextResponse.redirect(new URL('/auth/signin?error=token_exchange_failed', request.url));
+          console.error('[Auth0 Exchange] Error:', error);
+          return NextResponse.json({ error: 'Token exchange failed' }, { status: 500 });
         }
         
       case 'logout':
