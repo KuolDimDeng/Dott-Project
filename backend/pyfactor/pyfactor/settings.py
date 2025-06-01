@@ -155,12 +155,12 @@ FRONTEND_URL = 'https://localhost:3000'  # Adjust this to your actual frontend U
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-fallback-key-change-in-production-1234567890abcdefghijklmnopqrstuvwxyz')
 
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG', 'False').lower() in ('true', '1', 'yes')
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -173,7 +173,16 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
 }
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+# Update ALLOWED_HOSTS for deployment
+# Read from environment variable, split by comma, and strip whitespace
+allowed_hosts_env = os.getenv('ALLOWED_HOSTS', '')
+if allowed_hosts_env:
+    ALLOWED_HOSTS = [host.strip() for host in allowed_hosts_env.split(',') if host.strip()]
+else:
+    # Fallback for local development
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '.onrender.com', '*']
+
+print(f"✅ ALLOWED_HOSTS configured: {ALLOWED_HOSTS}")
 
 # CORS and CSRF configuration
 CORS_ALLOW_CREDENTIALS = True
@@ -344,7 +353,7 @@ REDIS_HOST = '127.0.0.1'
 REDIS_PORT = 6379
 REDIS_DB = 0
 # Redis configuration (consolidate with existing Redis settings)
-REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')
 CELERY_REDIS_MAX_CONNECTIONS = 20
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     'socket_timeout': 10,
@@ -360,8 +369,8 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'{REDIS_URL}/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'{REDIS_URL}/0')
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_TASK_REMOTE_TRACEBACKS = True
@@ -507,7 +516,7 @@ MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': os.getenv('CACHE_URL', f'{REDIS_URL}/1'),
         'OPTIONS': {
             'db': 1,
             'parser_class': 'redis.connection.DefaultParser',
