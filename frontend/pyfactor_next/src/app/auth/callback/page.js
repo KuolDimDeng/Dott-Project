@@ -3,9 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
-import { logger } from '@/utils/logger';
-import { getCurrentUser } from '@/services/userService';
-import { getOnboardingStatus } from '@/utils/onboardingUtils_Auth0';
 
 export default function Auth0CallbackPage() {
   const router = useRouter();
@@ -27,6 +24,11 @@ export default function Auth0CallbackPage() {
         
         // Get session from our API route
         const sessionResponse = await fetch('/api/auth/session');
+        
+        if (!sessionResponse.ok) {
+          throw new Error(`Session API returned ${sessionResponse.status}`);
+        }
+        
         const sessionData = await sessionResponse.json();
         
         if (!sessionData.user) {
@@ -39,83 +41,21 @@ export default function Auth0CallbackPage() {
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
 
-        logger.debug('[Auth0Callback] Processing Auth0 callback for user:', {
+        console.log('[Auth0Callback] Processing Auth0 callback for user:', {
           email: sessionData.user.email,
           sub: sessionData.user.sub
         });
         
-        setStatus('Loading your profile...');
+        setStatus('Setting up your account...');
         
-        // Get complete user profile from backend
-        let backendUser;
-        try {
-          backendUser = await getCurrentUser();
-        } catch (error) {
-          logger.error('[Auth0Callback] Failed to get backend user:', error);
-          // If backend fails, use Auth0 user data for basic routing
-          backendUser = {
-            email: sessionData.user.email,
-            sub: sessionData.user.sub,
-            needsOnboarding: true,
-            tenantId: null
-          };
-        }
-        
-        logger.debug('[Auth0Callback] User profile loaded:', {
-          email: backendUser.email,
-          needsOnboarding: backendUser.needsOnboarding,
-          onboardingCompleted: backendUser.onboardingCompleted,
-          tenantId: backendUser.tenantId
-        });
-        
-        // 🎯 Smart Routing Logic Implementation
-        
-        // 1. NEW USER - No tenant or needs onboarding
-        if (backendUser.needsOnboarding || !backendUser.tenantId || !backendUser.onboardingCompleted) {
-          setStatus('Setting up your account...');
-          logger.debug('[Auth0Callback] New user detected, redirecting to onboarding');
+        // For now, always redirect to onboarding for debugging
+        console.log('[Auth0Callback] Redirecting to onboarding');
+        setTimeout(() => {
           router.push('/onboarding/business-info');
-          return;
-        }
-        
-        // 2. RETURNING USER WITH INCOMPLETE ONBOARDING
-        try {
-          const onboardingStatus = await getOnboardingStatus();
-          
-          if (onboardingStatus && onboardingStatus.status !== 'completed') {
-            setStatus('Resuming your setup...');
-            const currentStep = onboardingStatus.currentStep || 'business_info';
-            const stepRoutes = {
-              business_info: '/onboarding/business-info',
-              subscription: '/onboarding/subscription', 
-              payment: '/onboarding/payment',
-              setup: '/onboarding/setup'
-            };
-            
-            const resumeRoute = stepRoutes[currentStep] || '/onboarding/business-info';
-            logger.debug('[Auth0Callback] Resuming onboarding at step:', currentStep);
-            router.push(resumeRoute);
-            return;
-          }
-        } catch (error) {
-          logger.warn('[Auth0Callback] Could not check onboarding status:', error);
-        }
-        
-        // 3. EXISTING USER (COMPLETE) - Go to tenant dashboard
-        if (backendUser.tenantId && backendUser.onboardingCompleted) {
-          setStatus('Loading your dashboard...');
-          logger.debug('[Auth0Callback] Complete user, redirecting to tenant dashboard');
-          router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-          return;
-        }
-        
-        // Fallback: Something went wrong, go to generic dashboard
-        setStatus('Loading dashboard...');
-        logger.warn('[Auth0Callback] Fallback routing to generic dashboard');
-        router.push('/dashboard');
+        }, 1500);
         
       } catch (error) {
-        logger.error('[Auth0Callback] Error in callback handler:', error);
+        console.error('[Auth0Callback] Error in callback handler:', error);
         setError(error.message || 'Authentication failed');
         setIsLoading(false);
         setRedirectHandled(true);
@@ -167,11 +107,11 @@ export default function Auth0CallbackPage() {
               </div>
             )}
             <div className="text-sm text-gray-500 space-y-1">
-              <p>🎯 Smart routing in progress...</p>
+              <p>🎯 Authentication successful! Redirecting...</p>
               <div className="text-xs text-left bg-gray-100 p-2 rounded">
-                <div>✓ New User → /onboarding/business-info</div>
-                <div>✓ Incomplete → Resume at step</div>
-                <div>✓ Complete → /tenant/[id]/dashboard</div>
+                <div>✓ Token exchange complete</div>
+                <div>✓ Session established</div>
+                <div>✓ Routing to onboarding...</div>
               </div>
             </div>
           </div>
