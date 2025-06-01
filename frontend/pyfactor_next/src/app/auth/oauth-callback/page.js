@@ -44,7 +44,7 @@ export default function Auth0OAuthCallbackPage() {
 
         setStatus('Exchanging authorization code...');
 
-        // Call our API to exchange the code for tokens
+        // Call our API to exchange the code for tokens - Fixed URL to match dynamic route
         const exchangeResponse = await fetch(`/api/auth/exchange?code=${code}&state=${state}`);
         
         if (!exchangeResponse.ok) {

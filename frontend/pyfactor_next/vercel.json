@@ -3,15 +3,6 @@
   "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "env": {
-    "ENABLE_EXPERIMENTAL_COREPACK": "1",
-    "NEXT_PUBLIC_API_URL": "http://DottApp-clean.eba-dua2f3pi.us-east-1.elasticbeanstalk.com",
-    "BACKEND_API_URL": "http://DottApp-clean.eba-dua2f3pi.us-east-1.elasticbeanstalk.com",
-    "NODE_ENV": "production",
-    "USE_DATABASE": "true",
-    "MOCK_DATA_DISABLED": "true",
-    "PROD_MODE": "true"
-  },
   "functions": {
     "src/app/**/*.js": {
       "maxDuration": 30
