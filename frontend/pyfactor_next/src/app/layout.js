@@ -2,7 +2,7 @@
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
-import { UserProvider } from '@auth0/nextjs-auth0';
+import { Auth0Provider } from '@auth0/nextjs-auth0';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
@@ -17,7 +17,7 @@ export const metadata = {
   description: 'Streamline your business operations with Dott',
 };
 
-// Root layout with Auth0 UserProvider for client-side authentication
+// Root layout with Auth0 Provider for client-side authentication
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
@@ -25,7 +25,7 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        <UserProvider>
+        <Auth0Provider>
           {children}
           <Toaster 
             position="top-right"
@@ -37,7 +37,7 @@ export default function RootLayout({ children }) {
               },
             }}
           />
-        </UserProvider>
+        </Auth0Provider>
       </body>
     </html>
   );
