@@ -18,5 +18,29 @@
       "maxDuration": 30
     }
   },
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "routes": [
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/api/auth/$1",
+      "headers": {
+        "cache-control": "no-store, max-age=0"
+      }
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/auth/(.*)",
+      "headers": [
+        {
+          "key": "cache-control",
+          "value": "no-store, max-age=0"
+        },
+        {
+          "key": "x-robots-tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ]
 }

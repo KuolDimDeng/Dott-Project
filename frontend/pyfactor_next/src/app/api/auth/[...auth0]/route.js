@@ -1,27 +1,6 @@
 import { Auth0Client } from '@auth0/nextjs-auth0/server';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Rate limiting storage (in production, use Redis)
-const requestCounts = new Map();
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS = 10; // Max 10 requests per minute per IP
-
-function checkRateLimit(ip) {
-  const now = Date.now();
-  const userRequests = requestCounts.get(ip) || [];
-  
-  // Remove old requests outside the window
-  const validRequests = userRequests.filter(time => now - time < RATE_LIMIT_WINDOW);
-  
-  if (validRequests.length >= MAX_REQUESTS) {
-    return false; // Rate limited
-  }
-  
-  validRequests.push(now);
-  requestCounts.set(ip, validRequests);
-  return true; // Allowed
-}
-
 // Create Auth0 client instance
 const auth0Client = new Auth0Client({
   domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
@@ -39,21 +18,7 @@ export async function GET(request, { params }) {
     const authRoute = authParams?.join('/');
     const url = new URL(request.url);
     
-    // Get client IP for rate limiting
-    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-    
-    // Only apply rate limiting to login route, not callback (callback is automated from Auth0)
-    if (authRoute === 'login') {
-      if (!checkRateLimit(ip)) {
-        console.log('[Auth0 Route] Rate limit exceeded for IP:', ip);
-        return NextResponse.json(
-          { error: 'Too many requests. Please wait a moment and try again.' },
-          { status: 429 }
-        );
-      }
-    }
-
-    console.log('[Auth0 Route] GET request:', { route: authRoute, ip });
+    console.log('[Auth0 Route] GET request:', { route: authRoute });
     
     // Handle different auth routes
     switch (authRoute) {
@@ -74,7 +39,7 @@ export async function GET(request, { params }) {
         return NextResponse.redirect(loginUrl);
         
       case 'callback':
-        // Handle OAuth callback from Auth0 (no rate limiting - this is automated)
+        // Handle OAuth callback from Auth0
         const code = url.searchParams.get('code');
         const callbackState = url.searchParams.get('state');
         const error = url.searchParams.get('error');
