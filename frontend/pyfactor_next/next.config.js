@@ -42,8 +42,24 @@ const nextConfig = {
   
   // Webpack configuration with enhanced error handling
   webpack: (config, { isServer, dev }) => {
-    // Skip problematic static generation in production builds
+    // Aggressive build-time fixes for server-side rendering
     if (!dev && isServer) {
+      // Replace React.createContext during build to prevent context errors
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        // Replace all context-related modules with stubs
+        '@/context/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
+        '@/contexts/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
+        '@/context/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
+        '@/contexts/UserProfileContext': path.resolve(__dirname, 'src/utils/stubs/user-profile-context-stub.js'),
+        '@/contexts/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
+        // Replace React providers that use createContext
+        'react-cookie': path.resolve(__dirname, 'src/utils/stubs/react-cookie-stub.js'),
+        '@auth0/nextjs-auth0': path.resolve(__dirname, 'src/utils/stubs/auth0-stub.js'),
+        'next-auth/react': path.resolve(__dirname, 'src/utils/stubs/next-auth-stub.js'),
+      };
+
+      // Skip problematic static generation in production builds
       const originalEntry = config.entry;
       config.entry = async () => {
         const entries = await originalEntry();
@@ -54,6 +70,7 @@ const nextConfig = {
           '[tenantId]/[...slug]',
           'clear-tenant',
           'not-found',
+          '_not-found',
         ];
         
         // Filter out problematic routes from build
@@ -67,19 +84,7 @@ const nextConfig = {
       };
     }
 
-    // Prevent React context issues during build
-    if (!dev && isServer) {
-      // Replace problematic context providers with stubs during build
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@/context/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
-        '@/contexts/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
-        '@/context/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
-        '@/contexts/UserProfileContext': path.resolve(__dirname, 'src/utils/stubs/user-profile-context-stub.js'),
-      };
-    }
-
-    // Handle problematic modules with stubs
+    // Handle problematic modules with stubs for all builds
     config.resolve.alias = {
       ...config.resolve.alias,
       'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),

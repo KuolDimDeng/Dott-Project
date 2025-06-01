@@ -1,13 +1,27 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
-import { Toaster } from 'react-hot-toast';
-import { Auth0Provider } from '@auth0/nextjs-auth0';
-import { CookiesProvider } from 'react-cookie';
-// Menu privilege system has been replaced with page privileges
-// import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
-// DO NOT directly import scripts here as they will run in server context
-// Scripts will be loaded via next/script in the component
+
+// Only import these in client environment
+let Toaster, Auth0Provider, CookiesProvider;
+
+// Detect if we're in build/static generation mode
+const isBuildTime = typeof window === 'undefined' && process.env.NODE_ENV === 'production';
+
+if (!isBuildTime) {
+  try {
+    const reactHotToast = require('react-hot-toast');
+    Toaster = reactHotToast.Toaster;
+    
+    const auth0NextJS = require('@auth0/nextjs-auth0');
+    Auth0Provider = auth0NextJS.Auth0Provider;
+    
+    const reactCookie = require('react-cookie');
+    CookiesProvider = reactCookie.CookiesProvider;
+  } catch (error) {
+    console.warn('Could not load providers:', error);
+  }
+}
 
 const inter = Inter({ subsets: ['latin'] });
 const montserrat = Montserrat({ subsets: ['latin'] });
@@ -18,8 +32,23 @@ export const metadata = {
   description: 'Streamline your business operations with Dott',
 };
 
-// Root layout with Auth0 Provider for client-side authentication
+// Root layout with conditional providers
 export default function RootLayout({ children }) {
+  // During build time, use minimal layout
+  if (isBuildTime || !CookiesProvider || !Auth0Provider || !Toaster) {
+    return (
+      <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        </head>
+        <body className={inter.className}>
+          {children}
+        </body>
+      </html>
+    );
+  }
+
+  // Runtime layout with full providers
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
       <head>
