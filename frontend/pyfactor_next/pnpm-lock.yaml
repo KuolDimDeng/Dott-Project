@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@auth0/auth0-react':
         specifier: ^2.3.0
-        version: 2.3.0(react-dom@19.1.0)(react@19.1.0)
+        version: 2.3.0(react-dom@18.3.1)(react@18.3.1)
       '@auth0/nextjs-auth0':
         specifier: ^4.6.0
-        version: 4.6.0(next@15.3.1)(react-dom@19.1.0)(react@19.1.0)
+        version: 4.6.0(next@15.3.1)(react-dom@18.3.1)(react@18.3.1)
       '@aws-amplify/adapter-nextjs':
         specifier: ^1.6.0
         version: 1.6.0(aws-amplify@6.14.1)(next@15.3.1)
@@ -139,7 +139,7 @@ importers:
         version: 4.17.21
       next:
         specifier: 15.3.1
-        version: 15.3.1(@babel/core@7.27.1)(react-dom@19.1.0)(react@19.1.0)
+        version: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1)(react@18.3.1)
       next-auth:
         specifier: ^4.24.11
         version: 4.24.11(next@15.3.1)(react-dom@19.1.0)(react@19.1.0)
@@ -160,13 +160,13 @@ importers:
         version: 6.5.0(typescript@5.8.3)
       puppeteer:
         specifier: ^24.7.2
-        version: 24.7.2(typescript@5.8.3)
+        version: 24.7.2
       qrcode.react:
         specifier: ^4.2.0
         version: 4.2.0(react@19.1.0)
       react:
-        specifier: ^19.1.0
-        version: 19.1.0
+        specifier: ^18.3.1
+        version: 18.3.1
       react-chartjs-2:
         specifier: ^5.2.0
         version: 5.3.0(chart.js@4.4.8)(react@19.1.0)
@@ -180,8 +180,8 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0(react-dom@19.1.0)(react@19.1.0)
       react-dom:
-        specifier: ^19.1.0
-        version: 19.1.0(react@19.1.0)
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
       react-error-boundary:
         specifier: ^5.0.0
         version: 5.0.0(react@19.1.0)
@@ -297,22 +297,22 @@ packages:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
 
-  /@auth0/auth0-react@2.3.0(react-dom@19.1.0)(react@19.1.0):
+  /@auth0/auth0-react@2.3.0(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-YYTc/DWWigKC9fURufR/79h3+3DAnIzbfEzJLZ8Z4Q0BXE0azru3pKUbU+vYzS4lMAJkclwLuAbUnLjK81vCpA==}
     peerDependencies:
       react: '*'
       react-dom: '*'
     dependencies:
       '@auth0/auth0-spa-js': 2.2.0
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
     dev: false
 
   /@auth0/auth0-spa-js@2.2.0:
     resolution: {integrity: sha512-YaHHCxiSQxDb+Ju9gXOqcqgXWq8EkUSpZC4g24D3MoEBUaADKwOosrAnmjDZcslBZpnSFFdrl4dLYedAer3xlQ==}
     dev: false
 
-  /@auth0/nextjs-auth0@4.6.0(next@15.3.1)(react-dom@19.1.0)(react@19.1.0):
+  /@auth0/nextjs-auth0@4.6.0(next@15.3.1)(react-dom@18.3.1)(react@18.3.1):
     resolution: {integrity: sha512-HK+fcUW6P8/qUDQfOfntftMg6yzeZLtyfTxL/lyeOub1o/xTL9SZ2fF39nH0H6w1loB5SCAbyN1vD8xxBwINqQ==}
     peerDependencies:
       next: ^14.2.25 || ^15.2.3
@@ -322,11 +322,11 @@ packages:
       '@edge-runtime/cookies': 5.0.2
       '@panva/hkdf': 1.2.1
       jose: 5.10.0
-      next: 15.3.1(@babel/core@7.27.1)(react-dom@19.1.0)(react@19.1.0)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1)(react@18.3.1)
       oauth4webapi: 3.5.1
-      react: 19.1.0
-      react-dom: 19.1.0(react@19.1.0)
-      swr: 2.3.3(react@19.1.0)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      swr: 2.3.3(react@18.3.1)
     dev: false
 
   /@aws-amplify/adapter-nextjs@1.6.0(aws-amplify@6.14.1)(next@15.3.1):
@@ -337,7 +337,7 @@ packages:
     dependencies:
       aws-amplify: 6.14.1
       aws-jwt-verify: 4.0.1
-      next: 15.3.1(@babel/core@7.27.1)(react-dom@19.1.0)(react@19.1.0)
+      next: 15.3.1(@babel/core@7.27.1)(react-dom@18.3.1)(react@18.3.1)
     dev: false
 
   /@aws-amplify/analytics@7.0.77(@aws-amplify/core@6.11.1):
@@ -8234,6 +8234,21 @@ packages:
       typescript: 5.8.3
     dev: true
 
+  /cosmiconfig@9.0.0:
+    resolution: {integrity: sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==}
+    engines: {node: '>=14'}
+    peerDependencies:
+      typescript: '>=4.9.5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+    dependencies:
+      env-paths: 2.2.1
+      import-fresh: 3.3.1
+      js-yaml: 4.1.0
+      parse-json: 5.2.0
+    dev: false
+
   /cosmiconfig@9.0.0(typescript@5.8.3):
     resolution: {integrity: sha512-itvL5h8RETACmOTFc4UfIyB2RfEHi71Ax6E/PivVxq9NseKbOWpeyHEOIbmAw1rs8Ak0VursQNww7lf7YtUwzg==}
     engines: {node: '>=14'}
@@ -10590,6 +10605,51 @@ packages:
       uuid: 8.3.2
     dev: false
 
+  /next@15.3.1(@babel/core@7.27.1)(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-8+dDV0xNLOgHlyBxP1GwHGVaNXsmp+2NhZEYrXr24GWLHtt27YrBPbPuHvzlhi7kZNYjeJNR93IF5zfFu5UL0g==}
+    engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
+    hasBin: true
+    peerDependencies:
+      '@opentelemetry/api': ^1.1.0
+      '@playwright/test': ^1.41.2
+      babel-plugin-react-compiler: '*'
+      react: '*'
+      react-dom: '*'
+      sass: ^1.3.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+      '@playwright/test':
+        optional: true
+      babel-plugin-react-compiler:
+        optional: true
+      sass:
+        optional: true
+    dependencies:
+      '@next/env': 15.3.1
+      '@swc/counter': 0.1.3
+      '@swc/helpers': 0.5.15
+      busboy: 1.6.0
+      caniuse-lite: 1.0.30001707
+      postcss: 8.4.31
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      styled-jsx: 5.1.6(@babel/core@7.27.1)(react@18.3.1)
+    optionalDependencies:
+      '@next/swc-darwin-arm64': 15.3.1
+      '@next/swc-darwin-x64': 15.3.1
+      '@next/swc-linux-arm64-gnu': 15.3.1
+      '@next/swc-linux-arm64-musl': 15.3.1
+      '@next/swc-linux-x64-gnu': 15.3.1
+      '@next/swc-linux-x64-musl': 15.3.1
+      '@next/swc-win32-arm64-msvc': 15.3.1
+      '@next/swc-win32-x64-msvc': 15.3.1
+      sharp: 0.34.2
+    transitivePeerDependencies:
+      - '@babel/core'
+      - babel-plugin-macros
+    dev: false
+
   /next@15.3.1(@babel/core@7.27.1)(react-dom@19.1.0)(react@19.1.0):
     resolution: {integrity: sha512-8+dDV0xNLOgHlyBxP1GwHGVaNXsmp+2NhZEYrXr24GWLHtt27YrBPbPuHvzlhi7kZNYjeJNR93IF5zfFu5UL0g==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
@@ -11346,7 +11406,7 @@ packages:
       - utf-8-validate
     dev: false
 
-  /puppeteer@24.7.2(typescript@5.8.3):
+  /puppeteer@24.7.2:
     resolution: {integrity: sha512-ifYqoY6wGs0yZeFuFPn8BE9FhuveXkarF+eO18I2e/axdoCh4Qh1AE+qXdJBhdaeoPt6eRNTY4Dih29Jbq8wow==}
     engines: {node: '>=18'}
     hasBin: true
@@ -11354,7 +11414,7 @@ packages:
     dependencies:
       '@puppeteer/browsers': 2.10.2
       chromium-bidi: 4.1.1(devtools-protocol@0.0.1425554)
-      cosmiconfig: 9.0.0(typescript@5.8.3)
+      cosmiconfig: 9.0.0
       devtools-protocol: 0.0.1425554
       puppeteer-core: 24.7.2
       typed-query-selector: 2.12.0
@@ -11362,7 +11422,6 @@ packages:
       - bare-buffer
       - bufferutil
       - supports-color
-      - typescript
       - utf-8-validate
     dev: false
 
@@ -11467,6 +11526,16 @@ packages:
       date-fns: 4.1.0
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+    dev: false
+
+  /react-dom@18.3.1(react@18.3.1):
+    resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
+    peerDependencies:
+      react: '*'
+    dependencies:
+      loose-envify: 1.4.0
+      react: 18.3.1
+      scheduler: 0.23.2
     dev: false
 
   /react-dom@19.1.0(react@19.1.0):
@@ -11670,6 +11739,13 @@ packages:
       prop-types: 15.8.1
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+    dev: false
+
+  /react@18.3.1:
+    resolution: {integrity: sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==}
+    engines: {node: '>=0.10.0'}
+    dependencies:
+      loose-envify: 1.4.0
     dev: false
 
   /react@19.1.0:
@@ -11908,6 +11984,12 @@ packages:
 
   /sax@1.2.1:
     resolution: {integrity: sha512-8I2a3LovHTOpm7NV5yOyO8IHqgVsfK4+UuySrXU8YXkSRX7k6hCV9b3HrkKCr3nMpgj+0bmocaJJWpvp1oc7ZA==}
+    dev: false
+
+  /scheduler@0.23.2:
+    resolution: {integrity: sha512-UOShsPwz7NrMUqhR6t0hWjFduvOzbtv7toDH1/hIrfRNIDBnnBWd0CwJTGvTpngVlmwGCdP9/Zl/tVrDqcuYzQ==}
+    dependencies:
+      loose-envify: 1.4.0
     dev: false
 
   /scheduler@0.25.0-rc-603e6108-20241029:
@@ -12381,6 +12463,24 @@ packages:
       tinycolor2: 1.6.0
     dev: false
 
+  /styled-jsx@5.1.6(@babel/core@7.27.1)(react@18.3.1):
+    resolution: {integrity: sha512-qSVyDTeMotdvQYoHWLNGwRFJHC+i+ZvdBRYosOFgC+Wg1vx4frN2/RG/NA7SYqqvKNLf39P2LSRA2pu6n0XYZA==}
+    engines: {node: '>= 12.0.0'}
+    peerDependencies:
+      '@babel/core': '*'
+      babel-plugin-macros: '*'
+      react: '*'
+    peerDependenciesMeta:
+      '@babel/core':
+        optional: true
+      babel-plugin-macros:
+        optional: true
+    dependencies:
+      '@babel/core': 7.27.1
+      client-only: 0.0.1
+      react: 18.3.1
+    dev: false
+
   /styled-jsx@5.1.6(@babel/core@7.27.1)(react@19.1.0):
     resolution: {integrity: sha512-qSVyDTeMotdvQYoHWLNGwRFJHC+i+ZvdBRYosOFgC+Wg1vx4frN2/RG/NA7SYqqvKNLf39P2LSRA2pu6n0XYZA==}
     engines: {node: '>= 12.0.0'}
@@ -12462,14 +12562,14 @@ packages:
       picocolors: 1.1.1
     dev: true
 
-  /swr@2.3.3(react@19.1.0):
+  /swr@2.3.3(react@18.3.1):
     resolution: {integrity: sha512-dshNvs3ExOqtZ6kJBaAsabhPdHyeY4P2cKwRCniDVifBMoG/SVI7tfLWqPXriVspf2Rg4tPzXJTnwaihIeFw2A==}
     peerDependencies:
       react: '*'
     dependencies:
       dequal: 2.0.3
-      react: 19.1.0
-      use-sync-external-store: 1.5.0(react@19.1.0)
+      react: 18.3.1
+      use-sync-external-store: 1.5.0(react@18.3.1)
     dev: false
 
   /tabbable@6.2.0:
@@ -12931,6 +13031,14 @@ packages:
       detect-node-es: 1.1.0
       react: 19.1.0
       tslib: 2.8.1
+    dev: false
+
+  /use-sync-external-store@1.5.0(react@18.3.1):
+    resolution: {integrity: sha512-Rb46I4cGGVBmjamjphe8L/UnvJD+uPPtTkNvX5mZgqdbavhI4EbgIWJiIHXJ8bc/i9EQGPRh4DwEURJ552Do0A==}
+    peerDependencies:
+      react: '*'
+    dependencies:
+      react: 18.3.1
     dev: false
 
   /use-sync-external-store@1.5.0(react@19.1.0):
