@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "dottapps-clean",
   "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
@@ -19,15 +18,6 @@
     }
   },
   "regions": ["iad1"],
-  "routes": [
-    {
-      "src": "/api/auth/(.*)",
-      "dest": "/api/auth/$1",
-      "headers": {
-        "cache-control": "no-store, max-age=0"
-      }
-    }
-  ],
   "headers": [
     {
       "source": "/api/auth/(.*)",
