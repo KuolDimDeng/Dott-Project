@@ -1,11 +1,11 @@
-import { getSession } from '@auth0/nextjs-auth0/server';
+import { auth0 } from '@/lib/auth0';
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 
 export async function GET(request) {
   try {
-    // Get the Auth0 session
-    const session = await getSession(request);
+    // Get the Auth0 session using the auth0.getSession method
+    const session = await auth0.getSession(request);
     
     if (!session || !session.user) {
       logger.debug('[API /me] No authenticated user found');

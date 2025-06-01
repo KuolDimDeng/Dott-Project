@@ -1,9 +1,10 @@
-// For Auth0 v4.6.0, we need a simpler approach
-// The middleware handles auth routes automatically
-export const auth0Config = {
-  domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN || 'placeholder.auth0.com',
-  clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID || 'placeholder-client-id',
-  clientSecret: process.env.AUTH0_CLIENT_SECRET || 'placeholder-secret',
-  secret: process.env.AUTH0_SECRET || 'placeholder-secret-key-that-is-at-least-32-characters-long',
-  baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
-};
+import { Auth0Client } from '@auth0/nextjs-auth0/server';
+
+// Create the Auth0 client instance
+export const auth0 = new Auth0Client({
+  domain: process.env.AUTH0_DOMAIN,
+  clientId: process.env.AUTH0_CLIENT_ID,
+  clientSecret: process.env.AUTH0_CLIENT_SECRET,
+  baseURL: process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL,
+  secret: process.env.AUTH0_SECRET,
+});
