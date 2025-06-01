@@ -1,24 +1,37 @@
-from django.http import HttpResponse, JsonResponse
+import os
+import sys
+import logging
+import json
+from datetime import datetime
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-import json
-import logging
 
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
-@require_http_methods(["GET", "HEAD"])
 def health_check(request):
-    """
-    Simple health check endpoint for AWS Elastic Beanstalk ALB
-    Returns 200 OK for healthy status
-    """
+    """Basic health check without database dependency"""
     try:
-        logger.info("Health check endpoint accessed")
-        return HttpResponse("OK", content_type="text/plain", status=200)
+        health_data = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'service': 'pyfactor-backend',
+            'version': '1.0.0',
+            'environment': os.getenv('ENVIRONMENT', 'development'),
+            'python_version': f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
+        }
+        
+        logger.info("Health check successful")
+        return JsonResponse(health_data, status=200)
+        
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
-        return HttpResponse("UNHEALTHY", content_type="text/plain", status=500)
+        return JsonResponse({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }, status=500)
 
 @csrf_exempt
 @require_http_methods(["GET", "HEAD"])
@@ -34,48 +47,42 @@ def root_health_check(request):
         logger.error(f"Root health check failed: {str(e)}")
         return HttpResponse("UNHEALTHY", content_type="text/plain", status=500)
 
-@csrf_exempt  
-@require_http_methods(["GET", "HEAD"])
+@csrf_exempt
 def detailed_health_check(request):
-    """
-    Detailed health check with system information
-    """
+    """Detailed health check with all components"""
+    health_data = {
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'pyfactor-backend',
+        'version': '1.0.0',
+        'checks': {}
+    }
+    
     try:
-        from django.db import connections
-        import time
+        # Basic Django check
+        health_data['checks']['django'] = {'status': 'healthy'}
         
-        db_status = "healthy"
-        db_errors = []
+        # Database check (optional for basic health)
+        try:
+            from django.db import connection
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")
+            health_data['checks']['database'] = {'status': 'healthy'}
+        except Exception as db_e:
+            health_data['checks']['database'] = {
+                'status': 'unhealthy',
+                'error': str(db_e)
+            }
+            health_data['status'] = 'degraded'
         
-        # Test database connection
-        for alias in connections:
-            try:
-                connections[alias].ensure_connection()
-                logger.info(f"Database connection '{alias}' is healthy")
-            except Exception as e:
-                db_status = "unhealthy"
-                db_errors.append(f"{alias}: {str(e)}")
-                logger.error(f"Database connection '{alias}' failed: {str(e)}")
-                
-        health_data = {
-            "status": "healthy" if db_status == "healthy" else "unhealthy",
-            "database": db_status,
-            "database_errors": db_errors if db_errors else None,
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "service": "pyfactor-django"
-        }
+        return JsonResponse(health_data, status=200)
         
-        status_code = 200 if db_status == "healthy" else 500
-        logger.info(f"Detailed health check completed with status: {health_data['status']}")
-        
-        return JsonResponse(health_data, status=status_code)
     except Exception as e:
         logger.error(f"Detailed health check failed: {str(e)}")
         return JsonResponse({
-            "status": "unhealthy", 
-            "error": str(e),
-            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "service": "pyfactor-django"
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
         }, status=500)
 
 class HealthCheckMiddleware:
