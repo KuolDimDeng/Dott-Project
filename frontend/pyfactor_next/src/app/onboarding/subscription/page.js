@@ -194,8 +194,39 @@ export default function SubscriptionPage() {
   useEffect(() => {
     const checkAuth = async () => {
       if (!user && !userLoading) {
-        logger.warn('[SubscriptionPage] No authenticated user found');
-        router.push('/auth/signin?redirect=' + encodeURIComponent(window.location.pathname));
+        logger.warn('[SubscriptionPage] No authenticated user found, redirecting to Auth0 login');
+        // Redirect to Auth0 login instead of old signin route
+        window.location.href = '/api/auth/login';
+        return;
+      }
+      
+      // If user is authenticated, check if they have completed business info
+      if (user && !userLoading) {
+        try {
+          logger.debug('[SubscriptionPage] User authenticated, checking onboarding status');
+          
+          // Get user profile to check onboarding status
+          const profileResponse = await fetch('/api/auth/profile');
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json();
+            logger.debug('[SubscriptionPage] User profile:', {
+              email: profile.email,
+              needsOnboarding: profile.needsOnboarding,
+              currentStep: profile.currentStep,
+              tenantId: profile.tenantId
+            });
+            
+            // If user still needs business info, redirect them back
+            if (profile.needsOnboarding && profile.currentStep === 'business_info') {
+              logger.info('[SubscriptionPage] Business info incomplete, redirecting to business-info page');
+              router.push('/onboarding/business-info');
+              return;
+            }
+          }
+        } catch (error) {
+          logger.error('[SubscriptionPage] Error checking user profile:', error);
+          // Continue to show subscription page - user might be authenticated
+        }
       }
     };
 
