@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
           new URLSearchParams({
             response_type: 'code',
             client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`, // Frontend page instead of API
+            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
             scope: 'openid profile email',
             audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/api/v2/`,
             state: loginState
@@ -50,7 +50,7 @@ export async function GET(request, { params }) {
           domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
           clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
           hasClientSecret: !!process.env.AUTH0_CLIENT_SECRET,
-          redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`,
+          redirectUri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
           baseUrl: process.env.NEXT_PUBLIC_BASE_URL
         });
         
@@ -72,7 +72,7 @@ export async function GET(request, { params }) {
             client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
             client_secret: process.env.AUTH0_CLIENT_SECRET,
             code: code,
-            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/oauth-callback`,
+            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
           };
           
           console.log('[Auth0 Exchange] Token request body:', {
