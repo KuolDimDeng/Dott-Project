@@ -95,6 +95,20 @@ export async function GET(request) {
             }
           }
           
+          // Fallback: Check individual cookies for onboarding status
+          const businessInfoCompletedCookie = cookieStore.get('businessInfoCompleted')?.value;
+          const onboardingStepCookie = cookieStore.get('onboardingStep')?.value;
+          
+          if (!sessionOnboardingData.currentStep && (businessInfoCompletedCookie === 'true' || onboardingStepCookie === 'subscription')) {
+            sessionOnboardingData = {
+              currentStep: 'subscription',
+              needsOnboarding: true,
+              onboardingCompleted: false,
+              businessInfoCompleted: true
+            };
+            console.log('[Auth Profile] Using individual cookies for onboarding status:', sessionOnboardingData);
+          }
+          
           // Merge Auth0 data with backend profile data, prioritizing session data for onboarding
           const completeProfile = {
             ...user, // Auth0 user data (email, name, picture, sub)
@@ -152,6 +166,28 @@ export async function GET(request) {
         }
       } catch (parseError) {
         console.error('[Auth Profile] Error parsing session for fallback profile:', parseError);
+      }
+    }
+    
+    // Additional fallback: Check individual cookies for onboarding status
+    if (basicProfile.currentStep === 'business_info') {
+      try {
+        const businessInfoCompletedCookie = cookieStore.get('businessInfoCompleted')?.value;
+        const onboardingStepCookie = cookieStore.get('onboardingStep')?.value;
+        
+        if (businessInfoCompletedCookie === 'true' || onboardingStepCookie === 'subscription') {
+          basicProfile.currentStep = 'subscription';
+          basicProfile.needsOnboarding = true;
+          basicProfile.onboardingCompleted = false;
+          basicProfile.businessInfoCompleted = true;
+          basicProfile.source = 'auth0-with-individual-cookies';
+          console.log('[Auth Profile] Updated basic profile with individual cookies:', {
+            currentStep: basicProfile.currentStep,
+            needsOnboarding: basicProfile.needsOnboarding
+          });
+        }
+      } catch (cookieError) {
+        console.error('[Auth Profile] Error checking individual cookies:', cookieError);
       }
     }
     
