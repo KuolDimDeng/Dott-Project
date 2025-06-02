@@ -1,6 +1,7 @@
 'use client';
 
 import { Auth0Provider } from '@auth0/nextjs-auth0';
+import { logger } from '@/utils/logger';
 
 // Auth0 configuration
 export const auth0Config = {
@@ -78,4 +79,99 @@ export const auth0Utils = {
     }
     return null;
   }
-}; 
+};
+
+/**
+ * Fetch Auth0 session data as fallback when API calls fail
+ * @returns {Promise<Object|null>} Auth0 session data in profile format
+ */
+export async function fetchAuth0SessionData() {
+  try {
+    logger.debug('[Auth0] Fetching session data as fallback');
+    
+    // Try to get session from our Auth0 session API
+    const response = await fetch('/api/auth/session', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Auth0 session API returned ${response.status}`);
+    }
+    
+    const sessionData = await response.json();
+    
+    if (!sessionData.user) {
+      throw new Error('No user data in Auth0 session');
+    }
+    
+    // Transform Auth0 session data to profile format
+    const user = sessionData.user;
+    const profileData = {
+      profile: {
+        id: user.sub,
+        userId: user.sub,
+        email: user.email,
+        name: user.name,
+        firstName: user.given_name || '',
+        lastName: user.family_name || '',
+        tenantId: user.tenantId || user.tenant_id || localStorage.getItem('tenant_id') || '',
+        role: user.userRole || user['custom:userrole'] || 'user',
+        businessName: user.businessName || user['custom:businessname'] || '',
+        businessType: user.businessType || user['custom:businesstype'] || '',
+        subscriptionPlan: user.subscriptionPlan || user['custom:subplan'] || 'free',
+        subscriptionStatus: user.subscriptionStatus || user['custom:subscriptionstatus'] || 'active',
+        onboardingStatus: user.onboardingStatus || user['custom:onboarding'] || 'completed',
+        setupDone: user.setupDone === true || user['custom:setupdone'] === 'TRUE',
+        picture: user.picture,
+        email_verified: user.email_verified,
+        updated_at: user.updated_at,
+        preferences: {
+          theme: 'light',
+          notificationsEnabled: true,
+          language: user.language || 'en'
+        }
+      }
+    };
+    
+    logger.info('[Auth0] Session data fetched successfully for fallback');
+    return profileData;
+    
+  } catch (error) {
+    logger.warn('[Auth0] Failed to fetch session data for fallback:', error.message);
+    
+    // Try to create a minimal profile from localStorage
+    if (typeof window !== 'undefined') {
+      const email = localStorage.getItem('email') || '';
+      const tenantId = localStorage.getItem('tenant_id') || localStorage.getItem('tenantId') || '';
+      const businessName = localStorage.getItem('businessName') || '';
+      
+      if (email || tenantId) {
+        logger.debug('[Auth0] Creating minimal profile from localStorage');
+        return {
+          profile: {
+            id: null,
+            email: email,
+            name: '',
+            firstName: '',
+            lastName: '',
+            tenantId: tenantId,
+            role: 'user',
+            businessName: businessName,
+            isMinimalProfile: true,
+            source: 'localStorage',
+            preferences: {
+              theme: 'light',
+              notificationsEnabled: true
+            }
+          }
+        };
+      }
+    }
+    
+    return null;
+  }
+} 

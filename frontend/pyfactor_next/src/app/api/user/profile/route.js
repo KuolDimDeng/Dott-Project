@@ -1,86 +1,24 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { isValidUUID } from '@/utils/tenantUtils';
-import { validateServerSession } from '@/utils/serverAuth';
+import { cookies } from 'next/headers';
 
 /**
  * API endpoint for fetching user profile data
- * Uses proper token-based authentication instead of server-side Cognito calls
+ * Updated for Auth0 custom domain integration
  */
 export async function GET(request) {
   const requestId = Math.random().toString(36).substring(2, 9);
   
   try {
-    logger.debug(`[UserProfile API] Fetching profile, request ${requestId}`);
+    logger.debug(`[UserProfile API] Fetching profile with Auth0 session, request ${requestId}`);
     
-    // Try multiple authentication methods for better compatibility
-    let sessionData = null;
+    // Get Auth0 session from cookies
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
-    // Method 1: Try server session validation
-    try {
-      sessionData = await validateServerSession(request);
-      if (sessionData.verified && sessionData.user) {
-        logger.debug(`[UserProfile API] Server session validation successful, request ${requestId}`);
-      } else {
-        throw new Error(sessionData.error || 'Session validation failed');
-      }
-    } catch (sessionError) {
-      logger.debug(`[UserProfile API] Server session validation failed: ${sessionError.message}`);
-      
-      // Method 2: Try extracting from headers (for client-side auth)
-      const authHeader = request.headers.get('authorization');
-      const idToken = request.headers.get('x-id-token') || request.cookies.get('idToken')?.value;
-      
-      if (authHeader || idToken) {
-        try {
-          // Extract token from Authorization header or direct token
-          const token = authHeader ? authHeader.replace('Bearer ', '') : idToken;
-          
-          if (token) {
-            // Decode the JWT token to get user info
-            const { jwtDecode } = await import('jwt-decode');
-            const decoded = jwtDecode(token);
-            
-            // Create a session-like object from the token
-            sessionData = {
-              verified: true,
-              user: {
-                userId: decoded.sub,
-                attributes: {
-                  sub: decoded.sub,
-                  email: decoded.email,
-                  given_name: decoded.given_name,
-                  family_name: decoded.family_name,
-                  'custom:tenant_ID': decoded['custom:tenant_ID'],
-                  'custom:tenantId': decoded['custom:tenantId'],
-                  'custom:businessid': decoded['custom:businessid'],
-                  'custom:businessname': decoded['custom:businessname'],
-                  'custom:businesstype': decoded['custom:businesstype'],
-                  'custom:userrole': decoded['custom:userrole'],
-                  'custom:onboarding': decoded['custom:onboarding'],
-                  'custom:setupdone': decoded['custom:setupdone'],
-                  'custom:subplan': decoded['custom:subplan'],
-                  'custom:subscriptionstatus': decoded['custom:subscriptionstatus'],
-                  'custom:created_at': decoded['custom:created_at'],
-                  'custom:updated_at': decoded['custom:updated_at']
-                }
-              }
-            };
-            
-            logger.debug(`[UserProfile API] Token-based authentication successful, request ${requestId}`);
-          } else {
-            throw new Error('No valid token found');
-          }
-        } catch (tokenError) {
-          logger.warn(`[UserProfile API] Token-based authentication failed: ${tokenError.message}`);
-          sessionData = null;
-        }
-      }
-    }
-    
-    // If all authentication methods failed
-    if (!sessionData || !sessionData.verified || !sessionData.user) {
-      logger.warn(`[UserProfile API] All authentication methods failed, request ${requestId}`);
+    if (!sessionCookie) {
+      logger.warn(`[UserProfile API] No Auth0 session found, request ${requestId}`);
       return NextResponse.json(
         { 
           error: 'Not authenticated',
@@ -91,41 +29,87 @@ export async function GET(request) {
       );
     }
     
-    const { user } = sessionData;
-    const userAttributes = user.attributes || {};
+    // Parse Auth0 session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    } catch (parseError) {
+      logger.warn(`[UserProfile API] Invalid session format, request ${requestId}`);
+      return NextResponse.json(
+        { 
+          error: 'Invalid session',
+          message: 'Session format is invalid - please sign in again',
+          requestId 
+        },
+        { status: 401 }
+      );
+    }
     
-    // Prepare tenant ID - ensure it's a valid UUID
-    let tenantId = userAttributes['custom:tenant_ID'] ||
-                   userAttributes['custom:tenantId'] ||
-                   userAttributes['custom:businessid'] ||
-                   userAttributes['custom:tenant_id'] ||
+    if (!sessionData.user) {
+      logger.warn(`[UserProfile API] No user data in session, request ${requestId}`);
+      return NextResponse.json(
+        { 
+          error: 'Invalid session',
+          message: 'No user data found in session',
+          requestId 
+        },
+        { status: 401 }
+      );
+    }
+    
+    const user = sessionData.user;
+    
+    // Get tenant ID from query parameters or user data
+    const url = new URL(request.url);
+    const queryTenantId = url.searchParams.get('tenantId');
+    
+    // Try to get tenant ID from multiple sources
+    let tenantId = queryTenantId || 
+                   user.tenant_id || 
+                   user.tenantId ||
+                   user['custom:tenant_ID'] ||
+                   user['custom:tenantId'] ||
+                   user['custom:businessid'] ||
                    null;
+    
+    // Also check localStorage values that might be passed via headers
+    const xTenantId = request.headers.get('x-tenant-id');
+    if (!tenantId && xTenantId) {
+      tenantId = xTenantId;
+    }
     
     if (tenantId && !isValidUUID(tenantId)) {
       logger.warn(`[UserProfile API] Invalid tenant ID format: "${tenantId}", using null instead`);
       tenantId = null;
     }
     
-    // Map available attributes to profile response
+    // Map Auth0 user data to profile response
     const profile = {
-      userId: userAttributes.sub || user.userId,
-      email: userAttributes.email,
-      firstName: userAttributes['given_name'] || userAttributes['custom:firstname'] || '',
-      lastName: userAttributes['family_name'] || userAttributes['custom:lastname'] || '',
+      userId: user.sub,
+      email: user.email,
+      firstName: user.given_name || user.firstName || '',
+      lastName: user.family_name || user.lastName || '',
       tenantId: tenantId,
-      businessName: userAttributes['custom:businessname'] || '',
-      businessType: userAttributes['custom:businesstype'] || '',
-      legalStructure: userAttributes['custom:legalstructure'] || '',
-      subscriptionPlan: userAttributes['custom:subplan'] || '',
-      subscriptionStatus: userAttributes['custom:subscriptionstatus'] || 'pending',
-      onboardingStatus: userAttributes['custom:onboarding'] || 'not_started',
-      setupDone: userAttributes['custom:setupdone'] === 'TRUE' || userAttributes['custom:setupdone'] === 'true',
-      currency: userAttributes['custom:currency'] || 'USD',
-      timezone: userAttributes['custom:timezone'] || 'America/New_York',
-      language: userAttributes['custom:language'] || 'en',
-      userRole: userAttributes['custom:userrole'] || 'user',
-      createdAt: userAttributes['custom:created_at'] || null,
-      updatedAt: userAttributes['custom:updated_at'] || null
+      businessName: user.businessName || user['custom:businessname'] || '',
+      businessType: user.businessType || user['custom:businesstype'] || '',
+      legalStructure: user.legalStructure || user['custom:legalstructure'] || '',
+      subscriptionPlan: user.subscriptionPlan || user['custom:subplan'] || 'free',
+      subscriptionStatus: user.subscriptionStatus || user['custom:subscriptionstatus'] || 'pending',
+      onboardingStatus: user.onboardingStatus || user['custom:onboarding'] || 'not_started',
+      setupDone: user.setupDone === true || user['custom:setupdone'] === 'TRUE' || user['custom:setupdone'] === 'true',
+      currency: user.currency || user['custom:currency'] || 'USD',
+      timezone: user.timezone || user['custom:timezone'] || 'America/New_York',
+      language: user.language || user['custom:language'] || 'en',
+      userRole: user.userRole || user['custom:userrole'] || 'user',
+      createdAt: user.createdAt || user['custom:created_at'] || null,
+      updatedAt: user.updatedAt || user['custom:updated_at'] || null,
+      
+      // Auth0 specific fields
+      name: user.name,
+      nickname: user.nickname,
+      picture: user.picture,
+      email_verified: user.email_verified,
+      updated_at: user.updated_at
     };
     
     // Add flags to help the frontend with state decisions
@@ -136,14 +120,14 @@ export async function GET(request) {
     profile.onboardingSteps = {
       businessInfo: Boolean(profile.businessName && profile.businessType),
       subscription: Boolean(profile.subscriptionPlan),
-      payment: profile.subscriptionPlan === 'free' || userAttributes['custom:payverified'] === 'TRUE'
+      payment: profile.subscriptionPlan === 'free' || user.paymentVerified === true
     };
     
-    logger.info(`[UserProfile API] Profile fetched successfully from session for ${profile.email}`);
+    logger.info(`[UserProfile API] Profile fetched successfully from Auth0 session for ${profile.email}`);
     
     return NextResponse.json({
       profile,
-      source: 'session',
+      source: 'auth0-session',
       requestId
     });
   } catch (error) {
@@ -170,14 +154,43 @@ export async function POST(request) {
     const profileData = await request.json();
     logger.debug('[API] User profile POST data:', profileData);
     
-    // Since we're using Cognito directly, we'll just simulate a successful update
-    // In a production implementation, this would call the updateUserAttributes API
+    // Get Auth0 session for validation
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
+    
+    if (!sessionCookie) {
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+    
+    // Parse session data
+    let sessionData;
+    try {
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+    
+    if (!sessionData.user) {
+      return NextResponse.json(
+        { error: 'No user data in session' },
+        { status: 401 }
+      );
+    }
+    
+    // For now, just return the updated data
+    // In a full implementation, this would update the user's profile in the backend
     
     return NextResponse.json({
       ...profileData,
       updated_at: new Date().toISOString(),
       status: 'success',
-      message: 'Profile update simulated. In production, this would update Cognito attributes.'
+      message: 'Profile update simulated for Auth0. In production, this would update user attributes.'
     });
   } catch (error) {
     logger.error('[API] User profile POST error:', error.message);

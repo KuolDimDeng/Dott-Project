@@ -443,6 +443,9 @@ const DashAppBar = ({
       // Get subscription type - default to free for Auth0 users
       const subscriptionType = 'free';
       
+      // Initialize initials variable outside the if block
+      let initials = 'U'; // Default fallback
+      
       // Set business name if available
       if (businessName) {
         setBusinessName(businessName);
@@ -450,7 +453,7 @@ const DashAppBar = ({
       
       // Generate and set user initials from Auth0 user data
       if (auth0User) {
-        const initials = generateInitialsFromNames(
+        initials = generateInitialsFromNames(
           auth0User.given_name, 
           auth0User.family_name, 
           auth0User.email

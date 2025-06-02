@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { logger } from '@/utils/logger';
-import { fetchUserAttributes, fetchAuthSession  } from '@/config/amplifyUnified';
+import { fetchAuth0SessionData } from '@/config/auth0';
 
 // Initial time to live for cache in milliseconds (15 minutes for faster sign-in)
 const CACHE_TTL = 15 * 60 * 1000; 
@@ -183,143 +183,96 @@ export function UserProfileProvider({ children }) {
     });
   }, []);
 
-  // Function to fetch Cognito attributes directly
-  const fetchCognitoAttributes = useCallback(async () => {
+  // Function to fetch directly from Auth0 session (replaces Cognito attributes)
+  const fetchAuth0Attributes = useCallback(async () => {
     try {
-      logger.debug('[UserProfileContext] Fetching Cognito attributes directly');
+      logger.debug('[UserProfileContext] Fetching Auth0 session attributes');
       
-      // Set loading state
-      setProfileCache(prev => ({
-        ...prev,
-        loading: true,
-        error: null
-      }));
+      const sessionData = await fetchAuth0SessionData();
       
-      // During sign-up flow, don't show errors for missing authentication
-      const inSignUpFlow = isInSignUpFlow();
-      
-      try {
-        // Fetch user attributes from Cognito
-        const attributes = await fetchUserAttributes();
-        logger.debug('[UserProfileContext] Cognito attributes:', attributes);
-        
-        if (!attributes) {
-          throw new Error('No Cognito attributes available');
-        }
-        
-        // Transform Cognito attributes to profile format
-        const profileData = transformCognitoAttributes(attributes);
-        
-        if (profileData) {
-          logger.info('[UserProfileContext] Profile populated from Cognito attributes');
-          
-          // Extract tenant ID if available
-          const tenantId = attributes['custom:tenant_ID'] || attributes['custom:businessid'] || null;
-          
-          // Update cache with profile data from Cognito
-          setProfileCache({
-            data: profileData,
-            timestamp: Date.now(),
-            tenantId,
-            loading: false,
-            error: null
-          });
-          
-          return profileData;
-        }
-        
-        throw new Error('Could not create profile from Cognito attributes');
-      } catch (authError) {
-        // Check if this is a common authentication error during normal flow
-        const isAuthError = 
-          authError.name === 'UserUnAuthenticatedException' || 
-          authError.name === 'NotAuthorizedException' ||
-          authError.name === 'TokenExpiredException';
-        
-        // During sign-up or when auth errors are expected, handle gracefully
-        if (inSignUpFlow || isAuthError) {
-          const isExpectedAuthError = 
-            window.location.pathname.includes('/auth/') || 
-            window.location.pathname.includes('/dashboard') ||
-            window.location.search.includes('fromSignIn=true');
-            
-          const logLevel = isExpectedAuthError ? 'info' : 'warn';
-          logger[logLevel]('[UserProfileContext] Auth error during expected flow:', {
-            name: authError.name,
-            message: authError.message.substring(0, 50), // Truncate message for cleaner logs
-            inSignUpFlow,
-            path: window.location.pathname
-          });
-          
-          // Create a minimal profile for expected auth errors
-          const minimalProfile = {
-            profile: {
-              id: null,
-              email: localStorage.getItem('emailForSignIn') || localStorage.getItem('email') || '',
-              name: '',
-              firstName: '',
-              lastName: '',
-              tenantId: localStorage.getItem('tenantId') || '',
-              role: 'client',
-              businessName: localStorage.getItem('businessName') || '',
-              isMinimalProfile: true,
-              authErrorType: authError.name,
-              preferences: {
-                theme: 'light',
-                notificationsEnabled: true
-              }
-            }
-          };
-          
-          setProfileCache({
-            data: minimalProfile,
-            timestamp: Date.now(),
-            tenantId: localStorage.getItem('tenantId') || null,
-            loading: false,
-            error: null
-          });
-          
-          return minimalProfile;
-        }
-        
-        // Regular error handling for non-signup flows
-        throw authError;
+      if (!sessionData) {
+        throw new Error('No Auth0 session data available');
       }
-    } catch (error) {
-      // During sign-up or expected errors, suppress error messages
-      if (isInSignUpFlow() || window.location.pathname.includes('/auth/')) {
-        logger.info('[UserProfileContext] Error suppressed during expected flow:', {
-          name: error.name, 
+      
+      // Transform Auth0 session data to profile format
+      const profileData = sessionData;
+      
+      if (profileData) {
+        logger.info('[UserProfileContext] Profile populated from Auth0 session');
+        
+        // Extract tenant ID if available
+        const tenantId = profileData.profile.tenantId || null;
+        
+        // Update cache with profile data from Auth0
+        setProfileCache({
+          data: profileData,
+          timestamp: Date.now(),
+          tenantId,
+          loading: false,
+          error: null
+        });
+        
+        return profileData;
+      }
+      
+      throw new Error('Could not create profile from Auth0 session');
+    } catch (authError) {
+      // Check if this is a common authentication error during normal flow
+      const isAuthError = 
+        authError.message.includes('401') || 
+        authError.message.includes('403') ||
+        authError.message.includes('Not authenticated');
+      
+      // During sign-up or when auth errors are expected, handle gracefully
+      if (inSignUpFlow || isAuthError) {
+        const isExpectedAuthError = 
+          window.location.pathname.includes('/auth/') || 
+          window.location.pathname.includes('/dashboard') ||
+          window.location.search.includes('fromSignIn=true');
+          
+        const logLevel = isExpectedAuthError ? 'info' : 'warn';
+        logger[logLevel]('[UserProfileContext] Auth error during expected flow:', {
+          message: authError.message.substring(0, 50), // Truncate message for cleaner logs
+          inSignUpFlow,
           path: window.location.pathname
         });
         
-        setProfileCache(prev => ({
-          ...prev,
+        // Create a minimal profile for expected auth errors
+        const minimalProfile = {
+          profile: {
+            id: null,
+            email: localStorage.getItem('emailForSignIn') || localStorage.getItem('email') || '',
+            name: '',
+            firstName: '',
+            lastName: '',
+            tenantId: localStorage.getItem('tenantId') || '',
+            role: 'client',
+            businessName: localStorage.getItem('businessName') || '',
+            isMinimalProfile: true,
+            authErrorType: 'Auth0SessionError',
+            preferences: {
+              theme: 'light',
+              notificationsEnabled: true
+            }
+          }
+        };
+        
+        setProfileCache({
+          data: minimalProfile,
+          timestamp: Date.now(),
+          tenantId: localStorage.getItem('tenantId') || null,
           loading: false,
           error: null
-        }));
+        });
         
-        return null;
+        return minimalProfile;
       }
       
-      // Only log detailed error for unexpected cases
-      const errorDetails = {
-        name: error.name,
-        message: error.message.substring(0, 100)
-      };
-      
-      logger.error('[UserProfileContext] Error fetching Cognito attributes:', errorDetails);
-      
-      setProfileCache(prev => ({
-        ...prev,
-        loading: false,
-        error: error.message
-      }));
-      
-      return null;
+      // Regular error handling for non-signup flows
+      throw authError;
     }
   }, []);
-  
+
   // Function to fetch profile data
   const fetchProfileData = useCallback(async (tenantId, forceRefresh = false) => {
     // Generate a unique request ID
@@ -416,35 +369,14 @@ export function UserProfileProvider({ children }) {
       
       logger.debug('[UserProfileContext] Fetching profile data from:', url);
       
-      // Try to get auth session - wrap in try/catch to handle unauthenticated cases
-      let idToken = null;
-      try {
-        const { tokens } = await fetchAuthSession();
-        idToken = tokens?.idToken?.toString();
-      } catch (authError) {
-        // Check if we're in an expected error state - could be during login or sign-up
-        const isExpectedAuthError = 
-          window.location.pathname.includes('/auth/') || 
-          window.location.pathname.includes('/dashboard') ||
-          window.location.search.includes('fromSignIn=true');
-        
-        if (isExpectedAuthError) {
-          logger.info('[UserProfileContext] Auth error during authentication flow:', authError.name);
-        } else {
-          logger.warn('[UserProfileContext] Failed to get auth session:', authError.message);
-        }
-        
-        // Fall through - we'll try the request without auth tokens, our API can handle it
-      }
-      
-      // Make the API request with the auth token if available
+      // Make the API request with Auth0 session (no need for separate auth token handling)
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
-          'Authorization': idToken ? `Bearer ${idToken}` : '',
           'X-Dashboard-Route': 'true',
         },
+        credentials: 'include', // Include cookies for Auth0 session
       });
       
       // Handle different response status codes gracefully
@@ -453,14 +385,14 @@ export function UserProfileProvider({ children }) {
         if ((response.status === 401 || response.status === 403)) {
           logger.info(`[UserProfileContext] Auth error (${response.status}) accessing profile API`);
           
-          // Try Cognito as fallback
-          const cognitoData = await fetchCognitoAttributes().catch(e => {
-            logger.debug('[UserProfileContext] Also failed to get Cognito attributes:', e.name);
+          // Try Auth0 session as fallback instead of Cognito
+          const auth0Data = await fetchAuth0Attributes().catch(e => {
+            logger.debug('[UserProfileContext] Also failed to get Auth0 session:', e.name);
             return null;
           });
           
-          if (cognitoData) {
-            logger.info('[UserProfileContext] Successfully retrieved profile from Cognito fallback');
+          if (auth0Data) {
+            logger.info('[UserProfileContext] Successfully retrieved profile from Auth0 session fallback');
             
             // Clean up pending request
             setPendingRequests(prev => {
@@ -469,54 +401,17 @@ export function UserProfileProvider({ children }) {
               return newPending;
             });
             
-            // Update cache with Cognito data
+            // Update cache with Auth0 data
             setProfileCache({
-              data: cognitoData,
+              data: auth0Data,
               timestamp: Date.now(),
               tenantId: tenantId,
               loading: false,
               error: null
             });
             
-            return cognitoData;
+            return auth0Data;
           }
-          
-          // If Cognito also fails, create a minimal profile
-          const minimalProfile = {
-            profile: {
-              id: null,
-              email: localStorage.getItem('email') || '',
-              name: '',
-              firstName: '',
-              lastName: '',
-              tenantId: tenantId || '',
-              role: 'client',
-              businessName: localStorage.getItem('businessName') || '',
-              isMinimalProfile: true,
-              preferences: {
-                theme: 'light',
-                notificationsEnabled: true
-              }
-            }
-          };
-          
-          // Update cache with minimal profile
-          setProfileCache({
-            data: minimalProfile,
-            timestamp: Date.now(),
-            tenantId: tenantId,
-            loading: false,
-            error: null
-          });
-          
-          // Clean up pending request
-          setPendingRequests(prev => {
-            const newPending = { ...prev };
-            delete newPending[tenantId || 'default'];
-            return newPending;
-          });
-          
-          return minimalProfile;
         }
         
         // For other error codes, throw an error to be caught by the catch block
@@ -549,11 +444,11 @@ export function UserProfileProvider({ children }) {
       // Handle the error gracefully
       logger.error('[UserProfileContext] Error fetching profile data:', error.message);
       
-      // Try fetching directly from Cognito if API fails
-      logger.info('[UserProfileContext] API request failed, trying to fetch from Cognito directly');
-      const cognitoData = await fetchCognitoAttributes().catch(() => null);
+      // Try fetching directly from Auth0 session if API fails
+      logger.info('[UserProfileContext] API request failed, trying to fetch from Auth0 session directly');
+      const auth0Data = await fetchAuth0Attributes().catch(() => null);
       
-      if (cognitoData) {
+      if (auth0Data) {
         // Clean up pending request
         setPendingRequests(prev => {
           const newPending = { ...prev };
@@ -561,49 +456,7 @@ export function UserProfileProvider({ children }) {
           return newPending;
         });
         
-        return cognitoData;
-      }
-      
-      // For sign-up flow, don't show errors
-      if (inSignUpFlow) {
-        logger.info('[UserProfileContext] Using minimal profile due to error during sign-up');
-        
-        // Create a minimal profile for sign-up flow
-        const signUpProfile = {
-          profile: {
-            id: null,
-            email: localStorage.getItem('emailForSignIn') || '',
-            name: '',
-            firstName: '',
-            lastName: '',
-            tenantId: tenantId || localStorage.getItem('tenantId') || '',
-            role: 'client',
-            businessName: localStorage.getItem('businessName') || '',
-            isSigningUp: true,
-            preferences: {
-              theme: 'light',
-              notificationsEnabled: true
-            }
-          }
-        };
-        
-        // Update cache with minimal profile
-        setProfileCache({
-          data: signUpProfile,
-          timestamp: Date.now(),
-          tenantId,
-          loading: false,
-          error: null
-        });
-        
-        // Clean up pending request
-        setPendingRequests(prev => {
-          const newPending = { ...prev };
-          delete newPending[tenantId || 'default'];
-          return newPending;
-        });
-        
-        return signUpProfile;
+        return auth0Data;
       }
       
       setProfileCache(prev => ({
@@ -622,7 +475,7 @@ export function UserProfileProvider({ children }) {
       // Return null instead of throwing to prevent unhandled promise rejections
       return null;
     }
-  }, [profileCache, pendingRequests, fetchCognitoAttributes]);
+  }, [profileCache, pendingRequests, fetchAuth0Attributes]);
   
   // Debounced version of fetchProfileData to prevent rapid consecutive calls
   const debouncedFetchProfile = useMemo(() => 
