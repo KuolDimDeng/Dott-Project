@@ -126,10 +126,6 @@ async function makeRequest(url, options, retryCount = 0) {
 
 export async function submitBusinessInfo(data) {
   try {
-    if (!API_BASE_URL) {
-      throw new Error('API_BASE_URL is not configured');
-    }
-
     // Map frontend field names to backend expectations
     const mappedData = {
       businessName: data.businessName || data.business_name,
@@ -147,30 +143,72 @@ export async function submitBusinessInfo(data) {
       taxId: data.taxId || data.tax_id
     };
 
-    logger.debug('[OnboardingAPI] Submitting business info:', {
+    logger.debug('[OnboardingAPI] Submitting business info via NextJS API route:', {
       businessName: mappedData.businessName,
       businessType: mappedData.businessType,
       country: mappedData.country,
-      requestUrl: `${API_BASE_URL}/api/onboarding/business-info/`
+      requestUrl: '/api/onboarding/business-info'
     });
 
-    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/business-info/`, {
+    // Use NextJS API route instead of calling Django directly
+    // This route handles Auth0 authentication and forwards to Django backend
+    const response = await fetch('/api/onboarding/business-info', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      },
+      credentials: 'include',
       body: JSON.stringify(mappedData)
     });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: `Request failed with status ${response.status}`
+      }));
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        logger.debug('[OnboardingAPI] Auth error - redirecting to login');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/api/auth/login';
+        }
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      
+      const error = new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.data = errorData;
+      
+      logger.error('[OnboardingAPI] Request failed:', {
+        status: response.status,
+        error: errorData
+      });
+      
+      throw error;
+    }
+
+    const responseData = await response.json();
+
     // Update localStorage with tenant info for compatibility
-    if (response?.tenant_id) {
-      localStorage.setItem('tenantId', response.tenant_id);
+    if (responseData?.tenant_id || responseData?.businessInfo?.businessId) {
+      const tenantId = responseData.tenant_id || responseData.businessInfo.businessId;
+      localStorage.setItem('tenantId', tenantId);
       
       // Store user attributes for compatibility with existing code
       const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
-      userAttributes['custom:tenant_id'] = response.tenant_id;
+      userAttributes['custom:tenant_id'] = tenantId;
       userAttributes['custom:business_name'] = mappedData.businessName;
       localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
     }
 
-    return response;
+    logger.debug('[OnboardingAPI] Business info submitted successfully:', {
+      success: responseData.success,
+      hasBusinessInfo: !!responseData.businessInfo
+    });
+
+    return responseData;
   } catch (error) {
     logger.error('[OnboardingAPI] Failed to submit business info:', {
       error: error.message,

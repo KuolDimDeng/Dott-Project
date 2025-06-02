@@ -114,7 +114,7 @@ function createSafeResponse(data, status = 200, additionalHeaders = null) {
 }
 
 /**
- * Handle business information update - SECURE VERSION
+ * Handle business information update - SECURE VERSION with Database Persistence
  */
 export async function POST(request) {
   try {
@@ -143,151 +143,206 @@ export async function POST(request) {
       }
     } catch (parseError) {
       console.warn('[api/onboarding/business-info] Error parsing request body:', parseError.message);
-      // Continue with empty data object
+      return createSafeResponse({
+        success: false,
+        error: 'Invalid request data',
+        message: 'Please check your input and try again'
+      }, 400);
     }
     
-    console.log('[api/onboarding/business-info] Setting up response data');
-    
-    // Start the cookie setup early
-    const responseData = {
-      success: true,
-      message: 'Business information updated successfully',
-      nextRoute: '/onboarding/subscription'
+    // Extract and validate business info data
+    const businessData = {
+      businessName: data.businessName || '',
+      businessType: data.businessType || '',
+      businessSubtypeSelections: data.businessSubtypeSelections || [],
+      country: data.country || '',
+      businessState: data.businessState || '',
+      legalStructure: data.legalStructure || '',
+      dateFounded: data.dateFounded || '',
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      industry: data.industry || '',
+      address: data.address || '',
+      phoneNumber: data.phoneNumber || '',
+      taxId: data.taxId || ''
     };
     
-    console.log('[api/onboarding/business-info] About to access cookies');
-    
-    // Set critical cookies immediately
-    try {
-      const cookieStore = await cookies();
-      
-      console.log('[api/onboarding/business-info] Setting cookies');
-      
-      // Mark business info step as completed
-      await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
-      await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-      await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
-      
-      // Set timestamp for token verification
-      await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
-      
-      console.log('[api/onboarding/business-info] Cookies set successfully');
-    } catch (cookieError) {
-      console.error('[api/onboarding/business-info] Error setting cookies:', cookieError);
-      throw new Error(`Cookie error: ${cookieError.message}`);
-    }
-    
-    // Check for faster path header
-    const headers = Object.fromEntries(request.headers.entries());
-    const isFastPath = headers['x-fast-path'] === 'true';
-    
-    // Set navigation response header to help with redirect
-    const responseHeaders = new Headers();
-    responseHeaders.append('X-Next-Route', '/onboarding/subscription');
-    
-    // If fast path, return immediately with just the navigation cookies
-    if (isFastPath) {
-      console.log('[api/onboarding/business-info] Using fast path, returning early');
-      return createSafeResponse(responseData, 200, responseHeaders);
-    }
-    
-    console.log('[api/onboarding/business-info] Getting server user');
-    
-    // Try to get authenticated user but don't fail if not present
-    let user = null;
-    try {
-      user = await getServerUser(request);
-      console.log('[api/onboarding/business-info] User retrieved:', { hasUser: !!user });
-    } catch (authError) {
-      console.error('[api/onboarding/business-info] Auth error:', {
-        message: authError.message,
-        code: authError.code,
-        name: authError.name
-      });
-      
-      // Continue processing without user
-    }
-    
-    // Ensure we have at least some data - use defaults if necessary
-    const businessName = data.businessName || user?.attributes?.['custom:businessname'] || '';
-    const businessType = data.businessType || user?.attributes?.['custom:businesstype'] || '';
-    const country = data.country || user?.attributes?.['custom:businesscountry'] || '';
-    const legalStructure = data.legalStructure || user?.attributes?.['custom:legalstructure'] || '';
-    
-    console.log('[api/onboarding/business-info] Business info update:', {
-      userPresent: !!user,
-      fields: Object.keys(data),
-      businessName,
-      businessType
+    console.log('[api/onboarding/business-info] Validated business data:', {
+      businessName: businessData.businessName,
+      businessType: businessData.businessType,
+      country: businessData.country
     });
 
+    // SECURITY: Forward to Django backend with proper authentication
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBaseUrl) {
+      throw new Error('API configuration missing - backend URL not configured');
+    }
+
     try {
+      // Get Auth0 access token for backend authentication
       const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('appSession');
+      let accessToken = null;
       
-      // Store business info in cookies
-      await cookieStore.set('businessName', businessName, COOKIE_OPTIONS);
-      await cookieStore.set('businessType', businessType, COOKIE_OPTIONS);
-      
-      // Only set these if they have values
-      if (country) {
-        await cookieStore.set('businessCountry', country, COOKIE_OPTIONS);
+      if (sessionCookie) {
+        try {
+          const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          accessToken = sessionData.accessToken;
+        } catch (parseError) {
+          console.error('[api/onboarding/business-info] Error parsing session for token:', parseError);
+        }
       }
       
-      if (legalStructure) {
-        await cookieStore.set('legalStructure', legalStructure, COOKIE_OPTIONS);
+      if (!accessToken) {
+        throw new Error('No valid access token found for backend authentication');
       }
-    } catch (cookieError) {
-      console.error('[api/onboarding/business-info] Error setting additional cookies:', cookieError);
-      // Continue even if these cookies fail
+      
+      console.log('[api/onboarding/business-info] Forwarding to Django backend with Auth0 token');
+      
+      // Forward authenticated request to Django backend
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-User-Email': authenticatedUser.email,
+          'X-Request-ID': `frontend-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          'X-Source': 'nextjs-api-route'
+        },
+        body: JSON.stringify(businessData),
+        timeout: 10000 // 10 second timeout
+      });
+      
+      let backendData = {};
+      let backendSuccess = false;
+      
+      if (backendResponse.ok) {
+        try {
+          backendData = await backendResponse.json();
+          backendSuccess = true;
+          console.log('[api/onboarding/business-info] Backend save successful:', {
+            hasTenantId: !!backendData.tenant_id,
+            success: backendData.success
+          });
+        } catch (jsonError) {
+          console.warn('[api/onboarding/business-info] Backend response not JSON, but request succeeded');
+          backendSuccess = true;
+          backendData = { success: true, message: 'Business info saved successfully' };
+        }
+      } else {
+        const errorText = await backendResponse.text().catch(() => 'Unknown error');
+        console.error('[api/onboarding/business-info] Backend save failed:', {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          error: errorText
+        });
+        
+        // Continue with cookie storage even if backend fails (graceful degradation)
+        console.log('[api/onboarding/business-info] Continuing with cookie storage despite backend failure');
+      }
+      
+      // ALWAYS set cookies for caching/fallback (regardless of backend success)
+      try {
+        // Mark business info step as completed
+        await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
+        await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
+        await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
+        
+        // Cache business info data
+        await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
+        await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+        
+        if (businessData.country) {
+          await cookieStore.set('businessCountry', businessData.country, COOKIE_OPTIONS);
+        }
+        
+        if (businessData.legalStructure) {
+          await cookieStore.set('legalStructure', businessData.legalStructure, COOKIE_OPTIONS);
+        }
+        
+        // Set timestamp for tracking
+        await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
+        
+        console.log('[api/onboarding/business-info] Cookies set successfully');
+      } catch (cookieError) {
+        console.error('[api/onboarding/business-info] Error setting cookies:', cookieError);
+        // Continue - don't fail the entire request for cookie issues
+      }
+      
+      // Prepare response data
+      const responseData = {
+        success: backendSuccess,
+        message: backendSuccess ? 'Business information saved successfully' : 'Business information cached locally',
+        nextRoute: '/onboarding/subscription',
+        businessInfo: {
+          businessName: businessData.businessName,
+          businessType: businessData.businessType,
+          country: businessData.country,
+          legalStructure: businessData.legalStructure
+        },
+        backendStatus: backendSuccess ? 'saved' : 'failed',
+        tenant_id: backendData.tenant_id || null
+      };
+      
+      // Return success response
+      return createSafeResponse(responseData);
+      
+    } catch (backendError) {
+      console.error('[api/onboarding/business-info] Backend communication failed:', {
+        message: backendError.message,
+        stack: backendError.stack
+      });
+      
+      // Graceful degradation: save to cookies even if backend fails
+      try {
+        const cookieStore = await cookies();
+        
+        // Mark business info step as completed (cached)
+        await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
+        await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
+        await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
+        
+        // Cache business data
+        await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
+        await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+        
+        return createSafeResponse({
+          success: true, // Still successful from user perspective
+          message: 'Business information saved locally (backend temporarily unavailable)',
+          nextRoute: '/onboarding/subscription',
+          businessInfo: {
+            businessName: businessData.businessName,
+            businessType: businessData.businessType,
+            country: businessData.country,
+            legalStructure: businessData.legalStructure
+          },
+          backendStatus: 'offline',
+          fallback: true
+        });
+      } catch (fallbackError) {
+        console.error('[api/onboarding/business-info] Complete failure:', fallbackError);
+        
+        return createSafeResponse({
+          success: false,
+          error: 'Failed to save business information',
+          message: 'Please try again or contact support if the problem persists'
+        }, 500);
+      }
     }
     
-    console.log('[api/onboarding/business-info] Creating successful response');
-    
-    // Update response with business info
-    return createSafeResponse({
-      success: true,
-      message: 'Business information updated successfully',
-      nextRoute: '/onboarding/subscription',
-      businessInfo: {
-        businessName,
-        businessType,
-        country,
-        legalStructure
-      }
-    });
   } catch (error) {
-    console.error('[api/onboarding/business-info] Error updating business info:', {
+    console.error('[api/onboarding/business-info] Critical error:', {
       message: error.message,
       name: error.name,
       stack: error.stack
     });
     
-    // Even on error, still try to set the essential cookies
-    try {
-      const cookieStore = await cookies();
-      
-      // Mark business info step as completed
-      await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
-      await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-      await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
-      
-      return createSafeResponse({
-        success: false,
-        error: 'Failed to update business information',
-        message: error.message,
-        fallback: true
-      }, 500);
-    } catch (cookieError) {
-      // Last resort error response if even cookie setting fails
-      console.error('[api/onboarding/business-info] Fatal error setting cookies:', cookieError);
-      
-      return createSafeResponse({
-        success: false,
-        error: 'Critical error updating business information',
-        message: error.message,
-        fallback: true
-      }, 500);
-    }
+    return createSafeResponse({
+      success: false,
+      error: 'Critical error processing business information',
+      message: error.message
+    }, 500);
   }
 }
 
