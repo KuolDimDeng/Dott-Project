@@ -1,29 +1,8 @@
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from './logger';
 
-// Try to import generateClient with fallback
-let generateClient;
-try {
-  // Try v6 import first
-  const apiModule = require('aws-amplify/api');
-  generateClient = apiModule.generateClient;
-} catch (v6Error) {
-  try {
-    // Try v5 fallback
-    const { API } = require('aws-amplify');
-    generateClient = () => API;
-  } catch (v5Error) {
-    console.warn('[CacheClient] Could not import generateClient, using fallback');
-    generateClient = () => null;
-  }
-}
-
 // In-memory cache storage
 const memoryCache = new Map();
-
-// Create the Amplify v6 API client
-const client = generateClient();
 
 /**
  * Cache entry with expiration
@@ -41,7 +20,7 @@ class CacheEntry {
 }
 
 /**
- * AppSync cache client for in-memory data caching
+ * Cache client for in-memory data caching
  * Avoids using localStorage or cookies in favor of in-memory caching
  */
 
@@ -126,23 +105,18 @@ export const clearAllCache = () => {
 };
 
 /**
- * Fetch data with caching capability
+ * Fetch data with caching capability (simplified version for Auth0)
  * @param {string} cacheKey - Key for caching
  * @param {any} data - Data to send
  * @param {Object} options - Fetch options
  * @param {boolean} options.bypassCache - If true, bypasses cache check
  * @param {number} options.ttl - Cache TTL in milliseconds
- * @param {string} options.apiName - GraphQL API name
- * @param {Object} options.query - GraphQL query
- * @param {Object} options.variables - GraphQL variables
  * @returns {Promise<any>} - Fetched or cached data
  */
 export const fetchWithCache = async (cacheKey, data, options = {}) => {
   const {
     bypassCache = false,
     ttl,
-    query,
-    variables,
   } = options;
   
   // Generate a unique request ID for tracking
@@ -158,37 +132,13 @@ export const fetchWithCache = async (cacheKey, data, options = {}) => {
       }
     }
     
-    let response;
-    
-    // If query provided, use GraphQL operation
-    if (query) {
-      logger.debug('[CacheClient] Executing GraphQL operation', { 
-        requestId, 
-        operationName: query.definitions?.[0]?.name?.value || 'Unknown' 
-      });
-      
-      response = await client.graphql({
-        query: query,
-        variables: variables || {},
-        authMode: 'AMAZON_COGNITO_USER_POOLS'
-      });
-      
-      // Extract data from the GraphQL response
-      if (response.data) {
-        const queryName = Object.keys(response.data)[0];
-        response = response.data[queryName];
-      }
-    } else {
-      // Use REST API call (this is simplified and would need customization)
-      // This is a placeholder for REST API implementation
-      logger.debug('[CacheClient] Using data provided directly', { requestId });
-      response = data;
-    }
+    // For Auth0, we just cache the provided data
+    logger.debug('[CacheClient] Using data provided directly', { requestId });
     
     // Cache the response
-    setCache(cacheKey, response, { ttl });
+    setCache(cacheKey, data, { ttl });
     
-    return response;
+    return data;
   } catch (error) {
     logger.error('[CacheClient] Fetch error', { cacheKey, requestId, error });
     throw error;
@@ -199,46 +149,28 @@ export const fetchWithCache = async (cacheKey, data, options = {}) => {
  * Cache user data attributes
  * @param {string} userId - User ID 
  * @param {Object} attributes - User attributes to cache
+ * @param {Object} options - Cache options
+ * @returns {boolean} - Success status
  */
-export const cacheUserAttributes = async (userId, attributes) => {
-  if (!userId) {
-    logger.error('[CacheClient] Cannot cache user attributes: No userId provided');
-    return;
-  }
-  
+export const cacheUserAttributes = async (userId, attributes, options = {}) => {
   try {
-    const cacheKey = `user_${userId}_attributes`;
-    const existingCache = getCache(cacheKey) || {};
-    
-    // Merge with existing attributes
-    const updatedAttributes = {
-      ...existingCache,
-      ...attributes,
-      lastUpdated: new Date().toISOString()
-    };
-    
-    setCache(cacheKey, updatedAttributes);
-    
-    logger.debug('[CacheClient] User attributes cached', { 
-      userId, 
-      attributeKeys: Object.keys(attributes) 
-    });
+    const cacheKey = `user_attributes_${userId}`;
+    return setCache(cacheKey, attributes, options);
   } catch (error) {
     logger.error('[CacheClient] Error caching user attributes', { userId, error });
+    return false;
   }
 };
 
 /**
  * Get cached user attributes
  * @param {string} userId - User ID
- * @returns {Object|null} - User attributes or null
+ * @returns {Object|null} - Cached user attributes or null
  */
 export const getCachedUserAttributes = (userId) => {
-  if (!userId) return null;
-  
   try {
-    const cacheKey = `user_${userId}_attributes`;
-    return getCache(cacheKey) || null;
+    const cacheKey = `user_attributes_${userId}`;
+    return getCache(cacheKey);
   } catch (error) {
     logger.error('[CacheClient] Error getting cached user attributes', { userId, error });
     return null;
@@ -246,22 +178,13 @@ export const getCachedUserAttributes = (userId) => {
 };
 
 /**
- * Clears user-related cache entries when logging out
+ * Clear user cache
  * @param {string} userId - User ID
  */
 export const clearUserCache = (userId) => {
   try {
-    if (userId) {
-      clearCache(`user_${userId}_attributes`);
-      clearCache(`user_${userId}_preferences`);
-      clearCache(`user_${userId}_settings`);
-      clearCache(`user_onboarding_status`);
-    }
-    
-    // Clear any authentication-related cache
-    clearCache('currentUser');
-    clearCache('userSession');
-    
+    const cacheKey = `user_attributes_${userId}`;
+    clearCache(cacheKey);
     logger.debug('[CacheClient] User cache cleared', { userId });
   } catch (error) {
     logger.error('[CacheClient] Error clearing user cache', { userId, error });
@@ -269,19 +192,11 @@ export const clearUserCache = (userId) => {
 };
 
 /**
- * Remove a specific entry from cache
+ * Remove cache entry (alias for clearCache)
  * @param {string} key - Cache key to remove
- * @returns {boolean} - Success status
  */
 export const removeCache = (key) => {
-  try {
-    const deleted = memoryCache.delete(key);
-    logger.debug('[CacheClient] Cache entry removed', { key, success: deleted });
-    return deleted;
-  } catch (error) {
-    logger.error('[CacheClient] Error removing cache entry', { key, error });
-    return false;
-  }
+  clearCache(key);
 };
 
 // Periodically clean expired entries
