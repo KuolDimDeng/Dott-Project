@@ -35,7 +35,10 @@ export async function GET() {
       sessionOnboardingStatus: {
         needsOnboarding: user.needsOnboarding,
         onboardingCompleted: user.onboardingCompleted,
-        currentStep: user.currentStep
+        currentStep: user.currentStep,
+        current_onboarding_step: user.current_onboarding_step,
+        businessInfoCompleted: user.businessInfoCompleted,
+        lastUpdated: user.lastUpdated
       }
     });
     
@@ -46,8 +49,17 @@ export async function GET() {
       needsOnboarding: user.needsOnboarding !== false,
       onboardingCompleted: user.onboardingCompleted === true,
       currentStep: user.currentStep || user.current_onboarding_step || 'business_info',
-      tenantId: user.tenantId || user.tenant_id
+      tenantId: user.tenantId || user.tenant_id,
+      businessInfoCompleted: user.businessInfoCompleted === true
     };
+    
+    console.log('[Profile API] Initial profile data from session:', {
+      email: profileData.email,
+      needsOnboarding: profileData.needsOnboarding,
+      onboardingCompleted: profileData.onboardingCompleted,
+      currentStep: profileData.currentStep,
+      businessInfoCompleted: profileData.businessInfoCompleted
+    });
     
     // Try to fetch additional data from Django backend (if available)
     if (accessToken) {
@@ -71,11 +83,16 @@ export async function GET() {
             email: backendUser.email,
             tenant_id: backendUser.tenant_id,
             onboarding_completed: backendUser.onboarding_completed,
-            needs_onboarding: backendUser.needs_onboarding
+            needs_onboarding: backendUser.needs_onboarding,
+            current_onboarding_step: backendUser.current_onboarding_step
           });
           
           // Merge backend data, but prioritize session data for onboarding status
           // (session data is more up-to-date after recent actions)
+          const oldCurrentStep = profileData.currentStep;
+          const sessionOnboardingComplete = user.onboardingCompleted;
+          const sessionNeedsOnboarding = user.needsOnboarding;
+          
           profileData = {
             ...profileData,
             // Backend data
@@ -90,7 +107,7 @@ export async function GET() {
             onboardingCompleted: user.onboardingCompleted !== undefined 
               ? user.onboardingCompleted 
               : (backendUser.onboarding_completed === true),
-            currentStep: user.currentStep || backendUser.current_onboarding_step || 'business_info',
+            currentStep: user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info',
             
             // Additional backend fields
             first_name: backendUser.first_name,
@@ -98,6 +115,17 @@ export async function GET() {
             date_joined: backendUser.date_joined,
             last_login: backendUser.last_login
           };
+          
+          console.log('[Profile API] Data merge details:', {
+            sessionCurrentStep: user.currentStep || user.current_onboarding_step,
+            backendCurrentStep: backendUser.current_onboarding_step,
+            finalCurrentStep: profileData.currentStep,
+            sessionNeedsOnboarding: sessionNeedsOnboarding,
+            backendNeedsOnboarding: backendUser.needs_onboarding,
+            finalNeedsOnboarding: profileData.needsOnboarding,
+            sessionBusinessInfoCompleted: user.businessInfoCompleted,
+            finalBusinessInfoCompleted: profileData.businessInfoCompleted
+          });
           
           console.log('[Profile API] Merged profile data with backend');
         } else {

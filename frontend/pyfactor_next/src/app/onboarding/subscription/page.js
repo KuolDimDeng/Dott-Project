@@ -258,6 +258,14 @@ export default function SubscriptionPage() {
               return;
             }
             
+            // Additional validation: Check if business info is actually completed
+            if (profile.needsOnboarding && !profile.businessInfoCompleted && 
+                (!profile.currentStep || profile.currentStep === 'business_info')) {
+              logger.info('[SubscriptionPage] Business info not completed, redirecting to business-info page');
+              router.push('/onboarding/business-info');
+              return;
+            }
+            
             // Set tenant ID if available from profile
             if (profile.tenantId && !tenantId) {
               setTenantId(profile.tenantId);

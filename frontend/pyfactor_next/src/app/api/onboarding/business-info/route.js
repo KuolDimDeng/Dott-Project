@@ -226,36 +226,7 @@ export async function POST(request) {
             success: backendData.success
           });
           
-          // Update user's onboarding progress to next step
-          try {
-            const progressUpdateResponse = await fetch(`${apiBaseUrl}/api/users/update-onboarding-step/`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${accessToken}`,
-                'X-User-Email': authenticatedUser.email,
-                'X-User-Sub': authenticatedUser.sub,
-                'X-Source': 'business-info-completion'
-              },
-              body: JSON.stringify({
-                current_step: 'subscription',
-                needs_onboarding: true,
-                onboarding_completed: false,
-                business_info_completed: true
-              })
-            });
-            
-            if (progressUpdateResponse.ok) {
-              console.log('[api/onboarding/business-info] User onboarding step updated to subscription');
-            } else {
-              console.warn('[api/onboarding/business-info] Failed to update onboarding step, but continuing');
-            }
-          } catch (progressError) {
-            console.warn('[api/onboarding/business-info] Error updating onboarding progress:', progressError);
-            // Continue - don't fail the whole request for this
-          }
-          
-          // Update session cookie with new onboarding status
+          // Update session cookie with new onboarding status (primary fix)
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
@@ -269,14 +240,17 @@ export async function POST(request) {
               }
             }
             
+            // CRITICAL FIX: Update session to move to subscription step
             const updatedSessionData = {
               ...sessionData,
               user: {
                 ...sessionData.user,
                 currentStep: 'subscription',
+                current_onboarding_step: 'subscription',
                 needsOnboarding: true,
                 onboardingCompleted: false,
-                businessInfoCompleted: true
+                businessInfoCompleted: true,
+                lastUpdated: new Date().toISOString()
               }
             };
             
@@ -286,11 +260,12 @@ export async function POST(request) {
               success: true,
               message: 'Business information saved successfully',
               next_step: 'subscription',
+              current_step: 'subscription',
               redirect_url: '/onboarding/subscription',
               tenant_id: backendData.tenant_id || null
             });
             
-            // Update the session cookie
+            // Update the session cookie with proper settings
             finalResponse.cookies.set('appSession', updatedSessionCookie, {
               path: '/',
               httpOnly: false,
@@ -299,12 +274,20 @@ export async function POST(request) {
               maxAge: 7 * 24 * 60 * 60 // 7 days
             });
             
-            console.log('[api/onboarding/business-info] Business info completed, session updated, ready for subscription');
+            console.log('[api/onboarding/business-info] Business info completed, session updated to subscription step');
             return finalResponse;
             
           } catch (sessionError) {
             console.error('[api/onboarding/business-info] Error updating session:', sessionError);
-            // Continue without session update
+            // Return success but with warning
+            return createSafeResponse({
+              success: true,
+              message: 'Business information saved, but session update failed',
+              next_step: 'subscription',
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData.tenant_id || null,
+              warning: 'Session update failed - you may need to refresh'
+            });
           }
           
         } catch (jsonError) {
@@ -312,7 +295,7 @@ export async function POST(request) {
           backendSuccess = true; // Still consider it successful
           backendData = { success: true, message: 'Business info saved successfully' };
           
-          // Still update session for successful submission
+          // Still update session for successful submission with proper onboarding step
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
@@ -326,14 +309,17 @@ export async function POST(request) {
               }
             }
             
+            // CRITICAL FIX: Update session to move to subscription step
             const updatedSessionData = {
               ...sessionData,
               user: {
                 ...sessionData.user,
                 currentStep: 'subscription',
+                current_onboarding_step: 'subscription',
                 needsOnboarding: true,
                 onboardingCompleted: false,
-                businessInfoCompleted: true
+                businessInfoCompleted: true,
+                lastUpdated: new Date().toISOString()
               }
             };
             
@@ -342,14 +328,31 @@ export async function POST(request) {
             const response = createSafeResponse({
               success: true,
               message: 'Business information saved successfully',
-              next_step: 'subscription'
+              next_step: 'subscription',
+              current_step: 'subscription',
+              redirect_url: '/onboarding/subscription'
             });
             
-            response.cookies.set('appSession', updatedSessionCookie, COOKIE_OPTIONS);
+            response.cookies.set('appSession', updatedSessionCookie, {
+              path: '/',
+              httpOnly: false,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 7 * 24 * 60 * 60 // 7 days
+            });
+            
+            console.log('[api/onboarding/business-info] Session updated to subscription step (no JSON case)');
             return response;
             
           } catch (sessionError) {
             console.error('[api/onboarding/business-info] Error updating session after Django success:', sessionError);
+            // Return success but indicate session issue
+            return createSafeResponse({
+              success: true,
+              message: 'Business information saved, but session update failed',
+              next_step: 'subscription',
+              warning: 'You may need to refresh the page'
+            });
           }
         }
       } else {
@@ -422,7 +425,34 @@ export async function POST(request) {
       try {
         const cookieStore = await cookies();
         
-        // Mark business info step as completed (cached)
+        // Mark business info step as completed (cached) and update session
+        const sessionCookie = cookieStore.get('appSession');
+        let sessionData = {};
+        
+        if (sessionCookie) {
+          try {
+            sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          } catch (parseError) {
+            console.warn('[api/onboarding/business-info] Error parsing session for fallback update:', parseError);
+          }
+        }
+        
+        // CRITICAL FIX: Update session to move to subscription step even in fallback
+        const updatedSessionData = {
+          ...sessionData,
+          user: {
+            ...sessionData.user,
+            currentStep: 'subscription',
+            current_onboarding_step: 'subscription', 
+            needsOnboarding: true,
+            onboardingCompleted: false,
+            businessInfoCompleted: true,
+            lastUpdated: new Date().toISOString()
+          }
+        };
+        
+        const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+        
         await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
         await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
         await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
@@ -431,10 +461,11 @@ export async function POST(request) {
         await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
         await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
         
-        return createSafeResponse({
+        const response = createSafeResponse({
           success: true, // Still successful from user perspective
           message: 'Business information saved locally (backend temporarily unavailable)',
           nextRoute: '/onboarding/subscription',
+          current_step: 'subscription',
           businessInfo: {
             businessName: businessData.businessName,
             businessType: businessData.businessType,
@@ -444,6 +475,18 @@ export async function POST(request) {
           backendStatus: 'offline',
           fallback: true
         });
+        
+        // Update session cookie with proper onboarding step
+        response.cookies.set('appSession', updatedSessionCookie, {
+          path: '/',
+          httpOnly: false,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60 // 7 days
+        });
+        
+        console.log('[api/onboarding/business-info] Session updated to subscription step (fallback case)');
+        return response;
       } catch (fallbackError) {
         console.error('[api/onboarding/business-info] Complete failure:', fallbackError);
         
