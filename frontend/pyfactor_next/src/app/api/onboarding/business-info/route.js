@@ -226,225 +226,130 @@ export async function POST(request) {
             success: backendData.success
           });
           
-          // If Django backend succeeds, update session and progress
-          if (backendResponse.ok) {
-            try {
-              const backendResult = await backendResponse.json();
-              console.log('[api/onboarding/business-info] Django backend success:', {
-                success: backendResult.success,
-                message: backendResult.message
-              });
-              
-              // Update user's onboarding progress to next step
-              try {
-                const progressUpdateResponse = await fetch(`${apiBaseUrl}/api/users/update-onboarding-step/`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`,
-                    'X-User-Email': authenticatedUser.email,
-                    'X-User-Sub': authenticatedUser.sub,
-                    'X-Source': 'business-info-completion'
-                  },
-                  body: JSON.stringify({
-                    current_step: 'subscription',
-                    needs_onboarding: true,
-                    onboarding_completed: false,
-                    business_info_completed: true
-                  })
-                });
-                
-                if (progressUpdateResponse.ok) {
-                  console.log('[api/onboarding/business-info] User onboarding step updated to subscription');
-                } else {
-                  console.warn('[api/onboarding/business-info] Failed to update onboarding step, but continuing');
-                }
-              } catch (progressError) {
-                console.warn('[api/onboarding/business-info] Error updating onboarding progress:', progressError);
-                // Continue - don't fail the whole request for this
-              }
-              
-              // Update session cookie with new onboarding status
-              try {
-                const updatedSessionData = {
-                  ...sessionData,
-                  user: {
-                    ...sessionData.user,
-                    currentStep: 'subscription',
-                    needsOnboarding: true,
-                    onboardingCompleted: false,
-                    businessInfoCompleted: true
-                  }
-                };
-                
-                const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
-                
-                const finalResponse = createSafeResponse({
-                  success: true,
-                  message: 'Business information saved successfully',
-                  next_step: 'subscription',
-                  redirect_url: '/onboarding/subscription'
-                });
-                
-                // Update the session cookie
-                finalResponse.cookies.set('appSession', updatedSessionCookie, {
-                  path: '/',
-                  httpOnly: false,
-                  secure: process.env.NODE_ENV === 'production',
-                  sameSite: 'lax',
-                  maxAge: 7 * 24 * 60 * 60 // 7 days
-                });
-                
-                console.log('[api/onboarding/business-info] Business info completed, session updated, ready for subscription');
-                return finalResponse;
-                
-              } catch (sessionError) {
-                console.error('[api/onboarding/business-info] Error updating session:', sessionError);
-                // Continue without session update
-              }
-              
-              return createSafeResponse({
-                success: true,
-                message: 'Business information saved successfully',
-                next_step: 'subscription',
-                redirect_url: '/onboarding/subscription'
-              });
-              
-            } catch (jsonError) {
-              console.log('[api/onboarding/business-info] Django backend responded OK but no JSON data');
-              
-              // Still update session for successful submission
-              try {
-                const updatedSessionData = {
-                  ...sessionData,
-                  user: {
-                    ...sessionData.user,
-                    currentStep: 'subscription',
-                    needsOnboarding: true,
-                    onboardingCompleted: false,
-                    businessInfoCompleted: true
-                  }
-                };
-                
-                const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
-                
-                const response = createSafeResponse({
-                  success: true,
-                  message: 'Business information saved successfully',
-                  next_step: 'subscription'
-                });
-                
-                response.cookies.set('appSession', updatedSessionCookie, COOKIE_OPTIONS);
-                return response;
-                
-              } catch (sessionError) {
-                console.error('[api/onboarding/business-info] Error updating session after Django success:', sessionError);
-              }
-              
-              return createSafeResponse({
-                success: true,
-                message: 'Business information saved successfully',
-                next_step: 'subscription'
-              });
-            }
-          } else {
-            const errorText = await backendResponse.text().catch(() => 'Unknown error');
-            console.error('[api/onboarding/business-info] Backend save failed:', {
-              status: backendResponse.status,
-              statusText: backendResponse.statusText,
-              error: errorText
+          // Update user's onboarding progress to next step
+          try {
+            const progressUpdateResponse = await fetch(`${apiBaseUrl}/api/users/update-onboarding-step/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`,
+                'X-User-Email': authenticatedUser.email,
+                'X-User-Sub': authenticatedUser.sub,
+                'X-Source': 'business-info-completion'
+              },
+              body: JSON.stringify({
+                current_step: 'subscription',
+                needs_onboarding: true,
+                onboarding_completed: false,
+                business_info_completed: true
+              })
             });
             
-            // Continue with cookie storage even if backend fails (graceful degradation)
-            console.log('[api/onboarding/business-info] Continuing with cookie storage despite backend failure');
+            if (progressUpdateResponse.ok) {
+              console.log('[api/onboarding/business-info] User onboarding step updated to subscription');
+            } else {
+              console.warn('[api/onboarding/business-info] Failed to update onboarding step, but continuing');
+            }
+          } catch (progressError) {
+            console.warn('[api/onboarding/business-info] Error updating onboarding progress:', progressError);
+            // Continue - don't fail the whole request for this
           }
           
-          // ALWAYS set cookies for caching/fallback (regardless of backend success)
-          try {
-            // Mark business info step as completed
-            await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
-            await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-            await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
-            
-            // Cache business info data
-            await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
-            await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
-            
-            if (businessData.country) {
-              await cookieStore.set('businessCountry', businessData.country, COOKIE_OPTIONS);
-            }
-            
-            if (businessData.legalStructure) {
-              await cookieStore.set('legalStructure', businessData.legalStructure, COOKIE_OPTIONS);
-            }
-            
-            // Set timestamp for tracking
-            await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
-            
-            console.log('[api/onboarding/business-info] Cookies set successfully');
-          } catch (cookieError) {
-            console.error('[api/onboarding/business-info] Error setting cookies:', cookieError);
-            // Continue - don't fail the entire request for cookie issues
-          }
-          
-          // Prepare response data
-          const responseData = {
-            success: backendSuccess,
-            message: backendSuccess ? 'Business information saved successfully' : 'Business information cached locally',
-            nextRoute: '/onboarding/subscription',
-            businessInfo: {
-              businessName: businessData.businessName,
-              businessType: businessData.businessType,
-              country: businessData.country,
-              legalStructure: businessData.legalStructure
-            },
-            backendStatus: backendSuccess ? 'saved' : 'failed',
-            tenant_id: backendData.tenant_id || null
-          };
-          
-          // Return success response
-          return createSafeResponse(responseData);
-          
-        } catch (backendError) {
-          console.error('[api/onboarding/business-info] Backend communication failed:', {
-            message: backendError.message,
-            stack: backendError.stack
-          });
-          
-          // Graceful degradation: save to cookies even if backend fails
+          // Update session cookie with new onboarding status
           try {
             const cookieStore = await cookies();
+            const sessionCookie = cookieStore.get('appSession');
+            let sessionData = {};
             
-            // Mark business info step as completed (cached)
-            await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
-            await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
-            await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
+            if (sessionCookie) {
+              try {
+                sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              } catch (parseError) {
+                console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
+              }
+            }
             
-            // Cache business data
-            await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
-            await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+            const updatedSessionData = {
+              ...sessionData,
+              user: {
+                ...sessionData.user,
+                currentStep: 'subscription',
+                needsOnboarding: true,
+                onboardingCompleted: false,
+                businessInfoCompleted: true
+              }
+            };
             
-            return createSafeResponse({
-              success: true, // Still successful from user perspective
-              message: 'Business information saved locally (backend temporarily unavailable)',
-              nextRoute: '/onboarding/subscription',
-              businessInfo: {
-                businessName: businessData.businessName,
-                businessType: businessData.businessType,
-                country: businessData.country,
-                legalStructure: businessData.legalStructure
-              },
-              backendStatus: 'offline',
-              fallback: true
+            const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            
+            const finalResponse = createSafeResponse({
+              success: true,
+              message: 'Business information saved successfully',
+              next_step: 'subscription',
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData.tenant_id || null
             });
-          } catch (fallbackError) {
-            console.error('[api/onboarding/business-info] Complete failure:', fallbackError);
             
-            return createSafeResponse({
-              success: false,
-              error: 'Failed to save business information',
-              message: 'Please try again or contact support if the problem persists'
-            }, 500);
+            // Update the session cookie
+            finalResponse.cookies.set('appSession', updatedSessionCookie, {
+              path: '/',
+              httpOnly: false,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 7 * 24 * 60 * 60 // 7 days
+            });
+            
+            console.log('[api/onboarding/business-info] Business info completed, session updated, ready for subscription');
+            return finalResponse;
+            
+          } catch (sessionError) {
+            console.error('[api/onboarding/business-info] Error updating session:', sessionError);
+            // Continue without session update
+          }
+          
+        } catch (jsonError) {
+          console.log('[api/onboarding/business-info] Django backend responded OK but no JSON data');
+          backendSuccess = true; // Still consider it successful
+          backendData = { success: true, message: 'Business info saved successfully' };
+          
+          // Still update session for successful submission
+          try {
+            const cookieStore = await cookies();
+            const sessionCookie = cookieStore.get('appSession');
+            let sessionData = {};
+            
+            if (sessionCookie) {
+              try {
+                sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              } catch (parseError) {
+                console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
+              }
+            }
+            
+            const updatedSessionData = {
+              ...sessionData,
+              user: {
+                ...sessionData.user,
+                currentStep: 'subscription',
+                needsOnboarding: true,
+                onboardingCompleted: false,
+                businessInfoCompleted: true
+              }
+            };
+            
+            const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            
+            const response = createSafeResponse({
+              success: true,
+              message: 'Business information saved successfully',
+              next_step: 'subscription'
+            });
+            
+            response.cookies.set('appSession', updatedSessionCookie, COOKIE_OPTIONS);
+            return response;
+            
+          } catch (sessionError) {
+            console.error('[api/onboarding/business-info] Error updating session after Django success:', sessionError);
           }
         }
       } else {
@@ -458,6 +363,54 @@ export async function POST(request) {
         // Continue with cookie storage even if backend fails (graceful degradation)
         console.log('[api/onboarding/business-info] Continuing with cookie storage despite backend failure');
       }
+      
+      // ALWAYS set cookies for caching/fallback (regardless of backend success)
+      try {
+        const cookieStore = await cookies();
+        
+        // Mark business info step as completed
+        await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
+        await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
+        await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
+        
+        // Cache business info data
+        await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
+        await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+        
+        if (businessData.country) {
+          await cookieStore.set('businessCountry', businessData.country, COOKIE_OPTIONS);
+        }
+        
+        if (businessData.legalStructure) {
+          await cookieStore.set('legalStructure', businessData.legalStructure, COOKIE_OPTIONS);
+        }
+        
+        // Set timestamp for tracking
+        await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
+        
+        console.log('[api/onboarding/business-info] Cookies set successfully');
+      } catch (cookieError) {
+        console.error('[api/onboarding/business-info] Error setting cookies:', cookieError);
+        // Continue - don't fail the entire request for cookie issues
+      }
+      
+      // Prepare response data
+      const responseData = {
+        success: backendSuccess,
+        message: backendSuccess ? 'Business information saved successfully' : 'Business information cached locally',
+        nextRoute: '/onboarding/subscription',
+        businessInfo: {
+          businessName: businessData.businessName,
+          businessType: businessData.businessType,
+          country: businessData.country,
+          legalStructure: businessData.legalStructure
+        },
+        backendStatus: backendSuccess ? 'saved' : 'failed',
+        tenant_id: backendData.tenant_id || null
+      };
+      
+      // Return success response
+      return createSafeResponse(responseData);
       
     } catch (backendError) {
       console.error('[api/onboarding/business-info] Backend communication failed:', {
