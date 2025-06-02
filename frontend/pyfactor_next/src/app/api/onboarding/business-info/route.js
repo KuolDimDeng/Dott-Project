@@ -3,7 +3,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
-import { getSession } from '@auth0/nextjs-auth0';
+import { Auth0Client } from '@auth0/nextjs-auth0/server';
+
+const auth0 = new Auth0Client();
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -19,8 +21,8 @@ const COOKIE_OPTIONS = {
  */
 async function validateAuthentication(request) {
   try {
-    // Check Auth0 session
-    const session = await getSession(request);
+    // Check Auth0 session using v4.x API
+    const session = await auth0.getSession(request);
     if (!session || !session.user) {
       return { 
         isAuthenticated: false, 

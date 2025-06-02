@@ -1,14 +1,7 @@
-import { handleAuth, handleLogin, handleLogout, handleCallback } from '@auth0/nextjs-auth0';
+import { Auth0Client } from '@auth0/nextjs-auth0/server';
 
-export const GET = handleAuth({
-  login: handleLogin({
-    authorizationParams: {
-      audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
-      scope: 'openid profile email'
-    }
-  }),
-  logout: handleLogout({
-    returnTo: process.env.NEXT_PUBLIC_BASE_URL
-  }),
-  callback: handleCallback()
-}); 
+const auth0 = new Auth0Client();
+
+export async function GET(request) {
+  return await auth0.middleware(request);
+} 
