@@ -76,12 +76,45 @@ export async function GET(request) {
             needsOnboarding: backendUserData.needsOnboarding
           });
           
-          // Merge Auth0 data with backend profile data
+          // Check if session cookie has more recent onboarding status
+          let sessionOnboardingData = {};
+          if (sessionCookie) {
+            try {
+              const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              if (sessionData.user) {
+                sessionOnboardingData = {
+                  currentStep: sessionData.user.currentStep,
+                  needsOnboarding: sessionData.user.needsOnboarding,
+                  onboardingCompleted: sessionData.user.onboardingCompleted,
+                  businessInfoCompleted: sessionData.user.businessInfoCompleted
+                };
+                console.log('[Auth Profile] Session onboarding data:', sessionOnboardingData);
+              }
+            } catch (parseError) {
+              console.error('[Auth Profile] Error parsing session for onboarding data:', parseError);
+            }
+          }
+          
+          // Merge Auth0 data with backend profile data, prioritizing session data for onboarding
           const completeProfile = {
             ...user, // Auth0 user data (email, name, picture, sub)
-            ...backendUserData, // Backend data (tenantId, currentStep, needsOnboarding, etc.)
+            ...backendUserData, // Backend data (tenantId, etc.)
+            // Prioritize session data for onboarding status if available
+            ...(sessionOnboardingData.currentStep && {
+              currentStep: sessionOnboardingData.currentStep,
+              needsOnboarding: sessionOnboardingData.needsOnboarding !== undefined ? sessionOnboardingData.needsOnboarding : backendUserData.needsOnboarding,
+              onboardingCompleted: sessionOnboardingData.onboardingCompleted !== undefined ? sessionOnboardingData.onboardingCompleted : backendUserData.onboardingCompleted,
+              businessInfoCompleted: sessionOnboardingData.businessInfoCompleted !== undefined ? sessionOnboardingData.businessInfoCompleted : backendUserData.businessInfoCompleted
+            }),
             source: 'merged' // Indicate this is merged data
           };
+          
+          console.log('[Auth Profile] Final merged profile:', {
+            currentStep: completeProfile.currentStep,
+            needsOnboarding: completeProfile.needsOnboarding,
+            businessInfoCompleted: completeProfile.businessInfoCompleted,
+            source: completeProfile.source
+          });
           
           return NextResponse.json(completeProfile);
         } else {
@@ -101,6 +134,26 @@ export async function GET(request) {
       tenantId: null,
       source: 'auth0-only'
     };
+    
+    // But check if session has onboarding status
+    if (sessionCookie) {
+      try {
+        const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        if (sessionData.user && sessionData.user.currentStep) {
+          basicProfile.currentStep = sessionData.user.currentStep;
+          basicProfile.needsOnboarding = sessionData.user.needsOnboarding !== undefined ? sessionData.user.needsOnboarding : true;
+          basicProfile.onboardingCompleted = sessionData.user.onboardingCompleted !== undefined ? sessionData.user.onboardingCompleted : false;
+          basicProfile.businessInfoCompleted = sessionData.user.businessInfoCompleted !== undefined ? sessionData.user.businessInfoCompleted : false;
+          basicProfile.source = 'auth0-with-session';
+          console.log('[Auth Profile] Updated basic profile with session data:', {
+            currentStep: basicProfile.currentStep,
+            needsOnboarding: basicProfile.needsOnboarding
+          });
+        }
+      } catch (parseError) {
+        console.error('[Auth Profile] Error parsing session for fallback profile:', parseError);
+      }
+    }
     
     console.log('[Auth Profile] Returning basic Auth0 profile with defaults');
     return NextResponse.json(basicProfile);
