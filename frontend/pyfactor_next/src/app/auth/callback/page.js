@@ -36,9 +36,10 @@ export default function Auth0CallbackPage() {
         
         setUser(sessionData);
         
-        console.log('[Auth0Callback] Processing Auth0 callback for user:', {
-          email: sessionData.email,
-          sub: sessionData.sub
+        console.log('[Auth0Callback] Authentication successful, session data:', {
+          hasUser: !!sessionData.user,
+          hasAccessToken: !!sessionData.accessToken,
+          email: sessionData.user?.email
         });
         
         setStatus('Loading your profile...');
@@ -55,31 +56,115 @@ export default function Auth0CallbackPage() {
         // Get complete user profile from backend
         let backendUser;
         try {
-          const userResponse = await fetch('/api/user/current', {
+          setStatus('Setting up your account...');
+          console.log('[Auth0Callback] Creating user in Django backend');
+          
+          const createUserResponse = await fetch('/api/user/create-auth0-user', {
+            method: 'POST',
             headers: {
-              'Authorization': `Bearer ${accessToken || 'session-token'}`,
-              'Content-Type': 'application/json',
-            },
+              'Content-Type': 'application/json'
+            }
           });
           
-          if (userResponse.ok) {
-            backendUser = await userResponse.json();
-            console.log('[Auth0Callback] Backend user data:', backendUser);
+          if (createUserResponse.ok) {
+            const createUserData = await createUserResponse.json();
+            console.log('[Auth0Callback] User creation result:', {
+              success: createUserData.success,
+              tenantId: createUserData.tenant_id,
+              currentStep: createUserData.current_step
+            });
+            
+            // Update backend user data with Django response
+            backendUser = {
+              email: sessionData.user.email,
+              sub: sessionData.user.sub,
+              name: sessionData.user.name,
+              picture: sessionData.user.picture,
+              tenantId: createUserData.tenant_id,
+              needsOnboarding: createUserData.needs_onboarding !== false,
+              onboardingCompleted: false,
+              currentStep: createUserData.current_step || 'business_info',
+              isNewUser: createUserData.success
+            };
+            
+            console.log('[Auth0Callback] Updated backend user with Django data:', backendUser);
           } else {
-            throw new Error(`Backend API returned ${userResponse.status}`);
+            console.warn('[Auth0Callback] User creation failed, checking if user exists');
+            
+            // Try to get existing user data from the response
+            try {
+              const errorData = await createUserResponse.json();
+              if (errorData.fallback && errorData.tenant_id) {
+                console.log('[Auth0Callback] Using fallback tenant ID:', errorData.tenant_id);
+                backendUser = {
+                  email: sessionData.user.email,
+                  sub: sessionData.user.sub,
+                  name: sessionData.user.name,
+                  picture: sessionData.user.picture,
+                  tenantId: errorData.tenant_id,
+                  needsOnboarding: true,
+                  onboardingCompleted: false,
+                  currentStep: 'business_info',
+                  isNewUser: true
+                };
+              }
+            } catch (parseError) {
+              console.error('[Auth0Callback] Error parsing create user response:', parseError);
+            }
           }
-        } catch (error) {
-          console.log('[Auth0Callback] Backend user fetch failed, treating as new user:', error);
-          // If backend fails, treat as new user
+        } catch (createUserError) {
+          console.error('[Auth0Callback] Error creating user in backend:', createUserError);
+          // Continue with default values
+        }
+        
+        // If we still don't have backend user data, try the original endpoint
+        if (!backendUser || !backendUser.tenantId) {
+          try {
+            const userResponse = await fetch('/api/user/current', {
+              headers: {
+                'Authorization': `Bearer ${accessToken || 'session-token'}`,
+                'Content-Type': 'application/json',
+              },
+            });
+            
+            if (userResponse.ok) {
+              const existingUser = await userResponse.json();
+              console.log('[Auth0Callback] Found existing user data:', existingUser);
+              
+              backendUser = {
+                email: existingUser.email || sessionData.user.email,
+                sub: existingUser.sub || sessionData.user.sub,
+                name: existingUser.name || sessionData.user.name,
+                picture: existingUser.picture || sessionData.user.picture,
+                tenantId: existingUser.tenant_id || existingUser.tenantId,
+                needsOnboarding: existingUser.needs_onboarding !== false,
+                onboardingCompleted: existingUser.onboarding_completed || false,
+                currentStep: existingUser.current_step || 'business_info',
+                isNewUser: !existingUser.tenant_id
+              };
+            }
+          } catch (error) {
+            console.log('[Auth0Callback] Backend user fetch failed:', error);
+          }
+        }
+        
+        // Final fallback if we still don't have backend user data
+        if (!backendUser) {
+          console.log('[Auth0Callback] Using fallback user data');
           backendUser = {
-            email: sessionData.email,
-            sub: sessionData.sub,
+            email: sessionData.user.email,
+            sub: sessionData.user.sub,
+            name: sessionData.user.name,
+            picture: sessionData.user.picture,
             needsOnboarding: true,
             tenantId: null,
             onboardingCompleted: false,
+            currentStep: 'business_info',
             isNewUser: true
           };
         }
+        
+        console.log('[Auth0Callback] Backend user data:', backendUser);
         
         console.log('[Auth0Callback] User profile loaded:', {
           email: backendUser.email,
