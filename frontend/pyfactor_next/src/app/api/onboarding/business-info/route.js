@@ -3,7 +3,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
-import { auth0 } from '@/lib/auth0';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -15,24 +14,62 @@ const COOKIE_OPTIONS = {
 };
 
 /**
- * Validate user authentication before processing request
+ * Validate user authentication using our custom session management
  */
 async function validateAuthentication(request) {
   try {
-    // Check Auth0 session using v4.x API
-    const session = await auth0.getSession(request);
-    if (!session || !session.user) {
+    console.log('[api/onboarding/business-info] Validating authentication');
+    
+    // Check for session cookie first
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
+    
+    if (sessionCookie) {
+      try {
+        const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        
+        // Check if session is expired
+        if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+          console.log('[api/onboarding/business-info] Session expired');
+          return { 
+            isAuthenticated: false, 
+            error: 'Session expired',
+            user: null 
+          };
+        }
+        
+        if (sessionData.user) {
+          console.log('[api/onboarding/business-info] Session authenticated:', sessionData.user.email);
+          return { 
+            isAuthenticated: true, 
+            user: sessionData.user,
+            error: null 
+          };
+        }
+      } catch (parseError) {
+        console.error('[api/onboarding/business-info] Error parsing session cookie:', parseError);
+      }
+    }
+    
+    // Fallback: check for individual Auth0 cookies
+    const accessTokenCookie = cookieStore.get('auth0_access_token');
+    const idTokenCookie = cookieStore.get('auth0_id_token');
+    
+    if (accessTokenCookie || idTokenCookie) {
+      console.log('[api/onboarding/business-info] Found auth token cookies');
+      // Basic authenticated user object
       return { 
-        isAuthenticated: false, 
-        error: 'Authentication required',
-        user: null 
+        isAuthenticated: true, 
+        user: { email: 'authenticated-user' }, // Minimal user object
+        error: null 
       };
     }
     
+    console.log('[api/onboarding/business-info] No authentication found');
     return { 
-      isAuthenticated: true, 
-      user: session.user,
-      error: null 
+      isAuthenticated: false, 
+      error: 'Authentication required',
+      user: null 
     };
   } catch (error) {
     console.error('[api/onboarding/business-info] Authentication error:', error);
