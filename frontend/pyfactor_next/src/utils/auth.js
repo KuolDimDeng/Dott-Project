@@ -1,83 +1,73 @@
 "use client";
 
-import { jwtDecode } from 'jwt-decode';
-import { logger } from './logger';
-import { signInWithRedirect } from '@/config/amplifyUnified';
+import { logger } from '@/utils/logger';
 
 /**
- * Check if a JWT token is expired
- * @param {string} token - The JWT token to check
- * @param {number} gracePeriodSec - Optional grace period in seconds
- * @returns {boolean} True if the token is expired
+ * Auth utilities for Auth0
  */
-const isTokenExpired = (token, gracePeriodSec = 0) => {
-  if (!token) return true;
-  
+
+/**
+ * Checks if user is authenticated with Auth0
+ * @returns {Promise<boolean>}
+ */
+export const isAuthenticated = async () => {
   try {
-    const decoded = jwtDecode(token);
-    if (!decoded.exp) return false;
-    
-    const currentTime = Math.floor(Date.now() / 1000);
-    return decoded.exp <= currentTime - gracePeriodSec;
+    const response = await fetch('/api/auth/me');
+    return response.ok;
   } catch (error) {
-    logger.error('[Auth] Error checking token expiration:', error);
-    return true;
+    logger.error('[Auth] Error checking authentication:', error);
+    return false;
   }
 };
 
 /**
- * Sign in with a social provider (Google, Apple, etc.)
- * @param {string} provider - The provider name ('Google', 'Apple')
- * @returns {Promise<void>} Triggers redirect to identity provider
+ * Gets the current user from Auth0
+ * @returns {Promise<Object|null>}
  */
-const signInWithSocialProvider = async (provider) => {
+export const getCurrentUser = async () => {
   try {
-    logger.debug(`[Auth] Initiating sign in with ${provider}`);
-    await signInWithRedirect({ provider });
-    // No need to return anything as this will redirect the user
-  } catch (error) {
-    logger.error(`[Auth] ${provider} sign in failed:`, error);
-    throw error;
-  }
-};
-
-/**
- * Refreshes the access token if expired
- * @returns {Promise<string|null>} The refreshed access token or null
- */
-const getRefreshedAccessToken = async () => {
-  try {
-    logger.debug('[Auth] Attempting to refresh access token');
-    const { fetchAuthSession } = await import('@/config/amplifyUnified');
-    const session = await fetchAuthSession();
+    const response = await fetch('/api/auth/me');
+    if (!response.ok) return null;
     
-    if (session?.tokens?.accessToken) {
-      return session.tokens.accessToken.toString();
-    }
-    return null;
+    const user = await response.json();
+    return user;
   } catch (error) {
-    logger.error('[Auth] Failed to refresh access token:', error);
+    logger.error('[Auth] Error getting current user:', error);
     return null;
   }
 };
 
 /**
- * Refreshes the user session and returns new tokens
+ * Redirects to Auth0 login
+ */
+export const signIn = () => {
+  window.location.href = '/api/auth/login';
+};
+
+/**
+ * Redirects to Auth0 logout
+ */
+export const signOut = () => {
+  window.location.href = '/api/auth/logout';
+};
+
+/**
+ * Refreshes the user session (no-op for Auth0 as it's handled automatically)
  * @returns {Promise<Object|null>} The refreshed session or null
  */
 export const refreshUserSession = async () => {
   try {
-    logger.debug('[Auth] Attempting to refresh user session');
-    const { fetchAuthSession } = await import('@/config/amplifyUnified');
-    const session = await fetchAuthSession({ forceRefresh: true });
+    logger.debug('[Auth] Checking Auth0 session');
+    const response = await fetch('/api/auth/me');
     
-    if (session?.tokens) {
-      logger.debug('[Auth] User session refreshed successfully');
-      return session;
+    if (response.ok) {
+      const user = await response.json();
+      logger.debug('[Auth] Auth0 session valid');
+      return user;
     }
     return null;
   } catch (error) {
-    logger.error('[Auth] Failed to refresh user session:', error);
+    logger.error('[Auth] Failed to check Auth0 session:', error);
     return null;
   }
 };
@@ -246,6 +236,3 @@ export const manualConfirmUser = async (userEmail) => {
     return { success: false, error: error.message || 'Unknown error' };
   }
 };
-
-// ES module exports
-export { isTokenExpired, signInWithSocialProvider, getRefreshedAccessToken };

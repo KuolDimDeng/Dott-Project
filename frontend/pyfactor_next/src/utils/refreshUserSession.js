@@ -1,16 +1,6 @@
-import { fetchAuthSession, getCurrentUser, signOut  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
 import { setCacheValue, getCacheValue } from './appCache';
-
-// Safe Hub import with fallback
-let Hub = null;
-try {
-  const amplifyModule = require('@/config/amplifyUnified');
-  Hub = amplifyModule.Hub;
-} catch (error) {
-  logger.warn('[Auth] Hub not available, continuing without Hub functionality');
-}
 
 /**
  * Migration function to convert ID tokens to access tokens
@@ -32,113 +22,37 @@ export function migrateToAccessTokens() {
     
     // Check if we need to migrate from ID token to access token
     const legacyIdToken = window.__APP_CACHE.auth.idToken || getCacheValue('idToken');
+    const currentAccessToken = window.__APP_CACHE.auth.token || getCacheValue('token');
     
-    // If we have a legacy token stored, but don't have a primary token
-    if (legacyIdToken && !window.__APP_CACHE.auth.token) {
+    if (legacyIdToken && !currentAccessToken) {
       logger.info('[Auth] Migrating from ID token to access token auth');
       
-      // Try to fetch a fresh session with access token
-      fetchAuthSession().then(session => {
-        if (session?.tokens?.accessToken) {
-          // Store the access token as the primary token
-          window.__APP_CACHE.auth.token = session.tokens.accessToken.toString();
-          setCacheValue('token', session.tokens.accessToken.toString());
-          
-          // Store the ID token separately
-          if (session?.tokens?.idToken) {
-            window.__APP_CACHE.auth.idToken = session.tokens.idToken.toString();
-            setCacheValue('idToken', session.tokens.idToken.toString());
-          }
-          
-          logger.info('[Auth] Successfully migrated to access token auth');
-        }
-      }).catch(error => {
-        logger.warn('[Auth] Failed to migrate to access token auth:', error);
-      });
-    }
-  } catch (error) {
-    logger.error('[Auth] Error in token migration:', error);
-  }
-}
-
-// Call migration function immediately
-migrateToAccessTokens();
-
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 1000;
-
-// Global state to track refresh attempts
-let isRefreshing = false;
-let lastRefreshTime = 0;
-const MIN_REFRESH_INTERVAL = 20000; // 20 seconds minimum between refreshes (reduced from 60s)
-let refreshPromise = null;
-let lastSuccessfulRefresh = 0;
-const TOKEN_CACHE_DURATION = 15 * 60 * 1000; // 15 minutes
-let refreshAttemptCount = 0;
-const MAX_REFRESH_ATTEMPTS = 3;
-const REFRESH_ATTEMPT_RESET_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
-// Add this new function to better manage the Hub listener issue
-// This will patch the AWS Amplify Hub system to deduplicate tokenRefresh events
-export function setupHubDeduplication() {
-  if (typeof window === 'undefined' || !Hub) return;
-  
-  // Initialize our Hub protection if it doesn't exist
-  if (!window.__hubProtectionInitialized) {
-    logger.debug('[Hub Protection] Setting up token refresh event deduplication');
-    
-    // Get original Hub dispatch function
-    const originalHubDispatch = Hub.dispatch;
-    
-    // Keep track of recent events to deduplicate them
-    const recentEvents = new Map();
-    const MAX_EVENTS = 25; // Maximum number of recent events to track
-    const DEDUPLICATION_WINDOW = 2000; // 2 seconds window for deduplication
-    
-    // Monkey patch Hub.dispatch to deduplicate events
-    Hub.dispatch = function dedupedDispatch(channel, payload) {
-      // Only intercept auth channel
-      if (channel === 'auth') {
-        // Only deduplicate tokenRefresh events
-        if (payload.event === 'tokenRefresh') {
-          const now = Date.now();
-          
-          // Create a key based on event name
-          const eventKey = `${payload.event}`;
-          
-          // Check if we've seen this event very recently
-          if (recentEvents.has(eventKey)) {
-            const lastTimestamp = recentEvents.get(eventKey);
-            
-            // If the event was seen very recently, drop it
-            if (now - lastTimestamp < DEDUPLICATION_WINDOW) {
-              logger.debug(`[Hub Protection] Dropping duplicate event: ${payload.event} (${now - lastTimestamp}ms ago)`);
-              return;
-            }
-          }
-          
-          // Update event timestamp
-          recentEvents.set(eventKey, now);
-          
-          // If map is too large, remove oldest entries
-          if (recentEvents.size > MAX_EVENTS) {
-            const oldestKey = Array.from(recentEvents.keys())[0];
-            recentEvents.delete(oldestKey);
-          }
-        }
-      }
+      // For Auth0, we prefer using access tokens for API calls
+      // If we only have an ID token, we'll try to use it temporarily
+      // but should trigger a proper token refresh
+      window.__APP_CACHE.auth.token = legacyIdToken;
+      setCacheValue('token', legacyIdToken);
       
-      // Call original dispatch function
-      return originalHubDispatch.call(this, channel, payload);
-    };
+      // Mark that we need a proper refresh
+      window.__APP_CACHE.auth.needsRefresh = true;
+      
+      logger.info('[Auth] Temporary migration completed - refresh needed');
+    }
     
-    window.__hubProtectionInitialized = true;
-    logger.debug('[Hub Protection] Hub event deduplication initialized');
+    return true;
+  } catch (error) {
+    logger.error('[Auth] Error during token migration:', error);
+    return false;
   }
 }
 
-// Call the setup function immediately
-setupHubDeduplication();
+/**
+ * Set up Hub deduplication (no-op for Auth0 - keeping for compatibility)
+ */
+export function setupHubDeduplication() {
+  logger.debug('[Auth] Hub deduplication not needed for Auth0');
+  return true;
+}
 
 // Add a function to ensure the APP_CACHE auth provider is set
 export function ensureAuthProvider() {
@@ -161,155 +75,62 @@ export function ensureAuthProvider() {
       }
       
       return true;
-    } catch (e) {
-      logger.error('[Auth] Error ensuring auth provider:', e);
+    } catch (error) {
+      logger.error('[Auth] Error ensuring auth provider:', error);
       return false;
     }
   }
   return false;
 }
 
-// Call the function immediately to set provider on load
-ensureAuthProvider();
+// Rate limiting for refresh attempts
+let lastSuccessfulRefresh = 0;
+const REFRESH_COOLDOWN = 30000; // 30 seconds minimum between refreshes
 
-// Reset refresh attempt count periodically
-setInterval(() => {
-  refreshAttemptCount = 0;
-}, REFRESH_ATTEMPT_RESET_INTERVAL);
-
-/**
- * Utility for forcing a session refresh when auth tokens expire
- * This handles automatically refreshing the user's session when 401 errors occur
- */
-
-/**
- * Refreshes the user's authentication session
- * This will either get a new token silently or force re-login if needed
- * 
- * @returns {Promise<boolean>} True if refresh was successful
- */
 export const refreshUserSession = async () => {
-  logger.info('[Auth] Attempting to refresh user session');
-  
   try {
-    // Prevent multiple simultaneous refresh attempts
-    if (isRefreshing) {
-      logger.info('[Auth] Another refresh is already in progress, waiting for it to complete');
-      return refreshPromise;
-    }
-    
-    // Check if we've refreshed recently to prevent hammering the auth server
+    // Check rate limiting
     const now = Date.now();
-    if (now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
-      logger.debug('[Auth] Refresh attempt too soon after previous attempt, using cached token');
+    if (now - lastSuccessfulRefresh < REFRESH_COOLDOWN) {
+      logger.debug('[Auth] Refresh rate limited, skipping');
+      return false;
+    }
+
+    logger.info('[Auth] Attempting to refresh user session');
+    
+    // Ensure auth provider is set correctly
+    ensureAuthProvider();
+    
+    // For Auth0, we don't need to manually refresh tokens
+    // Auth0 SDK handles this automatically
+    // We just need to check if we have valid tokens
+    
+    const authProvider = window.__APP_CACHE?.auth?.provider || 'auth0';
+    
+    if (authProvider === 'auth0') {
+      // For Auth0, check if we have a valid session
+      // The Auth0 SDK will handle token refresh automatically
+      logger.info('[Auth] Using Auth0 authentication - automatic token management');
       
-      // Return true if last refresh was successful and recent
-      if (now - lastSuccessfulRefresh < TOKEN_CACHE_DURATION) {
+      // Check if we have basic auth info
+      const hasToken = !!(window.__APP_CACHE?.auth?.token || getCacheValue('token'));
+      
+      if (hasToken) {
+        lastSuccessfulRefresh = Date.now();
+        logger.info('[Auth] Auth0 session appears valid');
         return true;
+      } else {
+        logger.info('[Auth] No Auth0 token found - user may need to re-authenticate');
+        return false;
       }
     }
     
-    // Mark that we're refreshing and track the time
-    isRefreshing = true;
-    lastRefreshTime = now;
+    logger.warn('[Auth] Unknown auth provider:', authProvider);
+    return false;
     
-    // Create a promise to track this refresh attempt
-    refreshPromise = (async () => {
-      try {
-        // Track refresh attempts to prevent infinite loops
-        refreshAttemptCount++;
-        if (refreshAttemptCount > MAX_REFRESH_ATTEMPTS) {
-          logger.warn(`[Auth] Maximum refresh attempts (${MAX_REFRESH_ATTEMPTS}) reached`);
-          return await forceRelogin();
-        }
-        
-        // Try to get the authentication provider
-        const authProvider = window?.__APP_CACHE?.auth?.provider;
-        
-        if (!authProvider) {
-          logger.warn('[Auth] No auth provider found in APP_CACHE');
-          return await forceRelogin();
-        }
-        
-        // Check if we have an auth mechanism to refresh the token
-        if (typeof window.refreshAuthToken === 'function') {
-          logger.info('[Auth] Using refreshAuthToken function');
-          const result = await window.refreshAuthToken();
-          
-          if (result?.success) {
-            logger.info('[Auth] Token refresh successful');
-            lastSuccessfulRefresh = Date.now();
-            
-            // Store the new token in APP_CACHE
-            if (result.tokens) {
-              storeTokensInAppCache(result.tokens);
-            }
-            
-            return true;
-          }
-        }
-        
-        // Try Amplify's fetchAuthSession to get fresh tokens
-        try {
-          logger.info('[Auth] Attempting to refresh session using Amplify');
-          const session = await fetchAuthSession({ forceRefresh: true });
-          
-          if (session?.tokens) {
-            logger.info('[Auth] Amplify session refresh successful');
-            lastSuccessfulRefresh = Date.now();
-            
-            // Store the new tokens in APP_CACHE
-            storeTokensInAppCache({
-              idToken: session.tokens.idToken?.toString(),
-              accessToken: session.tokens.accessToken?.toString(),
-              refreshToken: session.tokens.refreshToken?.toString()
-            });
-            
-            return true;
-          }
-        } catch (amplifyError) {
-          logger.error('[Auth] Amplify refresh failed:', amplifyError);
-        }
-        
-        // Try Cognito-specific refresh if available
-        if (authProvider === 'cognito' && window.AWS && window.AWS.Cognito) {
-          logger.info('[Auth] Attempting Cognito session refresh');
-          try {
-            // Try to refresh the Cognito session
-            const auth = window.AWS.Cognito.Auth;
-            if (auth && typeof auth.currentSession === 'function') {
-              const session = await auth.currentSession();
-              if (session) {
-                // Update the token in APP_CACHE
-                lastSuccessfulRefresh = Date.now();
-                storeTokensInAppCache({
-                  idToken: session.getIdToken().getJwtToken(),
-                  accessToken: session.getAccessToken().getJwtToken(),
-                  refreshToken: session.getRefreshToken().getToken()
-                });
-                
-                logger.info('[Auth] Updated token in APP_CACHE via Cognito');
-                return true;
-              }
-            }
-          } catch (cognitoError) {
-            logger.error('[Auth] Cognito refresh failed:', cognitoError);
-          }
-        }
-        
-        // If we get here, we need to force a relogin
-        return await forceRelogin();
-      } finally {
-        // Make sure to reset the refreshing flag when done
-        isRefreshing = false;
-      }
-    })();
-    
-    return await refreshPromise;
   } catch (error) {
-    logger.error('[Auth] Error refreshing session:', error);
-    isRefreshing = false;
-    return await forceRelogin();
+    logger.error('[Auth] Session refresh failed:', error);
+    return false;
   }
 };
 
@@ -337,99 +158,59 @@ function storeTokensInAppCache(tokens) {
       
       // Parse and store token expiry
       const decodedToken = parseJwt(tokens.accessToken);
-      if (decodedToken.exp) {
-        window.__APP_CACHE.auth.tokenExpiry = decodedToken.exp * 1000;
-        setCacheValue('tokenExpiry', decodedToken.exp * 1000);
+      if (decodedToken && decodedToken.exp) {
+        const expiry = decodedToken.exp * 1000; // Convert to milliseconds
+        window.__APP_CACHE.auth.tokenExpiry = expiry;
+        setCacheValue('tokenExpiry', expiry);
       }
+      
+      logger.debug('[Auth] Access token stored in APP_CACHE');
     }
     
     // Store ID token separately if provided
     if (tokens.idToken) {
       window.__APP_CACHE.auth.idToken = tokens.idToken;
       setCacheValue('idToken', tokens.idToken);
-      
-      // Extract user ID from ID token if available
-      const decodedIdToken = parseJwt(tokens.idToken);
-      if (decodedIdToken.sub) {
-        window.__APP_CACHE.auth.userId = decodedIdToken.sub;
-        setCacheValue('userId', decodedIdToken.sub);
-      }
+      logger.debug('[Auth] ID token stored in APP_CACHE');
     }
     
     // Store refresh token if provided
     if (tokens.refreshToken) {
       window.__APP_CACHE.auth.refreshToken = tokens.refreshToken;
       setCacheValue('refreshToken', tokens.refreshToken);
+      logger.debug('[Auth] Refresh token stored in APP_CACHE');
     }
     
-    // Store timestamp of when we got these tokens
+    // Mark timestamp
     const timestamp = Date.now();
     window.__APP_CACHE.auth.tokenTimestamp = timestamp;
     setCacheValue('tokenTimestamp', timestamp);
-    
-    // Mark that we have a session
-    window.__APP_CACHE.auth.hasSession = true;
     setCacheValue('hasSession', true);
     
-    logger.debug('[RefreshSession] Stored tokens in APP_CACHE');
-    return true;
+    logger.info('[Auth] Tokens stored successfully in APP_CACHE');
   } catch (error) {
-    logger.error('[AuthCache] Error storing tokens in APP_CACHE:', error);
-    return false;
+    logger.error('[Auth] Error storing tokens in APP_CACHE:', error);
   }
 }
 
-/**
- * Force the user to log in again when their session cannot be refreshed
- * 
- * @returns {Promise<boolean>} Always returns false as we're redirecting
- */
 const forceRelogin = async () => {
-  logger.warn('[Auth] Forcing relogin due to expired session');
-  
   try {
-    // Store the current URL to return after login
-    const currentPath = window.location.pathname + window.location.search;
-    if (window.__APP_CACHE) {
-      if (!window.__APP_CACHE.auth) {
-        window.__APP_CACHE.auth = {};
-      }
-      window.__APP_CACHE.auth.redirectAfterLogin = currentPath;
-      setCacheValue('redirectAfterLogin', currentPath);
+    logger.warn('[Auth] Force relogin triggered');
+    
+    // Clear the session
+    await clearUserSession();
+    
+    // For Auth0, redirect to login
+    if (typeof window !== 'undefined') {
+      window.location.href = '/auth/signin';
     }
     
-    // Clear any cached auth data
-    if (window.__APP_CACHE && window.__APP_CACHE.auth) {
-      window.__APP_CACHE.auth.token = null;
-      window.__APP_CACHE.auth.accessToken = null;
-      window.__APP_CACHE.auth.refreshToken = null;
-      window.__APP_CACHE.auth.hasSession = false;
-      window.__APP_CACHE.auth.tokenExpiry = null;
-    }
-    
-    // Show a user-friendly message
-    if (window.toast && typeof window.toast.error === 'function') {
-      window.toast.error('Your session has expired. Redirecting to login...');
-    } else {
-      alert('Your session has expired. Please log in again.');
-    }
-    
-    // Give the user time to see the message
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Redirect to login
-    window.location.href = '/login?expired=true&redirect=' + encodeURIComponent(currentPath);
-    
-    return false;
+    return true;
   } catch (error) {
-    logger.error('[Auth] Error in forceRelogin:', error);
-    // Fallback to basic redirect
-    window.location.href = '/login';
+    logger.error('[Auth] Error during force relogin:', error);
     return false;
   }
 };
-
-export default refreshUserSession;
 
 export async function clearUserSession() {
   try {
@@ -450,17 +231,6 @@ export async function clearUserSession() {
     setCacheValue('tokenExpiry', null);
     setCacheValue('hasSession', false);
     
-    // Also try to call Amplify signOut if available
-    try {
-      await signOut();
-      logger.debug('[Session] Amplify signOut completed');
-    } catch (signOutError) {
-      logger.warn('[Session] Error during Amplify signOut:', {
-        error: signOutError.message
-      });
-      // Continue even if Amplify signOut fails
-    }
-    
     logger.debug('[Session] Session cleared successfully');
     return true;
   } catch (error) {
@@ -474,33 +244,23 @@ export async function clearUserSession() {
 
 export const getStoredTokens = () => {
   try {
-    if (typeof window === 'undefined') {
-      return { idToken: null, accessToken: null, token: null, tokenTimestamp: null };
-    }
-    
-    // Try to get from APP_CACHE first
-    if (window.__APP_CACHE?.auth) {
-      return {
-        token: window.__APP_CACHE.auth.token || null, // This is now the access token
-        idToken: window.__APP_CACHE.auth.idToken || null,
-        accessToken: window.__APP_CACHE.auth.token || null, // For backward compatibility
-        tokenTimestamp: window.__APP_CACHE.auth.tokenTimestamp || null
-      };
-    }
-    
-    // Fallback to getCacheValue
-    const token = getCacheValue('token');
-    const idToken = getCacheValue('idToken');
-    const tokenTimestamp = getCacheValue('tokenTimestamp');
+    const token = window.__APP_CACHE?.auth?.token || getCacheValue('token');
+    const idToken = window.__APP_CACHE?.auth?.idToken || getCacheValue('idToken');
+    const refreshToken = window.__APP_CACHE?.auth?.refreshToken || getCacheValue('refreshToken');
     
     return {
-      token,
-      idToken,
-      accessToken: token, // For backward compatibility
-      tokenTimestamp: tokenTimestamp ? parseInt(tokenTimestamp, 10) : null
+      accessToken: token,
+      idToken: idToken,
+      refreshToken: refreshToken,
+      hasTokens: !!(token || idToken)
     };
   } catch (error) {
-    logger.warn('[getStoredTokens] Error reading tokens from AppCache', error);
-    return { token: null, idToken: null, accessToken: null, tokenTimestamp: null };
+    logger.error('[Auth] Error getting stored tokens:', error);
+    return {
+      accessToken: null,
+      idToken: null,
+      refreshToken: null,
+      hasTokens: false
+    };
   }
 };
