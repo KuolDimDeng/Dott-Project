@@ -679,11 +679,10 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [handleClose]);
 
   const handleSignOut = useCallback(() => {
-    if (logout) {
-      logout();
-    }
-    router.push('/');
-  }, [logout, router]);
+    // **CRITICAL FIX: Use browser redirect instead of XHR to avoid CORS errors**
+    console.log('[DashboardContent] Logging out user with Auth0');
+    window.location.href = '/api/auth/logout';
+  }, []);
 
   // Handle drawer toggle with improved memory management
   const handleDrawerToggle = useCallback(() => {

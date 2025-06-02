@@ -168,11 +168,42 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     if (isAuthenticated) {
       return {
         text: t('go_to_dashboard', 'DASHBOARD'),
-        action: () => {
-          if (tenantId) {
-            router.push(`/tenant/${tenantId}/dashboard`);
-          } else {
-            router.push('/dashboard');
+        action: async () => {
+          // **CRITICAL FIX: Always fetch latest profile to get current tenant ID**
+          try {
+            logger.debug('[AuthButton] Fetching latest profile for dashboard redirect');
+            const profileResponse = await fetch('/api/auth/profile');
+            
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              
+              if (profileData.tenantId) {
+                logger.debug('[AuthButton] Got tenant ID from profile:', profileData.tenantId);
+                router.push(`/tenant/${profileData.tenantId}/dashboard`);
+                return;
+              }
+            }
+            
+            // If profile fetch fails, try session data
+            const sessionResponse = await fetch('/api/auth/session');
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json();
+              
+              if (sessionData.user && sessionData.user.tenantId) {
+                logger.debug('[AuthButton] Got tenant ID from session:', sessionData.user.tenantId);
+                router.push(`/tenant/${sessionData.user.tenantId}/dashboard`);
+                return;
+              }
+            }
+            
+            // **FALLBACK: Redirect to onboarding instead of broken dashboard**
+            logger.warn('[AuthButton] No tenant ID found, redirecting to onboarding');
+            router.push('/onboarding/business-info');
+            
+          } catch (error) {
+            logger.error('[AuthButton] Error fetching tenant ID for dashboard redirect:', error);
+            // **LAST RESORT: Redirect to onboarding instead of broken dashboard**
+            router.push('/onboarding/business-info');
           }
         }
       };
