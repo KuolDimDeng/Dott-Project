@@ -4,14 +4,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { ToastProvider } from '@/components/Toast/ToastProvider';
 import { ONBOARDING_STEPS } from '@/config/steps';
 import Image from 'next/image';
 import StepIcon from './components/StepIcon';
 import StepConnector from './components/StepConnector';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useCookies } from 'react-cookie';
 
 // Define CSS for transition animations
 const pageTransitionStyles = `
@@ -28,6 +26,15 @@ const pageTransitionStyles = `
     transition: width 0.5s ease-in-out;
   }
 `;
+
+// Simple cookie helper function
+const getCookie = (name) => {
+  if (typeof document === 'undefined') return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return null;
+};
 
 // Get current step based on pathname
 const getCurrentStep = (pathname) => {
@@ -52,7 +59,6 @@ export default function OnboardingLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [cookies] = useCookies();
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useMediaQuery('(max-width: 768px)');
   const [currentStep, setCurrentStep] = useState('');
@@ -219,131 +225,129 @@ export default function OnboardingLayout({ children }) {
       {/* Add transition styles */}
       <style jsx global>{pageTransitionStyles}</style>
       
-      <ToastProvider>
-        <div className="flex flex-col min-h-screen md:flex-row bg-gray-50">
-          
-          {/* Brand sidebar - only visible on tablet and above */}
-          <div className="hidden md:flex md:w-5/12 lg:w-4/12 xl:w-5/12 bg-gradient-to-b from-blue-600 to-blue-800 text-white flex-col">
-            <div className="p-8 lg:p-12 flex flex-col h-full">
-              {/* Logo */}
-              <div className="mb-12">
-                <Image
-                  src="/static/images/Pyfactor.png"
-                  alt="Pyfactor Logo"
-                  width={150}
-                  height={50}
-                  className="h-12 w-auto"
-                  onError={(e) => {
-                    e.target.src = '/static/images/PyfactorLandingpage.png';
-                  }}
-                />
-              </div>
-              
-              {/* Step counter and content */}
-              <div className="mt-auto flex-grow flex flex-col justify-center">
-                <div className="text-sm font-medium text-blue-200 mb-3">{getProgressText()}</div>
-                <h1 className="text-3xl lg:text-4xl font-bold mb-4">{sidebarContent.title}</h1>
-                <p className="text-xl text-blue-100">{sidebarContent.subtitle}</p>
-                
-                {/* Enhanced progress indicator */}
-                <div className="mt-8 mb-8">
-                  <div className="flex mb-2 items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
-                        {getProgressText()}
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs font-semibold inline-block text-blue-200">
-                        {progressPercentage}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-700">
-                    <div 
-                      style={{ width: `${progressPercentage}%` }} 
-                      className="progress-bar-transition shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-300"
-                    ></div>
-                  </div>
-                </div>
-                
-                {/* Testimonial */}
-                <div className="mt-8 bg-blue-700 bg-opacity-50 p-6 rounded-lg border border-blue-400 border-opacity-20">
-                  <p className="italic text-blue-100 mb-4">
-                    "Pyfactor streamlined our accounting processes and saved us countless hours. The onboarding was simple and the team was incredibly helpful."
-                  </p>
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 rounded-full bg-blue-400 flex items-center justify-center text-blue-800 font-bold mr-3">
-                      JS
-                    </div>
-                    <div>
-                      <p className="font-medium">Jane Smith</p>
-                      <p className="text-sm text-blue-200">CEO, Smith Consulting</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <div className="flex flex-col min-h-screen md:flex-row bg-gray-50">
+        
+        {/* Brand sidebar - only visible on tablet and above */}
+        <div className="hidden md:flex md:w-5/12 lg:w-4/12 xl:w-5/12 bg-gradient-to-b from-blue-600 to-blue-800 text-white flex-col">
+          <div className="p-8 lg:p-12 flex flex-col h-full">
+            {/* Logo */}
+            <div className="mb-12">
+              <Image
+                src="/static/images/Pyfactor.png"
+                alt="Pyfactor Logo"
+                width={150}
+                height={50}
+                className="h-12 w-auto"
+                onError={(e) => {
+                  e.target.src = '/static/images/PyfactorLandingpage.png';
+                }}
+              />
             </div>
-          </div>
-
-          {/* Main content area */}
-          <div className="flex flex-col flex-1 relative">
-            {/* Mobile header */}
-            <div className="md:hidden bg-white border-b px-4 py-4">
-              <div className="flex items-center justify-between">
-                <Image
-                  src="/static/images/Pyfactor.png"
-                  alt="Pyfactor Logo"
-                  width={120}
-                  height={40}
-                  className="h-8 w-auto"
-                  onError={(e) => {
-                    e.target.src = '/static/images/PyfactorLandingpage.png';
-                  }}
-                />
-                <div className="text-sm text-gray-600">{getProgressText()}</div>
-              </div>
-              <div className="mt-3">
-                <div className="overflow-hidden h-2 bg-gray-200 rounded">
+            
+            {/* Step counter and content */}
+            <div className="mt-auto flex-grow flex flex-col justify-center">
+              <div className="text-sm font-medium text-blue-200 mb-3">{getProgressText()}</div>
+              <h1 className="text-3xl lg:text-4xl font-bold mb-4">{sidebarContent.title}</h1>
+              <p className="text-xl text-blue-100">{sidebarContent.subtitle}</p>
+              
+              {/* Enhanced progress indicator */}
+              <div className="mt-8 mb-8">
+                <div className="flex mb-2 items-center justify-between">
+                  <div>
+                    <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                      {getProgressText()}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-semibold inline-block text-blue-200">
+                      {progressPercentage}%
+                    </span>
+                  </div>
+                </div>
+                <div className="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-700">
                   <div 
                     style={{ width: `${progressPercentage}%` }} 
-                    className="progress-bar-transition h-full bg-blue-600"
+                    className="progress-bar-transition shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-300"
                   ></div>
                 </div>
               </div>
-            </div>
-
-            {/* Steps indicator - hidden on mobile, shown on tablet+ */}
-            <div className="hidden md:block bg-white border-b">
-              <div className="flex justify-center p-8">
-                <div className="flex items-center space-x-8">
-                  {steps.map((step, index) => (
-                    <React.Fragment key={step.key}>
-                      <StepIcon 
-                        step={step} 
-                        isActive={step.key === currentStep} 
-                        isCompleted={index < activeStepIndex}
-                        isMobile={isMobile}
-                      />
-                      {index < steps.length - 1 && (
-                        <StepConnector 
-                          isCompleted={index < activeStepIndex}
-                          isMobile={isMobile}
-                        />
-                      )}
-                    </React.Fragment>
-                  ))}
+              
+              {/* Testimonial */}
+              <div className="mt-8 bg-blue-700 bg-opacity-50 p-6 rounded-lg border border-blue-400 border-opacity-20">
+                <p className="italic text-blue-100 mb-4">
+                  "Pyfactor streamlined our accounting processes and saved us countless hours. The onboarding was simple and the team was incredibly helpful."
+                </p>
+                <div className="flex items-center">
+                  <div className="w-10 h-10 rounded-full bg-blue-400 flex items-center justify-center text-blue-800 font-bold mr-3">
+                    JS
+                  </div>
+                  <div>
+                    <p className="font-medium">Jane Smith</p>
+                    <p className="text-sm text-blue-200">CEO, Smith Consulting</p>
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Content */}
-            <div className={`flex-1 ${fadeIn ? 'page-transition' : ''}`}>
-              {children}
-            </div>
           </div>
         </div>
-      </ToastProvider>
+
+        {/* Main content area */}
+        <div className="flex flex-col flex-1 relative">
+          {/* Mobile header */}
+          <div className="md:hidden bg-white border-b px-4 py-4">
+            <div className="flex items-center justify-between">
+              <Image
+                src="/static/images/Pyfactor.png"
+                alt="Pyfactor Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+                onError={(e) => {
+                  e.target.src = '/static/images/PyfactorLandingpage.png';
+                }}
+              />
+              <div className="text-sm text-gray-600">{getProgressText()}</div>
+            </div>
+            <div className="mt-3">
+              <div className="overflow-hidden h-2 bg-gray-200 rounded">
+                <div 
+                  style={{ width: `${progressPercentage}%` }} 
+                  className="progress-bar-transition h-full bg-blue-600"
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Steps indicator - hidden on mobile, shown on tablet+ */}
+          <div className="hidden md:block bg-white border-b">
+            <div className="flex justify-center p-8">
+              <div className="flex items-center space-x-8">
+                {steps.map((step, index) => (
+                  <React.Fragment key={step.key}>
+                    <StepIcon 
+                      step={step} 
+                      isActive={step.key === currentStep} 
+                      isCompleted={index < activeStepIndex}
+                      isMobile={isMobile}
+                    />
+                    {index < steps.length - 1 && (
+                      <StepConnector 
+                        isCompleted={index < activeStepIndex}
+                        isMobile={isMobile}
+                      />
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className={`flex-1 ${fadeIn ? 'page-transition' : ''}`}>
+            {children}
+          </div>
+        </div>
+      </div>
     </>
   );
 }
