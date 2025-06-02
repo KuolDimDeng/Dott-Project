@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
-import { getCurrentUser  } from '@/config/amplifyUnified';
-import CognitoAttributes from '@/utils/CognitoAttributes';
+// Removed Amplify imports - using Auth0 session data instead
 import CrispErrorBoundary from './CrispErrorBoundary';
 import crispConfig from '@/config/crisp.config';
 
@@ -25,76 +24,84 @@ function CrispChat({ isAuthenticated }) {
           return;
         }
 
-        let user;
+        // Get user data from Auth0 session
+        let userData;
         try {
-          user = await getCurrentUser();
-        } catch (authError) {
-          // Handle authentication errors gracefully
-          if (authError.name === 'UserUnAuthenticatedException') {
-            logger.info('User not fully authenticated for Crisp chat, continuing without user data');
-            // Set up Crisp with minimal configuration
+          const response = await fetch('/api/auth/session');
+          if (!response.ok) {
+            logger.info('User not authenticated for Crisp chat, continuing without user data');
             window.$crisp.push(['do', 'chat:show']);
             return;
           }
-          throw authError; // Re-throw other errors
-        }
-
-        if (!user?.attributes) {
-          logger.warn('User authenticated but attributes not available');
+          const sessionData = await response.json();
+          userData = sessionData.user;
+        } catch (error) {
+          logger.warn('Failed to get session data for Crisp chat:', error);
+          window.$crisp.push(['do', 'chat:show']);
           return;
         }
 
-        const { attributes } = user;
+        if (!userData) {
+          logger.warn('User authenticated but data not available');
+          return;
+        }
 
-        // Set email if available using CognitoAttributes utility
-        const email = CognitoAttributes.getValue(attributes, CognitoAttributes.EMAIL);
-        if (email) {
-          window.$crisp.push(['set', 'user:email', email]);
+        // Set email if available
+        if (userData.email) {
+          window.$crisp.push(['set', 'user:email', userData.email]);
           logger.debug('Set Crisp user email');
         }
 
-        // Set nickname from first and last name using CognitoAttributes utility
-        const firstName = CognitoAttributes.getValue(attributes, CognitoAttributes.GIVEN_NAME);
-        const lastName = CognitoAttributes.getValue(attributes, CognitoAttributes.FAMILY_NAME);
-        if (firstName || lastName) {
-          const nickname = [firstName, lastName].filter(Boolean).join(' ');
-          if (nickname) {
-            window.$crisp.push(['set', 'user:nickname', nickname]);
-            logger.debug('Set Crisp user nickname:', nickname);
+        // Set nickname from name or email
+        const nickname = userData.name || userData.nickname || userData.email?.split('@')[0];
+        if (nickname) {
+          window.$crisp.push(['set', 'user:nickname', nickname]);
+          logger.debug('Set Crisp user nickname:', nickname);
+        }
+
+        // Get additional user metadata if available
+        try {
+          const userResponse = await fetch('/api/user/current', {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (userResponse.ok) {
+            const backendUser = await userResponse.json();
+            
+            // Set company name if available
+            if (backendUser.business_name) {
+              window.$crisp.push([
+                'set',
+                'user:company',
+                [backendUser.business_name],
+              ]);
+              logger.debug('Set Crisp user company:', backendUser.business_name);
+            }
+            
+            // Set tenant ID as custom data
+            if (backendUser.tenant_id) {
+              window.$crisp.push([
+                'set',
+                'session:data',
+                [['tenant_id', backendUser.tenant_id]]
+              ]);
+              logger.debug('Set Crisp tenant ID:', backendUser.tenant_id);
+            }
+            
+            // Set user role if available
+            if (backendUser.user_role) {
+              window.$crisp.push([
+                'set',
+                'session:data',
+                [['user_role', backendUser.user_role]]
+              ]);
+              logger.debug('Set Crisp user role:', backendUser.user_role);
+            }
           }
-        }
-
-        // Set company name if available using CognitoAttributes utility
-        const businessName = CognitoAttributes.getBusinessName(attributes);
-        if (businessName) {
-          window.$crisp.push([
-            'set',
-            'user:company',
-            [businessName],
-          ]);
-          logger.debug('Set Crisp user company:', businessName);
-        }
-
-        // Set tenant ID as custom data using CognitoAttributes utility
-        const tenantId = CognitoAttributes.getTenantId(attributes);
-        if (tenantId) {
-          window.$crisp.push([
-            'set',
-            'session:data',
-            [['tenant_id', tenantId]]
-          ]);
-          logger.debug('Set Crisp tenant ID:', tenantId);
-        }
-
-        // Set user role if available using CognitoAttributes utility
-        const userRole = CognitoAttributes.getUserRole(attributes);
-        if (userRole) {
-          window.$crisp.push([
-            'set',
-            'session:data',
-            [['user_role', userRole]]
-          ]);
-          logger.debug('Set Crisp user role:', userRole);
+        } catch (error) {
+          logger.debug('Could not fetch additional user data for Crisp:', error);
         }
 
         logger.debug('Crisp user data set successfully');

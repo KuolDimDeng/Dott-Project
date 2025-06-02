@@ -325,32 +325,88 @@ export default function SubscriptionPage() {
         
         // Always attempt dashboard redirect regardless of background setup
         try {
-          // Get user's tenant ID for correct dashboard redirect
-          const profileResponse = await fetch('/api/auth/profile');
-          if (profileResponse.ok) {
-            const profile = await profileResponse.json();
-            if (profile && profile.tenantId) {
-              logger.info('[SubscriptionPage] Redirecting to tenant dashboard:', profile.tenantId);
-              router.push(`/tenant/${profile.tenantId}/dashboard`);
-              return;
+          let foundTenantId = null;
+          
+          // Method 1: Try to get tenant ID from profile
+          try {
+            const profileResponse = await fetch('/api/auth/profile');
+            if (profileResponse.ok) {
+              const profile = await profileResponse.json();
+              if (profile && profile.tenantId) {
+                foundTenantId = profile.tenantId;
+                logger.info('[SubscriptionPage] Got tenant ID from profile:', foundTenantId);
+              }
+            }
+          } catch (profileError) {
+            logger.warn('[SubscriptionPage] Profile fetch failed:', profileError);
+          }
+          
+          // Method 2: Try to get tenant ID from session if profile didn't work
+          if (!foundTenantId) {
+            try {
+              const sessionResponse = await fetch('/api/auth/session');
+              if (sessionResponse.ok) {
+                const sessionData = await sessionResponse.json();
+                if (sessionData && sessionData.user && sessionData.user.tenantId) {
+                  foundTenantId = sessionData.user.tenantId;
+                  logger.info('[SubscriptionPage] Got tenant ID from session:', foundTenantId);
+                }
+              }
+            } catch (sessionError) {
+              logger.warn('[SubscriptionPage] Session fetch failed:', sessionError);
             }
           }
           
-          // Fallback: try session
-          const sessionResponse = await fetch('/api/auth/session');
-          if (sessionResponse.ok) {
-            const sessionData = await sessionResponse.json();
-            if (sessionData && sessionData.user && sessionData.user.tenantId) {
-              logger.info('[SubscriptionPage] Redirecting to tenant dashboard from session:', sessionData.user.tenantId);
-              router.push(`/tenant/${sessionData.user.tenantId}/dashboard`);
-              return;
+          // Method 3: Check component state tenant ID
+          if (!foundTenantId && tenantId) {
+            foundTenantId = tenantId;
+            logger.info('[SubscriptionPage] Using component state tenant ID:', foundTenantId);
+          }
+          
+          // Method 4: Try to extract from recent user creation calls (check window/global state)
+          if (!foundTenantId && typeof window !== 'undefined') {
+            // Check if there's cached user creation data
+            const cachedUserData = sessionStorage.getItem('recent_user_creation');
+            if (cachedUserData) {
+              try {
+                const userData = JSON.parse(cachedUserData);
+                if (userData.tenantId) {
+                  foundTenantId = userData.tenantId;
+                  logger.info('[SubscriptionPage] Got tenant ID from cached user creation data:', foundTenantId);
+                }
+              } catch (parseError) {
+                logger.warn('[SubscriptionPage] Failed to parse cached user data:', parseError);
+              }
             }
           }
           
-          // Check if we have a tenant ID from the component state
-          if (tenantId) {
-            logger.info('[SubscriptionPage] Using component state tenant ID:', tenantId);
-            router.push(`/tenant/${tenantId}/dashboard`);
+          // Method 5: Try direct backend call to get user data
+          if (!foundTenantId) {
+            try {
+              const directUserResponse = await fetch('/api/user/create-auth0-user', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ checkOnly: true })
+              });
+              
+              if (directUserResponse.ok) {
+                const userData = await directUserResponse.json();
+                if (userData.tenantId) {
+                  foundTenantId = userData.tenantId;
+                  logger.info('[SubscriptionPage] Got tenant ID from direct backend call:', foundTenantId);
+                }
+              }
+            } catch (backendError) {
+              logger.warn('[SubscriptionPage] Direct backend call failed:', backendError);
+            }
+          }
+          
+          // Now redirect with the found tenant ID
+          if (foundTenantId) {
+            logger.info('[SubscriptionPage] Redirecting to tenant dashboard:', foundTenantId);
+            router.push(`/tenant/${foundTenantId}/dashboard`);
             return;
           }
           
