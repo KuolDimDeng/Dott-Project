@@ -26,15 +26,34 @@ export async function GET(request, { params }) {
     
     // Handle logout route  
     if (route === 'logout') {
+      console.log('[Auth Route] Processing logout request');
+      
+      // **CRITICAL FIX: Use specific signin path for returnTo URL**
+      const returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin`;
+      
       const logoutUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/v2/logout?` +
         new URLSearchParams({
           client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
-          returnTo: process.env.NEXT_PUBLIC_BASE_URL,
+          returnTo: returnToUrl,
         });
       
-      // Clear session cookies
+      console.log('[Auth Route] Logout URL:', logoutUrl);
+      console.log('[Auth Route] Return URL:', returnToUrl);
+      
+      // Clear session cookies before redirect
       const response = NextResponse.redirect(logoutUrl);
+      
+      // Clear all auth-related cookies
       response.cookies.delete('appSession');
+      response.cookies.delete('auth0.is.authenticated');
+      response.cookies.delete('auth0-session');
+      
+      // Set additional headers to prevent caching
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('Pragma', 'no-cache');
+      response.headers.set('Expires', '0');
+      
+      console.log('[Auth Route] Redirecting to Auth0 logout with cleared cookies');
       return response;
     }
     
