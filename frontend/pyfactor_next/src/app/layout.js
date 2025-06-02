@@ -1,17 +1,23 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 import { Inter, Montserrat } from 'next/font/google';
 import './globals.css';
-import ClientProviders from './ClientProviders';
+import { Toaster } from 'react-hot-toast';
+import { Auth0Provider } from '@auth0/nextjs-auth0';
+// Menu privilege system has been replaced with page privileges
+// import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
+// DO NOT directly import scripts here as they will run in server context
+// Scripts will be loaded via next/script in the component
 
 const inter = Inter({ subsets: ['latin'] });
 const montserrat = Montserrat({ subsets: ['latin'] });
 
+// Using local font styling instead of next/font/google to prevent build errors
 export const metadata = {
   title: 'Dott: Small Business Software',
   description: 'Streamline your business operations with Dott',
 };
 
-// Root layout with proper provider structure
+// Root layout with Auth0 Provider for client-side authentication
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${inter.variable} ${montserrat.variable}`} suppressHydrationWarning>
@@ -19,9 +25,19 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        <ClientProviders>
+        <Auth0Provider>
           {children}
-        </ClientProviders>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+            }}
+          />
+        </Auth0Provider>
       </body>
     </html>
   );

@@ -17,11 +17,6 @@ const nextConfig = {
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
     NEXT_PUBLIC_COGNITO_DOMAIN: process.env.NEXT_PUBLIC_COGNITO_DOMAIN,
-    // Auth0 environment variables
-    APP_BASE_URL: process.env.APP_BASE_URL || 'https://dottapps.com',
-    AUTH0_BASE_URL: process.env.AUTH0_BASE_URL || 'https://dottapps.com',
-    AUTH0_DOMAIN: process.env.AUTH0_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
-    AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID || process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
   },
   
   // Page extensions
@@ -40,51 +35,9 @@ const nextConfig = {
     forceSwcTransforms: true,
   },
   
-  // Webpack configuration with enhanced error handling
-  webpack: (config, { isServer, dev }) => {
-    // Aggressive build-time fixes for server-side rendering
-    if (!dev && isServer) {
-      // Replace React.createContext during build to prevent context errors
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        // Replace all context-related modules with stubs
-        '@/context/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
-        '@/contexts/AuthContext': path.resolve(__dirname, 'src/utils/stubs/auth-context-stub.js'),
-        '@/context/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
-        '@/contexts/UserProfileContext': path.resolve(__dirname, 'src/utils/stubs/user-profile-context-stub.js'),
-        '@/contexts/TenantContext': path.resolve(__dirname, 'src/utils/stubs/tenant-context-stub.js'),
-        // Replace React providers that use createContext (but not server modules)
-        'react-cookie$': path.resolve(__dirname, 'src/utils/stubs/react-cookie-stub.js'),
-        '@auth0/nextjs-auth0$': path.resolve(__dirname, 'src/utils/stubs/auth0-stub.js'),
-        'next-auth/react$': path.resolve(__dirname, 'src/utils/stubs/next-auth-stub.js'),
-      };
-
-      // Skip problematic static generation in production builds
-      const originalEntry = config.entry;
-      config.entry = async () => {
-        const entries = await originalEntry();
-        
-        // Skip problematic routes during build
-        const problematicRoutes = [
-          'app/onboarding',
-          '[tenantId]/[...slug]',
-          'clear-tenant',
-          'not-found',
-          '_not-found',
-        ];
-        
-        // Filter out problematic routes from build
-        Object.keys(entries).forEach(key => {
-          if (problematicRoutes.some(route => key.includes(route))) {
-            console.log(`[Build] Skipping problematic route: ${key}`);
-          }
-        });
-        
-        return entries;
-      };
-    }
-
-    // Handle problematic modules with stubs for all builds
+  // Webpack configuration
+  webpack: (config, { isServer }) => {
+    // Handle problematic modules with stubs
     config.resolve.alias = {
       ...config.resolve.alias,
       'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),

@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
+import { getSession } from '@auth0/nextjs-auth0';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -12,6 +13,36 @@ const COOKIE_OPTIONS = {
   httpOnly: false,
   sameSite: 'lax'
 };
+
+/**
+ * Validate user authentication before processing request
+ */
+async function validateAuthentication(request) {
+  try {
+    // Check Auth0 session
+    const session = await getSession(request);
+    if (!session || !session.user) {
+      return { 
+        isAuthenticated: false, 
+        error: 'Authentication required',
+        user: null 
+      };
+    }
+    
+    return { 
+      isAuthenticated: true, 
+      user: session.user,
+      error: null 
+    };
+  } catch (error) {
+    console.error('[api/onboarding/business-info] Authentication error:', error);
+    return { 
+      isAuthenticated: false, 
+      error: 'Authentication validation failed',
+      user: null 
+    };
+  }
+}
 
 /**
  * Ensure a proper response is always returned
@@ -46,11 +77,25 @@ function createSafeResponse(data, status = 200, additionalHeaders = null) {
 }
 
 /**
- * Handle business information update
+ * Handle business information update - SECURE VERSION
  */
 export async function POST(request) {
   try {
     console.log('[api/onboarding/business-info] POST request received');
+    
+    // SECURITY: Validate authentication first
+    const authResult = await validateAuthentication(request);
+    if (!authResult.isAuthenticated) {
+      console.warn('[api/onboarding/business-info] Unauthorized request blocked');
+      return createSafeResponse({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please sign in to continue'
+      }, 401);
+    }
+    
+    const authenticatedUser = authResult.user;
+    console.log('[api/onboarding/business-info] Authenticated user:', authenticatedUser.email);
     
     // Get request body, handling empty requests gracefully
     let data = {};
@@ -210,11 +255,25 @@ export async function POST(request) {
 }
 
 /**
- * Get existing business information
+ * Get existing business information - SECURE VERSION
  */
 export async function GET(request) {
   try {
     console.log('[api/onboarding/business-info] GET request received');
+    
+    // SECURITY: Validate authentication first
+    const authResult = await validateAuthentication(request);
+    if (!authResult.isAuthenticated) {
+      console.warn('[api/onboarding/business-info] Unauthorized GET request blocked');
+      return createSafeResponse({
+        businessInfo: {},
+        error: 'Authentication required',
+        message: 'Please sign in to view business information'
+      }, 401);
+    }
+    
+    const authenticatedUser = authResult.user;
+    console.log('[api/onboarding/business-info] Authenticated user for GET:', authenticatedUser.email);
     
     // Simplified error handling - get cookies first
     let cookieStore;

@@ -5,11 +5,25 @@ const MAX_RETRIES = 2;
 
 async function getAuthHeaders(retryCount = 0) {
   try {
-    // For Auth0, we rely on the session cookie set by @auth0/nextjs-auth0
-    // The backend should validate the session using the Auth0 middleware
     const headers = {
       'Content-Type': 'application/json'
     };
+
+    // Get Auth0 access token for backend API authentication
+    try {
+      // For client-side, get the access token from Auth0
+      const response = await fetch('/api/auth/token');
+      if (response.ok) {
+        const { accessToken } = await response.json();
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+          logger.debug('[OnboardingAPI] Added Auth0 access token to headers');
+        }
+      }
+    } catch (tokenError) {
+      logger.warn('[OnboardingAPI] Failed to get access token:', tokenError);
+      // Continue without token - let backend handle the auth error
+    }
 
     // Add tenant ID from localStorage if available
     const tenantId = localStorage.getItem('tenantId');

@@ -31,45 +31,53 @@ try {
   };
 }
 
-// Safe import for API function with fallback
+// Safe import for API function with SECURE authentication
 let submitBusinessInfo;
 try {
   const apiModule = require('@/services/api/onboarding');
-  // Wrap the original function to use frontend API instead of backend API
-  const originalSubmitBusinessInfo = apiModule.submitBusinessInfo;
-  submitBusinessInfo = async (data) => {
-    logger.debug('[BusinessInfoPage] Using frontend API wrapper to avoid 403 errors', data);
-    
-    // Always use the frontend NextJS API route to avoid backend authentication issues
-    const response = await fetch('/api/onboarding/business-info', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  };
+  // Use the original secure function that authenticates with backend API
+  submitBusinessInfo = apiModule.submitBusinessInfo;
+  logger.debug('[BusinessInfoPage] Using secure authenticated API function');
 } catch (error) {
   logger.error('[BusinessInfoPage] Failed to import submitBusinessInfo', error);
   submitBusinessInfo = async (data) => {
-    logger.debug('[BusinessInfoPage] Using fallback submitBusinessInfo - calling frontend API', data);
+    logger.debug('[BusinessInfoPage] Using secure fallback with Auth0 authentication', data);
     
-    // Use the frontend NextJS API route instead of backend API to avoid 403 errors
-    const response = await fetch('/api/onboarding/business-info', {
+    // Get Auth0 access token for secure backend API call
+    let headers = {
+      'Content-Type': 'application/json',
+    };
+    
+    try {
+      const tokenResponse = await fetch('/api/auth/token');
+      if (tokenResponse.ok) {
+        const { accessToken } = await tokenResponse.json();
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+      }
+    } catch (tokenError) {
+      logger.error('[BusinessInfoPage] Failed to get access token:', tokenError);
+      throw new Error('Authentication required. Please sign in again.');
+    }
+    
+    // Call the secure backend API with authentication
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBaseUrl) {
+      throw new Error('API configuration missing');
+    }
+    
+    const response = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
+      credentials: 'include',
       body: JSON.stringify(data),
     });
     
     if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication failed. Please sign in again.');
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     
