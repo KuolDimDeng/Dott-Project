@@ -38,6 +38,34 @@ export async function GET(request, { params }) {
         console.log('[Auth0 Route] Redirecting to Auth0 login with frontend callback');
         return NextResponse.redirect(loginUrl);
         
+      case 'callback':
+        // Handle Auth0 callback after authentication
+        const callbackCode = url.searchParams.get('code');
+        const callbackState = url.searchParams.get('state');
+        const callbackError = url.searchParams.get('error');
+        const errorDescription = url.searchParams.get('error_description');
+        
+        console.log('[Auth0 Callback] Callback received:', {
+          hasCode: !!callbackCode,
+          hasState: !!callbackState,
+          error: callbackError,
+          errorDescription: errorDescription
+        });
+        
+        if (callbackError) {
+          console.error('[Auth0 Callback] Auth error:', { error: callbackError, errorDescription });
+          // Redirect to signin page with error
+          return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=${callbackError}`);
+        }
+        
+        if (!callbackCode) {
+          console.error('[Auth0 Callback] Missing authorization code');
+          return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=missing_code`);
+        }
+        
+        // Redirect to frontend callback handler
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?code=${callbackCode}&state=${callbackState}`);
+        
       case 'exchange':
         // NEW: API endpoint for token exchange (called from frontend)
         const code = url.searchParams.get('code');
