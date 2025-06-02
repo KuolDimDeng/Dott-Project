@@ -334,8 +334,8 @@ export default function SubscriptionPage() {
             if (profileResponse.ok) {
               const profile = await profileResponse.json();
               logger.info('[SubscriptionPage] Profile API response:', profile);
-              if (profile && profile.tenantId) {
-                foundTenantId = profile.tenantId;
+              if (profile && (profile.tenantId || profile.tenant_id)) {
+                foundTenantId = profile.tenantId || profile.tenant_id;
                 logger.info('[SubscriptionPage] Got tenant ID from profile:', foundTenantId);
               } else {
                 logger.warn('[SubscriptionPage] Profile response missing tenantId:', {
@@ -358,8 +358,8 @@ export default function SubscriptionPage() {
               if (sessionResponse.ok) {
                 const sessionData = await sessionResponse.json();
                 logger.info('[SubscriptionPage] Session API response:', sessionData);
-                if (sessionData && sessionData.user && sessionData.user.tenantId) {
-                  foundTenantId = sessionData.user.tenantId;
+                if (sessionData && sessionData.user && (sessionData.user.tenantId || sessionData.user.tenant_id)) {
+                  foundTenantId = sessionData.user.tenantId || sessionData.user.tenant_id;
                   logger.info('[SubscriptionPage] Got tenant ID from session:', foundTenantId);
                 } else {
                   logger.warn('[SubscriptionPage] Session response missing tenantId:', {
@@ -414,8 +414,8 @@ export default function SubscriptionPage() {
               if (directUserResponse.ok) {
                 const userData = await directUserResponse.json();
                 logger.info('[SubscriptionPage] Direct backend API response:', userData);
-                if (userData.tenantId) {
-                  foundTenantId = userData.tenantId;
+                if (userData.tenantId || userData.tenant_id) {
+                  foundTenantId = userData.tenantId || userData.tenant_id;
                   logger.info('[SubscriptionPage] Got tenant ID from direct backend call:', foundTenantId);
                 } else {
                   logger.warn('[SubscriptionPage] Direct backend response missing tenantId:', {
