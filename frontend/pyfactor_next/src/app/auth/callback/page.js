@@ -179,8 +179,48 @@ export default function Auth0CallbackPage() {
         
         // 🎯 Smart Routing Logic Implementation
         
-        // 1. NEW USER - No tenant or needs onboarding
-        if (backendUser.needsOnboarding || !backendUser.tenantId || !backendUser.onboardingCompleted || backendUser.isNewUser) {
+        // 1. Check latest onboarding status from profile API (most reliable source)
+        let latestOnboardingStatus = null;
+        try {
+          setStatus('Checking onboarding status...');
+          const profileResponse = await fetch('/api/auth/profile');
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            console.log('[Auth0Callback] Latest profile data:', {
+              needsOnboarding: profileData.needsOnboarding,
+              onboardingCompleted: profileData.onboardingCompleted,
+              currentStep: profileData.currentStep
+            });
+            
+            latestOnboardingStatus = {
+              needsOnboarding: profileData.needsOnboarding,
+              onboardingCompleted: profileData.onboardingCompleted,
+              currentStep: profileData.currentStep
+            };
+            
+            // Update backend user with latest status
+            if (latestOnboardingStatus.onboardingCompleted === true) {
+              backendUser.onboardingCompleted = true;
+              backendUser.needsOnboarding = false;
+            }
+          }
+        } catch (profileError) {
+          console.warn('[Auth0Callback] Could not fetch latest profile:', profileError);
+        }
+        
+        // 2. COMPLETED USER - Go directly to dashboard
+        if (backendUser.tenantId && (backendUser.onboardingCompleted || (latestOnboardingStatus && latestOnboardingStatus.onboardingCompleted))) {
+          setStatus('Loading your dashboard...');
+          console.log('[Auth0Callback] User has completed onboarding, redirecting to tenant dashboard');
+          
+          setTimeout(() => {
+            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
+          }, 1500);
+          return;
+        }
+        
+        // 3. NEW USER - No tenant or needs onboarding
+        if (backendUser.needsOnboarding || !backendUser.tenantId || backendUser.isNewUser) {
           setStatus('Setting up your account...');
           console.log('[Auth0Callback] New user detected, redirecting to onboarding');
           
@@ -190,7 +230,7 @@ export default function Auth0CallbackPage() {
           return;
         }
         
-        // 2. RETURNING USER WITH INCOMPLETE ONBOARDING
+        // 4. RETURNING USER WITH INCOMPLETE ONBOARDING
         if (backendUser.tenantId && !backendUser.onboardingCompleted) {
           try {
             setStatus('Checking your setup progress...');
@@ -236,18 +276,7 @@ export default function Auth0CallbackPage() {
           }
         }
         
-        // 3. EXISTING USER (COMPLETE) - Go to tenant dashboard
-        if (backendUser.tenantId && backendUser.onboardingCompleted) {
-          setStatus('Loading your dashboard...');
-          console.log('[Auth0Callback] Complete user, redirecting to tenant dashboard');
-          
-          setTimeout(() => {
-            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-          }, 1500);
-          return;
-        }
-        
-        // 4. Fallback: Something went wrong, go to generic dashboard
+        // 5. Fallback: Something went wrong, go to generic dashboard
         setStatus('Loading dashboard...');
         console.warn('[Auth0Callback] Fallback routing to generic dashboard');
         

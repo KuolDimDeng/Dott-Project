@@ -1,11 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from '@/hooks/useSession';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { useTranslation } from 'react-i18next';
-import { fetchAuthSession  } from '@/config/amplifyUnified';
 
 // Helper function to get a cookie by name
 const getCookie = (name) => {
@@ -29,168 +27,190 @@ export const resetPreviouslyOnboarded = () => {
   }
 };
 
-export default function AuthButton({ size = 'medium', variant = 'primary' }) {
+export default function AuthButton({ size = 'medium', variant = 'primary', theme = 'primary' }) {
   const router = useRouter();
-  const { user, loading, error } = useSession();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [previouslyOnboarded, setPreviouslyOnboarded] = useState(false);
-  const [buttonText, setButtonText] = useState("GET STARTED FOR FREE");
+  const [authState, setAuthState] = useState({
+    isAuthenticated: false,
+    onboardingCompleted: false,
+    needsOnboarding: true,
+    currentStep: 'business_info',
+    tenantId: null,
+    loading: true
+  });
   const { t } = useTranslation('auth');
 
-  // Check if cookies indicate a previous onboarding
+  // Check Auth0 authentication and onboarding status
   useEffect(() => {
-    try {
-      // Only check once on component mount
-      const onboardedStatus = getCookie('onboardedStatus');
-      const onboardingComplete = getCookie('onboardingComplete');
-      const setupCompleted = getCookie('setupCompleted');
-      
-      const isPreviouslyOnboarded = onboardedStatus === 'complete' || 
-                                   onboardingComplete === 'true' || 
-                                   setupCompleted === 'true';
-                                   
-      setPreviouslyOnboarded(isPreviouslyOnboarded);
-      
-      // Always log authentication state for debugging
-      logger.debug('[AuthButton state]:', { 
-        isAuthenticated: !!user, 
-        previouslyOnboarded: isPreviouslyOnboarded,
-        buttonText
-      });
-    } catch (e) {
-      logger.error('[AuthButton] Error checking cookies:', e);
-    }
+    const checkAuthStatus = async () => {
+      try {
+        // Check if Auth0 session exists
+        const sessionResponse = await fetch('/api/auth/session');
+        
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          
+          if (sessionData && sessionData.user) {
+            // User is authenticated, now check their onboarding status
+            try {
+              const profileResponse = await fetch('/api/auth/profile');
+              
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                
+                logger.debug('[AuthButton] Auth status:', {
+                  authenticated: true,
+                  needsOnboarding: profileData.needsOnboarding,
+                  onboardingCompleted: profileData.onboardingCompleted,
+                  currentStep: profileData.currentStep
+                });
+                
+                setAuthState({
+                  isAuthenticated: true,
+                  onboardingCompleted: profileData.onboardingCompleted === true,
+                  needsOnboarding: profileData.needsOnboarding !== false,
+                  currentStep: profileData.currentStep || 'business_info',
+                  tenantId: profileData.tenantId,
+                  loading: false
+                });
+              } else {
+                // Authenticated but can't get profile, assume needs onboarding
+                setAuthState({
+                  isAuthenticated: true,
+                  onboardingCompleted: false,
+                  needsOnboarding: true,
+                  currentStep: 'business_info',
+                  tenantId: null,
+                  loading: false
+                });
+              }
+            } catch (profileError) {
+              logger.warn('[AuthButton] Error fetching profile:', profileError);
+              setAuthState({
+                isAuthenticated: true,
+                onboardingCompleted: false,
+                needsOnboarding: true,
+                currentStep: 'business_info',
+                tenantId: null,
+                loading: false
+              });
+            }
+          } else {
+            // No user in session - not authenticated
+            setAuthState({
+              isAuthenticated: false,
+              onboardingCompleted: false,
+              needsOnboarding: true,
+              currentStep: 'business_info',
+              tenantId: null,
+              loading: false
+            });
+          }
+        } else {
+          // Session request failed - not authenticated
+          setAuthState({
+            isAuthenticated: false,
+            onboardingCompleted: false,
+            needsOnboarding: true,
+            currentStep: 'business_info',
+            tenantId: null,
+            loading: false
+          });
+        }
+      } catch (error) {
+        logger.error('[AuthButton] Error checking auth status:', error);
+        setAuthState({
+          isAuthenticated: false,
+          onboardingCompleted: false,
+          needsOnboarding: true,
+          currentStep: 'business_info',
+          tenantId: null,
+          loading: false
+        });
+      }
+    };
+
+    checkAuthStatus();
   }, []);
 
-  // Update authentication state when session changes - debounce the updates
-  useEffect(() => {
-    if (!loading) {
-      // Consider authenticated if we have a user or valid session
-      const hasValidSession = !!user || document.cookie.includes('hasSession=true');
-      
-      // Avoid constant re-rendering
-      if (isAuthenticated !== hasValidSession) {
-        setIsAuthenticated(hasValidSession);
-      }
-    }
-  }, [user, loading]);
-
-  // Update button text only when authentication status actually changes
-  useEffect(() => {
-    let newButtonText = "GET STARTED FOR FREE";
-    
-    if (isAuthenticated) {
-      if (previouslyOnboarded) {
-        newButtonText = "GO TO DASHBOARD";
-      } else {
-        newButtonText = "CONTINUE ONBOARDING";
-      }
-    } else {
-      newButtonText = "GET STARTED FOR FREE";
-    }
-    
-    // Only update if text needs to change
-    if (buttonText !== newButtonText) {
-      setButtonText(newButtonText);
-    }
-  }, [isAuthenticated, previouslyOnboarded]);
-
-  // Helper function to update cookies
-  const updateCookies = async (onboardingStep, onboardedStatus, setupCompleted = false) => {
-    try {
-      const { tokens } = await fetchAuthSession();
-      
-      if (tokens?.idToken) {
-        logger.debug('[AuthButton] Updating cookies before navigation');
-        
-        await fetch('/api/auth/set-cookies', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            idToken: tokens.idToken.toString(),
-            accessToken: tokens.accessToken.toString(),
-            refreshToken: tokens.refreshToken?.toString(),
-            onboardingStep,
-            onboardedStatus,
-            setupCompleted
-          }),
-        });
-        
-        logger.debug('[AuthButton] Successfully updated cookies');
-      }
-    } catch (error) {
-      logger.error('[AuthButton] Failed to update cookies:', error);
-      // Continue with navigation even if cookie update fails
-    }
-  };
-  
   const getButtonConfig = () => {
-    // Case 4: User is authenticated AND has completed onboarding
-    if (user && user.attributes?.['custom:onboarding']?.toLowerCase() === 'complete') {
+    const { isAuthenticated, onboardingCompleted, needsOnboarding, currentStep, tenantId } = authState;
+
+    // Case 1: User is authenticated AND has completed onboarding
+    if (isAuthenticated && onboardingCompleted && tenantId) {
       return {
-        text: t('your_dashboard', 'YOUR DASHBOARD'),
-        action: async () => {
-          await updateCookies('complete', 'complete', true);
-          router.push('/dashboard');
+        text: t('go_to_dashboard', 'DASHBOARD'),
+        action: () => {
+          router.push(`/tenant/${tenantId}/dashboard`);
         }
       };
     }
     
     // Case 2: User is authenticated BUT onboarding not completed
-    if (user && ['business_info', 'subscription', 'PAYMENT', 'SETUP'].includes(user.attributes?.['custom:onboarding'])) {
+    if (isAuthenticated && needsOnboarding && !onboardingCompleted) {
       return {
         text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
-        action: async () => {
-          // Redirect to the appropriate step based on onboarding status
-          const onboardingStatus = user.attributes?.['custom:onboarding'];
-          switch(onboardingStatus) {
-            case 'business_info':
-              await updateCookies('business-info', 'business_info');
-              router.push('/onboarding/business-info');
-              break;
-            case 'subscription':
-              await updateCookies('subscription', 'subscription');
-              router.push('/onboarding/subscription');
-              break;
-            case 'PAYMENT':
-              await updateCookies('payment', 'PAYMENT');
-              router.push('/onboarding/payment');
-              break;
-            case 'SETUP':
-              await updateCookies('setup', 'SETUP');
-              router.push('/onboarding/setup');
-              break;
-            default:
-              router.push('/onboarding');
+        action: () => {
+          // Redirect to the appropriate step based on current onboarding step
+          const stepRoutes = {
+            business_info: '/onboarding/business-info',
+            subscription: '/onboarding/subscription',
+            payment: '/onboarding/payment',
+            setup: '/onboarding/setup'
+          };
+          
+          const targetRoute = stepRoutes[currentStep] || '/onboarding/business-info';
+          router.push(targetRoute);
+        }
+      };
+    }
+    
+    // Case 3: User is authenticated but we're unsure of status (fallback)
+    if (isAuthenticated) {
+      return {
+        text: t('go_to_dashboard', 'DASHBOARD'),
+        action: () => {
+          if (tenantId) {
+            router.push(`/tenant/${tenantId}/dashboard`);
+          } else {
+            router.push('/dashboard');
           }
         }
       };
     }
     
-    // Case 3: User is NOT authenticated but has previously completed onboarding
-    if (!user && previouslyOnboarded) {
-      return {
-        text: t('sign_in', 'SIGN IN'),
-        action: () => router.push('/api/auth/login')
-      };
-    }
-    
-    // Case 1: User is not authenticated AND has not completed onboarding before
-    // Default for new users or loading state
+    // Case 4: User is not authenticated (default)
     return {
-      text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
-      action: () => router.push('/api/auth/login')
+      text: t('get_started_for_free', 'GET STARTED FOR FREE'),
+      action: () => {
+        router.push('/api/auth/login');
+      }
     };
   };
 
   // Get the button configuration
   const { text, action } = getButtonConfig();
 
-  // Use the button action from getButtonConfig
+  // Handle loading state
+  if (authState.loading) {
+    return (
+      <button
+        disabled
+        className={`
+          px-4 py-2 text-sm font-semibold uppercase tracking-wider rounded-md
+          bg-gray-300 text-gray-500 cursor-not-allowed
+          min-w-[120px] md:min-w-[200px]
+        `}
+      >
+        LOADING...
+      </button>
+    );
+  }
+
   const handleButtonClick = () => {
-    logger.debug('[AuthButton] Button clicked. Taking action.');
+    logger.debug('[AuthButton] Button clicked:', {
+      text,
+      authState
+    });
     action();
   };
 
@@ -208,22 +228,24 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
     text: 'bg-transparent hover:bg-gray-100 text-blue-600'
   };
 
-  logger.debug('AuthButton state:', {
-    isAuthenticated: !!user,
-    onboardingStatus: user?.attributes?.['custom:onboarding'],
-    previouslyOnboarded: previouslyOnboarded,
-    buttonText: buttonText
-  });
+  // Theme variations for light/dark modes
+  const themeClasses = {
+    light: 'bg-blue-600 hover:bg-blue-700 text-white',
+    dark: 'bg-white hover:bg-gray-100 text-blue-600',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white'
+  };
+
+  const finalTheme = theme || variant;
 
   return (
     <button
       onClick={handleButtonClick}
       className={`
         ${sizeClasses[size]}
-        ${variantClasses[variant]}
+        ${themeClasses[finalTheme] || variantClasses[variant]}
         font-semibold uppercase tracking-wider rounded-md transition-colors duration-200
         focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-opacity-50
-        min-w-[120px] md:min-w-[150px]
+        min-w-[120px] md:min-w-[200px]
       `}
     >
       {text}
