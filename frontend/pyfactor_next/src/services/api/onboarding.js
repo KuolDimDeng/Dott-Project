@@ -235,49 +235,175 @@ export async function submitSubscription(data) {
   try {
     // Map frontend field names to backend expectations
     const mappedData = {
-      selected_plan: data.selected_plan || data.plan,
-      billingCycle: data.billingCycle || data.billing_cycle || data.interval || 'monthly',
-      tenant_id: data.tenant_id || localStorage.getItem('tenantId')
+      selected_plan: data.selected_plan || data.plan || '',
+      billing_cycle: data.billing_cycle || data.interval || 'monthly',
+      payment_method: data.payment_method || null,
+      current_status: data.current_status || 'subscription',
+      next_status: data.next_status || (data.selected_plan === 'free' ? 'setup' : 'payment'),
+      reset_onboarding: data.reset_onboarding || false,
+      requires_payment: data.requires_payment || (data.selected_plan !== 'free')
     };
 
-    logger.debug('[OnboardingAPI] Submitting subscription:', {
-      plan: mappedData.selected_plan,
-      billingCycle: mappedData.billingCycle,
-      tenantId: mappedData.tenant_id
+    logger.debug('[OnboardingAPI] Submitting subscription via NextJS API route:', {
+      selected_plan: mappedData.selected_plan,
+      billing_cycle: mappedData.billing_cycle,
+      requires_payment: mappedData.requires_payment,
+      requestUrl: '/api/onboarding/subscription'
     });
 
-    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/subscription/`, {
+    // Use NextJS API route instead of calling Django directly
+    // This route handles Auth0 authentication and forwards to Django backend
+    const response = await fetch('/api/onboarding/subscription', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      },
+      credentials: 'include',
       body: JSON.stringify(mappedData)
     });
 
-    // Update localStorage for compatibility
-    if (response?.success) {
-      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
-      userAttributes['custom:subscription_plan'] = mappedData.selected_plan;
-      userAttributes['custom:billing_interval'] = mappedData.billingCycle;
-      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: `Request failed with status ${response.status}`
+      }));
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        logger.debug('[OnboardingAPI] Auth error - redirecting to login');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/api/auth/login';
+        }
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      
+      const error = new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.data = errorData;
+      
+      logger.error('[OnboardingAPI] Request failed:', {
+        status: response.status,
+        error: errorData
+      });
+      
+      throw error;
     }
 
-    return response;
+    const responseData = await response.json();
+
+    // Update localStorage with subscription info for compatibility
+    if (responseData?.subscription) {
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:subscription_plan'] = responseData.subscription.selected_plan;
+      userAttributes['custom:billing_interval'] = responseData.subscription.billing_cycle;
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+      
+      // Store subscription data
+      localStorage.setItem('subscriptionPlan', responseData.subscription.selected_plan);
+      localStorage.setItem('subscriptionInterval', responseData.subscription.billing_cycle);
+    }
+
+    logger.debug('[OnboardingAPI] Subscription submitted successfully:', {
+      success: responseData.success,
+      hasSubscription: !!responseData.subscription
+    });
+
+    return responseData;
   } catch (error) {
-    logger.error('[OnboardingAPI] Failed to submit subscription:', error);
+    logger.error('[OnboardingAPI] Failed to submit subscription:', {
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
 
 export async function submitPayment(data) {
   try {
-    logger.debug('[OnboardingAPI] Submitting payment:', {
-      paymentId: data.id
+    // Map frontend field names to backend expectations
+    const mappedData = {
+      paymentId: data.paymentId || data.id || '',
+      paymentMethod: data.paymentMethod || data.payment_method || 'credit_card',
+      amount: data.amount || 0,
+      currency: data.currency || 'USD',
+      status: data.status || 'pending',
+      periodEnd: data.periodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      timestamp: new Date().toISOString()
+    };
+
+    logger.debug('[OnboardingAPI] Submitting payment via NextJS API route:', {
+      paymentId: mappedData.paymentId,
+      paymentMethod: mappedData.paymentMethod,
+      amount: mappedData.amount,
+      requestUrl: '/api/onboarding/payment'
     });
 
-    return makeRequest(`${API_BASE_URL}/api/onboarding/payment`, {
+    // Use NextJS API route instead of calling Django directly
+    // This route handles Auth0 authentication and forwards to Django backend
+    const response = await fetch('/api/onboarding/payment', {
       method: 'POST',
-      body: JSON.stringify(data)
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Request-ID': `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+      },
+      credentials: 'include',
+      body: JSON.stringify(mappedData)
     });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        error: `Request failed with status ${response.status}`
+      }));
+      
+      // Handle specific error cases
+      if (response.status === 401) {
+        logger.debug('[OnboardingAPI] Auth error - redirecting to login');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/api/auth/login';
+        }
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      
+      const error = new Error(errorData.error || errorData.message || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.statusText = response.statusText;
+      error.data = errorData;
+      
+      logger.error('[OnboardingAPI] Request failed:', {
+        status: response.status,
+        error: errorData
+      });
+      
+      throw error;
+    }
+
+    const responseData = await response.json();
+
+    // Update localStorage with payment info for compatibility
+    if (responseData?.payment) {
+      const userAttributes = JSON.parse(localStorage.getItem('userAttributes') || '{}');
+      userAttributes['custom:payment_id'] = responseData.payment.paymentId;
+      userAttributes['custom:payment_method'] = responseData.payment.paymentMethod;
+      userAttributes['custom:payment_status'] = responseData.payment.status;
+      localStorage.setItem('userAttributes', JSON.stringify(userAttributes));
+      
+      // Store payment data
+      localStorage.setItem('paymentId', responseData.payment.paymentId);
+      localStorage.setItem('paymentCompleted', 'true');
+    }
+
+    logger.debug('[OnboardingAPI] Payment submitted successfully:', {
+      success: responseData.success,
+      hasPayment: !!responseData.payment
+    });
+
+    return responseData;
   } catch (error) {
-    logger.error('[OnboardingAPI] Failed to submit payment:', error);
+    logger.error('[OnboardingAPI] Failed to submit payment:', {
+      error: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }

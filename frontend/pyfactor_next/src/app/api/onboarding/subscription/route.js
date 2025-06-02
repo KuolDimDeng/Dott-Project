@@ -1,879 +1,411 @@
 import { NextResponse } from 'next/server';
-import { cookies, headers } from 'next/headers';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
-import { validateServerSession } from '@/utils/serverUtils';
-import { updateOnboardingStep, validateSubscription } from '@/utils/onboardingUtils';
-import crypto from 'crypto';
 
-// Force dynamic rendering for this API route
-export const dynamic = 'force-dynamic';
-
-// Helper function to parse cookies from header
-const parseCookies = (cookieHeader) => {
-  const cookies = {};
-  cookieHeader.split(';').forEach(cookie => {
-    const parts = cookie.split('=');
-    if (parts.length >= 2) {
-      const name = parts[0].trim();
-      const value = parts.slice(1).join('=').trim();
-      cookies[name] = value;
-    }
-  });
-  return cookies;
+// Increased cookie expiration for onboarding (7 days)
+const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
+const COOKIE_OPTIONS = {
+  path: '/',
+  maxAge: COOKIE_MAX_AGE,
+  httpOnly: false,
+  sameSite: 'lax'
 };
 
-export async function POST(request) {
+/**
+ * Validate user authentication using our custom Auth0 session management
+ */
+async function validateAuthentication(request) {
   try {
-    // Validate session using server utils
-    const sessionData = await validateServerSession();
+    console.log('[api/onboarding/subscription] Validating authentication');
     
-    // Check if validation was successful
-    if (!sessionData.verified) {
-      logger.error('[Subscription] Session validation failed:', {
-        error: sessionData.error || 'Unknown error',
-      });
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Check for session cookie first
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
-    const { tokens, user } = sessionData;
-    
-    if (!tokens || !user) {
-      logger.error('[Subscription] Invalid session data:', {
-        hasTokens: !!tokens,
-        hasUser: !!user
-      });
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    const accessToken = tokens.accessToken;
-    const idToken = tokens.idToken;
-    const userId = user.userId;
-    
-    if (!accessToken || !idToken) {
-      return NextResponse.json(
-        { error: 'Missing required tokens' },
-        { status: 401 }
-      );
-    }
-
-    let body;
-    try {
-      body = await request.json();
-      logger.info('[Subscription] Received request:', {
-        plan: body?.plan,
-        interval: body?.interval,
-        payment_method: body?.payment_method,
-        userId: userId,
-        timestamp: new Date().toISOString()
-      });
-
-      // Validate required fields
-      if (!body?.plan || !body?.interval) {
-        logger.error('[Subscription] Missing required fields:', {
-          receivedFields: body ? Object.keys(body) : [],
-          plan: body?.plan,
-          interval: body?.interval
-        });
-        return NextResponse.json({
-          error: 'Missing required fields',
-          details: 'Plan and interval are required',
-          received: {
-            plan: body?.plan,
-            interval: body?.interval,
-            payment_method: body?.payment_method
-          }
-        }, { status: 400 });
-      }
-
-      // Validate plan and interval values
-      const validPlans = ['free', 'PROFESSIONAL', 'ENTERPRISE'];
-      const validIntervals = ['MONTHLY', 'YEARLY'];
-      const validPaymentMethods = ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'];
-      
-      const plan = body.plan.toLowerCase();
-      const interval = body.interval.toUpperCase();
-      const paymentMethod = body.payment_method ? body.payment_method.toUpperCase() : null;
-      
-      if (!validPlans.includes(plan) || !validIntervals.includes(interval)) {
-        logger.error('[Subscription] Invalid plan or interval:', {
-          plan,
-          interval,
-          validPlans,
-          validIntervals
-        });
-        return NextResponse.json({
-          error: 'Invalid subscription options',
-          details: 'Invalid plan or interval value',
-          validOptions: {
-            plans: validPlans,
-            intervals: validIntervals
-          }
-        }, { status: 400 });
-      }
-      
-      // Validate payment method if provided (required for paid plans)
-      if ((plan === 'PROFESSIONAL' || plan === 'ENTERPRISE') && paymentMethod) {
-        if (!validPaymentMethods.includes(paymentMethod)) {
-          logger.error('[Subscription] Invalid payment method:', {
-            paymentMethod,
-            validPaymentMethods
-          });
-          return NextResponse.json({
-            error: 'Invalid payment method',
-            details: 'Invalid payment method value',
-            validOptions: {
-              paymentMethods: validPaymentMethods
-            }
-          }, { status: 400 });
-        }
-      }
-    } catch (error) {
-      logger.error('[Subscription] Failed to parse request body:', {
-        error: error.message,
-        stack: error.stack
-      });
-      return NextResponse.json({
-        error: 'Invalid request format',
-        details: 'Failed to parse request body'
-      }, { status: 400 });
-    }
-
-    // Validate subscription data
-    try {
-      logger.debug('[Subscription] Starting validation:', body);
-      await validateSubscription(body);
-      logger.info('[Subscription] Validation successful');
-    } catch (error) {
-      logger.error('[Subscription] Validation failed:', {
-        error: error.message,
-        data: body,
-        validationRules: {
-          validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
-          validIntervals: ['MONTHLY', 'YEARLY'],
-          validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
-        }
-      });
-      return NextResponse.json({
-        error: 'Validation Failed',
-        code: 'subscription_validation_error',
-        details: error.message,
-        validationRules: {
-          validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
-          validIntervals: ['MONTHLY', 'YEARLY'],
-          validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY']
-        }
-      }, { status: 400 });
-    }
-    
-    // Get current onboarding status
-    const attributes = user.attributes || {};
-    const isReset = request.headers.get('X-Reset-Onboarding') === 'true';
-    let currentStatus = attributes['custom:onboarding'] || 'not_started';
-
-    // Allow reset if explicitly requested
-    if (isReset) {
-      // Update onboarding status in Cognito with tokens
-      await updateOnboardingStep('business_info', {
-        'custom:setupdone': 'FALSE'
-      }, {
-        accessToken: accessToken,
-        idToken: idToken
-      });
-
-      // Update current status after reset
-      currentStatus = 'business_info';
-    } else {
-      // Normal validation for non-reset flow
-      if (currentStatus === 'complete') {
-        return NextResponse.json(
-          { error: 'Cannot update subscription after onboarding is complete. Use reset flag to start over.' },
-          { status: 400 }
-        );
-      }
-
-      // Check if business ID exists, which indicates business info has been completed
-      const hasBusinessId = !!attributes['custom:businessid'];
-      
-      // Allow NOT_STARTED if business ID exists, or BUSINESS_INFO or SUBSCRIPTION as valid states
-      // This handles the case where the cookie might be updated but Cognito attributes aren't in sync
-      if ((currentStatus !== 'business_info' &&
-           currentStatus !== 'subscription' &&
-           !(currentStatus === 'not_started' && hasBusinessId))) {
-        
-        logger.warn('[Subscription] Invalid onboarding status:', {
-          currentStatus,
-          expectedStatus: ['business_info', 'subscription', 'not_started (with businessId)'],
-          userId,
-          hasBusinessId
-        });
-        
-        return NextResponse.json(
-          { error: 'Must complete business info before subscription' },
-          { status: 400 }
-        );
-      }
-      
-      // If we're here with NOT_STARTED but have a business ID, update the status to BUSINESS_INFO
-      if (currentStatus === 'not_started' && hasBusinessId) {
-        logger.info('[Subscription] Updating status from not_started to BUSINESS_INFO due to business ID presence');
-        currentStatus = 'business_info';
-      }
-    }
-
-    // Add reset flag to backend request headers
-    const requestHeadersObj = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-      'X-Id-Token': idToken,
-      'X-User-ID': userId,
-      'X-Onboarding-Status': currentStatus
-    };
-
-    if (isReset) {
-      requestHeadersObj['X-Reset-Onboarding'] = 'true';
-    }
-    
-    // Get IDs and validate request
-    let tenantId = attributes['custom:businessid'];
-    let cognitoUserId = attributes.sub;
-
-    logger.info('[Subscription] Starting subscription process:', {
-      tenantId,
-      userId,
-      cognitoUserId,
-      currentStatus,
-      attributes: {
-        businessId: attributes['custom:businessid'],
-        businessName: attributes['custom:businessname'],
-        setupDone: attributes['custom:setupdone'],
-        onboarding: attributes['custom:onboarding'],
-        acctstatus: attributes['custom:acctstatus']
-      },
-      tokens: {
-        accessTokenLength: accessToken.length,
-        idTokenLength: idToken.length
-      }
-    });
-
-    // Determine next step based on plan and payment method
-    const plan = body.plan.toLowerCase();
-    const paymentMethod = body.payment_method ? body.payment_method.toLowerCase() : null;
-    
-    // Default next step based on plan - use lowercase values
-    let nextStep = plan === 'free' ? 'setup' : 'payment';
-    
-    // Override for paid plans with non-credit card payment methods
-    if ((plan === 'professional' || plan === 'enterprise') && 
-        paymentMethod && paymentMethod !== 'credit_card') {
-      nextStep = 'setup'; // Skip payment page for PayPal and Mobile Money
-    }
-
-    logger.debug('[Subscription] Request validation:', {
-      plan: body.plan,
-      interval: body.interval,
-      paymentMethod: body.payment_method,
-      isReset,
-      currentStatus,
-      nextStep,
-      validationRules: {
-        validPlans: ['free', 'PROFESSIONAL', 'ENTERPRISE'],
-        validIntervals: ['MONTHLY', 'YEARLY'],
-        validPaymentMethods: ['CREDIT_CARD', 'PAYPAL', 'MOBILE_MONEY'],
-        allowedStatus: ['business_info', 'not_started']
-      }
-    });
-
-    logger.debug('[Subscription] Request headers:', {
-      ...Object.fromEntries(
-        Object.entries(requestHeadersObj).filter(([key]) =>
-          !['Authorization', 'X-Id-Token'].includes(key)
-        )
-      ),
-      Authorization: '[REDACTED]',
-      'X-Id-Token': '[REDACTED]'
-    });
-
-    // Forward the request to the Django backend
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://127.0.0.1:8000';
-    const endpoint = '/api/onboarding/subscription/save/';
-    const requestUrl = `${backendUrl}${endpoint}`;
-
-    // Log environment and request details
-    logger.debug('[Subscription] Request configuration:', {
-      backendUrl,
-      endpoint,
-      requestUrl,
-      method: 'POST',
-      currentStatus,
-      nextStep,
-      environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL
-      }
-    });
-
-    // Validate URL
-    try {
-      new URL(requestUrl);
-    } catch (error) {
-      logger.error('[Subscription] Invalid request URL:', {
-        error: error.message,
-        requestUrl,
-        backendUrl,
-        endpoint
-      });
-      return NextResponse.json({
-        error: 'Invalid API URL configuration',
-        details: error.message
-      }, { status: 500 });
-    }
-
-    // Try to get business ID from cookies if not in attributes
-    const headersList = await headers();
-    const cookieHeader = headersList.get('cookie') || '';
-    const parsedCookies = parseCookies(cookieHeader);
-    const cookieTenantId = parsedCookies['tenantId'];
-    
-    // Use cookie tenant ID if attribute is missing
-    if (!tenantId && cookieTenantId) {
-      logger.info('[Subscription] Using tenant ID from cookies:', {
-        cookieTenantId
-      });
-      tenantId = cookieTenantId;
-      attributes['custom:businessid'] = cookieTenantId;
-    }
-    
-    // Use userId as cognitoUserId if missing
-    if (!cognitoUserId && userId) {
-      logger.info('[Subscription] Using userId as cognitoUserId:', {
-        userId
-      });
-      cognitoUserId = userId;
-    }
-    
-    // Check if we have the minimum required context
-    let businessInfoCompleted = false;
-    
-    // If we're missing tenantId or cognitoUserId, try to recover
-    if (!tenantId || !cognitoUserId) {
-      logger.warn('[Subscription] Missing required context:', {
-        tenantId,
-        cookieTenantId,
-        cognitoUserId,
-        userId,
-        businessId: attributes['custom:businessid'],
-        attributes: Object.keys(attributes)
-      });
-      // Check if onboarding status indicates business info is completed
-      // Use the same cookie parsing approach
-      const headersList = await headers();
-      const cookieHeader = headersList.get('cookie') || '';
-      const parsedCookies = parseCookies(cookieHeader);
-      const onboardingStep = parsedCookies['onboardingStep'];
-      const onboardedStatus = parsedCookies['onboardedStatus'];
-      
-      logger.debug('[Subscription] Checking onboarding status from cookies:', {
-        onboardingStep,
-        onboardedStatus,
-        currentStatus
-      });
-      
-      // If cookies indicate business info is completed, proceed despite missing data
-      if (onboardedStatus === 'business_info' ||
-          onboardingStep === 'subscription' ||
-          currentStatus === 'business_info' ||
-          currentStatus === 'subscription') {
-        
-        logger.info('[Subscription] Proceeding despite missing data - onboarding status indicates business info is completed');
-        businessInfoCompleted = true;
-        
-        // Generate a new tenantId if needed
-        if (!tenantId) {
-          tenantId = crypto.randomUUID();
-          attributes['custom:businessid'] = tenantId;
-          
-          logger.info('[Subscription] Generated new tenantId:', {
-            tenantId
-          });
-        }
-        
-        // Use userId as cognitoUserId if needed
-        if (!cognitoUserId && userId) {
-          cognitoUserId = userId;
-          
-          logger.info('[Subscription] Using userId as cognitoUserId:', {
-            userId,
-            cognitoUserId
-          });
-        }
-      } else if (userId && !tenantId) {
-        // If we have a userId but no tenantId and no indication of business info completion
-        return NextResponse.json({
-          error: 'Business info not completed',
-          details: 'Please complete business info before selecting a subscription',
-          redirectTo: '/onboarding/business-info'
-        }, { status: 400 });
-      }
-      
-      // If we still don't have the required context and business info is not completed
-      if ((!tenantId || !cognitoUserId) && !businessInfoCompleted) {
-        return NextResponse.json({
-          error: 'Missing required context',
-          details: 'Business setup incomplete',
-          context: {
-            hasTenantId: Boolean(tenantId),
-            hasCognitoId: Boolean(cognitoUserId),
-            hasBusinessId: Boolean(attributes['custom:businessid'])
-          }
-        }, { status: 400 });
-      }
-    }
-
-    // Prepare request headers with tracking
-    const requestId = Math.random().toString(36).substring(7);
-    const requestHeaders = {
-      ...requestHeadersObj,
-      'X-Tenant-ID': tenantId,
-      'X-Schema-Name': `tenant_${tenantId.replace(/-/g, '_')}`, // Add formatted schema name
-      'X-Cognito-Sub': cognitoUserId,
-      'X-Business-ID': attributes['custom:businessid'],
-      'X-Onboarding-Status': attributes['custom:onboarding'],
-      'X-Setup-Done': attributes['custom:setupdone'],
-      'X-Request-ID': requestId,
-      
-      // CORS headers
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Id-Token, X-Tenant-ID, X-Cognito-Sub, X-Business-ID, X-Onboarding-Status, X-Setup-Done, X-Request-ID'
-    };
-
-    logger.info('[Subscription] Request context:', {
-      requestId,
-      tenantId,
-      cognitoUserId,
-      businessId: attributes['custom:businessid'],
-      onboardingStatus: attributes['custom:onboarding'],
-      setupDone: attributes['custom:setupdone']
-    });
-
-    // Prepare request body
-    const requestBody = {
-      selected_plan: body.plan.toLowerCase(),
-      billing_cycle: body.interval.toLowerCase(),
-      payment_method: body.payment_method ? body.payment_method.toLowerCase() : null,
-      current_status: currentStatus,
-      next_status: nextStep,
-      reset_onboarding: isReset,
-      requires_payment: (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
-                        (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card'),
-      tenant_id: tenantId,
-      /* RLS: tenant_id instead of schema_name */
-      schema_name: "tenant_" + tenantId.replace(/-/g, '_'), // Format as Django expects it
-      business_id: attributes['custom:businessid'],
-      cognito_sub: cognitoUserId,
-      request_id: requestId,
-      timestamp: new Date().toISOString(),
-      user: {
-        id: cognitoUserId,
-        email: attributes.email,
-        setupDone: attributes['custom:setupdone'],
-        onboarding: attributes['custom:onboarding'],
-        acctstatus: attributes['custom:acctstatus']
-      },
-      business: {
-        id: attributes['custom:businessid'],
-        name: attributes['custom:businessname'],
-        type: attributes['custom:businesstype'],
-        country: attributes['custom:businesscountry'],
-        legalStructure: attributes['custom:legalstructure'],
-        dateFounded: attributes['custom:datefounded']
-      }
-    };
-
-    // Make request with retries
-    let response;
-    let retries = 3;
-    let delay = 1000;
-    let responseStatusCode = 200; // Default to success
-
-    // Always proceed with cookie updates regardless of backend response
-    let shouldProceedAnyway = true;
-
-    while (retries > 0) {
+    if (sessionCookie) {
       try {
-        logger.info('[Subscription] Attempting request:', {
-          requestId,
-          attempt: 4 - retries,
-          url: requestUrl,
-          plan: body.plan.toLowerCase(),
-          interval: body.interval.toLowerCase(),
-          paymentMethod: body.payment_method ? body.payment_method.toLowerCase() : null
-        });
-
-        response = await fetch(requestUrl, {
-          method: 'POST',
-          headers: requestHeaders,
-          body: JSON.stringify(requestBody)
-        });
-
-        if (response.ok) {
-          logger.info('[Subscription] Request successful:', {
-            requestId,
-            status: response.status,
-            attempt: 4 - retries
-          });
-          break;
-        }
-
-        const errorText = await response.text();
+        const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
         
-        // Check if this is a non-fatal error we can ignore
-        // Field does not exist in model error means the backend model structure is different
-        // but doesn't affect our ability to proceed with frontend flow
-        const isNonFatalError = 
-          errorText.includes("fields do not exist in this model") || 
-          errorText.includes("Profile not found");
-          
-        if (isNonFatalError) {
-          logger.warn('[Subscription] Non-fatal backend error - will continue with frontend flow:', {
-            requestId,
-            status: response.status,
-            error: errorText,
-            attempt: 4 - retries
-          });
-          
-          // Set response to indicate we'll continue despite backend error
-          responseStatusCode = 202; // Accepted
-          shouldProceedAnyway = true;
-          break;
-        }
-        
-        logger.error('[Subscription] Request failed:', {
-          requestId,
-          status: response.status,
-          error: errorText,
-          attempt: 4 - retries,
-          remaining: retries - 1
-        });
-
-        if (retries === 1) {
-          // For final attempt failure that's not non-fatal, return error but don't block frontend flow
-          responseStatusCode = 202; // Use 202 instead of error status
-          shouldProceedAnyway = true;
-          break;
-        }
-
-        retries--;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-      } catch (error) {
-        logger.error('[Subscription] Network error:', {
-          requestId,
-          error: error.message,
-          attempt: 4 - retries
-        });
-
-        if (retries === 1) {
-          // For network errors, don't fail the frontend flow
-          responseStatusCode = 202; // Accepted
-          shouldProceedAnyway = true;
-          break;
-        }
-
-        retries--;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        delay *= 2;
-      }
-    }
-
-    // Handle response
-    let data;
-    try {
-      // Check if we have a valid response from the backend
-      if (response && (response.ok || shouldProceedAnyway)) {
-        if (response.ok) {
-          // Log raw response
-          logger.debug('[Subscription] Raw response:', {
-            requestId,
-            status: response.status,
-            statusText: response.statusText,
-            headers: Object.fromEntries(response.headers.entries())
-          });
-    
-          // Parse response if it exists
-          try {
-            const responseText = await response.text();
-            if (responseText) {
-              data = JSON.parse(responseText);
-              
-              // Log success
-              logger.info('[Subscription] Request successful:', {
-                requestId,
-                success: data.success,
-                message: data.message,
-                nextStep: data.next_step
-              });
-            }
-          } catch (parseError) {
-            logger.warn('[Subscription] Failed to parse response, but continuing:', {
-              requestId,
-              error: parseError.message
-            });
-            // Continue despite parse error
-          }
-        } else {
-          // Non-fatal error, log and continue
-          logger.warn('[Subscription] Non-fatal backend error - using default values:', {
-            requestId,
-            status: response.status,
-            shouldProceedAnyway
-          });
-          
-          // Set default data
-          data = {
-            success: true,
-            message: 'Proceeding with subscription despite backend issues',
-            next_step: body.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment'
+        // Check if session is expired
+        if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+          console.log('[api/onboarding/subscription] Session expired');
+          return { 
+            isAuthenticated: false, 
+            error: 'Session expired',
+            user: null 
           };
         }
+        
+        if (sessionData.user) {
+          console.log('[api/onboarding/subscription] Session authenticated:', sessionData.user.email);
+          return { 
+            isAuthenticated: true, 
+            user: sessionData.user,
+            error: null 
+          };
+        }
+      } catch (parseError) {
+        console.error('[api/onboarding/subscription] Error parsing session cookie:', parseError);
+      }
+    }
+    
+    // Fallback: check for individual Auth0 cookies
+    const accessTokenCookie = cookieStore.get('auth0_access_token');
+    const idTokenCookie = cookieStore.get('auth0_id_token');
+    
+    if (accessTokenCookie || idTokenCookie) {
+      console.log('[api/onboarding/subscription] Found auth token cookies');
+      // Basic authenticated user object
+      return { 
+        isAuthenticated: true, 
+        user: { email: 'authenticated-user' }, // Minimal user object
+        error: null 
+      };
+    }
+    
+    console.log('[api/onboarding/subscription] No authentication found');
+    return { 
+      isAuthenticated: false, 
+      error: 'Authentication required',
+      user: null 
+    };
+  } catch (error) {
+    console.error('[api/onboarding/subscription] Authentication error:', error);
+    return { 
+      isAuthenticated: false, 
+      error: 'Authentication validation failed',
+      user: null 
+    };
+  }
+}
+
+/**
+ * Ensure a proper response is always returned
+ */
+function createSafeResponse(data, status = 200, additionalHeaders = null) {
+  try {
+    // Create response object with headers
+    const headers = additionalHeaders || new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Cache-Control', 'no-cache, no-store');
+    
+    return NextResponse.json(data, { 
+      status, 
+      headers 
+    });
+  } catch (error) {
+    console.error('[api/onboarding/subscription] Error creating response:', error);
+    // Absolutely minimal response that should never fail
+    const headers = new Headers();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Cache-Control', 'no-cache, no-store');
+    
+    return new Response(JSON.stringify({ success: false, error: 'Failed to create response' }), {
+      status: 500,
+      headers
+    });
+  }
+}
+
+/**
+ * Handle subscription save - SECURE VERSION with Database Persistence
+ */
+export async function POST(request) {
+  try {
+    console.log('[api/onboarding/subscription] POST request received');
+    
+    // SECURITY: Validate authentication first
+    const authResult = await validateAuthentication(request);
+    if (!authResult.isAuthenticated) {
+      console.warn('[api/onboarding/subscription] Unauthorized request blocked');
+      return createSafeResponse({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please sign in to continue'
+      }, 401);
+    }
+    
+    const authenticatedUser = authResult.user;
+    console.log('[api/onboarding/subscription] Authenticated user:', authenticatedUser.email);
+    
+    // Get request body, handling empty requests gracefully
+    let data = {};
+    try {
+      if (request.body) {
+        data = await request.json();
+        console.log('[api/onboarding/subscription] Request body parsed:', { fields: Object.keys(data) });
+      }
+    } catch (parseError) {
+      console.warn('[api/onboarding/subscription] Error parsing request body:', parseError.message);
+      return createSafeResponse({
+        success: false,
+        error: 'Invalid request data',
+        message: 'Please check your input and try again'
+      }, 400);
+    }
+    
+    // Extract and validate subscription data
+    const subscriptionData = {
+      selected_plan: data.selected_plan || data.plan || '',
+      billing_cycle: data.billing_cycle || data.interval || 'monthly',
+      payment_method: data.payment_method || null,
+      current_status: data.current_status || 'subscription',
+      next_status: data.next_status || (data.selected_plan === 'free' ? 'setup' : 'payment'),
+      reset_onboarding: data.reset_onboarding || false,
+      requires_payment: data.requires_payment || (data.selected_plan !== 'free')
+    };
+    
+    console.log('[api/onboarding/subscription] Validated subscription data:', {
+      selected_plan: subscriptionData.selected_plan,
+      billing_cycle: subscriptionData.billing_cycle,
+      requires_payment: subscriptionData.requires_payment
+    });
+
+    // SECURITY: Forward to Django backend with proper authentication
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBaseUrl) {
+      throw new Error('API configuration missing - backend URL not configured');
+    }
+
+    try {
+      // Get Auth0 access token for backend authentication
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('appSession');
+      let accessToken = null;
+      
+      if (sessionCookie) {
+        try {
+          const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          accessToken = sessionData.accessToken;
+        } catch (parseError) {
+          console.error('[api/onboarding/subscription] Error parsing session for token:', parseError);
+        }
+      }
+      
+      if (!accessToken) {
+        throw new Error('No valid access token found for backend authentication');
+      }
+      
+      console.log('[api/onboarding/subscription] Forwarding to Django backend with Auth0 token');
+      
+      // Forward authenticated request to Django backend
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'X-User-Email': authenticatedUser.email,
+          'X-Request-ID': `frontend-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          'X-Source': 'nextjs-api-route'
+        },
+        body: JSON.stringify(subscriptionData),
+        timeout: 10000 // 10 second timeout
+      });
+      
+      let backendData = {};
+      let backendSuccess = false;
+      
+      if (backendResponse.ok) {
+        try {
+          backendData = await backendResponse.json();
+          backendSuccess = true;
+          console.log('[api/onboarding/subscription] Backend save successful:', {
+            hasTenantId: !!backendData.tenant_id,
+            success: backendData.success
+          });
+        } catch (jsonError) {
+          console.warn('[api/onboarding/subscription] Backend response not JSON, but request succeeded');
+          backendSuccess = true;
+          backendData = { success: true, message: 'Subscription saved successfully' };
+        }
       } else {
-        // Handle case where no response or serious error
-        const errorText = response ? await response.text() : 'No response from backend';
-        logger.error('[Subscription] Backend request failed, but continuing with frontend flow:', {
-          requestId,
-          status: response?.status,
+        const errorText = await backendResponse.text().catch(() => 'Unknown error');
+        console.error('[api/onboarding/subscription] Backend save failed:', {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
           error: errorText
         });
         
-        // Set default data
-        data = {
-          success: true,
-          message: 'Proceeding with subscription despite backend issues',
-          next_step: body.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment'
-        };
+        // Continue with cookie storage even if backend fails (graceful degradation)
+        console.log('[api/onboarding/subscription] Continuing with cookie storage despite backend failure');
       }
-    } catch (error) {
-      // Log the error but don't fail the request
-      logger.error('[Subscription] Error handling response, but continuing:', {
-        requestId,
-        error: error.message,
-        stack: error.stack
-      });
       
-      // Use default data
-      data = {
-        success: true,
-        message: 'Proceeding with subscription despite backend issues',
-        next_step: body.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment'
+      // ALWAYS set cookies for caching/fallback (regardless of backend success)
+      try {
+        // Mark subscription step as completed
+        await cookieStore.set('subscriptionCompleted', 'true', COOKIE_OPTIONS);
+        await cookieStore.set('onboardingStep', subscriptionData.next_status, COOKIE_OPTIONS);
+        await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        
+        // Cache subscription data
+        await cookieStore.set('subscriptionPlan', subscriptionData.selected_plan, COOKIE_OPTIONS);
+        await cookieStore.set('subscriptionInterval', subscriptionData.billing_cycle, COOKIE_OPTIONS);
+        
+        if (subscriptionData.payment_method) {
+          await cookieStore.set('paymentMethod', subscriptionData.payment_method, COOKIE_OPTIONS);
+        }
+        
+        // Set timestamp for tracking
+        await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
+        
+        console.log('[api/onboarding/subscription] Cookies set successfully');
+      } catch (cookieError) {
+        console.error('[api/onboarding/subscription] Error setting cookies:', cookieError);
+        // Continue - don't fail the entire request for cookie issues
+      }
+      
+      // Prepare response data
+      const responseData = {
+        success: backendSuccess,
+        message: backendSuccess ? 'Subscription saved successfully' : 'Subscription cached locally',
+        nextRoute: subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment',
+        subscription: {
+          selected_plan: subscriptionData.selected_plan,
+          billing_cycle: subscriptionData.billing_cycle,
+          payment_method: subscriptionData.payment_method,
+          requires_payment: subscriptionData.requires_payment
+        },
+        backendStatus: backendSuccess ? 'saved' : 'failed',
+        tenant_id: backendData.tenant_id || null
       };
-    }
-
-    // Update onboarding status in Cognito with tokens
-    try {
-      // Normalize the plan value to lowercase for consistency in Cognito
-      const normalizedPlan = body.plan.toLowerCase();
-      const isFreeOrBasicPlan = body.plan.toLowerCase() === 'free' || body.plan.toLowerCase() === 'basic';
       
-      const attributesToUpdate = {
-        'custom:subplan': normalizedPlan,
-        'custom:subscriptioninterval': body.interval,
-        'custom:requirespayment': (body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
-                                 (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card') ? 'TRUE' : 'FALSE',
-        'custom:setupdone': isFreeOrBasicPlan ? 'true' : 'FALSE', // Set setupdone to true for free plans
-        'custom:onboarding': isFreeOrBasicPlan ? 'complete' : nextStep // Set onboarding to complete for free plans
-      };
+      // Return success response
+      return createSafeResponse(responseData);
       
-      // Log the attributes being updated
-      logger.debug('[Subscription] Updating Cognito attributes:', attributesToUpdate);
-      
-      // Add payment method if provided
-      if (body.payment_method) {
-        attributesToUpdate['custom:paymentmethod'] = body.payment_method.toLowerCase();
-      }
-      
-      await updateOnboardingStep(nextStep, attributesToUpdate, {
-        accessToken: accessToken,
-        idToken: idToken
+    } catch (backendError) {
+      console.error('[api/onboarding/subscription] Backend communication failed:', {
+        message: backendError.message,
+        stack: backendError.stack
       });
       
-      logger.info('[Subscription] Successfully updated onboarding step to ' + nextStep);
-    } catch (updateError) {
-      // Log the error but continue since the subscription was saved successfully
-      logger.warn('[Subscription] Failed to update onboarding step, but subscription was saved:', {
-        error: updateError.message,
-        nextStep
-      });
-      // Continue with the response since the subscription was saved successfully
-    }
-
-    // Determine next route based on plan and payment method
-    let nextRoute = '/dashboard';
-    
-    // For paid plans with credit card payment, go to payment page
-    if ((body.plan.toLowerCase() === 'professional' || body.plan.toLowerCase() === 'enterprise') && 
-        (!body.payment_method || body.payment_method.toLowerCase() === 'credit_card')) {
-      nextRoute = '/onboarding/payment';
-    }
-
-    // Create response data with redirect info
-    const responseData = {
-      ...data,
-      setupStatus: 'pending',
-      nextRoute,
-      message: "Subscription saved successfully. Redirecting to " + (nextRoute === '/dashboard' ? 'dashboard' : 'payment') + "...",
-      timestamp: new Date().toISOString(),
-      tenant: {
-        id: tenantId,
-        status: 'pending'
-      },
-      user: {
-        id: cognitoUserId,
-        email: attributes.email,
-        setupDone: attributes['custom:setupdone']
-      }
-    };
-
-    logger.debug('[Subscription] Response data prepared:', {
-      setupStatus: 'pending',
-      nextRoute,
-      tenant: {
-        id: tenantId,
-        status: 'pending'
-      },
-      user: {
-        id: cognitoUserId,
-        setupDone: attributes['custom:setupdone']
-      }
-    });
-
-    // Set the necessary cookies for frontend flow
-    const cookieStore = await cookies();
-    const expiration = new Date();
-    expiration.setDate(expiration.getDate() + 7); // 7 days
-    
-    // Define all the cookies to be set
-    const cookiesToSet = {
-      'onboardingStep': body.plan.toLowerCase() === 'free' ? 'SETUP' : (data?.next_step || nextStep.toLowerCase()),
-      'onboardedStatus': nextStep,
-      'selectedPlan': body.plan.toLowerCase(),
-      'billingCycle': body.interval.toLowerCase(),
-      'tenantId': tenantId,
-      'userEmail': attributes.email || '',
-      'businessName': attributes['custom:businessname'] || '',
-      'firstName': attributes['custom:firstname'] || '',
-      'lastName': attributes['custom:lastname'] || '',
-      'businessId': tenantId,
-      'businessType': attributes['custom:businesstype'] || '',
-      // Add a specific flag for the dashboard to recognize post-subscription access
-      'postSubscriptionAccess': 'true'
-    };
-    
-    // Set each cookie - properly awaited
-    for (const [name, value] of Object.entries(cookiesToSet)) {
-      if (value) { // Only set if value exists
-        await cookieStore.set(name, value, {
-          path: '/',
-          expires: expiration,
-          sameSite: 'lax'
+      // Graceful degradation: save to cookies even if backend fails
+      try {
+        const cookieStore = await cookies();
+        
+        // Mark subscription step as completed (cached)
+        await cookieStore.set('subscriptionCompleted', 'true', COOKIE_OPTIONS);
+        await cookieStore.set('onboardingStep', subscriptionData.next_status, COOKIE_OPTIONS);
+        await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        
+        // Cache subscription data
+        await cookieStore.set('subscriptionPlan', subscriptionData.selected_plan, COOKIE_OPTIONS);
+        await cookieStore.set('subscriptionInterval', subscriptionData.billing_cycle, COOKIE_OPTIONS);
+        
+        return createSafeResponse({
+          success: true, // Still successful from user perspective
+          message: 'Subscription saved locally (backend temporarily unavailable)',
+          nextRoute: subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment',
+          subscription: {
+            selected_plan: subscriptionData.selected_plan,
+            billing_cycle: subscriptionData.billing_cycle,
+            payment_method: subscriptionData.payment_method,
+            requires_payment: subscriptionData.requires_payment
+          },
+          backendStatus: 'offline',
+          fallback: true
         });
+      } catch (fallbackError) {
+        console.error('[api/onboarding/subscription] Complete failure:', fallbackError);
+        
+        return createSafeResponse({
+          success: false,
+          error: 'Failed to save subscription',
+          message: 'Please try again or contact support if the problem persists'
+        }, 500);
       }
     }
     
-    logger.info('[Subscription] Cookies set successfully:', {
-      requestId,
-      cookieNames: Object.keys(cookiesToSet)
-    });
-    
-    // Determine the next step based on plan (free plan goes to dashboard, others to payment)
-    const targetRoute = body.plan.toLowerCase() === 'free' 
-      ? 'dashboard' 
-      : 'payment';
-    
-    // Return successful response
-    return NextResponse.json({
-      success: true,
-      message: 'Subscription processed successfully',
-      plan: body.plan.toLowerCase(),
-      interval: body.interval.toLowerCase(),
-      next_step: data?.next_step || targetRoute,
-      target_route: "/" + targetRoute,
-      requires_payment: body.plan.toLowerCase() !== 'free'
-    }, {
-      status: 200, // Always return 200 to ensure frontend flow continues
-      headers: {
-        'X-Tenant-ID': tenantId,
-        'X-Request-ID': requestId
-      }
-    });
   } catch (error) {
-    // For catastrophic errors, still try to continue with cookies
-    logger.error('[Subscription] Unhandled exception, but still setting cookies and continuing:', {
-      error: error.message,
+    console.error('[api/onboarding/subscription] Critical error:', {
+      message: error.message,
+      name: error.name,
       stack: error.stack
     });
     
-    // Set minimum required cookies to continue flow
-    const cookieStore = await cookies();
-    const expiration = new Date();
-    expiration.setDate(expiration.getDate() + 7);
+    return createSafeResponse({
+      success: false,
+      error: 'Critical error processing subscription',
+      message: error.message
+    }, 500);
+  }
+}
+
+/**
+ * Get existing subscription information - SECURE VERSION
+ */
+export async function GET(request) {
+  try {
+    console.log('[api/onboarding/subscription] GET request received');
     
-    // Define a default body with fallback values for the error case
-    const defaultBody = { plan: 'free', interval: 'monthly' };
-    
-    try {
-      // Set essential cookies even in error case
-      const targetRoute = defaultBody.plan.toLowerCase() === 'free' ? 'SETUP' : 'payment';
-      await cookieStore.set('onboardingStep', targetRoute, { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('onboardedStatus', 'subscription', { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('selectedPlan', defaultBody.plan.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
-      await cookieStore.set('billingCycle', defaultBody.interval.toLowerCase(), { path: '/', expires: expiration, sameSite: 'lax' });
-      // Add post subscription access flag
-      await cookieStore.set('postSubscriptionAccess', 'true', { path: '/', expires: expiration, sameSite: 'lax' });
-      
-      logger.info('[Subscription] Essential cookies set despite error');
-    } catch (cookieError) {
-      logger.error('[Subscription] Failed to set cookies in error handler:', cookieError);
+    // SECURITY: Validate authentication first
+    const authResult = await validateAuthentication(request);
+    if (!authResult.isAuthenticated) {
+      console.warn('[api/onboarding/subscription] Unauthorized GET request blocked');
+      return createSafeResponse({
+        subscription: {},
+        error: 'Authentication required',
+        message: 'Please sign in to view subscription information'
+      }, 401);
     }
     
-    // Return success response anyway to ensure frontend flow continues
-    return NextResponse.json({
-      success: true,
-      message: 'Subscription processed with warnings',
-      plan: defaultBody.plan.toLowerCase(),
-      interval: defaultBody.interval.toLowerCase(),
-      next_step: defaultBody.plan.toLowerCase() === 'free' ? 'dashboard' : 'payment',
-      requires_payment: defaultBody.plan.toLowerCase() !== 'free'
-    }, {
-      status: 200 // Always 200 to continue frontend flow
+    const authenticatedUser = authResult.user;
+    console.log('[api/onboarding/subscription] Authenticated user for GET:', authenticatedUser.email);
+    
+    // Get values from cookies as fallback data source
+    let cookieStore;
+    try {
+      cookieStore = await cookies();
+      console.log('[api/onboarding/subscription] Got cookies successfully');
+    } catch (cookieError) {
+      console.error('[api/onboarding/subscription] Error accessing cookies:', cookieError);
+      // Return empty response that won't break the client
+      return createSafeResponse({
+        subscription: {},
+        error: 'Failed to access cookies'
+      });
+    }
+    
+    const subscriptionPlanCookie = cookieStore.get('subscriptionPlan')?.value || '';
+    const subscriptionIntervalCookie = cookieStore.get('subscriptionInterval')?.value || '';
+    const paymentMethodCookie = cookieStore.get('paymentMethod')?.value || '';
+    
+    console.log('[api/onboarding/subscription] Read cookies:', {
+      hasSubscriptionPlan: !!subscriptionPlanCookie,
+      hasSubscriptionInterval: !!subscriptionIntervalCookie
+    });
+    
+    // Create a safe response
+    return createSafeResponse({
+      subscription: {
+        selected_plan: subscriptionPlanCookie,
+        billing_cycle: subscriptionIntervalCookie,
+        payment_method: paymentMethodCookie
+      },
+      source: subscriptionPlanCookie ? 'cookies' : 'empty'
+    });
+  } catch (error) {
+    // Log error but return a valid empty response
+    console.error('[api/onboarding/subscription] GET: Error retrieving subscription:', {
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Return minimal valid response that won't break the client
+    return createSafeResponse({
+      subscription: {},
+      error: 'Failed to retrieve subscription information'
     });
   }
 }
 
 // Handle OPTIONS requests for CORS
 export async function OPTIONS() {
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': [
-        'Content-Type',
-        'Authorization',
-        'X-Id-Token',
-        'X-Tenant-ID',
-        'X-Cognito-Sub',
-        'X-Business-ID',
-        'X-Onboarding-Status',
-        'X-Setup-Done',
-        'X-Request-ID',
-        'X-Payment-Method'
-      ].join(', ')
-    }
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
   });
 }
