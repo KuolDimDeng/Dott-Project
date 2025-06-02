@@ -317,6 +317,14 @@ export default function SubscriptionPage() {
             })
           });
           
+          logger.debug('[SubscriptionPage] Background setup completed successfully');
+        } catch (setupError) {
+          logger.warn('[SubscriptionPage] Background setup failed, continuing anyway:', setupError);
+          // Continue to dashboard redirect even if background setup fails
+        }
+        
+        // Always attempt dashboard redirect regardless of background setup
+        try {
           // Get user's tenant ID for correct dashboard redirect
           const profileResponse = await fetch('/api/auth/profile');
           if (profileResponse.ok) {
@@ -339,13 +347,19 @@ export default function SubscriptionPage() {
             }
           }
           
-          // Last resort: generic dashboard
-          logger.warn('[SubscriptionPage] No tenant ID found, redirecting to generic dashboard');
-          router.push('/dashboard');
+          // Check if we have a tenant ID from the component state
+          if (tenantId) {
+            logger.info('[SubscriptionPage] Using component state tenant ID:', tenantId);
+            router.push(`/tenant/${tenantId}/dashboard`);
+            return;
+          }
           
-        } catch (setupError) {
-          logger.error('[SubscriptionPage] Background setup error:', setupError);
-          // Continue to dashboard anyway
+          // Last resort: generic dashboard with warning
+          logger.warn('[SubscriptionPage] No tenant ID found anywhere, redirecting to generic dashboard');
+          router.push('/dashboard');
+        } catch (redirectError) {
+          logger.error('[SubscriptionPage] Error during dashboard redirect:', redirectError);
+          // Final fallback
           router.push('/dashboard');
         }
       } else {

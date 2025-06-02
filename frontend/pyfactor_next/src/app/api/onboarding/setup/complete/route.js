@@ -4,45 +4,53 @@ import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
-    // Check authentication via cookie
-    const cookieStore = cookies();
-    const authCookie = cookieStore.get('auth0_logged_in');
+    // Check Auth0 v4.x authentication via appSession cookie
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
-    if (!authCookie || authCookie.value !== 'true') {
+    if (!sessionCookie) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Authentication required - no session found' },
+        { status: 401 }
+      );
+    }
+
+    // Validate session has user data
+    try {
+      const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      if (!sessionData.user || !sessionData.user.email) {
+        return NextResponse.json(
+          { error: 'Invalid session - no user data' },
+          { status: 401 }
+        );
+      }
+    } catch (parseError) {
+      return NextResponse.json(
+        { error: 'Invalid session format' },
         { status: 401 }
       );
     }
 
     const body = await request.json();
-    const { business_name, business_type, subscription_plan } = body;
+    console.log('[SetupComplete] Request body:', body);
 
-    // Validate required fields
-    if (!business_name || !business_type || !subscription_plan) {
-      return NextResponse.json(
-        { error: 'Missing required fields: business_name, business_type, subscription_plan' },
-        { status: 400 }
-      );
-    }
+    // For background completion, we don't need all the fields
+    const { status, completedAt, background, source } = body;
 
-    // Return success with demo data
-    return NextResponse.json({
+    // Return success response
+    const response = {
       success: true,
-      message: 'Onboarding completed successfully',
-      user: {
-        id: 'auth0|demo-user',
-        email: 'user@example.com',
-        name: 'Demo User',
-        business_name,
-        business_type,
-        subscription_plan,
-        onboarding_complete: true
-      }
-    });
+      message: 'Setup completed successfully',
+      completedAt: completedAt || new Date().toISOString(),
+      background: background || false,
+      source: source || 'manual'
+    };
+
+    console.log('[SetupComplete] Success response:', response);
+    return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error completing onboarding:', error);
+    console.error('[SetupComplete] Error completing setup:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
