@@ -242,6 +242,7 @@ export default function SubscriptionPage() {
         const profileResponse = await fetch('/api/auth/profile');
         if (profileResponse.ok) {
           const profile = await profileResponse.json();
+          logger.info('[SubscriptionPage] Profile API response:', profile);
           if (profile) {
             logger.debug('[SubscriptionPage] User profile:', {
               email: profile.email,
@@ -332,10 +333,19 @@ export default function SubscriptionPage() {
             const profileResponse = await fetch('/api/auth/profile');
             if (profileResponse.ok) {
               const profile = await profileResponse.json();
+              logger.info('[SubscriptionPage] Profile API response:', profile);
               if (profile && profile.tenantId) {
                 foundTenantId = profile.tenantId;
                 logger.info('[SubscriptionPage] Got tenant ID from profile:', foundTenantId);
+              } else {
+                logger.warn('[SubscriptionPage] Profile response missing tenantId:', {
+                  hasProfile: !!profile,
+                  profileKeys: profile ? Object.keys(profile) : [],
+                  profile: profile
+                });
               }
+            } else {
+              logger.warn('[SubscriptionPage] Profile API failed:', profileResponse.status);
             }
           } catch (profileError) {
             logger.warn('[SubscriptionPage] Profile fetch failed:', profileError);
@@ -347,10 +357,20 @@ export default function SubscriptionPage() {
               const sessionResponse = await fetch('/api/auth/session');
               if (sessionResponse.ok) {
                 const sessionData = await sessionResponse.json();
+                logger.info('[SubscriptionPage] Session API response:', sessionData);
                 if (sessionData && sessionData.user && sessionData.user.tenantId) {
                   foundTenantId = sessionData.user.tenantId;
                   logger.info('[SubscriptionPage] Got tenant ID from session:', foundTenantId);
+                } else {
+                  logger.warn('[SubscriptionPage] Session response missing tenantId:', {
+                    hasSessionData: !!sessionData,
+                    hasUser: !!(sessionData && sessionData.user),
+                    userKeys: sessionData && sessionData.user ? Object.keys(sessionData.user) : [],
+                    sessionData: sessionData
+                  });
                 }
+              } else {
+                logger.warn('[SubscriptionPage] Session API failed:', sessionResponse.status);
               }
             } catch (sessionError) {
               logger.warn('[SubscriptionPage] Session fetch failed:', sessionError);
@@ -393,10 +413,19 @@ export default function SubscriptionPage() {
               
               if (directUserResponse.ok) {
                 const userData = await directUserResponse.json();
+                logger.info('[SubscriptionPage] Direct backend API response:', userData);
                 if (userData.tenantId) {
                   foundTenantId = userData.tenantId;
                   logger.info('[SubscriptionPage] Got tenant ID from direct backend call:', foundTenantId);
+                } else {
+                  logger.warn('[SubscriptionPage] Direct backend response missing tenantId:', {
+                    hasUserData: !!userData,
+                    userDataKeys: userData ? Object.keys(userData) : [],
+                    userData: userData
+                  });
                 }
+              } else {
+                logger.warn('[SubscriptionPage] Direct backend API failed:', directUserResponse.status);
               }
             } catch (backendError) {
               logger.warn('[SubscriptionPage] Direct backend call failed:', backendError);
