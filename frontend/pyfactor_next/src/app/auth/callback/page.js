@@ -21,8 +21,8 @@ export default function Auth0CallbackPage() {
       try {
         setStatus('Verifying authentication...');
         
-        // Get session from our API route
-        const sessionResponse = await fetch('/api/auth/profile');
+        // Get session from our session API route (returns { user, accessToken, idToken })
+        const sessionResponse = await fetch('/api/auth/session');
         
         if (!sessionResponse.ok) {
           throw new Error(`Session API returned ${sessionResponse.status}`);
@@ -30,7 +30,7 @@ export default function Auth0CallbackPage() {
         
         const sessionData = await sessionResponse.json();
         
-        if (!sessionData) {
+        if (!sessionData || !sessionData.user) {
           throw new Error('No user session found');
         }
         

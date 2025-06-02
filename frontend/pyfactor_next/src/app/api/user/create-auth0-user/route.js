@@ -11,6 +11,7 @@ export async function POST(request) {
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
+      console.error('[Create Auth0 User] No Auth0 session cookie found');
       return NextResponse.json({ error: 'No Auth0 session found' }, { status: 401 });
     }
     
@@ -18,14 +19,32 @@ export async function POST(request) {
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
     } catch (parseError) {
-      console.error('[Create Auth0 User] Error parsing session:', parseError);
+      console.error('[Create Auth0 User] Error parsing session cookie:', parseError);
       return NextResponse.json({ error: 'Invalid session data' }, { status: 401 });
     }
     
+    console.log('[Create Auth0 User] Session data structure:', {
+      hasUser: !!sessionData.user,
+      hasAccessToken: !!sessionData.accessToken,
+      userEmail: sessionData.user?.email,
+      sessionKeys: Object.keys(sessionData)
+    });
+    
     const { user, accessToken } = sessionData;
     
-    if (!user || !accessToken) {
-      return NextResponse.json({ error: 'Invalid session - missing user or token' }, { status: 401 });
+    if (!user) {
+      console.error('[Create Auth0 User] No user in session data. Session structure:', sessionData);
+      return NextResponse.json({ 
+        error: 'Invalid session - missing user data',
+        fallback: true,
+        tenant_id: uuidv4(),
+        current_step: 'business_info',
+        needs_onboarding: true
+      }, { status: 200 });
+    }
+    
+    if (!accessToken) {
+      console.warn('[Create Auth0 User] No access token in session data, continuing anyway');
     }
     
     console.log('[Create Auth0 User] Creating user for:', user.email);

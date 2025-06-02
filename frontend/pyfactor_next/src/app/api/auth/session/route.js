@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 /**
  * Custom session endpoint to ensure properly formatted JSON responses
@@ -7,36 +8,51 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request) {
   try {
-    // Get session cookie
-    const sessionCookie = request.cookies.get('appSession');
+    console.log('[Auth Session] Getting Auth0 session data');
+    
+    // Try to get session from custom cookie first
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
-      return NextResponse.json({ user: null }, { status: 200 });
+      console.log('[Auth Session] No session cookie found');
+      return NextResponse.json(null, { status: 200 });
     }
     
+    let sessionData;
     try {
-      // Decode session data
-      const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      
-      // Check if session is expired
-      if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
-        return NextResponse.json({ user: null, error: 'Session expired' }, { status: 200 });
-      }
-      
-      // Return user data (without sensitive tokens)
-      return NextResponse.json({
-        user: sessionData.user,
-        isAuthenticated: true,
-        expiresAt: sessionData.accessTokenExpiresAt
-      }, { status: 200 });
-      
-    } catch (error) {
-      console.error('[Auth Session] Error decoding session:', error);
-      return NextResponse.json({ user: null, error: 'Invalid session' }, { status: 200 });
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    } catch (parseError) {
+      console.error('[Auth Session] Error parsing session cookie:', parseError);
+      return NextResponse.json(null, { status: 200 });
     }
+    
+    // Check if session is expired
+    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+      console.log('[Auth Session] Session expired');
+      return NextResponse.json(null, { status: 200 });
+    }
+    
+    const { user, accessToken, idToken } = sessionData;
+    
+    if (!user) {
+      console.log('[Auth Session] No user in session data');
+      return NextResponse.json(null, { status: 200 });
+    }
+    
+    console.log('[Auth Session] Session found for user:', user.email);
+    
+    // Return session data in the format expected by the callback
+    return NextResponse.json({
+      user: user,
+      accessToken: accessToken,
+      idToken: idToken,
+      authenticated: true,
+      source: 'session-cookie'
+    });
     
   } catch (error) {
-    console.error('[Auth Session] Error:', error);
-    return NextResponse.json({ user: null, error: 'Internal error' }, { status: 500 });
+    console.error('[Auth Session] Error getting session:', error);
+    return NextResponse.json({ error: 'Failed to get session' }, { status: 500 });
   }
 } 
