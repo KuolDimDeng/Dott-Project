@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCurrentUser  } from '@/config/amplifyUnified';
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { logger } from '@/utils/logger';
 import LoadingScreen from '@/components/LoadingScreen';
 
@@ -16,43 +16,32 @@ import LoadingScreen from '@/components/LoadingScreen';
 export function authenticatedRoute(Component) {
   return function AuthenticatedComponent(props) {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { user, error, isLoading } = useUser();
+    const [authChecked, setAuthChecked] = useState(false);
 
     useEffect(() => {
-      // Check if user is authenticated
-      const checkAuth = async () => {
-        try {
-          setIsLoading(true);
-          
-          // Get current authenticated user using Amplify v6 API
-          const currentUser = await getCurrentUser().catch(() => null);
-          
-          if (currentUser) {
-            logger.debug('[AuthenticatedRoute] User is authenticated', { userId: currentUser.userId });
-            setIsAuthenticated(true);
-          } else {
-            logger.debug('[AuthenticatedRoute] No authenticated user found');
-            router.push('/auth/signin?redirect=' + encodeURIComponent(window.location.pathname));
-          }
-        } catch (error) {
-          logger.error('[AuthenticatedRoute] Authentication error', error);
+      // Only check auth when Auth0 has finished loading
+      if (!isLoading) {
+        if (error) {
+          logger.error('[AuthenticatedRoute] Auth0 error', error);
           router.push('/auth/signin?redirect=' + encodeURIComponent(window.location.pathname));
-        } finally {
-          setIsLoading(false);
+        } else if (user) {
+          logger.debug('[AuthenticatedRoute] User is authenticated', { userId: user.sub, email: user.email });
+          setAuthChecked(true);
+        } else {
+          logger.debug('[AuthenticatedRoute] No authenticated user found');
+          router.push('/auth/signin?redirect=' + encodeURIComponent(window.location.pathname));
         }
-      };
-
-      checkAuth();
-    }, [router]);
+      }
+    }, [user, error, isLoading, router]);
 
     // Show loading screen while checking authentication
-    if (isLoading) {
+    if (isLoading || !authChecked) {
       return <LoadingScreen message="Checking authentication..." />;
     }
 
     // Render the wrapped component if authenticated
-    return isAuthenticated ? <Component {...props} /> : null;
+    return user ? <Component {...props} /> : null;
   };
 }
 

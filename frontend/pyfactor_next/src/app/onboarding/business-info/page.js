@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from '@/config/amplifyUnified';
-import { authenticatedRoute } from '@/components/AuthenticatedRoute';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { submitBusinessInfo } from '@/services/api/onboarding';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -12,6 +12,7 @@ import { countries } from 'countries-list';
 
 const BusinessInfoPage = () => {
   const router = useRouter();
+  const { user, isLoading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
@@ -22,20 +23,6 @@ const BusinessInfoPage = () => {
     country: 'United States',
     founded_date: new Date().toISOString().split('T')[0], // Current date in YYYY-MM-DD format
   });
-  const [userId, setUserId] = useState(null);
-
-  // Get current user on mount
-  useEffect(() => {
-    const getUserId = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        setUserId(currentUser.userId);
-      } catch (error) {
-        logger.error('[BusinessInfoPage] Error getting current user:', error);
-      }
-    };
-    getUserId();
-  }, []);
 
   // Check if required fields are filled
   const isValid = useMemo(() => {
@@ -84,30 +71,36 @@ const BusinessInfoPage = () => {
             ...cachedData
           }));
         } else {
-          // Fallback to Cognito attributes
+          // Try to get from API
           try {
-            logger.debug('[BusinessInfoPage] Fetching business info from Cognito');
-            const attributes = await fetchUserAttributes();
+            logger.debug('[BusinessInfoPage] Fetching business info from API');
+            const response = await fetch('/api/onboarding/business-info');
             
-            const cognitoData = {
-              legal_name: attributes['custom:businessname'] || '',
-              business_type: attributes['custom:businesstype'] || '',
-              legal_structure: attributes['custom:legalstructure'] || '',
-              country: attributes['custom:businesscountry'] || 'United States',
-              founded_date: attributes['custom:datefounded'] || new Date().toISOString().split('T')[0]
-            };
-            
-            // Store in app cache for quick access
-            setCache('business_info', cognitoData, { ttl: 3600000 }); // 1 hour
-            
-            setBusinessInfo(prevState => ({
-              ...prevState,
-              ...cognitoData
-            }));
-            
-            logger.debug('[BusinessInfoPage] Business info loaded from Cognito', { cognitoData });
-          } catch (cognitoError) {
-            logger.error('[BusinessInfoPage] Failed to fetch business info from Cognito', cognitoError);
+            if (response.ok) {
+              const data = await response.json();
+              
+              if (data.businessInfo) {
+                const apiData = {
+                  legal_name: data.businessInfo.businessName || '',
+                  business_type: data.businessInfo.businessType || '',
+                  legal_structure: data.businessInfo.legalStructure || '',
+                  country: data.businessInfo.country || 'United States',
+                  founded_date: data.businessInfo.dateFounded || new Date().toISOString().split('T')[0]
+                };
+                
+                // Store in app cache for quick access
+                setCache('business_info', apiData, { ttl: 3600000 }); // 1 hour
+                
+                setBusinessInfo(prevState => ({
+                  ...prevState,
+                  ...apiData
+                }));
+                
+                logger.debug('[BusinessInfoPage] Business info loaded from API', { apiData });
+              }
+            }
+          } catch (apiError) {
+            logger.error('[BusinessInfoPage] Failed to fetch business info from API', apiError);
             // Keep default values already set in state
           }
         }
@@ -119,8 +112,11 @@ const BusinessInfoPage = () => {
       }
     };
 
-    fetchBusinessInfo();
-  }, []);
+    // Only fetch data when user auth state is resolved
+    if (!userLoading) {
+      fetchBusinessInfo();
+    }
+  }, [userLoading]);
 
   // Handle field changes
   const handleChange = (e) => {
@@ -144,64 +140,35 @@ const BusinessInfoPage = () => {
     setSubmitting(true);
     
     try {
-      logger.debug('[BusinessInfoPage] Saving business info to Cognito and AppCache', businessInfo);
+      logger.debug('[BusinessInfoPage] Saving business info via API', businessInfo);
       
       // Get the country code for the selected country
       const selectedCountry = countryOptions.find(option => option.value === businessInfo.country);
       const countryCode = selectedCountry?.code || 'US'; // Default to US if not found
       
-      // Generate a business ID that is exactly 36 characters
-      const timestamp = Date.now().toString();
-      const randomString = Math.random().toString(36).substring(2, 10);
-      const paddedId = `bus_${timestamp}_${randomString}`.padEnd(36, '0').substring(0, 36);
-      
-      // Format the data for Cognito attributes
-      const userAttributes = {
-        'custom:businessname': businessInfo.legal_name,
-        'custom:businesstype': businessInfo.business_type,
-        'custom:legalstructure': businessInfo.legal_structure,
-        'custom:businesscountry': countryCode, // Use the country code (2-3 chars) instead of full name
-        'custom:datefounded': businessInfo.founded_date,
-        'custom:businessid': paddedId, // Ensure it's exactly 36 chars
-        'custom:onboarding': 'subscription', // Track progress in onboarding flow
-        'custom:updated_at': new Date().toISOString(),
-        'custom:setupdone': 'false', // Setup isn't done until onboarding is complete
-        'custom:attrversion': '1.0.0' // Ensure at least 5 characters
+      // Prepare data for API submission
+      const submissionData = {
+        businessName: businessInfo.legal_name,
+        businessType: businessInfo.business_type,
+        legalStructure: businessInfo.legal_structure,
+        country: countryCode, // Use the country code (2-3 chars) instead of full name
+        dateFounded: businessInfo.founded_date,
+        firstName: user?.given_name || user?.name?.split(' ')[0] || '',
+        lastName: user?.family_name || user?.name?.split(' ').slice(1).join(' ') || ''
       };
       
-      // Update Cognito attributes directly
-      await updateUserAttributes({
-        userAttributes
-      });
+      // Submit via API
+      const response = await submitBusinessInfo(submissionData);
       
-      logger.debug('[BusinessInfoPage] Business info saved to Cognito successfully');
-      
-      // Save business ID in app cache
-      setCache('businessId', paddedId, { ttl: 86400000 * 30 }); // 30 days
-      
-      // Store the complete business info object in cache with the updated fields
-      const updatedBusinessInfo = {
-        ...businessInfo,
-        business_id: paddedId,
-        country_code: countryCode
-      };
+      logger.debug('[BusinessInfoPage] Business info saved via API successfully', response);
       
       // Update app cache with new data
-      setCache('business_info', updatedBusinessInfo, { ttl: 3600000 }); // 1 hour
+      const updatedBusinessInfo = {
+        ...businessInfo,
+        business_id: response?.tenant_id || response?.businessId
+      };
       
-      // Cache user attributes if we have a userId
-      if (userId) {
-        const userSpecificInfo = {
-          businessId: paddedId,
-          businessName: businessInfo.legal_name,
-          businessType: businessInfo.business_type,
-          legalStructure: businessInfo.legal_structure,
-          countryCode: countryCode,
-          foundedDate: businessInfo.founded_date
-        };
-        
-        setCache(`user_${userId}_businessInfo`, userSpecificInfo, { ttl: 86400000 }); // 24 hours
-      }
+      setCache('business_info', updatedBusinessInfo, { ttl: 3600000 }); // 1 hour
       
       // Update onboarding state in app cache
       const onboardingStatus = {
@@ -214,21 +181,8 @@ const BusinessInfoPage = () => {
       
       logger.debug('[BusinessInfoPage] Business info updated successfully, redirecting to subscription page');
       
-      // Force redirection with a small delay to ensure state is properly updated
-      setTimeout(() => {
-        // Use the Next.js router push with specific options for more reliable navigation
-        router.push('/onboarding/subscription?source=business-info&ts=' + Date.now(), { 
-          forceOptimisticNavigation: true 
-        });
-        
-        // Fallback with direct window.location for problematic cases
-        setTimeout(() => {
-          if (window.location.pathname.includes('/business-info')) {
-            logger.warn('[BusinessInfoPage] Router navigation failed, using direct location change');
-            window.location.href = '/onboarding/subscription?source=business-info&fallback=true&ts=' + Date.now();
-          }
-        }, 1000);
-      }, 300);
+      // Navigate to subscription page
+      router.push('/onboarding/subscription');
     } catch (error) {
       logger.error('[BusinessInfoPage] Failed to update business info', error);
       setError('Failed to save business information. Please try again.');
@@ -237,7 +191,7 @@ const BusinessInfoPage = () => {
     }
   };
 
-  if (loading) {
+  if (userLoading || loading) {
     return <LoadingScreen message="Loading your business information..." />;
   }
 
@@ -410,4 +364,4 @@ const BusinessInfoPage = () => {
   );
 };
 
-export default authenticatedRoute(BusinessInfoPage);
+export default BusinessInfoPage;
