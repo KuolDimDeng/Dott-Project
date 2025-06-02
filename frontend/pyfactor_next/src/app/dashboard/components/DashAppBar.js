@@ -38,7 +38,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined' && !window.__APP_CACHE) {
@@ -88,7 +87,6 @@ const DashAppBar = ({
     user: auth0User, 
     isLoading: auth0Loading, 
     error: auth0Error,
-    getUserInitials: getAuth0Initials,
     getFullName: getAuth0FullName,
     getBusinessName: getAuth0BusinessName
   } = useAuth0Data();
@@ -207,73 +205,22 @@ const DashAppBar = ({
     };
   }, [userAttributes, propUserData, propProfileData]);
 
-  // Find where generateInitialsFromNames is first declared (keep this one)
-  const generateInitialsFromNames = useCallback(
-    (firstNameValue, lastNameValue, emailValue) => {
-      if (!firstNameValue && !lastNameValue && !emailValue) return '';
-
-      if (firstNameValue && lastNameValue) {
-        return `${firstNameValue.charAt(0).toUpperCase()}${lastNameValue.charAt(0).toUpperCase()}`;
-      } else if (firstNameValue) {
-        // Try to extract a second initial from email
-        if (emailValue && emailValue.includes('@')) {
-          const emailName = emailValue.split('@')[0];
-          if (emailName.includes('.')) {
-            const emailParts = emailName.split('.');
-            if (emailParts.length >= 2 && emailParts[1].length > 0) {
-              return `${firstNameValue.charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
-            }
-          }
-        }
-        return firstNameValue.charAt(0).toUpperCase();
-      } else if (lastNameValue) {
-        return lastNameValue.charAt(0).toUpperCase();
-      } else if (emailValue) {
-        // Try to extract initials from email format (first.last@domain.com)
-        const emailName = emailValue.split('@')[0];
-        if (emailName.includes('.')) {
-          const emailParts = emailName.split('.');
-          if (
-            emailParts.length >= 2 &&
-            emailParts[0].length > 0 &&
-            emailParts[1].length > 0
-          ) {
-            return `${emailParts[0].charAt(0).toUpperCase()}${emailParts[1].charAt(0).toUpperCase()}`;
-          }
-        } else if (emailName.length > 1) {
-          // For emails like kuoldimdeng@outlook.com - try to extract two initials
-          // First, check if there's any camelCase (e.g., kuolDimdeng)
-          const camelCaseMatch = emailName.match(/([a-z]+)([A-Z][a-z]+)/);
-          if (camelCaseMatch && camelCaseMatch.length >= 3) {
-            return `${camelCaseMatch[1].charAt(0).toUpperCase()}${camelCaseMatch[2].charAt(0).toUpperCase()}`;
-          }
-
-          // Otherwise, try to intelligently split the name
-          // For kuoldimdeng, we'll intelligently try to identify a split point
-          // Common South Sudanese names often have this pattern
-
-          // Specific handling for known formats like kuoldimdeng
-          if (emailName.toLowerCase().startsWith('kuol')) {
-            // Extract K from kuol and D from dimdeng
-            const firstPart = emailName.substring(0, 4); // kuol
-            const secondPart = emailName.substring(4); // dimdeng
-            return `${firstPart.charAt(0).toUpperCase()}${secondPart.charAt(0).toUpperCase()}`;
-          }
-
-          // For other cases, try a simple division of the string
-          const midPoint = Math.floor(emailName.length / 2);
-          const firstPart = emailName.substring(0, midPoint);
-          const lastPart = emailName.substring(midPoint);
-
-          return `${firstPart.charAt(0).toUpperCase()}${lastPart.charAt(0).toUpperCase()}`;
-        }
-        return emailValue.charAt(0).toUpperCase();
-      }
-
-      return '';
-    },
-    []
-  );
+  // Simple utility function to generate user initials (replaces CognitoAttributes.getUserInitials)
+  const generateInitialsFromNames = (firstName, lastName, email) => {
+    if (firstName && lastName) {
+      return `${firstName.charAt(0).toUpperCase()}${lastName.charAt(0).toUpperCase()}`;
+    }
+    if (firstName) {
+      return firstName.charAt(0).toUpperCase();
+    }
+    if (lastName) {
+      return lastName.charAt(0).toUpperCase();
+    }
+    if (email) {
+      return email.charAt(0).toUpperCase();
+    }
+    return 'U'; // Default fallback
+  };
 
   // Use the cached profile data if available - only on mount
   useEffect(() => {
@@ -482,47 +429,35 @@ const DashAppBar = ({
   // Modify the fetchCorrectUserDetails function to use tenant-specific caching
   const fetchCorrectUserDetails = useCallback(async () => {
     try {
-      if (!isAuthenticated || !tenantId) {
-        logger.error('[AppBar] Cannot fetch tenant details without authentication and tenant ID');
+      if (!tenantId) {
+        logger.error('[AppBar] Cannot fetch tenant details without tenant ID');
         return;
       }
 
-      // Try to get attributes from Cognito
-      const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-      const attributes = await fetchUserAttributes();
+      // Skip Cognito validation entirely - Auth0 handles authentication
+      logger.debug('[AppBar] Using Auth0 for user authentication and data');
       
-      // Validate current tenant ID matches the attribute tenant ID (for security)
-      const attributeTenantId = CognitoAttributes.getValue(attributes, CognitoAttributes.TENANT_ID) || CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_ID);
-      if (attributeTenantId && attributeTenantId !== tenantId) {
-        logger.error('[AppBar] Tenant ID mismatch! URL tenant ID does not match authenticated user tenant ID', {
-          urlTenantId: tenantId,
-          userTenantId: attributeTenantId
-        });
-        // Clear any cached data for this tenant to prevent data leakage
-        clearTenantCache();
-        return;
-      }
+      // Get business name from Auth0 cache
+      let businessName = getAuth0BusinessName() || '';
       
-      // Get business name from Cognito attributes
-      let businessName = CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_NAME, '');
-      
-      // Get subscription type from Cognito attributes
-      const subscriptionType = CognitoAttributes.getValue(attributes, CognitoAttributes.SUBSCRIPTION_PLAN, 'free');
+      // Get subscription type - default to free for Auth0 users
+      const subscriptionType = 'free';
       
       // Set business name if available
-      if (businessName && businessName.trim() !== '') {
-        logger.info('[AppBar] Setting business name from Cognito:', businessName);
+      if (businessName) {
         setBusinessName(businessName);
       }
       
-      // Generate and set user initials
-      const firstName = attributes['custom:firstname'] || attributes['given_name'] || '';
-      const lastName = attributes['custom:lastname'] || attributes['family_name'] || '';
-      const email = attributes['email'] || '';
-      
-      const initials = CognitoAttributes.getUserInitials(attributes);
-      if (initials) {
-        setUserInitials(initials);
+      // Generate and set user initials from Auth0 user data
+      if (auth0User) {
+        const initials = generateInitialsFromNames(
+          auth0User.given_name, 
+          auth0User.family_name, 
+          auth0User.email
+        );
+        if (initials) {
+          setUserInitials(initials);
+        }
       }
       
       // Update cache with tenant-specific keys
@@ -540,58 +475,18 @@ const DashAppBar = ({
         setBusinessName(cachedProfileData.businessName);
       }
     }
-  }, [tenantId, isAuthenticated, generateInitialsFromNames, isCacheValid, cachedProfileData, setTenantCacheData, clearTenantCache]);
+  }, [tenantId, generateInitialsFromNames, isCacheValid, cachedProfileData, setTenantCacheData, getAuth0BusinessName, auth0User]);
 
   // Update the component initialization effect to ensure tenant isolation
   useEffect(() => {
-    if (isAuthenticated && tenantId) {
-      // Validate that we should have access to this tenant
-      const validateTenantAccess = async () => {
-        try {
-          // Try to get attributes from Cognito
-          const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-          const attributes = await fetchUserAttributes();
-          
-          // Get the tenant ID from attributes
-          const attributeTenantId = CognitoAttributes.getValue(attributes, CognitoAttributes.TENANT_ID) || CognitoAttributes.getValue(attributes, CognitoAttributes.BUSINESS_ID);
-          
-          // If there's a mismatch, clear cache and log warning
-          if (attributeTenantId && attributeTenantId !== tenantId) {
-            logger.error('[AppBar] SECURITY WARNING: Tenant ID mismatch!', {
-              urlTenantId: tenantId,
-              userTenantId: attributeTenantId
-            });
-            
-            // Clear any incorrectly cached data
-            clearTenantCache();
-            
-            // Clear UI state to prevent data leakage
-            setBusinessName(null);
-            setUserInitials(null);
-            return;
-          }
-          
-          // Check subscription plan from attributes
-          const subscriptionType = CognitoAttributes.getValue(attributes, CognitoAttributes.SUBSCRIPTION_PLAN, 'free');
-                                  
-          // Update subscription plan in userData if needed
-          if (subscriptionType && subscriptionType !== 'free') {
-            updateUserData(prevData => ({
-              ...prevData,
-              subscription_type: subscriptionType
-            }));
-          }
-          
-          // Proceed with fetching correct user details
-          fetchCorrectUserDetails();
-        } catch (error) {
-          logger.error('[AppBar] Error validating tenant access:', error);
-        }
-      };
+    if (tenantId && !auth0Loading) {
+      // Auth0 handles all authentication - no need for Cognito validation
+      logger.debug('[AppBar] Initializing with Auth0 authentication for tenant:', tenantId);
       
-      validateTenantAccess();
+      // Proceed with fetching Auth0-based user details
+      fetchCorrectUserDetails();
     }
-  }, [isAuthenticated, tenantId, fetchCorrectUserDetails, updateUserData, clearTenantCache]);
+  }, [tenantId, auth0Loading, fetchCorrectUserDetails]);
 
   // Update generateBusinessName function to use tenant-specific cache
   const generateBusinessName = useCallback(() => {
@@ -777,10 +672,16 @@ const DashAppBar = ({
            '';
   }, [userAttributes, userData, businessName, profileData]);
 
-  // Function to get the user's email from app cache, cookies, and Cognito tokens
+  // Function to get the user's email from Auth0 session and app cache
   const getUserEmail = () => {
+    // First check userData from props
     if (userData && userData.email) {
       return userData.email;
+    }
+    
+    // Check Auth0 user data
+    if (auth0User && auth0User.email) {
+      return auth0User.email;
     }
     
     if (typeof window !== 'undefined') {
@@ -798,44 +699,20 @@ const DashAppBar = ({
         return window.__APP_CACHE.user.email;
       }
       
-      // Try to decode from idToken if available in app cache
-      const idToken = window.__APP_CACHE.auth.idToken;
-      if (idToken) {
+      // Try to get from Auth0 session storage
+      const sessionData = localStorage.getItem('auth0_session');
+      if (sessionData) {
         try {
-          const payload = JSON.parse(atob(idToken.split('.')[1]));
-          if (payload.email) {
-            // Ensure data is in app cache
-            window.__APP_CACHE.auth.email = payload.email;
-            return payload.email;
+          const parsed = JSON.parse(sessionData);
+          if (parsed.user && parsed.user.email) {
+            // Store in app cache for future use
+            window.__APP_CACHE.auth.email = parsed.user.email;
+            return parsed.user.email;
           }
         } catch (error) {
-          console.error('Error parsing ID token:', error);
+          logger.debug('[AppBar] Error parsing Auth0 session data:', error);
         }
       }
-      
-      // Last resort - try to get email from Cognito (async, will update later)
-      import('@/config/amplifyUnified')
-        .then(({ fetchUserAttributes }) => {
-          fetchUserAttributes()
-            .then(attributes => {
-              if (attributes.email) {
-                window.__APP_CACHE.auth.email = attributes.email;
-                // Update UI if needed
-                if (setUserData) {
-                  setUserData(prevData => ({
-                    ...prevData,
-                    email: attributes.email
-                  }));
-                }
-              }
-            })
-            .catch(e => {
-              logger.debug('[AppBar] Failed to fetch user attributes:', e);
-            });
-        })
-        .catch(e => {
-          logger.debug('[AppBar] Failed to import auth module:', e);
-        });
     }
     
     return null;
@@ -878,159 +755,41 @@ const DashAppBar = ({
   // Flag to track email processing
   const hasEmailBeenProcessed = useRef(false);
 
-  // Fetch user attributes from Cognito if not provided as props
+  // Fetch user attributes for initials (REMOVE COGNITO - Auth0 handles this now)
   useEffect(() => {
-    const fetchAttributes = async () => {
-      try {
-        // Only attempt to fetch if we don't already have user attributes
-        if (!userAttributes && isAuthenticated) {
-          logger.info('[DashAppBar] No userAttributes prop provided, fetching from Cognito');
-          
-          // Import auth utilities
-            const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-            
-          // Get user attributes
-            const attributes = await fetchUserAttributes();
-          
-          // Log success
-          logger.info('[DashAppBar] Successfully fetched user attributes from Cognito');
-          
-          // Set user attributes if we received valid data
-          if (attributes && Object.keys(attributes).length > 0) {
-            // Use any available name attributes to generate initials
-            const firstName = 
-              attributes['given_name'] || 
-              attributes['custom:firstname'] || 
-              attributes['firstName'] || 
-              attributes['first_name'] || '';
-              
-            const lastName = 
-              attributes['family_name'] || 
-              attributes['custom:lastname'] || 
-              attributes['lastName'] || 
-              attributes['last_name'] || '';
-              
-            const email = attributes['email'] || '';
-            
-            // Generate initials from the attributes
-            if (firstName || lastName || email) {
-            const initials = CognitoAttributes.getUserInitials(attributes);
-            if (initials) {
-              setUserInitials(initials);
-              }
-            }
-          }
-        }
-      } catch (error) {
-        logger.error('[DashAppBar] Error fetching user attributes:', error);
-      }
-    };
+    // Skip this entirely - Auth0 hook handles user initials
+    if (auth0Loading) {
+      return; // Wait for Auth0 data to load
+    }
     
-    fetchAttributes();
-  }, [userAttributes, isAuthenticated]);
-  // Enhanced debugging for user initials issue
+    // All user data now comes from Auth0 hook
+    logger.debug('[DashAppBar] Skipping Cognito attribute fetch - using Auth0 data');
+  }, [auth0Loading]);
+
+  // Remove Cognito debugging - Enhanced debugging for user initials issue  
   useEffect(() => {
-    const debugUserInitials = () => {
-      console.group('[DashAppBar] User Initials Debug');
-      console.log('Current userInitials state:', userInitials);
-      console.log('userAttributes available:', !!userAttributes);
-      console.log('isAuthenticated:', isAuthenticated);
-      
-      if (userAttributes) {
-        console.log('userAttributes keys:', Object.keys(userAttributes));
-        console.log('given_name:', userAttributes.given_name);
-        console.log('family_name:', userAttributes.family_name);
-        console.log('email:', userAttributes.email);
-        
-        // Test CognitoAttributes.getUserInitials directly
-        const testInitials = CognitoAttributes.getUserInitials(userAttributes);
-        console.log('CognitoAttributes.getUserInitials result:', testInitials);
-      } else {
-        console.log('No userAttributes available for debugging');
-      }
-      console.groupEnd();
-    };
-    
-    // Run debug on mount and when dependencies change
-    debugUserInitials();
-  }, [userInitials, userAttributes, isAuthenticated]);
+    if (!auth0Loading && auth0User) {
+      logger.debug('[DashAppBar] Auth0 User Initials Debug:', {
+        userInitials: userInitials,
+        auth0User: !!auth0User,
+        given_name: auth0User.given_name,
+        family_name: auth0User.family_name,
+        email: auth0User.email,
+        initials: generateInitialsFromNames(auth0User.given_name, auth0User.family_name, auth0User.email)
+      });
+    }
+  }, [userInitials, auth0User, auth0Loading, generateInitialsFromNames]);
 
   // Only use tenant-specific fetch when tenant ID changes
   useEffect(() => {
-    if (isAuthenticated && tenantId) {
+    if (tenantId && !auth0Loading) {
       // Fetch tenant-specific details when tenant ID is available
       fetchCorrectUserDetails();
     }
-  }, [isAuthenticated, tenantId, fetchCorrectUserDetails]);
+  }, [tenantId, auth0Loading, fetchCorrectUserDetails]);
 
-  // Function to get user initials from JWT token
-  const getInitialsFromJwtToken = async () => {
-    try {
-      // Try to get token from app cache first
-      let idToken = null;
-      
-      if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.idToken) {
-        idToken = window.__APP_CACHE.auth.idToken;
-      } else {
-        // Try to get from auth session
-        try {
-          const { fetchAuthSession } = await import('@/config/amplifyUnified');
-          const session = await fetchAuthSession();
-          if (session?.tokens?.idToken) {
-            idToken = session.tokens.idToken.toString();
-            // Store in app cache for future use
-            if (typeof window !== 'undefined') {
-              window.__APP_CACHE = window.__APP_CACHE || {};
-              window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-              window.__APP_CACHE.auth.idToken = idToken;
-            }
-            logger.debug('[AppBar] Retrieved token from auth session for initials');
-          }
-        } catch (error) {
-          logger.warn('[AppBar] Error accessing auth session:', error);
-        }
-      }
-      
-      if (!idToken) {
-        logger.warn('[AppBar] No JWT token found for initial extraction');
-        return null;
-      }
-
-      const payload = JSON.parse(atob(idToken.split('.')[1]));
-      logger.debug('[AppBar] Found JWT token payload for initials:', payload);
-      
-      // Check for first name and last name in ALL possible attribute formats
-      const firstName = 
-        payload['given_name'] || 
-        payload['custom:firstname'] || 
-        payload['custom:first_name'] || 
-        payload['first_name'] || 
-        payload['firstName'] || 
-        payload['name']?.split(' ')[0] || 
-        '';
-      
-      const lastName = 
-        payload['family_name'] || 
-        payload['custom:lastname'] || 
-        payload['custom:last_name'] || 
-        payload['last_name'] || 
-        payload['lastName'] || 
-        (payload['name']?.includes(' ') ? payload['name'].split(' ').slice(1).join(' ') : '') || 
-        '';
-        
-      const email = payload['email'] || '';
-      
-      const initials = CognitoAttributes.getUserInitials(attributes);
-      if (initials) {
-        logger.info('[AppBar] Setting initials from JWT token:', { firstName, lastName, initials });
-        setUserInitials(initials);
-        return initials;
-      }
-    } catch (error) {
-      logger.warn('[AppBar] Error extracting initials from JWT token:', error);
-      return null;
-    }
-  };
+  // Remove JWT token extraction - not needed with Auth0 hook
+  // Function to get user initials from JWT token - REMOVED (Auth0 hook handles this)
 
   // Declare the subscription type for display purposes
   const subscriptionTypeForDisplay = effectiveSubscriptionType || 'free';
@@ -1038,7 +797,7 @@ const DashAppBar = ({
   // Update user initials when Auth0 user data is available
   useEffect(() => {
     if (auth0User && !auth0Loading) {
-      const initials = getAuth0Initials(auth0User);
+      const initials = generateInitialsFromNames(auth0User.given_name, auth0User.family_name, auth0User.email);
       logger.debug('[DashAppBar] Setting user initials from Auth0:', { 
         initials, 
         given_name: auth0User.given_name, 
@@ -1046,7 +805,7 @@ const DashAppBar = ({
       });
       setUserInitials(initials);
     }
-  }, [auth0User, auth0Loading, getAuth0Initials]);
+  }, [auth0User, auth0Loading, generateInitialsFromNames]);
 
   // Update business name from Auth0 business info cache
   useEffect(() => {

@@ -42,21 +42,22 @@ export async function POST(request) {
     // **NEW: Update user onboarding status in Django backend**
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.DJANGO_API_URL || 'https://api.dottapps.com';
-      const updateUrl = `${backendUrl}/users/update-onboarding/`;
+      const updateUrl = `${backendUrl}/api/users/me/`;  // Use the correct Django endpoint
       
       console.log('[SetupComplete] Updating onboarding status for user:', userEmail);
       
       const backendResponse = await fetch(updateUrl, {
-        method: 'POST',
+        method: 'PATCH',  // Use PATCH method for updating user profile
         headers: {
           'Content-Type': 'application/json',
           'X-User-Email': userEmail, // Pass user email for identification
+          'Authorization': `Bearer ${sessionCookie.value}`, // Pass session token
         },
         body: JSON.stringify({
-          needsOnboarding: false,
-          onboardingCompleted: true,
-          currentStep: 'completed',
-          completedAt: completedAt || new Date().toISOString()
+          onboarding_status: 'complete',  // Use Django field names
+          needs_onboarding: false,
+          current_step: 'completed',
+          setup_completed_at: completedAt || new Date().toISOString()
         })
       });
 
@@ -64,9 +65,11 @@ export async function POST(request) {
         const backendResult = await backendResponse.json();
         console.log('[SetupComplete] Backend update successful:', backendResult);
       } else {
+        const errorText = await backendResponse.text();
         console.warn('[SetupComplete] Backend update failed:', {
           status: backendResponse.status,
-          statusText: backendResponse.statusText
+          statusText: backendResponse.statusText,
+          error: errorText
         });
         // Continue anyway - don't fail the frontend flow if backend update fails
       }
