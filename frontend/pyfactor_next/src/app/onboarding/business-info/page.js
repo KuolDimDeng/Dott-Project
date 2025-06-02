@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0/client';
+import { useUser } from '@auth0/nextjs-auth0';
 import { submitBusinessInfo } from '@/services/api/onboarding';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';
