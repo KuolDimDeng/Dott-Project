@@ -58,10 +58,37 @@ const PaymentContent = () => {
       
       // Only Professional and Enterprise plans need payment
       if (userPlan !== 'professional' && userPlan !== 'enterprise') {
-        logger.info('[PaymentPage] Free plan detected, redirecting to setup', { plan: userPlan });
-        startTransition(() => {
-          router.replace('/onboarding/setup');
-        });
+        logger.info('[PaymentPage] Free plan detected, redirecting to dashboard', { plan: userPlan });
+        
+        // Get tenant ID and redirect to proper dashboard
+        const redirectToDashboard = async () => {
+          try {
+            // Try to get tenant ID from profile
+            const profileResponse = await fetch('/api/auth/profile');
+            if (profileResponse.ok) {
+              const profile = await profileResponse.json();
+              if (profile && profile.tenantId) {
+                logger.info('[PaymentPage] Redirecting to tenant dashboard:', profile.tenantId);
+                startTransition(() => {
+                  router.replace(`/tenant/${profile.tenantId}/dashboard`);
+                });
+                return;
+              }
+            }
+            
+            // Fallback to generic dashboard
+            startTransition(() => {
+              router.replace('/dashboard');
+            });
+          } catch (error) {
+            logger.error('[PaymentPage] Error getting tenant ID:', error);
+            startTransition(() => {
+              router.replace('/dashboard');
+            });
+          }
+        };
+        
+        redirectToDashboard();
       }
     }
   }, [loading, isPending, user, router, getUserFromCache]);

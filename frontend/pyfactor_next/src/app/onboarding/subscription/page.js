@@ -302,8 +302,52 @@ export default function SubscriptionPage() {
         // Cache the subscription data
         setCache('subscription_data', subscriptionData, { ttl: 86400000 }); // 24 hours
         
-        // For free plan, skip payment and go directly to setup
-        router.push('/onboarding/setup');
+        // For free plan, complete setup in background and go directly to dashboard
+        try {
+          // Trigger background setup completion
+          await fetch('/api/onboarding/setup/complete', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              status: 'complete',
+              completedAt: new Date().toISOString(),
+              background: true
+            })
+          });
+          
+          // Get user's tenant ID for correct dashboard redirect
+          const profileResponse = await fetch('/api/auth/profile');
+          if (profileResponse.ok) {
+            const profile = await profileResponse.json();
+            if (profile && profile.tenantId) {
+              logger.info('[SubscriptionPage] Redirecting to tenant dashboard:', profile.tenantId);
+              router.push(`/tenant/${profile.tenantId}/dashboard`);
+              return;
+            }
+          }
+          
+          // Fallback: try session
+          const sessionResponse = await fetch('/api/auth/session');
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            if (sessionData && sessionData.user && sessionData.user.tenantId) {
+              logger.info('[SubscriptionPage] Redirecting to tenant dashboard from session:', sessionData.user.tenantId);
+              router.push(`/tenant/${sessionData.user.tenantId}/dashboard`);
+              return;
+            }
+          }
+          
+          // Last resort: generic dashboard
+          logger.warn('[SubscriptionPage] No tenant ID found, redirecting to generic dashboard');
+          router.push('/dashboard');
+          
+        } catch (setupError) {
+          logger.error('[SubscriptionPage] Background setup error:', setupError);
+          // Continue to dashboard anyway
+          router.push('/dashboard');
+        }
       } else {
         throw new Error('Failed to save subscription');
       }
@@ -342,7 +386,7 @@ export default function SubscriptionPage() {
         // Cache the subscription data
         setCache('subscription_data', subscriptionData, { ttl: 86400000 }); // 24 hours
         
-        // For paid plans, go to payment page
+        // For paid plans, go to payment page (which will redirect to dashboard after payment)
         router.push('/onboarding/payment');
       } else {
         throw new Error('Failed to save subscription');
