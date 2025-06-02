@@ -2,13 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { fetchUserAttributes, updateUserAttributes, getCurrentUser } from '@/config/amplifyUnified';
+import { useUser } from '@auth0/nextjs-auth0';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/utils/logger';
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
+import { setCache, getCache } from '@/utils/cacheClient';
 import { isValidUUID } from '@/utils/tenantUtils';
 import { getFallbackTenantId, createFallbackApiResponse, storeReliableTenantId } from '@/utils/tenantFallback';
-import { fetchAuthSession } from '@/config/amplifyUnified';
 
 // Header component with sign out option
 const Header = ({ showSignOut = false, showBackButton = false }) => {
@@ -20,8 +19,7 @@ const Header = ({ showSignOut = false, showBackButton = false }) => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      router.push('/sign-in');
+      window.location.href = '/api/auth/logout';
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -118,46 +116,11 @@ const CheckIcon = (props) => (
   </svg>
 );
 
-// Add this session check helper function
-const ensureAuthSessionSaved = async () => {
-  try {
-    // Try to get and refresh the current session
-    const { tokens } = await fetchAuthSession({ forceRefresh: true });
-    
-    // Store auth tokens in sessionStorage for emergency fallback
-    if (tokens?.idToken) {
-      sessionStorage.setItem('idToken', tokens.idToken.toString());
-      document.cookie = `idToken=${tokens.idToken.toString()}; path=/; max-age=86400; SameSite=Strict; Secure`;
-      
-      // Also set auth session cookie for middleware
-      document.cookie = `authSessionId=${tokens.idToken.toString().split('.')[2]}; path=/; max-age=86400; SameSite=Strict; Secure`;
-      
-      // Extract expiration from token for debugging
-      try {
-        const payload = JSON.parse(atob(tokens.idToken.toString().split('.')[1]));
-        const expiration = new Date(payload.exp * 1000).toISOString();
-        logger.debug('[SubscriptionPage] Token refreshed, expires:', expiration);
-      } catch (e) {
-        // Ignore parsing errors
-      }
-    }
-    
-    if (tokens?.accessToken) {
-      sessionStorage.setItem('accessToken', tokens.accessToken.toString());
-      document.cookie = `accessToken=${tokens.accessToken.toString()}; path=/; max-age=86400; SameSite=Strict; Secure`;
-    }
-    
-    return true;
-  } catch (error) {
-    logger.error('[SubscriptionPage] Error refreshing auth session:', error);
-    return false;
-  }
-};
-
 // Main SubscriptionPage component
 export default function SubscriptionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user, isLoading: userLoading } = useUser();
   const [businessData, setBusinessData] = useState({
     businessName: 'Your Business',
     businessType: 'Other'
@@ -179,237 +142,151 @@ export default function SubscriptionPage() {
         // Try to get business info with fallback to defaults
         try {
           // Check AppCache first
-          const cachedBusinessInfo = getCacheValue('businessInfo');
+          const cachedBusinessInfo = getCache('business_info');
           if (cachedBusinessInfo) {
             logger.debug('[SubscriptionPage] Using cached business info');
-            setBusinessData(cachedBusinessInfo);
+            setBusinessData({
+              businessName: cachedBusinessInfo.legal_name || 'Your Business',
+              businessType: cachedBusinessInfo.business_type || 'Other'
+            });
           } else {
-            // Try to get from Cognito attributes
-            const attributes = await fetchUserAttributes();
-            if (attributes['custom:businessname']) {
-              const businessInfo = {
-                businessName: attributes['custom:businessname'] || 'Your Business',
-                businessType: attributes['custom:businesstype'] || 'Other',
-                legalName: attributes['custom:legalname'] || attributes['custom:businessname'] || 'Your Business',
-                country: attributes['custom:country'] || 'US'
-              };
-              setBusinessData(businessInfo);
-              setCacheValue('businessInfo', businessInfo, { ttl: 3600000 }); // 1 hour
+            // Try to get from API
+            const response = await fetch('/api/onboarding/business-info');
+            if (response.ok) {
+              const data = await response.json();
+              if (data.businessInfo) {
+                const businessInfo = {
+                  businessName: data.businessInfo.businessName || 'Your Business',
+                  businessType: data.businessInfo.businessType || 'Other'
+                };
+                setBusinessData(businessInfo);
+                setCache('business_info', data.businessInfo, { ttl: 3600000 }); // 1 hour
+              }
             }
           }
         } catch (error) {
-          logger.warn('[SubscriptionPage] Failed to get business info, using defaults:', error);
+          logger.error('[SubscriptionPage] Error loading business info:', error);
+          // Use defaults
         }
 
-        // Generate tenant ID if needed
-        let currentTenantId;
-        try {
-          const attributes = await fetchUserAttributes();
-          currentTenantId = attributes['custom:tenant_ID'] || attributes['custom:businessid'];
-          
-          // If not a valid UUID, generate one
-          if (!currentTenantId || !isValidUUID(currentTenantId)) {
-            currentTenantId = uuidv4();
-            logger.info('[SubscriptionPage] Generated new tenant ID:', currentTenantId);
-            
-            // Store the new ID in AppCache
-            setCacheValue('tenant_id', currentTenantId, { ttl: 86400000 * 30 }); // 30 days
-            
-            // Try to update Cognito attributes
-            try {
-              await updateUserAttributes({
-                userAttributes: {
-                  'custom:tenant_ID': currentTenantId,
-                  'custom:businessid': currentTenantId,
-                  'custom:updated_at': new Date().toISOString()
-                }
-              });
-            } catch (updateError) {
-              logger.warn('[SubscriptionPage] Could not update Cognito with tenant ID:', updateError);
-            }
-          }
-        } catch (error) {
-          // Fallback to UUID generation if Cognito fails
-          currentTenantId = uuidv4();
-          logger.warn('[SubscriptionPage] Error getting tenant ID, generated fallback:', currentTenantId);
+        // Get tenant ID
+        const fallbackTenantId = getFallbackTenantId();
+        if (fallbackTenantId) {
+          setTenantId(fallbackTenantId);
+          logger.debug('[SubscriptionPage] Using fallback tenant ID');
         }
-        
-        setTenantId(currentTenantId);
+
       } catch (error) {
-        logger.error('[SubscriptionPage] Error initializing subscription:', error);
-        setError('Failed to load subscription information. Please try refreshing the page.');
+        logger.error('[SubscriptionPage] Initialization error:', error);
+        setError('Failed to initialize subscription page');
       } finally {
         setLoading(false);
       }
     };
 
-    // Check authentication and initialize
+    // Only initialize when user auth state is resolved
+    if (!userLoading) {
+      initializeSubscription();
+    }
+  }, [userLoading]);
+
+  // Check authentication status
+  useEffect(() => {
     const checkAuth = async () => {
-      try {
-        await getCurrentUser();
-        await initializeSubscription();
-      } catch (error) {
-        logger.error('[SubscriptionPage] Error authenticating user:', error);
-        router.push('/sign-in');
+      if (!user && !userLoading) {
+        logger.warn('[SubscriptionPage] No authenticated user found');
+        router.push('/auth/signin?redirect=' + encodeURIComponent(window.location.pathname));
       }
     };
 
-    checkAuth();
-  }, [router]);
+    if (!userLoading) {
+      checkAuth();
+    }
+  }, [user, userLoading, router]);
 
-  // Handle free plan selection
   const handleFreePlanSelection = async () => {
     try {
       setIsProcessing(true);
-      setError(null);
-      logger.info('[SubscriptionPage] Free plan selected');
+      logger.info('[SubscriptionPage] Processing free plan selection');
 
-      // Ensure we have a tenant ID
-      if (!tenantId) {
-        const newTenantId = uuidv4();
-        setTenantId(newTenantId);
-        logger.info('[SubscriptionPage] Generated new tenant ID for free plan:', newTenantId);
-      }
+      // Save subscription choice via API
+      const subscriptionData = {
+        plan: 'free',
+        billingInterval: billingCycle,
+        paymentMethod: 'none',
+        status: 'active'
+      };
 
-      // Store subscription info in localStorage for recovery and fallback
-      localStorage.setItem('subscription_completed', 'true');
-      localStorage.setItem('tenant_id', tenantId);
-      localStorage.setItem('subscription_plan', 'free');
-      localStorage.setItem('subscription_date', new Date().toISOString());
+      const response = await fetch('/api/onboarding/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(subscriptionData)
+      });
 
-      // Also set as cookies for the middleware
-      document.cookie = `tenant_id=${tenantId}; path=/; max-age=2592000; SameSite=Strict`;
-      document.cookie = `subscription_plan=free; path=/; max-age=2592000; SameSite=Strict`;
-      document.cookie = `subscription_status=active; path=/; max-age=2592000; SameSite=Strict`;
-
-      // Skip Cognito attribute updates entirely - they're not allowed
-      logger.info('[SubscriptionPage] Storing subscription data locally');
-
-      // Store tenant ID for fallback mechanisms
-      storeReliableTenantId(tenantId);
-
-      // Add subscription data to session/local storage for the dashboard
-      try {
-        // Also try to use app cache if available
-        if (typeof setCacheValue === 'function') {
-          setCacheValue('selectedPlan', 'free', { ttl: 86400000 * 30 }); // 30 days
-          setCacheValue('subscription_status', 'active', { ttl: 86400000 * 30 });
-        }
+      if (response.ok) {
+        logger.debug('[SubscriptionPage] Free plan saved successfully');
         
-        sessionStorage.setItem('selectedPlan', 'free');
-        sessionStorage.setItem('subscription_status', 'active');
-      } catch (storageError) {
-        logger.warn('[SubscriptionPage] Error saving to session storage:', storageError);
+        // Cache the subscription data
+        setCache('subscription_data', subscriptionData, { ttl: 86400000 }); // 24 hours
+        
+        // For free plan, skip payment and go directly to setup
+        router.push('/onboarding/setup');
+      } else {
+        throw new Error('Failed to save subscription');
       }
-
-      // Refresh auth session before redirecting
-      await ensureAuthSessionSaved();
-
-      // Redirect to dashboard with the tenant ID
-      const dashboardUrl = "/" + tenantId + "/dashboard?fromSubscription=true&plan=free";
-      logger.info('[SubscriptionPage] Redirecting to dashboard:', dashboardUrl);
-      
-      // Use window.location.href for more reliable navigation with cookies
-      window.location.href = dashboardUrl;
     } catch (error) {
-      logger.error('[SubscriptionPage] Error in free plan selection:', error);
-      setError('There was an error setting up your account. Please try again.');
-      
-      // Try fallback redirect
-      try {
-        const fallbackId = getFallbackTenantId() || tenantId || uuidv4();
-        logger.info('[SubscriptionPage] Attempting fallback redirect with ID:', fallbackId);
-        
-        // First ensure authentication
-        await ensureAuthSessionSaved();
-        
-        // Then redirect
-        setTimeout(() => {
-          router.push("/" + fallbackId + "/dashboard?fromSubscription=true&recovery=true");
-        }, 500);
-      } catch (redirectError) {
-        logger.error('[SubscriptionPage] Fallback redirect failed:', redirectError);
-        // If all else fails, try to go to home
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
-      }
+      logger.error('[SubscriptionPage] Error selecting free plan:', error);
+      setError('Failed to select plan. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle paid plan selection
   const handlePaidPlanSelection = async (planId) => {
     try {
       setIsProcessing(true);
-      setError(null);
-      logger.info('[SubscriptionPage] Paid plan selected:', { planId, billingCycle });
+      logger.info('[SubscriptionPage] Processing paid plan selection', { planId });
 
-      // Ensure we have a tenant ID
-      if (!tenantId) {
-        const newTenantId = uuidv4();
-        setTenantId(newTenantId);
-        logger.info('[SubscriptionPage] Generated new tenant ID for paid plan:', newTenantId);
-      }
+      // Save subscription choice via API
+      const subscriptionData = {
+        plan: planId,
+        billingInterval: billingCycle,
+        paymentMethod: 'credit_card',
+        status: 'pending'
+      };
 
-      // Store subscription info in localStorage for recovery and fallback
-      localStorage.setItem('subscription_completed', 'true');
-      localStorage.setItem('tenant_id', tenantId);
-      localStorage.setItem('subscription_plan', planId);
-      localStorage.setItem('billing_cycle', billingCycle);
-      localStorage.setItem('subscription_date', new Date().toISOString());
+      const response = await fetch('/api/onboarding/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(subscriptionData)
+      });
 
-      // Skip Cognito attribute updates entirely - they're not allowed
-      logger.info('[SubscriptionPage] Storing subscription data locally');
-
-      // Store tenant ID for fallback mechanisms
-      storeReliableTenantId(tenantId);
-
-      // Add subscription data to session/local storage for the dashboard
-      try {
-        // Also try to use app cache if available
-        if (typeof setCacheValue === 'function') {
-          setCacheValue('selectedPlan', planId, { ttl: 86400000 * 30 }); // 30 days
-          setCacheValue('billingCycle', billingCycle, { ttl: 86400000 * 30 });
-          setCacheValue('subscription_status', 'pending', { ttl: 86400000 * 30 });
-        }
+      if (response.ok) {
+        logger.debug('[SubscriptionPage] Paid plan saved successfully');
         
-        sessionStorage.setItem('selectedPlan', planId);
-        sessionStorage.setItem('billingCycle', billingCycle);
-        sessionStorage.setItem('subscription_status', 'pending');
-      } catch (storageError) {
-        logger.warn('[SubscriptionPage] Error saving to session storage:', storageError);
+        // Cache the subscription data
+        setCache('subscription_data', subscriptionData, { ttl: 86400000 }); // 24 hours
+        
+        // For paid plans, go to payment page
+        router.push('/onboarding/payment');
+      } else {
+        throw new Error('Failed to save subscription');
       }
-
-      // Refresh auth session before redirecting
-      await ensureAuthSessionSaved();
-
-      // For this simplified version, we'll redirect to the dashboard directly
-      // In a real implementation, we would create a checkout session here
-      const dashboardUrl = "/" + tenantId + "/dashboard?fromSubscription=true&plan=" + planId;
-      logger.info('[SubscriptionPage] Redirecting to dashboard:', dashboardUrl);
-      
-      // Use Next.js router with a small delay to ensure tokens are saved
-      setTimeout(() => {
-        router.push(dashboardUrl);
-      }, 500);
     } catch (error) {
-      logger.error('[SubscriptionPage] Error in paid plan selection:', error);
-      setError('There was an error setting up your subscription. Please try again.');
-      
-      // If all else fails, try to go to home
-      setTimeout(() => {
-        router.push('/');
-      }, 1500);
+      logger.error('[SubscriptionPage] Error selecting paid plan:', error);
+      setError('Failed to select plan. Please try again.');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Handle plan selection - directs to appropriate handler
   const handlePlanSelection = (planId) => {
     setSelectedPlan(planId);
+    
     if (planId === 'free') {
       handleFreePlanSelection();
     } else {
@@ -417,122 +294,132 @@ export default function SubscriptionPage() {
     }
   };
 
-  // Loading state
-  if (loading) {
+  if (userLoading || loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent align-[-0.125em]" role="status">
-            <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-          </div>
-          <p className="mt-4 text-lg text-gray-700">Loading subscription options...</p>
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading subscription options...</p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-lg">
-          <div className="flex items-center justify-center w-12 h-12 mx-auto mb-4 rounded-full bg-red-100">
-            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <h2 className="mb-4 text-xl font-semibold text-center text-gray-800">Error Loading Subscription Options</h2>
-          <p className="mb-6 text-center text-gray-600">{error}</p>
-          <div className="flex flex-col space-y-3">
-            <button 
-              onClick={() => { setError(null); window.location.reload(); }}
-              className="w-full px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            >
-              Try Again
-            </button>
-            <button 
-              onClick={() => router.push('/onboarding/business-info')}
-              className="w-full px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
-            >
-              Back to Business Info
-            </button>
-          </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
   }
 
-  // Main subscription page content
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       <Header showSignOut={true} showBackButton={true} />
-      <main className="flex-grow px-4 py-8">
-        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-bold text-center mb-8 text-slate-800">Choose Your Subscription Plan</h1>
-          <p className="text-md text-gray-600 text-center max-w-3xl mx-auto mb-8">
-            Select the plan that best fits your business needs.
-            You can upgrade or downgrade your subscription at any time.
+      
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <h2 className="text-3xl font-extrabold text-gray-900">
+            Choose Your Plan for {businessData.businessName}
+          </h2>
+          <p className="mt-4 text-lg text-gray-600">
+            Select the perfect plan for your {businessData.businessType.toLowerCase()} business
           </p>
           
-          {/* Subscription Plans */}
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {subscriptionPlans.map(plan => (
-              <div 
-                key={plan.id}
-                className={"border rounded-lg overflow-hidden " + (selectedPlan === plan.id ? 'border-2 border-blue-500 shadow-md' : 'border-gray-200')}
-              >
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-500 mb-4">{plan.description}</p>
-                  <p className="text-3xl font-bold mb-6">
-                    {"$" + plan.price}
-                    <span className="text-lg font-normal text-gray-500">/{billingCycle}</span>
-                  </p>
-                  <button
-                    onClick={() => handlePlanSelection(plan.id)}
-                    disabled={isProcessing}
-                    className={"w-full py-2 px-4 rounded-md " + (
-                      isProcessing ? 'bg-gray-300 cursor-not-allowed' : 
-                      selectedPlan === plan.id ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                    ) + " focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"}
-                  >
-                    {isProcessing && selectedPlan === plan.id ? 'Processing...' : 'Select ' + plan.name + ' Plan'}
-                  </button>
-                </div>
-                <div className="px-6 pb-6">
-                  <ul className="space-y-2">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center">
-                        <CheckIcon className="h-5 w-5 text-green-500 mr-2" />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {/* Billing Cycle Toggle */}
-          <div className="mt-10 flex flex-col items-center">
-            <p className="text-gray-700 mb-4">Billing Cycle</p>
-            <div className="flex items-center space-x-4">
+          {/* Billing Toggle */}
+          <div className="mt-8 flex justify-center">
+            <div className="relative bg-gray-100 rounded-lg p-1">
               <button
+                type="button"
+                className={`relative py-2 px-6 rounded-md text-sm font-medium transition-all ${
+                  billingCycle === 'monthly'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
                 onClick={() => setBillingCycle('monthly')}
-                className={"px-4 py-2 rounded-md " + (billingCycle === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800')}
               >
                 Monthly
               </button>
               <button
+                type="button"
+                className={`relative py-2 px-6 rounded-md text-sm font-medium transition-all ${
+                  billingCycle === 'annual'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
                 onClick={() => setBillingCycle('annual')}
-                className={"px-4 py-2 rounded-md " + (billingCycle === 'annual' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800')}
               >
-                Annual (Save 10%)
+                Annual
+                <span className="ml-1 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                  Save 20%
+                </span>
               </button>
             </div>
           </div>
         </div>
-      </main>
+
+        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {subscriptionPlans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`relative bg-white border rounded-lg shadow-sm p-8 hover:shadow-lg transition-shadow ${
+                selectedPlan === plan.id ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-gray-200'
+              }`}
+            >
+              <div className="text-center">
+                <h3 className="text-2xl font-semibold text-gray-900">{plan.name}</h3>
+                <p className="mt-2 text-gray-600">{plan.description}</p>
+                <div className="mt-4">
+                  <span className="text-4xl font-bold text-gray-900">
+                    ${billingCycle === 'annual' && plan.price > 0 ? Math.round(plan.price * 0.8) : plan.price}
+                  </span>
+                  {plan.price > 0 && (
+                    <span className="text-gray-600">/{billingCycle === 'monthly' ? 'month' : 'year'}</span>
+                  )}
+                </div>
+              </div>
+
+              <ul className="mt-8 space-y-4">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-start">
+                    <CheckIcon className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handlePlanSelection(plan.id)}
+                disabled={isProcessing}
+                className={`mt-8 w-full py-3 px-4 rounded-md text-white font-medium transition-colors ${
+                  plan.id === 'professional'
+                    ? 'bg-indigo-600 hover:bg-indigo-700'
+                    : plan.id === 'enterprise'
+                    ? 'bg-purple-600 hover:bg-purple-700'
+                    : 'bg-gray-600 hover:bg-gray-700'
+                } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {isProcessing && selectedPlan === plan.id ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  `Choose ${plan.name}`
+                )}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
