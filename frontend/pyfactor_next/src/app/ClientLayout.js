@@ -9,9 +9,17 @@ import AuthErrorBoundary from '@/components/ErrorBoundary';
 import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
 import dynamic from 'next/dynamic';
 
-// Dynamically import the ReactErrorDebugger to avoid SSR issues
+// Dynamically import components to avoid SSR issues
 const ReactErrorDebugger = dynamic(
   () => import('@/components/Debug/ReactErrorDebugger'),
+  {
+    ssr: false,
+    loading: () => null
+  }
+);
+
+const DynamicComponents = dynamic(
+  () => import('@/components/DynamicComponents'),
   {
     ssr: false,
     loading: () => null
@@ -99,7 +107,9 @@ export default function ClientLayout({ children }) {
 
   return (
     <AuthErrorBoundary>
-      {children}
+      <DynamicComponents>
+        {children}
+      </DynamicComponents>
       {process.env.NODE_ENV === 'development' && <ReactErrorDebugger />}
     </AuthErrorBoundary>
   );

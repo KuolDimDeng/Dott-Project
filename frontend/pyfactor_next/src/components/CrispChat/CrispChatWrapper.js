@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 session check will be done in the CrispChat component
 import CrispChat from './CrispChat';
 import { logger } from '@/utils/logger';
 
@@ -13,22 +13,21 @@ export default function CrispChatWrapper() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const user = await getCurrentUser();
-        // Only set as authenticated if we have a user with attributes
-        const hasValidUser = !!user?.attributes;
+        // Check Auth0 session
+        const response = await fetch('/api/auth/session');
+        const hasValidUser = response.ok;
         setIsAuthenticated(hasValidUser);
 
-        if (user && !user.attributes) {
-          logger.warn('User found but attributes not available for Crisp chat');
-        } else if (hasValidUser) {
-          logger.debug('Valid user with attributes found for Crisp chat');
+        if (hasValidUser) {
+          const sessionData = await response.json();
+          if (sessionData.user) {
+            logger.debug('Valid Auth0 user found for Crisp chat');
+          }
+        } else {
+          logger.debug('User not authenticated for Crisp chat');
         }
       } catch (error) {
-        if (error.name === 'UserUnAuthenticatedException') {
-          logger.debug('User not authenticated for Crisp chat');
-        } else {
-          logger.error('Error checking auth status for Crisp chat:', error);
-        }
+        logger.error('Error checking auth status for Crisp chat:', error);
         setIsAuthenticated(false);
       } finally {
         setIsLoaded(true);
@@ -37,9 +36,6 @@ export default function CrispChatWrapper() {
     };
 
     checkAuth();
-
-    // No longer polling for auth status changes
-    return () => {};
   }, []);
 
   if (!isLoaded) {

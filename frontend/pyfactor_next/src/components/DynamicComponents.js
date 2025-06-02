@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { logger } from '@/utils/logger';
-import { getCurrentUser  } from '@/config/amplifyUnified';
+// Auth0 session check will be done via fetch
 
 // Dynamically import components to avoid SSR issues with error handling
 const CookieBanner = dynamic(
@@ -85,15 +85,17 @@ export default function DynamicComponents({ children }) {
           setTimeout(() => reject(new Error('Auth check timeout')), 1000)
         );
         
-        // Race between auth check and timeout
-        const user = await Promise.race([
-          getCurrentUser(),
+        // Check Auth0 session with timeout
+        const sessionPromise = fetch('/api/auth/session').then(res => res.ok);
+        
+        const hasSession = await Promise.race([
+          sessionPromise,
           timeoutPromise
         ]);
         
-        if (user) {
+        if (hasSession) {
           setIsAuthenticated(true);
-          logger.debug('[DynamicComponents] User authenticated for Crisp Chat', { userId: user.userId });
+          logger.debug('[DynamicComponents] User authenticated for Crisp Chat');
         } else {
           setIsAuthenticated(false);
           logger.debug('[DynamicComponents] User not authenticated for Crisp Chat');
