@@ -380,7 +380,7 @@ export default function Pricing() {
                 
                 <div className="mt-8 mb-8">
                   <Link
-                    href="/auth/signup"
+                    href="/api/auth/login"
                     className={`block w-full text-center px-6 py-3 border border-transparent rounded-lg ${
                       plan.highlight
                         ? 'bg-primary-main hover:bg-primary-dark text-white shadow-md'
@@ -452,7 +452,7 @@ export default function Pricing() {
               <p className="mt-2 text-gray-600">Need custom features or dedicated support for your large organization?</p>
               <div className="mt-6">
                 <Link
-                  href="/auth/signup"
+                  href="/api/auth/login"
                   className="inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
                 >
                   Choose Enterprise

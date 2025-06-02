@@ -41,7 +41,7 @@ const BUTTON_CONFIGS = {
   DEFAULT: {
     text: 'Sign In',
     variant: 'primary',
-    route: '/auth/signin'
+    route: '/api/auth/login'
   }
 };
 
@@ -114,7 +114,7 @@ export default function LandingButton() {
       // If user is not authenticated, redirect to sign in
       if (!isAuthenticated) {
         logger.debug('[LandingButton] User not authenticated, redirecting to sign in');
-        router.push('/auth/signin');
+        router.push('/api/auth/login');
         return;
       }
 
@@ -122,7 +122,7 @@ export default function LandingButton() {
       const { tokens } = await fetchAuthSession();
       if (!tokens?.idToken) {
         logger.debug('[LandingButton] No valid tokens found during navigation, redirecting to sign in');
-        router.push('/auth/signin');
+        router.push('/api/auth/login');
         return;
       }
 
@@ -130,7 +130,7 @@ export default function LandingButton() {
       const tokenPayload = JSON.parse(atob(tokens.idToken.split('.')[1]));
       if (tokenPayload.exp * 1000 < Date.now()) {
         logger.debug('[LandingButton] Token is expired, redirecting to sign in');
-        router.push('/auth/signin');
+        router.push('/api/auth/login');
         return;
       }
 
@@ -168,7 +168,7 @@ export default function LandingButton() {
         setRetryCount(0);
         
         // Fallback to sign in
-        router.push('/auth/signin');
+        router.push('/api/auth/login');
       }
     } finally {
       setLoading(false);

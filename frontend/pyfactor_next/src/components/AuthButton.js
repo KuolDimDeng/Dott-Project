@@ -173,7 +173,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
     if (!user && previouslyOnboarded) {
       return {
         text: t('sign_in', 'SIGN IN'),
-        action: () => router.push('/auth/signin')
+        action: () => router.push('/api/auth/login')
       };
     }
     
@@ -181,7 +181,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary' }) {
     // Default for new users or loading state
     return {
       text: t('button_get_started_for_free', 'GET STARTED FOR FREE'),
-      action: () => router.push('/auth/signup')
+      action: () => router.push('/api/auth/login')
     };
   };
 
