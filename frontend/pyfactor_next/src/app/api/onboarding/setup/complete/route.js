@@ -4,183 +4,136 @@ import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
-    // Check Auth0 v4.x authentication via appSession cookie
+    console.log('[SetupComplete] Processing onboarding completion request');
+    
+    // Get Auth0 session
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Authentication required - no session found' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No Auth0 session found' }, { status: 401 });
     }
-
-    // Validate session has user data
-    let userEmail = null;
-    let sessionData = null;
+    
+    let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      if (!sessionData.user || !sessionData.user.email) {
-        return NextResponse.json(
-          { error: 'Invalid session - no user data' },
-          { status: 401 }
-        );
-      }
-      userEmail = sessionData.user.email;
     } catch (parseError) {
-      return NextResponse.json(
-        { error: 'Invalid session format' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Invalid session data' }, { status: 401 });
     }
-
-    const body = await request.json();
-    console.log('[SetupComplete] Request body:', body);
-
-    // For background completion, we don't need all the fields
-    const { status, completedAt, background, source } = body;
-
-    // **NEW: Update user onboarding status in Django backend**
+    
+    const { user, accessToken } = sessionData;
+    const userEmail = user?.email;
+    
+    if (!userEmail) {
+      return NextResponse.json({ error: 'User email not found in session' }, { status: 401 });
+    }
+    
+    console.log('[SetupComplete] Completing onboarding for user:', userEmail);
+    
+    const completedAt = new Date().toISOString();
+    
+    // Update Django backend onboarding status
+    let backendUpdateSuccessful = false;
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.DJANGO_API_URL || 'https://api.dottapps.com';
-      const updateUrl = `${backendUrl}/api/users/me/`;  // Use the correct Django endpoint
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
       
-      console.log('[SetupComplete] Updating onboarding status for user:', userEmail);
+      console.log('[SetupComplete] Updating onboarding status in Django backend');
       
-      // Get Auth0 access token for Django authentication
-      let authHeaders = {
-        'Content-Type': 'application/json',
-        'X-User-Email': userEmail, // Pass user email for identification
-      };
-
-      // Try to get access token from Auth0 session
-      try {
-        const { getAccessToken } = await import('@auth0/nextjs-auth0');
-        const accessToken = await getAccessToken();
-        if (accessToken) {
-          authHeaders['Authorization'] = `Bearer ${accessToken}`;
-          console.log('[SetupComplete] Using Auth0 access token for Django authentication');
-        }
-      } catch (tokenError) {
-        console.log('[SetupComplete] Could not get Auth0 access token, using session cookie method:', tokenError.message);
-        // Fallback: include session cookie for Django session authentication
-        authHeaders['Cookie'] = `appSession=${sessionCookie.value}`;
-      }
-      
-      const backendResponse = await fetch(updateUrl, {
-        method: 'PATCH',  // Use PATCH method for updating user profile
-        headers: authHeaders,
+      const backendResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: JSON.stringify({
-          onboarding_status: 'complete',  // Use Django field names
+          onboarding_status: 'completed',
           needs_onboarding: false,
-          current_step: 'completed',
-          setup_completed_at: completedAt || new Date().toISOString()
+          onboarding_completed: true,
+          current_onboarding_step: 'completed',
+          setup_completed_at: completedAt
         })
       });
-
+      
       if (backendResponse.ok) {
-        const backendResult = await backendResponse.json();
-        console.log('[SetupComplete] Backend update successful:', backendResult);
+        const updatedUser = await backendResponse.json();
+        console.log('[SetupComplete] Successfully updated Django backend:', {
+          user_id: updatedUser.id,
+          onboarding_completed: updatedUser.onboarding_completed,
+          needs_onboarding: updatedUser.needs_onboarding
+        });
+        backendUpdateSuccessful = true;
       } else {
         const errorText = await backendResponse.text();
-        console.warn('[SetupComplete] Backend update failed:', {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          error: errorText
-        });
-        
-        // Try alternative endpoint if main one fails
-        if (backendResponse.status === 404) {
-          console.log('[SetupComplete] Trying alternative Django endpoint...');
-          try {
-            const altResponse = await fetch(`${backendUrl}/api/auth/update-user-profile/`, {
-              method: 'POST',
-              headers: authHeaders,
-              body: JSON.stringify({
-                email: userEmail,
-                onboarding_completed: true,
-                needs_onboarding: false,
-                current_step: 'completed'
-              })
-            });
-            
-            if (altResponse.ok) {
-              console.log('[SetupComplete] Alternative endpoint successful');
-            } else {
-              console.warn('[SetupComplete] Alternative endpoint also failed:', altResponse.status);
-            }
-          } catch (altError) {
-            console.error('[SetupComplete] Alternative endpoint error:', altError);
-          }
-        }
-        
-        // Continue anyway - don't fail the frontend flow if backend update fails
+        console.error('[SetupComplete] Django backend update failed:', errorText);
       }
     } catch (backendError) {
-      console.error('[SetupComplete] Error updating backend onboarding status:', backendError);
-      // Continue anyway - don't fail the frontend flow if backend update fails
+      console.error('[SetupComplete] Error updating Django backend:', backendError.message);
     }
-
-    // **CRITICAL FIX: Update Auth0 session cookie with completed onboarding status**
+    
+    // Update Auth0 session cookie (critical for immediate session updates)
     try {
-      // Update the session data object
-      sessionData.user.needsOnboarding = false;
-      sessionData.user.onboardingCompleted = true;
-      sessionData.user.onboardingStatus = 'completed';
-      sessionData.user.currentStep = 'completed';
-      sessionData.user.setupDone = true;
-      sessionData.user.setupCompletedAt = completedAt || new Date().toISOString();
+      const updatedSessionData = {
+        ...sessionData,
+        user: {
+          ...sessionData.user,
+          needsOnboarding: false,
+          onboardingCompleted: true,
+          onboarding_completed: true,
+          needs_onboarding: false,
+          currentStep: 'completed',
+          current_onboarding_step: 'completed',
+          setupCompletedAt: completedAt
+        }
+      };
       
-      // Re-encode the updated session data
-      const updatedSessionValue = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+      const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
       
-      // Create response with updated session cookie
       const response = NextResponse.json({
         success: true,
-        message: 'Setup completed successfully',
-        completedAt: completedAt || new Date().toISOString(),
-        background: background || false,
-        source: source || 'manual',
-        onboardingCompleted: true,
-        needsOnboarding: false
+        message: 'Onboarding completion recorded successfully',
+        onboarding_completed: true,
+        needs_onboarding: false,
+        current_step: 'completed',
+        setup_completed_at: completedAt,
+        backend_updated: backendUpdateSuccessful
       });
-
-      // Set the updated session cookie
-      response.cookies.set('appSession', updatedSessionValue, {
+      
+      // Update session cookie with new onboarding status
+      response.cookies.set('appSession', updatedSessionCookie, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        path: '/',
-        maxAge: 24 * 60 * 60 // 24 hours
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/'
       });
-
-      console.log('[SetupComplete] Success response with updated session cookie');
-      return response;
-
-    } catch (sessionUpdateError) {
-      console.error('[SetupComplete] Error updating session cookie:', sessionUpdateError);
       
-      // Return success response without updated cookie as fallback
-      const response = {
-        success: true,
-        message: 'Setup completed successfully (session update failed)',
-        completedAt: completedAt || new Date().toISOString(),
-        background: background || false,
-        source: source || 'manual',
-        onboardingCompleted: true,
-        needsOnboarding: false,
-        sessionUpdateFailed: true
-      };
-
-      console.log('[SetupComplete] Fallback success response:', response);
-      return NextResponse.json(response);
+      console.log('[SetupComplete] Session cookie updated with onboarding completion');
+      return response;
+      
+    } catch (sessionError) {
+      console.error('[SetupComplete] Error updating session cookie:', sessionError);
+      
+      // Return success even if session update fails, as long as backend was updated
+      return NextResponse.json({
+        success: backendUpdateSuccessful,
+        message: backendUpdateSuccessful 
+          ? 'Onboarding completed in backend, session update failed'
+          : 'Onboarding completion failed',
+        onboarding_completed: backendUpdateSuccessful,
+        needs_onboarding: !backendUpdateSuccessful,
+        current_step: backendUpdateSuccessful ? 'completed' : 'business_info',
+        setup_completed_at: completedAt,
+        backend_updated: backendUpdateSuccessful,
+        session_error: sessionError.message
+      });
     }
-
+    
   } catch (error) {
-    console.error('[SetupComplete] Error completing setup:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('[SetupComplete] Unexpected error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error.message 
+    }, { status: 500 });
   }
 }

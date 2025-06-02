@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(request) {
   try {
-    console.log('[Create Auth0 User] Creating user in Django backend');
+    console.log('[Create Auth0 User] Starting user creation/lookup process');
     
     // Get Auth0 session
     const cookieStore = await cookies();
@@ -27,6 +27,7 @@ export async function POST(request) {
       hasUser: !!sessionData.user,
       hasAccessToken: !!sessionData.accessToken,
       userEmail: sessionData.user?.email,
+      userSub: sessionData.user?.sub,
       sessionKeys: Object.keys(sessionData)
     });
     
@@ -43,264 +44,189 @@ export async function POST(request) {
       }, { status: 200 });
     }
     
-    if (!accessToken) {
-      console.warn('[Create Auth0 User] No access token in session data, continuing anyway');
-    }
+    console.log('[Create Auth0 User] Processing Auth0 user:', {
+      email: user.email,
+      sub: user.sub,
+      name: user.name
+    });
     
-    console.log('[Create Auth0 User] Creating user for:', user.email);
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+    console.log('[Create Auth0 User] Using API base URL:', apiBaseUrl);
     
-    // Call Django backend API
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiBaseUrl) {
-      throw new Error('API configuration missing - backend URL not configured');
-    }
-
-    // **CRITICAL FIX: First try to get existing user before creating a new one**
+    // Step 1: Check if user already exists using Auth0 token
+    let existingUser = null;
     try {
-      console.log('[Create Auth0 User] Checking for existing user first...');
+      console.log('[Create Auth0 User] Checking for existing user with Auth0 token');
       
-      const getUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+      const existingUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          'X-User-Email': user.email,
-          'X-User-Sub': user.sub
+          'Accept': 'application/json',
         }
       });
       
-      if (getUserResponse.ok) {
-        const existingUser = await getUserResponse.json();
+      console.log('[Create Auth0 User] Existing user lookup status:', existingUserResponse.status);
+      
+      if (existingUserResponse.ok) {
+        existingUser = await existingUserResponse.json();
         console.log('[Create Auth0 User] Found existing user:', {
-          userId: existingUser.id,
-          tenantId: existingUser.tenant_id,
-          currentStep: existingUser.current_step,
-          needsOnboarding: existingUser.needs_onboarding
+          email: existingUser.email,
+          tenant_id: existingUser.tenant_id,
+          onboarding_completed: existingUser.onboarding_completed,
+          needs_onboarding: existingUser.needs_onboarding
         });
         
-        // **CRITICAL FIX: Update session cookie with existing user data**
-        try {
-          const updatedSessionData = {
-            ...sessionData,
-            user: {
-              ...sessionData.user,
-              tenantId: existingUser.tenant_id || existingUser.tenantId,
-              currentStep: existingUser.current_step,
-              needsOnboarding: existingUser.needs_onboarding !== false,
-              onboardingCompleted: existingUser.onboarding_completed || false
-            }
-          };
-          
-          const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
-          
-          const response = NextResponse.json({
-            success: true,
-            message: 'User already exists',
-            user: existingUser,
-            tenant_id: existingUser.tenant_id || existingUser.tenantId,
-            current_step: existingUser.current_step || 'business_info',
-            needs_onboarding: existingUser.needs_onboarding !== false,
-            isExistingUser: true
-          });
-          
-          // Update the session cookie
-          response.cookies.set('appSession', updatedSessionCookie, {
-            path: '/',
-            httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 // 7 days
-          });
-          
-          console.log('[Create Auth0 User] Session updated with existing user data');
-          return response;
-          
-        } catch (cookieError) {
-          console.error('[Create Auth0 User] Error updating session cookie for existing user:', cookieError);
-          // Return existing user data anyway
-          return NextResponse.json({
-            success: true,
-            message: 'User already exists',
-            user: existingUser,
-            tenant_id: existingUser.tenant_id || existingUser.tenantId,
-            current_step: existingUser.current_step || 'business_info',
-            needs_onboarding: existingUser.needs_onboarding !== false,
-            isExistingUser: true
-          });
-        }
-      } else if (getUserResponse.status !== 404) {
-        console.warn('[Create Auth0 User] Unexpected error checking for existing user:', getUserResponse.status);
-        // Continue to create new user
+        // User exists - return their existing data
+        return NextResponse.json({
+          success: true,
+          message: 'Existing user found',
+          isExistingUser: true,
+          user_id: existingUser.id,
+          tenant_id: existingUser.tenant_id,
+          email: existingUser.email,
+          needs_onboarding: existingUser.needs_onboarding !== false,
+          onboardingCompleted: existingUser.onboarding_completed === true,
+          current_step: existingUser.current_onboarding_step || 'business_info'
+        });
       } else {
-        console.log('[Create Auth0 User] User does not exist, proceeding to create new user');
+        console.log('[Create Auth0 User] User does not exist yet (status:', existingUserResponse.status, ')');
       }
-    } catch (existingUserError) {
-      console.error('[Create Auth0 User] Error checking for existing user:', existingUserError);
-      // Continue to create new user
+    } catch (error) {
+      console.warn('[Create Auth0 User] Error checking existing user:', error.message);
     }
-
-    // **Only generate tenant ID if user doesn't exist**
-    console.log('[Create Auth0 User] Creating new user...');
     
-    // Prepare user data for Django backend
-    const userData = {
-      email: user.email,
-      auth0_sub: user.sub,
-      first_name: user.given_name || user.name?.split(' ')[0] || '',
-      last_name: user.family_name || user.name?.split(' ').slice(1).join(' ') || '',
-      name: user.name || user.email,
-      picture: user.picture || '',
-      is_verified: user.email_verified || true,
-      auth_provider: 'auth0'
-    };
+    // Step 2: Create new user if not found
+    console.log('[Create Auth0 User] Creating new user in Django backend');
+    const tenantId = uuidv4(); // Generate new tenant ID for new user
     
-    // Generate a tenant ID for the new user
-    const tenantId = uuidv4();
-    userData.tenant_id = tenantId;
-    
-    console.log('[Create Auth0 User] User data prepared:', {
-      email: userData.email,
-      auth0_sub: userData.auth0_sub,
-      tenant_id: userData.tenant_id,
-      hasAccessToken: !!accessToken
-    });
-
     try {
-      const backendResponse = await fetch(`${apiBaseUrl}/api/auth0/create-user/`, {
+      const createUserResponse = await fetch(`${apiBaseUrl}/api/auth0/create-user/`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
-          'X-User-Email': user.email,
-          'X-User-Sub': user.sub,
-          'X-Source': 'auth0-callback'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify(userData)
+        body: JSON.stringify({
+          auth0_sub: user.sub,
+          email: user.email,
+          first_name: user.given_name || '',
+          last_name: user.family_name || '',
+          name: user.name || '',
+          picture: user.picture || '',
+          tenant_id: tenantId,
+          needs_onboarding: true,
+          onboarding_status: 'business_info'
+        })
       });
       
-      let responseData = {};
+      console.log('[Create Auth0 User] Create user response status:', createUserResponse.status);
       
-      if (backendResponse.ok) {
-        try {
-          responseData = await backendResponse.json();
-          console.log('[Create Auth0 User] Backend user creation successful:', {
-            userId: responseData.user_id,
-            tenantId: responseData.tenant_id,
-            success: responseData.success
-          });
-        } catch (jsonError) {
-          console.log('[Create Auth0 User] Backend responded OK but no JSON data');
-          responseData = { 
-            success: true, 
-            message: 'User created successfully',
-            tenant_id: tenantId,
-            user_id: user.sub
-          };
-        }
-      } else {
-        const errorText = await backendResponse.text().catch(() => 'Unknown error');
-        console.error('[Create Auth0 User] Backend user creation failed:', {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          error: errorText
+      if (createUserResponse.ok) {
+        const newUser = await createUserResponse.json();
+        console.log('[Create Auth0 User] Successfully created new user:', {
+          user_id: newUser.id,
+          tenant_id: newUser.tenant_id,
+          email: newUser.email
         });
         
-        // **This should not happen anymore since we checked for existing user first**
-        if (backendResponse.status === 409) {
-          console.error('[Create Auth0 User] User already exists - this should not happen!');
-        }
-        
-        // For other errors, return them but don't fail completely
-        return NextResponse.json({
-          success: false,
-          error: 'Backend user creation failed',
-          details: errorText,
-          fallback: true,
-          // Provide fallback data so frontend can continue
-          tenant_id: tenantId,
-          current_step: 'business_info',
-          needs_onboarding: true
-        }, { status: 200 }); // Return 200 so frontend doesn't fail
-      }
-      
-      // Update session cookie with tenant information
-      try {
-        const updatedSessionData = {
+        // Update session cookie with tenant ID for consistency
+        const updatedSession = {
           ...sessionData,
           user: {
             ...sessionData.user,
-            tenantId: responseData.tenant_id || tenantId,
-            currentStep: responseData.current_step || 'business_info',
-            needsOnboarding: responseData.needs_onboarding !== false,
-            onboardingCompleted: false
+            tenant_id: newUser.tenant_id,
+            needs_onboarding: true,
+            onboarding_completed: false
           }
         };
         
-        const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
-        
         const response = NextResponse.json({
           success: true,
-          message: 'User created successfully in Django backend',
-          user: responseData,
-          tenant_id: responseData.tenant_id || tenantId,
-          current_step: responseData.current_step || 'business_info',
-          needs_onboarding: responseData.needs_onboarding !== false
+          message: 'New user created successfully',
+          isExistingUser: false,
+          user_id: newUser.id,
+          tenant_id: newUser.tenant_id,
+          email: newUser.email,
+          needs_onboarding: true,
+          onboardingCompleted: false,
+          current_step: 'business_info'
         });
         
-        // Update the session cookie
-        response.cookies.set('appSession', updatedSessionCookie, {
-          path: '/',
-          httpOnly: false,
+        // Update session cookie
+        response.cookies.set('appSession', Buffer.from(JSON.stringify(updatedSession)).toString('base64'), {
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 // 7 days
+          maxAge: 60 * 60 * 24 * 7 // 7 days
         });
         
-        console.log('[Create Auth0 User] Session updated with tenant information');
         return response;
+      } else {
+        const errorText = await createUserResponse.text();
+        console.error('[Create Auth0 User] Failed to create user in Django:', errorText);
         
-      } catch (cookieError) {
-        console.error('[Create Auth0 User] Error updating session cookie:', cookieError);
-        // Continue without cookie update
+        // Handle duplicate user case
+        if (createUserResponse.status === 409 || errorText.includes('already exists')) {
+          console.log('[Create Auth0 User] User already exists (409), attempting to fetch existing user');
+          
+          // Retry getting the existing user
+          try {
+            const retryResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              }
+            });
+            
+            if (retryResponse.ok) {
+              const existingUserData = await retryResponse.json();
+              return NextResponse.json({
+                success: true,
+                message: 'Found existing user after conflict',
+                isExistingUser: true,
+                user_id: existingUserData.id,
+                tenant_id: existingUserData.tenant_id,
+                email: existingUserData.email,
+                needs_onboarding: existingUserData.needs_onboarding !== false,
+                onboardingCompleted: existingUserData.onboarding_completed === true,
+                current_step: existingUserData.current_onboarding_step || 'business_info'
+              });
+            }
+          } catch (retryError) {
+            console.error('[Create Auth0 User] Failed to retry user lookup:', retryError);
+          }
+        }
+        
+        throw new Error(`Django API error: ${errorText}`);
       }
+    } catch (error) {
+      console.error('[Create Auth0 User] Error creating user in Django:', error);
       
-      return NextResponse.json({
-        success: true,
-        message: 'User created successfully in Django backend',
-        user: responseData,
-        tenant_id: responseData.tenant_id || tenantId,
-        current_step: responseData.current_step || 'business_info',
-        needs_onboarding: responseData.needs_onboarding !== false
-      });
-      
-    } catch (backendError) {
-      console.error('[Create Auth0 User] Backend communication failed:', {
-        message: backendError.message,
-        stack: backendError.stack
-      });
-      
+      // Fallback: Return session-only data to prevent blocking user flow
       return NextResponse.json({
         success: false,
-        error: 'Failed to communicate with backend',
-        details: backendError.message,
         fallback: true,
-        // Provide fallback data so frontend can continue
+        message: 'Backend unavailable, using session fallback',
+        isExistingUser: false,
         tenant_id: tenantId,
-        current_step: 'business_info', 
-        needs_onboarding: true
-      }, { status: 200 }); // Return 200 so frontend doesn't fail
+        email: user.email,
+        needs_onboarding: true,
+        onboardingCompleted: false,
+        current_step: 'business_info',
+        error: error.message
+      }, { status: 200 });
     }
     
   } catch (error) {
-    console.error('[Create Auth0 User] Critical error:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack
-    });
-    
-    return NextResponse.json({
-      success: false,
-      error: 'Critical error creating user',
-      message: error.message
+    console.error('[Create Auth0 User] Unexpected error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error.message 
     }, { status: 500 });
   }
 } 

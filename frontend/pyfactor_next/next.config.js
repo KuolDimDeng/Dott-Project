@@ -5,7 +5,7 @@ const path = require('path');
 const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
 const nextConfig = {
-  // Basic Next.js settings optimized for Vercel deployment
+  // Basic Next.js settings optimized for development speed
   reactStrictMode: true,
   trailingSlash: false,
   
@@ -30,13 +30,32 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Experimental features
-  experimental: {
-    forceSwcTransforms: true,
-  },
-  
-  // Webpack configuration
-  webpack: (config, { isServer }) => {
+  // Webpack configuration for optimized builds
+  webpack: (config, { isServer, dev }) => {
+    // Development-specific optimizations
+    if (dev) {
+      // Reduce watch options to prevent excessive file watching
+      config.watchOptions = {
+        poll: false,
+        aggregateTimeout: 300,
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/.next/**',
+          '**/dist/**',
+          '**/build/**',
+        ],
+      };
+      
+      // Optimize CSS processing in development
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      };
+    }
+
     // Handle problematic modules with stubs
     config.resolve.alias = {
       ...config.resolve.alias,
@@ -162,4 +181,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; /* Backend connectivity fix - 2025-05-24T00:41:19.355Z */
+module.exports = nextConfig;

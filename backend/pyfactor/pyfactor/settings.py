@@ -77,30 +77,12 @@ AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startswith('placeholder_'):
     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
-# AWS Cognito Settings
-COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID', 'us-east-1_JPL8vGfb6')
-COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID', '1o5v84mrgn4gt87khtr179uc5b') 
-COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN', 'pyfactor-dev.auth.us-east-1.amazoncognito.com')
-
-# Check Cognito configuration
-if not all([COGNITO_USER_POOL_ID, COGNITO_APP_CLIENT_ID, COGNITO_DOMAIN]):
-    print("Warning: Cognito credentials are not fully configured:")
-    print(f"User Pool ID: {'Set' if COGNITO_USER_POOL_ID else 'Missing'}")
-    print(f"App Client ID: {'Set' if COGNITO_APP_CLIENT_ID else 'Missing'}")
-    print(f"Domain: {'Set' if COGNITO_DOMAIN else 'Missing'}")
-    
-    # Set defaults for development if needed
-    COGNITO_USER_POOL_ID = COGNITO_USER_POOL_ID or 'us-east-1_JPL8vGfb6'
-    COGNITO_APP_CLIENT_ID = COGNITO_APP_CLIENT_ID or '1o5v84mrgn4gt87khtr179uc5b'
-    COGNITO_DOMAIN = COGNITO_DOMAIN or 'pyfactor-dev.auth.us-east-1.amazoncognito.com'
-    
-    print("Using default Cognito settings for development.")
-
-# Auth0 Settings
+# Auth0 Settings (Primary Authentication)
 AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
-AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', None)  # Optional, for API audience
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
+AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"
 
 # Check Auth0 configuration
 if not all([AUTH0_DOMAIN, AUTH0_CLIENT_ID]):
@@ -112,16 +94,9 @@ if not all([AUTH0_DOMAIN, AUTH0_CLIENT_ID]):
 else:
     print("✅ Auth0 configuration loaded successfully")
 
-# Authentication Provider Selection
-USE_AUTH0 = os.getenv('USE_AUTH0', 'true').lower() in ('true', '1', 'yes')
-USE_COGNITO = os.getenv('USE_COGNITO', 'false').lower() in ('true', '1', 'yes')
-
-if USE_AUTH0:
-    print("🔐 Using Auth0 for authentication")
-elif USE_COGNITO:
-    print("🔐 Using AWS Cognito for authentication")
-else:
-    print("⚠️  No authentication provider specified, defaulting to Auth0")
+# Authentication Provider Configuration
+USE_AUTH0 = True  # Always use Auth0
+print("🔐 Using Auth0 for authentication")
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, '.venv/lib/python3.12/site-packages'))
@@ -165,13 +140,14 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Always enforce AWS Cognito Authentication even in development mode
-USE_AWS_AUTH = True
-COGNITO_TOKEN_VERIFY = True
-
+# Configure DEBUG toolbar
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
 }
+
+# Always enforce AWS Cognito Authentication even in development mode
+USE_AWS_AUTH = True
+COGNITO_TOKEN_VERIFY = True
 
 # Update ALLOWED_HOSTS for deployment
 # Read from environment variable, split by comma, and strip whitespace
@@ -324,9 +300,7 @@ OAUTH_CALLBACK_URL = f"{FRONTEND_URL}/api/auth/callback/google"
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',  # Add this for social auth
-    'custom_auth.backends.CognitoBackend',
-
+    'allauth.account.auth_backends.AuthenticationBackend',  # For social auth (if needed)
 ]
 
 # Celery Configuration
@@ -549,72 +523,25 @@ if not DEBUG:
     
 DJANGO_ALLOW_ASYNC_UNSAFE = True  # Only for development
 
-# REST framework settings
-if USE_AUTH0:
-    # Use Auth0 authentication
-    REST_FRAMEWORK = {
-        'DEFAULT_AUTHENTICATION_CLASSES': [
-            'custom_auth.auth0_authentication.Auth0JWTAuthentication',
-            'rest_framework.authentication.SessionAuthentication',
-        ],
-        'DEFAULT_PERMISSION_CLASSES': [
-            'custom_auth.permissions.SetupEndpointPermission',
-        ],
-        'DEFAULT_PARSER_CLASSES': [
-            'rest_framework.parsers.JSONParser',
-        ],
-        'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
-        'DEFAULT_RENDERER_CLASSES': [
-            'rest_framework.renderers.JSONRenderer',
-        ],
-        'DEFAULT_THROTTLE_CLASSES': [
-            'rest_framework.throttling.AnonRateThrottle',
-            'rest_framework.throttling.UserRateThrottle',
-        ],
-        'DEFAULT_THROTTLE_RATES': {
-            'anon': '5/minute',
-            'user': '60/minute',
-            'tax_calculation': '100/day',  # Custom rate for tax calculations
-        },
-    }
-else:
-    # Use Cognito authentication (legacy)
-    REST_FRAMEWORK = {
-        'DEFAULT_AUTHENTICATION_CLASSES': [
-            'custom_auth.jwt.CognitoJWTAuthentication',
-            'custom_auth.authentication.CognitoAuthentication',
-            'rest_framework.authentication.SessionAuthentication',
-        ],
-        'DEFAULT_PERMISSION_CLASSES': [
-            'custom_auth.permissions.SetupEndpointPermission',
-        ],
-        'DEFAULT_PARSER_CLASSES': [
-            'rest_framework.parsers.JSONParser',
-        ],
-        'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
-        'DEFAULT_RENDERER_CLASSES': [
-            'rest_framework.renderers.JSONRenderer',
-        ],
-        'DEFAULT_THROTTLE_CLASSES': [
-            'rest_framework.throttling.AnonRateThrottle',
-            'rest_framework.throttling.UserRateThrottle',
-        ],
-        'DEFAULT_THROTTLE_RATES': {
-            'anon': '5/minute',
-            'user': '60/minute',
-            'tax_calculation': '100/day',  # Custom rate for tax calculations
-        },
-    }
+# Ensure the logs directory exists
+os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 
-# Add these JWT settings
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'sub',
+# Configure Django REST Framework for Auth0 Authentication
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'custom_auth.auth0_authentication.Auth0JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # Fallback for admin
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+    'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
 }
-
 
 # Logging configuration
 LOGGING_CONFIG = None
@@ -694,31 +621,6 @@ LOGGING = {
             'propagate': True,
         },
     },
-}
-
-# Ensure the logs directory exists
-os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
-
-# Cognito Authentication Settings
-COGNITO_AWS_REGION = AWS_REGION
-COGNITO_USER_POOL = COGNITO_USER_POOL_ID  # Already correct
-COGNITO_APP_CLIENT_ID = COGNITO_APP_CLIENT_ID  # Already correct
-COGNITO_TOKEN_VERIFY = True
-COGNITO_ATTR_MAPPING = {
-    'email': 'email',
-    'given_name': 'first_name',
-    'family_name': 'last_name',
-    'custom:userrole': 'role',
-    'custom:businessid': 'business_id',
-    'custom:businessname': 'business_name',
-    'custom:businesstype': 'business_type',
-    'custom:businesscountry': 'business_country',
-    'custom:legalstructure': 'legal_structure',
-    'custom:datefounded': 'date_founded',
-    'custom:subplan': 'subscription_plan',
-    'custom:subscriptioninterval': 'subscription_interval',
-    'custom:onboarding': 'onboarding_status',
-    'custom:setupdone': 'setup_complete'
 }
 
 logging.config.dictConfig(LOGGING)

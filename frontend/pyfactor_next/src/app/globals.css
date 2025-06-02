@@ -158,7 +158,7 @@ body {
 
 /* Loading animations */
 .loading-spinner {
-  @apply animate-spin rounded-full border-4 border-primary-light border-t-primary-main h-8 w-8;
+  @apply animate-spin rounded-full border-4 border-blue-200 border-t-blue-600 h-8 w-8;
 }
 
 /* Responsive typography - fixed for Tailwind v3+ */

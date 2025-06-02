@@ -4,6 +4,10 @@ module.exports = {
     './src/pages/**/*.{js,jsx,ts,tsx}',
     './src/components/**/*.{js,jsx,ts,tsx}',
     './src/app/**/*.{js,jsx,ts,tsx}',
+    // Exclude commonly changing files that don't need Tailwind classes
+    '!./src/**/*.test.{js,jsx,ts,tsx}',
+    '!./src/**/*.stories.{js,jsx,ts,tsx}',
+    '!./node_modules/**',
   ],
   theme: {
     extend: {
@@ -127,8 +131,7 @@ module.exports = {
       preferredStrategy: 'standard',
     }),
   ],
-  // Only disable preflight if you're experiencing conflicts with MUI during transition
-  // Once fully migrated to Tailwind, you can remove this
+  // Enable preflight for consistent base styles
   corePlugins: {
     preflight: true,
   },
