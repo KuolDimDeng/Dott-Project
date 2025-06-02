@@ -38,9 +38,10 @@ export async function GET(request, { params }) {
       return response;
     }
     
-    // Handle callback route
+    // Handle callback route - Exchange code for tokens and create session
     if (route === 'callback') {
       const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state');
       const error = url.searchParams.get('error');
       
       if (error) {
@@ -48,9 +49,80 @@ export async function GET(request, { params }) {
         return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=${error}`);
       }
       
-      if (code) {
-        // Redirect to frontend callback handler
-        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?code=${code}`);
+      if (!code) {
+        console.error('[Auth Route] No authorization code received');
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=no_code`);
+      }
+      
+      try {
+        console.log('[Auth Route] Exchanging code for tokens...');
+        
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/oauth/token`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            grant_type: 'authorization_code',
+            client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+            client_secret: process.env.AUTH0_CLIENT_SECRET,
+            code: code,
+            redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+          }),
+        });
+        
+        if (!tokenResponse.ok) {
+          const errorData = await tokenResponse.text();
+          console.error('[Auth Route] Token exchange failed:', errorData);
+          return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=token_exchange_failed`);
+        }
+        
+        const tokens = await tokenResponse.json();
+        console.log('[Auth Route] Token exchange successful');
+        
+        // Get user info
+        const userResponse = await fetch(`https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/userinfo`, {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`
+          }
+        });
+        
+        if (!userResponse.ok) {
+          console.error('[Auth Route] Failed to get user info');
+          return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=user_info_failed`);
+        }
+        
+        const user = await userResponse.json();
+        console.log('[Auth Route] User info retrieved:', user.email);
+        
+        // Create session data
+        const sessionData = {
+          user: user,
+          accessToken: tokens.access_token,
+          idToken: tokens.id_token,
+          refreshToken: tokens.refresh_token,
+          accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
+        };
+        
+        // Redirect to frontend callback with session cookie
+        const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`);
+        
+        // Set session cookie
+        const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+        response.cookies.set('appSession', sessionCookie, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: tokens.expires_in || 3600,
+          path: '/'
+        });
+        
+        return response;
+        
+      } catch (error) {
+        console.error('[Auth Route] Callback processing error:', error);
+        return NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?error=callback_failed`);
       }
     }
     
