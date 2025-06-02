@@ -344,8 +344,38 @@ export default function SetupPage() {
     }
   };
 
-  const handleContinueToDashboard = () => {
-    router.push('/dashboard');
+  const handleContinueToDashboard = async () => {
+    try {
+      // Get user's tenant ID from profile
+      const profileResponse = await fetch('/api/auth/profile');
+      if (profileResponse.ok) {
+        const profile = await profileResponse.json();
+        if (profile && profile.tenantId) {
+          console.log('[SetupPage] Redirecting to tenant dashboard:', profile.tenantId);
+          router.push(`/tenant/${profile.tenantId}/dashboard`);
+          return;
+        }
+      }
+      
+      // Fallback: try to get tenant ID from session
+      const sessionResponse = await fetch('/api/auth/session');
+      if (sessionResponse.ok) {
+        const sessionData = await sessionResponse.json();
+        if (sessionData && sessionData.user && sessionData.user.tenantId) {
+          console.log('[SetupPage] Redirecting to tenant dashboard from session:', sessionData.user.tenantId);
+          router.push(`/tenant/${sessionData.user.tenantId}/dashboard`);
+          return;
+        }
+      }
+      
+      // Last resort: redirect to generic dashboard (will likely prompt for tenant setup)
+      console.warn('[SetupPage] No tenant ID found, redirecting to generic dashboard');
+      router.push('/dashboard');
+    } catch (error) {
+      console.error('[SetupPage] Error getting tenant ID for dashboard redirect:', error);
+      // Fallback to generic dashboard
+      router.push('/dashboard');
+    }
   };
 
   if (userLoading) {
