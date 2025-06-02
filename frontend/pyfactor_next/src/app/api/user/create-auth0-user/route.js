@@ -49,6 +49,98 @@ export async function POST(request) {
     
     console.log('[Create Auth0 User] Creating user for:', user.email);
     
+    // Call Django backend API
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiBaseUrl) {
+      throw new Error('API configuration missing - backend URL not configured');
+    }
+
+    // **CRITICAL FIX: First try to get existing user before creating a new one**
+    try {
+      console.log('[Create Auth0 User] Checking for existing user first...');
+      
+      const getUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'X-User-Email': user.email,
+          'X-User-Sub': user.sub
+        }
+      });
+      
+      if (getUserResponse.ok) {
+        const existingUser = await getUserResponse.json();
+        console.log('[Create Auth0 User] Found existing user:', {
+          userId: existingUser.id,
+          tenantId: existingUser.tenant_id,
+          currentStep: existingUser.current_step,
+          needsOnboarding: existingUser.needs_onboarding
+        });
+        
+        // **CRITICAL FIX: Update session cookie with existing user data**
+        try {
+          const updatedSessionData = {
+            ...sessionData,
+            user: {
+              ...sessionData.user,
+              tenantId: existingUser.tenant_id || existingUser.tenantId,
+              currentStep: existingUser.current_step,
+              needsOnboarding: existingUser.needs_onboarding !== false,
+              onboardingCompleted: existingUser.onboarding_completed || false
+            }
+          };
+          
+          const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+          
+          const response = NextResponse.json({
+            success: true,
+            message: 'User already exists',
+            user: existingUser,
+            tenant_id: existingUser.tenant_id || existingUser.tenantId,
+            current_step: existingUser.current_step || 'business_info',
+            needs_onboarding: existingUser.needs_onboarding !== false,
+            isExistingUser: true
+          });
+          
+          // Update the session cookie
+          response.cookies.set('appSession', updatedSessionCookie, {
+            path: '/',
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 // 7 days
+          });
+          
+          console.log('[Create Auth0 User] Session updated with existing user data');
+          return response;
+          
+        } catch (cookieError) {
+          console.error('[Create Auth0 User] Error updating session cookie for existing user:', cookieError);
+          // Return existing user data anyway
+          return NextResponse.json({
+            success: true,
+            message: 'User already exists',
+            user: existingUser,
+            tenant_id: existingUser.tenant_id || existingUser.tenantId,
+            current_step: existingUser.current_step || 'business_info',
+            needs_onboarding: existingUser.needs_onboarding !== false,
+            isExistingUser: true
+          });
+        }
+      } else if (getUserResponse.status !== 404) {
+        console.warn('[Create Auth0 User] Unexpected error checking for existing user:', getUserResponse.status);
+        // Continue to create new user
+      } else {
+        console.log('[Create Auth0 User] User does not exist, proceeding to create new user');
+      }
+    } catch (existingUserError) {
+      console.error('[Create Auth0 User] Error checking for existing user:', existingUserError);
+      // Continue to create new user
+    }
+
+    // **Only generate tenant ID if user doesn't exist**
+    console.log('[Create Auth0 User] Creating new user...');
+    
     // Prepare user data for Django backend
     const userData = {
       email: user.email,
@@ -61,7 +153,7 @@ export async function POST(request) {
       auth_provider: 'auth0'
     };
     
-    // Generate a tenant ID for the user
+    // Generate a tenant ID for the new user
     const tenantId = uuidv4();
     userData.tenant_id = tenantId;
     
@@ -71,13 +163,7 @@ export async function POST(request) {
       tenant_id: userData.tenant_id,
       hasAccessToken: !!accessToken
     });
-    
-    // Call Django backend to create user
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiBaseUrl) {
-      throw new Error('API configuration missing - backend URL not configured');
-    }
-    
+
     try {
       const backendResponse = await fetch(`${apiBaseUrl}/api/auth0/create-user/`, {
         method: 'POST',
@@ -118,37 +204,9 @@ export async function POST(request) {
           error: errorText
         });
         
-        // If it's a "user already exists" error (409), that's actually OK
+        // **This should not happen anymore since we checked for existing user first**
         if (backendResponse.status === 409) {
-          console.log('[Create Auth0 User] User already exists in backend, fetching existing user');
-          
-          // Try to get existing user
-          const getUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-              'X-User-Email': user.email,
-              'X-User-Sub': user.sub
-            }
-          });
-          
-          if (getUserResponse.ok) {
-            const existingUser = await getUserResponse.json();
-            console.log('[Create Auth0 User] Found existing user:', {
-              userId: existingUser.id,
-              tenantId: existingUser.tenant_id,
-              currentStep: existingUser.current_step
-            });
-            
-            return NextResponse.json({
-              success: true,
-              message: 'User already exists',
-              user: existingUser,
-              tenant_id: existingUser.tenant_id || existingUser.tenantId,
-              current_step: existingUser.current_step || 'business_info',
-              needs_onboarding: existingUser.needs_onboarding !== false
-            });
-          }
+          console.error('[Create Auth0 User] User already exists - this should not happen!');
         }
         
         // For other errors, return them but don't fail completely

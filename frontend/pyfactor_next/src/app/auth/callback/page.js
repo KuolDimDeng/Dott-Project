@@ -71,10 +71,10 @@ export default function Auth0CallbackPage() {
             console.log('[Auth0Callback] User creation result:', {
               success: createUserData.success,
               tenantId: createUserData.tenant_id,
-              currentStep: createUserData.current_step
+              currentStep: createUserData.current_step,
+              isExistingUser: createUserData.isExistingUser
             });
             
-            // Update backend user data with Django response
             backendUser = {
               email: sessionData.user.email,
               sub: sessionData.user.sub,
@@ -82,9 +82,9 @@ export default function Auth0CallbackPage() {
               picture: sessionData.user.picture,
               tenantId: createUserData.tenant_id,
               needsOnboarding: createUserData.needs_onboarding !== false,
-              onboardingCompleted: false,
+              onboardingCompleted: createUserData.onboardingCompleted || !createUserData.needs_onboarding,
               currentStep: createUserData.current_step || 'business_info',
-              isNewUser: createUserData.success
+              isNewUser: !createUserData.isExistingUser && createUserData.success
             };
             
             console.log('[Auth0Callback] Updated backend user with Django data:', backendUser);
@@ -219,8 +219,19 @@ export default function Auth0CallbackPage() {
           return;
         }
         
-        // 3. NEW USER - No tenant or needs onboarding
-        if (backendUser.needsOnboarding || !backendUser.tenantId || backendUser.isNewUser) {
+        // **ENHANCED: Check if this is an existing user with completed onboarding**
+        if (backendUser.tenantId && !backendUser.isNewUser && (latestOnboardingStatus?.needsOnboarding === false || latestOnboardingStatus?.onboardingCompleted === true)) {
+          setStatus('Welcome back! Loading your dashboard...');
+          console.log('[Auth0Callback] Existing user with completed onboarding, redirecting to tenant dashboard');
+          
+          setTimeout(() => {
+            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
+          }, 1500);
+          return;
+        }
+        
+        // 3. NEW USER - No tenant or needs onboarding  
+        if (backendUser.isNewUser || backendUser.needsOnboarding || !backendUser.tenantId) {
           setStatus('Setting up your account...');
           console.log('[Auth0Callback] New user detected, redirecting to onboarding');
           
