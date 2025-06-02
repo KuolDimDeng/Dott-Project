@@ -1,11 +1,12 @@
 'use client';
 
+import { useUser } from '@auth0/nextjs-auth0/client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Auth0CallbackPage() {
+  const { user, error: auth0Error, isLoading: auth0Loading } = useUser();
   const router = useRouter();
-  const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [status, setStatus] = useState('Completing authentication...');
@@ -13,45 +14,60 @@ export default function Auth0CallbackPage() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // Wait for Auth0 to load
+      if (auth0Loading) {
+        setStatus('Verifying authentication...');
+        return;
+      }
+
+      // Check for Auth0 errors
+      if (auth0Error) {
+        console.error('[Auth0Callback] Auth0 error:', auth0Error);
+        setError(auth0Error.message || 'Authentication failed');
+        setIsLoading(false);
+        setTimeout(() => {
+          router.push('/auth/signin?error=auth0_error');
+        }, 3000);
+        return;
+      }
+
+      // If no user after loading, redirect to signin
+      if (!user) {
+        console.log('[Auth0Callback] No user found after Auth0 loading');
+        setTimeout(() => {
+          router.push('/auth/signin?error=no_user');
+        }, 1500);
+        return;
+      }
+
       // Prevent multiple redirects
       if (redirectHandled) {
         return;
       }
 
       try {
-        setStatus('Verifying authentication...');
-        
-        // Get session from our API route
-        const sessionResponse = await fetch('/api/auth/session');
-        
-        if (!sessionResponse.ok) {
-          throw new Error(`Session API returned ${sessionResponse.status}`);
-        }
-        
-        const sessionData = await sessionResponse.json();
-        
-        if (!sessionData.user) {
-          throw new Error(sessionData.error || 'No user session found');
-        }
-        
-        setUser(sessionData.user);
-        
-        // Mark redirect as handled to prevent loops
-        setRedirectHandled(true);
-
         console.log('[Auth0Callback] Processing Auth0 callback for user:', {
-          email: sessionData.user.email,
-          sub: sessionData.user.sub
+          email: user.email,
+          sub: user.sub
         });
         
         setStatus('Loading your profile...');
+        
+        // Get access token for backend API calls
+        const tokenResponse = await fetch('/api/auth/token');
+        let accessToken = null;
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          accessToken = tokenData.accessToken;
+        }
         
         // Get complete user profile from backend
         let backendUser;
         try {
           const userResponse = await fetch('/api/user/current', {
             headers: {
-              'Authorization': `Bearer ${sessionData.accessToken || 'session-token'}`,
+              'Authorization': `Bearer ${accessToken || 'session-token'}`,
               'Content-Type': 'application/json',
             },
           });
@@ -66,8 +82,8 @@ export default function Auth0CallbackPage() {
           console.log('[Auth0Callback] Backend user fetch failed, treating as new user:', error);
           // If backend fails, treat as new user
           backendUser = {
-            email: sessionData.user.email,
-            sub: sessionData.user.sub,
+            email: user.email,
+            sub: user.sub,
             needsOnboarding: true,
             tenantId: null,
             onboardingCompleted: false,
@@ -82,6 +98,9 @@ export default function Auth0CallbackPage() {
           tenantId: backendUser.tenantId,
           isNewUser: backendUser.isNewUser
         });
+        
+        // Mark redirect as handled to prevent loops
+        setRedirectHandled(true);
         
         // 🎯 Smart Routing Logic Implementation
         
@@ -103,7 +122,7 @@ export default function Auth0CallbackPage() {
             
             const onboardingResponse = await fetch(`/api/onboarding/status?tenantId=${backendUser.tenantId}`, {
               headers: {
-                'Authorization': `Bearer ${sessionData.accessToken || 'session-token'}`,
+                'Authorization': `Bearer ${accessToken || 'session-token'}`,
                 'Content-Type': 'application/json',
               },
             });
@@ -165,7 +184,6 @@ export default function Auth0CallbackPage() {
         console.error('[Auth0Callback] Error in callback handler:', error);
         setError(error.message || 'Authentication failed');
         setIsLoading(false);
-        setRedirectHandled(true);
         
         // Delay redirect to show error
         setTimeout(() => {
@@ -177,7 +195,7 @@ export default function Auth0CallbackPage() {
     };
 
     handleCallback();
-  }, [router, redirectHandled]);
+  }, [user, auth0Error, auth0Loading, router, redirectHandled]);
 
   // Show loading while processing
   return (
