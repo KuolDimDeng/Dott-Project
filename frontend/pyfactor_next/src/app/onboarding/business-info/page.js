@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';
 import LoadingScreen from '@/components/LoadingScreen';
@@ -85,9 +84,39 @@ try {
   };
 }
 
+// Custom hook for Auth0 v4.x session management
+const useAuth0Session = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData && sessionData.user) {
+            setUser(sessionData.user);
+          }
+        }
+      } catch (err) {
+        console.error('[useAuth0Session] Error fetching session:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSession();
+  }, []);
+
+  return { user, isLoading, error };
+};
+
 const BusinessInfoPageContent = () => {
   const router = useRouter();
-  const { user, isLoading: userLoading } = useUser();
+  const { user, isLoading: userLoading } = useAuth0Session();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);

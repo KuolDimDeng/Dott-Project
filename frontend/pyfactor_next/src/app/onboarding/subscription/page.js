@@ -2,12 +2,41 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useUser } from '@auth0/nextjs-auth0';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';
 import { isValidUUID } from '@/utils/tenantUtils';
 import { getFallbackTenantId, createFallbackApiResponse, storeReliableTenantId } from '@/utils/tenantFallback';
+
+// Custom hook for Auth0 v4.x session management
+const useAuth0Session = () => {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchSession = async () => {
+      try {
+        const response = await fetch('/api/auth/session');
+        if (response.ok) {
+          const sessionData = await response.json();
+          if (sessionData && sessionData.user) {
+            setUser(sessionData.user);
+          }
+        }
+      } catch (err) {
+        console.error('[useAuth0Session] Error fetching session:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSession();
+  }, []);
+
+  return { user, isLoading, error };
+};
 
 // Header component with sign out option
 const Header = ({ showSignOut = false, showBackButton = false }) => {
@@ -120,7 +149,7 @@ const CheckIcon = (props) => (
 export default function SubscriptionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, isLoading: userLoading } = useUser();
+  const { user, isLoading: userLoading } = useAuth0Session();
   const [businessData, setBusinessData] = useState({
     businessName: 'Your Business',
     businessType: 'Other'
@@ -193,22 +222,27 @@ export default function SubscriptionPage() {
   // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
-      if (!user && !userLoading) {
+      // Skip auth check if still loading
+      if (userLoading) {
+        return;
+      }
+      
+      if (!user) {
         logger.warn('[SubscriptionPage] No authenticated user found, redirecting to Auth0 login');
-        // Redirect to Auth0 login instead of old signin route
+        // Redirect to Auth0 login
         window.location.href = '/api/auth/login';
         return;
       }
       
       // If user is authenticated, check if they have completed business info
-      if (user && !userLoading) {
-        try {
-          logger.debug('[SubscriptionPage] User authenticated, checking onboarding status');
-          
-          // Get user profile to check onboarding status
-          const profileResponse = await fetch('/api/auth/profile');
-          if (profileResponse.ok) {
-            const profile = await profileResponse.json();
+      try {
+        logger.debug('[SubscriptionPage] User authenticated, checking onboarding status');
+        
+        // Get user profile to check onboarding status
+        const profileResponse = await fetch('/api/auth/profile');
+        if (profileResponse.ok) {
+          const profile = await profileResponse.json();
+          if (profile) {
             logger.debug('[SubscriptionPage] User profile:', {
               email: profile.email,
               needsOnboarding: profile.needsOnboarding,
@@ -222,18 +256,24 @@ export default function SubscriptionPage() {
               router.push('/onboarding/business-info');
               return;
             }
+            
+            // Set tenant ID if available from profile
+            if (profile.tenantId && !tenantId) {
+              setTenantId(profile.tenantId);
+            }
           }
-        } catch (error) {
-          logger.error('[SubscriptionPage] Error checking user profile:', error);
-          // Continue to show subscription page - user might be authenticated
+        } else {
+          logger.warn('[SubscriptionPage] Could not fetch user profile, continuing with session data');
         }
+      } catch (error) {
+        logger.error('[SubscriptionPage] Error checking user profile:', error);
+        // Continue to show subscription page - user is authenticated via session
       }
     };
 
-    if (!userLoading) {
-      checkAuth();
-    }
-  }, [user, userLoading, router]);
+    // Only run auth check when user loading state is resolved
+    checkAuth();
+  }, [user, userLoading, router, tenantId]);
 
   const handleFreePlanSelection = async () => {
     try {
