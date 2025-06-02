@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import { validateServerSession } from '@/utils/serverUtils';
+import crypto from 'crypto';
 
 export async function POST(request) {
   try {
