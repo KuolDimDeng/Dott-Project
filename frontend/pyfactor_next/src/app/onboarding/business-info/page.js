@@ -3,14 +3,63 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0';
-import { submitBusinessInfo } from '@/services/api/onboarding';
 import { logger } from '@/utils/logger';
 import { setCache, getCache } from '@/utils/cacheClient';
 import LoadingScreen from '@/components/LoadingScreen';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
-import { countries } from 'countries-list';
 
-const BusinessInfoPage = () => {
+// Safe import with fallback for countries
+let countries = {};
+try {
+  const countriesModule = require('countries-list');
+  countries = countriesModule.countries || {};
+} catch (error) {
+  logger.error('[BusinessInfoPage] Failed to import countries-list', error);
+  // Fallback country list
+  countries = {
+    US: { name: 'United States' },
+    CA: { name: 'Canada' },
+    GB: { name: 'United Kingdom' },
+    AU: { name: 'Australia' },
+    DE: { name: 'Germany' },
+    FR: { name: 'France' },
+    JP: { name: 'Japan' },
+    IN: { name: 'India' },
+    BR: { name: 'Brazil' },
+    MX: { name: 'Mexico' }
+  };
+}
+
+// Safe import for API function with fallback
+let submitBusinessInfo;
+try {
+  const apiModule = require('@/services/api/onboarding');
+  submitBusinessInfo = apiModule.submitBusinessInfo || (() => {
+    throw new Error('submitBusinessInfo function not available');
+  });
+} catch (error) {
+  logger.error('[BusinessInfoPage] Failed to import submitBusinessInfo', error);
+  submitBusinessInfo = async (data) => {
+    logger.debug('[BusinessInfoPage] Using fallback submitBusinessInfo', data);
+    
+    const response = await fetch('/api/onboarding/business-info', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  };
+}
+
+const BusinessInfoPageContent = () => {
   const router = useRouter();
   const { user, isLoading: userLoading } = useUser();
   const [loading, setLoading] = useState(true);
@@ -30,8 +79,13 @@ const BusinessInfoPage = () => {
     return requiredFields.every(field => businessInfo[field]?.trim());
   }, [businessInfo]);
 
-  // Convert countries-list object to array for dropdown
+  // Convert countries object to array for dropdown with safety check
   const countryOptions = useMemo(() => {
+    if (!countries || typeof countries !== 'object') {
+      logger.warn('[BusinessInfoPage] Countries data not available, using fallback');
+      return [{ value: 'United States', label: 'United States', code: 'US' }];
+    }
+    
     return Object.entries(countries).map(([code, country]) => ({
       value: country.name,
       label: country.name,
@@ -39,16 +93,38 @@ const BusinessInfoPage = () => {
     })).sort((a, b) => a.label.localeCompare(b.label));
   }, []);
 
-  // Format businessTypes for dropdown
+  // Format businessTypes for dropdown with safety check
   const businessTypeOptions = useMemo(() => {
+    if (!businessTypes || !Array.isArray(businessTypes)) {
+      logger.warn('[BusinessInfoPage] businessTypes not available, using fallback');
+      return [
+        { value: 'General Business', label: 'General Business' },
+        { value: 'Consulting', label: 'Consulting' },
+        { value: 'Technology', label: 'Technology' },
+        { value: 'Retail', label: 'Retail' },
+        { value: 'Other', label: 'Other' }
+      ];
+    }
+    
     return businessTypes.map(type => ({
       value: type,
       label: type
     }));
   }, []);
 
-  // Format legalStructures for dropdown
+  // Format legalStructures for dropdown with safety check
   const legalStructureOptions = useMemo(() => {
+    if (!legalStructures || !Array.isArray(legalStructures)) {
+      logger.warn('[BusinessInfoPage] legalStructures not available, using fallback');
+      return [
+        { value: 'LLC', label: 'LLC' },
+        { value: 'Corporation', label: 'Corporation' },
+        { value: 'Sole Proprietorship', label: 'Sole Proprietorship' },
+        { value: 'Partnership', label: 'Partnership' },
+        { value: 'Other', label: 'Other' }
+      ];
+    }
+    
     return legalStructures.map(structure => ({
       value: structure,
       label: structure
@@ -361,6 +437,14 @@ const BusinessInfoPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const BusinessInfoPage = () => {
+  return (
+    <ErrorBoundary>
+      <BusinessInfoPageContent />
+    </ErrorBoundary>
   );
 };
 
