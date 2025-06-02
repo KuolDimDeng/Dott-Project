@@ -3,9 +3,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
-import { Auth0Client } from '@auth0/nextjs-auth0/server';
-
-const auth0 = new Auth0Client();
+import { auth0 } from '@/lib/auth0';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
