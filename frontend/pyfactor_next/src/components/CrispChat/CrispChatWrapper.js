@@ -2,46 +2,31 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// Auth0 session check will be done in the CrispChat component
+import { useUser } from '@auth0/nextjs-auth0';
 import CrispChat from './CrispChat';
 import { logger } from '@/utils/logger';
 
 export default function CrispChatWrapper() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { user, isLoading } = useUser();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // Check Auth0 session
-        const response = await fetch('/api/auth/session');
-        const hasValidUser = response.ok;
-        setIsAuthenticated(hasValidUser);
+    // Wait for Auth0 to finish loading
+    if (!isLoading) {
+      logger.debug('[CrispChatWrapper] Auth0 loading complete', { 
+        hasUser: !!user,
+        userEmail: user?.email 
+      });
+      setIsReady(true);
+    }
+  }, [isLoading, user]);
 
-        if (hasValidUser) {
-          const sessionData = await response.json();
-          if (sessionData.user) {
-            logger.debug('Valid Auth0 user found for Crisp chat');
-          }
-        } else {
-          logger.debug('User not authenticated for Crisp chat');
-        }
-      } catch (error) {
-        logger.error('Error checking auth status for Crisp chat:', error);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoaded(true);
-        logger.debug('Crisp chat auth check completed');
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  if (!isLoaded) {
-    logger.debug('Crisp chat wrapper still loading');
+  // Don't render until Auth0 is ready
+  if (!isReady) {
+    logger.debug('[CrispChatWrapper] Waiting for Auth0...');
     return null;
   }
 
-  return <CrispChat isAuthenticated={isAuthenticated} />;
+  logger.debug('[CrispChatWrapper] Rendering CrispChat', { isAuthenticated: !!user });
+  return <CrispChat isAuthenticated={!!user} user={user} />;
 }

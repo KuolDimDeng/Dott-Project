@@ -11,7 +11,6 @@ import api from '@/utils/api';
 import usersApi from '@/utils/api/usersApi';
 import UserMenuPrivileges from './UserMenuPrivileges';
 import UserPagePrivileges from './UserPagePrivileges';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 import { useProfile } from '@/hooks/useProfile';
 import { 
   UserGroupIcon, 
@@ -164,10 +163,14 @@ const SettingsManagement = () => {
           // Try to get tenant ID from user attributes as fallback
           let tenantId = null;
           if (user && user.attributes) {
-            tenantId = CognitoAttributes.getTenantId(user.attributes) || 
-                     CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID) ||
+            tenantId = user.attributes.tenant_id || 
+                     user.attributes.business_id ||
                      user.attributes['custom:tenant_ID'] ||
                      user.attributes['custom:businessid'];
+          }
+          // Also check localStorage for Auth0 compatibility
+          if (!tenantId && typeof window !== 'undefined') {
+            tenantId = localStorage.getItem('tenant_id') || localStorage.getItem('business_id');
           }
           // Force refresh profile data
           fetchProfile(tenantId, true);
@@ -206,13 +209,18 @@ const SettingsManagement = () => {
         logger.info('[SettingsManagement] User attributes:', user.attributes);
         
         // Try all possible attribute formats for tenant ID
-        currentTenantId = CognitoAttributes.getTenantId(user.attributes) || 
-                         CognitoAttributes.getValue(user.attributes, CognitoAttributes.BUSINESS_ID) ||
+        currentTenantId = user.attributes.tenant_id || 
+                         user.attributes.business_id ||
                          user.attributes['custom:tenant_ID'] ||
                          user.attributes['custom:tenantId'] ||
                          user.attributes['custom:tenantID'] ||
                          user.attributes['custom:tenant_id'] ||
                          user.attributes['custom:businessid'];
+        
+        // Also check localStorage for Auth0 compatibility
+        if (!currentTenantId && typeof window !== 'undefined') {
+          currentTenantId = localStorage.getItem('tenant_id') || localStorage.getItem('business_id');
+        }
       } else {
         logger.error('[SettingsManagement] No user or profile data available');
         setError('User not authenticated');

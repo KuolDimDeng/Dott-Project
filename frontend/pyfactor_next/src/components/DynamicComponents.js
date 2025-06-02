@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { logger } from '@/utils/logger';
-// Auth0 session check will be done via fetch
+import { useUser } from '@auth0/nextjs-auth0';
 
 // Dynamically import components to avoid SSR issues with error handling
 const CookieBanner = dynamic(
@@ -43,77 +43,15 @@ export default function DynamicComponents({ children }) {
   console.log('[DynamicComponents] Component created - this should appear in console');
   logger.debug('[DynamicComponents] Component created');
   
+  const { user, isLoading } = useUser();
   const [componentsMounted, setComponentsMounted] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authChecked, setAuthChecked] = useState(false);
 
   // Add initial mount logging
   useEffect(() => {
     logger.debug('[DynamicComponents] Component mounting...');
   }, []);
 
-  // Check authentication status for Crisp Chat
-  useEffect(() => {
-    // Skip auth check during build/SSR
-    if (typeof window === 'undefined') {
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-      return;
-    }
-
-    async function checkAuthStatus() {
-      try {
-        logger.debug('[DynamicComponents] Checking authentication status for Crisp Chat');
-        
-        // Check if we're on a public page
-        const isPublicPage = () => {
-          const path = window.location.pathname;
-          const publicPaths = ['/', '/about', '/contact', '/pricing', '/terms', '/privacy', '/blog', '/careers'];
-          return publicPaths.includes(path) || path.startsWith('/auth/');
-        };
-        
-        // Skip auth check on public pages
-        if (isPublicPage()) {
-          logger.debug('[DynamicComponents] On public page, skipping auth check');
-          setIsAuthenticated(false);
-          setAuthChecked(true);
-          return;
-        }
-        
-        // Add a timeout to prevent hanging on auth check
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth check timeout')), 1000)
-        );
-        
-        // Check Auth0 session with timeout
-        const sessionPromise = fetch('/api/auth/session').then(res => res.ok);
-        
-        const hasSession = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]);
-        
-        if (hasSession) {
-          setIsAuthenticated(true);
-          logger.debug('[DynamicComponents] User authenticated for Crisp Chat');
-        } else {
-          setIsAuthenticated(false);
-          logger.debug('[DynamicComponents] User not authenticated for Crisp Chat');
-        }
-      } catch (error) {
-        // User not authenticated or timeout
-        setIsAuthenticated(false);
-        logger.debug('[DynamicComponents] Authentication check failed or timed out', { error: error.message });
-      } finally {
-        setAuthChecked(true);
-        logger.debug('[DynamicComponents] Auth check completed', { isAuthenticated, authChecked: true });
-      }
-    }
-
-    // Add a small delay to ensure the page has loaded
-    const timer = setTimeout(checkAuthStatus, 100);
-    return () => clearTimeout(timer);
-  }, []);
+  
 
   // Only render components after client-side hydration is complete
   useEffect(() => {
@@ -121,7 +59,11 @@ export default function DynamicComponents({ children }) {
     setComponentsMounted(true);
   }, []);
 
-  logger.debug('[DynamicComponents] Rendering components', { isAuthenticated, componentsMounted, authChecked });
+  logger.debug('[DynamicComponents] Rendering components', { 
+    isAuthenticated: !!user, 
+    componentsMounted, 
+    isLoading 
+  });
 
   return (
     <>
@@ -129,11 +71,11 @@ export default function DynamicComponents({ children }) {
       {children}
       
       {/* Only render dynamic components after mount and auth check */}
-      {componentsMounted && authChecked && (
+      {componentsMounted && !isLoading && (
         <>
           <CookieBanner />
-          {logger.debug('[DynamicComponents] About to render CrispChat with isAuthenticated:', isAuthenticated)}
-          <CrispChat isAuthenticated={isAuthenticated} />
+          {logger.debug('[DynamicComponents] About to render CrispChat with isAuthenticated:', !!user)}
+          <CrispChat isAuthenticated={!!user} user={user} />
         </>
       )}
     </>

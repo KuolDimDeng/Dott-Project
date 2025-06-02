@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 import { saveLanguagePreference, getLanguagePreference } from '@/utils/userPreferences';
 import { setCacheValue } from '@/utils/appCache';
 import AuthButton from '@/components/AuthButton';
@@ -14,24 +13,24 @@ export default function AppBar() {
   const router = useRouter();
   const { t, i18n } = useTranslation();
   
-  // Initialize language from Cognito on component mount
+  // Initialize language from user preferences on component mount
   useEffect(() => {
-    async function initializeLanguageFromCognito() {
+    async function initializeLanguageFromPreferences() {
       try {
         const savedLanguage = await getLanguagePreference();
         if (savedLanguage && savedLanguage !== i18n.language) {
           const langExists = supportedLanguages.find(lang => lang.code === savedLanguage);
           if (langExists) {
             await i18n.changeLanguage(savedLanguage);
-            console.log('✅ Initialized language from Cognito:', savedLanguage);
+            console.log('✅ Initialized language from user preferences:', savedLanguage);
           }
         }
       } catch (error) {
-        console.error('❌ Error initializing language from Cognito:', error);
+        console.error('❌ Error initializing language from user preferences:', error);
       }
     }
     
-    initializeLanguageFromCognito();
+    initializeLanguageFromPreferences();
   }, [i18n]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -183,16 +182,16 @@ export default function AppBar() {
       await i18n.changeLanguage(language.code);
       setIsMenuOpen(false);
       
-      // Save language preference to Cognito attributes
+      // Save language preference to user preferences
       try {
         await saveLanguagePreference(language.code);
         
         // Also store in AppCache for faster access
         setCacheValue('user_pref_custom:language', language.code);
         
-        console.log('✅ Language preference saved to Cognito:', language.code);
+        console.log('✅ Language preference saved to user preferences:', language.code);
       } catch (error) {
-        console.error('❌ Failed to save language preference to Cognito:', error);
+        console.error('❌ Failed to save language preference to user preferences:', error);
         // Continue with language change even if saving fails
       }
       

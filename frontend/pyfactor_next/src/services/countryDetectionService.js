@@ -7,7 +7,6 @@
 
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { saveUserPreference, getUserPreference } from '@/utils/userPreferences';
-import CognitoAttributes from '@/utils/CognitoAttributes';
 
 // Cache TTL for country detection (24 hours)
 // Developed countries that should NEVER get discount
@@ -270,7 +269,7 @@ export async function initializeCountryDetection() {
     setCacheValue('user_language', language);
     setCacheValue('user_is_developing_country', isDeveloping);
     
-    // Save preferences to Cognito
+    // Save preferences to user storage
     try {
       await saveUserPreference('custom:country', country);
       await saveUserPreference('custom:detected_language', language);

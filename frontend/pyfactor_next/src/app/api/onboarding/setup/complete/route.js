@@ -46,13 +46,29 @@ export async function POST(request) {
       
       console.log('[SetupComplete] Updating onboarding status for user:', userEmail);
       
+      // Get Auth0 access token for Django authentication
+      let authHeaders = {
+        'Content-Type': 'application/json',
+        'X-User-Email': userEmail, // Pass user email for identification
+      };
+
+      // Try to get access token from Auth0 session
+      try {
+        const { getAccessToken } = await import('@auth0/nextjs-auth0');
+        const accessToken = await getAccessToken();
+        if (accessToken) {
+          authHeaders['Authorization'] = `Bearer ${accessToken}`;
+          console.log('[SetupComplete] Using Auth0 access token for Django authentication');
+        }
+      } catch (tokenError) {
+        console.log('[SetupComplete] Could not get Auth0 access token, using session cookie method:', tokenError.message);
+        // Fallback: include session cookie for Django session authentication
+        authHeaders['Cookie'] = `appSession=${sessionCookie.value}`;
+      }
+      
       const backendResponse = await fetch(updateUrl, {
         method: 'PATCH',  // Use PATCH method for updating user profile
-        headers: {
-          'Content-Type': 'application/json',
-          'X-User-Email': userEmail, // Pass user email for identification
-          'Authorization': `Bearer ${sessionCookie.value}`, // Pass session token
-        },
+        headers: authHeaders,
         body: JSON.stringify({
           onboarding_status: 'complete',  // Use Django field names
           needs_onboarding: false,
@@ -71,6 +87,32 @@ export async function POST(request) {
           statusText: backendResponse.statusText,
           error: errorText
         });
+        
+        // Try alternative endpoint if main one fails
+        if (backendResponse.status === 404) {
+          console.log('[SetupComplete] Trying alternative Django endpoint...');
+          try {
+            const altResponse = await fetch(`${backendUrl}/api/auth/update-user-profile/`, {
+              method: 'POST',
+              headers: authHeaders,
+              body: JSON.stringify({
+                email: userEmail,
+                onboarding_completed: true,
+                needs_onboarding: false,
+                current_step: 'completed'
+              })
+            });
+            
+            if (altResponse.ok) {
+              console.log('[SetupComplete] Alternative endpoint successful');
+            } else {
+              console.warn('[SetupComplete] Alternative endpoint also failed:', altResponse.status);
+            }
+          } catch (altError) {
+            console.error('[SetupComplete] Alternative endpoint error:', altError);
+          }
+        }
+        
         // Continue anyway - don't fail the frontend flow if backend update fails
       }
     } catch (backendError) {

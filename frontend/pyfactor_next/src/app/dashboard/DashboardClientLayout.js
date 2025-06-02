@@ -26,6 +26,15 @@ const ReactErrorDebugger = dynamic(
   { ssr: false, loading: () => null }
 );
 
+// Add DynamicComponents which includes CrispChat
+const DynamicComponents = dynamic(
+  () => import('@/components/DynamicComponents'),
+  {
+    ssr: false,
+    loading: () => null
+  }
+);
+
 // Simplified import for FixInputEvent
 const FixInputEvent = dynamic(
   () => import('./fixInputEvent').catch(err => {
@@ -149,8 +158,10 @@ export default function ClientLayout({ children }) {
       <SessionProvider>
         <ThemeProvider>
           <NotificationProvider>
-            <ClientDataSync />
-            {children}
+            <DynamicComponents>
+              <ClientDataSync />
+              {children}
+            </DynamicComponents>
           </NotificationProvider>
         </ThemeProvider>
       </SessionProvider>

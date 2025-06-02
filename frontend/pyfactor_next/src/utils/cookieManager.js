@@ -8,7 +8,41 @@
 
 import { logger } from '@/utils/logger';
 import { parseJwt } from '@/lib/authUtils';
-import CognitoAttributes from '@/utils/CognitoAttributes';
+
+// Auth0-compatible attribute helpers
+const Auth0Attributes = {
+  getValue: (attributes, key, defaultValue = null) => {
+    if (!attributes || typeof attributes !== 'object') return defaultValue;
+    return attributes[key] || defaultValue;
+  },
+  
+  getTenantId: (attributes) => {
+    if (!attributes) return null;
+    return attributes.tenant_id || attributes.business_id || attributes.tenantId || null;
+  },
+  
+  getOnboardingStatus: (attributes) => {
+    if (!attributes) return 'PENDING';
+    return attributes.onboarding || attributes.onboarding_status || 'PENDING';
+  },
+  
+  isSetupDone: (attributes) => {
+    if (!attributes) return false;
+    const setupDone = attributes.setup_done || attributes.setupDone || 'false';
+    return setupDone === 'true' || setupDone === true;
+  },
+  
+  getSubscriptionPlan: (attributes) => {
+    if (!attributes) return null;
+    return attributes.subscription_plan || attributes.subscriptionPlan || null;
+  },
+  
+  isPaymentVerified: (attributes) => {
+    if (!attributes) return false;
+    const paymentVerified = attributes.payment_verified || attributes.paymentVerified || 'false';
+    return paymentVerified === 'true' || paymentVerified === true;
+  }
+};
 
 /**
  * Sets authentication data using Auth0
@@ -68,12 +102,12 @@ export const setOnboardingAttributes = async (attributes) => {
     
     // Extract onboarding status from attributes
     const onboardingStatus = 
-      CognitoAttributes.getValue(attributes, CognitoAttributes.ONBOARDING) || 
+      Auth0Attributes.getValue(attributes, 'onboarding') || 
       attributes.onboarding || 
       'PENDING';
       
     // Extract setup completion status
-    const setupDone = CognitoAttributes.getValue(attributes, CognitoAttributes.SETUP_DONE, 'false').toLowerCase() === 'true';
+    const setupDone = Auth0Attributes.getValue(attributes, 'setup_done', 'false').toLowerCase() === 'true';
     
     // Store in localStorage for Auth0 compatibility
     if (typeof window !== 'undefined') {
@@ -81,7 +115,7 @@ export const setOnboardingAttributes = async (attributes) => {
       localStorage.setItem('setup_done', setupDone ? 'true' : 'false');
       
       // Store tenant ID if available
-      const tenantId = CognitoAttributes.getTenantId(attributes);
+      const tenantId = Auth0Attributes.getTenantId(attributes);
       if (tenantId) {
         localStorage.setItem('tenant_id', tenantId);
         localStorage.setItem('business_id', tenantId); // Legacy support
@@ -171,20 +205,20 @@ export const setTokenExpiredFlag = async () => {
 };
 
 /**
- * Enhanced onboarding step determination with proper Cognito attribute usage
+ * Enhanced onboarding step determination with Auth0 compatibility
  * 
- * @param {Object} userAttributes - User attributes from Cognito
+ * @param {Object} userAttributes - User attributes from Auth0
  * @returns {String} The next onboarding step or 'dashboard' if complete
  */
 export function determineOnboardingStep(userAttributes) {
   console.log('🔍 [cookieManager] determineOnboardingStep called with attributes:', {
     hasAttributes: !!userAttributes,
     attributeKeys: userAttributes ? Object.keys(userAttributes) : [],
-    onboarding: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.ONBOARDING) : 'undefined',
-    setupDone: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.SETUP_DONE) : 'undefined',
-    tenantId: userAttributes ? CognitoAttributes.getTenantId(userAttributes) : 'undefined',
-    subPlan: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.SUBSCRIPTION_PLAN) : 'undefined',
-    payVerified: userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.PAYMENT_VERIFIED) : 'undefined'
+    onboarding: userAttributes ? Auth0Attributes.getValue(userAttributes, 'onboarding') : 'undefined',
+    setupDone: userAttributes ? Auth0Attributes.getValue(userAttributes, 'setup_done') : 'undefined',
+    tenantId: userAttributes ? Auth0Attributes.getTenantId(userAttributes) : 'undefined',
+    subPlan: userAttributes ? Auth0Attributes.getValue(userAttributes, 'subscription_plan') : 'undefined',
+    payVerified: userAttributes ? Auth0Attributes.getValue(userAttributes, 'payment_verified') : 'undefined'
   });
 
   // Validate input
@@ -193,12 +227,12 @@ export function determineOnboardingStep(userAttributes) {
     return 'business-info';
   }
 
-  // Get all relevant attributes using CognitoAttributes utility
-  const onboardingStatus = CognitoAttributes.getOnboardingStatus(userAttributes);
-  const isSetupDone = CognitoAttributes.isSetupDone(userAttributes);
-  const tenantId = CognitoAttributes.getTenantId(userAttributes);
-  const subscriptionPlan = CognitoAttributes.getSubscriptionPlan(userAttributes);
-  const isPaymentVerified = CognitoAttributes.isPaymentVerified(userAttributes);
+  // Get all relevant attributes using Auth0Attributes utility
+  const onboardingStatus = Auth0Attributes.getOnboardingStatus(userAttributes);
+  const isSetupDone = Auth0Attributes.isSetupDone(userAttributes);
+  const tenantId = Auth0Attributes.getTenantId(userAttributes);
+  const subscriptionPlan = Auth0Attributes.getSubscriptionPlan(userAttributes);
+  const isPaymentVerified = Auth0Attributes.isPaymentVerified(userAttributes);
 
   console.log('📊 [cookieManager] Extracted onboarding data:', {
     onboardingStatus: onboardingStatus || 'null',

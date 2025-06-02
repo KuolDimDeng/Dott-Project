@@ -6,7 +6,7 @@ import { logger } from '@/utils/logger';
 import CrispErrorBoundary from './CrispErrorBoundary';
 import crispConfig from '@/config/crisp.config';
 
-function CrispChat({ isAuthenticated }) {
+function CrispChat({ isAuthenticated, user }) {
   const [mounted, setMounted] = useState(false);
 
   // Log immediately when component is created
@@ -24,22 +24,8 @@ function CrispChat({ isAuthenticated }) {
           return;
         }
 
-        // Get user data from Auth0 session
-        let userData;
-        try {
-          const response = await fetch('/api/auth/session');
-          if (!response.ok) {
-            logger.info('User not authenticated for Crisp chat, continuing without user data');
-            window.$crisp.push(['do', 'chat:show']);
-            return;
-          }
-          const sessionData = await response.json();
-          userData = sessionData.user;
-        } catch (error) {
-          logger.warn('Failed to get session data for Crisp chat:', error);
-          window.$crisp.push(['do', 'chat:show']);
-          return;
-        }
+        // Use Auth0 user data passed as prop
+        const userData = user;
 
         if (!userData) {
           logger.warn('User authenticated but data not available');
