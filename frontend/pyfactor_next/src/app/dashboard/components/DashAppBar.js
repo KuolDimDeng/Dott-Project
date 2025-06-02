@@ -35,6 +35,7 @@ import clsx from 'clsx';
 import { useToast } from '@/hooks/useToast';
 import { useSession } from '@/hooks/useSession';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth0Data } from '@/hooks/useAuth0Data';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import CognitoAttributes from '@/utils/CognitoAttributes';
@@ -78,9 +79,19 @@ const DashAppBar = ({
   // Reduced logging for production - only log once per mount
   const hasLoggedInit = useRef(false);
   if (!hasLoggedInit.current) {
-    logger.debug('[DashAppBar] Component initialized - Using ONLY Cognito and AppCache for data sources (NO GRAPHQL)');
+    logger.debug('[DashAppBar] Component initialized - Using Auth0 session data for user info');
     hasLoggedInit.current = true;
   }
+  
+  // Use Auth0 data hook to get user information
+  const { 
+    user: auth0User, 
+    isLoading: auth0Loading, 
+    error: auth0Error,
+    getUserInitials: getAuth0Initials,
+    getFullName: getAuth0FullName,
+    getBusinessName: getAuth0BusinessName
+  } = useAuth0Data();
   
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
@@ -1024,6 +1035,30 @@ const DashAppBar = ({
   // Declare the subscription type for display purposes
   const subscriptionTypeForDisplay = effectiveSubscriptionType || 'free';
 
+  // Update user initials when Auth0 user data is available
+  useEffect(() => {
+    if (auth0User && !auth0Loading) {
+      const initials = getAuth0Initials(auth0User);
+      logger.debug('[DashAppBar] Setting user initials from Auth0:', { 
+        initials, 
+        given_name: auth0User.given_name, 
+        family_name: auth0User.family_name 
+      });
+      setUserInitials(initials);
+    }
+  }, [auth0User, auth0Loading, getAuth0Initials]);
+
+  // Update business name from Auth0 business info cache
+  useEffect(() => {
+    if (!auth0Loading) {
+      const auth0BusinessName = getAuth0BusinessName();
+      if (auth0BusinessName && auth0BusinessName !== businessName) {
+        logger.debug('[DashAppBar] Setting business name from Auth0 cache:', auth0BusinessName);
+        setBusinessName(auth0BusinessName);
+      }
+    }
+  }, [auth0Loading, getAuth0BusinessName, businessName]);
+
   return (
     <>
       <header 
@@ -1054,7 +1089,7 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || effectiveBusinessName || userAttributes?.['custom:businessname'] || userData?.businessName || ''}</span>
+                  <span className="font-semibold">{businessName || getAuth0BusinessName() || ''}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -1070,7 +1105,7 @@ const DashAppBar = ({
                 >
                   {/* Display business name on mobile inside the subscription button */}
                   <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {effectiveBusinessName ? `${effectiveBusinessName}:` : ''}
+                    {(businessName || getAuth0BusinessName()) ? `${businessName || getAuth0BusinessName()}:` : ''}
                   </span>
                   <span className="whitespace-nowrap text-xs inline-block">
                     {displayLabel}
@@ -1182,7 +1217,7 @@ const DashAppBar = ({
                 className="flex items-center justify-center text-white hover:bg-white/10 p-0.5 rounded-full"
               >
                 <div className="w-8 h-8 rounded-full bg-primary-main text-white flex items-center justify-center text-sm font-medium border-2 border-white">
-                  {userInitials || (userAttributes && CognitoAttributes.getUserInitials(userAttributes)) || '?'}
+                  {userInitials || '?'}
                 </div>
               </button>
             </div>
@@ -1207,27 +1242,22 @@ const DashAppBar = ({
               <div className="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                 <div className="flex items-center mb-2">
                   <div className="w-10 h-10 rounded-full bg-primary-main text-white border-2 border-white flex items-center justify-center text-base font-medium mr-3">
-                    {userInitials || (userAttributes && CognitoAttributes.getUserInitials(userAttributes)) || '?'}
+                    {userInitials || '?'}
                   </div>
                   <div>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">
-                        {userAttributes ? 
-                          (CognitoAttributes.getValue(userAttributes, CognitoAttributes.GIVEN_NAME) && CognitoAttributes.getValue(userAttributes, CognitoAttributes.FAMILY_NAME) ?
-                            `${CognitoAttributes.getValue(userAttributes, CognitoAttributes.GIVEN_NAME)} ${CognitoAttributes.getValue(userAttributes, CognitoAttributes.FAMILY_NAME)}` :
-                            userData?.name || (userData?.firstName && userData?.lastName ? 
-                              `${userData.firstName} ${userData.lastName}` : userData?.firstName || userData?.email?.split('@')[0] || 'Guest')) :
-                          'Guest'}
+                        {auth0User ? getAuth0FullName(auth0User) : 'Guest'}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {(userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.EMAIL) : '') || userData?.email || ''}
+                        {auth0User?.email || ''}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
                   <span className="font-semibold">Business: </span>
-                  <span>{(userAttributes ? CognitoAttributes.getValue(userAttributes, CognitoAttributes.BUSINESS_NAME) : '') || userData?.businessName || businessName || effectiveBusinessName || ''}</span>
+                  <span>{businessName || getAuth0BusinessName() || ''}</span>
                 </div>
               </div>
 
