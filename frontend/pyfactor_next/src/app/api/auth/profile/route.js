@@ -113,12 +113,18 @@ export async function GET(request) {
           const completeProfile = {
             ...user, // Auth0 user data (email, name, picture, sub)
             ...backendUserData, // Backend data (tenantId, etc.)
-            // Prioritize session data for onboarding status if available
+            // **CRITICAL FIX: Prioritize session data for onboarding status if available**
             ...(sessionOnboardingData.currentStep && {
               currentStep: sessionOnboardingData.currentStep,
               needsOnboarding: sessionOnboardingData.needsOnboarding !== undefined ? sessionOnboardingData.needsOnboarding : backendUserData.needsOnboarding,
               onboardingCompleted: sessionOnboardingData.onboardingCompleted !== undefined ? sessionOnboardingData.onboardingCompleted : backendUserData.onboardingCompleted,
               businessInfoCompleted: sessionOnboardingData.businessInfoCompleted !== undefined ? sessionOnboardingData.businessInfoCompleted : backendUserData.businessInfoCompleted
+            }),
+            // **ADDITIONAL FIX: Always check session for latest onboarding data even if currentStep is not set**
+            ...(sessionOnboardingData.needsOnboarding !== undefined && {
+              needsOnboarding: sessionOnboardingData.needsOnboarding,
+              onboardingCompleted: sessionOnboardingData.onboardingCompleted,
+              currentStep: sessionOnboardingData.currentStep || backendUserData.currentStep
             }),
             source: 'merged' // Indicate this is merged data
           };
@@ -126,6 +132,7 @@ export async function GET(request) {
           console.log('[Auth Profile] Final merged profile:', {
             currentStep: completeProfile.currentStep,
             needsOnboarding: completeProfile.needsOnboarding,
+            onboardingCompleted: completeProfile.onboardingCompleted,
             businessInfoCompleted: completeProfile.businessInfoCompleted,
             source: completeProfile.source
           });
@@ -153,15 +160,26 @@ export async function GET(request) {
     if (sessionCookie) {
       try {
         const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-        if (sessionData.user && sessionData.user.currentStep) {
-          basicProfile.currentStep = sessionData.user.currentStep;
-          basicProfile.needsOnboarding = sessionData.user.needsOnboarding !== undefined ? sessionData.user.needsOnboarding : true;
-          basicProfile.onboardingCompleted = sessionData.user.onboardingCompleted !== undefined ? sessionData.user.onboardingCompleted : false;
-          basicProfile.businessInfoCompleted = sessionData.user.businessInfoCompleted !== undefined ? sessionData.user.businessInfoCompleted : false;
+        if (sessionData.user) {
+          // **CRITICAL FIX: Always prioritize session onboarding data**
+          if (sessionData.user.needsOnboarding !== undefined) {
+            basicProfile.needsOnboarding = sessionData.user.needsOnboarding;
+          }
+          if (sessionData.user.onboardingCompleted !== undefined) {
+            basicProfile.onboardingCompleted = sessionData.user.onboardingCompleted;
+          }
+          if (sessionData.user.currentStep !== undefined) {
+            basicProfile.currentStep = sessionData.user.currentStep;
+          }
+          if (sessionData.user.businessInfoCompleted !== undefined) {
+            basicProfile.businessInfoCompleted = sessionData.user.businessInfoCompleted;
+          }
+          
           basicProfile.source = 'auth0-with-session';
           console.log('[Auth Profile] Updated basic profile with session data:', {
             currentStep: basicProfile.currentStep,
-            needsOnboarding: basicProfile.needsOnboarding
+            needsOnboarding: basicProfile.needsOnboarding,
+            onboardingCompleted: basicProfile.onboardingCompleted
           });
         }
       } catch (parseError) {

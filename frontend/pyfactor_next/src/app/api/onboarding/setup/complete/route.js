@@ -17,8 +17,9 @@ export async function POST(request) {
 
     // Validate session has user data
     let userEmail = null;
+    let sessionData = null;
     try {
-      const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
       if (!sessionData.user || !sessionData.user.email) {
         return NextResponse.json(
           { error: 'Invalid session - no user data' },
@@ -120,19 +121,60 @@ export async function POST(request) {
       // Continue anyway - don't fail the frontend flow if backend update fails
     }
 
-    // Return success response
-    const response = {
-      success: true,
-      message: 'Setup completed successfully',
-      completedAt: completedAt || new Date().toISOString(),
-      background: background || false,
-      source: source || 'manual',
-      onboardingCompleted: true,
-      needsOnboarding: false
-    };
+    // **CRITICAL FIX: Update Auth0 session cookie with completed onboarding status**
+    try {
+      // Update the session data object
+      sessionData.user.needsOnboarding = false;
+      sessionData.user.onboardingCompleted = true;
+      sessionData.user.onboardingStatus = 'completed';
+      sessionData.user.currentStep = 'completed';
+      sessionData.user.setupDone = true;
+      sessionData.user.setupCompletedAt = completedAt || new Date().toISOString();
+      
+      // Re-encode the updated session data
+      const updatedSessionValue = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+      
+      // Create response with updated session cookie
+      const response = NextResponse.json({
+        success: true,
+        message: 'Setup completed successfully',
+        completedAt: completedAt || new Date().toISOString(),
+        background: background || false,
+        source: source || 'manual',
+        onboardingCompleted: true,
+        needsOnboarding: false
+      });
 
-    console.log('[SetupComplete] Success response:', response);
-    return NextResponse.json(response);
+      // Set the updated session cookie
+      response.cookies.set('appSession', updatedSessionValue, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60 // 24 hours
+      });
+
+      console.log('[SetupComplete] Success response with updated session cookie');
+      return response;
+
+    } catch (sessionUpdateError) {
+      console.error('[SetupComplete] Error updating session cookie:', sessionUpdateError);
+      
+      // Return success response without updated cookie as fallback
+      const response = {
+        success: true,
+        message: 'Setup completed successfully (session update failed)',
+        completedAt: completedAt || new Date().toISOString(),
+        background: background || false,
+        source: source || 'manual',
+        onboardingCompleted: true,
+        needsOnboarding: false,
+        sessionUpdateFailed: true
+      };
+
+      console.log('[SetupComplete] Fallback success response:', response);
+      return NextResponse.json(response);
+    }
 
   } catch (error) {
     console.error('[SetupComplete] Error completing setup:', error);
