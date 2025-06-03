@@ -22,7 +22,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', '')
 AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', '')
 AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')  # Alias for cognito client
+AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')  # AWS region for services
 
 # Stripe Configuration
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'sk_test_dummy_key_for_development')

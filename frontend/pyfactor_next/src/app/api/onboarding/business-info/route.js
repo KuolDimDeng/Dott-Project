@@ -243,8 +243,11 @@ export async function POST(request) {
                 console.log('[api/onboarding/business-info] Parsed session data successfully, user exists:', !!sessionData.user);
               } catch (parseError) {
                 console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
+                sessionData = {}; // Reset to empty object on parse error
               }
             }
+            
+            console.log('[api/onboarding/business-info] Current session user data before update:', {\n              hasUser: !!sessionData.user,\n              currentStep: sessionData.user?.currentStep,\n              businessInfoCompleted: sessionData.user?.businessInfoCompleted\n            });
             
             // CRITICAL FIX: Update session to move to subscription step
             // Ensure we have a proper user object structure
@@ -276,33 +279,14 @@ export async function POST(request) {
             // Update the session cookie with proper settings
             finalResponse.cookies.set('appSession', updatedSessionCookie, {
               path: '/',
-              httpOnly: false,
+              httpOnly: true,
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'lax',
               maxAge: 7 * 24 * 60 * 60 // 7 days
             });
             
-            console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {
-              currentStep: updatedSessionData.user.currentStep,
-              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
-              needsOnboarding: updatedSessionData.user.needsOnboarding,
-              cookieSet: true
-            });
-            return finalResponse;
+            console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {\n              currentStep: updatedSessionData.user.currentStep,\n              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,\n              needsOnboarding: updatedSessionData.user.needsOnboarding,\n              cookieSet: true,\n              cookieSize: updatedSessionCookie.length\n            });\n            return finalResponse;\n            \n          } catch (sessionError) {\n            console.error('[api/onboarding/business-info] ❌ CRITICAL ERROR updating session:', {\n              error: sessionError.message,\n              stack: sessionError.stack,\n              name: sessionError.name\n            });\n            // Return success but with warning\n            return createSafeResponse({\n              success: true,\n              message: 'Business information saved, but session update failed',\n              next_step: 'subscription',\n              redirect_url: '/onboarding/subscription',\n              tenant_id: backendData.tenant_id || null,\n              warning: 'Session update failed - you may need to refresh',\n              sessionError: sessionError.message\n            });\n          }
             
-          } catch (sessionError) {
-            console.error('[api/onboarding/business-info] Error updating session:', sessionError);
-            // Return success but with warning
-            return createSafeResponse({
-              success: true,
-              message: 'Business information saved, but session update failed',
-              next_step: 'subscription',
-              redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null,
-              warning: 'Session update failed - you may need to refresh'
-            });
-          }
-          
         } catch (jsonError) {
           console.log('[api/onboarding/business-info] Django backend responded OK but no JSON data');
           backendSuccess = true; // Still consider it successful
@@ -350,7 +334,7 @@ export async function POST(request) {
             
             response.cookies.set('appSession', updatedSessionCookie, {
               path: '/',
-              httpOnly: false,
+              httpOnly: true,
               secure: process.env.NODE_ENV === 'production',
               sameSite: 'lax',
               maxAge: 7 * 24 * 60 * 60 // 7 days
@@ -458,8 +442,11 @@ export async function POST(request) {
             console.log('[api/onboarding/business-info] Fallback - Parsed session data successfully, user exists:', !!sessionData.user);
           } catch (parseError) {
             console.warn('[api/onboarding/business-info] Error parsing session for fallback update:', parseError);
+            sessionData = {}; // Reset to empty object on parse error
           }
         }
+        
+        console.log('[api/onboarding/business-info] Fallback - Current session user data before update:', {\n          hasUser: !!sessionData.user,\n          currentStep: sessionData.user?.currentStep,\n          businessInfoCompleted: sessionData.user?.businessInfoCompleted\n        });
         
         // CRITICAL FIX: Update session to move to subscription step even in fallback
         // Ensure we have a proper user object structure
@@ -505,7 +492,7 @@ export async function POST(request) {
         // Update session cookie with proper onboarding step
         response.cookies.set('appSession', updatedSessionCookie, {
           path: '/',
-          httpOnly: false,
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 7 * 24 * 60 * 60 // 7 days
@@ -514,7 +501,9 @@ export async function POST(request) {
         console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (fallback case):', {
           currentStep: updatedSessionData.user.currentStep,
           businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
-          cookieSet: true
+          cookieSet: true,
+          fallbackMode: true,
+          cookieSize: updatedSessionCookie.length
         });
         return response;
       } catch (fallbackError) {
