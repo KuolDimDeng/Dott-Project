@@ -64,6 +64,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/favicon.ico',
             '/api/hr/health/',
             '/api/hr/health',  # Add HR health endpoint as public
+            '/api/diagnostic/',  # Temporary diagnostic endpoint for debugging
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
