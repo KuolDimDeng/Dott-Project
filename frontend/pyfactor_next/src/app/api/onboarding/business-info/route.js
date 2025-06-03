@@ -1,4 +1,5 @@
 // Server component - no 'use client' directive needed for API routes
+// DEPLOYMENT TIMESTAMP: 2025-06-03 19:27 - Critical needsOnboarding fix deployed
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
