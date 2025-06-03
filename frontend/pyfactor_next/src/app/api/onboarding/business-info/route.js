@@ -269,7 +269,30 @@ export async function POST(request) {
               }
             };
             
-            const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            
+            // Validate session cookie size (browsers typically limit to 4KB)
+            if (updatedSessionCookie.length > 4000) {
+              console.warn('[api/onboarding/business-info] Session cookie is very large:', updatedSessionCookie.length, 'bytes');
+              // Trim some non-essential data if needed
+              const trimmedSessionData = {
+                ...updatedSessionData,
+                user: {
+                  email: updatedSessionData.user.email,
+                  currentStep: 'subscription',
+                  current_onboarding_step: 'subscription',
+                  needsOnboarding: true,
+                  onboardingCompleted: false,
+                  businessInfoCompleted: true,
+                  lastUpdated: new Date().toISOString()
+                }
+              };
+              const trimmedCookie = Buffer.from(JSON.stringify(trimmedSessionData)).toString('base64');
+              console.log('[api/onboarding/business-info] Trimmed session cookie size:', trimmedCookie.length, 'bytes');
+              if (trimmedCookie.length < 4000) {
+                updatedSessionCookie = trimmedCookie;
+              }
+            }
             
             const finalResponse = createSafeResponse({
               success: true,
@@ -281,20 +304,25 @@ export async function POST(request) {
             });
             
             // Update the session cookie with proper settings
-            finalResponse.cookies.set('appSession', updatedSessionCookie, {
+            const cookieSettings = {
               path: '/',
               httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
+              secure: true, // Always use secure in production
               sameSite: 'lax',
-              maxAge: 7 * 24 * 60 * 60 // 7 days
-            });
+              maxAge: 7 * 24 * 60 * 60, // 7 days
+              domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+            };
+            
+            finalResponse.cookies.set('appSession', updatedSessionCookie, cookieSettings);
             
             console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {
               currentStep: updatedSessionData.user.currentStep,
               businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
               needsOnboarding: updatedSessionData.user.needsOnboarding,
               cookieSet: true,
-              cookieSize: updatedSessionCookie.length
+              cookieSize: updatedSessionCookie.length,
+              cookieSettings: cookieSettings,
+              nodeEnv: process.env.NODE_ENV
             });
             return finalResponse;
             
@@ -350,7 +378,30 @@ export async function POST(request) {
               }
             };
             
-            const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            
+            // Validate session cookie size (browsers typically limit to 4KB)
+            if (updatedSessionCookie.length > 4000) {
+              console.warn('[api/onboarding/business-info] Session cookie is very large:', updatedSessionCookie.length, 'bytes');
+              // Trim some non-essential data if needed
+              const trimmedSessionData = {
+                ...updatedSessionData,
+                user: {
+                  email: updatedSessionData.user.email,
+                  currentStep: 'subscription',
+                  current_onboarding_step: 'subscription',
+                  needsOnboarding: true,
+                  onboardingCompleted: false,
+                  businessInfoCompleted: true,
+                  lastUpdated: new Date().toISOString()
+                }
+              };
+              const trimmedCookie = Buffer.from(JSON.stringify(trimmedSessionData)).toString('base64');
+              console.log('[api/onboarding/business-info] Trimmed session cookie size:', trimmedCookie.length, 'bytes');
+              if (trimmedCookie.length < 4000) {
+                updatedSessionCookie = trimmedCookie;
+              }
+            }
             
             const response = createSafeResponse({
               success: true,
@@ -363,9 +414,10 @@ export async function POST(request) {
             response.cookies.set('appSession', updatedSessionCookie, {
               path: '/',
               httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
+              secure: true, // Always use secure in production
               sameSite: 'lax',
-              maxAge: 7 * 24 * 60 * 60 // 7 days
+              maxAge: 7 * 24 * 60 * 60, // 7 days
+              domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
             });
             
             console.log('[api/onboarding/business-info] Session updated to subscription step (no JSON case):', {
@@ -496,7 +548,30 @@ export async function POST(request) {
           }
         };
         
-        const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+        let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+        
+        // Validate session cookie size (browsers typically limit to 4KB)
+        if (updatedSessionCookie.length > 4000) {
+          console.warn('[api/onboarding/business-info] Session cookie is very large:', updatedSessionCookie.length, 'bytes');
+          // Trim some non-essential data if needed
+          const trimmedSessionData = {
+            ...updatedSessionData,
+            user: {
+              email: updatedSessionData.user.email,
+              currentStep: 'subscription',
+              current_onboarding_step: 'subscription',
+              needsOnboarding: true,
+              onboardingCompleted: false,
+              businessInfoCompleted: true,
+              lastUpdated: new Date().toISOString()
+            }
+          };
+          const trimmedCookie = Buffer.from(JSON.stringify(trimmedSessionData)).toString('base64');
+          console.log('[api/onboarding/business-info] Trimmed session cookie size:', trimmedCookie.length, 'bytes');
+          if (trimmedCookie.length < 4000) {
+            updatedSessionCookie = trimmedCookie;
+          }
+        }
         
         await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
         await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
@@ -525,9 +600,10 @@ export async function POST(request) {
         response.cookies.set('appSession', updatedSessionCookie, {
           path: '/',
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
+          secure: true, // Always use secure in production
           sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60 // 7 days
+          maxAge: 7 * 24 * 60 * 60, // 7 days
+          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
         });
         
         console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (fallback case):', {
@@ -535,7 +611,9 @@ export async function POST(request) {
           businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
           cookieSet: true,
           fallbackMode: true,
-          cookieSize: updatedSessionCookie.length
+          cookieSize: updatedSessionCookie.length,
+          nodeEnv: process.env.NODE_ENV,
+          cookieDomain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : 'localhost'
         });
         return response;
       } catch (fallbackError) {
