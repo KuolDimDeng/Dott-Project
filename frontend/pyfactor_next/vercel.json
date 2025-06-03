@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "name": "dottapps-oauth-enhanced",
-  "buildCommand": "pnpm run build",
+  "buildCommand": "pnpm run build:production",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
   "env": {
@@ -19,11 +18,6 @@
   "regions": ["iad1"],
   "github": {
     "silent": true
-  },
-  "functions": {
-    "**/*.js": {
-      "memory": 1024
-    }
   },
   "redirects": [
   ],
