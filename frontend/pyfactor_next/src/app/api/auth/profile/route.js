@@ -100,7 +100,8 @@ export async function GET() {
             tenant_id: backendUser.tenant_id,
             tenantId: backendUser.tenant_id, // Alias for compatibility
             
-            // Onboarding status: Prioritize session data if it exists and looks recent
+            // Onboarding status: ALWAYS prioritize session data if it exists
+            // Session data is more current after form submissions
             needsOnboarding: user.needsOnboarding !== undefined 
               ? user.needsOnboarding 
               : (backendUser.needs_onboarding !== false),
@@ -108,6 +109,9 @@ export async function GET() {
               ? user.onboardingCompleted 
               : (backendUser.onboarding_completed === true),
             currentStep: user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info',
+            businessInfoCompleted: user.businessInfoCompleted !== undefined 
+              ? user.businessInfoCompleted 
+              : false,
             
             // Additional backend fields
             first_name: backendUser.first_name,
@@ -124,7 +128,8 @@ export async function GET() {
             backendNeedsOnboarding: backendUser.needs_onboarding,
             finalNeedsOnboarding: profileData.needsOnboarding,
             sessionBusinessInfoCompleted: user.businessInfoCompleted,
-            finalBusinessInfoCompleted: profileData.businessInfoCompleted
+            finalBusinessInfoCompleted: profileData.businessInfoCompleted,
+            dataSource: 'session data prioritized over backend'
           });
           
           console.log('[Profile API] Merged profile data with backend');
@@ -142,12 +147,26 @@ export async function GET() {
       profileData.onboardingCompleted = true;
     }
     
+    // CRITICAL FIX: Handle edge cases where session data might be inconsistent
+    // If business info is completed but currentStep is still business_info, advance to subscription
+    if (profileData.businessInfoCompleted === true && profileData.currentStep === 'business_info') {
+      console.log('[Profile API] Business info completed but currentStep is business_info, correcting to subscription');
+      profileData.currentStep = 'subscription';
+    }
+    
+    // If we have no currentStep but business info is completed, set to subscription
+    if (!profileData.currentStep && profileData.businessInfoCompleted === true) {
+      console.log('[Profile API] No currentStep but business info completed, setting to subscription');
+      profileData.currentStep = 'subscription';
+    }
+    
     console.log('[Profile API] Final profile data:', {
       email: profileData.email,
       tenantId: profileData.tenantId,
       needsOnboarding: profileData.needsOnboarding,
       onboardingCompleted: profileData.onboardingCompleted,
-      currentStep: profileData.currentStep
+      currentStep: profileData.currentStep,
+      businessInfoCompleted: profileData.businessInfoCompleted
     });
     
     return NextResponse.json(profileData);
