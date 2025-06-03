@@ -35,40 +35,36 @@ export async function POST(request) {
     // Update Django backend onboarding status
     let backendUpdateSuccessful = false;
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
       
-      console.log('[SetupComplete] Updating onboarding status in Django backend');
+      console.log('[SetupComplete] Calling Django onboarding completion endpoint');
       
-      const backendResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-        method: 'PATCH',
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          onboarding_status: 'completed',
-          needs_onboarding: false,
-          onboarding_completed: true,
-          current_onboarding_step: 'completed',
-          setup_completed_at: completedAt
+          completed_at: completedAt
         })
       });
       
       if (backendResponse.ok) {
-        const updatedUser = await backendResponse.json();
-        console.log('[SetupComplete] Successfully updated Django backend:', {
-          user_id: updatedUser.id,
-          onboarding_completed: updatedUser.onboarding_completed,
-          needs_onboarding: updatedUser.needs_onboarding
-        });
+        const result = await backendResponse.json();
+        console.log('[SetupComplete] ✅ Django onboarding completion successful:', result);
         backendUpdateSuccessful = true;
       } else {
         const errorText = await backendResponse.text();
-        console.error('[SetupComplete] Django backend update failed:', errorText);
+        console.error('[SetupComplete] ❌ Django onboarding completion failed:', {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          error: errorText
+        });
       }
     } catch (backendError) {
-      console.error('[SetupComplete] Error updating Django backend:', backendError.message);
+      console.error('[SetupComplete] ❌ Error calling Django onboarding completion:', backendError.message);
     }
     
     // Update Auth0 session cookie (critical for immediate session updates)
