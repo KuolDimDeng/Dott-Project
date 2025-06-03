@@ -1,14 +1,32 @@
 {
   "version": 2,
-  "buildCommand": "pnpm run build:production",
+  "name": "dottapps-oauth-enhanced",
+  "buildCommand": "pnpm run build",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "functions": {
-    "src/app/**/*.js": {
-      "maxDuration": 30
-    }
+  "env": {
+    "ENABLE_EXPERIMENTAL_COREPACK": "1",
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_API_URL": "https://api.dottapps.com",
+    "BACKEND_API_URL": "https://api.dottapps.com",
+    "USE_DATABASE": "true",
+    "MOCK_DATA_DISABLED": "true",
+    "PROD_MODE": "true",
+    "NEXT_PUBLIC_AUTH0_DOMAIN": "auth.dottapps.com",
+    "NEXT_PUBLIC_AUTH0_CLIENT_ID": "GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ",
+    "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/"
   },
   "regions": ["iad1"],
+  "github": {
+    "silent": true
+  },
+  "functions": {
+    "**/*.js": {
+      "memory": 1024
+    }
+  },
+  "redirects": [
+  ],
   "headers": [
     {
       "source": "/api/auth/(.*)",
