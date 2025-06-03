@@ -8,6 +8,9 @@ from django.utils.decorators import method_decorator
 # Import health check view
 from .health_check import health_check, root_health_check, detailed_health_check
 
+# Import diagnostic view
+from custom_auth.api.views.diagnostic_views import DiagnosticView
+
 class UUIDConverter:
     regex = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -29,6 +32,9 @@ urlpatterns = [
     path('health-check/', health_check, name='health_check_alt'),
     path('healthz', health_check, name='health_check_render'),  # Render health check endpoint
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
+    
+    # Temporary diagnostic endpoint
+    path('api/diagnostic/', DiagnosticView.as_view(), name='diagnostic'),
 ]
 
 # Only add other URLs if not in health-check-only mode
