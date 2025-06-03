@@ -237,274 +237,248 @@ export async function POST(request) {
             success: backendData.success
           });
           
-          // Update session cookie with new onboarding status (primary fix)
-          console.log('🚨 [BUSINESS-INFO API] ATTEMPTING SESSION UPDATE - Backend success path');
-          console.log('🚨 [BUSINESS-INFO API] About to get cookies and update session');
-          console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE PROCESS STARTED ===');
-          try {
-            const cookieStore = await cookies();
-            const sessionCookie = cookieStore.get('appSession');
-            let sessionData = {};
-            
-            console.log('[api/onboarding/business-info] Session cookie exists:', !!sessionCookie);
-            console.log('🚨 [BUSINESS-INFO API] Session cookie details:');
-            console.log('🚨 [BUSINESS-INFO API] - Cookie exists:', !!sessionCookie);
-            console.log('🚨 [BUSINESS-INFO API] - Cookie size:', sessionCookie?.value?.length || 0, 'bytes');
-            
-            if (sessionCookie) {
-              try {
-                sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-                console.log('[api/onboarding/business-info] Parsed session data successfully, user exists:', !!sessionData.user);
-                console.log('🚨 [BUSINESS-INFO API] === CURRENT SESSION DATA ===');
-                console.log('🚨 [BUSINESS-INFO API] Current session structure:', {
-                  hasUser: !!sessionData.user,
-                  hasAccessToken: !!sessionData.accessToken,
-                  userEmail: sessionData.user?.email,
-                  currentNeedsOnboarding: sessionData.user?.needsOnboarding,
-                  currentOnboardingCompleted: sessionData.user?.onboardingCompleted,
-                  currentStep: sessionData.user?.currentStep,
-                  currentBusinessInfoCompleted: sessionData.user?.businessInfoCompleted,
-                  lastUpdated: sessionData.user?.lastUpdated
-                });
-              } catch (parseError) {
-                console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
-                console.log('🚨 [BUSINESS-INFO API] ❌ SESSION PARSE ERROR:', parseError.message);
-                sessionData = {}; // Reset to empty object on parse error
-              }
-            }
-            
-            console.log('[api/onboarding/business-info] Current session user data before update:', {
-              hasUser: !!sessionData.user,
-              currentStep: sessionData.user?.currentStep,
-              businessInfoCompleted: sessionData.user?.businessInfoCompleted
-            });
-            
-            // CRITICAL FIX: Update session to move to subscription step
-            // Ensure we have a proper user object structure
-            const currentUser = sessionData.user || {};
-            
-            console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE CONSTRUCTION ===');
-            console.log('🚨 [BUSINESS-INFO API] Current user object:', currentUser);
-            console.log('🚨 [BUSINESS-INFO API] About to set:');
-            console.log('🚨 [BUSINESS-INFO API] - needsOnboarding: false (was:', currentUser.needsOnboarding, ')');
-            console.log('🚨 [BUSINESS-INFO API] - onboardingCompleted: false (was:', currentUser.onboardingCompleted, ')');
-            console.log('🚨 [BUSINESS-INFO API] - currentStep: subscription (was:', currentUser.currentStep, ')');
-            console.log('🚨 [BUSINESS-INFO API] - businessInfoCompleted: true (was:', currentUser.businessInfoCompleted, ')');
-            
-            const updatedSessionData = {
-              ...sessionData,
-              user: {
-                ...currentUser,
-                currentStep: 'subscription',
-                current_onboarding_step: 'subscription',
-                needsOnboarding: false, // User has completed business info step
-                onboardingCompleted: false, // Still need to complete subscription
-                businessInfoCompleted: true,
-                lastUpdated: new Date().toISOString()
-              }
-            };
-            
-            console.log('🚨 [BUSINESS-INFO API] === UPDATED SESSION DATA ===');
-            console.log('🚨 [BUSINESS-INFO API] New session user object:', {
-              email: updatedSessionData.user.email,
-              needsOnboarding: updatedSessionData.user.needsOnboarding,
-              onboardingCompleted: updatedSessionData.user.onboardingCompleted,
-              currentStep: updatedSessionData.user.currentStep,
-              current_onboarding_step: updatedSessionData.user.current_onboarding_step,
-              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
-              lastUpdated: updatedSessionData.user.lastUpdated
-            });
-            
-            let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
-            
-            // Validate session cookie size (browsers typically limit to 4KB)
-            if (updatedSessionCookie.length > 4000) {
-              console.warn('[api/onboarding/business-info] Session cookie is very large:', updatedSessionCookie.length, 'bytes');
-              // Trim some non-essential data if needed
-              const trimmedSessionData = {
-                ...updatedSessionData,
-                user: {
-                  email: updatedSessionData.user.email,
-                  currentStep: 'subscription',
-                  current_onboarding_step: 'subscription',
-                  needsOnboarding: false,
-                  onboardingCompleted: false,
-                  businessInfoCompleted: true,
-                  lastUpdated: new Date().toISOString()
-                }
-              };
-              const trimmedCookie = Buffer.from(JSON.stringify(trimmedSessionData)).toString('base64');
-              console.log('[api/onboarding/business-info] Trimmed session cookie size:', trimmedCookie.length, 'bytes');
-              if (trimmedCookie.length < 4000) {
-                updatedSessionCookie = trimmedCookie;
-              }
-            }
-            
-            const finalResponse = createSafeResponse({
-              success: true,
-              message: 'Business information saved successfully',
-              next_step: 'subscription',
-              current_step: 'subscription',
-              redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null
-            });
-            
-            // Update the session cookie with proper settings
-            const cookieSettings = {
-              path: '/',
-              httpOnly: true,
-              secure: true, // Always use secure in production
-              sameSite: 'lax',
-              maxAge: 7 * 24 * 60 * 60, // 7 days
-              domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-            };
-            
-            finalResponse.cookies.set('appSession', updatedSessionCookie, cookieSettings);
-            
-            console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE COMPLETE ===');
-            console.log('🚨 [BUSINESS-INFO API] ✅ SESSION COOKIE SET SUCCESSFULLY');
-            console.log('🚨 [BUSINESS-INFO API] Cookie settings used:', cookieSettings);
-            console.log('🚨 [BUSINESS-INFO API] Cookie size:', updatedSessionCookie.length, 'bytes');
-            console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
-            console.log('🚨 [BUSINESS-INFO API] Domain setting:', cookieSettings.domain);
-            
-            console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {
-              currentStep: updatedSessionData.user.currentStep,
-              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
-              needsOnboarding: updatedSessionData.user.needsOnboarding,
-              cookieSet: true,
-              cookieSize: updatedSessionCookie.length,
-              cookieSettings: cookieSettings,
-              nodeEnv: process.env.NODE_ENV
-            });
-            
-            console.log('🚨 [BUSINESS-INFO API] === FINAL RESPONSE ===');
-            console.log('🚨 [BUSINESS-INFO API] Response data being sent:', {
-              success: true,
-              message: 'Business information saved successfully',
-              next_step: 'subscription',
-              current_step: 'subscription',
-              redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null
-            });
-            
-            return finalResponse;
-            
-          } catch (sessionError) {
-            console.error('[api/onboarding/business-info] ❌ CRITICAL ERROR updating session:', {
-              error: sessionError.message,
-              stack: sessionError.stack,
-              name: sessionError.name
-            });
-            // Return success but with warning
-            return createSafeResponse({
-              success: true,
-              message: 'Business information saved, but session update failed',
-              next_step: 'subscription',
-              redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null,
-              warning: 'Session update failed - you may need to refresh',
-              sessionError: sessionError.message
-            });
-          }
-        } catch (jsonError) {
-          console.log('[api/onboarding/business-info] Django backend responded OK but no JSON data');
-          backendSuccess = true; // Still consider it successful
-          backendData = { success: true, message: 'Business info saved successfully' };
+          // CRITICAL FIX: Enhanced session update with maximum debugging
+          console.log('🚨 [BUSINESS-INFO API] === ENHANCED SESSION UPDATE STARTED ===');
+          console.log('🚨 [BUSINESS-INFO API] Time:', new Date().toISOString());
+          console.log('🚨 [BUSINESS-INFO API] NodeJS version:', process.version);
+          console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
           
-          // Still update session for successful submission with proper onboarding step
           try {
             const cookieStore = await cookies();
-            const sessionCookie = cookieStore.get('appSession');
-            let sessionData = {};
+            console.log('🚨 [BUSINESS-INFO API] Step 1: Got cookie store successfully');
             
-            if (sessionCookie) {
-              try {
-                sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-              } catch (parseError) {
-                console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
-              }
+            const sessionCookie = cookieStore.get('appSession');
+            console.log('🚨 [BUSINESS-INFO API] Step 2: Session cookie exists:', !!sessionCookie);
+            console.log('🚨 [BUSINESS-INFO API] Step 2: Session cookie size:', sessionCookie?.value?.length || 0, 'bytes');
+            
+            if (!sessionCookie) {
+              console.log('🚨 [BUSINESS-INFO API] ❌ CRITICAL: No session cookie found - cannot update session');
+              throw new Error('No session cookie found for update');
             }
             
-            // CRITICAL FIX: Update session to move to subscription step
-            // Ensure we have a proper user object structure
+            let sessionData = {};
+            try {
+              sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              console.log('🚨 [BUSINESS-INFO API] Step 3: Session parsed successfully');
+              console.log('🚨 [BUSINESS-INFO API] Step 3: User exists in session:', !!sessionData.user);
+            } catch (parseError) {
+              console.error('🚨 [BUSINESS-INFO API] ❌ Session parse error:', parseError.message);
+              throw new Error(`Session parse failed: ${parseError.message}`);
+            }
+            
+            // SIMPLIFIED SESSION UPDATE - More reliable approach
+            console.log('🚨 [BUSINESS-INFO API] Step 4: Creating updated session data');
             const currentUser = sessionData.user || {};
-            const updatedSessionData = {
-              ...sessionData,
-              user: {
-                ...currentUser,
-                currentStep: 'subscription',
-                current_onboarding_step: 'subscription',
-                needsOnboarding: false,
-                onboardingCompleted: false,
-                businessInfoCompleted: true,
-                lastUpdated: new Date().toISOString()
-              }
+            
+            console.log('🚨 [BUSINESS-INFO API] Step 4: Current user state:', {
+              email: currentUser.email,
+              needsOnboarding: currentUser.needsOnboarding,
+              currentStep: currentUser.currentStep,
+              businessInfoCompleted: currentUser.businessInfoCompleted
+            });
+            
+            // Create the updated user object with explicit values
+            const updatedUser = {
+              ...currentUser,
+              // CRITICAL: Set completion status
+              needsOnboarding: false,
+              onboardingCompleted: false,
+              currentStep: 'subscription',
+              current_onboarding_step: 'subscription',
+              businessInfoCompleted: true,
+              lastUpdated: new Date().toISOString(),
+              // Preserve essential fields
+              email: currentUser.email,
+              sub: currentUser.sub,
+              name: currentUser.name,
+              picture: currentUser.picture
             };
             
-            let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            console.log('🚨 [BUSINESS-INFO API] Step 5: Updated user object:', {
+              email: updatedUser.email,
+              needsOnboarding: updatedUser.needsOnboarding,
+              currentStep: updatedUser.currentStep,
+              businessInfoCompleted: updatedUser.businessInfoCompleted
+            });
             
-            // Validate session cookie size (browsers typically limit to 4KB)
-            if (updatedSessionCookie.length > 4000) {
-              console.warn('[api/onboarding/business-info] Session cookie is very large:', updatedSessionCookie.length, 'bytes');
-              // Trim some non-essential data if needed
-              const trimmedSessionData = {
-                ...updatedSessionData,
-                user: {
-                  email: updatedSessionData.user.email,
-                  currentStep: 'subscription',
-                  current_onboarding_step: 'subscription',
-                  needsOnboarding: false,
-                  onboardingCompleted: false,
-                  businessInfoCompleted: true,
-                  lastUpdated: new Date().toISOString()
-                }
-              };
-              const trimmedCookie = Buffer.from(JSON.stringify(trimmedSessionData)).toString('base64');
-              console.log('[api/onboarding/business-info] Trimmed session cookie size:', trimmedCookie.length, 'bytes');
-              if (trimmedCookie.length < 4000) {
-                updatedSessionCookie = trimmedCookie;
-              }
+            // Create minimal session data (reduce cookie size)
+            const updatedSessionData = {
+              user: updatedUser,
+              accessToken: sessionData.accessToken,
+              idToken: sessionData.idToken,
+              accessTokenExpiresAt: sessionData.accessTokenExpiresAt
+            };
+            
+            console.log('🚨 [BUSINESS-INFO API] Step 6: Creating cookie string');
+            let cookieString;
+            try {
+              cookieString = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+              console.log('🚨 [BUSINESS-INFO API] Step 6: Cookie string created, size:', cookieString.length, 'bytes');
+            } catch (encodeError) {
+              console.error('🚨 [BUSINESS-INFO API] ❌ Cookie encoding error:', encodeError.message);
+              throw new Error(`Cookie encoding failed: ${encodeError.message}`);
             }
             
+            // Validate cookie size and trim if necessary
+            if (cookieString.length > 3900) { // Leave some buffer
+              console.log('🚨 [BUSINESS-INFO API] ⚠️ Cookie too large, creating minimal version');
+              const minimalSessionData = {
+                user: {
+                  email: updatedUser.email,
+                  sub: updatedUser.sub,
+                  needsOnboarding: false,
+                  currentStep: 'subscription',
+                  businessInfoCompleted: true,
+                  lastUpdated: new Date().toISOString()
+                },
+                accessToken: sessionData.accessToken
+              };
+              cookieString = Buffer.from(JSON.stringify(minimalSessionData)).toString('base64');
+              console.log('🚨 [BUSINESS-INFO API] Step 6b: Minimal cookie created, size:', cookieString.length, 'bytes');
+            }
+            
+            console.log('🚨 [BUSINESS-INFO API] Step 7: Creating response');
             const response = createSafeResponse({
               success: true,
               message: 'Business information saved successfully',
               next_step: 'subscription',
               current_step: 'subscription',
-              redirect_url: '/onboarding/subscription'
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData.tenant_id || null,
+              debug: {
+                sessionUpdated: true,
+                cookieSize: cookieString.length,
+                timestamp: new Date().toISOString()
+              }
             });
             
-            response.cookies.set('appSession', updatedSessionCookie, {
+            console.log('�� [BUSINESS-INFO API] Step 8: Setting cookie with production settings');
+            const cookieOptions = {
               path: '/',
               httpOnly: true,
-              secure: true, // Always use secure in production
+              secure: true,
               sameSite: 'lax',
               maxAge: 7 * 24 * 60 * 60, // 7 days
               domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+            };
+            
+            console.log('🚨 [BUSINESS-INFO API] Step 8: Cookie options:', cookieOptions);
+            
+            try {
+              response.cookies.set('appSession', cookieString, cookieOptions);
+              console.log('🚨 [BUSINESS-INFO API] Step 9: ✅ SESSION COOKIE SET SUCCESSFULLY!');
+            } catch (setCookieError) {
+              console.error('🚨 [BUSINESS-INFO API] ❌ Cookie set error:', setCookieError.message);
+              throw new Error(`Failed to set cookie: ${setCookieError.message}`);
+            }
+            
+            console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE COMPLETED SUCCESSFULLY ===');
+            console.log('🚨 [BUSINESS-INFO API] Final verification:', {
+              sessionUpdated: true,
+              newNeedsOnboarding: false,
+              newCurrentStep: 'subscription',
+              businessInfoCompleted: true,
+              cookieSize: cookieString.length,
+              domain: cookieOptions.domain,
+              production: process.env.NODE_ENV === 'production'
             });
             
-            console.log('[api/onboarding/business-info] Session updated to subscription step (no JSON case):', {
-              currentStep: updatedSessionData.user.currentStep,
-              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted
-            });
             return response;
             
-          } catch (sessionError) {
-            console.error('[api/onboarding/business-info] Error updating session after Django success:', sessionError);
-            // Return success but indicate session issue
+          } catch (sessionUpdateError) {
+            console.error('�� [BUSINESS-INFO API] ❌ CRITICAL SESSION UPDATE ERROR:', {
+              message: sessionUpdateError.message,
+              stack: sessionUpdateError.stack,
+              name: sessionUpdateError.name
+            });
+            
+            // Return success but with session update failure warning
             return createSafeResponse({
               success: true,
-              message: 'Business information saved, but session update failed',
+              message: 'Business information saved successfully',
               next_step: 'subscription',
-              warning: 'You may need to refresh the page'
+              current_step: 'subscription',
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData.tenant_id || null,
+              warning: 'Session update failed - you may need to refresh the page',
+              error: sessionUpdateError.message,
+              debug: {
+                sessionUpdateFailed: true,
+                error: sessionUpdateError.message,
+                timestamp: new Date().toISOString()
+              }
             });
           }
+          
+        } catch (jsonError) {
+          console.log('🚨 [BUSINESS-INFO API] Backend responded OK but no JSON data');
+          console.log('[api/onboarding/business-info] Django backend responded OK but no JSON data');
+          backendSuccess = true; // Still consider it successful
+          backendData = { success: true, message: 'Business info saved successfully' };
+          
+          // SIMPLIFIED SESSION UPDATE FOR NO-JSON CASE
+          console.log('�� [BUSINESS-INFO API] === SIMPLIFIED SESSION UPDATE (NO JSON CASE) ===');
+          try {
+            const cookieStore = await cookies();
+            const sessionCookie = cookieStore.get('appSession');
+            
+            if (sessionCookie) {
+              const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              const currentUser = sessionData.user || {};
+              
+              const minimalUser = {
+                email: currentUser.email,
+                sub: currentUser.sub,
+                needsOnboarding: false,
+                currentStep: 'subscription',
+                businessInfoCompleted: true,
+                lastUpdated: new Date().toISOString()
+              };
+              
+              const minimalSession = {
+                user: minimalUser,
+                accessToken: sessionData.accessToken
+              };
+              
+              const cookieString = Buffer.from(JSON.stringify(minimalSession)).toString('base64');
+              
+              const response = createSafeResponse({
+                success: true,
+                message: 'Business information saved successfully',
+                next_step: 'subscription',
+                current_step: 'subscription',
+                redirect_url: '/onboarding/subscription'
+              });
+              
+              response.cookies.set('appSession', cookieString, {
+                path: '/',
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 7 * 24 * 60 * 60,
+                domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+              });
+              
+              console.log('🚨 [BUSINESS-INFO API] ✅ SIMPLIFIED SESSION UPDATE SUCCESSFUL');
+              return response;
+            }
+          } catch (simplifiedError) {
+            console.error('🚨 [BUSINESS-INFO API] ❌ Simplified session update failed:', simplifiedError.message);
+          }
+          
+          // Fallback response
+          return createSafeResponse({
+            success: true,
+            message: 'Business information saved successfully',
+            next_step: 'subscription',
+            current_step: 'subscription',
+            redirect_url: '/onboarding/subscription'
+          });
         }
       } else {
         console.log('🚨 [BUSINESS-INFO API] BACKEND FAILED PATH');
         const errorText = await backendResponse.text().catch(() => 'Unknown error');
-        console.error('🚨 [BUSINESS-INFO API] ❌ BACKEND SAVE FAILED:', {
+        console.error('�� [BUSINESS-INFO API] ❌ BACKEND SAVE FAILED:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
           error: errorText,
