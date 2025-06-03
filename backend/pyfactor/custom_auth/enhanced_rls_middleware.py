@@ -54,11 +54,13 @@ class EnhancedRowLevelSecurityMiddleware:
             '/favicon.ico',
             '/api/hr/health/',
             '/api/hr/health',  # Add HR health endpoint as public
-            # Auth0 user management endpoints (needed for tenant creation/lookup)
+        ]
+        
+        # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
+        self.auth0_tenant_endpoints = [
             '/api/users/me/',
             '/api/auth0/create-user/',
             '/api/user/create-auth0-user/',  # Frontend endpoint
-            '/api/auth0/',  # All Auth0 endpoints
         ]
         
         # Add custom public paths from settings if available
@@ -103,6 +105,10 @@ class EnhancedRowLevelSecurityMiddleware:
                 logger.debug(f"Error clearing tenant context: {e}")
                 
             return self.get_response(request)
+        
+        # Handle Auth0 tenant management endpoints specially
+        if self._is_auth0_tenant_endpoint(request.path):
+            return self._handle_auth0_tenant_endpoint(request, is_async)
         
         # Extract tenant ID from multiple sources with fallbacks
         tenant_id = self._get_tenant_id(request)
@@ -266,4 +272,56 @@ class EnhancedRowLevelSecurityMiddleware:
     @sync_to_async
     def _set_tenant_context_async(self, tenant_id):
         """Set the PostgreSQL RLS tenant context asynchronously"""
-        return self._set_tenant_context_sync(tenant_id) 
+        return self._set_tenant_context_sync(tenant_id)
+
+    def _is_auth0_tenant_endpoint(self, path):
+        """Check if the path is an Auth0 tenant management endpoint"""
+        return any(path.startswith(endpoint) for endpoint in self.auth0_tenant_endpoints)
+
+    def _handle_auth0_tenant_endpoint(self, request, is_async):
+        """
+        Handle Auth0 tenant management endpoints securely.
+        These endpoints require Auth0 authentication but can create/lookup tenant IDs.
+        """
+        from custom_auth.auth0_authentication import Auth0JWTAuthentication
+        
+        # Verify Auth0 authentication first
+        auth = Auth0JWTAuthentication()
+        try:
+            auth_result = auth.authenticate(request)
+            if not auth_result or len(auth_result) != 2:
+                logger.warning(f"Auth0 authentication failed for tenant endpoint: {request.path}")
+                return HttpResponseForbidden("Auth0 authentication required")
+            
+            user, token = auth_result
+            if not user:
+                logger.warning(f"Auth0 authentication failed for tenant endpoint: {request.path}")
+                return HttpResponseForbidden("Auth0 authentication required")
+            
+            # Set the authenticated user on the request
+            request.user = user
+            request.auth = token
+            
+            # For tenant management endpoints, we allow processing without initial tenant ID
+            # but still maintain security through Auth0 authentication
+            logger.info(f"Auth0 tenant endpoint authenticated: {request.path} for user: {user}")
+            
+            # Clear tenant context for safety during tenant operations
+            try:
+                if is_async:
+                    asyncio.create_task(self._set_tenant_context_async(None))
+                else:
+                    self._set_tenant_context_sync(None)
+            except Exception as e:
+                logger.debug(f"Error clearing tenant context: {e}")
+            
+            # Process the request with Auth0 authentication but no tenant context
+            response = self.get_response(request)
+            
+            # Add security headers
+            response['X-Auth0-Verified'] = 'true'
+            return response
+            
+        except Exception as e:
+            logger.error(f"Auth0 authentication error for {request.path}: {e}")
+            return HttpResponseForbidden("Authentication failed") 
