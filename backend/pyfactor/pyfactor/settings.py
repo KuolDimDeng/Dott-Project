@@ -84,7 +84,8 @@ AUTH0_DOMAIN = os.getenv('AUTH0_TENANT_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.c
 AUTH0_ISSUER_DOMAIN = AUTH0_DOMAIN  # Use ACTUAL tenant domain for issuer validation (not custom domain)
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
-AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://api.dottapps.com')
+# FIX: Match the audience that frontend sends in JWT tokens
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
 
 # Always use actual tenant domain for JWKS and issuer validation
 AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
