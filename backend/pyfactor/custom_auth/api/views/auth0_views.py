@@ -35,7 +35,9 @@ class Auth0UserCreateView(APIView):
             user = request.user
             data = request.data
             
-            logger.info(f"Auth0 user creation/lookup for: {user.email}")
+            logger.info(f"🔍 [AUTH0_USER_CREATE] === USER LOOKUP STARTED ===")
+            logger.info(f"🔍 [AUTH0_USER_CREATE] Authenticated User: {user.email} (ID: {user.pk})")
+            logger.info(f"🔍 [AUTH0_USER_CREATE] Request data: {data}")
             
             # Extract data from request
             auth0_sub = data.get('auth0_sub') or getattr(user, 'auth0_sub', None)
@@ -46,15 +48,57 @@ class Auth0UserCreateView(APIView):
             picture = data.get('picture', '')
             tenant_id = data.get('tenant_id', None)
             
-            logger.info(f"Processing user data: email={email}, auth0_sub={auth0_sub}, tenant_id={tenant_id}")
+            logger.info(f"🔍 [AUTH0_USER_CREATE] Processing user data: email={email}, auth0_sub={auth0_sub}, user_id={user.pk}")
             
             with transaction.atomic():
                 # Check if user already has a tenant
                 existing_tenant = None
+                
                 try:
-                    existing_tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    # First try to find by owner_id
+                    logger.info(f"🔍 [AUTH0_USER_CREATE] Looking for tenant with owner_id={user.pk}")
+                    existing_tenant = Tenant.objects.filter(owner_id=user.pk).first()
+                    
                     if existing_tenant:
-                        logger.info(f"🔍 [AUTH0_USER_CREATE] Found existing tenant for user {user.email}: {existing_tenant.id}")
+                        logger.info(f"✅ [AUTH0_USER_CREATE] Found tenant by owner_id: {existing_tenant.id}")
+                    else:
+                        logger.info(f"❌ [AUTH0_USER_CREATE] No tenant found by owner_id")
+                        
+                        # FALLBACK: Look for tenant owned by ANY user with the same email
+                        logger.info(f"🔍 [AUTH0_USER_CREATE] Fallback: Looking for tenant by email {email}")
+                        from django.contrib.auth import get_user_model
+                        User = get_user_model()
+                        
+                        # Find all users with this email
+                        users_with_email = User.objects.filter(email=email)
+                        logger.info(f"🔍 [AUTH0_USER_CREATE] Found {users_with_email.count()} users with email {email}")
+                        
+                        for user_candidate in users_with_email:
+                            logger.info(f"  - User ID: {user_candidate.pk}, Auth0 Sub: {getattr(user_candidate, 'auth0_sub', 'None')}")
+                            
+                            candidate_tenant = Tenant.objects.filter(owner_id=user_candidate.pk).first()
+                            if candidate_tenant:
+                                logger.info(f"✅ [AUTH0_USER_CREATE] Found tenant via email fallback: {candidate_tenant.id}")
+                                existing_tenant = candidate_tenant
+                                
+                                # CRITICAL: Update the tenant ownership to current user
+                                logger.info(f"🔧 [AUTH0_USER_CREATE] Updating tenant owner from {candidate_tenant.owner_id} to {user.pk}")
+                                candidate_tenant.owner_id = user.pk
+                                candidate_tenant.save(update_fields=['owner_id'])
+                                
+                                # Also update the user record to link Auth0 if needed
+                                if not getattr(user, 'auth0_sub', None) and auth0_sub:
+                                    logger.info(f"🔧 [AUTH0_USER_CREATE] Linking Auth0 sub to user: {auth0_sub}")
+                                    user.auth0_sub = auth0_sub
+                                    user.save(update_fields=['auth0_sub'])
+                                
+                                break
+                                
+                        if not existing_tenant:
+                            logger.info(f"❌ [AUTH0_USER_CREATE] No tenant found via email fallback either")
+                    
+                    if existing_tenant:
+                        logger.info(f"✅ [AUTH0_USER_CREATE] Found existing tenant for user {user.email}: {existing_tenant.id}")
                         
                         # Get onboarding progress with detailed debugging
                         progress = OnboardingProgress.objects.filter(user=user).first()
@@ -81,13 +125,28 @@ class Auth0UserCreateView(APIView):
                             logger.info(f"  - needs_onboarding: {needs_onboarding}")
                             logger.info(f"  - onboarding_completed: {onboarding_completed}")
                         else:
-                            logger.warning(f"🚨 [AUTH0_USER_CREATE] No onboarding progress found for user {user.email} - this might be the issue!")
+                            logger.warning(f"🚨 [AUTH0_USER_CREATE] No onboarding progress found for user {user.email} - will create one with 'complete' status")
+                            # Create completed onboarding progress for existing user
+                            OnboardingProgress.objects.create(
+                                user=user,
+                                tenant_id=existing_tenant.id,
+                                onboarding_status='complete',
+                                current_step='complete',
+                                next_step='complete',
+                                setup_completed=True,
+                                completed_steps=['business_info', 'subscription', 'payment', 'setup'],
+                                completed_at=timezone.now()
+                            )
+                            current_step = 'complete'
+                            needs_onboarding = False
+                            onboarding_completed = True
+                            logger.info(f"✅ [AUTH0_USER_CREATE] Created completed onboarding progress")
                         
                         return Response({
                             'success': True,
                             'message': 'Existing user found',
                             'isExistingUser': True,
-                            'user_id': user.id,
+                            'user_id': user.pk,
                             'tenant_id': str(existing_tenant.id),
                             'email': user.email,
                             'needs_onboarding': needs_onboarding,
@@ -95,19 +154,19 @@ class Auth0UserCreateView(APIView):
                             'current_step': current_step
                         })
                 except Exception as e:
-                    logger.warning(f"Error checking existing tenant: {str(e)}")
+                    logger.error(f"❌ [AUTH0_USER_CREATE] Error checking existing tenant: {str(e)}")
                 
                 # Create new tenant if none exists
                 if not existing_tenant:
                     # Use provided tenant_id or generate new one
                     new_tenant_id = tenant_id or str(uuid.uuid4())
                     
-                    logger.info(f"Creating new tenant for user {user.email}: {new_tenant_id}")
+                    logger.info(f"🆕 [AUTH0_USER_CREATE] Creating new tenant for user {user.email}: {new_tenant_id}")
                     
                     tenant = Tenant.objects.create(
                         id=new_tenant_id,
                         name=f"{name}'s Business" if name else f"{email}'s Business",
-                        owner_id=user.id,
+                        owner_id=user.pk,
                         created_at=timezone.now(),
                         updated_at=timezone.now(),
                         is_active=True
@@ -123,13 +182,13 @@ class Auth0UserCreateView(APIView):
                         completed_steps=[]
                     )
                     
-                    logger.info(f"Successfully created tenant {tenant.id} for user {user.email}")
+                    logger.info(f"✅ [AUTH0_USER_CREATE] Successfully created tenant {tenant.id} for user {user.email}")
                     
                     return Response({
                         'success': True,
                         'message': 'New user created successfully',
                         'isExistingUser': False,
-                        'user_id': user.id,
+                        'user_id': user.pk,
                         'tenant_id': str(tenant.id),
                         'email': user.email,
                         'needs_onboarding': True,
@@ -138,7 +197,8 @@ class Auth0UserCreateView(APIView):
                     })
                 
         except Exception as e:
-            logger.error(f"Error in Auth0 user creation: {str(e)}")
+            logger.error(f"❌ [AUTH0_USER_CREATE] Error in Auth0 user creation: {str(e)}")
+            logger.error(f"❌ [AUTH0_USER_CREATE] Traceback: {traceback.format_exc()}")
             
             # Fallback response to prevent blocking user flow
             fallback_tenant_id = tenant_id or str(uuid.uuid4())
@@ -147,7 +207,7 @@ class Auth0UserCreateView(APIView):
                 'success': False,
                 'message': 'Backend error, using fallback',
                 'isExistingUser': False,
-                'user_id': getattr(user, 'id', None),
+                'user_id': getattr(user, 'pk', None),
                 'tenant_id': fallback_tenant_id,
                 'email': getattr(user, 'email', email),
                 'needs_onboarding': True,
