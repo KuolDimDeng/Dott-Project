@@ -28,8 +28,8 @@ export async function GET(request, { params }) {
     if (route === 'logout') {
       console.log('[Auth Route] Processing logout request');
       
-      // **CRITICAL FIX: Use specific signin path for returnTo URL**
-      const returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin`;
+      // **FIXED: Redirect to home page instead of signin**
+      const returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/`;
       
       const logoutUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/v2/logout?` +
         new URLSearchParams({

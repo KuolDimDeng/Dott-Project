@@ -230,12 +230,55 @@ export async function POST(request) {
         console.log('[api/onboarding/subscription] Continuing with cookie storage despite backend failure');
       }
       
+      // **🎯 CRITICAL FIX: Auto-complete onboarding for free plans**
+      if (subscriptionData.selected_plan === 'free') {
+        console.log('[api/onboarding/subscription] Free plan detected - completing onboarding automatically');
+        
+        try {
+          // Call the onboarding complete API to ensure backend and session are updated
+          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+              'X-User-Email': authenticatedUser.email,
+              'X-Request-ID': `onboarding-complete-${Date.now()}`,
+              'X-Source': 'free-plan-auto-complete'
+            },
+            body: JSON.stringify({
+              plan: 'free',
+              auto_complete: true,
+              source: 'subscription_selection'
+            }),
+            timeout: 10000
+          });
+          
+          if (completeResponse.ok) {
+            console.log('[api/onboarding/subscription] Onboarding marked as complete for free plan');
+            // Update the next route to go directly to dashboard
+            subscriptionData.next_status = 'complete';
+          } else {
+            console.warn('[api/onboarding/subscription] Failed to mark onboarding complete, but continuing');
+          }
+        } catch (completeError) {
+          console.error('[api/onboarding/subscription] Error marking onboarding complete:', completeError);
+          // Continue even if this fails - the user can still access the dashboard
+        }
+      }
+      
       // ALWAYS set cookies for caching/fallback (regardless of backend success)
       try {
         // Mark subscription step as completed
         await cookieStore.set('subscriptionCompleted', 'true', COOKIE_OPTIONS);
         await cookieStore.set('onboardingStep', subscriptionData.next_status, COOKIE_OPTIONS);
-        await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        
+        // **🎯 CRITICAL FIX: Set correct onboarding status for free plans**
+        if (subscriptionData.selected_plan === 'free') {
+          await cookieStore.set('onboardedStatus', 'complete', COOKIE_OPTIONS);
+          await cookieStore.set('onboardingCompleted', 'true', COOKIE_OPTIONS);
+        } else {
+          await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        }
         
         // Cache subscription data
         await cookieStore.set('subscriptionPlan', subscriptionData.selected_plan, COOKIE_OPTIONS);
@@ -258,7 +301,8 @@ export async function POST(request) {
       const responseData = {
         success: backendSuccess,
         message: backendSuccess ? 'Subscription saved successfully' : 'Subscription cached locally',
-        nextRoute: subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment',
+        nextRoute: subscriptionData.selected_plan === 'free' ? '/dashboard' : 
+                  (subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment'),
         subscription: {
           selected_plan: subscriptionData.selected_plan,
           billing_cycle: subscriptionData.billing_cycle,
@@ -266,7 +310,10 @@ export async function POST(request) {
           requires_payment: subscriptionData.requires_payment
         },
         backendStatus: backendSuccess ? 'saved' : 'failed',
-        tenant_id: backendData.tenant_id || null
+        tenant_id: backendData.tenant_id || null,
+        // **🎯 CRITICAL FIX: Indicate onboarding completion for free plans**
+        onboardingComplete: subscriptionData.selected_plan === 'free',
+        autoCompleted: subscriptionData.selected_plan === 'free'
       };
       
       // Return success response
@@ -285,7 +332,14 @@ export async function POST(request) {
         // Mark subscription step as completed (cached)
         await cookieStore.set('subscriptionCompleted', 'true', COOKIE_OPTIONS);
         await cookieStore.set('onboardingStep', subscriptionData.next_status, COOKIE_OPTIONS);
-        await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        
+        // **🎯 CRITICAL FIX: Set correct onboarding status for free plans**
+        if (subscriptionData.selected_plan === 'free') {
+          await cookieStore.set('onboardedStatus', 'complete', COOKIE_OPTIONS);
+          await cookieStore.set('onboardingCompleted', 'true', COOKIE_OPTIONS);
+        } else {
+          await cookieStore.set('onboardedStatus', 'subscription', COOKIE_OPTIONS);
+        }
         
         // Cache subscription data
         await cookieStore.set('subscriptionPlan', subscriptionData.selected_plan, COOKIE_OPTIONS);
@@ -294,7 +348,8 @@ export async function POST(request) {
         return createSafeResponse({
           success: true, // Still successful from user perspective
           message: 'Subscription saved locally (backend temporarily unavailable)',
-          nextRoute: subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment',
+          nextRoute: subscriptionData.selected_plan === 'free' ? '/dashboard' : 
+                    (subscriptionData.next_status === 'setup' ? '/onboarding/setup' : '/onboarding/payment'),
           subscription: {
             selected_plan: subscriptionData.selected_plan,
             billing_cycle: subscriptionData.billing_cycle,
@@ -302,7 +357,10 @@ export async function POST(request) {
             requires_payment: subscriptionData.requires_payment
           },
           backendStatus: 'offline',
-          fallback: true
+          fallback: true,
+          // **🎯 CRITICAL FIX: Indicate onboarding completion for free plans even in fallback**
+          onboardingComplete: subscriptionData.selected_plan === 'free',
+          autoCompleted: subscriptionData.selected_plan === 'free'
         });
       } catch (fallbackError) {
         console.error('[api/onboarding/subscription] Complete failure:', fallbackError);
