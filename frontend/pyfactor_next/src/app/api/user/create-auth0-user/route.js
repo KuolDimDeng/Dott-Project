@@ -6,6 +6,15 @@ export async function POST(request) {
   try {
     console.log('[Create Auth0 User] Starting user creation/lookup process');
     
+    // Check if this is a check-only request
+    let requestBody = {};
+    try {
+      requestBody = await request.json();
+    } catch (e) {
+      // No body is fine
+    }
+    const checkOnly = requestBody.checkOnly;
+    
     // Get Auth0 session
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
@@ -53,52 +62,140 @@ export async function POST(request) {
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     console.log('[Create Auth0 User] Using API base URL:', apiBaseUrl);
     
-    // Step 1: Check if user already exists using Auth0 token
-    let existingUser = null;
-    try {
-      console.log('[Create Auth0 User] Checking for existing user with Auth0 token');
-      
-      const existingUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        }
-      });
-      
-      console.log('[Create Auth0 User] Existing user lookup status:', existingUserResponse.status);
-      
-      if (existingUserResponse.ok) {
-        existingUser = await existingUserResponse.json();
-        console.log('[Create Auth0 User] Found existing user:', {
-          email: existingUser.email,
-          tenant_id: existingUser.tenant_id,
-          onboarding_completed: existingUser.onboarding_completed,
-          needs_onboarding: existingUser.needs_onboarding
-        });
-        
-        // User exists - return their existing data
-        return NextResponse.json({
-          success: true,
-          message: 'Existing user found',
-          isExistingUser: true,
-          user_id: existingUser.id,
-          tenant_id: existingUser.tenant_id,
-          email: existingUser.email,
-          needs_onboarding: existingUser.needs_onboarding !== false,
-          onboardingCompleted: existingUser.onboarding_completed === true,
-          current_step: existingUser.current_onboarding_step || 'business_info'
-        });
-      } else {
-        console.log('[Create Auth0 User] User does not exist yet (status:', existingUserResponse.status, ')');
-      }
-    } catch (error) {
-      console.warn('[Create Auth0 User] Error checking existing user:', error.message);
+    // ENHANCED: Check for existing tenant ID in multiple places
+    console.log('[Create Auth0 User] === ENHANCED EXISTING USER DETECTION ===');
+    
+    // Method 1: Check session for existing tenant ID
+    let existingTenantId = sessionData.user?.tenant_id || sessionData.user?.tenantId;
+    if (existingTenantId) {
+      console.log('[Create Auth0 User] Found existing tenant ID in session:', existingTenantId);
     }
     
-    // Step 2: Create new user if not found
-    console.log('[Create Auth0 User] Creating new user in Django backend');
+    // Method 2: Check cookies for tenant ID
+    if (!existingTenantId) {
+      const tenantCookie = cookieStore.get('user_tenant_id');
+      if (tenantCookie) {
+        existingTenantId = tenantCookie.value;
+        console.log('[Create Auth0 User] Found existing tenant ID in cookie:', existingTenantId);
+      }
+    }
+    
+    // Method 3: Check for auth0_sub-based cookie storage
+    if (!existingTenantId) {
+      const auth0SubHash = Buffer.from(user.sub).toString('base64').substring(0, 16);
+      const subBasedCookie = cookieStore.get(`tenant_${auth0SubHash}`);
+      if (subBasedCookie) {
+        existingTenantId = subBasedCookie.value;
+        console.log('[Create Auth0 User] Found existing tenant ID via Auth0 sub:', existingTenantId);
+      }
+    }
+    
+    // Step 1: Try Django backend lookup (if not check-only)
+    let existingUser = null;
+    if (!checkOnly) {
+      try {
+        console.log('[Create Auth0 User] Checking for existing user with Auth0 token');
+        
+        const existingUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          }
+        });
+        
+        console.log('[Create Auth0 User] Existing user lookup status:', existingUserResponse.status);
+        
+        if (existingUserResponse.ok) {
+          existingUser = await existingUserResponse.json();
+          console.log('[Create Auth0 User] Found existing user in backend:', {
+            email: existingUser.email,
+            tenant_id: existingUser.tenant_id,
+            onboarding_completed: existingUser.onboarding_completed,
+            needs_onboarding: existingUser.needs_onboarding
+          });
+          
+          // Store tenant ID for future use
+          existingTenantId = existingUser.tenant_id;
+          
+          // User exists - return their existing data
+          return NextResponse.json({
+            success: true,
+            message: 'Existing user found',
+            isExistingUser: true,
+            user_id: existingUser.id,
+            tenant_id: existingUser.tenant_id,
+            email: existingUser.email,
+            needs_onboarding: existingUser.needs_onboarding !== false,
+            onboardingCompleted: existingUser.onboarding_completed === true,
+            current_step: existingUser.current_onboarding_step || 'business_info'
+          });
+        } else {
+          console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
+        }
+      } catch (error) {
+        console.warn('[Create Auth0 User] Error checking existing user:', error.message);
+      }
+    }
+    
+    // If we have an existing tenant ID from session/cookies, use it instead of creating new one
+    if (existingTenantId) {
+      console.log('[Create Auth0 User] RETURNING EXISTING TENANT ID:', existingTenantId);
+      
+      // Update session to ensure tenant ID is preserved
+      const updatedSession = {
+        ...sessionData,
+        user: {
+          ...sessionData.user,
+          tenant_id: existingTenantId,
+          tenantId: existingTenantId,
+          needs_onboarding: sessionData.user?.needsOnboarding !== false,
+          onboarding_completed: sessionData.user?.onboardingCompleted === true
+        }
+      };
+      
+      const response = NextResponse.json({
+        success: true,
+        message: 'Existing user found (session/cookie)',
+        isExistingUser: true,
+        tenantId: existingTenantId,
+        tenant_id: existingTenantId,
+        email: user.email,
+        needs_onboarding: sessionData.user?.needsOnboarding !== false,
+        onboardingCompleted: sessionData.user?.onboardingCompleted === true,
+        current_step: sessionData.user?.currentStep || 'business_info'
+      });
+      
+      // Update session cookie with tenant ID
+      response.cookies.set('appSession', Buffer.from(JSON.stringify(updatedSession)).toString('base64'), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      });
+      
+      // Store tenant ID in dedicated cookie for future lookups
+      const auth0SubHash = Buffer.from(user.sub).toString('base64').substring(0, 16);
+      response.cookies.set(`tenant_${auth0SubHash}`, existingTenantId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+      });
+      
+      response.cookies.set('user_tenant_id', existingTenantId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30 // 30 days
+      });
+      
+      return response;
+    }
+    
+    // Step 2: Create new user only if no existing tenant ID found
+    console.log('[Create Auth0 User] Creating new user - no existing tenant ID found');
     const tenantId = uuidv4(); // Generate new tenant ID for new user
     
     try {
@@ -138,6 +235,7 @@ export async function POST(request) {
           user: {
             ...sessionData.user,
             tenant_id: newUser.tenant_id,
+            tenantId: newUser.tenant_id,
             needs_onboarding: true,
             onboarding_completed: false
           }
@@ -149,6 +247,7 @@ export async function POST(request) {
           isExistingUser: false,
           user_id: newUser.id,
           tenant_id: newUser.tenant_id,
+          tenantId: newUser.tenant_id,
           email: newUser.email,
           needs_onboarding: true,
           onboardingCompleted: false,
@@ -161,6 +260,22 @@ export async function POST(request) {
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7 // 7 days
+        });
+        
+        // Store tenant ID for future lookups
+        const auth0SubHash = Buffer.from(user.sub).toString('base64').substring(0, 16);
+        response.cookies.set(`tenant_${auth0SubHash}`, newUser.tenant_id, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
+        
+        response.cookies.set('user_tenant_id', newUser.tenant_id, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
         });
         
         return response;
@@ -191,6 +306,7 @@ export async function POST(request) {
                 isExistingUser: true,
                 user_id: existingUserData.id,
                 tenant_id: existingUserData.tenant_id,
+                tenantId: existingUserData.tenant_id,
                 email: existingUserData.email,
                 needs_onboarding: existingUserData.needs_onboarding !== false,
                 onboardingCompleted: existingUserData.onboarding_completed === true,
@@ -207,19 +323,68 @@ export async function POST(request) {
     } catch (error) {
       console.error('[Create Auth0 User] Error creating user in Django:', error);
       
-      // Fallback: Return session-only data to prevent blocking user flow
-      return NextResponse.json({
+      // ENHANCED FALLBACK: Check for existing tenant ID one more time before creating new one
+      if (!existingTenantId) {
+        console.log('[Create Auth0 User] No existing tenant ID found anywhere, creating new one for fallback');
+      } else {
+        console.log('[Create Auth0 User] Using existing tenant ID for fallback:', existingTenantId);
+      }
+      
+      const fallbackTenantId = existingTenantId || tenantId;
+      
+      // Update session with tenant ID for consistency
+      const updatedSession = {
+        ...sessionData,
+        user: {
+          ...sessionData.user,
+          tenant_id: fallbackTenantId,
+          tenantId: fallbackTenantId,
+          needs_onboarding: true,
+          onboarding_completed: false
+        }
+      };
+      
+      const response = NextResponse.json({
         success: false,
         fallback: true,
         message: 'Backend unavailable, using session fallback',
-        isExistingUser: false,
-        tenant_id: tenantId,
+        isExistingUser: !!existingTenantId,
+        tenant_id: fallbackTenantId,
+        tenantId: fallbackTenantId,
         email: user.email,
         needs_onboarding: true,
         onboardingCompleted: false,
         current_step: 'business_info',
         error: error.message
       }, { status: 200 });
+      
+      // Update session cookie
+      response.cookies.set('appSession', Buffer.from(JSON.stringify(updatedSession)).toString('base64'), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7 // 7 days
+      });
+      
+      // Store tenant ID for future lookups if it's new
+      if (fallbackTenantId) {
+        const auth0SubHash = Buffer.from(user.sub).toString('base64').substring(0, 16);
+        response.cookies.set(`tenant_${auth0SubHash}`, fallbackTenantId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
+        
+        response.cookies.set('user_tenant_id', fallbackTenantId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30 // 30 days
+        });
+      }
+      
+      return response;
     }
     
   } catch (error) {
