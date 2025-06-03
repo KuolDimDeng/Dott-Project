@@ -293,47 +293,28 @@ CACHES = {
     }
 }
 
-# Define AWS Cognito Settings
-COGNITO_USER_POOL_ID = os.getenv('AWS_COGNITO_USER_POOL_ID', 'us-east-1_JPL8vGfb6')
-COGNITO_APP_CLIENT_ID = os.getenv('AWS_COGNITO_CLIENT_ID', '1o5v84mrgn4gt87khtr179uc5b') 
-COGNITO_DOMAIN = os.getenv('AWS_COGNITO_DOMAIN', 'pyfactor-dev.auth.us-east-1.amazoncognito.com')
-USE_AWS_AUTH = True
+# Define Auth0 Settings (Primary Authentication)
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
+AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
+AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"
 
-# AWS Authentication Settings
-COGNITO_AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
-COGNITO_USER_POOL = COGNITO_USER_POOL_ID
-COGNITO_TOKEN_VERIFY = True
-COGNITO_ATTR_MAPPING = {
-    'email': 'email',
-    'given_name': 'first_name',
-    'family_name': 'last_name',
-    'custom:userrole': 'role',
-    'custom:businessid': 'business_id',
-    'custom:businessname': 'business_name',
-    'custom:businesstype': 'business_type',
-    'custom:businesscountry': 'business_country',
-    'custom:legalstructure': 'legal_structure',
-    'custom:datefounded': 'date_founded',
-    'custom:subplan': 'subscription_plan',
-    'custom:subscriptioninterval': 'subscription_interval',
-    'custom:onboarding': 'onboarding_status',
-    'custom:setupdone': 'setup_complete'
-}
+# Authentication Provider Configuration
+USE_AUTH0 = True  # Always use Auth0
 
 # REST Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'custom_auth.jwt.CognitoJWTAuthentication',
-        'custom_auth.authentication.CognitoAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
+        'custom_auth.auth0_authentication.Auth0JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',  # Fallback for admin
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'custom_auth.permissions.SetupEndpointPermission',
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
-    'EXCEPTION_HANDLER': 'custom_auth.utils.custom_exception_handler',
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
@@ -346,15 +327,7 @@ REST_FRAMEWORK = {
         'user': '60/minute',
         'tax_calculation': '100/day',  # Custom rate for tax calculations
     },
-}
-
-# JWT settings
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'USER_ID_FIELD': 'id',
-    'USER_ID_CLAIM': 'sub',
+    'DATETIME_FORMAT': '%Y-%m-%dT%H:%M:%S.%fZ',
 }
 
 # Authentication settings for dj-rest-auth and allauth

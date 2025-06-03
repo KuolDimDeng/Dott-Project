@@ -16,7 +16,3 @@ django.setup()
 
 # Initialize the WSGI application
 application = get_wsgi_application()
-
-# Now that Django is set up and apps are loaded, initialize the Cognito client
-from custom_auth.client import get_cognito_client
-cognito_client = get_cognito_client()
