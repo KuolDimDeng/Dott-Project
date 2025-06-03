@@ -1,0 +1,69 @@
+{
+    "Service": {
+        "ServiceName": "dott-backend",
+        "ServiceId": "997caa1f2f634591ae1c9f5d6caead7f",
+        "ServiceArn": "arn:aws:apprunner:us-east-1:471112661935:service/dott-backend/997caa1f2f634591ae1c9f5d6caead7f",
+        "ServiceUrl": "gjjyah2dyz.us-east-1.awsapprunner.com",
+        "CreatedAt": "2025-05-30T07:04:18.570000-06:00",
+        "UpdatedAt": "2025-05-30T07:04:18.570000-06:00",
+        "Status": "OPERATION_IN_PROGRESS",
+        "SourceConfiguration": {
+            "ImageRepository": {
+                "ImageIdentifier": "471112661935.dkr.ecr.us-east-1.amazonaws.com/dott-backend:latest",
+                "ImageConfiguration": {
+                    "RuntimeEnvironmentVariables": {
+                        "ALLOWED_HOSTS": "*",
+                        "AWS_COGNITO_CLIENT_ID": "1o5v84mrgn4gt87khtr179uc5b",
+                        "AWS_COGNITO_DOMAIN": "pyfactor-dev.auth.us-east-1.amazoncognito.com",
+                        "AWS_COGNITO_USER_POOL_ID": "us-east-1_JPL8vGfb6",
+                        "AWS_DEFAULT_REGION": "us-east-1",
+                        "CORS_ALLOW_ALL_ORIGINS": "True",
+                        "DJANGO_SETTINGS_MODULE": "pyfactor.settings_eb",
+                        "PYTHONUNBUFFERED": "1",
+                        "RDS_DB_NAME": "dott_main",
+                        "RDS_HOSTNAME": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com",
+                        "RDS_PASSWORD": "RRfXU6uPPUbBEg1JqGTJ",
+                        "RDS_PORT": "5432",
+                        "RDS_USERNAME": "dott_admin",
+                        "REDIS_HOST": "127.0.0.1",
+                        "REDIS_PORT": "6379",
+                        "SECRET_KEY": "wUB1KHDvOyClcHqf%zLs-+Kn*ZB08iHSfCeWDh2FZ!uk7&qe%n"
+                    },
+                    "Port": "8000"
+                },
+                "ImageRepositoryType": "ECR"
+            },
+            "AutoDeploymentsEnabled": false,
+            "AuthenticationConfiguration": {
+                "AccessRoleArn": "arn:aws:iam::471112661935:role/AppRunnerECRAccessRole"
+            }
+        },
+        "InstanceConfiguration": {
+            "Cpu": "1024",
+            "Memory": "2048"
+        },
+        "HealthCheckConfiguration": {
+            "Protocol": "HTTP",
+            "Path": "/health/",
+            "Interval": 10,
+            "Timeout": 5,
+            "HealthyThreshold": 2,
+            "UnhealthyThreshold": 3
+        },
+        "AutoScalingConfigurationSummary": {
+            "AutoScalingConfigurationArn": "arn:aws:apprunner:us-east-1:471112661935:autoscalingconfiguration/DefaultConfiguration/1/00000000000000000000000000000001",
+            "AutoScalingConfigurationName": "DefaultConfiguration",
+            "AutoScalingConfigurationRevision": 1
+        },
+        "NetworkConfiguration": {
+            "EgressConfiguration": {
+                "EgressType": "DEFAULT"
+            },
+            "IngressConfiguration": {
+                "IsPubliclyAccessible": true
+            },
+            "IpAddressType": "IPV4"
+        }
+    },
+    "OperationId": "25a5ff693dde4c07aff05d43e1e126dc"
+}

@@ -1,0 +1,9 @@
+# Auth0 and payment processing requirements
+python-jose[cryptography]==3.3.0
+cryptography==41.0.7
+django-cors-headers==4.3.1
+stripe==7.12.0
+
+# Additional dependencies that might be needed
+requests==2.31.0
+python-dotenv==1.0.0

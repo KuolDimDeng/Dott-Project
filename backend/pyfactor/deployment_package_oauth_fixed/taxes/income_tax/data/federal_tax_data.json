@@ -1,0 +1,14 @@
+{
+    "fica": {
+        "social_security": 0.062,
+        "medicare": 0.014499999999999999
+    },
+    "futa": {
+        "rate": 0.06
+    },
+    "tax_brackets": {
+        "single": [],
+        "married_jointly": []
+    },
+    "deductions": {}
+}

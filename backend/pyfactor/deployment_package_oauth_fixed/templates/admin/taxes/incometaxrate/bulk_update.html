@@ -1,0 +1,50 @@
+<!-- templates/admin/taxes/incometaxrate/bulk_update.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div>
+            <fieldset class="module aligned">
+                {% for field in form %}
+                <div class="form-row">
+                    <div class="field-box">
+                        {{ field.errors }}
+                        {{ field.label_tag }}
+                        {{ field }}
+                        {% if field.help_text %}
+                        <div class="help">{{ field.help_text|safe }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </fieldset>
+            
+            <div class="help">
+                <h3>Instructions</h3>
+                <p>Upload a CSV file with tax rate information. The file should have the following columns:</p>
+                <ul>
+                    <li><strong>filing_status</strong>: single, married_joint, married_separate, head_household</li>
+                    <li><strong>is_flat_rate</strong>: true or false</li>
+                    <li><strong>rate_value</strong>: decimal value (e.g., 0.05 for 5%)</li>
+                    <li><strong>income_min</strong>: minimum income amount (leave blank for flat rate)</li>
+                    <li><strong>income_max</strong>: maximum income amount (leave blank for highest bracket)</li>
+                    <li><strong>effective_date</strong>: date when rate goes into effect (YYYY-MM-DD)</li>
+                </ul>
+                
+                <p>
+                    <a href="{% url 'admin:taxes_incometaxrate_export_template' %}" class="button">
+                        Download Template
+                    </a>
+                </p>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" class="default" value="Upload and Process">
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

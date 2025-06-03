@@ -1,0 +1,6 @@
+packages:
+  yum:
+    gcc-c++: []
+    python3-devel: []
+    # Using libpq-devel as a primary option instead of postgresql-devel
+    libpq-devel: []

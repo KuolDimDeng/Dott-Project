@@ -1,0 +1,75 @@
+{
+  "family": "dott-backend-task-v2",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "executionRoleArn": "arn:aws:iam::471112661935:role/ecsTaskExecutionRole",
+  "containerDefinitions": [
+    {
+      "name": "dott-backend",
+      "image": "471112661935.dkr.ecr.us-east-1.amazonaws.com/dott-backend:v2",
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "SECRET_KEY",
+          "value": "django-insecure-fargate-deployment-key-v2-1748628600"
+        },
+        {
+          "name": "DJANGO_SETTINGS_MODULE",
+          "value": "pyfactor.settings_eb"
+        },
+        {
+          "name": "PYTHONUNBUFFERED",
+          "value": "1"
+        },
+        {
+          "name": "ALLOWED_HOSTS",
+          "value": "*"
+        },
+        {
+          "name": "CORS_ALLOW_ALL_ORIGINS",
+          "value": "True"
+        },
+        {
+          "name": "RDS_DB_NAME",
+          "value": "dott_main"
+        },
+        {
+          "name": "RDS_USERNAME",
+          "value": "dott_admin"
+        },
+        {
+          "name": "RDS_PASSWORD",
+          "value": "RRfXU6uPPUbBEg1JqGTJ"
+        },
+        {
+          "name": "RDS_HOSTNAME",
+          "value": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com"
+        },
+        {
+          "name": "RDS_PORT",
+          "value": "5432"
+        },
+        {
+          "name": "AWS_DEFAULT_REGION",
+          "value": "us-east-1"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/dott-backend",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+} 

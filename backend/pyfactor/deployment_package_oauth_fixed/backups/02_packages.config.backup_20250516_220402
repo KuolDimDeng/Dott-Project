@@ -1,0 +1,22 @@
+packages:
+  yum:
+    gcc-c++: []
+    python3-devel: []
+    libpq-devel: []
+    postgresql: []
+    # The following are added for better PostgreSQL support on AL2023
+    wget: []
+    unzip: []
+    make: []
+
+commands:
+  01_install_postgresql_client:
+    command: |
+      # Ensure system libraries are installed
+      dnf -y install postgresql
+      # Make sure PostgreSQL client is available
+      if ! command -v psql &> /dev/null; then
+        echo "Installing PostgreSQL client..."
+        amazon-linux-extras enable postgresql14
+        dnf -y install postgresql
+      fi

@@ -1,0 +1,32 @@
+{
+  "ApplicationName": "Dott",
+  "EnvironmentName": "Dott-env-clean",
+  "VersionLabel": "clean-deploy-20250529130718",
+  "PlatformArn": "arn:aws:elasticbeanstalk:us-east-1::platform/Docker running on 64bit Amazon Linux 2023/4.5.2",
+  "Tier": {
+    "Name": "WebServer",
+    "Type": "Standard"
+  },
+  "OptionSettings": [
+    {
+      "Namespace": "aws:ec2:instances",
+      "OptionName": "InstanceTypes",
+      "Value": "t3.small"
+    },
+    {
+      "Namespace": "aws:elasticbeanstalk:application:environment",
+      "OptionName": "DJANGO_SETTINGS_MODULE",
+      "Value": "pyfactor.settings_eb"
+    },
+    {
+      "Namespace": "aws:elasticbeanstalk:application:environment",
+      "OptionName": "PYTHONUNBUFFERED",
+      "Value": "1"
+    },
+    {
+      "Namespace": "aws:elasticbeanstalk:environment:proxy",
+      "OptionName": "ProxyServer",
+      "Value": "nginx"
+    }
+  ]
+}

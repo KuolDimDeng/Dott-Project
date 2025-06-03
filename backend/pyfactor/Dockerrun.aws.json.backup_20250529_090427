@@ -1,0 +1,14 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": ".",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8000",
+      "HostPort": "8000"
+    }
+  ],
+  "Logging": "/var/log/eb-docker/containers/eb-current-app"
+}

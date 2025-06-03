@@ -1,3 +1,4 @@
+import { auth0Utils } from '@/config/auth0';
 'use client';
 
 import { logger } from '@/utils/logger';
@@ -249,8 +250,8 @@ const fetchAuthSession = async () => {
       const user = await response.json();
       return {
         tokens: {
-          accessToken: { toString: () => 'auth0-access-token' },
-          idToken: { toString: () => 'auth0-id-token' }
+          accessToken: await auth0Utils.getAccessToken(),
+          idToken: await auth0Utils.getAccessToken()
         },
         userSub: user.sub
       };

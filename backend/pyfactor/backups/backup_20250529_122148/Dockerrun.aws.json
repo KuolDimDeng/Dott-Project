@@ -1,0 +1,20 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "python:3.12-slim",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8000"
+    }
+  ],
+  "Volumes": [
+    {
+      "HostDirectory": "/var/app/current",
+      "ContainerDirectory": "/app"
+    }
+  ],
+  "Logging": "/var/log/eb-docker",
+  "Command": "gunicorn pyfactor.wsgi:application --bind 0.0.0.0:8000 --workers 2 --threads 4 --worker-class gthread --timeout 120 --keepalive 5 --max-requests 1000 --max-requests-jitter 50"
+}

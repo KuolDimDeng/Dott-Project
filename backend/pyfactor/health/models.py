@@ -1,0 +1,1 @@
+# Health app models (empty - no models needed for health checks) 

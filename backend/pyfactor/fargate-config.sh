@@ -1,0 +1,5 @@
+CLUSTER_NAME="dott-cluster"
+SERVICE_NAME="dott-backend-service"
+TASK_DEFINITION="dott-backend-task"
+REGION="us-east-1"
+SECURITY_GROUP_ID="sg-0f2d9fde27e4d4770"

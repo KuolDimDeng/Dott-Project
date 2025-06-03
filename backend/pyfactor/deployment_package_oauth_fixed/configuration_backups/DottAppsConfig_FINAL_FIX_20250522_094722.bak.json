@@ -1,0 +1,6 @@
+  {
+    "Namespace": "aws:rds:dbinstance",
+    "OptionName": "DBEngineVersion",
+    "Value": "13.7"
+  }
+]

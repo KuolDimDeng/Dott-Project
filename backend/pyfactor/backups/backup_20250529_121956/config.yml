@@ -1,0 +1,25 @@
+branch-defaults:
+  default:
+    environment: Dott-env-fixed
+    group_suffix: null
+environment-defaults:
+  Dott-env-3:
+    branch: null
+    repository: null
+  DottApps-env:
+    branch: null
+    repository: null
+global:
+  application_name: DottApps
+  branch: null
+  default_ec2_keyname: dott-key-pair
+  default_platform: Docker running on 64bit Amazon Linux 2023
+  default_region: us-east-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: null
+  repository: null
+  sc: null
+  workspace_type: Application

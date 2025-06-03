@@ -1,0 +1,32 @@
+{
+"AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "pyfactor-backend",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": "8000",
+      "HostPort": "8000"
+    }
+  ],
+  "Volumes": [
+    {
+      "HostDirectory": "/var/app/current/media",
+      "ContainerDirectory": "/var/app/current/media"
+    },
+    {
+      "HostDirectory": "/var/app/current/logs",
+      "ContainerDirectory": "/var/app/current/logs"
+    },
+    {
+      "HostDirectory": "/var/app/current/static",
+      "ContainerDirectory": "/var/app/current/static"
+    },
+    {
+      "HostDirectory": "/var/app/current/static",
+      "ContainerDirectory": "/app/static"
+    }
+  ],
+  "Logging": "/var/app/current/logs"
+}

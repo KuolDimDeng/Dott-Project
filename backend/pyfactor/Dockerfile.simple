@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+# Install only essential system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libpq-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Create a minimal requirements file for testing
+RUN echo "Django==5.1.7\ngunicorn==20.1.0\npsycopg2-binary==2.9.9\nwhitenoise==6.5.0" > requirements-minimal.txt
+
+# Install minimal requirements
+RUN pip install --no-cache-dir -r requirements-minimal.txt
+
+# Copy only essential files first
+COPY manage.py ./
+COPY pyfactor/ ./pyfactor/
+COPY health/ ./health/
+
+# Create necessary directories
+RUN mkdir -p staticfiles logs
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=pyfactor.settings_eb
+
+EXPOSE 8000
+
+# Simple command to start the application
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"] 

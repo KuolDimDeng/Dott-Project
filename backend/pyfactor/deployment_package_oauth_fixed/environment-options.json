@@ -1,0 +1,82 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "ServiceRole",
+    "Value": "aws-elasticbeanstalk-service-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "IamInstanceProfile",
+    "Value": "aws-elasticbeanstalk-ec2-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "InstanceType",
+    "Value": "t2.small"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:healthreporting:system",
+    "OptionName": "SystemType",
+    "Value": "enhanced"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DEBUG",
+    "Value": "False"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DATABASE_URL",
+    "Value": "sqlite:///db.sqlite3"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DJANGO_SETTINGS_MODULE",
+    "Value": "pyfactor.settings"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "ENVIRONMENT",
+    "Value": "production"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application",
+    "OptionName": "Application Healthcheck URL",
+    "Value": "/health/"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "HealthCheckPath",
+    "Value": "/health/"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+    "OptionName": "StreamLogs",
+    "Value": "true"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+    "OptionName": "DeleteOnTerminate",
+    "Value": "false"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+    "OptionName": "RetentionInDays",
+    "Value": "7"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:command",
+    "OptionName": "DeploymentPolicy",
+    "Value": "AllAtOnce"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:command",
+    "OptionName": "Timeout",
+    "Value": "600"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:proxy",
+    "OptionName": "ProxyServer",
+    "Value": "nginx"
+  }
+]

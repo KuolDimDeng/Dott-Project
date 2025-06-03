@@ -1,0 +1,141 @@
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+test_venv/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Git and version control
+.git/
+.gitignore
+.gitattributes
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files and temporary
+*.backup*
+*.bak
+*.tmp
+*.temp
+backups/
+backups_*/
+temp_*/
+configuration_backups/
+
+# Development and testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Documentation
+docs/
+*.md
+README*
+CHANGELOG*
+LICENSE*
+*.txt.backup*
+
+# Scripts and deployment artifacts
+scripts/
+*.sh
+*.zip
+*.tar.gz
+*.sql
+deployment*/
+lightweight_*/
+docker_*/
+max-security*/
+fixed_package/
+temp_extract*/
+*-deployment-*/
+oauth-requirements-*/
+*.env.backup*
+
+# Large data files
+data/
+*.csv
+*.json.backup*
+*.log.*
+
+# Node.js (if any)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Specific large directories that shouldn't be deployed
+.ebextensions_backup/
+.ebextensions.backup/
+configuration_backups/
+deployment_package_*/
+
+# AWS and deployment artifacts
+.aws/
+.elasticbeanstalk/
+*.pem
+*.p12
+environment-options*.json
+
+# Additional exclusions for size optimization
+*.pyc
+*.pyo
+*.orig
+*.rej
+.coverage.*
+.mypy_cache/
+.dmypy.json
+dmypy.json

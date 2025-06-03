@@ -1,0 +1,6 @@
+Rate​	Married Filing Jointly	Married Filing Jointly	Married Filing Separate​ly	Married Filing Separate​ly
+ 	More Than​	But not more than​	More than​	But not more than​
+5.35%	$0	$46,330	$0	$23,165
+6.80%	$46,330	$184,040	​$23,165	$92,020
+7.85%	$184,040	$321,450 ​	$92,020	$160,725
+9.85%	$321,450 ​	 	$160,725	

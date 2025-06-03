@@ -1,0 +1,14 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "672b1b271c72",
+    "Update": "true"
+  },
+  "Ports": [
+    {
+      "ContainerPort": 8000
+    }
+  ],
+  "Logging": "/var/log/eb-docker",
+  "Command": "gunicorn --bind 0.0.0.0:8000 --workers 4 --timeout 120 --graceful-timeout 30 --max-requests 1000 --max-requests-jitter 50 pyfactor.wsgi:application"
+}

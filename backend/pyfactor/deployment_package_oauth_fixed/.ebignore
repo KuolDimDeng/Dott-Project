@@ -1,0 +1,42 @@
+# Ignore docker-compose.yml to prevent conflict with Dockerrun.aws.json
+docker-compose.yml
+# Ignore local development files
+.env
+.env.local
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ignore Node.js and deployment temporary files
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+temp_extract/
+tmp-deploy/
+scripts/node_modules/
+*.zip
+*.log
+logs/
+.venv/
+venv/
+.DS_Store
+backups/
+temp_*/

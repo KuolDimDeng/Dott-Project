@@ -1,0 +1,97 @@
+[
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "ServiceRole",
+    "Value": "arn:aws:iam::471112661935:role/aws-elasticbeanstalk-service-role"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "EnvironmentType",
+    "Value": "LoadBalanced"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment",
+    "OptionName": "LoadBalancerType",
+    "Value": "application"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "IamInstanceProfile",
+    "Value": "aws-elasticbeanstalk-ec2-role"
+  },
+  {
+    "Namespace": "aws:autoscaling:launchconfiguration",
+    "OptionName": "InstanceType",
+    "Value": "t3.medium"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DJANGO_SETTINGS_MODULE",
+    "Value": "pyfactor.settings_eb"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "SECRET_KEY",
+    "Value": "django-insecure-temp-key-change-in-production"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "DEBUG",
+    "Value": "False"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "FRONTEND_URL",
+    "Value": "https://dottapps.com"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_HOSTNAME",
+    "Value": "dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_DB_NAME",
+    "Value": "dott_main"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_USERNAME",
+    "Value": "dott_admin"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_PASSWORD",
+    "Value": "RRfXU6uPPUbBEg1JqGTJ"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:application:environment",
+    "OptionName": "RDS_PORT",
+    "Value": "5432"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "Port",
+    "Value": "8080"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "Protocol",
+    "Value": "HTTP"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:environment:process:default",
+    "OptionName": "HealthCheckPath",
+    "Value": "/health/"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:cloudwatch:logs",
+    "OptionName": "StreamLogs",
+    "Value": "true"
+  },
+  {
+    "Namespace": "aws:elasticbeanstalk:healthreporting:system",
+    "OptionName": "SystemType",
+    "Value": "enhanced"
+  }
+]

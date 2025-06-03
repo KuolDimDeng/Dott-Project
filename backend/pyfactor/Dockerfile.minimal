@@ -1,0 +1,23 @@
+FROM python:3.12-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy only the health server
+COPY simple_health_server.py .
+
+# Create a minimal startup script
+RUN echo '#!/bin/bash' > /app/start.sh && \
+    echo 'echo "=== Starting Minimal Health Server ==="' >> /app/start.sh && \
+    echo 'echo "Time: $(date)"' >> /app/start.sh && \
+    echo 'echo "Python: $(python --version)"' >> /app/start.sh && \
+    echo 'echo "Working directory: $(pwd)"' >> /app/start.sh && \
+    echo 'echo "Starting health server on port 8000..."' >> /app/start.sh && \
+    echo 'python simple_health_server.py' >> /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Expose port 8000
+EXPOSE 8000
+
+# Run the health server
+CMD ["/app/start.sh"] 

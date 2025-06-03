@@ -1,0 +1,151 @@
+#!/bin/bash
+# Enhanced prebuild script updated by Version0016_fix_pyc_bytecode_files.py
+# This script runs before building the application
+
+set -e   # Exit on error
+set -o pipefail # Exit if any command in a pipe fails
+set -x   # Print commands for debugging
+exec > >(tee -a /var/log/eb-prebuild.log) 2>&1  # Redirect output to log file
+
+echo "==== ENHANCED PREBUILD STARTING AT $(date) ===="
+echo "Script version: Updated by Version0016_fix_pyc_bytecode_files.py"
+
+# Define paths
+APP_DIR="/var/app/staging"
+VENV_DIR="/var/app/venv/staging"
+
+echo "==== ENVIRONMENT INFORMATION ===="
+echo "Python version: $(python --version)"
+echo "Platform: $(uname -a)"
+echo "Working directory: $(pwd)"
+
+# IMPORTANT: Aggressive cleanup of all bytecode files
+echo "==== CLEANING UP BYTECODE FILES AND CACHES ===="
+echo "Finding and removing all __pycache__ directories..."
+find . -type d -name "__pycache__" -exec rm -rf {} +
+
+echo "Finding and removing all .pyc files..."
+find . -type f -name "*.pyc" -delete
+
+echo "Finding and removing all .pyo files..."
+find . -type f -name "*.pyo" -delete
+
+echo "Finding and removing all .pyd files..."
+find . -type f -name "*.pyd" -delete
+
+echo "Directory contents after cleanup:"
+ls -la
+
+# Create a constraints file to enforce package versions
+cat > /tmp/pip-constraints.txt << EOL
+urllib3==1.26.16
+boto3==1.26.164
+botocore==1.29.164
+s3transfer==0.6.2
+EOL
+
+echo "==== CONSTRAINTS FILE CREATED ===="
+cat /tmp/pip-constraints.txt
+
+# Verify correct directories
+if [ ! -d "$APP_DIR" ]; then
+    echo "ERROR: Application directory $APP_DIR does not exist"
+    mkdir -p "$APP_DIR"
+    echo "Created $APP_DIR directory"
+fi
+
+# First, upgrade pip itself with specific version
+echo "==== UPGRADING PIP ===="
+pip install --upgrade --ignore-installed pip==23.3.1 setuptools==69.0.3 || {
+  echo "Warning: Could not upgrade pip/setuptools, using system version instead"
+  pip --version
+}
+
+# Force uninstall problematic packages
+echo "==== REMOVING ANY CONFLICTING PACKAGES ===="
+pip uninstall -y urllib3 boto3 botocore s3transfer awscli textract boto || true
+
+# Install urllib3 first with no-dependencies to avoid conflicts
+echo "==== INSTALLING URLLIB3 ===="
+pip install urllib3==1.26.16 --no-dependencies
+
+# Install AWS SDK components at compatible versions
+echo "==== INSTALLING AWS SDK COMPONENTS ===="
+pip install boto3==1.26.164 botocore==1.29.164 s3transfer==0.6.2 --no-dependencies
+
+# Install critical packages explicitly with their exact versions
+echo "==== INSTALLING CRITICAL PACKAGES ===="
+pip install Django==4.2.10 gunicorn==21.2.0 psycopg2-binary==2.9.9
+
+# Finally, install the rest of the requirements with constraints
+echo "==== INSTALLING REMAINING REQUIREMENTS ===="
+if [ -f "requirements-eb.txt" ]; then
+    echo "Using EB requirements file"
+    pip install -r requirements-eb.txt --constraint /tmp/pip-constraints.txt || {
+        echo "ERROR installing from requirements-eb.txt"
+        echo "Trying with --no-dependencies flag"
+        pip install -r requirements-eb.txt --no-dependencies
+    }
+elif [ -f "requirements.txt" ]; then
+    echo "Using standard requirements file"
+    pip install -r requirements.txt --constraint /tmp/pip-constraints.txt || {
+        echo "ERROR installing from requirements.txt"
+        echo "Trying with --no-dependencies flag"
+        pip install -r requirements.txt --no-dependencies
+    }
+else
+    echo "ERROR: No requirements file found"
+    exit 1
+fi
+
+# Verify the installed versions
+echo "==== VERIFYING INSTALLED VERSIONS ===="
+pip list | grep -E 'urllib3|boto3|botocore|s3transfer'
+
+# Install PostgreSQL libraries if needed (for non-binary psycopg2)
+echo "==== ENSURING POSTGRESQL LIBRARIES ARE INSTALLED ===="
+which yum > /dev/null && {
+    # Detect Amazon Linux version
+    if grep -q "Amazon Linux release 2023" /etc/os-release; then
+        echo "Detected Amazon Linux 2023"
+        
+        # Enable PostgreSQL modules
+        echo "Enabling PostgreSQL module"
+        sudo dnf install -y dnf-plugins-core
+        sudo dnf config-manager --set-enabled amazonlinux-appstream
+        
+        # First try the postgresql-devel package
+        # Note: Replaced postgresql-devel with libpq-devel for AL2023 compatibility
+if ! sudo yum install -y libpq-devel; then
+            echo "Failed to install postgresql-devel, trying libpq-devel"
+            # Try libpq-devel which is often a suitable replacement
+            if ! sudo yum install -y libpq-devel; then
+                echo "Failed to install libpq-devel, trying postgresql13-devel"
+                # Try specific postgresql version packages
+                for pg_version in 15 14 13 12 11; do
+                    echo "Attempting to install postgresql${pg_version}-devel"
+                    if sudo yum install -y postgresql${pg_version}-devel; then
+                        echo "Successfully installed postgresql${pg_version}-devel"
+                        break
+                    fi
+                done
+            fi
+        fi
+    else
+        echo "Detected Amazon Linux 2 or other - using postgresql-devel package"
+        # Note: Replaced postgresql-devel with libpq-devel for AL2023 compatibility
+yum list installed | grep -qw postgresql-devel || sudo yum install -y libpq-devel
+    fi
+}
+
+# Clean pip cache to avoid conflicts with cached packages
+pip cache purge
+
+# FINAL BYTECODE CLEANUP: Run again to clean any bytecode that might have been generated
+echo "==== FINAL BYTECODE CLEANUP ===="
+find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find . -type f -name "*.pyc" -delete
+find . -type f -name "*.pyo" -delete
+find . -type f -name "*.pyd" -delete
+
+echo "==== PREBUILD COMPLETED SUCCESSFULLY AT $(date) ===="

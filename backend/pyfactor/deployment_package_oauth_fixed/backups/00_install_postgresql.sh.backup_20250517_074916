@@ -1,0 +1,126 @@
+#!/bin/bash
+# PostgreSQL package installer for Amazon Linux 2023
+# Created by Version0017_fix_postgresql_package_deployment.py
+
+set -e
+set -o pipefail
+
+echo "=== CUSTOM POSTGRESQL PACKAGE INSTALLER ==="
+echo "Running script at $(date)"
+echo "Detecting Amazon Linux version..."
+
+# Check Amazon Linux version
+AL_VERSION="unknown"
+if grep -q "Amazon Linux release 2023" /etc/os-release; then
+    AL_VERSION="al2023"
+    echo "Detected Amazon Linux 2023"
+elif grep -q "Amazon Linux 2" /etc/os-release; then
+    AL_VERSION="al2"
+    echo "Detected Amazon Linux 2"
+else
+    echo "Unknown Amazon Linux version, will try multiple approaches"
+fi
+
+# Function to try installing PostgreSQL packages using various methods
+install_postgresql_packages() {
+    echo "Attempting to enable PostgreSQL repository..."
+    
+    if [[ "$AL_VERSION" == "al2023" ]]; then
+        # For Amazon Linux 2023
+        echo "Enabling PostgreSQL module and repository for AL2023..."
+        
+        # Try enabling Amazon Linux modules first
+        sudo dnf install -y dnf-plugins-core || echo "Warning: Could not install dnf-plugins-core"
+        sudo dnf config-manager --set-enabled amazonlinux-appstream || echo "Warning: Could not enable appstream"
+        
+        # Try multiple PostgreSQL package variants for AL2023
+        echo "Trying to install PostgreSQL development package (libpq-devel)..."
+        if sudo dnf install -y libpq-devel; then
+            echo "Successfully installed libpq-devel"
+            return 0
+        fi
+        
+        echo "Trying to install PostgreSQL development package (postgresql-devel)..."
+        if sudo dnf install -y libpq-devel # Replaced postgresql-devel for AL2023 compatibility; then
+            echo "Successfully installed postgresql-devel"
+            return 0
+        fi
+        
+        # Try specific PostgreSQL version packages
+        for pg_version in 15 14 13 12 11; do
+            echo "Attempting to install postgresql${pg_version}-devel..."
+            if sudo dnf install -y postgresql${pg_version}-devel; then
+                echo "Successfully installed postgresql${pg_version}-devel"
+                return 0
+            fi
+        done
+        
+        # Last resort: Install PostgreSQL from PGDG repo for AL2023
+        echo "Attempting to install PostgreSQL from PGDG repository..."
+        sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-9-x86_64/pgdg-redhat-repo-latest.noarch.rpm || true
+        sudo dnf -qy module disable postgresql || true
+        if sudo dnf install -y postgresql15-devel; then
+            echo "Successfully installed postgresql15-devel from PGDG repository"
+            return 0
+        fi
+    else
+        # For Amazon Linux 2 or unknown
+        echo "Attempting to install PostgreSQL packages for AL2 or unknown..."
+        
+        # Try the standard package first
+        if sudo yum install -y libpq-devel # Replaced postgresql-devel for AL2023 compatibility; then
+            echo "Successfully installed postgresql-devel"
+            return 0
+        fi
+        
+        # Try libpq-devel as an alternative
+        if sudo yum install -y libpq-devel; then
+            echo "Successfully installed libpq-devel"
+            return 0
+        fi
+        
+        # Try specific PostgreSQL version packages
+        for pg_version in 15 14 13 12 11; do
+            echo "Attempting to install postgresql${pg_version}-devel..."
+            if sudo yum install -y postgresql${pg_version}-devel; then
+                echo "Successfully installed postgresql${pg_version}-devel"
+                return 0
+            fi
+        done
+        
+        # Last resort: Install PostgreSQL from PGDG repo for AL2
+        echo "Attempting to install PostgreSQL from PGDG repository..."
+        sudo yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm || true
+        if sudo yum install -y postgresql15-devel; then
+            echo "Successfully installed postgresql15-devel from PGDG repository"
+            return 0
+        fi
+    fi
+    
+    echo "WARNING: All attempts to install PostgreSQL development packages failed."
+    echo "Will attempt to continue without them, but psycopg2 compilation may fail."
+    echo "Consider using psycopg2-binary package instead which doesn't require these dependencies."
+    
+    # Return non-zero but don't stop the deployment
+    return 1
+}
+
+# Execute the PostgreSQL package installation
+install_postgresql_packages || echo "PostgreSQL package installation failed, but continuing deployment"
+
+# Verify installation
+echo "Checking for PostgreSQL development files..."
+if pkg-config --exists libpq; then
+    echo "libpq found via pkg-config"
+    pkg-config --modversion libpq
+    pkg-config --cflags libpq
+elif [ -f "/usr/include/libpq-fe.h" ]; then
+    echo "libpq-fe.h header found"
+elif [ -f "/usr/include/postgresql/libpq-fe.h" ]; then
+    echo "postgresql/libpq-fe.h header found"
+else
+    echo "WARNING: No PostgreSQL development files found."
+    echo "Will attempt to use psycopg2-binary package if available."
+fi
+
+echo "=== POSTGRESQL PACKAGE INSTALLATION COMPLETED ==="
