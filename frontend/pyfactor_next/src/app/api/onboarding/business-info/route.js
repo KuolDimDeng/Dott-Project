@@ -352,7 +352,7 @@ export async function POST(request) {
               }
             });
             
-            console.log('�� [BUSINESS-INFO API] Step 8: Setting cookie with production settings');
+            console.log('🚨 [BUSINESS-INFO API] Step 8: Setting cookie with production settings');
             const cookieOptions = {
               path: '/',
               httpOnly: true,
@@ -386,7 +386,7 @@ export async function POST(request) {
             return response;
             
           } catch (sessionUpdateError) {
-            console.error('�� [BUSINESS-INFO API] ❌ CRITICAL SESSION UPDATE ERROR:', {
+            console.error('🚨 [BUSINESS-INFO API] ❌ CRITICAL SESSION UPDATE ERROR:', {
               message: sessionUpdateError.message,
               stack: sessionUpdateError.stack,
               name: sessionUpdateError.name
@@ -417,7 +417,7 @@ export async function POST(request) {
           backendData = { success: true, message: 'Business info saved successfully' };
           
           // SIMPLIFIED SESSION UPDATE FOR NO-JSON CASE
-          console.log('�� [BUSINESS-INFO API] === SIMPLIFIED SESSION UPDATE (NO JSON CASE) ===');
+          console.log('🚨 [BUSINESS-INFO API] === SIMPLIFIED SESSION UPDATE (NO JSON CASE) ===');
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
@@ -478,7 +478,7 @@ export async function POST(request) {
       } else {
         console.log('🚨 [BUSINESS-INFO API] BACKEND FAILED PATH');
         const errorText = await backendResponse.text().catch(() => 'Unknown error');
-        console.error('�� [BUSINESS-INFO API] ❌ BACKEND SAVE FAILED:', {
+        console.error('🚨 [BUSINESS-INFO API] ❌ BACKEND SAVE FAILED:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
           error: errorText,
@@ -487,6 +487,222 @@ export async function POST(request) {
         
         // Continue with cookie storage even if backend fails (graceful degradation)
         console.log('[api/onboarding/business-info] Continuing with cookie storage despite backend failure');
+        
+        // CRITICAL FIX: Enhanced session update for backend failure - same as success path
+        console.log('🚨 [BUSINESS-INFO API] === ENHANCED SESSION UPDATE (BACKEND FAILED) ===');
+        console.log('🚨 [BUSINESS-INFO API] Time:', new Date().toISOString());
+        console.log('🚨 [BUSINESS-INFO API] Backend failed, but we still need to update session');
+        
+        try {
+          const cookieStore = await cookies();
+          console.log('🚨 [BUSINESS-INFO API] Step 1: Got cookie store successfully (fallback)');
+          
+          const sessionCookie = cookieStore.get('appSession');
+          console.log('🚨 [BUSINESS-INFO API] Step 2: Session cookie exists:', !!sessionCookie);
+          console.log('🚨 [BUSINESS-INFO API] Step 2: Session cookie size:', sessionCookie?.value?.length || 0, 'bytes');
+          
+          if (!sessionCookie) {
+            console.log('🚨 [BUSINESS-INFO API] ❌ CRITICAL: No session cookie found - cannot update session (fallback)');
+            throw new Error('No session cookie found for update (fallback)');
+          }
+          
+          let sessionData = {};
+          try {
+            sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            console.log('🚨 [BUSINESS-INFO API] Step 3: Session parsed successfully (fallback)');
+            console.log('🚨 [BUSINESS-INFO API] Step 3: User exists in session:', !!sessionData.user);
+          } catch (parseError) {
+            console.error('🚨 [BUSINESS-INFO API] ❌ Session parse error (fallback):', parseError.message);
+            throw new Error(`Session parse failed (fallback): ${parseError.message}`);
+          }
+          
+          // SIMPLIFIED SESSION UPDATE - More reliable approach (same as success path)
+          console.log('🚨 [BUSINESS-INFO API] Step 4: Creating updated session data (fallback)');
+          const currentUser = sessionData.user || {};
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 4: Current user state (fallback):', {
+            email: currentUser.email,
+            needsOnboarding: currentUser.needsOnboarding,
+            currentStep: currentUser.currentStep,
+            businessInfoCompleted: currentUser.businessInfoCompleted
+          });
+          
+          // Create the updated user object with explicit values
+          const updatedUser = {
+            ...currentUser,
+            // CRITICAL: Set completion status even though backend failed
+            needsOnboarding: false,
+            onboardingCompleted: false,
+            currentStep: 'subscription',
+            current_onboarding_step: 'subscription',
+            businessInfoCompleted: true,
+            lastUpdated: new Date().toISOString(),
+            // Preserve essential fields
+            email: currentUser.email,
+            sub: currentUser.sub,
+            name: currentUser.name,
+            picture: currentUser.picture
+          };
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 5: Updated user object (fallback):', {
+            email: updatedUser.email,
+            needsOnboarding: updatedUser.needsOnboarding,
+            currentStep: updatedUser.currentStep,
+            businessInfoCompleted: updatedUser.businessInfoCompleted
+          });
+          
+          // Create minimal session data (reduce cookie size)
+          const updatedSessionData = {
+            user: updatedUser,
+            accessToken: sessionData.accessToken,
+            idToken: sessionData.idToken,
+            accessTokenExpiresAt: sessionData.accessTokenExpiresAt
+          };
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 6: Creating cookie string (fallback)');
+          let cookieString;
+          try {
+            cookieString = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+            console.log('🚨 [BUSINESS-INFO API] Step 6: Cookie string created, size (fallback):', cookieString.length, 'bytes');
+          } catch (encodeError) {
+            console.error('🚨 [BUSINESS-INFO API] ❌ Cookie encoding error (fallback):', encodeError.message);
+            throw new Error(`Cookie encoding failed (fallback): ${encodeError.message}`);
+          }
+          
+          // Validate cookie size and trim if necessary
+          if (cookieString.length > 3900) { // Leave some buffer
+            console.log('🚨 [BUSINESS-INFO API] ⚠️ Cookie too large, creating minimal version (fallback)');
+            const minimalSessionData = {
+              user: {
+                email: updatedUser.email,
+                sub: updatedUser.sub,
+                needsOnboarding: false,
+                currentStep: 'subscription',
+                businessInfoCompleted: true,
+                lastUpdated: new Date().toISOString()
+              },
+              accessToken: sessionData.accessToken
+            };
+            cookieString = Buffer.from(JSON.stringify(minimalSessionData)).toString('base64');
+            console.log('🚨 [BUSINESS-INFO API] Step 6b: Minimal cookie created, size (fallback):', cookieString.length, 'bytes');
+          }
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 7: Creating response (fallback)');
+          const response = createSafeResponse({
+            success: true, // Still successful from user perspective
+            message: 'Business information saved locally (backend temporarily unavailable)',
+            next_step: 'subscription',
+            current_step: 'subscription',
+            redirect_url: '/onboarding/subscription',
+            backendStatus: 'offline',
+            fallback: true,
+            debug: {
+              sessionUpdated: true,
+              cookieSize: cookieString.length,
+              timestamp: new Date().toISOString(),
+              backendError: errorText
+            }
+          });
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 8: Setting cookie with production settings (fallback)');
+          const cookieOptions = {
+            path: '/',
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+          };
+          
+          console.log('🚨 [BUSINESS-INFO API] Step 8: Cookie options (fallback):', cookieOptions);
+          
+          try {
+            response.cookies.set('appSession', cookieString, cookieOptions);
+            console.log('🚨 [BUSINESS-INFO API] Step 9: ✅ SESSION COOKIE SET SUCCESSFULLY (FALLBACK)!');
+          } catch (setCookieError) {
+            console.error('🚨 [BUSINESS-INFO API] ❌ Cookie set error (fallback):', setCookieError.message);
+            throw new Error(`Failed to set cookie (fallback): ${setCookieError.message}`);
+          }
+          
+          console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE COMPLETED SUCCESSFULLY (FALLBACK) ===');
+          console.log('🚨 [BUSINESS-INFO API] Final verification (fallback):', {
+            sessionUpdated: true,
+            newNeedsOnboarding: false,
+            newCurrentStep: 'subscription',
+            businessInfoCompleted: true,
+            cookieSize: cookieString.length,
+            domain: cookieOptions.domain,
+            production: process.env.NODE_ENV === 'production',
+            backendFailed: true
+          });
+          
+          // Set fallback cookies too
+          await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
+          await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
+          await cookieStore.set('onboardedStatus', 'business_info', COOKIE_OPTIONS);
+          await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
+          await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+          
+          if (businessData.country) {
+            await cookieStore.set('businessCountry', businessData.country, COOKIE_OPTIONS);
+          }
+          
+          if (businessData.legalStructure) {
+            await cookieStore.set('legalStructure', businessData.legalStructure, COOKIE_OPTIONS);
+          }
+          
+          await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
+          console.log('🚨 [BUSINESS-INFO API] ✅ FALLBACK COOKIES SET SUCCESSFULLY');
+          
+          return response;
+          
+        } catch (sessionUpdateError) {
+          console.error('🚨 [BUSINESS-INFO API] ❌ CRITICAL SESSION UPDATE ERROR (FALLBACK):', {
+            message: sessionUpdateError.message,
+            stack: sessionUpdateError.stack,
+            name: sessionUpdateError.name
+          });
+          
+          // Last resort: try basic cookie storage
+          try {
+            const cookieStore = await cookies();
+            await cookieStore.set('businessInfoCompleted', 'true', COOKIE_OPTIONS);
+            await cookieStore.set('onboardingStep', 'subscription', COOKIE_OPTIONS);
+            await cookieStore.set('businessName', businessData.businessName, COOKIE_OPTIONS);
+            await cookieStore.set('businessType', businessData.businessType, COOKIE_OPTIONS);
+            
+            console.log('🚨 [BUSINESS-INFO API] ✅ BASIC FALLBACK COOKIES SET');
+            
+            return createSafeResponse({
+              success: true,
+              message: 'Business information saved locally',
+              next_step: 'subscription',
+              current_step: 'subscription',
+              redirect_url: '/onboarding/subscription',
+              warning: 'Session update failed but basic data saved',
+              error: sessionUpdateError.message,
+              debug: {
+                sessionUpdateFailed: true,
+                error: sessionUpdateError.message,
+                timestamp: new Date().toISOString(),
+                fallbackUsed: true
+              }
+            });
+          } catch (finalError) {
+            console.error('🚨 [BUSINESS-INFO API] ❌ COMPLETE FAILURE:', finalError.message);
+            
+            return createSafeResponse({
+              success: false,
+              error: 'Failed to save business information',
+              message: 'Please try again or contact support if the problem persists',
+              debug: {
+                sessionError: sessionUpdateError.message,
+                finalError: finalError.message,
+                timestamp: new Date().toISOString()
+              }
+            }, 500);
+          }
+        }
       }
       
       // ALWAYS set cookies for caching/fallback (regardless of backend success)
