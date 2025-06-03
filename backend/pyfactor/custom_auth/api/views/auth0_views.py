@@ -17,6 +17,7 @@ from django.utils import timezone
 from django.db import transaction
 import uuid
 import json
+import traceback
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -53,18 +54,34 @@ class Auth0UserCreateView(APIView):
                 try:
                     existing_tenant = Tenant.objects.filter(owner_id=user.id).first()
                     if existing_tenant:
-                        logger.info(f"Found existing tenant for user {user.email}: {existing_tenant.id}")
+                        logger.info(f"🔍 [AUTH0_USER_CREATE] Found existing tenant for user {user.email}: {existing_tenant.id}")
                         
-                        # Get onboarding progress
+                        # Get onboarding progress with detailed debugging
                         progress = OnboardingProgress.objects.filter(user=user).first()
                         current_step = 'business_info'
                         needs_onboarding = True
                         onboarding_completed = False
                         
+                        logger.info(f"🔍 [AUTH0_USER_CREATE] Raw onboarding progress for {user.email}: {progress}")
+                        
                         if progress:
+                            logger.info(f"🔍 [AUTH0_USER_CREATE] Onboarding progress details:")
+                            logger.info(f"  - onboarding_status: '{progress.onboarding_status}'")
+                            logger.info(f"  - current_step: '{progress.current_step}'")
+                            logger.info(f"  - setup_completed: {progress.setup_completed}")
+                            logger.info(f"  - completed_steps: {progress.completed_steps}")
+                            logger.info(f"  - completed_at: {progress.completed_at}")
+                            
                             current_step = progress.current_step or 'business_info'
                             needs_onboarding = progress.onboarding_status != 'complete'
                             onboarding_completed = progress.onboarding_status == 'complete'
+                            
+                            logger.info(f"🔍 [AUTH0_USER_CREATE] Computed values:")
+                            logger.info(f"  - current_step: '{current_step}'")
+                            logger.info(f"  - needs_onboarding: {needs_onboarding}")
+                            logger.info(f"  - onboarding_completed: {onboarding_completed}")
+                        else:
+                            logger.warning(f"🚨 [AUTH0_USER_CREATE] No onboarding progress found for user {user.email} - this might be the issue!")
                         
                         return Response({
                             'success': True,
@@ -466,18 +483,28 @@ class Auth0OnboardingCompleteView(APIView):
         try:
             user = request.user
             
-            logger.info(f"Completing onboarding for user: {user.email}")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] === COMPLETION REQUEST STARTED ===")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] User: {user.email} (ID: {user.id})")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] Request data: {request.data}")
             
             # Get onboarding progress
             try:
                 progress = OnboardingProgress.objects.get(user=user)
+                logger.info(f"🎯 [ONBOARDING_COMPLETE] Found existing progress:")
+                logger.info(f"  - Current onboarding_status: '{progress.onboarding_status}'")
+                logger.info(f"  - Current current_step: '{progress.current_step}'")
+                logger.info(f"  - Current setup_completed: {progress.setup_completed}")
+                logger.info(f"  - Current completed_steps: {progress.completed_steps}")
             except OnboardingProgress.DoesNotExist:
+                logger.error(f"🚨 [ONBOARDING_COMPLETE] No onboarding progress found for user {user.email}")
                 return Response({
                     'success': False,
                     'error': 'No onboarding progress found'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             # Mark as complete
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] Updating progress to completed...")
+            
             progress.setup_completed = True
             progress.setup_timestamp = timezone.now()
             progress.onboarding_status = 'complete'
@@ -491,7 +518,13 @@ class Auth0OnboardingCompleteView(APIView):
             
             progress.save()
             
-            logger.info(f"Onboarding completed for user {user.email}")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] ✅ Progress updated successfully:")
+            logger.info(f"  - New onboarding_status: '{progress.onboarding_status}'")
+            logger.info(f"  - New current_step: '{progress.current_step}'")
+            logger.info(f"  - New setup_completed: {progress.setup_completed}")
+            logger.info(f"  - New completed_steps: {progress.completed_steps}")
+            logger.info(f"  - Completed at: {progress.completed_at}")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] === COMPLETION REQUEST FINISHED ===")
             
             return Response({
                 'success': True,
@@ -503,7 +536,8 @@ class Auth0OnboardingCompleteView(APIView):
             })
             
         except Exception as e:
-            logger.error(f"Error completing onboarding: {str(e)}")
+            logger.error(f"🚨 [ONBOARDING_COMPLETE] Error completing onboarding: {str(e)}")
+            logger.error(f"🚨 [ONBOARDING_COMPLETE] Exception details: {traceback.format_exc()}")
             return Response({
                 'success': False,
                 'error': 'Failed to complete onboarding',
