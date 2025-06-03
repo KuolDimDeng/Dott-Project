@@ -78,11 +78,17 @@ if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startsw
     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
 # Auth0 Settings (Primary Authentication)
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')  # Use actual tenant domain for JWT validation
+# Support for Auth0 custom domains - separate actual domain from custom domain
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')  # Actual tenant domain for JWKS
+AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')  # Custom domain for frontend/issuer
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/')
-AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"
+
+# Determine which domain to use for issuer validation
+# If custom domain is configured, use it for issuer validation
+AUTH0_ISSUER_DOMAIN = AUTH0_CUSTOM_DOMAIN if AUTH0_CUSTOM_DOMAIN else AUTH0_DOMAIN
+AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
 
 # Check Auth0 configuration
 if not all([AUTH0_DOMAIN, AUTH0_CLIENT_ID]):

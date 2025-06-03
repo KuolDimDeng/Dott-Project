@@ -29,15 +29,20 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
     """
     
     def __init__(self):
-        self.domain = getattr(settings, 'AUTH0_DOMAIN', None)
+        self.domain = getattr(settings, 'AUTH0_DOMAIN', None)  # Actual tenant domain for JWKS
+        self.custom_domain = getattr(settings, 'AUTH0_CUSTOM_DOMAIN', None)  # Custom domain if configured
+        self.issuer_domain = getattr(settings, 'AUTH0_ISSUER_DOMAIN', self.domain)  # Domain for issuer validation
         self.audience = getattr(settings, 'AUTH0_AUDIENCE', None)
         self.client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
         
         if not self.domain:
             raise exceptions.AuthenticationFailed('Auth0 domain not configured')
             
+        # Always use the actual tenant domain for JWKS, even with custom domains
         self.jwks_url = f"https://{self.domain}/.well-known/jwks.json"
         self.jwks_client = PyJWKClient(self.jwks_url)
+        
+        logger.info(f"Auth0 configured - JWKS: {self.domain}, Issuer: {self.issuer_domain}")
     
     def authenticate(self, request):
         """
@@ -82,16 +87,16 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         Validate JWT token against Auth0's public keys.
         """
         try:
-            # Get the signing key from Auth0
+            # Get the signing key from Auth0 (always use actual tenant domain)
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
             
-            # Decode and validate the token
+            # Decode and validate the token (use issuer domain for validation)
             payload = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=self.audience,
-                issuer=f"https://{self.domain}/"
+                issuer=f"https://{self.issuer_domain}/"
             )
             
             return payload
