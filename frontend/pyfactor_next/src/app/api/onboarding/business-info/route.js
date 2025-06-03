@@ -217,6 +217,8 @@ export async function POST(request) {
       let backendData = {};
       let backendSuccess = false;
       
+      console.log('[api/onboarding/business-info] Backend response status:', backendResponse.status, backendResponse.ok);
+      
       if (backendResponse.ok) {
         try {
           backendData = await backendResponse.json();
@@ -227,14 +229,18 @@ export async function POST(request) {
           });
           
           // Update session cookie with new onboarding status (primary fix)
+          console.log('[api/onboarding/business-info] ATTEMPTING SESSION UPDATE - Backend success path');
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
             let sessionData = {};
             
+            console.log('[api/onboarding/business-info] Session cookie exists:', !!sessionCookie);
+            
             if (sessionCookie) {
               try {
                 sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+                console.log('[api/onboarding/business-info] Parsed session data successfully, user exists:', !!sessionData.user);
               } catch (parseError) {
                 console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
               }
@@ -276,10 +282,11 @@ export async function POST(request) {
               maxAge: 7 * 24 * 60 * 60 // 7 days
             });
             
-            console.log('[api/onboarding/business-info] Business info completed, session updated to subscription step:', {
+            console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {
               currentStep: updatedSessionData.user.currentStep,
               businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
-              needsOnboarding: updatedSessionData.user.needsOnboarding
+              needsOnboarding: updatedSessionData.user.needsOnboarding,
+              cookieSet: true
             });
             return finalResponse;
             
@@ -368,10 +375,11 @@ export async function POST(request) {
         }
       } else {
         const errorText = await backendResponse.text().catch(() => 'Unknown error');
-        console.error('[api/onboarding/business-info] Backend save failed:', {
+        console.error('[api/onboarding/business-info] ❌ BACKEND SAVE FAILED:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
-          error: errorText
+          error: errorText,
+          url: `${apiBaseUrl}/api/onboarding/business-info/`
         });
         
         // Continue with cookie storage even if backend fails (graceful degradation)
@@ -436,13 +444,18 @@ export async function POST(request) {
       try {
         const cookieStore = await cookies();
         
+        console.log('[api/onboarding/business-info] ATTEMPTING SESSION UPDATE - Backend failed, using fallback path');
+        
         // Mark business info step as completed (cached) and update session
         const sessionCookie = cookieStore.get('appSession');
         let sessionData = {};
         
+        console.log('[api/onboarding/business-info] Fallback - Session cookie exists:', !!sessionCookie);
+        
         if (sessionCookie) {
           try {
             sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            console.log('[api/onboarding/business-info] Fallback - Parsed session data successfully, user exists:', !!sessionData.user);
           } catch (parseError) {
             console.warn('[api/onboarding/business-info] Error parsing session for fallback update:', parseError);
           }
@@ -498,9 +511,10 @@ export async function POST(request) {
           maxAge: 7 * 24 * 60 * 60 // 7 days
         });
         
-        console.log('[api/onboarding/business-info] Session updated to subscription step (fallback case):', {
+        console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (fallback case):', {
           currentStep: updatedSessionData.user.currentStep,
-          businessInfoCompleted: updatedSessionData.user.businessInfoCompleted
+          businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
+          cookieSet: true
         });
         return response;
       } catch (fallbackError) {
