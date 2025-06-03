@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import auth_views, tenant_views
 from .views.auth0_views import (
+    Auth0UserCreateView,
     Auth0UserProfileView,
     Auth0OnboardingBusinessInfoView,
     Auth0OnboardingSubscriptionView,
@@ -22,6 +23,7 @@ urlpatterns = [
     path('auth/verify-tenant/', auth_views.VerifyTenantView.as_view(), name='verify-tenant'),
     
     # Auth0 endpoints
+    path('auth0/create-user/', Auth0UserCreateView.as_view(), name='auth0-create-user'),
     path('users/me/', Auth0UserProfileView.as_view(), name='auth0-user-profile'),
     path('onboarding/business-info/', Auth0OnboardingBusinessInfoView.as_view(), name='auth0-onboarding-business-info'),
     path('onboarding/subscription/', Auth0OnboardingSubscriptionView.as_view(), name='auth0-onboarding-subscription'),
