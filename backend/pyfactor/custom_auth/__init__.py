@@ -1,7 +1,8 @@
 """
-Custom authentication package for handling Cognito integration and user attributes.
+Custom authentication package for handling Auth0 integration and user management.
 """
 
-from .client import get_cognito_client
+# Auth0 authentication functionality is handled by individual modules
+# No need for client initialization at package level
 
-__all__ = ['get_cognito_client']
+__all__ = []
