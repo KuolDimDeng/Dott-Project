@@ -71,6 +71,10 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/users/me/',
             '/api/auth0/create-user/',
             '/api/user/create-auth0-user/',  # Frontend endpoint
+            '/api/onboarding/business-info/',
+            '/api/onboarding/subscription/',
+            '/api/onboarding/complete',
+            '/api/onboarding/',  # Catch-all for onboarding endpoints
         ]
         
         # Add custom public paths from settings if available
