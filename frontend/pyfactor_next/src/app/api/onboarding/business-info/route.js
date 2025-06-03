@@ -117,6 +117,10 @@ function createSafeResponse(data, status = 200, additionalHeaders = null) {
  * Handle business information update - SECURE VERSION with Database Persistence
  */
 export async function POST(request) {
+  console.log('🚨 [BUSINESS-INFO API] POST REQUEST STARTED - Version 2.1');
+  console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
+  console.log('🚨 [BUSINESS-INFO API] API Base URL:', process.env.NEXT_PUBLIC_API_URL);
+  
   try {
     console.log('[api/onboarding/business-info] POST request received');
     
@@ -198,7 +202,9 @@ export async function POST(request) {
         throw new Error('No valid access token found for backend authentication');
       }
       
-      console.log('[api/onboarding/business-info] Forwarding to Django backend with Auth0 token');
+      console.log('🚨 [BUSINESS-INFO API] ABOUT TO CALL DJANGO BACKEND');
+      console.log('🚨 [BUSINESS-INFO API] Access token exists:', !!accessToken);
+      console.log('🚨 [BUSINESS-INFO API] Backend URL:', `${apiBaseUrl}/api/onboarding/business-info/`);
       
       // Forward authenticated request to Django backend
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
@@ -217,9 +223,11 @@ export async function POST(request) {
       let backendData = {};
       let backendSuccess = false;
       
-      console.log('[api/onboarding/business-info] Backend response status:', backendResponse.status, backendResponse.ok);
+      console.log('🚨 [BUSINESS-INFO API] Backend response status:', backendResponse.status, backendResponse.ok);
+      console.log('🚨 [BUSINESS-INFO API] Backend response OK?', backendResponse.ok);
       
       if (backendResponse.ok) {
+        console.log('🚨 [BUSINESS-INFO API] BACKEND SUCCESS PATH');
         try {
           backendData = await backendResponse.json();
           backendSuccess = true;
@@ -229,7 +237,8 @@ export async function POST(request) {
           });
           
           // Update session cookie with new onboarding status (primary fix)
-          console.log('[api/onboarding/business-info] ATTEMPTING SESSION UPDATE - Backend success path');
+          console.log('🚨 [BUSINESS-INFO API] ATTEMPTING SESSION UPDATE - Backend success path');
+          console.log('🚨 [BUSINESS-INFO API] About to get cookies and update session');
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
@@ -438,8 +447,9 @@ export async function POST(request) {
           }
         }
       } else {
+        console.log('🚨 [BUSINESS-INFO API] BACKEND FAILED PATH');
         const errorText = await backendResponse.text().catch(() => 'Unknown error');
-        console.error('[api/onboarding/business-info] ❌ BACKEND SAVE FAILED:', {
+        console.error('🚨 [BUSINESS-INFO API] ❌ BACKEND SAVE FAILED:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
           error: errorText,
@@ -508,7 +518,8 @@ export async function POST(request) {
       try {
         const cookieStore = await cookies();
         
-        console.log('[api/onboarding/business-info] ATTEMPTING SESSION UPDATE - Backend failed, using fallback path');
+        console.log('🚨 [BUSINESS-INFO API] ATTEMPTING SESSION UPDATE - Backend failed, using fallback path');
+        console.log('🚨 [BUSINESS-INFO API] Starting fallback session update process');
         
         // Mark business info step as completed (cached) and update session
         const sessionCookie = cookieStore.get('appSession');
@@ -628,11 +639,12 @@ export async function POST(request) {
     }
     
   } catch (error) {
-    console.error('[api/onboarding/business-info] Critical error:', {
+    console.error('🚨 [BUSINESS-INFO API] CRITICAL ERROR IN POST FUNCTION:', {
       message: error.message,
       name: error.name,
       stack: error.stack
     });
+    console.error('🚨 [BUSINESS-INFO API] This is the main catch block - something went very wrong');
     
     return createSafeResponse({
       success: false,
