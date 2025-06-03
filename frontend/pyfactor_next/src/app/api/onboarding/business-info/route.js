@@ -241,10 +241,12 @@ export async function POST(request) {
             }
             
             // CRITICAL FIX: Update session to move to subscription step
+            // Ensure we have a proper user object structure
+            const currentUser = sessionData.user || {};
             const updatedSessionData = {
               ...sessionData,
               user: {
-                ...sessionData.user,
+                ...currentUser,
                 currentStep: 'subscription',
                 current_onboarding_step: 'subscription',
                 needsOnboarding: true,
@@ -274,7 +276,11 @@ export async function POST(request) {
               maxAge: 7 * 24 * 60 * 60 // 7 days
             });
             
-            console.log('[api/onboarding/business-info] Business info completed, session updated to subscription step');
+            console.log('[api/onboarding/business-info] Business info completed, session updated to subscription step:', {
+              currentStep: updatedSessionData.user.currentStep,
+              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
+              needsOnboarding: updatedSessionData.user.needsOnboarding
+            });
             return finalResponse;
             
           } catch (sessionError) {
@@ -310,10 +316,12 @@ export async function POST(request) {
             }
             
             // CRITICAL FIX: Update session to move to subscription step
+            // Ensure we have a proper user object structure
+            const currentUser = sessionData.user || {};
             const updatedSessionData = {
               ...sessionData,
               user: {
-                ...sessionData.user,
+                ...currentUser,
                 currentStep: 'subscription',
                 current_onboarding_step: 'subscription',
                 needsOnboarding: true,
@@ -341,7 +349,10 @@ export async function POST(request) {
               maxAge: 7 * 24 * 60 * 60 // 7 days
             });
             
-            console.log('[api/onboarding/business-info] Session updated to subscription step (no JSON case)');
+            console.log('[api/onboarding/business-info] Session updated to subscription step (no JSON case):', {
+              currentStep: updatedSessionData.user.currentStep,
+              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted
+            });
             return response;
             
           } catch (sessionError) {
@@ -438,10 +449,12 @@ export async function POST(request) {
         }
         
         // CRITICAL FIX: Update session to move to subscription step even in fallback
+        // Ensure we have a proper user object structure
+        const currentUser = sessionData.user || {};
         const updatedSessionData = {
           ...sessionData,
           user: {
-            ...sessionData.user,
+            ...currentUser,
             currentStep: 'subscription',
             current_onboarding_step: 'subscription', 
             needsOnboarding: true,
@@ -485,7 +498,10 @@ export async function POST(request) {
           maxAge: 7 * 24 * 60 * 60 // 7 days
         });
         
-        console.log('[api/onboarding/business-info] Session updated to subscription step (fallback case)');
+        console.log('[api/onboarding/business-info] Session updated to subscription step (fallback case):', {
+          currentStep: updatedSessionData.user.currentStep,
+          businessInfoCompleted: updatedSessionData.user.businessInfoCompleted
+        });
         return response;
       } catch (fallbackError) {
         console.error('[api/onboarding/business-info] Complete failure:', fallbackError);
