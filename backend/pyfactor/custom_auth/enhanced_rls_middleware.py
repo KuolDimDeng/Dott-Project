@@ -54,6 +54,11 @@ class EnhancedRowLevelSecurityMiddleware:
             '/favicon.ico',
             '/api/hr/health/',
             '/api/hr/health',  # Add HR health endpoint as public
+            # Auth0 user management endpoints (needed for tenant creation/lookup)
+            '/api/users/me/',
+            '/api/auth0/create-user/',
+            '/api/user/create-auth0-user/',  # Frontend endpoint
+            '/api/auth0/',  # All Auth0 endpoints
         ]
         
         # Add custom public paths from settings if available
