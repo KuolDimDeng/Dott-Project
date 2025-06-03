@@ -271,7 +271,7 @@ export async function POST(request) {
                 ...currentUser,
                 currentStep: 'subscription',
                 current_onboarding_step: 'subscription',
-                needsOnboarding: true,
+                needsOnboarding: false,
                 onboardingCompleted: false,
                 businessInfoCompleted: true,
                 lastUpdated: new Date().toISOString()
@@ -290,7 +290,7 @@ export async function POST(request) {
                   email: updatedSessionData.user.email,
                   currentStep: 'subscription',
                   current_onboarding_step: 'subscription',
-                  needsOnboarding: true,
+                  needsOnboarding: false,
                   onboardingCompleted: false,
                   businessInfoCompleted: true,
                   lastUpdated: new Date().toISOString()
@@ -380,7 +380,7 @@ export async function POST(request) {
                 ...currentUser,
                 currentStep: 'subscription',
                 current_onboarding_step: 'subscription',
-                needsOnboarding: true,
+                needsOnboarding: false,
                 onboardingCompleted: false,
                 businessInfoCompleted: true,
                 lastUpdated: new Date().toISOString()
@@ -399,7 +399,7 @@ export async function POST(request) {
                   email: updatedSessionData.user.email,
                   currentStep: 'subscription',
                   current_onboarding_step: 'subscription',
-                  needsOnboarding: true,
+                  needsOnboarding: false,
                   onboardingCompleted: false,
                   businessInfoCompleted: true,
                   lastUpdated: new Date().toISOString()
@@ -552,7 +552,7 @@ export async function POST(request) {
             ...currentUser,
             currentStep: 'subscription',
             current_onboarding_step: 'subscription', 
-            needsOnboarding: true,
+            needsOnboarding: false,
             onboardingCompleted: false,
             businessInfoCompleted: true,
             lastUpdated: new Date().toISOString()
@@ -571,7 +571,7 @@ export async function POST(request) {
               email: updatedSessionData.user.email,
               currentStep: 'subscription',
               current_onboarding_step: 'subscription',
-              needsOnboarding: true,
+              needsOnboarding: false,
               onboardingCompleted: false,
               businessInfoCompleted: true,
               lastUpdated: new Date().toISOString()

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET() {
+  console.log('🚨 [PROFILE API] GET REQUEST STARTED - Version 2.1');
+  console.log('🚨 [PROFILE API] Environment:', process.env.NODE_ENV);
+  
   try {
     console.log('[Profile API] Getting user profile data');
     
@@ -9,25 +12,40 @@ export async function GET() {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
+    console.log('🚨 [PROFILE API] Session cookie exists:', !!sessionCookie);
+    console.log('🚨 [PROFILE API] Session cookie size:', sessionCookie?.value?.length || 0, 'bytes');
+    
     if (!sessionCookie) {
-      console.log('[Profile API] No session cookie found');
+      console.log('🚨 [PROFILE API] ❌ NO SESSION COOKIE FOUND');
       return NextResponse.json(null, { status: 200 });
     }
     
     let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      console.log('🚨 [PROFILE API] ✅ Session cookie parsed successfully');
     } catch (parseError) {
-      console.error('[Profile API] Error parsing session cookie:', parseError);
+      console.error('🚨 [PROFILE API] ❌ Error parsing session cookie:', parseError);
       return NextResponse.json(null, { status: 200 });
     }
     
     const { user, accessToken } = sessionData;
     
     if (!user) {
-      console.log('[Profile API] No user data in session');
+      console.log('🚨 [PROFILE API] ❌ No user data in session');
       return NextResponse.json(null, { status: 200 });
     }
+    
+    console.log('🚨 [PROFILE API] RAW SESSION USER DATA:', {
+      email: user.email,
+      needsOnboarding: user.needsOnboarding,
+      onboardingCompleted: user.onboardingCompleted,
+      currentStep: user.currentStep,
+      current_onboarding_step: user.current_onboarding_step,
+      businessInfoCompleted: user.businessInfoCompleted,
+      lastUpdated: user.lastUpdated,
+      tenantId: user.tenantId || user.tenant_id
+    });
     
     console.log('[Profile API] Session user data:', {
       email: user.email,
@@ -63,10 +81,12 @@ export async function GET() {
     
     // Try to fetch additional data from Django backend (if available)
     if (accessToken) {
+      console.log('🚨 [PROFILE API] ATTEMPTING BACKEND FETCH - Access token exists');
       try {
         const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
         
         console.log('[Profile API] Fetching profile from Django backend');
+        console.log('🚨 [PROFILE API] Backend URL:', `${apiBaseUrl}/api/users/me/`);
         
         const backendResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
           method: 'GET',
@@ -77,8 +97,17 @@ export async function GET() {
           }
         });
         
+        console.log('🚨 [PROFILE API] Backend response status:', backendResponse.status, backendResponse.ok);
+        
         if (backendResponse.ok) {
           const backendUser = await backendResponse.json();
+          console.log('🚨 [PROFILE API] ✅ BACKEND USER DATA:', {
+            email: backendUser.email,
+            tenant_id: backendUser.tenant_id,
+            onboarding_completed: backendUser.onboarding_completed,
+            needs_onboarding: backendUser.needs_onboarding,
+            current_onboarding_step: backendUser.current_onboarding_step
+          });
           console.log('[Profile API] Backend user data:', {
             email: backendUser.email,
             tenant_id: backendUser.tenant_id,
@@ -92,6 +121,15 @@ export async function GET() {
           const oldCurrentStep = profileData.currentStep;
           const sessionOnboardingComplete = user.onboardingCompleted;
           const sessionNeedsOnboarding = user.needsOnboarding;
+          
+          console.log('🚨 [PROFILE API] BEFORE MERGE - Session vs Backend:', {
+            sessionNeedsOnboarding: user.needsOnboarding,
+            backendNeedsOnboarding: backendUser.needs_onboarding,
+            sessionCurrentStep: user.currentStep || user.current_onboarding_step,
+            backendCurrentStep: backendUser.current_onboarding_step,
+            sessionBusinessInfo: user.businessInfoCompleted,
+            willPrioritizeSession: user.needsOnboarding !== undefined
+          });
           
           profileData = {
             ...profileData,
@@ -169,9 +207,25 @@ export async function GET() {
       businessInfoCompleted: profileData.businessInfoCompleted
     });
     
+    console.log('🚨 [PROFILE API] ✅ FINAL PROFILE DATA BEING RETURNED:', {
+      email: profileData.email,
+      tenantId: profileData.tenantId,
+      needsOnboarding: profileData.needsOnboarding,
+      onboardingCompleted: profileData.onboardingCompleted,
+      currentStep: profileData.currentStep,
+      businessInfoCompleted: profileData.businessInfoCompleted,
+      hasAllRequiredFields: !!(profileData.email && profileData.tenantId),
+      dataSource: accessToken ? 'session+backend' : 'session-only'
+    });
+    
     return NextResponse.json(profileData);
     
   } catch (error) {
+    console.error('🚨 [PROFILE API] ❌ CRITICAL ERROR:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack
+    });
     console.error('[Profile API] Error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
