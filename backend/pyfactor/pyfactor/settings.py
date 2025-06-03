@@ -78,10 +78,10 @@ if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startsw
     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
 # Auth0 Settings (Primary Authentication)
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'auth.dottapps.com')
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
-AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/')
 AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"
 
 # Check Auth0 configuration
