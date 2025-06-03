@@ -6,12 +6,12 @@ import logging
 import time
 import jwt
 import uuid
+import requests
 from django.utils.deprecation import MiddlewareMixin
 from django.db import connection
 from .rls import set_current_tenant_id, clear_current_tenant_id, verify_rls_setup
 from django.conf import settings
 from django.http import JsonResponse
-from .cognito import CognitoClient
 
 logger = logging.getLogger(__name__)
 
@@ -224,20 +224,22 @@ class RequestIDMiddleware(MiddlewareMixin):
 
 class TokenRefreshMiddleware(MiddlewareMixin):
     """
-    Middleware that checks for expiring JWT tokens and refreshes them automatically.
+    Middleware that checks for expiring JWT tokens and refreshes them automatically using Auth0.
     This prevents token expiration errors from interrupting the user experience.
     """
     
     def __init__(self, get_response):
         self.get_response = get_response
-        self.cognito_client = CognitoClient()
         # Time buffer in seconds (refresh token if it expires within this window)
         self.refresh_buffer = 60 * 5  # 5 minutes
         self.async_mode = False  # Add async_mode attribute for ASGI compatibility
+        self.auth0_domain = getattr(settings, 'AUTH0_DOMAIN', '')
+        self.auth0_client_id = getattr(settings, 'AUTH0_CLIENT_ID', '')
+        self.auth0_client_secret = getattr(settings, 'AUTH0_CLIENT_SECRET', '')
     
     def process_request(self, request):
         """
-        Check if the access token is about to expire and refresh it if needed.
+        Check if the access token is about to expire and refresh it if needed using Auth0.
         """
         # Skip for paths that don't need token refresh
         skip_paths = [
@@ -283,15 +285,15 @@ class TokenRefreshMiddleware(MiddlewareMixin):
             
             # If token exists and is about to expire, refresh it
             if exp and (exp - current_time <= self.refresh_buffer):
-                logger.info(f"Token about to expire in {exp - current_time} seconds, refreshing")
+                logger.info(f"Token about to expire in {exp - current_time} seconds, refreshing with Auth0")
                 
                 try:
-                    # Try to refresh the token
-                    response = self.cognito_client.refresh_auth(refresh_token)
+                    # Try to refresh the token using Auth0
+                    new_tokens = self._refresh_auth0_token(refresh_token)
                     
-                    if response and 'AuthenticationResult' in response:
-                        auth_result = response['AuthenticationResult']
-                        new_access_token = auth_result.get('IdToken')
+                    if new_tokens and 'access_token' in new_tokens:
+                        new_access_token = new_tokens.get('access_token')
+                        new_id_token = new_tokens.get('id_token')
                         
                         if new_access_token:
                             # Store new token for the current request
@@ -300,14 +302,14 @@ class TokenRefreshMiddleware(MiddlewareMixin):
                             # Store refreshed token in a request attribute 
                             # so it can be added to the response cookies
                             request.refreshed_tokens = {
-                                'idToken': new_access_token,
-                                'accessToken': auth_result.get('AccessToken')
+                                'access_token': new_access_token,
+                                'id_token': new_id_token or new_access_token
                             }
                             
-                            logger.info("Token refreshed successfully")
+                            logger.info("Token refreshed successfully with Auth0")
                 except Exception as e:
                     # Log but continue with the current token - let the view handle any auth errors
-                    logger.error(f"Failed to refresh token: {str(e)}")
+                    logger.error(f"Failed to refresh token with Auth0: {str(e)}")
         
         except Exception as e:
             # Log but don't interrupt the request
@@ -315,24 +317,59 @@ class TokenRefreshMiddleware(MiddlewareMixin):
         
         return None
     
+    def _refresh_auth0_token(self, refresh_token):
+        """
+        Refresh Auth0 token using the refresh token.
+        
+        Args:
+            refresh_token (str): The refresh token
+            
+        Returns:
+            dict: New tokens or None if refresh failed
+        """
+        try:
+            url = f"https://{self.auth0_domain}/oauth/token"
+            
+            payload = {
+                'grant_type': 'refresh_token',
+                'client_id': self.auth0_client_id,
+                'client_secret': self.auth0_client_secret,
+                'refresh_token': refresh_token
+            }
+            
+            headers = {
+                'content-type': 'application/json'
+            }
+            
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Auth0 token refresh failed: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error refreshing Auth0 token: {str(e)}")
+            return None
+    
     def process_response(self, request, response):
         """
         If the token was refreshed during the request, update the response cookies.
         """
         if hasattr(request, 'refreshed_tokens'):
             # Update cookies with new tokens
-            from .views.token_service import TokenService
-            
-            # New tokens from request
-            new_id_token = request.refreshed_tokens.get('idToken')
-            new_access_token = request.refreshed_tokens.get('accessToken')
+            new_access_token = request.refreshed_tokens.get('access_token')
+            new_id_token = request.refreshed_tokens.get('id_token')
             
             # Set cookies with new tokens
-            if new_id_token:
-                TokenService.set_token_cookie(response, 'idToken', new_id_token)
-            
             if new_access_token:
-                TokenService.set_token_cookie(response, 'accessToken', new_access_token)
+                response.set_cookie('access_token', new_access_token, 
+                                  max_age=3600, secure=True, httponly=True, samesite='Lax')
+            
+            if new_id_token:
+                response.set_cookie('idToken', new_id_token,
+                                  max_age=3600, secure=True, httponly=True, samesite='Lax')
             
             # Add a header to indicate token was refreshed
             response['X-Token-Refreshed'] = 'true'
