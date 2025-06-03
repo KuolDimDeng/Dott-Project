@@ -1,5 +1,16 @@
+# Auth0 Configuration Fix - Updated for Custom Domain Support
+# Add these to your Render environment variables
 
-# Auth0 Configuration Fix - Add to your Render environment variables
-AUTH0_DOMAIN=auth.dottapps.com
+# Actual Auth0 tenant domain (for JWKS and Management API)
+AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
+
+# Custom domain (for frontend and issuer validation)  
+AUTH0_CUSTOM_DOMAIN=auth.dottapps.com
+
+# Other Auth0 settings
 AUTH0_AUDIENCE=https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/
 AUTH0_CLIENT_ID=GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ
+
+# Note: This configuration allows:
+# - JWKS fetching from actual tenant domain (required)
+# - JWT issuer validation against custom domain (required for frontend tokens)
