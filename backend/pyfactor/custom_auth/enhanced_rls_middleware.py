@@ -28,7 +28,17 @@ import json
 
 from .rls import fix_rls_configuration, set_tenant_context, clear_tenant_context
 
-logger = logging.getLogger(__name__)
+# Import Auth0 authentication with fallback
+try:
+    from custom_auth.auth0_authentication import Auth0JWTAuthentication
+    AUTH0_AVAILABLE = True
+    logger = logging.getLogger(__name__)
+    logger.info("Auth0JWTAuthentication imported successfully")
+except ImportError as e:
+    AUTH0_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.error(f"Failed to import Auth0JWTAuthentication: {e}")
+    logger.error("Auth0 tenant endpoints will not work without this module")
 
 class EnhancedRowLevelSecurityMiddleware:
     """
@@ -283,7 +293,9 @@ class EnhancedRowLevelSecurityMiddleware:
         Handle Auth0 tenant management endpoints securely.
         These endpoints require Auth0 authentication but can create/lookup tenant IDs.
         """
-        from custom_auth.auth0_authentication import Auth0JWTAuthentication
+        if not AUTH0_AVAILABLE:
+            logger.error("Auth0JWTAuthentication not available - cannot handle Auth0 tenant endpoint")
+            return HttpResponseForbidden("Auth0 authentication module not available")
         
         # Verify Auth0 authentication first
         auth = Auth0JWTAuthentication()

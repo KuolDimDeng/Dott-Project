@@ -82,8 +82,7 @@ pids
 ehthumbs.db
 Thumbs.db
 
-# Large backend files (temporary ignore)
-backend/
+# Large files (specific exclusions instead of entire directories)
 aws/
 frontend_schema_backups/
 frontend_file_backups/
