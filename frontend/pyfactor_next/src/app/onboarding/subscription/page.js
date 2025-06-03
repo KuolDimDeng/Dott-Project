@@ -242,6 +242,19 @@ export default function SubscriptionPage() {
         const profileResponse = await fetch('/api/auth/profile');
         if (profileResponse.ok) {
           const profile = await profileResponse.json();
+          
+          console.log('🚨 [SUBSCRIPTION PAGE] === PROFILE API RESPONSE ANALYSIS ===');
+          console.log('🚨 [SUBSCRIPTION PAGE] Raw profile response:', profile);
+          console.log('🚨 [SUBSCRIPTION PAGE] Profile analysis:', {
+            email: profile.email,
+            needsOnboarding: profile.needsOnboarding,
+            onboardingCompleted: profile.onboardingCompleted,
+            currentStep: profile.currentStep,
+            businessInfoCompleted: profile.businessInfoCompleted,
+            tenantId: profile.tenantId,
+            lastUpdated: profile.lastUpdated
+          });
+          
           logger.info('[SubscriptionPage] Profile API response:', profile);
           if (profile) {
             logger.debug('[SubscriptionPage] User profile:', {
@@ -251,20 +264,39 @@ export default function SubscriptionPage() {
               tenantId: profile.tenantId
             });
             
+            console.log('🚨 [SUBSCRIPTION PAGE] === REDIRECT LOGIC ANALYSIS ===');
+            console.log('🚨 [SUBSCRIPTION PAGE] Checking redirect condition 1:');
+            console.log('🚨 [SUBSCRIPTION PAGE] - profile.needsOnboarding:', profile.needsOnboarding);
+            console.log('🚨 [SUBSCRIPTION PAGE] - profile.currentStep:', profile.currentStep);
+            console.log('🚨 [SUBSCRIPTION PAGE] - Condition 1 result:', profile.needsOnboarding && profile.currentStep === 'business_info');
+            
             // If user still needs business info, redirect them back
             if (profile.needsOnboarding && profile.currentStep === 'business_info') {
+              console.log('🚨 [SUBSCRIPTION PAGE] ❌ REDIRECT TRIGGERED - Condition 1: needsOnboarding=true AND currentStep=business_info');
               logger.info('[SubscriptionPage] Business info incomplete, redirecting to business-info page');
               router.push('/onboarding/business-info');
               return;
             }
             
+            console.log('🚨 [SUBSCRIPTION PAGE] Checking redirect condition 2:');
+            console.log('🚨 [SUBSCRIPTION PAGE] - profile.needsOnboarding:', profile.needsOnboarding);
+            console.log('🚨 [SUBSCRIPTION PAGE] - profile.businessInfoCompleted:', profile.businessInfoCompleted);
+            console.log('🚨 [SUBSCRIPTION PAGE] - profile.currentStep:', profile.currentStep);
+            console.log('🚨 [SUBSCRIPTION PAGE] - !profile.currentStep:', !profile.currentStep);
+            console.log('🚨 [SUBSCRIPTION PAGE] - currentStep === business_info:', profile.currentStep === 'business_info');
+            console.log('🚨 [SUBSCRIPTION PAGE] - Condition 2 result:', profile.needsOnboarding && !profile.businessInfoCompleted && (!profile.currentStep || profile.currentStep === 'business_info'));
+            
             // Additional validation: Check if business info is actually completed
             if (profile.needsOnboarding && !profile.businessInfoCompleted && 
                 (!profile.currentStep || profile.currentStep === 'business_info')) {
+              console.log('🚨 [SUBSCRIPTION PAGE] ❌ REDIRECT TRIGGERED - Condition 2: needsOnboarding=true AND businessInfoCompleted=false');
               logger.info('[SubscriptionPage] Business info not completed, redirecting to business-info page');
               router.push('/onboarding/business-info');
               return;
             }
+            
+            console.log('🚨 [SUBSCRIPTION PAGE] ✅ NO REDIRECT - User passed all validation checks');
+            console.log('🚨 [SUBSCRIPTION PAGE] User will remain on subscription page');
             
             // Set tenant ID if available from profile
             if (profile.tenantId && !tenantId) {
@@ -272,6 +304,9 @@ export default function SubscriptionPage() {
             }
           }
         } else {
+          console.log('🚨 [SUBSCRIPTION PAGE] ❌ PROFILE API FAILED');
+          console.log('🚨 [SUBSCRIPTION PAGE] Response status:', profileResponse.status);
+          console.log('🚨 [SUBSCRIPTION PAGE] Response statusText:', profileResponse.statusText);
           logger.warn('[SubscriptionPage] Could not fetch user profile, continuing with session data');
         }
       } catch (error) {

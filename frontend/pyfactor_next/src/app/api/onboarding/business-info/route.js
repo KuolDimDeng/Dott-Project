@@ -240,19 +240,35 @@ export async function POST(request) {
           // Update session cookie with new onboarding status (primary fix)
           console.log('🚨 [BUSINESS-INFO API] ATTEMPTING SESSION UPDATE - Backend success path');
           console.log('🚨 [BUSINESS-INFO API] About to get cookies and update session');
+          console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE PROCESS STARTED ===');
           try {
             const cookieStore = await cookies();
             const sessionCookie = cookieStore.get('appSession');
             let sessionData = {};
             
             console.log('[api/onboarding/business-info] Session cookie exists:', !!sessionCookie);
+            console.log('🚨 [BUSINESS-INFO API] Session cookie details:');
+            console.log('🚨 [BUSINESS-INFO API] - Cookie exists:', !!sessionCookie);
+            console.log('🚨 [BUSINESS-INFO API] - Cookie size:', sessionCookie?.value?.length || 0, 'bytes');
             
             if (sessionCookie) {
               try {
                 sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
                 console.log('[api/onboarding/business-info] Parsed session data successfully, user exists:', !!sessionData.user);
+                console.log('🚨 [BUSINESS-INFO API] === CURRENT SESSION DATA ===');
+                console.log('🚨 [BUSINESS-INFO API] Current session structure:', {
+                  hasUser: !!sessionData.user,
+                  hasAccessToken: !!sessionData.accessToken,
+                  userEmail: sessionData.user?.email,
+                  currentNeedsOnboarding: sessionData.user?.needsOnboarding,
+                  currentOnboardingCompleted: sessionData.user?.onboardingCompleted,
+                  currentStep: sessionData.user?.currentStep,
+                  currentBusinessInfoCompleted: sessionData.user?.businessInfoCompleted,
+                  lastUpdated: sessionData.user?.lastUpdated
+                });
               } catch (parseError) {
                 console.warn('[api/onboarding/business-info] Error parsing session for update:', parseError);
+                console.log('🚨 [BUSINESS-INFO API] ❌ SESSION PARSE ERROR:', parseError.message);
                 sessionData = {}; // Reset to empty object on parse error
               }
             }
@@ -266,18 +282,38 @@ export async function POST(request) {
             // CRITICAL FIX: Update session to move to subscription step
             // Ensure we have a proper user object structure
             const currentUser = sessionData.user || {};
+            
+            console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE CONSTRUCTION ===');
+            console.log('🚨 [BUSINESS-INFO API] Current user object:', currentUser);
+            console.log('🚨 [BUSINESS-INFO API] About to set:');
+            console.log('🚨 [BUSINESS-INFO API] - needsOnboarding: false (was:', currentUser.needsOnboarding, ')');
+            console.log('🚨 [BUSINESS-INFO API] - onboardingCompleted: false (was:', currentUser.onboardingCompleted, ')');
+            console.log('🚨 [BUSINESS-INFO API] - currentStep: subscription (was:', currentUser.currentStep, ')');
+            console.log('🚨 [BUSINESS-INFO API] - businessInfoCompleted: true (was:', currentUser.businessInfoCompleted, ')');
+            
             const updatedSessionData = {
               ...sessionData,
               user: {
                 ...currentUser,
                 currentStep: 'subscription',
                 current_onboarding_step: 'subscription',
-                needsOnboarding: false,
-                onboardingCompleted: false,
+                needsOnboarding: false, // User has completed business info step
+                onboardingCompleted: false, // Still need to complete subscription
                 businessInfoCompleted: true,
                 lastUpdated: new Date().toISOString()
               }
             };
+            
+            console.log('🚨 [BUSINESS-INFO API] === UPDATED SESSION DATA ===');
+            console.log('🚨 [BUSINESS-INFO API] New session user object:', {
+              email: updatedSessionData.user.email,
+              needsOnboarding: updatedSessionData.user.needsOnboarding,
+              onboardingCompleted: updatedSessionData.user.onboardingCompleted,
+              currentStep: updatedSessionData.user.currentStep,
+              current_onboarding_step: updatedSessionData.user.current_onboarding_step,
+              businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
+              lastUpdated: updatedSessionData.user.lastUpdated
+            });
             
             let updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
             
@@ -325,6 +361,13 @@ export async function POST(request) {
             
             finalResponse.cookies.set('appSession', updatedSessionCookie, cookieSettings);
             
+            console.log('🚨 [BUSINESS-INFO API] === SESSION UPDATE COMPLETE ===');
+            console.log('🚨 [BUSINESS-INFO API] ✅ SESSION COOKIE SET SUCCESSFULLY');
+            console.log('🚨 [BUSINESS-INFO API] Cookie settings used:', cookieSettings);
+            console.log('🚨 [BUSINESS-INFO API] Cookie size:', updatedSessionCookie.length, 'bytes');
+            console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
+            console.log('🚨 [BUSINESS-INFO API] Domain setting:', cookieSettings.domain);
+            
             console.log('[api/onboarding/business-info] ✅ SESSION SUCCESSFULLY UPDATED (backend success):', {
               currentStep: updatedSessionData.user.currentStep,
               businessInfoCompleted: updatedSessionData.user.businessInfoCompleted,
@@ -334,6 +377,17 @@ export async function POST(request) {
               cookieSettings: cookieSettings,
               nodeEnv: process.env.NODE_ENV
             });
+            
+            console.log('🚨 [BUSINESS-INFO API] === FINAL RESPONSE ===');
+            console.log('🚨 [BUSINESS-INFO API] Response data being sent:', {
+              success: true,
+              message: 'Business information saved successfully',
+              next_step: 'subscription',
+              current_step: 'subscription',
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData.tenant_id || null
+            });
+            
             return finalResponse;
             
           } catch (sessionError) {

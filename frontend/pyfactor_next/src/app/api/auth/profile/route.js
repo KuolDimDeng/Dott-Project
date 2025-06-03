@@ -47,6 +47,15 @@ export async function GET() {
       tenantId: user.tenantId || user.tenant_id
     });
     
+    console.log('🚨 [PROFILE API] === SESSION DATA ANALYSIS ===');
+    console.log('🚨 [PROFILE API] Session user fields check:');
+    console.log('🚨 [PROFILE API] - user.needsOnboarding !== undefined:', user.needsOnboarding !== undefined);
+    console.log('🚨 [PROFILE API] - user.needsOnboarding value:', user.needsOnboarding);
+    console.log('🚨 [PROFILE API] - user.needsOnboarding !== false:', user.needsOnboarding !== false);
+    console.log('🚨 [PROFILE API] - user.onboardingCompleted:', user.onboardingCompleted);
+    console.log('🚨 [PROFILE API] - user.currentStep:', user.currentStep);
+    console.log('🚨 [PROFILE API] - user.businessInfoCompleted:', user.businessInfoCompleted);
+    
     console.log('[Profile API] Session user data:', {
       email: user.email,
       hasOnboardingData: !!(user.needsOnboarding !== undefined || user.onboardingCompleted !== undefined),
@@ -70,6 +79,13 @@ export async function GET() {
       tenantId: user.tenantId || user.tenant_id,
       businessInfoCompleted: user.businessInfoCompleted === true
     };
+    
+    console.log('🚨 [PROFILE API] === INITIAL PROFILE DATA (FROM SESSION) ===');
+    console.log('🚨 [PROFILE API] Initial profile construction:');
+    console.log('🚨 [PROFILE API] - needsOnboarding calculation: user.needsOnboarding !== false =', user.needsOnboarding, '!== false =', user.needsOnboarding !== false);
+    console.log('🚨 [PROFILE API] - onboardingCompleted calculation: user.onboardingCompleted === true =', user.onboardingCompleted, '=== true =', user.onboardingCompleted === true);
+    console.log('🚨 [PROFILE API] - currentStep calculation:', user.currentStep, '||', user.current_onboarding_step, '|| business_info =', user.currentStep || user.current_onboarding_step || 'business_info');
+    console.log('🚨 [PROFILE API] - businessInfoCompleted calculation: user.businessInfoCompleted === true =', user.businessInfoCompleted, '=== true =', user.businessInfoCompleted === true);
     
     console.log('[Profile API] Initial profile data from session:', {
       email: profileData.email,
@@ -131,6 +147,15 @@ export async function GET() {
             willPrioritizeSession: user.needsOnboarding !== undefined
           });
           
+          console.log('🚨 [PROFILE API] === BACKEND DATA MERGE LOGIC ===');
+          console.log('🚨 [PROFILE API] Merge calculations:');
+          console.log('🚨 [PROFILE API] - user.needsOnboarding !== undefined:', user.needsOnboarding !== undefined);
+          console.log('🚨 [PROFILE API] - Will use session needsOnboarding:', user.needsOnboarding !== undefined ? user.needsOnboarding : (backendUser.needs_onboarding !== false));
+          console.log('🚨 [PROFILE API] - user.onboardingCompleted !== undefined:', user.onboardingCompleted !== undefined);
+          console.log('🚨 [PROFILE API] - Will use session onboardingCompleted:', user.onboardingCompleted !== undefined ? user.onboardingCompleted : (backendUser.onboarding_completed === true));
+          console.log('🚨 [PROFILE API] - Will use currentStep:', user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info');
+          console.log('🚨 [PROFILE API] - Will use businessInfoCompleted:', user.businessInfoCompleted !== undefined ? user.businessInfoCompleted : false);
+          
           profileData = {
             ...profileData,
             // Backend data
@@ -157,6 +182,13 @@ export async function GET() {
             date_joined: backendUser.date_joined,
             last_login: backendUser.last_login
           };
+          
+          console.log('🚨 [PROFILE API] === AFTER BACKEND MERGE ===');
+          console.log('🚨 [PROFILE API] Final merged values:');
+          console.log('🚨 [PROFILE API] - Final needsOnboarding:', profileData.needsOnboarding);
+          console.log('🚨 [PROFILE API] - Final onboardingCompleted:', profileData.onboardingCompleted);
+          console.log('🚨 [PROFILE API] - Final currentStep:', profileData.currentStep);
+          console.log('🚨 [PROFILE API] - Final businessInfoCompleted:', profileData.businessInfoCompleted);
           
           console.log('[Profile API] Data merge details:', {
             sessionCurrentStep: user.currentStep || user.current_onboarding_step,
