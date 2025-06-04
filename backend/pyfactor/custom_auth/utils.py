@@ -629,47 +629,19 @@ def ensure_auth_tables_in_schema(tenant_id: uuid.UUID):
 def update_cognito_tenant_id(cognito_sub, tenant_id):
     """
     Update the business ID in Cognito user attributes to match the tenant ID
-    This ensures that the tenant ID is persisted in Cognito for future logins
+    NOTE: Disabled since using Auth0 instead of AWS Cognito
     
     Args:
-        cognito_sub: Cognito sub identifier for the user
-        tenant_id: Tenant ID to store in Cognito
+        cognito_sub: Cognito sub identifier for the user (not used with Auth0)
+        tenant_id: Tenant ID to store (logged for Auth0 mode)
         
     Returns:
-        bool: True if successful, False otherwise
+        bool: Always returns True in Auth0 mode
     """
-    logger.info(f"Updating Cognito businessid for user {cognito_sub} to {tenant_id}")
+    logger.info(f"Auth0 mode: Tenant ID {tenant_id} logged for user {cognito_sub} (Cognito updates disabled)")
     
-    try:
-        # Import boto3 client for Cognito
-        import boto3
-        from django.conf import settings
-        
-        # Get Cognito client
-        cognito_client = boto3.client(
-            'cognito-idp',
-            region_name=settings.AWS_REGION,
-            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-        )
-        
-        # Update user attributes
-        response = cognito_client.admin_update_user_attributes(
-            UserPoolId=settings.COGNITO_USER_POOL_ID,
-            Username=cognito_sub,
-            UserAttributes=[
-                {
-                    'Name': 'custom:businessid',
-                    'Value': str(tenant_id)
-                }
-            ]
-        )
-        
-        logger.info(f"Successfully updated Cognito attributes for user {cognito_sub}")
-        return True
-    except Exception as e:
-        logger.error(f"Error updating Cognito attributes: {str(e)}")
-        return False
+    # Return success since Auth0 doesn't need Cognito attribute updates
+    return True
 
 def validate_tenant_isolation(tenant_id: uuid.UUID):
     """

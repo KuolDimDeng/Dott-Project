@@ -166,7 +166,7 @@ class RowLevelSecurityMiddleware:
         
         # 2. Try to get from authenticated user (e.g., Cognito)
         if not tenant_id and hasattr(request, 'user') and request.user.is_authenticated:
-            tenant_id = self._get_tenant_from_user(request.user)
+            tenant_id = self.get_tenant_id_from_user(request.user)
         
         # 3. Try session storage
         if not tenant_id and hasattr(request, 'session'):
@@ -200,30 +200,21 @@ class RowLevelSecurityMiddleware:
         
         return tenant_id
     
-    def _get_tenant_from_user(self, user):
-        """Extract tenant ID from user object with AWS Cognito support"""
-        # Try direct attribute first
-        if hasattr(user, 'tenant_id') and user.tenant_id:
-            return user.tenant_id
+    def get_tenant_id_from_user(self, user):
+        """Extract tenant ID from user object with Auth0 support"""
+        logger.debug(f"Extracting tenant ID from user {user}")
         
-        # Try user profile
-        if hasattr(user, 'profile') and hasattr(user.profile, 'tenant_id'):
-            return user.profile.tenant_id
-        
-        # Try Cognito attributes (AWS Cognito integration)
-        if hasattr(user, 'cognito_attributes'):
-            try:
-                if isinstance(user.cognito_attributes, dict):
-                    # Try both standard and custom attribute formats
-                    return (user.cognito_attributes.get('tenant_id') or 
-                            user.cognito_attributes.get('custom:tenant_ID'))
-                elif isinstance(user.cognito_attributes, str):
-                    # Parse JSON string
-                    attrs = json.loads(user.cognito_attributes)
-                    return (attrs.get('tenant_id') or 
-                            attrs.get('custom:tenant_ID'))
-            except Exception as e:
-                logger.debug(f"Error extracting tenant ID from Cognito: {e}")
+        try:
+            # Direct tenant relationship
+            if hasattr(user, 'tenant_id') and user.tenant_id:
+                return str(user.tenant_id)
+            
+            # Try tenant relationship
+            if hasattr(user, 'tenant') and user.tenant:
+                return str(user.tenant.id)
+                
+        except Exception as e:
+            logger.debug(f"Error extracting tenant ID: {e}")
         
         return None
     

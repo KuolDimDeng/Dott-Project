@@ -1,11 +1,11 @@
 """
-Enhanced Row Level Security (RLS) Middleware
+Enhanced Row-Level Security (RLS) Middleware for Django with Auth0
 
-Production-ready middleware that ensures proper tenant isolation by setting PostgreSQL
-tenant context for each request. Works with AWS RDS and Cognito.
+This middleware automatically sets the database session's tenant context 
+for each request based on tenant information from Auth0, headers, or session.
 
 Features:
-- Cognito attribute integration
+- Auth0 attribute integration
 - Connection pooling compatibility 
 - Fallback tenant extraction from multiple sources
 - Handles async/sync requests
@@ -45,7 +45,7 @@ except ImportError as e:
 class EnhancedRowLevelSecurityMiddleware:
     """
     Enhanced middleware that sets PostgreSQL's Row Level Security (RLS) context
-    for each request based on tenant information from Cognito, headers, or session.
+    for each request based on tenant information from Auth0, headers, or session.
     """
     
     def __init__(self, get_response):
@@ -212,7 +212,7 @@ class EnhancedRowLevelSecurityMiddleware:
         """
         Extract tenant ID from multiple sources with fallbacks:
         1. Request headers
-        2. User object (from Cognito)
+        2. User object (from Auth0)
         3. Session
         4. Cookies
         """
@@ -274,18 +274,7 @@ class EnhancedRowLevelSecurityMiddleware:
         if hasattr(user, 'profile') and hasattr(user.profile, 'tenant_id'):
             return user.profile.tenant_id
             
-        # Try user.cognito_attributes
-        if hasattr(user, 'cognito_attributes'):
-            try:
-                # Handle both dict and JSON string cases
-                if isinstance(user.cognito_attributes, dict):
-                    return user.cognito_attributes.get('tenant_id') or user.cognito_attributes.get('custom:tenant_ID')
-                elif isinstance(user.cognito_attributes, str):
-                    attrs = json.loads(user.cognito_attributes)
-                    return attrs.get('tenant_id') or attrs.get('custom:tenant_ID')
-            except Exception:
-                pass
-                
+        # Auth0 mode - no additional attribute extraction needed
         return None
     
     def _set_tenant_context_sync(self, tenant_id):

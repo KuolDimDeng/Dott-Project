@@ -1,7 +1,5 @@
 from django.apps import AppConfig
 import logging
-import inspect
-import asyncio
 import sys
 
 logger = logging.getLogger(__name__)
@@ -19,10 +17,7 @@ class CustomAuthConfig(AppConfig):
         
         # Don't perform RLS verification during app initialization
         # This avoids async context errors and database access during app initialization
-        logger.info("CustomAuth app initialized - RLS verification deferred to middleware")
-        
-        # This reduces circular imports by deferring some imports
-        # Running this in a separate thread can cause other issues, so we don't do that
+        logger.info("CustomAuth app initialized - Using Auth0 authentication")
         
         # Import signals to ensure they're registered
         try:
@@ -33,23 +28,5 @@ class CustomAuthConfig(AppConfig):
         except ImportError as e:
             logger.error(f"Error importing signals: {e}")
             
-        # Defer Cognito initialization to a "ready" signal handler
-        # This is better than doing it directly in the ready method 
-        # which might be called before all apps are loaded
-        
-        # We'll set up a simple function to initialize Cognito after a short delay
-        from django.db.backends.signals import connection_created
-        
-        def init_cognito(sender, connection, **kwargs):
-            if not hasattr(self, '_cognito_initialized'):
-                try:
-                    from custom_auth.client import get_cognito_client
-                    self.cognito_client = get_cognito_client()
-                    logger.info("Successfully initialized Cognito client")
-                    self._cognito_initialized = True
-                except Exception as e:
-                    logger.error(f"Error initializing Cognito client: {e}")
-                    self.cognito_client = None
-        
-        # Connect to a signal that happens later in the Django initialization process
-        connection_created.connect(init_cognito)
+        # Note: Removed AWS Cognito client initialization since using Auth0
+        logger.info("Auth0 authentication configured - no AWS Cognito client needed")

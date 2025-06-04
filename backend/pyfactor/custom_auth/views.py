@@ -258,7 +258,7 @@ class CustomAuthToken(ObtainAuthToken):
                 try:
                     # Create tenant schema
                     tenant = create_tenant_schema_for_user(user)
-                    logger.info(f"Tenant schema created successfully: { tenant.id}")
+                    logger.info(f"Tenant schema created successfully: {tenant.id}")
                 except Exception as e:
                     logger.error(f"Failed to create tenant schema: {str(e)}")
                     # Continue with authentication even if tenant creation fails
@@ -278,7 +278,7 @@ class CustomAuthToken(ObtainAuthToken):
             
             if hasattr(user, 'tenant') and user.tenant:
                 response_data['tenant_id'] = str(user.tenant.id)
-                response_data['schema_name'] = user. tenant.id
+                response_data['schema_name'] = user.tenant.id
 
             response = Response(response_data)
             
@@ -326,14 +326,14 @@ class SocialLoginView(APIView):
                             # Check if the user already has an owned tenant that's not properly linked
                             owned_tenant = Tenant.objects.filter(owner=user).first()
                             if owned_tenant:
-                                logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_ tenant.id} for user {user.email}")
+                                logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_tenant.id} for user {user.email}")
                                 user.tenant = owned_tenant
                                 user.save(update_fields=['tenant'])
                             else:
                                 # Check for any tenant where user is the owner
                                 tenant = Tenant.objects.filter(owner=user).first()
                                 if tenant:
-                                    logger.info(f"[SOCIAL_LOGIN] Found existing tenant { tenant.id} for user {user.email}")
+                                    logger.info(f"[SOCIAL_LOGIN] Found existing tenant {tenant.id} for user {user.email}")
                                     user.tenant = tenant
                                     user.save(update_fields=['tenant'])
                                 else:
@@ -345,7 +345,7 @@ class SocialLoginView(APIView):
                                     except Exception as e:
                                         logger.error(f"[SOCIAL_LOGIN] Failed to create tenant schema for user {user.email}: {str(e)}")
                         else:
-                            logger.info(f"[SOCIAL_LOGIN] User {user.email} already has a tenant {user. tenant.id}")
+                            logger.info(f"[SOCIAL_LOGIN] User {user.email} already has a tenant {user.tenant.id}")
 
                         refresh = RefreshToken.for_user(user)
                         response_data = {
@@ -359,7 +359,7 @@ class SocialLoginView(APIView):
                         # Add tenant information to response if available
                         if hasattr(user, 'tenant') and user.tenant:
                             response_data['tenant_id'] = str(user.tenant.id)
-                            response_data['schema_name'] = user. tenant.id
+                            response_data['schema_name'] = user.tenant.id
                             
                         logger.info(f"Social login successful for user: {user.email}")
                         return Response(response_data)
@@ -602,7 +602,7 @@ class ActivateAccountView(APIView):
                     try:
                         if hasattr(user, 'owned_tenant'):
                             owned_tenant = user.owned_tenant
-                            logger.info(f"Found owned tenant {owned_ tenant.id} for user {user.email}")
+                            logger.info(f"Found owned tenant {owned_tenant.id} for user {user.email}")
                     except Exception as tenant_lookup_error:
                         logger.debug(f"No owned tenant found: {str(tenant_lookup_error)}")
                     
@@ -610,7 +610,7 @@ class ActivateAccountView(APIView):
                     if owned_tenant and not user.tenant:
                         user.tenant = owned_tenant
                         user.save(update_fields=['tenant'])
-                        logger.info(f"Linked user {user.email} to their owned tenant {owned_ tenant.id}")
+                        logger.info(f"Linked user {user.email} to their owned tenant {owned_tenant.id}")
                         tenant = owned_tenant
                     else:
                         # Check for any tenant where user is the owner
@@ -624,7 +624,7 @@ class ActivateAccountView(APIView):
                             # No existing tenant found, create a new one
                             logger.info(f"No existing tenant found, creating new tenant schema for user {user.email}")
                             tenant = create_tenant_schema_for_user(user)
-                            logger.info(f"Tenant schema created successfully: { tenant.id}")
+                            logger.info(f"Tenant schema created successfully: {tenant.id}")
                 except Exception as e:
                     logger.error(f"Failed to create tenant schema during activation: {str(e)}")
                     # Continue with activation even if tenant creation fails
@@ -634,7 +634,7 @@ class ActivateAccountView(APIView):
             # Add tenant information to response if available
             if tenant:
                 response_data["tenant_id"] = str(tenant.id)
-                response_data["schema_name"] =  tenant.id
+                response_data["schema_name"] = tenant.id
                 
             return Response(response_data, status=status.HTTP_200_OK)
         else:
@@ -823,146 +823,79 @@ class TokenService:
 class SignupAPIView(APIView):
     permission_classes = [AllowAny]
 
+    @transaction.atomic
     def post(self, request):
         """
-        Handle user signup after Cognito confirmation
+        Handle user signup with Auth0 authentication
         """
-        logger.debug("Received signup request: %s", request.data)
+        request_id = str(uuid.uuid4())
+        logger.info(f"[SignUpAPIView:{request_id}] Received signup request")
+        
         try:
-            # Validate required fields
             email = request.data.get('email')
-            cognito_id = request.data.get('cognitoId')
-            user_role = request.data.get('userRole', 'owner')
-            business_id = request.data.get('businessId') or request.data.get('custom:businessid')
-
-            if not email or not cognito_id:
-                logger.error("Missing required fields in signup request")
-                return Response(
-                    {"error": "Missing required fields"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # First check if a user with this email already exists and has a tenant
+            
+            logger.info(f"[SignUpAPIView:{request_id}] Processing signup for email: {email}")
+            
+            if not email:
+                return Response({
+                    'success': False,
+                    'error': 'Email is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            # Check if user already exists
             existing_user = User.objects.filter(email=email).first()
+            
             if existing_user:
-                logger.info(f"[SIGNUP] User {email} already exists, checking for existing tenant")
+                logger.info(f"[SIGNUP] User already exists for email {email}")
                 
-                # Use our failsafe to check for existing tenant
-                existing_tenant, should_create = ensure_single_tenant_per_business(
-                    existing_user, business_id)
-                
-                if existing_tenant:
-                    # Update user Cognito ID if needed
-                    if existing_user.cognito_sub != cognito_id:
-                        existing_user.cognito_sub = cognito_id
-                        existing_user.save(update_fields=['cognito_sub'])
-                        logger.info(f"[SIGNUP] Updated Cognito ID for existing user {email}")
-                        
-                    # Update role if different
-                    if existing_user.role != user_role:
-                        existing_user.role = user_role
-                        existing_user.save(update_fields=['role'])
-                        logger.info(f"[SIGNUP] Updated role for existing user {email}")
-                    
-                    response_data = {
-                        "status": "success",
-                        "message": "User already exists and has a tenant",
-                        "userId": str(existing_user.id),
-                        "email": existing_user.email,
-                        "isOnboarded": existing_user.is_onboarded,
-                        "tenantId": str(existing_tenant.id),
-                        "schemaName": existing_ tenant.id
+                # Return user info for Auth0 signup
+                return Response({
+                    'success': True,
+                    'user': {
+                        'id': str(existing_user.id),
+                        'email': existing_user.email,
+                        'first_name': existing_user.first_name,
+                        'last_name': existing_user.last_name,
+                        'is_active': existing_user.is_active,
+                        'email_verified': getattr(existing_user, 'email_verified', False),
+                        'role': getattr(existing_user, 'role', 'owner'),
+                        'date_joined': existing_user.date_joined.isoformat() if existing_user.date_joined else None
                     }
-                    logger.info(f"[SIGNUP] Returning existing user and tenant info for {email}")
-                    return Response(response_data)
-
-            with transaction.atomic():
-                # Create or update user
-                user, created = User.objects.get_or_create(
-                    email=email,
-                    defaults={
-                        'cognito_sub': cognito_id,
-                        'is_active': True,
-                        'email_verified': True,
-                        'role': user_role
-                    }
-                )
-
-                if not created:
-                    # Update existing user
-                    user.cognito_sub = cognito_id
-                    user.is_active = True
-                    user.email_verified = True
-                    user.role = user_role
-                    user.save(update_fields=['cognito_sub', 'is_active', 'email_verified', 'role'])
-
-                # Use the failsafe to check for tenant or create a new one if needed
-                tenant, should_create = ensure_single_tenant_per_business(user, business_id)
-                
-                if not tenant and should_create:
-                    # Only OWNER users should create new tenants
-                    if user_role == 'owner':
-                        try:
-                            # Create new tenant with proper locking
-                            tenant = create_tenant_schema_for_user(user)
-                            logger.info(f"[SIGNUP] Created tenant schema { tenant.id} for user {email}")
-                        except Exception as e:
-                            logger.error(f"[SIGNUP] Failed to create tenant schema for user {email}: {str(e)}")
-                    else:
-                        logger.warning(f"[SIGNUP] Non-OWNER user {email} cannot create a tenant")
-                elif tenant:
-                    logger.info(f"[SIGNUP] Using existing tenant { tenant.id} for user {email}")
-                
-                # Create user profile
-                try:
-                    # Create profile if doesn't exist
-                    profile, _ = UserProfile.objects.get_or_create(
-                        user=user,
-                        defaults={
-                            'setup_complete': False,
-                            'is_active': False,
-                            'setup_status': 'not_started',
-                            'created_at': timezone.now()
-                        }
-                    )
-                except Exception as e:
-                    logger.error(f"[SIGNUP] Failed to create user profile: {str(e)}")
-                
-                # Create onboarding progress
-                try:
-                    progress, _ = OnboardingProgress.objects.get_or_create(
-                        user=user,
-                        defaults={
-                            'onboarding_status': 'business-info',
-                            'current_step': 'business-info',
-                            'next_step': 'subscription',
-                            'created_at': timezone.now()
-                        }
-                    )
-                except Exception as e:
-                    logger.error(f"[SIGNUP] Failed to create onboarding progress: {str(e)}")
-                
-                response_data = {
-                    "status": "success",
-                    "userId": str(user.id),
-                    "email": user.email,
-                    "isOnboarded": user.is_onboarded
+                }, status=status.HTTP_200_OK)
+            
+            # Create new user for Auth0
+            user_data = {
+                'email': email,
+                'first_name': request.data.get('firstName', ''),
+                'last_name': request.data.get('lastName', ''),
+                'is_active': True,
+                'email_verified': True,
+                'role': 'owner'
+            }
+            
+            user = User.objects.create(**user_data)
+            logger.info(f"[SIGNUP] Created new user: {email}")
+            
+            return Response({
+                'success': True,
+                'user': {
+                    'id': str(user.id),
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'is_active': user.is_active,
+                    'email_verified': getattr(user, 'email_verified', True),
+                    'role': getattr(user, 'role', 'owner'),
+                    'date_joined': user.date_joined.isoformat() if user.date_joined else None
                 }
-                
-                # Add tenant information to response if available
-                if tenant:
-                    response_data["tenantId"] = str(tenant.id)
-                    response_data["schemaName"] =  tenant.id
-
-                logger.info(f"User signup completed for {email}")
-                return Response(response_data)
-
+            }, status=status.HTTP_201_CREATED)
+            
         except Exception as e:
-            logger.error("Error processing signup: %s", str(e))
-            return Response(
-                {"error": "Internal server error"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            logger.error(f"[SignUpAPIView:{request_id}] Error during signup: {str(e)}")
+            return Response({
+                'success': False,
+                'error': 'Internal server error'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class UpdateSessionView(APIView):
     permission_classes = [IsAuthenticated]
@@ -987,7 +920,7 @@ class UpdateSessionView(APIView):
 # Add missing OAuth authentication views that the frontend expects
 class OAuthSignUpView(APIView):
     """
-    Handle OAuth user creation/verification after Google sign-in
+    Handle OAuth user creation/verification with Auth0 authentication
     This endpoint is called by the frontend oauth-success page
     """
     permission_classes = [AllowAny]
@@ -995,34 +928,29 @@ class OAuthSignUpView(APIView):
     def post(self, request):
         try:
             request_id = str(uuid.uuid4())
-            logger.info("[OAuthSignUp:%s] New OAuth signup request", request_id)
+            logger.info("[OAuthSignUp:%s] New Auth0 OAuth signup request", request_id)
             
             # Extract user data from request
             email = request.data.get('email')
-            cognito_id = request.data.get('cognitoId')
             first_name = request.data.get('firstName', '')
             last_name = request.data.get('lastName', '')
             user_role = request.data.get('userRole', 'owner')
             is_verified = request.data.get('is_already_verified', True)
             
-            logger.info("[OAuthSignUp:%s] Processing for email: %s, cognitoId: %s", request_id, email, cognito_id)
+            logger.info("[OAuthSignUp:%s] Processing Auth0 signup for email: %s", request_id, email)
             
-            if not email or not cognito_id:
-                logger.error("[OAuthSignUp:%s] Missing required fields", request_id)
+            if not email:
+                logger.error("[OAuthSignUp:%s] Missing email", request_id)
                 return Response({
                     'success': False,
-                    'error': 'Email and Cognito ID are required'
+                    'error': 'Email is required'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
                 # Check if user already exists
                 existing_user = User.objects.filter(email=email).first()
                 if existing_user:
-                    logger.info("[OAuthSignUp:%s] User already exists, updating cognito_sub", request_id)
-                    # Update cognito_sub if needed
-                    if existing_user.cognito_sub != cognito_id:
-                        existing_user.cognito_sub = cognito_id
-                        existing_user.save(update_fields=['cognito_sub'])
+                    logger.info("[OAuthSignUp:%s] User already exists", request_id)
                     
                     return Response({
                         'success': True,
@@ -1032,10 +960,9 @@ class OAuthSignUpView(APIView):
                         'onboarding_status': getattr(existing_user, 'onboarding_status', 'not_started')
                     })
                 
-                # Create new user
+                # Create new user for Auth0
                 user_data = {
                     'email': email,
-                    'cognito_sub': cognito_id,  # Use cognito_sub instead of cognito_id
                     'first_name': first_name,
                     'last_name': last_name,
                     'is_active': True,
@@ -1043,7 +970,7 @@ class OAuthSignUpView(APIView):
                     'date_joined': timezone.now()
                 }
                 
-                # Don't set password for OAuth users - they authenticate via Cognito
+                # Don't set password for OAuth users - they authenticate via Auth0
                 user = User(**user_data)
                 user.set_unusable_password()  # Mark as OAuth user
                 user.save()
@@ -1122,7 +1049,6 @@ class OAuthUserProfileView(APIView):
                 'email': user.email,
                 'first_name': user.first_name,
                 'last_name': user.last_name,
-                'cognito_id': getattr(user, 'cognito_sub', None),  # Map cognito_sub to cognito_id for frontend
                 'user_role': getattr(user, 'role', 'owner'),
                 'onboarding_status': onboarding_status,
                 'is_verified': True,  # OAuth users are already verified
