@@ -9,7 +9,7 @@ This module defines the URL patterns for all authentication-related functionalit
 - Session management
 - Tenant management
 
-All URLs are prefixed with 'api/' from the main URLs configuration.
+All URLs are prefixed with 'auth/' from the main URLs configuration.
 """
 
 from django.urls import path, re_path, include, register_converter
@@ -55,23 +55,18 @@ register_converter(UUIDConverter, 'uuid')
 router = DefaultRouter()
 
 urlpatterns = [
-       # API endpoints
-       path('api/', include('custom_auth.api.urls')),
-
-       # Session endpoints
-    
        # Auth error logging endpoints - handle both patterns explicitly
-    re_path(r'^auth/_log/?$', AuthErrorView.as_view(), name='auth_log'),
-    re_path(r'^auth/error/?$', AuthErrorView.as_view(), name='auth_error'),
+    re_path(r'^_log/?$', AuthErrorView.as_view(), name='auth_log'),
+    re_path(r'^error/?$', AuthErrorView.as_view(), name='auth_error'),
 
     # OAuth Authentication endpoints
-    # path('api/auth/signup/', OAuthSignUpView.as_view(), name='oauth_signup'),
-    # path('api/auth/profile/', OAuthUserProfileView.as_view(), name='oauth_profile'),
+    # path('auth/signup/', OAuthSignUpView.as_view(), name='oauth_signup'),
+    # path('auth/profile/', OAuthUserProfileView.as_view(), name='oauth_profile'),
     
     # Registration and Signup
     path('register/', RegisterView.as_view(), name='register'),
     path('signup/', SignUpView.as_view(), name='signup'),
-    path('auth/signup/', SignUpView.as_view(), name='auth_signup'),
+    path('signup/', SignUpView.as_view(), name='auth_signup'),
 
     # Token Management
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -80,7 +75,7 @@ urlpatterns = [
     path('auth-token/', CustomAuthToken.as_view(), name='auth_token'),
 
     # Add new API endpoint for token refresh
-    path('api/auth/refresh/', TokenRefreshView.as_view(), name='api_token_refresh'),
+    path('refresh/', TokenRefreshView.as_view(), name='api_token_refresh'),
 
     # Password Reset Flow
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot_password'),
@@ -125,16 +120,16 @@ urlpatterns = [
     path('health-check/', health_check.as_view(), name='health-check'),
     
     # User Signup API
-    path('api/auth/signup/', APISignupView.as_view(), name='signup_api'),
+    path('signup/', APISignupView.as_view(), name='signup_api'),
 
     # Tenant endpoints (legacy)
     path('tenant/verify/', OldTenantVerifyView.as_view(), name='tenant-verify-old'),
     path('tenant/create/', TenantCreateView.as_view(), name='tenant-create'),
     
     # Enhanced tenant management endpoints
-    path('api/tenant/verify/', NewTenantVerifyView.as_view(), name='tenant-verify'),
+    path('tenant/verify/', NewTenantVerifyView.as_view(), name='tenant-verify'),
 
     # Debug endpoints for RLS
-    path('api/debug/rls/', rls_debug_view, name='rls_debug'),
-    path('api/debug/rls/fix/', fix_rls_view, name='rls_fix'),
+    path('debug/rls/', rls_debug_view, name='rls_debug'),
+    path('debug/rls/fix/', fix_rls_view, name='rls_fix'),
 ]

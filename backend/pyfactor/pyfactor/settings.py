@@ -325,12 +325,45 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
 CELERY_WORKER_CONCURRENCY = 1              # Limit to a single worker
 
+# Redis settings - only configure if explicitly provided
+REDIS_HOST = os.environ.get('REDIS_HOST')
+REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
 
-REDIS_HOST = '127.0.0.1'
-REDIS_PORT = 6379
-REDIS_DB = 0
-# Redis configuration (consolidate with existing Redis settings)
-REDIS_URL = os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')
+# Only configure Redis if explicitly provided
+if REDIS_HOST:
+    REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+    CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    
+    # Update your CACHES setting to use Redis when available
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+            'OPTIONS': {
+                'db': 1,
+                'parser_class': 'redis.connection.DefaultParser',
+                'pool_class': 'redis.connection.ConnectionPool',
+                'socket_timeout': 5,
+                'socket_connect_timeout': 5,
+                'retry_on_timeout': True,
+                'max_connections': 100,
+            },
+            'KEY_PREFIX': '{tenant}',
+        }
+    }
+else:
+    # No Redis configured - use dummy cache backend and no Celery
+    REDIS_URL = None
+    CELERY_BROKER_URL = None
+    CELERY_RESULT_BACKEND = None
+    
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
+
 CELERY_REDIS_MAX_CONNECTIONS = 20
 CELERY_BROKER_TRANSPORT_OPTIONS = {
     'socket_timeout': 10,
@@ -342,16 +375,15 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
     }
 }
 
-# Redis database numbers for different uses
+# Redis database numbers for different uses (only used when Redis is available)
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
 
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', f'{REDIS_URL}/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', f'{REDIS_URL}/0')
 CELERY_SEND_TASK_SENT_EVENT = True
 CELERY_TASK_SEND_SENT_EVENT = True
 CELERY_TASK_REMOTE_TRACEBACKS = True
 CELERY_TASK_RESULT_EXPIRES = 60 * 60 * 24  # 24 hours
+
 # Add these Celery settings
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_ENABLE_UTC = True
@@ -488,27 +520,6 @@ FILE_UPLOAD_HANDLERS = [
     'django.core.files.uploadhandler.TemporaryFileUploadHandler',
 ]
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10MB
-
-# Update your CACHES setting in settings.py
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': os.getenv('CACHE_URL', f'{REDIS_URL}/1'),
-        'OPTIONS': {
-            'db': 1,
-            'parser_class': 'redis.connection.DefaultParser',
-            'pool_class': 'redis.connection.ConnectionPool',
-            'socket_timeout': 5,
-            'socket_connect_timeout': 5,
-            'retry_on_timeout': True,
-            'max_connections': 100,
-            
-            
-            
-        },
-        'KEY_PREFIX': '{tenant}',  # Moved outside OPTIONS to the correct location
-    }
-}
 
 # Add these settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB

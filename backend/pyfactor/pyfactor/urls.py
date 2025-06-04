@@ -44,29 +44,17 @@ if not settings.DEBUG or True:  # Always include for now, but can be conditional
         # Import these only when needed to avoid startup errors
         from custom_auth.api.views.tenant_views import TenantDetailView
         
-        # Use method_decorator to handle CSRF exemption properly with async views
-        async_csrf_exempt = method_decorator(csrf_exempt, name='dispatch')
-
-        # Create async-compatible patterns for API endpoints
-        api_patterns = [
-            # Essential endpoints only
-            path('', include('custom_auth.urls')),
-            
-            # Tenant endpoint
-            path('tenant/<uuid:tenant_id>/', csrf_exempt(TenantDetailView.as_view()), name='tenant-detail'),
-        ]
-
-        # Add API routes
+        # Add API routes - Fix double nesting issue by directly including custom_auth.api.urls
         urlpatterns.extend([
-            # API routes with namespace
-            path('api/', include((api_patterns, 'api'), namespace='api')),
+            # API routes - directly include the API endpoints
+            path('api/', include('custom_auth.api.urls')),
             
             # Main app routes
             path('', include('users.urls')),
             
             # Authentication routes
             path('accounts/', include('allauth.urls')),
-            path('api/auth/', include('custom_auth.api.urls')),
+            path('auth/', include('custom_auth.urls')),  # Remove api/ prefix to avoid double nesting
         ])
         
     except ImportError as e:
