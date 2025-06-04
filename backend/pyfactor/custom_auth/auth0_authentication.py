@@ -20,16 +20,16 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt import PyJWKClient
 from urllib.parse import urljoin
 
-# Add JWE support
+# Add JWE support with fallback
 try:
     from jwcrypto import jwe, jwk
     JWE_AVAILABLE = True
     logger = logging.getLogger(__name__)
     logger.info("✅ JWE support available for encrypted Auth0 tokens")
-except ImportError:
+except ImportError as e:
     JWE_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning("❌ JWE support not available - install jwcrypto for encrypted tokens")
+    logger.warning(f"❌ JWE support not available: {str(e)} - will attempt fallback authentication")
 
 User = get_user_model()
 
@@ -53,6 +53,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         logger.info(f"   🔹 AUTH0_CUSTOM_DOMAIN: {self.custom_domain}")
         logger.info(f"   🔹 AUTH0_AUDIENCE: {self.audience}")
         logger.info(f"   🔹 AUTH0_CLIENT_ID: {self.client_id}")
+        logger.info(f"   🔹 JWE_AVAILABLE: {JWE_AVAILABLE}")
         
         if not self.domain:
             logger.error("❌ AUTH0_DOMAIN not configured")
@@ -136,15 +137,42 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         except Exception:
             return False
     
+    def get_user_info_from_auth0_api(self, token):
+        """
+        Fallback: Get user info from Auth0 userinfo endpoint when JWE decryption fails.
+        """
+        try:
+            logger.debug("🔄 Attempting fallback: Auth0 userinfo API")
+            
+            response = requests.get(
+                f"https://{self.domain}/userinfo",
+                headers={'Authorization': f'Bearer {token}'},
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                user_info = response.json()
+                logger.info("✅ Successfully retrieved user info from Auth0 API")
+                return user_info
+            else:
+                logger.error(f"❌ Auth0 userinfo API failed: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ Auth0 userinfo API error: {str(e)}")
+            return None
+    
     def decrypt_jwe_token(self, jwe_token):
         """
         Decrypt a JWE token using the client secret.
         """
         if not JWE_AVAILABLE:
-            raise exceptions.AuthenticationFailed('JWE support not available - cannot decrypt token')
+            logger.warning("⚠️ JWE library not available, attempting Auth0 API fallback")
+            return None
         
         if not self.client_secret:
-            raise exceptions.AuthenticationFailed('Auth0 client secret required for JWE decryption')
+            logger.warning("⚠️ Auth0 client secret required for JWE decryption, attempting fallback")
+            return None
         
         try:
             logger.debug("🔓 Attempting JWE token decryption...")
@@ -157,12 +185,25 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             jwe_token_obj.deserialize(jwe_token)
             decrypted_payload = jwe_token_obj.decrypt(key)
             
+            if decrypted_payload is None:
+                logger.error("❌ JWE decryption returned None")
+                return None
+            
             logger.debug("✅ JWE token decrypted successfully")
-            return decrypted_payload.decode('utf-8')
+            
+            # Handle both bytes and string returns
+            if isinstance(decrypted_payload, bytes):
+                return decrypted_payload.decode('utf-8')
+            elif isinstance(decrypted_payload, str):
+                return decrypted_payload
+            else:
+                logger.error(f"❌ Unexpected decryption result type: {type(decrypted_payload)}")
+                return None
             
         except Exception as e:
             logger.error(f"❌ JWE decryption failed: {str(e)}")
-            raise exceptions.AuthenticationFailed(f'JWE decryption failed: {str(e)}')
+            logger.error(f"❌ Exception type: {type(e).__name__}")
+            return None
     
     def validate_token(self, token):
         """
@@ -179,12 +220,19 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             if self.is_jwe_token(token):
                 logger.debug("🔍 Detected JWE (encrypted) token")
                 
-                # Decrypt the JWE token to get the inner JWT
+                # Try to decrypt the JWE token
                 decrypted_jwt = self.decrypt_jwe_token(token)
-                logger.debug("✅ JWE token decrypted, now validating inner JWT")
                 
-                # Now validate the decrypted JWT
-                return self.validate_jwt(decrypted_jwt)
+                if decrypted_jwt:
+                    logger.debug("✅ JWE token decrypted, now validating inner JWT")
+                    return self.validate_jwt(decrypted_jwt)
+                else:
+                    logger.warning("⚠️ JWE decryption failed, trying Auth0 API fallback")
+                    user_info = self.get_user_info_from_auth0_api(token)
+                    if user_info:
+                        return user_info
+                    else:
+                        raise exceptions.AuthenticationFailed('JWE decryption and API fallback both failed')
             else:
                 logger.debug("🔍 Detected standard JWT token")
                 return self.validate_jwt(token)
