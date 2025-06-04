@@ -1,3 +1,4 @@
+# Requirements for PyFactor Django API - Force rebuild 2025-06-04
 # Core Django - Updated to 4.2.16 to resolve django-allauth dependency conflict
 Django==4.2.16
 gunicorn==20.1.0
@@ -39,4 +40,6 @@ channels==4.2.2
 # AWS
 boto3==1.38.27
 jwcrypto==1.5.6
+
+# Payment processing - CRITICAL for business_views.py
 stripe>=5.0.0
