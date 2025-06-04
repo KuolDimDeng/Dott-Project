@@ -15,9 +15,14 @@ WORKDIR /app
 # Copy requirements first for better caching
 COPY requirements-render.txt ./
 
-# Install Python dependencies
+# Install Python dependencies with verification
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements-render.txt
+    pip install --no-cache-dir -r requirements-render.txt && \
+    echo "=== DEPENDENCY VERIFICATION ===" && \
+    python -c "import stripe; print(f'✅ Stripe {stripe.__version__} installed successfully')" && \
+    python -c "import jwcrypto; print(f'✅ JWCrypto installed successfully')" && \
+    python -c "import celery; print(f'✅ Celery {celery.__version__} installed successfully')" && \
+    echo "=== ALL CRITICAL DEPENDENCIES VERIFIED ==="
 
 # Copy application code
 COPY . .

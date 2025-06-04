@@ -1,3 +1,7 @@
+# PyFactor Django API Requirements - Production Build
+# BUILD CACHE BUSTER: 2025-06-04-14:57:00
+# This timestamp forces Docker layer rebuild to ensure fresh dependency installation
+
 # Core Django - Updated to 4.2.16 to resolve django-allauth dependency conflict
 Django==4.2.16
 gunicorn==20.1.0
@@ -89,3 +93,10 @@ packaging==25.0
 prompt-toolkit==3.0.51
 msgpack==1.1.0
 certifi==2025.4.26
+
+# CRITICAL DEPENDENCIES - MUST BE INSTALLED
+# Payment processing - CRITICAL for business_views.py line 15
+stripe==12.2.0
+
+# JWE encryption support for Auth0 - CRITICAL for custom_auth
+jwcrypto==1.5.6

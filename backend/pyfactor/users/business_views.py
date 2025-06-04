@@ -12,8 +12,7 @@ from .business_serializers import AddBusinessMemberSerializer, BusinessSerialize
 from .models import UserProfile
 import requests
 from django.contrib.auth import get_user_model
-# TODO: TEMPORARY FIX - Comment out stripe import to bypass ModuleNotFoundError
-# import stripe
+import stripe
 from django.urls import reverse
 from django.conf import settings
 
@@ -27,8 +26,7 @@ from django.db.models import Q
 
 User = get_user_model()
 
-# TODO: TEMPORARY FIX - Comment out stripe API key setting
-# stripe.api_key = settings.STRIPE_SECRET_KEY
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 logger = get_logger()
 
@@ -435,43 +433,37 @@ class CreateCheckoutSessionView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # TODO: TEMPORARY FIX - Return error since stripe is disabled
-        return Response({
-            'error': 'Stripe checkout is temporarily disabled due to dependency issues'
-        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        
-        # ORIGINAL CODE (commented out temporarily):
-        # try:
-        #     billing_cycle = request.data.get('billingCycle', 'monthly')
-        #     price_id = settings.STRIPE_PRICE_ID_MONTHLY if billing_cycle == 'monthly' else settings.STRIPE_PRICE_ID_ANNUAL
-        #
-        #     # Get the user's business
-        #     user_profile = UserProfile.objects.get(user=request.user)
-        #     business = user_profile.business
-        #     
-        #     # Store metadata about the subscription
-        #     metadata = {
-        #         'user_id': str(request.user.id),
-        #         'business_id': str(business.id),
-        #         'selected_plan': 'professional',  # Since this is a checkout for professional plan
-        #         'billing_cycle': billing_cycle
-        #     }
-        #
-        #     checkout_session = stripe.checkout.Session.create(
-        #         client_reference_id=request.user.id,
-        #         payment_method_types=['card'],
-        #         line_items=[{
-        #             'price': price_id,
-        #             'quantity': 1,
-        #         }],
-        #         mode='subscription',
-        #         success_url=request.build_absolute_uri(reverse('onboarding:onboarding_success')) + '?session_id={CHECKOUT_SESSION_ID}',
-        #         cancel_url=request.build_absolute_uri(reverse('onboarding:save_step3')),
-        #         metadata=metadata,
-        #     )
-        #     return Response({'sessionId': checkout_session.id})
-        # except Exception as e:
-        #     return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        try:
+            billing_cycle = request.data.get('billingCycle', 'monthly')
+            price_id = settings.STRIPE_PRICE_ID_MONTHLY if billing_cycle == 'monthly' else settings.STRIPE_PRICE_ID_ANNUAL
+
+            # Get the user's business
+            user_profile = UserProfile.objects.get(user=request.user)
+            business = user_profile.business
+            
+            # Store metadata about the subscription
+            metadata = {
+                'user_id': str(request.user.id),
+                'business_id': str(business.id),
+                'selected_plan': 'professional',  # Since this is a checkout for professional plan
+                'billing_cycle': billing_cycle
+            }
+
+            checkout_session = stripe.checkout.Session.create(
+                client_reference_id=request.user.id,
+                payment_method_types=['card'],
+                line_items=[{
+                    'price': price_id,
+                    'quantity': 1,
+                }],
+                mode='subscription',
+                success_url=request.build_absolute_uri(reverse('onboarding:onboarding_success')) + '?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=request.build_absolute_uri(reverse('onboarding:save_step3')),
+                metadata=metadata,
+            )
+            return Response({'sessionId': checkout_session.id})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 def update_storage_quota(business_id, selected_plan):
@@ -564,88 +556,84 @@ def update_subscription_plan(request):
 
 @csrf_exempt
 def stripe_webhook(request):
-    # TODO: TEMPORARY FIX - Return early since stripe is disabled
-    return HttpResponse("Stripe webhook temporarily disabled", status=503)
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     
-    # ORIGINAL CODE (commented out temporarily):
-    # payload = request.body
-    # sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-    # 
-    # try:
-    #     event = stripe.Webhook.construct_event(
-    #         payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-    #     )
-    # except ValueError as e:
-    #     # Invalid payload
-    #     return HttpResponse(status=400)
-    # except stripe.error.SignatureVerificationError as e:
-    #     # Invalid signature
-    #     return HttpResponse(status=400)
-    #     
-    # # Handle the checkout.session.completed event
-    # if event.type == 'checkout.session.completed':
-    #     session = event.data.object
-    #     
-    #     # Retrieve the subscription from metadata
-    #     metadata = session.metadata
-    #     business_id = metadata.get('business_id')
-    #     selected_plan = metadata.get('selected_plan')
-    #     
-    #     if business_id and selected_plan:
-    #         # Process the subscription
-    #         try:
-    #             business = Business.objects.get(id=business_id)
-    #             
-    #             # Create/update subscription record
-    #             Subscription.objects.update_or_create(
-    #                 business=business,
-    #                 defaults={
-    #                     'selected_plan': selected_plan,
-    #                     'is_active': True,
-    #                     'start_date': timezone.now().date(),
-    #                     'billing_cycle': metadata.get('billing_cycle', 'monthly')
-    #                 }
-    #             )
-    #             
-    #             # Update storage quota
-    #             update_storage_quota(business_id, selected_plan)
-    #             
-    #             logger.info(f"Subscription updated via Stripe webhook for business {business_id}")
-    #         except Exception as e:
-    #             logger.error(f"Failed to process subscription from webhook: {str(e)}")
-    # 
-    # # Handle subscription events
-    # elif event.type == 'customer.subscription.updated' or event.type == 'customer.subscription.created':
-    #     subscription = event.data.object
-    #     
-    #     # Map the price ID to a plan
-    #     plan_mapping = {
-    #         settings.STRIPE_PRICE_ID_MONTHLY: 'professional',
-    #         settings.STRIPE_PRICE_ID_ANNUAL: 'professional',
-    #         # Add any other price IDs you use
-    #     }
-    #     
-    #     # Get the price ID from the subscription
-    #     if subscription.items.data and len(subscription.items.data) > 0:
-    #         price_id = subscription.items.data[0].price.id
-    #         
-    #         # Find the user by customer ID
-    #         try:
-    #             # This assumes you store the Stripe customer ID with your user
-    #             customer = stripe.Customer.retrieve(subscription.customer)
-    #             user = User.objects.get(email=customer.email)
-    #             
-    #             # Get the business
-    #             business = Business.objects.get(owner=user)
-    #             
-    #             # Determine the plan
-    #             selected_plan = plan_mapping.get(price_id, 'free')
-    #             
-    #             # Update storage quota
-    #             update_storage_quota(business.id, selected_plan)
-    #             
-    #             logger.info(f"Storage quota updated via subscription event for user {user.id}")
-    #         except Exception as e:
-    #             logger.error(f"Failed to update quota from subscription event: {str(e)}")
-    #     
-    # return HttpResponse(status=200)
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
+        )
+    except ValueError as e:
+        # Invalid payload
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return HttpResponse(status=400)
+        
+    # Handle the checkout.session.completed event
+    if event.type == 'checkout.session.completed':
+        session = event.data.object
+        
+        # Retrieve the subscription from metadata
+        metadata = session.metadata
+        business_id = metadata.get('business_id')
+        selected_plan = metadata.get('selected_plan')
+        
+        if business_id and selected_plan:
+            # Process the subscription
+            try:
+                business = Business.objects.get(id=business_id)
+                
+                # Create/update subscription record
+                Subscription.objects.update_or_create(
+                    business=business,
+                    defaults={
+                        'selected_plan': selected_plan,
+                        'is_active': True,
+                        'start_date': timezone.now().date(),
+                        'billing_cycle': metadata.get('billing_cycle', 'monthly')
+                    }
+                )
+                
+                # Update storage quota
+                update_storage_quota(business_id, selected_plan)
+                
+                logger.info(f"Subscription updated via Stripe webhook for business {business_id}")
+            except Exception as e:
+                logger.error(f"Failed to process subscription from webhook: {str(e)}")
+    
+    # Handle subscription events
+    elif event.type == 'customer.subscription.updated' or event.type == 'customer.subscription.created':
+        subscription = event.data.object
+        
+        # Map the price ID to a plan
+        plan_mapping = {
+            settings.STRIPE_PRICE_ID_MONTHLY: 'professional',
+            settings.STRIPE_PRICE_ID_ANNUAL: 'professional',
+            # Add any other price IDs you use
+        }
+        
+        # Get the price ID from the subscription
+        if subscription.items.data and len(subscription.items.data) > 0:
+            price_id = subscription.items.data[0].price.id
+            
+            # Find the user by customer ID
+            try:
+                # This assumes you store the Stripe customer ID with your user
+                customer = stripe.Customer.retrieve(subscription.customer)
+                user = User.objects.get(email=customer.email)
+                
+                # Get the business
+                business = Business.objects.get(owner=user)
+                
+                # Determine the plan
+                selected_plan = plan_mapping.get(price_id, 'free')
+                
+                # Update storage quota
+                update_storage_quota(business.id, selected_plan)
+                
+                logger.info(f"Storage quota updated via subscription event for user {user.id}")
+            except Exception as e:
+                logger.error(f"Failed to update quota from subscription event: {str(e)}")
+        
+    return HttpResponse(status=200)
