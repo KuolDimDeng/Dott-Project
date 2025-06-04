@@ -19,7 +19,7 @@ COPY requirements-render.txt ./
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
     pip install --no-cache-dir -r requirements-render.txt && \
     echo "=== DEPENDENCY VERIFICATION ===" && \
-    python -c "import stripe; print(f'✅ Stripe {stripe.__version__} installed successfully')" && \
+    python -c "import stripe; print(f'✅ Stripe {stripe._version} installed successfully')" && \
     python -c "import jwcrypto; print(f'✅ JWCrypto installed successfully')" && \
     python -c "import celery; print(f'✅ Celery {celery.__version__} installed successfully')" && \
     echo "=== ALL CRITICAL DEPENDENCIES VERIFIED ==="
