@@ -88,6 +88,20 @@ class EnhancedRowLevelSecurityMiddleware:
         except Exception:
             pass
         
+        # Log configuration details
+        logger.info("🔧 EnhancedRowLevelSecurityMiddleware Configuration:")
+        logger.info(f"   🔹 AUTH0_AVAILABLE: {AUTH0_AVAILABLE}")
+        logger.info(f"   🔹 Public paths: {len(self.public_paths)} configured")
+        logger.info(f"   🔹 Auth0 tenant endpoints: {len(self.auth0_tenant_endpoints)} configured")
+        
+        if AUTH0_AVAILABLE:
+            logger.info("✅ Auth0 module available - tenant endpoints enabled")
+            logger.debug(f"🔹 Auth0 tenant endpoints: {self.auth0_tenant_endpoints}")
+        else:
+            logger.warning("❌ Auth0 module NOT available - tenant endpoints will fail")
+            
+        logger.debug(f"🔹 Public paths: {self.public_paths}")
+        
         # Initialize RLS functions in the database
         self._initialize_rls_functions()
         
@@ -301,21 +315,37 @@ class EnhancedRowLevelSecurityMiddleware:
         Handle Auth0 tenant management endpoints securely.
         These endpoints require Auth0 authentication but can create/lookup tenant IDs.
         """
+        logger.info(f"🔐 Processing Auth0 tenant endpoint: {request.path}")
+        logger.debug(f"🔍 Request method: {request.method}")
+        logger.debug(f"🔍 Request headers: {dict(request.headers)}")
+        
         if not AUTH0_AVAILABLE:
-            logger.error("Auth0JWTAuthentication not available - cannot handle Auth0 tenant endpoint")
+            logger.error("❌ Auth0JWTAuthentication not available - cannot handle Auth0 tenant endpoint")
             return HttpResponseForbidden("Auth0 authentication module not available")
         
         # Verify Auth0 authentication first
         auth = Auth0JWTAuthentication()
+        logger.debug("🔍 Creating Auth0JWTAuthentication instance...")
+        
         try:
+            logger.debug(f"🔍 Attempting Auth0 authentication for: {request.path}")
             auth_result = auth.authenticate(request)
+            
+            logger.debug(f"🔍 Auth0 authentication result type: {type(auth_result)}")
+            logger.debug(f"🔍 Auth0 authentication result: {auth_result is not None}")
+            
             if not auth_result or len(auth_result) != 2:
-                logger.warning(f"Auth0 authentication failed for tenant endpoint: {request.path}")
+                logger.warning(f"❌ Auth0 authentication failed for tenant endpoint: {request.path}")
+                logger.warning(f"❌ Auth result: {auth_result}")
                 return HttpResponseForbidden("Auth0 authentication required")
             
             user, token = auth_result
+            logger.info(f"✅ Auth0 authentication successful for: {request.path}")
+            logger.debug(f"✅ Authenticated user: {user}")
+            logger.debug(f"✅ Token length: {len(token) if token else 0}")
+            
             if not user:
-                logger.warning(f"Auth0 authentication failed for tenant endpoint: {request.path}")
+                logger.warning(f"❌ Auth0 authentication failed - no user for tenant endpoint: {request.path}")
                 return HttpResponseForbidden("Auth0 authentication required")
             
             # Set the authenticated user on the request
@@ -324,7 +354,7 @@ class EnhancedRowLevelSecurityMiddleware:
             
             # For tenant management endpoints, we allow processing without initial tenant ID
             # but still maintain security through Auth0 authentication
-            logger.info(f"Auth0 tenant endpoint authenticated: {request.path} for user: {user}")
+            logger.info(f"✅ Auth0 tenant endpoint authenticated: {request.path} for user: {user}")
             
             # Clear tenant context for safety during tenant operations
             try:
@@ -333,15 +363,25 @@ class EnhancedRowLevelSecurityMiddleware:
                 else:
                     self._set_tenant_context_sync(None)
             except Exception as e:
-                logger.debug(f"Error clearing tenant context: {e}")
+                logger.debug(f"❌ Error clearing tenant context: {e}")
             
             # Process the request with Auth0 authentication but no tenant context
+            logger.debug(f"🔄 Processing authenticated request for: {request.path}")
             response = self.get_response(request)
             
             # Add security headers
             response['X-Auth0-Verified'] = 'true'
+            logger.info(f"✅ Auth0 tenant endpoint request completed successfully: {request.path}")
             return response
             
         except Exception as e:
-            logger.error(f"Auth0 authentication error for {request.path}: {e}")
+            logger.error(f"❌ Auth0 authentication error for {request.path}: {e}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            logger.error(f"❌ Error details: {str(e)}")
+            
+            # Log request details for debugging
+            logger.debug(f"🔍 Request META keys: {list(request.META.keys())}")
+            auth_header = request.META.get('HTTP_AUTHORIZATION', 'NOT_SET')
+            logger.debug(f"🔍 Authorization header: {auth_header[:100] if auth_header != 'NOT_SET' else 'NOT_SET'}...")
+            
             return HttpResponseForbidden("Authentication failed") 

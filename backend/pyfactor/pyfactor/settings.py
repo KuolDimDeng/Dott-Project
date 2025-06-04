@@ -575,7 +575,7 @@ LOGGING = {
     },
     'handlers': {
         'console': {
-            'level': 'DEBUG',
+            'level': 'DEBUG',  # Changed to DEBUG for detailed logging
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
@@ -610,7 +610,17 @@ LOGGING = {
         },
         'custom_auth': {
             'handlers': ['console', 'auth_file'],
-            'level': 'DEBUG',
+            'level': 'DEBUG',  # Changed to DEBUG for detailed Auth0 logging
+            'propagate': False,
+        },
+        'custom_auth.auth0_authentication': {
+            'handlers': ['console', 'auth_file'],
+            'level': 'DEBUG',  # Specific logger for Auth0 authentication
+            'propagate': False,
+        },
+        'custom_auth.enhanced_rls_middleware': {
+            'handlers': ['console', 'auth_file'],
+            'level': 'DEBUG',  # Specific logger for RLS middleware
             'propagate': False,
         },
         'custom_auth.api': {

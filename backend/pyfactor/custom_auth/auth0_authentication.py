@@ -7,6 +7,7 @@ from jwt.algorithms import RSAAlgorithm
 import requests
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, Any
+import base64
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -35,34 +36,52 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         self.audience = getattr(settings, 'AUTH0_AUDIENCE', None)
         self.client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
         
+        logger.info(f"🔧 Auth0JWTAuthentication initializing with config:")
+        logger.info(f"   🔹 AUTH0_DOMAIN: {self.domain}")
+        logger.info(f"   🔹 AUTH0_ISSUER_DOMAIN: {self.issuer_domain}")
+        logger.info(f"   🔹 AUTH0_CUSTOM_DOMAIN: {self.custom_domain}")
+        logger.info(f"   🔹 AUTH0_AUDIENCE: {self.audience}")
+        logger.info(f"   🔹 AUTH0_CLIENT_ID: {self.client_id}")
+        
         if not self.domain:
+            logger.error("❌ AUTH0_DOMAIN not configured")
             raise exceptions.AuthenticationFailed('Auth0 domain not configured')
             
         # Always use the actual tenant domain for JWKS, even with custom domains
         self.jwks_url = f"https://{self.domain}/.well-known/jwks.json"
         self.jwks_client = PyJWKClient(self.jwks_url)
         
-        logger.info(f"Auth0 configured - JWKS: {self.domain}, Issuer: {self.issuer_domain}")
+        logger.info(f"✅ Auth0 configured - JWKS: {self.domain}, Issuer: {self.issuer_domain}")
+        logger.info(f"   🔗 JWKS URL: {self.jwks_url}")
     
     def authenticate(self, request):
         """
         Authenticate the request and return a two-tuple of (user, token).
         """
+        logger.debug(f"🔍 Auth0 authentication attempt for: {request.path}")
+        
         token = self.get_token_from_request(request)
         if not token:
+            logger.debug("❌ No token found in request")
             return None
             
+        logger.debug(f"🎫 Token received (length: {len(token)})")
+        logger.debug(f"🎫 Token preview: {token[:50]}...")
+        
         try:
             # Decode and validate the JWT token
             user_info = self.validate_token(token)
+            logger.info(f"✅ Token validation successful for user: {user_info.get('sub', 'unknown')}")
             
             # Get or create user based on Auth0 info
             user = self.get_or_create_user(user_info)
+            logger.info(f"✅ User authentication successful: {user.email}")
             
             return (user, token)
             
         except Exception as e:
-            logger.error(f"Auth0 authentication failed: {str(e)}")
+            logger.error(f"❌ Auth0 authentication failed for {request.path}: {str(e)}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
             raise exceptions.AuthenticationFailed(f"Invalid token: {str(e)}")
     
     def get_token_from_request(self, request):
@@ -71,41 +90,80 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         """
         auth_header = request.META.get('HTTP_AUTHORIZATION')
         
+        logger.debug(f"🔍 Authorization header present: {bool(auth_header)}")
+        
         if not auth_header:
+            logger.debug("❌ No Authorization header found")
             return None
             
         try:
             auth_type, token = auth_header.split(' ', 1)
+            logger.debug(f"🔍 Auth type: {auth_type}")
+            logger.debug(f"🔍 Token length: {len(token) if token else 0}")
+            
             if auth_type.lower() != 'bearer':
+                logger.debug(f"❌ Invalid auth type: {auth_type} (expected: Bearer)")
                 return None
             return token
-        except ValueError:
+        except ValueError as e:
+            logger.error(f"❌ Error parsing Authorization header: {e}")
             return None
     
     def validate_token(self, token):
         """
         Validate JWT token against Auth0's public keys.
         """
+        logger.debug("🔍 Starting JWT token validation...")
+        
         try:
+            # First, let's decode the header without verification to see what we're working with
+            unverified_header = jwt.get_unverified_header(token)
+            logger.debug(f"🔍 JWT Header: {unverified_header}")
+            
+            # Try to decode payload without verification for debugging
+            try:
+                unverified_payload = jwt.decode(token, options={"verify_signature": False})
+                logger.debug(f"🔍 JWT Payload (unverified): {json.dumps(unverified_payload, indent=2)}")
+                logger.debug(f"🔍 Token issuer: {unverified_payload.get('iss', 'NOT_SET')}")
+                logger.debug(f"🔍 Token audience: {unverified_payload.get('aud', 'NOT_SET')}")
+                logger.debug(f"🔍 Token subject: {unverified_payload.get('sub', 'NOT_SET')}")
+            except Exception as decode_error:
+                logger.error(f"❌ Error decoding unverified payload: {decode_error}")
+                
             # Get the signing key from Auth0 (always use actual tenant domain)
+            logger.debug(f"🔍 Fetching signing key from: {self.jwks_url}")
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
+            logger.debug(f"✅ Successfully retrieved signing key")
+            
+            # Build expected issuer
+            expected_issuer = f"https://{self.issuer_domain}/"
+            logger.debug(f"🔍 Expected issuer: {expected_issuer}")
+            logger.debug(f"🔍 Expected audience: {self.audience}")
             
             # Decode and validate the token (use issuer domain for validation)
+            logger.debug("🔍 Performing full JWT validation...")
             payload = jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["RS256"],
                 audience=self.audience,
-                issuer=f"https://{self.issuer_domain}/"
+                issuer=expected_issuer
             )
             
+            logger.info(f"✅ JWT validation successful!")
+            logger.debug(f"✅ Validated payload: {json.dumps(payload, indent=2)}")
             return payload
             
-        except jwt.ExpiredSignatureError:
+        except jwt.ExpiredSignatureError as e:
+            logger.error(f"❌ Token expired: {e}")
             raise exceptions.AuthenticationFailed('Token has expired')
         except jwt.InvalidTokenError as e:
+            logger.error(f"❌ Invalid token error: {e}")
+            logger.error(f"❌ Error details: {str(e)}")
             raise exceptions.AuthenticationFailed(f'Invalid token: {str(e)}')
         except Exception as e:
+            logger.error(f"❌ Unexpected token validation error: {e}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
             raise exceptions.AuthenticationFailed(f'Token validation error: {str(e)}')
     
     def get_or_create_user(self, user_info):
@@ -115,34 +173,43 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         auth0_id = user_info.get('sub')
         email = user_info.get('email')
         
+        logger.debug(f"🔍 Getting/creating user for Auth0 ID: {auth0_id}, Email: {email}")
+        
         if not auth0_id:
+            logger.error("❌ No user ID (sub) in token")
             raise exceptions.AuthenticationFailed('No user ID in token')
             
         if not email:
+            logger.error("❌ No email in token")
             raise exceptions.AuthenticationFailed('No email in token')
         
         try:
             # Try to find user by Auth0 ID first
             user = User.objects.get(auth0_sub=auth0_id)
+            logger.debug(f"✅ Found existing user by Auth0 ID: {user.email}")
             
             # Update email if it changed
             current_email = getattr(user, 'email', None)
             if current_email != email:
+                logger.info(f"📧 Updating user email from {current_email} to {email}")
                 setattr(user, 'email', email)
                 user.save(update_fields=['email'])
                 
             return user
             
         except User.DoesNotExist:
+            logger.debug(f"🔍 User not found by Auth0 ID, trying email: {email}")
             # Try to find by email (for migration from Cognito)
             try:
                 user = User.objects.get(email=email)
+                logger.info(f"✅ Found user by email, linking to Auth0 ID: {auth0_id}")
                 # Link this user to Auth0
                 setattr(user, 'auth0_sub', auth0_id)
                 user.save(update_fields=['auth0_sub'])
                 return user
                 
             except User.DoesNotExist:
+                logger.info(f"👤 Creating new user for: {email}")
                 # Create new user
                 user_data = {
                     'email': email,
@@ -157,7 +224,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     user_data['username'] = email
                 
                 user = User.objects.create(**user_data)
-                logger.info(f"Created new user from Auth0: {email} ({auth0_id})")
+                logger.info(f"✅ Created new user from Auth0: {email} ({auth0_id})")
                 return user
 
 
