@@ -1,4 +1,4 @@
--- Fix onboarding schema - add missing session_id column
+-- Fix onboarding schema - add missing columns
 -- Safe to run multiple times (uses IF NOT EXISTS)
 
 -- Add session_id column if it doesn't exist
@@ -12,12 +12,39 @@ BEGIN
         ALTER TABLE onboarding_onboardingprogress 
         ADD COLUMN session_id UUID NULL;
         
-        -- Create index on session_id for performance
-        CREATE INDEX IF NOT EXISTS onboard_session_idx 
-        ON onboarding_onboardingprogress(session_id);
-        
-        RAISE NOTICE 'Added session_id column and index to onboarding_onboardingprogress';
+        RAISE NOTICE 'Added session_id column to onboarding_onboardingprogress';
     ELSE
         RAISE NOTICE 'session_id column already exists in onboarding_onboardingprogress';
     END IF;
 END $$; 
+
+-- Add last_session_activity column if it doesn't exist
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'onboarding_onboardingprogress' 
+        AND column_name = 'last_session_activity'
+    ) THEN
+        ALTER TABLE onboarding_onboardingprogress 
+        ADD COLUMN last_session_activity TIMESTAMP WITH TIME ZONE NULL;
+        
+        RAISE NOTICE 'Added last_session_activity column to onboarding_onboardingprogress';
+    ELSE
+        RAISE NOTICE 'last_session_activity column already exists in onboarding_onboardingprogress';
+    END IF;
+END $$; 
+
+-- Create indexes for performance if they don't exist
+CREATE INDEX IF NOT EXISTS onboard_session_idx 
+ON onboarding_onboardingprogress(session_id);
+
+CREATE INDEX IF NOT EXISTS onboard_activity_idx 
+ON onboarding_onboardingprogress(last_session_activity);
+
+-- Show final schema
+SELECT column_name, data_type, is_nullable 
+FROM information_schema.columns 
+WHERE table_name = 'onboarding_onboardingprogress' 
+AND column_name IN ('session_id', 'last_session_activity')
+ORDER BY column_name; 
