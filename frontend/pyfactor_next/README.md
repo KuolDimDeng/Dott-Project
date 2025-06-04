@@ -1,4 +1,6 @@
-# Pyfactor Next.js Frontend
+# PyFactor Next.js Frontend
+
+This is the Next.js frontend for the PyFactor application.
 
 ## Recent Fixes
 
@@ -18,33 +20,19 @@
 
 ## Getting Started
 
-For local development, use the optimized startup script:
+First, run the development server:
 
 ```bash
-pnpm run dev:pnpm
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
 ```
 
-This script uses a simplified Next.js configuration that avoids common issues with browser target compatibility, particularly with `opera_mobile` in Babel configurations.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-Alternatively, you can use the standard development server:
-
-```bash
-pnpm run dev
-```
-
-For development with high memory needs (recommended):
-
-```bash
-pnpm run dev-high-memory
-```
-
-For development with memory debugging and heap inspection:
-
-```bash
-pnpm run dev-debug
-```
-
-Open [https://localhost:3000](https://localhost:3000) with your browser to see the result.
+<!-- Force redeploy trigger: 2025-06-04 - JWT token fix deployment -->
 
 ## Memory Management
 
