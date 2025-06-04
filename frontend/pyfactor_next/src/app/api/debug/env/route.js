@@ -11,7 +11,8 @@ export async function GET() {
     
     // Expected values
     EXPECTED_DOMAIN: 'dev-cbyy63jovi6zrcos.us.auth0.com',
-    EXPECTED_AUDIENCE: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/',
+    EXPECTED_AUDIENCE: 'https://api.dottapps.com',
+    EXPECTED_CLIENT_ID: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ',
     
     // Configuration test
     SHOULD_USE_CUSTOM_DOMAIN: false,
@@ -38,8 +39,8 @@ export async function GET() {
       : 'Environment variables need adjustment',
     recommendations: allCorrect ? [] : [
       !isCorrect.domain && 'Set NEXT_PUBLIC_AUTH0_DOMAIN to dev-cbyy63jovi6zrcos.us.auth0.com',
-      !isCorrect.audience && 'Set NEXT_PUBLIC_AUTH0_AUDIENCE to https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/',
-      !isCorrect.clientId && 'Set NEXT_PUBLIC_AUTH0_CLIENT_ID'
+      !isCorrect.audience && 'Set NEXT_PUBLIC_AUTH0_AUDIENCE to https://api.dottapps.com',
+      !isCorrect.clientId && 'Set NEXT_PUBLIC_AUTH0_CLIENT_ID to GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
     ].filter(Boolean)
   });
 } 

@@ -1,57 +1,32 @@
 // Emergency JWT Test API Route
 // Test Auth0 configuration with forced audience parameter
-import { createFixedAuth0Client, getJWTAccessToken } from '../../../../config/auth0-audience-fix.js';
+import { NextResponse } from 'next/server';
+import { auth0Utils } from '@/config/auth0';
 
 export async function GET(request) {
-  console.log('🚨 EMERGENCY JWT TEST API STARTING...');
-  
   try {
-    // Test 1: Environment Variables Check
-    console.log('🔍 Environment Variables Test:');
-    const envVars = {
-      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
-      audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
-      clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID ? '***SET***' : 'MISSING'
-    };
-    console.log('Env vars:', envVars);
+    console.log('🚨 EMERGENCY JWT TEST ROUTE - Testing Auth0 configuration');
     
-    // Test 2: Create Fixed Auth0 Client
-    console.log('🔧 Creating Auth0 client with forced audience...');
-    const auth0Client = await createFixedAuth0Client();
-    console.log('✅ Auth0 client created');
+    // Test if we can get a user and token
+    const user = await auth0Utils.getUser();
+    const token = await auth0Utils.getAccessToken();
     
-    // Test 3: Simulate Token Request (won't work without user login, but will show config)
-    console.log('📋 Client Configuration Check:');
-    
-    const testResults = {
-      success: true,
-      environment: envVars,
-      clientCreated: true,
+    const result = {
       timestamp: new Date().toISOString(),
-      message: 'Emergency JWT configuration test completed',
-      recommendations: [
-        'Environment variables are loaded',
-        'Auth0 client created with forced audience',
-        'Ready for JWT token generation',
-        'Next: Test with actual user authentication'
-      ]
+      user: user ? { email: user.email, sub: user.sub } : null,
+      hasToken: !!token,
+      tokenPreview: token ? `${token.substring(0, 20)}...` : null,
+      configTest: 'Using main auth0 config'
     };
     
-    return Response.json(testResults);
+    console.log('🔍 Emergency test result:', result);
     
+    return NextResponse.json(result);
   } catch (error) {
     console.error('❌ Emergency JWT test failed:', error);
-    
-    return Response.json({
-      success: false,
+    return NextResponse.json({ 
       error: error.message,
-      timestamp: new Date().toISOString(),
-      message: 'Emergency JWT test failed',
-      recommendations: [
-        'Check environment variables in Vercel',
-        'Verify Auth0 configuration',
-        'Check network connectivity'
-      ]
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 } 

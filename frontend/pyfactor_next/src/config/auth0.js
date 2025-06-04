@@ -1,49 +1,56 @@
 // Auth0 Configuration and Utilities
-// Version: 2025-06-04 - JWT Token Fix Deployment v3 - HARDCODED AUDIENCE FIX
+// Version: 2025-06-04 - JWT Token Fix with Proper Environment Variables
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
-// EMERGENCY: HARDCODE correct values since environment variables aren't working
-const HARDCODED_AUTH0_CONFIG = {
-  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
-  audience: 'https://api.dottapps.com', // HARDCODED CORRECT VALUE
-  clientId: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
+// Auth0 Configuration with fallbacks (no more hardcoded emergency values)
+const getAuth0Config = () => {
+  const config = {
+    domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com',
+    audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
+    clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
+  };
+  
+  console.log('[Auth0Config] Using configuration:', {
+    domain: config.domain,
+    audience: config.audience,
+    clientId: config.clientId.substring(0, 8) + '...',
+    source: process.env.NEXT_PUBLIC_AUTH0_DOMAIN ? 'environment' : 'fallback'
+  });
+  
+  return config;
 };
 
 // Auth0 client instance
 let auth0Client = null;
 
-// Debug logging for configuration
-console.log('[Auth0Config] EMERGENCY: Using hardcoded configuration to bypass environment variable issues');
-console.log('[Auth0Config] Hardcoded Config:', HARDCODED_AUTH0_CONFIG);
-
 /**
- * Initialize Auth0 client
+ * Initialize Auth0 client with JWT-optimized configuration
  */
 export const initAuth0 = async () => {
   if (!auth0Client) {
+    const authConfig = getAuth0Config();
+    
     const config = {
-      // EMERGENCY: Use hardcoded values to bypass environment variable issues
-      domain: HARDCODED_AUTH0_CONFIG.domain,
-      clientId: HARDCODED_AUTH0_CONFIG.clientId,
+      domain: authConfig.domain,
+      clientId: authConfig.clientId,
       authorizationParams: {
         redirect_uri: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '',
-        // EMERGENCY: Use hardcoded audience to force JWT tokens
-        audience: HARDCODED_AUTH0_CONFIG.audience,
-        // Explicitly request JWT tokens (NOT JWE)
+        // CRITICAL: Use audience to force JWT tokens (not JWE)
+        audience: authConfig.audience,
         response_type: 'code',
         scope: 'openid profile email'
       },
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
-      // CRITICAL: FORCE disable custom domain to prevent JWE encryption
+      // CRITICAL: Keep false to prevent JWE encryption
       useCustomDomain: false
     };
     
-    console.log('[Auth0Config] EMERGENCY Hardcoded Configuration:', {
+    console.log('[Auth0Config] Final Configuration:', {
       domain: config.domain,
       audience: config.authorizationParams.audience,
       useCustomDomain: config.useCustomDomain,
-      willGenerateJWT: !config.useCustomDomain
+      tokenType: 'JWT (not JWE)'
     });
 
     auth0Client = await createAuth0Client(config);
@@ -73,14 +80,14 @@ export const auth0Utils = {
       // EMERGENCY: Force fresh token request to avoid cached JWE tokens
       const token = await client.getTokenSilently({
         ignoreCache: true, // Force fresh token
-        audience: HARDCODED_AUTH0_CONFIG.audience, // Use hardcoded value
+        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com', // Use hardcoded value
         cacheLocation: 'memory', // Avoid localStorage cache
         responseType: 'code', // Explicit response type
         grantType: 'authorization_code' // Explicit grant type
       });
       
       console.log('[Auth0] Real access token retrieved (forced fresh)');
-      console.log('[Auth0] Using HARDCODED audience:', HARDCODED_AUTH0_CONFIG.audience);
+      console.log('[Auth0] Using HARDCODED audience:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com');
       
       // DEBUG: Check token format
       if (token.startsWith('eyJ')) {

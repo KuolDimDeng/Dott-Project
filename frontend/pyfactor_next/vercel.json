@@ -13,7 +13,7 @@
     "PROD_MODE": "true",
     "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-cbyy63jovi6zrcos.us.auth0.com",
     "NEXT_PUBLIC_AUTH0_CLIENT_ID": "GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ",
-    "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/"
+    "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://api.dottapps.com"
   },
   "regions": ["iad1"],
   "github": {
@@ -29,7 +29,7 @@
   "build": {
     "env": {
       "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-cbyy63jovi6zrcos.us.auth0.com",
-      "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/"
+      "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://api.dottapps.com"
     }
   },
   "headers": [

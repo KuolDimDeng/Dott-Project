@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
           client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
           redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
           scope: 'openid profile email',
-          audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/api/v2/`,
+          audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
         });
       
       console.log('[Auth Route] Redirecting to Auth0:', loginUrl);
