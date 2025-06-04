@@ -172,15 +172,15 @@ SECURE_HSTS_PRELOAD = True
 SESSION_COOKIE_DOMAIN = '.dottapps.com'
 CSRF_COOKIE_DOMAIN = '.dottapps.com'
 
-# Database settings for RDS
+# Database settings for Render PostgreSQL
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
-        'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
-        'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
-        'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
-        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'NAME': os.environ.get('DB_NAME', 'dott_production'),
+        'USER': os.environ.get('DB_USER', 'dott_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'HOST': os.environ.get('DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
+        'PORT': os.environ.get('DB_PORT', '5432'),
         'CONN_MAX_AGE': 300,  # Keep connections for 5 minutes
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {
@@ -192,11 +192,11 @@ DATABASES = {
     },
     'taxes': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('RDS_DB_NAME', 'dott_main'),
-        'USER': os.environ.get('RDS_USERNAME', 'dott_admin'),
-        'PASSWORD': os.environ.get('RDS_PASSWORD', 'RRfXU6uPPUbBEg1JqGTJ'),
-        'HOST': os.environ.get('RDS_HOSTNAME', 'dott-dev.c12qgo6m085e.us-east-1.rds.amazonaws.com'),
-        'PORT': os.environ.get('RDS_PORT', '5432'),
+        'NAME': os.environ.get('TAX_DB_NAME', 'dott_production'),
+        'USER': os.environ.get('TAX_DB_USER', 'dott_user'),
+        'PASSWORD': os.environ.get('TAX_DB_PASSWORD', 'SG65SMG79zpPfx8lRDWlIBTfxw1VCVnJ'),
+        'HOST': os.environ.get('TAX_DB_HOST', 'dpg-d0u3s349c44c73a8m3rg-a.oregon-postgres.render.com'),
+        'PORT': os.environ.get('TAX_DB_PORT', '5432'),
         'CONN_MAX_AGE': 300,
         'CONN_HEALTH_CHECKS': True,
         'OPTIONS': {

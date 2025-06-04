@@ -94,6 +94,28 @@ class Auth0UserCreateView(APIView):
                                 
                                 break
                                 
+                        # NEW: Also check for any completed onboarding progress by email
+                        if not existing_tenant:
+                            logger.info(f"🔍 [AUTH0_USER_CREATE] Checking for completed onboarding progress by email")
+                            completed_progress = OnboardingProgress.objects.filter(
+                                user__email=email,
+                                onboarding_status='complete'
+                            ).first()
+                            
+                            if completed_progress:
+                                logger.info(f"✅ [AUTH0_USER_CREATE] Found completed onboarding! Using tenant: {completed_progress.tenant_id}")
+                                existing_tenant = Tenant.objects.filter(id=completed_progress.tenant_id).first()
+                                if existing_tenant:
+                                    # Link this user to the existing completed setup
+                                    completed_progress.user = user
+                                    completed_progress.save(update_fields=['user'])
+                                    existing_tenant.owner_id = user.pk
+                                    existing_tenant.save(update_fields=['owner_id'])
+                                    
+                                    if not getattr(user, 'auth0_sub', None) and auth0_sub:
+                                        user.auth0_sub = auth0_sub
+                                        user.save(update_fields=['auth0_sub'])
+                                
                         if not existing_tenant:
                             logger.info(f"❌ [AUTH0_USER_CREATE] No tenant found via email fallback either")
                     
@@ -102,6 +124,15 @@ class Auth0UserCreateView(APIView):
                         
                         # Get onboarding progress with detailed debugging
                         progress = OnboardingProgress.objects.filter(user=user).first()
+                        
+                        # If no progress linked to this user, check by tenant_id
+                        if not progress:
+                            progress = OnboardingProgress.objects.filter(tenant_id=existing_tenant.id).first()
+                            if progress:
+                                logger.info(f"🔧 [AUTH0_USER_CREATE] Linking existing progress to user")
+                                progress.user = user
+                                progress.save(update_fields=['user'])
+                        
                         current_step = 'business_info'
                         needs_onboarding = True
                         onboarding_completed = False
@@ -156,12 +187,12 @@ class Auth0UserCreateView(APIView):
                 except Exception as e:
                     logger.error(f"❌ [AUTH0_USER_CREATE] Error checking existing tenant: {str(e)}")
                 
-                # Create new tenant if none exists
+                # Create new tenant if none exists (FOR TRULY NEW USERS ONLY)
                 if not existing_tenant:
                     # Use provided tenant_id or generate new one
                     new_tenant_id = tenant_id or str(uuid.uuid4())
                     
-                    logger.info(f"🆕 [AUTH0_USER_CREATE] Creating new tenant for user {user.email}: {new_tenant_id}")
+                    logger.info(f"🆕 [AUTH0_USER_CREATE] Creating new tenant for TRULY NEW user {user.email}: {new_tenant_id}")
                     
                     tenant = Tenant.objects.create(
                         id=new_tenant_id,
