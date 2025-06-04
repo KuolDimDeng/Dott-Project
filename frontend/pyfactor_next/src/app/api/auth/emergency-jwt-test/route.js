@@ -1,6 +1,6 @@
 // Emergency JWT Test API Route
 // Test Auth0 configuration with forced audience parameter
-import { createFixedAuth0Client, getJWTAccessToken } from '../../../config/auth0-audience-fix.js';
+import { createFixedAuth0Client, getJWTAccessToken } from '../../../../config/auth0-audience-fix.js';
 
 export async function GET(request) {
   console.log('🚨 EMERGENCY JWT TEST API STARTING...');
