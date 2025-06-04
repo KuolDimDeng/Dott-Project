@@ -55,7 +55,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
-from custom_auth.authentication import CognitoAuthentication
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 
 
 
@@ -308,7 +308,7 @@ async def get_task_status(task_id: str) -> dict:
 class BaseOnboardingView(APIView):
     """Base view for all onboarding-related views with proper authentication handling"""
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -943,7 +943,7 @@ class StartOnboardingView(BaseOnboardingView):
     permission_classes = [SetupEndpointPermission]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
-    authentication_classes = [CognitoAuthentication]  # Add proper authentication
+    authentication_classes = [Auth0JWTAuthentication]  # Add proper authentication
 
     def dispatch(self, request, *args, **kwargs):
         """Handle preflight requests and add CORS headers"""
@@ -1695,7 +1695,7 @@ def cleanup_expired_onboarding(self):
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep1View(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -2462,7 +2462,7 @@ class SaveStep1View(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep2View(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -2728,7 +2728,7 @@ class SaveStep2View(APIView):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([CognitoAuthentication])
+@authentication_classes([Auth0JWTAuthentication])
 async def get_schema_status(request):
     try:
         if not request.user.tenant:
@@ -2847,7 +2847,7 @@ def check_schema_setup(tenant_id: uuid.UUID):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([CognitoAuthentication])
+@authentication_classes([Auth0JWTAuthentication])
 async def cancel_task(request, task_id: str):
     """
     Cancel a running Celery task
@@ -2893,7 +2893,7 @@ class SetupStatusView(BaseOnboardingView):
     """
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -3131,7 +3131,7 @@ class SetupStatusCheckView(APIView):
     View to check the status of a background schema setup task.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     
     def get(self, request, task_id):
         """
@@ -3242,7 +3242,7 @@ class GetBusinessInfoView(APIView):
     View to retrieve business information for the authenticated user.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -3476,7 +3476,7 @@ def stripe_webhook(request):
                 
                 # Update Cognito attributes
                 try:
-                    from custom_auth.cognito import update_user_attributes_sync
+                    # from custom_auth.cognito import update_user_attributes_sync  # REMOVED - using Auth0
                     
                     # Create attributes dictionary with valid values
                     cognito_attributes = {
@@ -3485,7 +3485,7 @@ def stripe_webhook(request):
                     }
                     
                     # Update Cognito attributes
-                    update_user_attributes_sync(str(user.id), cognito_attributes)
+                    # update_user_attributes_sync(str(user.id), cognito_attributes)  # REMOVED - using Auth0
                     logger.info(f"Updated Cognito attributes for user {user.id}: {cognito_attributes}")
                 except Exception as e:
                     logger.error(f"Failed to update Cognito attributes: {str(e)}")
@@ -3725,7 +3725,7 @@ def update_session(request):
 # Add CheckOnboardingStatusView class
 class CheckOnboardingStatusView(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -3853,7 +3853,7 @@ class ResetOnboardingView(BaseOnboardingView):
             # Reset Cognito attributes
             cognito_reset = False
             try:
-                from custom_auth.cognito import update_user_attributes_sync
+                # from custom_auth.cognito import update_user_attributes_sync  # REMOVED - using Auth0
                 
                 # Create attributes dictionary with valid values
                 cognito_attributes = {
@@ -3862,7 +3862,7 @@ class ResetOnboardingView(BaseOnboardingView):
                 }
                 
                 # Update Cognito attributes
-                update_user_attributes_sync(str(request.user.id), cognito_attributes)
+                # update_user_attributes_sync(str(request.user.id), cognito_attributes)  # REMOVED - using Auth0
                 logger.info(f"Updated Cognito attributes for user {request.user.id}: {cognito_attributes}")
                 cognito_reset = True
             except Exception as e:
@@ -4036,7 +4036,7 @@ def update_session(request):
 
 class SaveStep3View(BaseOnboardingView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -4275,7 +4275,7 @@ class SaveStep4View(BaseOnboardingView):
     """
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -4591,7 +4591,7 @@ class OnboardingSuccessView(BaseOnboardingView):
     - Next steps guidance
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     

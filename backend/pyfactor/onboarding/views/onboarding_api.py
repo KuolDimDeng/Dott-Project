@@ -230,13 +230,8 @@ class OnboardingStatusAPI(APIView):
                 progress.last_session_activity = timezone.now()
                 progress.save()
                 
-                # Update user's onboarding status in Cognito custom attributes
-                user = request.user
-                if hasattr(user, 'update_cognito_attributes'):
-                    user.update_cognito_attributes({
-                        'custom:onboarding': step,
-                        'custom:lastStep': step
-                    })
+                # Log Auth0 attributes update (replaces Cognito update)
+                logger.info(f"Auth0 user attributes logged for {request.user.email}: status={step}, plan={selected_plan}")
             
             # Sync to database immediately
             onboarding_session_service.sync_to_db(session_id, OnboardingProgress)
@@ -352,14 +347,6 @@ class CompleteOnboardingAPI(APIView):
                 
                 # Save progress
                 progress.save()
-                
-                # Update user's onboarding status in Cognito custom attributes
-                user = request.user
-                if hasattr(user, 'update_cognito_attributes'):
-                    user.update_cognito_attributes({
-                        'custom:onboarding': 'complete',
-                        'custom:setupdone': 'TRUE'
-                    })
             
             # Invalidate Redis session to clean up
             if session_id:
