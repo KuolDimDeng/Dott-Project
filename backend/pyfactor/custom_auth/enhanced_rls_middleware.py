@@ -68,6 +68,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/hr/health',  # Add HR health endpoint as public
             '/api/diagnostic/',  # Temporary diagnostic endpoint for debugging
             '/api/diagnostic/restore/',  # Temporary restore endpoint for account restoration
+            '/api/check-user/',  # User lookup endpoint for debugging
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
