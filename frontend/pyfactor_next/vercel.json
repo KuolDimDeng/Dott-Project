@@ -21,17 +21,24 @@
   },
   "redirects": [
   ],
+  "functions": {
+    "app/**/*.js": {
+      "maxDuration": 30
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-cbyy63jovi6zrcos.us.auth0.com",
+      "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/"
+    }
+  },
   "headers": [
     {
-      "source": "/api/auth/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
-          "key": "cache-control",
-          "value": "no-store, max-age=0"
-        },
-        {
-          "key": "x-robots-tag",
-          "value": "noindex"
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
         }
       ]
     }

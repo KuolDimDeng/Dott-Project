@@ -5,6 +5,13 @@ import { createAuth0Client } from '@auth0/auth0-spa-js';
 // Auth0 client instance
 let auth0Client = null;
 
+// FORCE JWT CONFIGURATION - Override environment variables if needed
+const FORCE_JWT_CONFIG = {
+  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
+  audience: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/',
+  useCustomDomain: false // CRITICAL: Must be false for JWT
+};
+
 // Debug logging for environment variables
 console.log('[Auth0Config] Environment Variables:', {
   domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
@@ -12,34 +19,44 @@ console.log('[Auth0Config] Environment Variables:', {
   clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID ? '***' : 'missing'
 });
 
+console.log('[Auth0Config] Force JWT Config:', FORCE_JWT_CONFIG);
+
 /**
  * Initialize Auth0 client
  */
 export const initAuth0 = async () => {
   if (!auth0Client) {
     const config = {
-      // Use regular Auth0 domain for JWT tokens (NOT custom domain)
-      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com',
+      // PRIORITY: Use forced config if env vars are missing/incorrect
+      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || FORCE_JWT_CONFIG.domain,
       clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
       authorizationParams: {
         redirect_uri: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '',
-        // Use Auth0 API audience for JWT tokens
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+        // PRIORITY: Use forced config for audience
+        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience,
         // Explicitly request JWT tokens (NOT JWE)
         response_type: 'code',
         scope: 'openid profile email'
       },
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
-      // CRITICAL: Disable custom domain to prevent JWE encryption
-      useCustomDomain: false
+      // CRITICAL: FORCE disable custom domain to prevent JWE encryption
+      useCustomDomain: FORCE_JWT_CONFIG.useCustomDomain
     };
     
-    console.log('[Auth0Config] Client Configuration:', {
+    console.log('[Auth0Config] Final Configuration:', {
       domain: config.domain,
       audience: config.authorizationParams.audience,
-      useCustomDomain: config.useCustomDomain
+      useCustomDomain: config.useCustomDomain,
+      willGenerateJWT: !config.useCustomDomain
     });
+
+    // Verify configuration will generate JWT
+    if (config.useCustomDomain === true) {
+      console.error('🚨 WARNING: useCustomDomain is true - this will generate JWE tokens!');
+      config.useCustomDomain = false; // Force override
+      console.log('✅ FORCED useCustomDomain to false for JWT generation');
+    }
     
     auth0Client = await createAuth0Client(config);
   }
@@ -66,6 +83,23 @@ export const auth0Utils = {
       const client = await getAuth0Client();
       const token = await client.getTokenSilently();
       console.log('[Auth0] Real access token retrieved');
+      
+      // DEBUG: Check token format
+      if (token.startsWith('eyJ')) {
+        try {
+          const header = JSON.parse(atob(token.split('.')[0]));
+          console.log('[Auth0] Token header:', header);
+          
+          if (header.alg === 'dir' && header.enc) {
+            console.error('🚨 ERROR: Still receiving JWE tokens!', header);
+          } else if (header.alg === 'RS256' || header.alg === 'HS256') {
+            console.log('✅ SUCCESS: Received JWT token!', header);
+          }
+        } catch (e) {
+          console.log('[Auth0] Could not parse token header');
+        }
+      }
+      
       return token;
     } catch (error) {
       console.error('[Auth0] Error getting access token:', error);
