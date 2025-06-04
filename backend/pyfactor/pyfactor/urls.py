@@ -36,31 +36,17 @@ urlpatterns = [
     # Temporary diagnostic endpoint
     path('api/diagnostic/', DiagnosticView.as_view(), name='diagnostic'),
     path('api/diagnostic/restore/', RestoreAccountView.as_view(), name='restore_account'),
+    
+    # API routes - ALWAYS include these (don't wrap in try-catch)
+    path('api/', include('custom_auth.api.urls')),
+    
+    # Main app routes
+    path('', include('users.urls')),
+    
+    # Authentication routes  
+    path('accounts/', include('allauth.urls')),
+    path('auth/', include('custom_auth.urls')),
 ]
-
-# Only add other URLs if not in health-check-only mode
-if not settings.DEBUG or True:  # Always include for now, but can be conditional
-    try:
-        # Import these only when needed to avoid startup errors
-        from custom_auth.api.views.tenant_views import TenantDetailView
-        
-        # Add API routes - Fix double nesting issue by directly including custom_auth.api.urls
-        urlpatterns.extend([
-            # API routes - directly include the API endpoints
-            path('api/', include('custom_auth.api.urls')),
-            
-            # Main app routes
-            path('', include('users.urls')),
-            
-            # Authentication routes
-            path('accounts/', include('allauth.urls')),
-            path('auth/', include('custom_auth.urls')),  # Remove api/ prefix to avoid double nesting
-        ])
-        
-    except ImportError as e:
-        # If imports fail, just continue with health endpoints
-        print(f"Warning: Some modules could not be imported: {e}")
-        pass
 
 # Handle debug configuration properly
 if settings.DEBUG:
