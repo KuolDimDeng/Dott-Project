@@ -12,7 +12,7 @@ from users.models import UserProfile
 from onboarding.models import OnboardingProgress
 from users.serializers import UserProfileSerializer as UserSerializer
 from django.utils import timezone
-from ..authentication import CognitoAuthentication
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from django.core.exceptions import ValidationError
 from pyfactor.logging_config import get_logger
 
@@ -41,42 +41,42 @@ def ensure_single_tenant_per_business(user, business_id):
     return None, True
 
 class SignupView(APIView):
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     permission_classes = [AllowAny]
 
     def post(self, request):
         """
-        Handle user signup after Cognito confirmation
+        Handle user signup with Auth0 authentication
         """
-        logger.debug("Received signup request: %s", request.data)
+        logger.debug("Received Auth0 signup request: %s", request.data)
         try:
             # Validate required fields
             email = request.data.get('email')
-            cognito_id = request.data.get('cognitoId')
+            auth0_sub = request.data.get('auth0_sub') or request.data.get('sub')
             user_role = request.data.get('userRole', 'owner')
             business_id = request.data.get('businessId') or request.data.get('custom:businessid')
 
-            if not email or not cognito_id:
-                logger.error("Missing required fields in signup request")
+            if not email:
+                logger.error("Missing required email field in signup request")
                 return Response(
-                    {"error": "Missing required fields"},
+                    {"error": "Email is required"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
             # First check if a user with this email already exists and has a tenant
             existing_user = User.objects.filter(email=email).first()
             if existing_user:
-                logger.info(f"[SIGNUP] User {email} already exists, checking for existing tenant")
+                logger.info(f"[AUTH0-SIGNUP] User {email} already exists, checking for existing tenant")
                 
-                # Check for user's linked tenant via ForeignKey relationship
-                tenant = existing_user.tenant
-                
-                if tenant:
-                    # Update user Cognito ID if needed
-                    if existing_user.cognito_sub != cognito_id:
-                        existing_user.cognito_sub = cognito_id
-                        existing_user.save(update_fields=['cognito_sub'])
-                        logger.info(f"[SIGNUP] Updated Cognito ID for existing user {email}")
+                # Check for user's linked tenant via the tenant service
+                if hasattr(existing_user, 'tenant') and existing_user.tenant:
+                    tenant = existing_user.tenant
+                    
+                    # Update user Auth0 sub if needed
+                    if hasattr(existing_user, 'auth0_sub') and existing_user.auth0_sub != auth0_sub:
+                        existing_user.auth0_sub = auth0_sub
+                        existing_user.save(update_fields=['auth0_sub'])
+                        logger.info(f"[AUTH0-SIGNUP] Updated Auth0 sub for existing user {email}")
                     
                     response_data = {
                         "status": "success",
@@ -86,7 +86,7 @@ class SignupView(APIView):
                         "isOnboarded": getattr(existing_user, 'is_onboarded', False),
                         "tenantId": str(tenant.id)
                     }
-                    logger.info(f"[SIGNUP] Returning existing user and tenant info for {email}")
+                    logger.info(f"[AUTH0-SIGNUP] Returning existing user and tenant info for {email}")
                     return Response(response_data)
 
             with transaction.atomic():
@@ -94,16 +94,21 @@ class SignupView(APIView):
                 user, created = User.objects.get_or_create(
                     email=email,
                     defaults={
-                        'cognito_sub': cognito_id,
                         'is_active': True
                     }
                 )
 
                 if not created:
                     # Update existing user
-                    user.cognito_sub = cognito_id
                     user.is_active = True
-                    user.save(update_fields=['cognito_sub', 'is_active'])
+                    update_fields = ['is_active']
+                    
+                    # Update Auth0 sub if the field exists
+                    if hasattr(user, 'auth0_sub') and auth0_sub:
+                        user.auth0_sub = auth0_sub
+                        update_fields.append('auth0_sub')
+                        
+                    user.save(update_fields=update_fields)
 
                 # Extract business information
                 business_name = request.data.get('business_name') or request.data.get('businessName')
@@ -116,20 +121,21 @@ class SignupView(APIView):
                         try:
                             tenant_id = uuid.UUID(business_id)
                         except (ValueError, TypeError):
-                            logger.warning(f"[SIGNUP] Invalid business ID format: {business_id}, will generate new tenant ID")
+                            logger.warning(f"[AUTH0-SIGNUP] Invalid business ID format: {business_id}, will generate new tenant ID")
                     
                     # Use tenant management service to create or get tenant
-                    tenant, created = TenantManagementService.create_tenant(
+                    tenant, tenant_created = TenantManagementService.create_tenant(
                         user_id=user.id,
                         business_name=business_name,
                         tenant_id=tenant_id
                     )
                     
-                    # Update user's tenant relationship
-                    user.tenant = tenant
-                    user.save(update_fields=['tenant'])
+                    # Update user's tenant relationship if the field exists
+                    if hasattr(user, 'tenant'):
+                        user.tenant = tenant
+                        user.save(update_fields=['tenant'])
                     
-                    logger.info(f"[SIGNUP] {'Created' if created else 'Using existing'} tenant {tenant.id} for user {email}")
+                    logger.info(f"[AUTH0-SIGNUP] {'Created' if tenant_created else 'Using existing'} tenant {tenant.id} for user {email}")
                     
                     response_data = {
                         "status": "success",
@@ -152,7 +158,7 @@ class SignupView(APIView):
                 
                 return Response(response_data)
         except Exception as e:
-            logger.exception(f"Error in signup process: {str(e)}")
+            logger.exception(f"Error in Auth0 signup process: {str(e)}")
             return Response(
                 {"error": f"Signup failed: {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
