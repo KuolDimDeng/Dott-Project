@@ -9,9 +9,9 @@ echo "Python: $(python --version)"
 echo "Working directory: $(pwd)"
 echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-pyfactor.settings}"
 
-# Install dependencies
-echo "Installing dependencies..."
-pip install -r requirements.txt
+# Install dependencies from requirements-render.txt (contains fixed dependencies)
+echo "Installing dependencies from requirements-render.txt..."
+pip install -r requirements-render.txt
 
 # Test Django configuration
 echo "Testing Django configuration..."
