@@ -91,7 +91,10 @@ export const auth0Utils = {
       // EMERGENCY: Force fresh token request to avoid cached JWE tokens
       const token = await client.getTokenSilently({
         ignoreCache: true, // Force fresh token
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience
+        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience,
+        cacheLocation: 'memory', // Avoid localStorage cache
+        responseType: 'code', // Explicit response type
+        grantType: 'authorization_code' // Explicit grant type
       });
       
       console.log('[Auth0] Real access token retrieved (forced fresh)');
