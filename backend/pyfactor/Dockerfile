@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY requirements-eb.txt ./
+COPY requirements-render.txt ./
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
-    pip install --no-cache-dir -r requirements-eb.txt
+    pip install --no-cache-dir -r requirements-render.txt
 
 # Copy application code
 COPY . .
