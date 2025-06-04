@@ -2,6 +2,12 @@
 // Version: 2025-06-04 - JWT Token Fix Deployment
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
+// EMERGENCY: Force environment variables if not set correctly
+if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_AUTH0_AUDIENCE) {
+  console.warn('🚨 EMERGENCY: Setting missing AUTH0_AUDIENCE environment variable');
+  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/';
+}
+
 // Auth0 client instance
 let auth0Client = null;
 
@@ -81,8 +87,15 @@ export const auth0Utils = {
   getAccessToken: async () => {
     try {
       const client = await getAuth0Client();
-      const token = await client.getTokenSilently();
-      console.log('[Auth0] Real access token retrieved');
+      
+      // EMERGENCY: Force fresh token request to avoid cached JWE tokens
+      const token = await client.getTokenSilently({
+        ignoreCache: true, // Force fresh token
+        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience
+      });
+      
+      console.log('[Auth0] Real access token retrieved (forced fresh)');
+      console.log('[Auth0] Using audience:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience);
       
       // DEBUG: Check token format
       if (token.startsWith('eyJ')) {
@@ -92,6 +105,7 @@ export const auth0Utils = {
           
           if (header.alg === 'dir' && header.enc) {
             console.error('🚨 ERROR: Still receiving JWE tokens!', header);
+            console.error('🚨 This means Auth0 audience is not being used correctly');
           } else if (header.alg === 'RS256' || header.alg === 'HS256') {
             console.log('✅ SUCCESS: Received JWT token!', header);
           }
