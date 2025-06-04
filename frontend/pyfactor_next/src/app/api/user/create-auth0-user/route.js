@@ -93,50 +93,50 @@ export async function POST(request) {
     // Step 1: Try Django backend lookup (if not check-only)
     let existingUser = null;
     if (!checkOnly) {
-      try {
-        console.log('[Create Auth0 User] Checking for existing user with Auth0 token');
-        
-        const existingUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          }
-        });
-        
-        console.log('[Create Auth0 User] Existing user lookup status:', existingUserResponse.status);
-        
-        if (existingUserResponse.ok) {
-          existingUser = await existingUserResponse.json();
+    try {
+      console.log('[Create Auth0 User] Checking for existing user with Auth0 token');
+      
+      const existingUserResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        }
+      });
+      
+      console.log('[Create Auth0 User] Existing user lookup status:', existingUserResponse.status);
+      
+      if (existingUserResponse.ok) {
+        existingUser = await existingUserResponse.json();
           console.log('[Create Auth0 User] Found existing user in backend:', {
-            email: existingUser.email,
-            tenant_id: existingUser.tenant_id,
-            onboarding_completed: existingUser.onboarding_completed,
-            needs_onboarding: existingUser.needs_onboarding
-          });
+          email: existingUser.email,
+          tenant_id: existingUser.tenant_id,
+          onboarding_completed: existingUser.onboarding_completed,
+          needs_onboarding: existingUser.needs_onboarding
+        });
           
           // Store tenant ID for future use
           existingTenantId = existingUser.tenant_id;
-          
-          // User exists - return their existing data
-          return NextResponse.json({
-            success: true,
-            message: 'Existing user found',
-            isExistingUser: true,
-            user_id: existingUser.id,
-            tenant_id: existingUser.tenant_id,
-            email: existingUser.email,
-            needs_onboarding: existingUser.needs_onboarding !== false,
-            onboardingCompleted: existingUser.onboarding_completed === true,
-            current_step: existingUser.current_onboarding_step || 'business_info'
-          });
-        } else {
+        
+        // User exists - return their existing data
+        return NextResponse.json({
+          success: true,
+          message: 'Existing user found',
+          isExistingUser: true,
+          user_id: existingUser.id,
+          tenant_id: existingUser.tenant_id,
+          email: existingUser.email,
+          needs_onboarding: existingUser.needs_onboarding !== false,
+          onboardingCompleted: existingUser.onboarding_completed === true,
+          current_step: existingUser.current_onboarding_step || 'business_info'
+        });
+      } else {
           console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
-        }
-      } catch (error) {
-        console.warn('[Create Auth0 User] Error checking existing user:', error.message);
       }
+    } catch (error) {
+      console.warn('[Create Auth0 User] Error checking existing user:', error.message);
+    }
     }
     
     // If we have an existing tenant ID from session/cookies, use it instead of creating new one

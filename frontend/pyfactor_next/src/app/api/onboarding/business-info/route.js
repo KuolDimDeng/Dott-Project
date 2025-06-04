@@ -257,11 +257,11 @@ export async function POST(request) {
             }
             
             let sessionData = {};
-            try {
-              sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+              try {
+                sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
               console.log('🚨 [BUSINESS-INFO API] Step 3: Session parsed successfully');
               console.log('🚨 [BUSINESS-INFO API] Step 3: User exists in session:', !!sessionData.user);
-            } catch (parseError) {
+              } catch (parseError) {
               console.error('🚨 [BUSINESS-INFO API] ❌ Session parse error:', parseError.message);
               throw new Error(`Session parse failed: ${parseError.message}`);
             }
@@ -328,8 +328,8 @@ export async function POST(request) {
                   sub: updatedUser.sub,
                   needsOnboarding: false,
                   currentStep: 'subscription',
-                  businessInfoCompleted: true,
-                  lastUpdated: new Date().toISOString()
+                businessInfoCompleted: true,
+                lastUpdated: new Date().toISOString()
                 },
                 accessToken: sessionData.accessToken
               };
@@ -433,47 +433,47 @@ export async function POST(request) {
                 currentStep: 'subscription',
                 businessInfoCompleted: true,
                 lastUpdated: new Date().toISOString()
-              };
-              
+            };
+            
               const minimalSession = {
                 user: minimalUser,
                 accessToken: sessionData.accessToken
               };
               
               const cookieString = Buffer.from(JSON.stringify(minimalSession)).toString('base64');
-              
-              const response = createSafeResponse({
-                success: true,
-                message: 'Business information saved successfully',
-                next_step: 'subscription',
-                current_step: 'subscription',
-                redirect_url: '/onboarding/subscription'
-              });
-              
+            
+            const response = createSafeResponse({
+              success: true,
+              message: 'Business information saved successfully',
+              next_step: 'subscription',
+              current_step: 'subscription',
+              redirect_url: '/onboarding/subscription'
+            });
+            
               response.cookies.set('appSession', cookieString, {
-                path: '/',
+              path: '/',
                 httpOnly: true,
                 secure: true,
-                sameSite: 'lax',
+              sameSite: 'lax',
                 maxAge: 7 * 24 * 60 * 60,
                 domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-              });
-              
+            });
+            
               console.log('🚨 [BUSINESS-INFO API] ✅ SIMPLIFIED SESSION UPDATE SUCCESSFUL');
-              return response;
+            return response;
             }
           } catch (simplifiedError) {
             console.error('🚨 [BUSINESS-INFO API] ❌ Simplified session update failed:', simplifiedError.message);
           }
-          
+            
           // Fallback response
-          return createSafeResponse({
-            success: true,
+            return createSafeResponse({
+              success: true,
             message: 'Business information saved successfully',
-            next_step: 'subscription',
+              next_step: 'subscription',
             current_step: 'subscription',
             redirect_url: '/onboarding/subscription'
-          });
+            });
         }
       } else {
         console.log('🚨 [BUSINESS-INFO API] BACKEND FAILED PATH');

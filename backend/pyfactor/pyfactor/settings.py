@@ -78,25 +78,25 @@ if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startsw
     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
 # Auth0 Settings (Primary Authentication)
-# HARDCODED VALUES TO FIX JWT VALIDATION ISSUE
-AUTH0_CUSTOM_DOMAIN = 'auth.dottapps.com'  # Custom domain
-AUTH0_DOMAIN = 'dev-cbyy63jovi6zrcos.us.auth0.com'  # Actual tenant domain for JWKS
-AUTH0_ISSUER_DOMAIN = 'dev-cbyy63jovi6zrcos.us.auth0.com'  # Use ACTUAL tenant domain for issuer validation
+# Dynamic configuration using environment variables
+AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+AUTH0_ISSUER_DOMAIN = os.getenv('AUTH0_ISSUER_DOMAIN', AUTH0_DOMAIN)  # Default to AUTH0_DOMAIN if not specified
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
-# HARDCODE the audience to match what frontend sends
-AUTH0_AUDIENCE = 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/'
+# Use environment variable for audience with sensible default
+AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
 
-# Always use actual tenant domain for JWT validation 
+# Build issuer URL from the issuer domain
 AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
 
 # Check Auth0 configuration
-print("🔐 Auth0 Configuration (HARDCODED VALUES):")
+print("🔐 Auth0 Configuration (Environment Variables):")
 print(f"   Domain: {AUTH0_DOMAIN}")
 print(f"   Issuer: {AUTH0_ISSUER}")
 print(f"   Audience: {AUTH0_AUDIENCE}")
 print(f"   Custom Domain: {AUTH0_CUSTOM_DOMAIN}")
-print("✅ Auth0 configuration loaded with hardcoded values")
+print("✅ Auth0 configuration loaded from environment variables")
 
 USE_AUTH0 = True  # Always use Auth0
 print("🔐 Using Auth0 for authentication")

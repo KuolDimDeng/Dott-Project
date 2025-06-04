@@ -84,7 +84,7 @@ export default function Auth0CallbackPage() {
               needsOnboarding: createUserData.needs_onboarding !== false,
               onboardingCompleted: createUserData.onboardingCompleted || !createUserData.needs_onboarding,
               currentStep: createUserData.current_step || 'business_info',
-              isNewUser: !createUserData.isExistingUser && createUserData.success
+              isNewUser: createUserData.success ? !createUserData.isExistingUser : false
             };
             
             console.log('[Auth0Callback] Updated backend user with Django data:', backendUser);
@@ -105,7 +105,7 @@ export default function Auth0CallbackPage() {
                   needsOnboarding: true,
                   onboardingCompleted: false,
                   currentStep: 'business_info',
-                  isNewUser: true
+                  isNewUser: !errorData.isExistingUser
                 };
               }
             } catch (parseError) {
