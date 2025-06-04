@@ -1,31 +1,29 @@
 // Auth0 Configuration and Utilities
-// Version: 2025-06-04 - JWT Token Fix Deployment v2 - FORCE REDEPLOY
+// Version: 2025-06-04 - JWT Token Fix Deployment v3 - HARDCODED AUDIENCE FIX
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
-// EMERGENCY: Force environment variables if not set correctly
-if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_AUTH0_AUDIENCE) {
-  console.warn('🚨 EMERGENCY: Setting missing AUTH0_AUDIENCE environment variable');
-  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = 'https://api.dottapps.com';
+// EMERGENCY: HARDCODE correct values since environment variables aren't working
+const HARDCODED_AUTH0_CONFIG = {
+  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
+  audience: 'https://api.dottapps.com', // HARDCODED CORRECT VALUE
+  clientId: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
+};
+
+// Force environment variables if not set correctly
+if (typeof window !== 'undefined') {
+  console.warn('🚨 EMERGENCY: Forcing hardcoded Auth0 audience to fix JWE issue');
+  // Override problematic environment variables
+  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = HARDCODED_AUTH0_CONFIG.audience;
+  process.env.NEXT_PUBLIC_AUTH0_DOMAIN = HARDCODED_AUTH0_CONFIG.domain;
+  process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID = HARDCODED_AUTH0_CONFIG.clientId;
 }
 
 // Auth0 client instance
 let auth0Client = null;
 
-// FORCE JWT CONFIGURATION - Override environment variables if needed
-const FORCE_JWT_CONFIG = {
-  domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
-  audience: 'https://api.dottapps.com', // Updated to match Auth0 API identifier
-  useCustomDomain: false // CRITICAL: Must be false for JWT
-};
-
-// Debug logging for environment variables
-console.log('[Auth0Config] Environment Variables:', {
-  domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
-  audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
-  clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID ? '***' : 'missing'
-});
-
-console.log('[Auth0Config] Force JWT Config:', FORCE_JWT_CONFIG);
+// Debug logging for configuration
+console.log('[Auth0Config] EMERGENCY: Using hardcoded configuration to bypass environment variable issues');
+console.log('[Auth0Config] Hardcoded Config:', HARDCODED_AUTH0_CONFIG);
 
 /**
  * Initialize Auth0 client
@@ -33,13 +31,13 @@ console.log('[Auth0Config] Force JWT Config:', FORCE_JWT_CONFIG);
 export const initAuth0 = async () => {
   if (!auth0Client) {
     const config = {
-      // PRIORITY: Use forced config if env vars are missing/incorrect
-      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || FORCE_JWT_CONFIG.domain,
-      clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+      // EMERGENCY: Use hardcoded values to bypass environment variable issues
+      domain: HARDCODED_AUTH0_CONFIG.domain,
+      clientId: HARDCODED_AUTH0_CONFIG.clientId,
       authorizationParams: {
         redirect_uri: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '',
-        // PRIORITY: Use forced config for audience
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience,
+        // EMERGENCY: Use hardcoded audience to force JWT tokens
+        audience: HARDCODED_AUTH0_CONFIG.audience,
         // Explicitly request JWT tokens (NOT JWE)
         response_type: 'code',
         scope: 'openid profile email'
@@ -47,23 +45,16 @@ export const initAuth0 = async () => {
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
       // CRITICAL: FORCE disable custom domain to prevent JWE encryption
-      useCustomDomain: FORCE_JWT_CONFIG.useCustomDomain
+      useCustomDomain: false
     };
     
-    console.log('[Auth0Config] Final Configuration:', {
+    console.log('[Auth0Config] EMERGENCY Hardcoded Configuration:', {
       domain: config.domain,
       audience: config.authorizationParams.audience,
       useCustomDomain: config.useCustomDomain,
       willGenerateJWT: !config.useCustomDomain
     });
 
-    // Verify configuration will generate JWT
-    if (config.useCustomDomain === true) {
-      console.error('🚨 WARNING: useCustomDomain is true - this will generate JWE tokens!');
-      config.useCustomDomain = false; // Force override
-      console.log('✅ FORCED useCustomDomain to false for JWT generation');
-    }
-    
     auth0Client = await createAuth0Client(config);
   }
   return auth0Client;
@@ -91,14 +82,14 @@ export const auth0Utils = {
       // EMERGENCY: Force fresh token request to avoid cached JWE tokens
       const token = await client.getTokenSilently({
         ignoreCache: true, // Force fresh token
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience,
+        audience: HARDCODED_AUTH0_CONFIG.audience, // Use hardcoded value
         cacheLocation: 'memory', // Avoid localStorage cache
         responseType: 'code', // Explicit response type
         grantType: 'authorization_code' // Explicit grant type
       });
       
       console.log('[Auth0] Real access token retrieved (forced fresh)');
-      console.log('[Auth0] Using audience:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || FORCE_JWT_CONFIG.audience);
+      console.log('[Auth0] Using HARDCODED audience:', HARDCODED_AUTH0_CONFIG.audience);
       
       // DEBUG: Check token format
       if (token.startsWith('eyJ')) {
