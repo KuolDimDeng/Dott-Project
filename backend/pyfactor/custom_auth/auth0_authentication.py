@@ -27,15 +27,29 @@ try:
     JWE_AVAILABLE = True
     logger = logging.getLogger(__name__)
     logger.info("✅ JWE support available for encrypted Auth0 tokens")
+    logger.info("✅ jwcrypto library imported successfully")
 except ImportError as e:
     JWE_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.warning(f"❌ JWE support not available: {str(e)} - will attempt fallback authentication")
+    logger.warning(f"❌ JWE support not available - ImportError: {str(e)}")
     logger.warning("💡 To enable JWE decryption: pip install jwcrypto")
+    logger.warning("📋 Current available packages:")
+    try:
+        import pkg_resources
+        installed_packages = [d.project_name for d in pkg_resources.working_set]
+        jwe_related = [p for p in installed_packages if 'jw' in p.lower() or 'crypto' in p.lower()]
+        if jwe_related:
+            logger.warning(f"   JWE/Crypto related packages: {jwe_related}")
+        else:
+            logger.warning("   No JWE/Crypto related packages found")
+    except Exception:
+        pass
 except Exception as e:
     JWE_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.error(f"❌ JWE import error: {str(e)} - will attempt fallback authentication")
+    logger.error(f"❌ JWE import error: {str(e)}")
+    logger.error(f"❌ Error type: {type(e).__name__}")
+    logger.error("💡 Will use Auth0 API fallback authentication")
 
 User = get_user_model()
 
