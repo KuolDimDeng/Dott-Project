@@ -5,7 +5,7 @@ import { createAuth0Client } from '@auth0/auth0-spa-js';
 // EMERGENCY: Force environment variables if not set correctly
 if (typeof window !== 'undefined' && !process.env.NEXT_PUBLIC_AUTH0_AUDIENCE) {
   console.warn('🚨 EMERGENCY: Setting missing AUTH0_AUDIENCE environment variable');
-  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/';
+  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = 'https://api.dottapps.com';
 }
 
 // Auth0 client instance
@@ -14,7 +14,7 @@ let auth0Client = null;
 // FORCE JWT CONFIGURATION - Override environment variables if needed
 const FORCE_JWT_CONFIG = {
   domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
-  audience: 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/',
+  audience: 'https://api.dottapps.com', // Updated to match Auth0 API identifier
   useCustomDomain: false // CRITICAL: Must be false for JWT
 };
 
