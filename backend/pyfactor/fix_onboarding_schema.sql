@@ -69,6 +69,23 @@ BEGIN
     END IF;
 END $$; 
 
+-- Add user_role column if it doesn't exist
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'onboarding_onboardingprogress' 
+        AND column_name = 'user_role'
+    ) THEN
+        ALTER TABLE onboarding_onboardingprogress 
+        ADD COLUMN user_role VARCHAR(50) NULL DEFAULT 'owner';
+        
+        RAISE NOTICE 'Added user_role column to onboarding_onboardingprogress';
+    ELSE
+        RAISE NOTICE 'user_role column already exists in onboarding_onboardingprogress';
+    END IF;
+END $$; 
+
 -- Create indexes for performance if they don't exist
 CREATE INDEX IF NOT EXISTS onboard_session_idx 
 ON onboarding_onboardingprogress(session_id);
@@ -82,9 +99,12 @@ ON onboarding_onboardingprogress(business_id);
 CREATE INDEX IF NOT EXISTS onboard_account_status_idx 
 ON onboarding_onboardingprogress(account_status);
 
+CREATE INDEX IF NOT EXISTS onboard_user_role_idx 
+ON onboarding_onboardingprogress(user_role);
+
 -- Show final schema
 SELECT column_name, data_type, is_nullable 
 FROM information_schema.columns 
 WHERE table_name = 'onboarding_onboardingprogress' 
-AND column_name IN ('session_id', 'last_session_activity', 'business_id', 'account_status')
+AND column_name IN ('session_id', 'last_session_activity', 'business_id', 'account_status', 'user_role')
 ORDER BY column_name; 
