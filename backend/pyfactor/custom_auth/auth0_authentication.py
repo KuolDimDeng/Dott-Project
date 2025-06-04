@@ -31,6 +31,11 @@ except ImportError as e:
     JWE_AVAILABLE = False
     logger = logging.getLogger(__name__)
     logger.warning(f"❌ JWE support not available: {str(e)} - will attempt fallback authentication")
+    logger.warning("💡 To enable JWE decryption: pip install jwcrypto")
+except Exception as e:
+    JWE_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.error(f"❌ JWE import error: {str(e)} - will attempt fallback authentication")
 
 User = get_user_model()
 
@@ -54,7 +59,17 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         logger.info(f"   🔹 AUTH0_CUSTOM_DOMAIN: {self.custom_domain}")
         logger.info(f"   🔹 AUTH0_AUDIENCE: {self.audience}")
         logger.info(f"   🔹 AUTH0_CLIENT_ID: {self.client_id}")
+        logger.info(f"   🔹 AUTH0_CLIENT_SECRET: {'✅ Set' if self.client_secret else '❌ Missing'}")
         logger.info(f"   🔹 JWE_AVAILABLE: {JWE_AVAILABLE}")
+        
+        # JWE capability assessment
+        if JWE_AVAILABLE and self.client_secret:
+            logger.info("🔐 JWE decryption fully enabled - will decrypt Auth0 encrypted tokens")
+        elif JWE_AVAILABLE and not self.client_secret:
+            logger.warning("⚠️ JWE library available but client secret missing - will use API fallback")
+            logger.warning("💡 Set AUTH0_CLIENT_SECRET environment variable to enable JWE decryption")
+        elif not JWE_AVAILABLE:
+            logger.warning("⚠️ JWE library not available - will use Auth0 API fallback only")
         
         if not self.domain:
             logger.error("❌ AUTH0_DOMAIN not configured")
@@ -231,6 +246,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
     def decrypt_jwe_token(self, jwe_token):
         """
         Decrypt a JWE token using the client secret.
+        For Auth0 JWE with alg='dir', the client secret is used directly as the encryption key.
         """
         if not JWE_AVAILABLE:
             logger.warning("⚠️ JWE library not available, attempting Auth0 API fallback")
@@ -238,32 +254,63 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         
         if not self.client_secret:
             logger.warning("⚠️ Auth0 client secret required for JWE decryption, attempting fallback")
+            logger.warning("⚠️ Set AUTH0_CLIENT_SECRET environment variable to enable JWE decryption")
             return None
         
         try:
             logger.debug("🔓 Attempting JWE token decryption...")
+            logger.debug(f"🔍 Client secret available: {bool(self.client_secret)}")
+            logger.debug(f"🔍 Client secret length: {len(self.client_secret) if self.client_secret else 0}")
             
-            # Create JWK from client secret for direct encryption
-            key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(self.client_secret.encode()).decode())
-            
-            # Decrypt the JWE token
-            jwe_token_obj = jwe.JWE()
-            jwe_token_obj.deserialize(jwe_token)
-            decrypted_payload = jwe_token_obj.decrypt(key)
-            
-            if decrypted_payload is None:
-                logger.error("❌ JWE decryption returned None")
+            # For Auth0 JWE with alg='dir', use the client secret directly
+            # The client secret should be base64url encoded for the JWK
+            try:
+                # Auth0 uses the client secret directly as bytes for AES-GCM
+                secret_bytes = self.client_secret.encode('utf-8')
+                
+                # Create JWK for direct encryption (kty='oct' for symmetric key)
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes).decode().rstrip('='))
+                logger.debug("✅ JWK created successfully")
+                
+            except Exception as key_error:
+                logger.error(f"❌ Failed to create JWK from client secret: {str(key_error)}")
                 return None
             
-            logger.debug("✅ JWE token decrypted successfully")
-            
-            # Handle both bytes and string returns
-            if isinstance(decrypted_payload, bytes):
-                return decrypted_payload.decode('utf-8')
-            elif isinstance(decrypted_payload, str):
-                return decrypted_payload
-            else:
-                logger.error(f"❌ Unexpected decryption result type: {type(decrypted_payload)}")
+            try:
+                # Create JWE object and deserialize the token
+                jwe_token_obj = jwe.JWE()
+                jwe_token_obj.deserialize(jwe_token)
+                logger.debug("✅ JWE token deserialized successfully")
+                
+                # Decrypt using the key
+                decrypted_payload = jwe_token_obj.decrypt(key)
+                logger.debug("✅ JWE token decrypted successfully")
+                
+                if decrypted_payload is None:
+                    logger.error("❌ JWE decryption returned None")
+                    return None
+                
+                # Handle both bytes and string returns
+                if isinstance(decrypted_payload, bytes):
+                    decrypted_str = decrypted_payload.decode('utf-8')
+                    logger.debug(f"✅ Decrypted payload (from bytes): {decrypted_str[:100]}...")
+                    return decrypted_str
+                elif isinstance(decrypted_payload, str):
+                    logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
+                    return decrypted_payload
+                else:
+                    logger.error(f"❌ Unexpected decryption result type: {type(decrypted_payload)}")
+                    return None
+                    
+            except Exception as decrypt_error:
+                logger.error(f"❌ JWE decryption failed: {str(decrypt_error)}")
+                logger.error(f"❌ Decryption error type: {type(decrypt_error).__name__}")
+                # Log more details about the token structure for debugging
+                try:
+                    header = jwt.get_unverified_header(jwe_token)
+                    logger.debug(f"🔍 JWE Header for debugging: {header}")
+                except Exception:
+                    pass
                 return None
             
         except Exception as e:
