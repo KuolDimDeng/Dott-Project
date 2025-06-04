@@ -1,5 +1,5 @@
 // Auth0 Configuration and Utilities
-// Version: 2025-06-04 - JWT Token Fix Deployment
+// Version: 2025-06-04 - JWT Token Fix Deployment v2 - FORCE REDEPLOY
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
 // EMERGENCY: Force environment variables if not set correctly
