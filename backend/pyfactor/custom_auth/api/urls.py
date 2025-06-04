@@ -10,6 +10,7 @@ from .views.auth0_views import (
     Auth0OnboardingCompleteView,
     Auth0OnboardingStatusView
 )
+from .views.user_check_views import CheckUserView
 
 router = DefaultRouter()
 
@@ -21,6 +22,9 @@ urlpatterns = [
     path('auth/verify-session/', auth_views.VerifySessionView.as_view(), name='verify-session'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
     path('auth/verify-tenant/', auth_views.VerifyTenantView.as_view(), name='verify-tenant'),
+    
+    # User check endpoint (for debugging)
+    path('check-user/', CheckUserView.as_view(), name='check-user'),
     
     # Auth0 endpoints
     path('auth0/create-user/', Auth0UserCreateView.as_view(), name='auth0-create-user'),
