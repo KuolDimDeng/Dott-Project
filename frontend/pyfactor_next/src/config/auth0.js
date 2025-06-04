@@ -9,15 +9,6 @@ const HARDCODED_AUTH0_CONFIG = {
   clientId: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
 };
 
-// Force environment variables if not set correctly
-if (typeof window !== 'undefined') {
-  console.warn('🚨 EMERGENCY: Forcing hardcoded Auth0 audience to fix JWE issue');
-  // Override problematic environment variables
-  process.env.NEXT_PUBLIC_AUTH0_AUDIENCE = HARDCODED_AUTH0_CONFIG.audience;
-  process.env.NEXT_PUBLIC_AUTH0_DOMAIN = HARDCODED_AUTH0_CONFIG.domain;
-  process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID = HARDCODED_AUTH0_CONFIG.clientId;
-}
-
 // Auth0 client instance
 let auth0Client = null;
 
