@@ -534,14 +534,8 @@ def update_subscription_plan(request):
         # Update storage quota
         update_storage_quota(business.id, selected_plan)
         
-        # Update Cognito attributes if applicable
-        try:
-            from custom_auth.cognito import update_user_attributes_sync
-            update_user_attributes_sync(str(request.user.id), {
-                'custom:subplan': selected_plan
-            })
-        except Exception as e:
-            logger.error(f"Failed to update Cognito attributes: {str(e)}")
+        # Log success since we're using Auth0 instead of Cognito
+        logger.info(f"Subscription plan updated to {selected_plan} for user {request.user.id}")
         
         return Response({
             'status': 'success',

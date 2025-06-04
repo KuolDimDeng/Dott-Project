@@ -607,7 +607,6 @@ def check_subscription_status(user):
     Returns a tuple of (is_expired, previously_plan) if expired, otherwise (False, current_plan).
     """
     from users.models import Subscription, UserProfile
-    from custom_auth.cognito import update_user_attributes
     
     logger.debug(f"Checking subscription status for user {user.email}")
     
@@ -640,14 +639,8 @@ def check_subscription_status(user):
             subscription.is_active = False
             subscription.save()
             
-            # Update Cognito attribute
-            try:
-                update_user_attributes(user.username, {
-                    'custom:subplan': 'free'
-                })
-                logger.info(f"Updated Cognito attributes for user {user.username}")
-            except Exception as e:
-                logger.error(f"Failed to update Cognito attributes: {str(e)}")
+            # Log the subscription update (Auth0 attributes handled elsewhere)
+            logger.info(f"Subscription updated to free plan for user {user.email}")
             
             return True, previous_plan
         

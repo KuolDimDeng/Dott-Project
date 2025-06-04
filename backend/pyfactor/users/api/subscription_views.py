@@ -38,16 +38,9 @@ def subscription_status(request):
             subscription.is_active = False
             subscription.save()
             
-            # Update Cognito attributes
-            try:
-                from custom_auth.cognito import update_user_attributes
-                update_user_attributes(request.user.username, {
-                    'custom:subplan': 'free'
-                })
-                logger.info(f"Updated Cognito attributes for user {request.user.username}")
-            except Exception as e:
-                logger.error(f"Failed to update Cognito attributes: {str(e)}")
-                
+            # Log subscription update since using Auth0 instead of Cognito
+            logger.info(f"Subscription updated for user {request.user.id}")
+            
             return Response({
                 "expired": True,
                 "plan": "free",

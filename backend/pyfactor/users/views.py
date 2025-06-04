@@ -7,7 +7,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ValidationError
-from custom_auth.jwt import CognitoJWTAuthentication
 from .models import Business
 from .models import UserProfile, User
 from .serializers import UserProfileSerializer
@@ -32,7 +31,6 @@ class ProfileView(APIView):
     handling, efficient database queries, and detailed response formatting.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoJWTAuthentication]  # Use Cognito JWT authentication
 
     def get_user_profile(self, user):
         """

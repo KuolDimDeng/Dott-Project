@@ -17,8 +17,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from datetime import datetime
 
-from custom_auth.authentication import CognitoAuthentication
-from custom_auth.cognito import cognito_client
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from custom_auth.models import Tenant
 from custom_auth.utils import consolidate_user_tenants
 from users.models import UserProfile, Business
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 @method_decorator(csrf_exempt, name='dispatch')
 class DashboardSchemaSetupView(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [CognitoAuthentication]
+    authentication_classes = [Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -276,42 +275,8 @@ class DashboardSchemaSetupView(APIView):
                     
                     logger.info(f"Successfully applied RLS policies to all tenant-aware tables")
 
-                    # Update user's onboarding status in Cognito
+                    # Update user's onboarding status since we're using Auth0
                     try:
-                        import boto3
-                        from botocore.exceptions import ClientError
-                        
-                        cognito_client = boto3.client('cognito-idp', 
-                            region_name=settings.AWS_REGION,
-                            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY
-                        )
-                        
-                        # Check if user has cognito_sub
-                        if hasattr(request.user, 'cognito_sub') and request.user.cognito_sub:
-                            # Update Cognito attributes to mark onboarding as complete
-                            cognito_client.admin_update_user_attributes(
-                                UserPoolId=settings.COGNITO_USER_POOL_ID,
-                                Username=request.user.cognito_sub,
-                                UserAttributes=[
-                                    {
-                                        'Name': 'custom:onboarding',
-                                        'Value': 'COMPLETE'
-                                    },
-                                    {
-                                        'Name': 'custom:setupdone',
-                                        'Value': 'TRUE'
-                                    },
-                                    {
-                                        'Name': 'custom:updated_at',
-                                        'Value': timezone.now().isoformat()
-                                    }
-                                ]
-                            )
-                            logger.info(f"Updated Cognito attributes for user {request.user.id} - onboarding marked as COMPLETE")
-                        else:
-                            logger.warning(f"User {request.user.id} does not have a cognito_sub, could not update Cognito attributes")
-                            
                         # Update OnboardingProgress record if it exists
                         from onboarding.models import OnboardingProgress
                         progress = OnboardingProgress.objects.filter(user=request.user).first()
@@ -322,13 +287,15 @@ class DashboardSchemaSetupView(APIView):
                             progress.rls_setup_timestamp = timezone.now()
                             progress.save(update_fields=['onboarding_status', 'completed_at', 'rls_setup_completed', 'rls_setup_timestamp'])
                             logger.info(f"Updated OnboardingProgress record for user {request.user.id}")
-                    except Exception as cognito_error:
-                        logger.error(f"Error updating Cognito attributes: {str(cognito_error)}", extra={
+                        
+                        logger.info(f"Onboarding marked as COMPLETE for user {request.user.id} (Auth0 mode)")
+                    except Exception as update_error:
+                        logger.error(f"Error updating onboarding status: {str(update_error)}", extra={
                             'request_id': request_id,
-                            'error': str(cognito_error),
+                            'error': str(update_error),
                             'traceback': traceback.format_exc()
                         })
-                        # Continue despite Cognito errors
+                        # Continue despite update errors
                         
                 except Exception as rls_error:
                     logger.error(f"Error applying RLS policies: {str(rls_error)}", extra={

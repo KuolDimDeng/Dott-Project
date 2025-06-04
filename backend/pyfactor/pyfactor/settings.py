@@ -68,14 +68,14 @@ STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL', 'placeholder_price_
 if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.startswith('placeholder_'):
     print("Warning: Using placeholder Stripe credentials. Payments will not work.")
 
-# AWS Settings
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'placeholder_aws_key')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'placeholder_aws_secret')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+# AWS Settings - COMMENTED OUT (using Auth0 and Render instead)
+# AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID', 'placeholder_aws_key')
+# AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY', 'placeholder_aws_secret')
+# AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
 
-# Print warning for development mode
-if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startswith('placeholder_'):
-    print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
+# Print warning for development mode - COMMENTED OUT
+# if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startswith('placeholder_'):
+#     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
 # Auth0 Settings (Primary Authentication)
 # Dynamic configuration using environment variables
@@ -148,9 +148,9 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': lambda request: False,
 }
 
-# Always enforce AWS Cognito Authentication even in development mode
-USE_AWS_AUTH = True
-COGNITO_TOKEN_VERIFY = True
+# AWS Cognito Authentication - COMMENTED OUT (using Auth0 instead)
+# USE_AWS_AUTH = True
+# COGNITO_TOKEN_VERIFY = True
 
 # Update ALLOWED_HOSTS for deployment
 # Read from environment variable, split by comma, and strip whitespace

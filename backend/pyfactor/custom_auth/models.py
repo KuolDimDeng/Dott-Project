@@ -94,7 +94,6 @@ class User(AbstractUser):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name='users')
     
     # Additional fields
-    cognito_sub = models.CharField(max_length=255, null=True, blank=True)
     auth0_sub = models.CharField(max_length=255, null=True, blank=True, help_text='Auth0 subject identifier')
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     business_id = models.UUIDField(null=True, blank=True)

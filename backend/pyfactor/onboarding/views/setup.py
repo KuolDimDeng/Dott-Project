@@ -68,26 +68,9 @@ class SetupStatusView(APIView):
                 
                 # You could add additional tenant-specific logic here
             
-            # Try to update Cognito user attributes if tenant_id is provided
+            # Try to update user attributes if tenant_id is provided (Auth0 mode)
             if tenant_id:
-                try:
-                    from custom_auth.cognito import update_cognito_user_attributes
-                    from custom_auth.tenant_metadata import get_tenant_user
-                    
-                    # Get the user associated with this tenant
-                    tenant_user = get_tenant_user(tenant_id)
-                    if tenant_user:
-                        # Update the user's Cognito attributes to ensure onboarding status is correct
-                        update_cognito_user_attributes(
-                            tenant_user.cognito_sub,
-                            {
-                                'custom:setupdone': 'TRUE' if response_data.get('status') == 'complete' else 'FALSE',
-                                'custom:onboarding': 'SETUP'  # Ensure onboarding step is set to SETUP
-                            }
-                        )
-                        logger.info(f"Updated Cognito attributes for tenant {tenant_id}")
-                except Exception as e:
-                    logger.error(f"Failed to update Cognito attributes: {str(e)}")
+                logger.info(f"Setup completed for tenant {tenant_id} (using Auth0)")
             
             # Cache the response
             cache.set(cache_key, response_data, CACHE_TIMEOUT)
@@ -147,6 +130,9 @@ class InitializeSetupView(APIView):
                 'timestamp': str(uuid.uuid1())
             }
             
+            # Log success since using Auth0 instead of Cognito
+            logger.info(f"Setup completed for user {request.user.id}")
+
             response = Response(response_data, status=status.HTTP_200_OK)
             response["Access-Control-Allow-Origin"] = request.headers.get('Origin', '*')
             response["Access-Control-Allow-Credentials"] = "true"
