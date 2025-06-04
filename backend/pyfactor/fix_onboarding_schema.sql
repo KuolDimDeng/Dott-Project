@@ -35,6 +35,23 @@ BEGIN
     END IF;
 END $$; 
 
+-- Add business_id column if it doesn't exist
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'onboarding_onboardingprogress' 
+        AND column_name = 'business_id'
+    ) THEN
+        ALTER TABLE onboarding_onboardingprogress 
+        ADD COLUMN business_id UUID NULL;
+        
+        RAISE NOTICE 'Added business_id column to onboarding_onboardingprogress';
+    ELSE
+        RAISE NOTICE 'business_id column already exists in onboarding_onboardingprogress';
+    END IF;
+END $$; 
+
 -- Create indexes for performance if they don't exist
 CREATE INDEX IF NOT EXISTS onboard_session_idx 
 ON onboarding_onboardingprogress(session_id);
@@ -42,9 +59,12 @@ ON onboarding_onboardingprogress(session_id);
 CREATE INDEX IF NOT EXISTS onboard_activity_idx 
 ON onboarding_onboardingprogress(last_session_activity);
 
+CREATE INDEX IF NOT EXISTS onboard_business_idx 
+ON onboarding_onboardingprogress(business_id);
+
 -- Show final schema
 SELECT column_name, data_type, is_nullable 
 FROM information_schema.columns 
 WHERE table_name = 'onboarding_onboardingprogress' 
-AND column_name IN ('session_id', 'last_session_activity')
+AND column_name IN ('session_id', 'last_session_activity', 'business_id')
 ORDER BY column_name; 
