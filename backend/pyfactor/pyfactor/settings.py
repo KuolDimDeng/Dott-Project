@@ -78,29 +78,26 @@ if AWS_ACCESS_KEY_ID.startswith('placeholder_') or AWS_SECRET_ACCESS_KEY.startsw
     print("Warning: Using placeholder AWS credentials. Some AWS services may not work.")
 
 # Auth0 Settings (Primary Authentication)
-# Handle case where AUTH0_DOMAIN might be set to custom domain in environment
-AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')  # Always use custom domain
-AUTH0_DOMAIN = os.getenv('AUTH0_TENANT_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')  # Actual tenant domain for JWKS
-AUTH0_ISSUER_DOMAIN = AUTH0_DOMAIN  # Use ACTUAL tenant domain for issuer validation (not custom domain)
+# HARDCODED VALUES TO FIX JWT VALIDATION ISSUE
+AUTH0_CUSTOM_DOMAIN = 'auth.dottapps.com'  # Custom domain
+AUTH0_DOMAIN = 'dev-cbyy63jovi6zrcos.us.auth0.com'  # Actual tenant domain for JWKS
+AUTH0_ISSUER_DOMAIN = 'dev-cbyy63jovi6zrcos.us.auth0.com'  # Use ACTUAL tenant domain for issuer validation
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
-# FIX: Match the audience that frontend sends in JWT tokens
-AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
+# HARDCODE the audience to match what frontend sends
+AUTH0_AUDIENCE = 'https://dev-cbyy63jovi6zrcos.us.auth0.com/api/v2/'
 
-# Always use actual tenant domain for JWKS and issuer validation
+# Always use actual tenant domain for JWT validation 
 AUTH0_ISSUER = f"https://{AUTH0_ISSUER_DOMAIN}/"
 
 # Check Auth0 configuration
-if not all([AUTH0_DOMAIN, AUTH0_CLIENT_ID]):
-    print("Warning: Auth0 credentials are not fully configured:")
-    print(f"Domain: {'Set' if AUTH0_DOMAIN else 'Missing'}")
-    print(f"Client ID: {'Set' if AUTH0_CLIENT_ID else 'Missing'}")
-    print(f"Client Secret: {'Set' if AUTH0_CLIENT_SECRET else 'Missing'}")
-    print(f"Audience: {'Set' if AUTH0_AUDIENCE else 'Not Set (optional)'}")
-else:
-    print("✅ Auth0 configuration loaded successfully")
+print("🔐 Auth0 Configuration (HARDCODED VALUES):")
+print(f"   Domain: {AUTH0_DOMAIN}")
+print(f"   Issuer: {AUTH0_ISSUER}")
+print(f"   Audience: {AUTH0_AUDIENCE}")
+print(f"   Custom Domain: {AUTH0_CUSTOM_DOMAIN}")
+print("✅ Auth0 configuration loaded with hardcoded values")
 
-# Authentication Provider Configuration
 USE_AUTH0 = True  # Always use Auth0
 print("🔐 Using Auth0 for authentication")
 
