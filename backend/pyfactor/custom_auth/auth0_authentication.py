@@ -276,15 +276,17 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.debug(f"🔍 Client secret available: {bool(self.client_secret)}")
             logger.debug(f"🔍 Client secret length: {len(self.client_secret) if self.client_secret else 0}")
             
-            # For Auth0 JWE with alg='dir', use the client secret directly
-            # The client secret should be base64url encoded for the JWK
+            # For Auth0 JWE with alg='dir' and enc='A256GCM', we need exactly 32 bytes (256 bits)
+            # Auth0 client secrets are typically 64 characters, so we need to derive the proper key
             try:
-                # Auth0 uses the client secret directly as bytes for AES-GCM
-                secret_bytes = self.client_secret.encode('utf-8')
+                # Use SHA-256 to derive a 32-byte key from the client secret
+                import hashlib
+                secret_hash = hashlib.sha256(self.client_secret.encode('utf-8')).digest()
                 
                 # Create JWK for direct encryption (kty='oct' for symmetric key)
-                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes).decode().rstrip('='))
-                logger.debug("✅ JWK created successfully")
+                # The key must be exactly 32 bytes for A256GCM
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_hash).decode().rstrip('='))
+                logger.debug("✅ JWK created successfully with derived 32-byte key")
                 
             except Exception as key_error:
                 logger.error(f"❌ Failed to create JWK from client secret: {str(key_error)}")
