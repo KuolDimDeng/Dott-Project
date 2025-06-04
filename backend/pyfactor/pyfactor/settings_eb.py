@@ -269,29 +269,42 @@ AUTH_USER_MODEL = 'custom_auth.User'
 FRONTEND_URL = 'https://dottapps.com'
 
 # Redis settings - use ElastiCache if available
-REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
-REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
 
-CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
-CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
-        'OPTIONS': {
-            'db': 1,
-            'parser_class': 'redis.connection.DefaultParser',
-            'pool_class': 'redis.connection.ConnectionPool',
-            'socket_timeout': 5,
-            'socket_connect_timeout': 5,
-            'retry_on_timeout': True,
-            'max_connections': 100,
-        },
-        'KEY_PREFIX': '{tenant}',
+# Only configure Redis if explicitly provided
+if REDIS_HOST:
+    REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+    CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+            'OPTIONS': {
+                'db': 1,
+                'parser_class': 'redis.connection.DefaultParser',
+                'pool_class': 'redis.connection.ConnectionPool',
+                'socket_timeout': 5,
+                'socket_connect_timeout': 5,
+                'retry_on_timeout': True,
+                'max_connections': 100,
+            },
+            'KEY_PREFIX': '{tenant}',
+        }
     }
-}
+else:
+    # No Redis configured - use dummy cache backend
+    REDIS_URL = None
+    CELERY_BROKER_URL = None
+    CELERY_RESULT_BACKEND = None
+    
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
 
 # Define Auth0 Settings (Primary Authentication)
 AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')

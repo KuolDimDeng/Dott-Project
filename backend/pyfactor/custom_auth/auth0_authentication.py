@@ -79,12 +79,18 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         Fallback: Get user info from Auth0 userinfo endpoint when JWE decryption fails.
         SECURITY NOTE: This validates the token server-side at Auth0.
         """
-        # Check cache first to prevent rate limiting
+        # Check cache first to prevent rate limiting (with fallback if Redis unavailable)
         cache_key = self.get_cache_key_for_token(token)
-        cached_result = cache.get(cache_key)
-        if cached_result:
-            logger.debug("🔄 Using cached Auth0 userinfo result")
-            return cached_result
+        cached_result = None
+        
+        # Try to get from cache, but continue if Redis is unavailable
+        try:
+            cached_result = cache.get(cache_key)
+            if cached_result:
+                logger.debug("🔄 Using cached Auth0 userinfo result")
+                return cached_result
+        except Exception as cache_error:
+            logger.warning(f"⚠️ Cache unavailable (continuing without caching): {str(cache_error)}")
             
         try:
             logger.debug("🔄 Attempting fallback: Auth0 userinfo API")
@@ -116,16 +122,25 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 logger.info("✅ Successfully retrieved user info from Auth0 API")
                 logger.debug(f"🔍 Auth0 API returned user: {user_info.get('email', 'unknown')}")
                 
-                # Cache the result for 5 minutes to prevent rate limiting
-                cache.set(cache_key, user_info, 300)
+                # Try to cache the result for 5 minutes to prevent rate limiting (but continue if caching fails)
+                try:
+                    cache.set(cache_key, user_info, 300)
+                    logger.debug("✅ Cached Auth0 userinfo result")
+                except Exception as cache_error:
+                    logger.warning(f"⚠️ Could not cache result (continuing anyway): {str(cache_error)}")
+                
                 return user_info
             elif response.status_code == 429:
-                logger.warning("⚠️ Auth0 API rate limit hit, using cached result if available")
-                # Try to return any cached result, even if expired
-                cached_result = cache.get(cache_key + "_backup")
-                if cached_result:
-                    logger.info("✅ Using backup cached result due to rate limiting")
-                    return cached_result
+                logger.warning("⚠️ Auth0 API rate limit hit, trying cached result if available")
+                # Try to return any cached result, even if expired (but handle cache failures)
+                try:
+                    cached_result = cache.get(cache_key + "_backup")
+                    if cached_result:
+                        logger.info("✅ Using backup cached result due to rate limiting")
+                        return cached_result
+                except Exception as cache_error:
+                    logger.warning(f"⚠️ Could not access backup cache: {str(cache_error)}")
+                
                 logger.error("❌ No cached result available during rate limiting")
                 return None
             else:
