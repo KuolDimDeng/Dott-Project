@@ -10,14 +10,17 @@ let auth0Client = null;
 export const initAuth0 = async () => {
   if (!auth0Client) {
     auth0Client = await createAuth0Client({
-      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com',
+      domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com',
       clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
       authorizationParams: {
         redirect_uri: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '',
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE
+        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+        response_type: 'code',
+        scope: 'openid profile email'
       },
       cacheLocation: 'localstorage',
-      useRefreshTokens: true
+      useRefreshTokens: true,
+      useCustomDomain: false
     });
   }
   return auth0Client;
