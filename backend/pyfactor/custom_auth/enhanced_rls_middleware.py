@@ -10,9 +10,11 @@ Features:
 - Fallback tenant extraction from multiple sources
 - Handles async/sync requests
 - Designed for production use
+- Enhanced Auth0 support for tenant management endpoints
 
 Author: Claude AI Assistant
 Date: 2025-04-19
+Updated: 2025-06-04 - Fixed Auth0 tenant endpoint handling
 """
 
 import logging
@@ -33,12 +35,12 @@ try:
     from custom_auth.auth0_authentication import Auth0JWTAuthentication
     AUTH0_AVAILABLE = True
     logger = logging.getLogger(__name__)
-    logger.info("Auth0JWTAuthentication imported successfully")
+    logger.info("✅ Auth0JWTAuthentication imported successfully - tenant endpoints enabled")
 except ImportError as e:
     AUTH0_AVAILABLE = False
     logger = logging.getLogger(__name__)
-    logger.error(f"Failed to import Auth0JWTAuthentication: {e}")
-    logger.error("Auth0 tenant endpoints will not work without this module")
+    logger.error(f"❌ Failed to import Auth0JWTAuthentication: {e}")
+    logger.error("🚫 Auth0 tenant endpoints will not work without this module")
 
 class EnhancedRowLevelSecurityMiddleware:
     """

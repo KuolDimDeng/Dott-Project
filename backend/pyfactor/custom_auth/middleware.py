@@ -351,7 +351,7 @@ class TokenRefreshMiddleware(MiddlewareMixin):
                 
         except Exception as e:
             logger.error(f"Error refreshing Auth0 token: {str(e)}")
-            return None
+        return None
     
     def process_response(self, request, response):
         """
