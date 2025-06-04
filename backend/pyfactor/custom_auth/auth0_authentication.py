@@ -8,6 +8,7 @@ import requests
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, Any
 import base64
+import hashlib
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -65,6 +66,81 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         
         logger.info(f"✅ Auth0 configured - JWKS: {self.domain}, Issuer: {self.issuer_domain}")
         logger.info(f"   🔗 JWKS URL: {self.jwks_url}")
+    
+    def get_cache_key_for_token(self, token):
+        """
+        Generate a cache key for token validation results.
+        """
+        token_hash = hashlib.md5(token.encode()).hexdigest()[:12]
+        return f"auth0_userinfo_{token_hash}"
+    
+    def get_user_info_from_auth0_api(self, token):
+        """
+        Fallback: Get user info from Auth0 userinfo endpoint when JWE decryption fails.
+        SECURITY NOTE: This validates the token server-side at Auth0.
+        """
+        # Check cache first to prevent rate limiting
+        cache_key = self.get_cache_key_for_token(token)
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            logger.debug("🔄 Using cached Auth0 userinfo result")
+            return cached_result
+            
+        try:
+            logger.debug("🔄 Attempting fallback: Auth0 userinfo API")
+            
+            # First validate token format and basic structure
+            if not token or len(token) < 50:
+                logger.error("❌ Invalid token format for API fallback")
+                return None
+            
+            response = requests.get(
+                f"https://{self.domain}/userinfo",
+                headers={
+                    'Authorization': f'Bearer {token}',
+                    'Content-Type': 'application/json'
+                },
+                timeout=10,
+                verify=True  # Ensure SSL verification
+            )
+            
+            if response.status_code == 200:
+                user_info = response.json()
+                
+                # Validate required fields are present
+                required_fields = ['sub', 'email']
+                if not all(field in user_info for field in required_fields):
+                    logger.error("❌ Missing required fields in Auth0 response")
+                    return None
+                
+                logger.info("✅ Successfully retrieved user info from Auth0 API")
+                logger.debug(f"🔍 Auth0 API returned user: {user_info.get('email', 'unknown')}")
+                
+                # Cache the result for 5 minutes to prevent rate limiting
+                cache.set(cache_key, user_info, 300)
+                return user_info
+            elif response.status_code == 429:
+                logger.warning("⚠️ Auth0 API rate limit hit, using cached result if available")
+                # Try to return any cached result, even if expired
+                cached_result = cache.get(cache_key + "_backup")
+                if cached_result:
+                    logger.info("✅ Using backup cached result due to rate limiting")
+                    return cached_result
+                logger.error("❌ No cached result available during rate limiting")
+                return None
+            else:
+                logger.error(f"❌ Auth0 userinfo API failed: {response.status_code} - {response.text}")
+                return None
+                
+        except requests.Timeout:
+            logger.error("❌ Auth0 userinfo API timeout")
+            return None
+        except requests.RequestException as e:
+            logger.error(f"❌ Auth0 userinfo API network error: {str(e)}")
+            return None
+        except Exception as e:
+            logger.error(f"❌ Auth0 userinfo API error: {str(e)}")
+            return None
     
     def authenticate(self, request):
         """
@@ -136,31 +212,6 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             return False
         except Exception:
             return False
-    
-    def get_user_info_from_auth0_api(self, token):
-        """
-        Fallback: Get user info from Auth0 userinfo endpoint when JWE decryption fails.
-        """
-        try:
-            logger.debug("🔄 Attempting fallback: Auth0 userinfo API")
-            
-            response = requests.get(
-                f"https://{self.domain}/userinfo",
-                headers={'Authorization': f'Bearer {token}'},
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                user_info = response.json()
-                logger.info("✅ Successfully retrieved user info from Auth0 API")
-                return user_info
-            else:
-                logger.error(f"❌ Auth0 userinfo API failed: {response.status_code} - {response.text}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"❌ Auth0 userinfo API error: {str(e)}")
-            return None
     
     def decrypt_jwe_token(self, jwe_token):
         """
