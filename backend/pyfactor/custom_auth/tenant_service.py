@@ -21,7 +21,7 @@ from typing import Optional, Tuple, Dict, Any, Union
 # Import models and utilities
 from custom_auth.models import User, Tenant
 from custom_auth.rls import set_tenant_in_db, tenant_context, verify_rls_setup
-from custom_auth.utils import update_cognito_tenant_id
+from custom_auth.utils import update_auth0_tenant_id
 
 logger = logging.getLogger(__name__)
 
@@ -66,14 +66,13 @@ class TenantManagementService:
                 logger.info(f"[TENANT-CREATE-{process_id}] User {user_id} already has tenant {existing_tenant.id}")
                 
                 # Ensure user.tenant_id is consistent
-                if user.tenant_id != existing_tenant.id:
+                if hasattr(user, 'tenant_id') and user.tenant_id != existing_tenant.id:
                     user.tenant_id = existing_tenant.id
                     user.save(update_fields=['tenant_id'])
                     logger.info(f"[TENANT-CREATE-{process_id}] Updated user's tenant_id to {existing_tenant.id}")
                 
-                # Try to update Cognito if possible
-                if user.cognito_sub:
-                    cls._update_cognito_tenant_id(user.cognito_sub, existing_tenant.id)
+                # Log tenant creation for Auth0 instead of updating Cognito
+                cls._log_auth0_tenant_id(user.email, existing_tenant.id)
                 
                 return existing_tenant, False
                 
@@ -87,14 +86,14 @@ class TenantManagementService:
                         existing_tenant_by_id.save(update_fields=['owner_id'])
                         
                         # Update user's tenant_id
-                        user.tenant_id = existing_tenant_by_id.id
-                        user.save(update_fields=['tenant_id'])
+                        if hasattr(user, 'tenant_id'):
+                            user.tenant_id = existing_tenant_by_id.id
+                            user.save(update_fields=['tenant_id'])
                         
                         logger.info(f"[TENANT-CREATE-{process_id}] Associated existing tenant {existing_tenant_by_id.id} with user {user_id}")
                         
-                        # Try to update Cognito if possible
-                        if user.cognito_sub:
-                            cls._update_cognito_tenant_id(user.cognito_sub, existing_tenant_by_id.id)
+                        # Log for Auth0 instead of updating Cognito
+                        cls._log_auth0_tenant_id(user.email, existing_tenant_by_id.id)
                         
                         return existing_tenant_by_id, False
                     else:
@@ -104,7 +103,7 @@ class TenantManagementService:
                             logger.info(f"[TENANT-CREATE-{process_id}] Found existing tenant {existing_tenant_by_id.id} owned by user {user_id}")
                             
                             # Ensure user.tenant_id is consistent
-                            if user.tenant_id != existing_tenant_by_id.id:
+                            if hasattr(user, 'tenant_id') and user.tenant_id != existing_tenant_by_id.id:
                                 user.tenant_id = existing_tenant_by_id.id
                                 user.save(update_fields=['tenant_id'])
                                 
@@ -137,14 +136,14 @@ class TenantManagementService:
             )
             
             # Link tenant to user
-            user.tenant_id = tenant.id
-            user.save(update_fields=['tenant_id'])
+            if hasattr(user, 'tenant_id'):
+                user.tenant_id = tenant.id
+                user.save(update_fields=['tenant_id'])
             
             logger.info(f"[TENANT-CREATE-{process_id}] Created new tenant {tenant.id} for user {user_id}")
             
-            # Try to update Cognito if possible
-            if user.cognito_sub:
-                cls._update_cognito_tenant_id(user.cognito_sub, tenant.id)
+            # Log tenant creation for Auth0 instead of updating Cognito
+            cls._log_auth0_tenant_id(user.email, tenant.id)
             
             # Schedule background setup of RLS for this tenant
             cls._schedule_tenant_setup(tenant.id)
@@ -202,14 +201,13 @@ class TenantManagementService:
                 result['has_access'] = True
                 
                 # Ensure user.tenant_id is consistent
-                if user.tenant_id != tenant.id:
+                if hasattr(user, 'tenant_id') and user.tenant_id != tenant.id:
                     user.tenant_id = tenant.id
                     user.save(update_fields=['tenant_id'])
                     logger.info(f"Updated user {user_id} tenant_id to {tenant.id}")
                 
-                # Try to update Cognito if possible
-                if user.cognito_sub:
-                    cls._update_cognito_tenant_id(user.cognito_sub, tenant.id)
+                # Log tenant creation for Auth0 instead of updating Cognito
+                cls._log_auth0_tenant_id(user.email, tenant.id)
                     
                 return result
                 
@@ -217,7 +215,7 @@ class TenantManagementService:
             # (This is where you would implement additional access checks for multi-user tenants)
             
             # For now, just check if the user's tenant_id matches
-            if user.tenant_id == tenant.id:
+            if hasattr(user, 'tenant_id') and user.tenant_id == tenant.id:
                 result['has_access'] = True
                 return result
                 
@@ -227,13 +225,12 @@ class TenantManagementService:
                 result['correct_tenant_id'] = user_tenant.id
                 
                 # Update user.tenant_id if needed
-                if user.tenant_id != user_tenant.id:
+                if hasattr(user, 'tenant_id') and user.tenant_id != user_tenant.id:
                     user.tenant_id = user_tenant.id
                     user.save(update_fields=['tenant_id'])
                     
-                # Try to update Cognito
-                if user.cognito_sub:
-                    cls._update_cognito_tenant_id(user.cognito_sub, user_tenant.id)
+                # Log tenant creation for Auth0 instead of updating Cognito
+                cls._log_auth0_tenant_id(user.email, user_tenant.id)
             
             return result
             
@@ -284,35 +281,35 @@ class TenantManagementService:
                 result['django_updated'] = created
                 return result
                 
-            # Case 2: User has tenant in Django but not in Cognito
+            # Case 2: User has tenant in Django but not in Auth0 (was Cognito)
             if django_tenant_id and not cognito_tenant_id:
-                # Update Cognito
-                if user.cognito_sub:
-                    cls._update_cognito_tenant_id(user.cognito_sub, django_tenant_id)
-                    result['cognito_updated'] = True
+                # Log for Auth0
+                cls._log_auth0_tenant_id(user.email, django_tenant_id)
+                result['cognito_updated'] = True
                     
                 result['tenant_id'] = django_tenant_id
                 result['success'] = True
                 return result
                 
-            # Case 3: User has tenant in Cognito but not in Django
+            # Case 3: User has tenant in Auth0 (was Cognito) but not in Django
             if not django_tenant_id and cognito_tenant_id:
-                # Check if the Cognito tenant exists in Django
+                # Check if the Auth0 tenant exists in Django
                 cognito_tenant = Tenant.objects.filter(id=cognito_tenant_id).first()
                 
                 if cognito_tenant:
-                    # Cognito tenant exists - link it to the user
+                    # Auth0 tenant exists - link it to the user
                     cognito_tenant.owner_id = str(user_id)
                     cognito_tenant.save(update_fields=['owner_id'])
                     
                     # Update user.tenant_id
-                    user.tenant_id = cognito_tenant.id
-                    user.save(update_fields=['tenant_id'])
+                    if hasattr(user, 'tenant_id'):
+                        user.tenant_id = cognito_tenant.id
+                        user.save(update_fields=['tenant_id'])
                     
                     result['tenant_id'] = cognito_tenant.id
                     result['django_updated'] = True
                 else:
-                    # Cognito tenant doesn't exist - create it
+                    # Auth0 tenant doesn't exist - create it
                     tenant, created = cls.create_tenant(user_id, tenant_id=cognito_tenant_id)
                     result['tenant_id'] = tenant.id
                     result['django_updated'] = True
@@ -320,12 +317,11 @@ class TenantManagementService:
                 result['success'] = True
                 return result
                 
-            # Case 4: User has different tenants in Django and Cognito
+            # Case 4: User has different tenants in Django and Auth0 (was Cognito)
             if django_tenant_id != cognito_tenant_id:
                 # Always use Django as the source of truth
-                if user.cognito_sub:
-                    cls._update_cognito_tenant_id(user.cognito_sub, django_tenant_id)
-                    result['cognito_updated'] = True
+                cls._log_auth0_tenant_id(user.email, django_tenant_id)
+                result['cognito_updated'] = True
                     
                 result['tenant_id'] = django_tenant_id
                 result['success'] = True
@@ -340,25 +336,6 @@ class TenantManagementService:
             logger.error(f"Error reconciling tenant with Cognito: {str(e)}")
             result['error'] = str(e)
             return result
-    
-    @classmethod
-    def _update_cognito_tenant_id(cls, cognito_sub: str, tenant_id: uuid.UUID) -> bool:
-        """
-        Update the tenant ID in Cognito
-        
-        Args:
-            cognito_sub: The Cognito subject ID of the user
-            tenant_id: The tenant ID to set
-            
-        Returns:
-            bool: Whether the update was successful
-        """
-        try:
-            logger.info(f"Updating Cognito tenant ID for user {cognito_sub} to {tenant_id}")
-            return update_cognito_tenant_id(cognito_sub, tenant_id)
-        except Exception as e:
-            logger.error(f"Error updating Cognito tenant ID: {str(e)}")
-            return False
     
     @classmethod
     def _schedule_tenant_setup(cls, tenant_id: uuid.UUID) -> None:
@@ -464,4 +441,23 @@ class TenantManagementService:
         thread.daemon = True
         thread.start()
         
-        logger.info(f"Scheduled background RLS setup for tenant {tenant_id}") 
+        logger.info(f"Scheduled background RLS setup for tenant {tenant_id}")
+
+    @classmethod
+    def _log_auth0_tenant_id(cls, email: str, tenant_id: uuid.UUID) -> bool:
+        """
+        Log tenant ID for Auth0 user (replaces Cognito update)
+        
+        Args:
+            email: The email of the user
+            tenant_id: The tenant ID to log
+            
+        Returns:
+            bool: Always returns True in Auth0 mode
+        """
+        try:
+            logger.info(f"Auth0 mode: Tenant ID {tenant_id} logged for user {email}")
+            return update_auth0_tenant_id(email, tenant_id)
+        except Exception as e:
+            logger.error(f"Error logging Auth0 tenant ID: {str(e)}")
+            return False 
