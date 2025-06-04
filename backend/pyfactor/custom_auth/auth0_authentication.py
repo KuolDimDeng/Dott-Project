@@ -20,13 +20,23 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt import PyJWKClient
 from urllib.parse import urljoin
 
-logger = logging.getLogger(__name__)
+# Add JWE support
+try:
+    from jwcrypto import jwe, jwk
+    JWE_AVAILABLE = True
+    logger = logging.getLogger(__name__)
+    logger.info("✅ JWE support available for encrypted Auth0 tokens")
+except ImportError:
+    JWE_AVAILABLE = False
+    logger = logging.getLogger(__name__)
+    logger.warning("❌ JWE support not available - install jwcrypto for encrypted tokens")
+
 User = get_user_model()
 
 class Auth0JWTAuthentication(authentication.BaseAuthentication):
     """
     Auth0 JWT Authentication for Django REST Framework
-    Validates Auth0 tokens and creates/updates local users
+    Validates Auth0 tokens (both JWT and JWE) and creates/updates local users
     """
     
     def __init__(self):
@@ -35,6 +45,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         self.issuer_domain = getattr(settings, 'AUTH0_ISSUER_DOMAIN', self.domain)  # Domain for issuer validation
         self.audience = getattr(settings, 'AUTH0_AUDIENCE', None)
         self.client_id = getattr(settings, 'AUTH0_CLIENT_ID', None)
+        self.client_secret = getattr(settings, 'AUTH0_CLIENT_SECRET', None)
         
         logger.info(f"🔧 Auth0JWTAuthentication initializing with config:")
         logger.info(f"   🔹 AUTH0_DOMAIN: {self.domain}")
@@ -69,7 +80,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         logger.debug(f"🎫 Token preview: {token[:50]}...")
         
         try:
-            # Decode and validate the JWT token
+            # Decode and validate the JWT/JWE token
             user_info = self.validate_token(token)
             logger.info(f"✅ Token validation successful for user: {user_info.get('sub', 'unknown')}")
             
@@ -109,17 +120,85 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.error(f"❌ Error parsing Authorization header: {e}")
             return None
     
+    def is_jwe_token(self, token):
+        """
+        Check if the token is a JWE (encrypted) token by examining its structure.
+        """
+        try:
+            # JWE tokens have 5 parts separated by dots (header.encrypted_key.iv.ciphertext.tag)
+            # JWT tokens have 3 parts (header.payload.signature)
+            parts = token.split('.')
+            if len(parts) == 5:
+                # Check if the header indicates JWE
+                header = jwt.get_unverified_header(token)
+                return 'enc' in header and 'alg' in header
+            return False
+        except Exception:
+            return False
+    
+    def decrypt_jwe_token(self, jwe_token):
+        """
+        Decrypt a JWE token using the client secret.
+        """
+        if not JWE_AVAILABLE:
+            raise exceptions.AuthenticationFailed('JWE support not available - cannot decrypt token')
+        
+        if not self.client_secret:
+            raise exceptions.AuthenticationFailed('Auth0 client secret required for JWE decryption')
+        
+        try:
+            logger.debug("🔓 Attempting JWE token decryption...")
+            
+            # Create JWK from client secret for direct encryption
+            key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(self.client_secret.encode()).decode())
+            
+            # Decrypt the JWE token
+            jwe_token_obj = jwe.JWE()
+            jwe_token_obj.deserialize(jwe_token)
+            decrypted_payload = jwe_token_obj.decrypt(key)
+            
+            logger.debug("✅ JWE token decrypted successfully")
+            return decrypted_payload.decode('utf-8')
+            
+        except Exception as e:
+            logger.error(f"❌ JWE decryption failed: {str(e)}")
+            raise exceptions.AuthenticationFailed(f'JWE decryption failed: {str(e)}')
+    
     def validate_token(self, token):
         """
-        Validate JWT token against Auth0's public keys.
+        Validate JWT/JWE token against Auth0's public keys.
         """
-        logger.debug("🔍 Starting JWT token validation...")
+        logger.debug("🔍 Starting JWT/JWE token validation...")
         
         try:
             # First, let's decode the header without verification to see what we're working with
             unverified_header = jwt.get_unverified_header(token)
-            logger.debug(f"🔍 JWT Header: {unverified_header}")
+            logger.debug(f"🔍 Token Header: {unverified_header}")
             
+            # Check if this is a JWE token
+            if self.is_jwe_token(token):
+                logger.debug("🔍 Detected JWE (encrypted) token")
+                
+                # Decrypt the JWE token to get the inner JWT
+                decrypted_jwt = self.decrypt_jwe_token(token)
+                logger.debug("✅ JWE token decrypted, now validating inner JWT")
+                
+                # Now validate the decrypted JWT
+                return self.validate_jwt(decrypted_jwt)
+            else:
+                logger.debug("🔍 Detected standard JWT token")
+                return self.validate_jwt(token)
+                
+        except Exception as e:
+            logger.error(f"❌ Token validation error: {str(e)}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            raise exceptions.AuthenticationFailed(f'Token validation error: {str(e)}')
+    
+    def validate_jwt(self, token):
+        """
+        Validate a standard JWT token.
+        """
+        try:
             # Try to decode payload without verification for debugging
             try:
                 unverified_payload = jwt.decode(token, options={"verify_signature": False})
