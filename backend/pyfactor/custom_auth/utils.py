@@ -2,7 +2,6 @@ import uuid
 import logging
 import time
 import sys
-import redis
 import traceback
 from django.db import connection, transaction
 from django.conf import settings
@@ -10,13 +9,31 @@ from .models import Tenant, User
 
 from rest_framework.views import exception_handler
 from rest_framework.exceptions import AuthenticationFailed
-from botocore.exceptions import ClientError
 
-
+# Optional Redis import - don't fail if Redis is not available
+try:
+    import redis
+    # Make Redis connection optional and configurable
+    REDIS_HOST = getattr(settings, 'REDIS_HOST', None)
+    REDIS_PORT = getattr(settings, 'REDIS_PORT', 6379)
+    
+    if REDIS_HOST:
+        redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=0)
+        # Test connection
+        redis_client.ping()
+        REDIS_AVAILABLE = True
+        logger = logging.getLogger('Pyfactor')
+        logger.info("Redis connection established successfully")
+    else:
+        redis_client = None
+        REDIS_AVAILABLE = False
+except (ImportError, redis.ConnectionError, Exception) as e:
+    redis_client = None
+    REDIS_AVAILABLE = False
+    # Don't log error during import to avoid startup issues
+    pass
 
 logger = logging.getLogger('Pyfactor')
-
-redis_client = redis.Redis(host='localhost', port=6379, db=0)
 
 
 def ensure_schema_consistency(tenant_id: uuid.UUID, schema_name: str = 'public', reference_schema: str = 'public'):
@@ -148,7 +165,6 @@ def create_tenant_for_user(user, business_name=None):
     from django.utils import timezone
     import random
     import string
-    import logging
     import time  # Add time import for measuring elapsed time
     
     logger = logging.getLogger(__name__)
@@ -222,12 +238,10 @@ def create_tenant_for_user(user, business_name=None):
             
             # Ensure Cognito businessid is updated with tenant ID
             try:
-                # Only update if user has a Cognito sub
-                if hasattr(user, 'cognito_sub') and user.cognito_sub:
-                    update_cognito_tenant_id(user.cognito_sub, str(tenant.id))
-                    logger.info(f"[TENANT-CREATION-{process_id}] Updated Cognito businessid for user {user.email}: {tenant.id}")
+                # Log tenant creation for Auth0 mode instead of updating Cognito
+                logger.info(f"[TENANT-CREATION-{process_id}] Tenant {tenant.id} created for Auth0 user {user.email}")
             except Exception as e:
-                logger.warning(f"[TENANT-CREATION-{process_id}] Failed to update Cognito: {str(e)}")
+                logger.warning(f"[TENANT-CREATION-{process_id}] Failed to log tenant info: {str(e)}")
             
             return tenant
         
@@ -361,11 +375,10 @@ def create_tenant_for_user(user, business_name=None):
             
             # Update Cognito if available
             try:
-                if hasattr(user, 'cognito_sub') and user.cognito_sub:
-                    update_cognito_tenant_id(user.cognito_sub, str(tenant.id))
-                    logger.info(f"[TENANT-CREATION-{process_id}] Updated Cognito businessid for user {user.email}: {tenant.id}")
+                # Log tenant creation for Auth0 mode instead of updating Cognito
+                logger.info(f"[TENANT-CREATION-{process_id}] Tenant {tenant.id} created for Auth0 user {user.email}")
             except Exception as e:
-                logger.warning(f"[TENANT-CREATION-{process_id}] Failed to update Cognito: {str(e)}")
+                logger.warning(f"[TENANT-CREATION-{process_id}] Failed to log tenant info: {str(e)}")
                     
             return tenant
                     
@@ -384,23 +397,16 @@ create_tenant_schema_for_user = create_tenant_for_user
 
 def custom_exception_handler(exc, context):
     """
-    Custom exception handler for REST framework that handles Cognito-specific errors.
+    Custom exception handler for REST framework that handles Auth0-specific errors.
     """
     # Call REST framework's default exception handler first
     response = exception_handler(exc, context)
 
-    if isinstance(exc, ClientError):
-        error_code = exc.response['Error']['Code']
-        if error_code == 'NotAuthorizedException':
-            logger.warning(f"Authentication failed: {str(exc)}")
-            return AuthenticationFailed('Invalid token or token expired')
-        elif error_code == 'InvalidParameterException':
-            logger.warning(f"Invalid parameters: {str(exc)}")
-            return AuthenticationFailed('Invalid authentication parameters')
-        else:
-            logger.error(f"Cognito error: {str(exc)}")
-            return AuthenticationFailed('Authentication failed')
-
+    # Log any authentication errors for Auth0
+    if hasattr(exc, 'response') and 'Error' in str(exc):
+        logger.warning(f"Authentication failed: {str(exc)}")
+        return AuthenticationFailed('Invalid token or token expired')
+    
     # Return the original response
     return response
 
@@ -409,30 +415,47 @@ def acquire_user_lock(user_id, timeout=60, retry_interval=0.1, max_retries=50):
     Acquire a distributed lock for a specific user to prevent concurrent tenant creation
     Returns True if lock acquired, False otherwise
     """
+    # If Redis is not available, return True (no locking)
+    if not REDIS_AVAILABLE or not redis_client:
+        logger.debug(f"Redis not available, skipping lock for user {user_id}")
+        return True
+        
     lock_key = f"tenant_creation_lock:{user_id}"
     retry_count = 0
     
     while retry_count < max_retries:
-        # Try to acquire lock with an expiration
-        acquired = redis_client.set(lock_key, "1", ex=timeout, nx=True)
-        
-        if acquired:
-            logger.debug(f"Lock acquired for user {user_id}")
-            return True
+        try:
+            # Try to acquire lock with an expiration
+            acquired = redis_client.set(lock_key, "1", ex=timeout, nx=True)
             
-        logger.debug(f"Lock acquisition attempt {retry_count+1} failed for user {user_id}, retrying...")
-        time.sleep(retry_interval)
-        retry_count += 1
+            if acquired:
+                logger.debug(f"Lock acquired for user {user_id}")
+                return True
+                
+            logger.debug(f"Lock acquisition attempt {retry_count+1} failed for user {user_id}, retrying...")
+            time.sleep(retry_interval)
+            retry_count += 1
+        except Exception as e:
+            logger.warning(f"Redis error during lock acquisition for user {user_id}: {str(e)}")
+            return True  # Fallback to no locking if Redis fails
     
     logger.warning(f"Failed to acquire lock for user {user_id} after {max_retries} attempts")
     return False
 
 def release_user_lock(user_id):
     """Release the distributed lock for a user"""
-    lock_key = f"tenant_creation_lock:{user_id}"
-    released = redis_client.delete(lock_key)
-    logger.debug(f"Lock released for user {user_id}: {released}")
-    return released
+    # If Redis is not available, return True (no locking)
+    if not REDIS_AVAILABLE or not redis_client:
+        return True
+        
+    try:
+        lock_key = f"tenant_creation_lock:{user_id}"
+        released = redis_client.delete(lock_key)
+        logger.debug(f"Lock released for user {user_id}: {released}")
+        return released
+    except Exception as e:
+        logger.warning(f"Redis error during lock release for user {user_id}: {str(e)}")
+        return True  # Fallback to success if Redis fails
 
 def consolidate_user_tenants(user):
     """
@@ -625,22 +648,21 @@ def ensure_auth_tables_in_schema(tenant_id: uuid.UUID):
         logger.error(f"Error ensuring auth tables: {str(e)}")
         return False
 
-# Add a new function to update Cognito businessid attribute
-def update_cognito_tenant_id(cognito_sub, tenant_id):
+def update_auth0_tenant_id(user_email, tenant_id):
     """
-    Update the business ID in Cognito user attributes to match the tenant ID
-    NOTE: Disabled since using Auth0 instead of AWS Cognito
+    Log tenant ID update for Auth0 user (replaces Cognito function)
+    NOTE: Auth0 metadata updates are handled through Auth0 Management API if needed
     
     Args:
-        cognito_sub: Cognito sub identifier for the user (not used with Auth0)
-        tenant_id: Tenant ID to store (logged for Auth0 mode)
+        user_email: User email for Auth0 user
+        tenant_id: Tenant ID to log
         
     Returns:
         bool: Always returns True in Auth0 mode
     """
-    logger.info(f"Auth0 mode: Tenant ID {tenant_id} logged for user {cognito_sub} (Cognito updates disabled)")
+    logger.info(f"Auth0 mode: Tenant ID {tenant_id} logged for user {user_email}")
     
-    # Return success since Auth0 doesn't need Cognito attribute updates
+    # Return success since Auth0 doesn't need the same attribute updates as Cognito
     return True
 
 def validate_tenant_isolation(tenant_id: uuid.UUID):
