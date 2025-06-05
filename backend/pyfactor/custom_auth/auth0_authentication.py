@@ -108,66 +108,69 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
     
     def get_user_info_from_auth0_api(self, token):
         """
-        Fallback: Get user info from Auth0 userinfo endpoint when JWE decryption fails.
-        SECURITY NOTE: This validates the token server-side at Auth0.
-        Enhanced with super aggressive caching to eliminate rate limiting.
+        Get user info from Auth0 userinfo API with ultra-aggressive caching to prevent rate limiting.
         """
-        # Check cache first with multiple strategies and MUCH longer cache times
         cache_key = self.get_cache_key_for_token(token)
-        primary_cache_key = cache_key + "_primary"
-        backup_cache_key = cache_key + "_backup"
-        emergency_cache_key = cache_key + "_emergency"
-        ultra_cache_key = cache_key + "_ultra"
         
-        # Try primary cache first (2 hours - much longer!)
-        try:
-            cached_result = cache.get(primary_cache_key)
-            if cached_result:
-                logger.debug("🔄 Using primary cached Auth0 userinfo result")
-                # Refresh cache TTL since we're using it
-                cache.set(primary_cache_key, cached_result, 7200)  # 2 hours
-                return cached_result
-        except Exception as cache_error:
-            logger.warning(f"⚠️ Primary cache unavailable: {str(cache_error)}")
-            
-        # Try backup cache (8 hours)
-        try:
-            backup_result = cache.get(backup_cache_key)
-            if backup_result:
-                logger.debug("🔄 Using backup cached Auth0 userinfo result")
-                # Refresh backup cache and promote to primary
-                cache.set(primary_cache_key, backup_result, 7200)   # 2 hours
-                cache.set(backup_cache_key, backup_result, 28800)   # 8 hours
-                return backup_result
-        except Exception as cache_error:
-            logger.warning(f"⚠️ Backup cache unavailable: {str(cache_error)}")
-            
-        # Try emergency cache (24 hours)
-        try:
-            emergency_result = cache.get(emergency_cache_key)
-            if emergency_result:
-                logger.warning("⚠️ Using emergency cached result - API may be down")
-                # Promote to lower tiers
-                cache.set(primary_cache_key, emergency_result, 7200)   # 2 hours
-                cache.set(backup_cache_key, emergency_result, 28800)   # 8 hours
-                return emergency_result
-        except Exception as cache_error:
-            logger.warning(f"⚠️ Emergency cache unavailable: {str(cache_error)}")
-            
-        # Try ultra cache (7 days - for extreme situations)
-        try:
-            ultra_result = cache.get(ultra_cache_key)
-            if ultra_result:
-                logger.error("🚨 Using ultra cached result - Auth0 API severely limited")
-                # Promote to all lower tiers
-                cache.set(primary_cache_key, ultra_result, 7200)     # 2 hours
-                cache.set(backup_cache_key, ultra_result, 28800)     # 8 hours
-                cache.set(emergency_cache_key, ultra_result, 86400)  # 24 hours
-                return ultra_result
-        except Exception as cache_error:
-            logger.warning(f"⚠️ Ultra cache unavailable: {str(cache_error)}")
+        # Define ALL cache strategies with extended lifetimes
+        cache_strategies = [
+            (f"{cache_key}_primary", "primary cache (2h)", 7200),
+            (f"{cache_key}_backup", "backup cache (8h)", 28800), 
+            (f"{cache_key}_emergency", "emergency cache (24h)", 86400),
+            (f"{cache_key}_ultra", "ultra cache (7d)", 604800),
+            (f"{cache_key}_super", "super cache (30d)", 2592000),  # NEW: 30 days
+            (f"{cache_key}_mega", "mega cache (90d)", 7776000),   # NEW: 90 days
+        ]
         
-        # No cache available, try API call (with circuit breaker logic)
+        # ULTRA-AGGRESSIVE: Try ALL cache levels first (before any API calls)
+        for cache_key_name, cache_desc, ttl in cache_strategies:
+            try:
+                cached_result = cache.get(cache_key_name)
+                if cached_result:
+                    logger.info(f"✅ Cache HIT: Using {cache_desc}")
+                    # PROMOTE to all lower cache levels for redundancy
+                    for promote_key, _, promote_ttl in cache_strategies:
+                        if promote_ttl <= ttl:  # Only promote to shorter or equal TTL
+                            try:
+                                cache.set(promote_key, cached_result, promote_ttl)
+                            except Exception:
+                                pass
+                    return cached_result
+            except Exception as cache_error:
+                logger.debug(f"⚠️ Cache check failed for {cache_desc}: {str(cache_error)}")
+                continue
+        
+        # If no cache hit, implement CIRCUIT BREAKER logic
+        circuit_breaker_key = f"auth0_rate_limit_circuit_breaker"
+        try:
+            circuit_breaker_state = cache.get(circuit_breaker_key)
+            if circuit_breaker_state == "OPEN":
+                logger.error("🚨 CIRCUIT BREAKER OPEN - Auth0 API calls suspended due to rate limiting")
+                
+                # Try to find ANY cached version (even expired) 
+                for cache_key_name, cache_desc, ttl in reversed(cache_strategies):
+                    try:
+                        # Force cache retrieval even if potentially expired
+                        stale_result = cache.get(cache_key_name)
+                        if stale_result:
+                            logger.warning(f"🔄 Using STALE {cache_desc} due to circuit breaker")
+                            # Promote to active caches
+                            for promote_key, _, promote_ttl in cache_strategies[:3]:  # Only first 3 levels
+                                try:
+                                    cache.set(promote_key, stale_result, promote_ttl)
+                                except Exception:
+                                    pass
+                            return stale_result
+                    except Exception:
+                        continue
+                
+                # No cache available at all
+                logger.error("❌ No cached result available and circuit breaker OPEN")
+                return None
+        except Exception:
+            pass
+        
+        # No cache available, try API call with circuit breaker
         try:
             logger.debug("🔄 No cached result found, attempting Auth0 userinfo API")
             
@@ -182,7 +185,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     'Authorization': f'Bearer {token}',
                     'Content-Type': 'application/json'
                 },
-                timeout=8,  # Even shorter timeout to fail fast
+                timeout=6,  # Shorter timeout to fail fast
                 verify=True
             )
             
@@ -198,38 +201,44 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 logger.info("✅ Successfully retrieved user info from Auth0 API")
                 logger.debug(f"🔍 Auth0 API returned user: {user_info.get('email', 'unknown')}")
                 
-                # Cache with SUPER aggressive multi-tier strategy
+                # ULTRA-AGGRESSIVE CACHING: Store in ALL cache levels
+                for cache_key_name, cache_desc, ttl in cache_strategies:
+                    try:
+                        cache.set(cache_key_name, user_info, ttl)
+                    except Exception as cache_error:
+                        logger.debug(f"⚠️ Could not set {cache_desc}: {str(cache_error)}")
+                
+                logger.debug("✅ Cached Auth0 userinfo with 6-tier ultra-redundancy (2h/8h/24h/7d/30d/90d)")
+                
+                # RESET circuit breaker on successful API call
                 try:
-                    # Primary cache (2 hours) - frequent access
-                    cache.set(primary_cache_key, user_info, 7200)
-                    # Backup cache (8 hours) - rate limiting protection  
-                    cache.set(backup_cache_key, user_info, 28800)
-                    # Emergency cache (24 hours) - disaster recovery
-                    cache.set(emergency_cache_key, user_info, 86400)
-                    # Ultra cache (7 days) - extreme protection
-                    cache.set(ultra_cache_key, user_info, 604800)
-                    logger.debug("✅ Cached Auth0 userinfo with 4-tier redundancy (2h/8h/24h/7d)")
-                except Exception as cache_error:
-                    logger.warning(f"⚠️ Could not cache result: {str(cache_error)}")
+                    cache.delete(circuit_breaker_key)
+                except Exception:
+                    pass
                 
                 return user_info
                 
             elif response.status_code == 429:
-                logger.error("❌ Auth0 API rate limit hit - trying ALL cached strategies")
+                logger.error("❌ Auth0 API rate limit hit - OPENING CIRCUIT BREAKER")
                 
-                # Try ALL cache strategies with longer expiry tolerance
-                for cache_key_suffix, cache_desc, ttl in [
-                    ("_backup", "backup cache (8h)", 28800),
-                    ("_emergency", "emergency cache (24h)", 86400),
-                    ("_ultra", "ultra cache (7d)", 604800),
-                    ("_primary", "primary cache (2h)", 7200)
-                ]:
+                # OPEN circuit breaker for 15 minutes
+                try:
+                    cache.set(circuit_breaker_key, "OPEN", 900)  # 15 minutes
+                except Exception:
+                    pass
+                
+                # Try ALL cache strategies (including potentially stale ones)
+                for cache_key_name, cache_desc, ttl in reversed(cache_strategies):
                     try:
-                        fallback_result = cache.get(cache_key + cache_key_suffix)
+                        fallback_result = cache.get(cache_key_name)
                         if fallback_result:
                             logger.warning(f"✅ Using {cache_desc} due to rate limiting")
                             # Promote to primary for future use
-                            cache.set(primary_cache_key, fallback_result, 7200)
+                            for promote_key, _, promote_ttl in cache_strategies[:3]:
+                                try:
+                                    cache.set(promote_key, fallback_result, promote_ttl)
+                                except Exception:
+                                    pass
                             return fallback_result
                     except Exception:
                         continue
@@ -244,15 +253,15 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             else:
                 logger.error(f"❌ Auth0 userinfo API failed: {response.status_code} - {response.text}")
                 
-                # Try cached results even on API errors (with ALL cache tiers)
-                try:
-                    for cache_suffix in ["_backup", "_emergency", "_ultra", "_primary"]:
-                        fallback_result = cache.get(cache_key + cache_suffix)
+                # Try cached results even on API errors (ALL cache tiers)
+                for cache_key_name, cache_desc, ttl in reversed(cache_strategies):
+                    try:
+                        fallback_result = cache.get(cache_key_name)
                         if fallback_result:
-                            logger.warning(f"✅ Using cached result due to API error: {cache_suffix}")
+                            logger.warning(f"✅ Using {cache_desc} due to API error")
                             return fallback_result
-                except Exception:
-                    pass
+                    except Exception:
+                        continue
                 
                 return None
                 
@@ -260,32 +269,40 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.error("❌ Auth0 userinfo API timeout")
             
             # Try cached results on timeout (ALL tiers)
-            try:
-                for cache_suffix in ["_backup", "_emergency", "_ultra", "_primary"]:
-                    fallback_result = cache.get(cache_key + cache_suffix)
+            for cache_key_name, cache_desc, ttl in reversed(cache_strategies):
+                try:
+                    fallback_result = cache.get(cache_key_name)
                     if fallback_result:
-                        logger.warning(f"✅ Using cached result due to timeout: {cache_suffix}")
+                        logger.warning(f"✅ Using {cache_desc} due to timeout")
                         # Promote to primary
-                        cache.set(primary_cache_key, fallback_result, 7200)
+                        for promote_key, _, promote_ttl in cache_strategies[:3]:
+                            try:
+                                cache.set(promote_key, fallback_result, promote_ttl)
+                            except Exception:
+                                pass
                         return fallback_result
-            except Exception:
-                pass
+                except Exception:
+                    continue
             return None
             
         except requests.RequestException as e:
             logger.error(f"❌ Auth0 userinfo API network error: {str(e)}")
             
             # Try cached results on network error (ALL tiers)
-            try:
-                for cache_suffix in ["_backup", "_emergency", "_ultra", "_primary"]:
-                    fallback_result = cache.get(cache_key + cache_suffix)
+            for cache_key_name, cache_desc, ttl in reversed(cache_strategies):
+                try:
+                    fallback_result = cache.get(cache_key_name)
                     if fallback_result:
-                        logger.warning(f"✅ Using cached result due to network error: {cache_suffix}")
+                        logger.warning(f"✅ Using {cache_desc} due to network error")
                         # Promote to primary
-                        cache.set(primary_cache_key, fallback_result, 7200)
+                        for promote_key, _, promote_ttl in cache_strategies[:3]:
+                            try:
+                                cache.set(promote_key, fallback_result, promote_ttl)
+                            except Exception:
+                                pass
                         return fallback_result
-            except Exception:
-                pass
+                except Exception:
+                    continue
             return None
             
         except Exception as e:

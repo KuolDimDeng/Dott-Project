@@ -180,12 +180,12 @@ class OnboardingProgress(models.Model):
         """
         # FIXED: Set tenant_id from the user's tenant, not user.id directly
         # tenant_id should be UUID, but user.id is integer (BigAutoField)
-        if not self.tenant_id and hasattr(self.user, 'id'):
+        if not self.tenant_id and self.user:
             # Try to get the tenant for this user
             from custom_auth.models import Tenant
             try:
                 # First try to find tenant where user is owner
-                tenant = Tenant.objects.filter(owner_id=self.user.id).first()
+                tenant = Tenant.objects.filter(owner_id=self.user.pk).first()
                 if tenant:
                     self.tenant_id = tenant.id
                 else:
@@ -196,7 +196,7 @@ class OnboardingProgress(models.Model):
                 # If tenant lookup fails, don't set tenant_id incorrectly
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"Could not determine tenant_id for user {self.user.id}: {str(e)}")
+                logger.warning(f"Could not determine tenant_id for user {self.user.pk}: {str(e)}")
             
         # Update session activity timestamp if session_id is set
         if self.session_id:
