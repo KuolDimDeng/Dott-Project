@@ -22,6 +22,27 @@ import traceback
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
+def safe_bool_convert(value, default=False):
+    """
+    Safely convert various input types to boolean values.
+    Handles string 'false'/'true', numbers, and actual booleans.
+    
+    Args:
+        value: The value to convert (str, int, bool, etc.)
+        default: Default value if conversion fails
+        
+    Returns:
+        bool: The converted boolean value
+    """
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, str):
+        return value.lower() in ('true', '1', 'yes', 'on')
+    elif isinstance(value, (int, float)):
+        return bool(value)
+    else:
+        return default
+
 class Auth0UserCreateView(APIView):
     """
     Create or get Auth0 user with tenant ID.

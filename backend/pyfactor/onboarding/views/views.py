@@ -4178,7 +4178,14 @@ class SaveStep3View(BaseOnboardingView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
             # Validate and process payment
-            payment_completed = data.get('payment_completed', False)
+            payment_completed_raw = data.get('payment_completed', False)
+            
+            # Convert string boolean values to actual booleans
+            if isinstance(payment_completed_raw, str):
+                payment_completed = payment_completed_raw.lower() in ('true', '1', 'yes')
+            else:
+                payment_completed = bool(payment_completed_raw)
+                
             if payment_completed:
                 await self.validate_payment_data(data)
                 payment_verified = await self.verify_payment(data.get('payment_reference'))
@@ -4684,3 +4691,26 @@ class OnboardingSuccessView(BaseOnboardingView):
                 'code': 'server_error',
                 'request_id': request_id
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+def safe_bool_convert(value, default=False):
+    """
+    Safely convert various input types to boolean values.
+    Handles string 'false'/'true', numbers, and actual booleans.
+    
+    Args:
+        value: The value to convert (str, int, bool, etc.)
+        default: Default value if conversion fails
+        
+    Returns:
+        bool: The converted boolean value
+    """
+    if isinstance(value, bool):
+        return value
+    elif isinstance(value, str):
+        return value.lower() in ('true', '1', 'yes', 'on')
+    elif isinstance(value, (int, float)):
+        return bool(value)
+    else:
+        return default
+
+# Configure Django logging
