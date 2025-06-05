@@ -4178,11 +4178,8 @@ class SaveStep3View(BaseOnboardingView):
             # Validate and process payment
             payment_completed_raw = data.get('payment_completed', False)
             
-            # Convert string boolean values to actual booleans
-            if isinstance(payment_completed_raw, str):
-                payment_completed = payment_completed_raw.lower() in ('true', '1', 'yes')
-            else:
-                payment_completed = bool(payment_completed_raw)
+            # Convert string boolean values to actual booleans using our safe converter
+            payment_completed = safe_bool_convert(payment_completed_raw)
                 
             if payment_completed:
                 await self.validate_payment_data(data)
