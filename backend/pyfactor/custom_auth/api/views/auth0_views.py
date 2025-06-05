@@ -439,9 +439,13 @@ class Auth0OnboardingBusinessInfoView(APIView):
                 
                 if not created:
                     progress.tenant_id = tenant.id
-                    progress.onboarding_status = 'subscription'
-                    progress.current_step = 'subscription'
-                    progress.next_step = 'subscription'
+                    
+                    # IMPORTANT: Don't overwrite completed onboarding status
+                    if progress.onboarding_status != 'complete':
+                        progress.onboarding_status = 'subscription'
+                        progress.current_step = 'subscription'
+                        progress.next_step = 'subscription'
+                    
                     if 'business_info' not in progress.completed_steps:
                         progress.completed_steps.append('business_info')
                     
