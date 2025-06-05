@@ -308,7 +308,7 @@ else:
 
 # Define Auth0 Settings (Primary Authentication)
 AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
-AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ')
+AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')
 AUTH0_AUDIENCE = os.getenv('AUTH0_AUDIENCE', f'https://{AUTH0_DOMAIN}/api/v2/')
 AUTH0_ISSUER = f"https://{AUTH0_DOMAIN}/"

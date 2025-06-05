@@ -12,7 +12,7 @@
     "MOCK_DATA_DISABLED": "true",
     "PROD_MODE": "true",
     "NEXT_PUBLIC_AUTH0_DOMAIN": "dev-cbyy63jovi6zrcos.us.auth0.com",
-    "NEXT_PUBLIC_AUTH0_CLIENT_ID": "GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ",
+    "NEXT_PUBLIC_AUTH0_CLIENT_ID": "9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF",
     "NEXT_PUBLIC_AUTH0_AUDIENCE": "https://api.dottapps.com"
   },
   "regions": ["iad1"],
