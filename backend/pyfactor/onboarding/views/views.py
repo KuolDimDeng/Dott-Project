@@ -67,8 +67,6 @@ from celery.app import app_or_default
 from celery.exceptions import OperationalError as CeleryOperationalError, TimeoutError
 from celery.result import AsyncResult
 from channels.layers import get_channel_layer
-from google.oauth2 import id_token
-from google.auth.transport import requests
 from kombu.exceptions import OperationalError as KombuOperationalError
 from redis.exceptions import ConnectionError as RedisConnectionError
 from celery.exceptions import OperationalError as CeleryOperationalError
