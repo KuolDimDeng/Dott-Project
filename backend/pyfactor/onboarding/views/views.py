@@ -4453,6 +4453,8 @@ class SaveStep4View(BaseOnboardingView):
                         current_step='setup',
                         next_step='complete'
                     )
+                    # Fix any corrupted boolean fields before returning
+                    progress = fix_boolean_fields(progress)
                     return progress
                 except Exception as e:
                     logger.error(f"Error creating progress: {str(e)}")
@@ -4519,6 +4521,9 @@ class SaveStep4View(BaseOnboardingView):
             progress.database_setup_task_id = task.id
             progress.onboarding_status = 'setup'
             progress.setup_started_at = timezone.now()
+            
+            # Fix any corrupted boolean fields before saving
+            progress = fix_boolean_fields(progress)
             progress.save(update_fields=[
                 'database_setup_task_id',
                 'onboarding_status',
@@ -4707,5 +4712,26 @@ def safe_bool_convert(value, default=False):
         return bool(value)
     else:
         return default
+
+def fix_boolean_fields(progress):
+    """
+    Fix any corrupted boolean fields in OnboardingProgress before saving.
+    Converts string "false"/"true" to proper boolean values.
+    
+    Args:
+        progress: OnboardingProgress instance
+    """
+    # Fix all boolean fields that might be corrupted
+    progress.payment_completed = safe_bool_convert(progress.payment_completed)
+    progress.rls_setup_completed = safe_bool_convert(progress.rls_setup_completed)
+    progress.setup_completed = safe_bool_convert(progress.setup_completed)
+    
+    # Fix any other boolean fields that exist
+    if hasattr(progress, 'business_info_completed'):
+        progress.business_info_completed = safe_bool_convert(progress.business_info_completed)
+    if hasattr(progress, 'subscription_completed'):
+        progress.subscription_completed = safe_bool_convert(progress.subscription_completed)
+    
+    return progress
 
 # Configure Django logging

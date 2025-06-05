@@ -43,6 +43,27 @@ def safe_bool_convert(value, default=False):
     else:
         return default
 
+def fix_boolean_fields(progress):
+    """
+    Fix any corrupted boolean fields in OnboardingProgress before saving.
+    Converts string "false"/"true" to proper boolean values.
+    
+    Args:
+        progress: OnboardingProgress instance
+    """
+    # Fix all boolean fields that might be corrupted
+    progress.payment_completed = safe_bool_convert(progress.payment_completed)
+    progress.rls_setup_completed = safe_bool_convert(progress.rls_setup_completed)
+    progress.setup_completed = safe_bool_convert(progress.setup_completed)
+    
+    # Fix any other boolean fields that exist
+    if hasattr(progress, 'business_info_completed'):
+        progress.business_info_completed = safe_bool_convert(progress.business_info_completed)
+    if hasattr(progress, 'subscription_completed'):
+        progress.subscription_completed = safe_bool_convert(progress.subscription_completed)
+    
+    return progress
+
 class Auth0UserCreateView(APIView):
     """
     Create or get Auth0 user with tenant ID.
@@ -423,6 +444,13 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     progress.next_step = 'subscription'
                     if 'business_info' not in progress.completed_steps:
                         progress.completed_steps.append('business_info')
+                    
+                    # Fix any corrupted boolean fields before saving
+                    progress = fix_boolean_fields(progress)
+                    progress.save()
+                else:
+                    # Fix any corrupted boolean fields before saving for new records too
+                    progress = fix_boolean_fields(progress)
                     progress.save()
                 
                 logger.info(f"Created/updated tenant {tenant.id} for user {user.email}")
@@ -497,6 +525,8 @@ class Auth0OnboardingSubscriptionView(APIView):
                 if 'payment' not in progress.completed_steps:
                     progress.completed_steps.append('payment')
             
+            # Fix any corrupted boolean fields before saving
+            progress = fix_boolean_fields(progress)
             progress.save()
             
             logger.info(f"Updated subscription for user {user.email}: {plan}")
@@ -562,6 +592,8 @@ class Auth0OnboardingPaymentView(APIView):
             if 'payment' not in progress.completed_steps:
                 progress.completed_steps.append('payment')
             
+            # Fix any corrupted boolean fields before saving
+            progress = fix_boolean_fields(progress)
             progress.save()
             
             logger.info(f"Payment processed for user {user.email}")
@@ -629,6 +661,8 @@ class Auth0OnboardingCompleteView(APIView):
             if 'complete' not in progress.completed_steps:
                 progress.completed_steps.append('complete')
             
+            # Fix any corrupted boolean fields before saving
+            progress = fix_boolean_fields(progress)
             progress.save()
             
             logger.info(f"🎯 [ONBOARDING_COMPLETE] ✅ Progress updated successfully:")
