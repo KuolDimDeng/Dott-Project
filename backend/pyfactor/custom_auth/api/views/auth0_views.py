@@ -334,31 +334,26 @@ class Auth0UserProfileView(APIView):
                         'setup_completed': progress.setup_completed,
                         'current_step': progress.current_step,
                         'next_step': progress.next_step,
+                        'onboarding_completed': progress.onboarding_status == 'complete'
                     }
             except Exception as e:
                 logger.warning(f"Error getting onboarding progress for user {user.id}: {str(e)}")
             
-            # Build response
-            profile_data = {
-                'user': {
-                    'id': user.id,
-                    'auth0_id': getattr(user, 'auth0_sub', None),
-                    'email': user.email,
-                    'name': f"{user.first_name} {user.last_name}".strip() or user.email,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'picture': None,  # Auth0 profile picture could be added here
-                },
-                'tenant': None,
-                'role': user_role,
-                'onboarding': onboarding_data,
-                'onboarding_status': onboarding_status,
-                'setup_done': onboarding_status == 'complete'
+            # Build user data in the format frontend expects (direct format, no wrapper)
+            user_data = {
+                'id': user.id,
+                'auth0_id': getattr(user, 'auth0_sub', None),
+                'email': user.email,
+                'name': f"{user.first_name} {user.last_name}".strip() or user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'picture': None,  # Auth0 profile picture could be added here
             }
             
-            # Add tenant data if exists
+            # Build tenant data
+            tenant_data = None
             if tenant:
-                profile_data['tenant'] = {
+                tenant_data = {
                     'id': str(tenant.id),
                     'name': tenant.name,
                     'business_type': None,  # Add if BusinessDetails model exists
@@ -367,9 +362,14 @@ class Auth0UserProfileView(APIView):
                     'onboarding_completed': onboarding_status == 'complete'
                 }
             
+            # Return direct format that frontend expects
             return Response({
-                'success': True,
-                'data': profile_data
+                'user': user_data,
+                'tenant': tenant_data,
+                'role': user_role,
+                'onboarding': onboarding_data,
+                'onboarding_status': onboarding_status,
+                'setup_done': onboarding_status == 'complete'
             })
             
         except Exception as e:
