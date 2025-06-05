@@ -413,151 +413,155 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         except Exception:
             return False
     
-    def decrypt_jwe_token(self, jwe_token):
-        """
-        Decrypt a JWE token using the client secret.
-        For Auth0 JWE with alg='dir', the client secret is used directly as the encryption key.
-        Try multiple approaches to handle different Auth0 configurations.
-        """
-        if not JWE_AVAILABLE:
-            logger.warning("⚠️ JWE library not available, attempting Auth0 API fallback")
-            return None
-        
-        if not self.client_secret:
-            logger.warning("⚠️ Auth0 client secret required for JWE decryption, attempting fallback")
-            logger.warning("⚠️ Set AUTH0_CLIENT_SECRET environment variable to enable JWE decryption")
-            return None
-        
-        try:
-            logger.debug("🔓 Attempting JWE token decryption...")
-            logger.debug(f"🔍 Client secret available: {bool(self.client_secret)}")
-            logger.debug(f"🔍 Client secret length: {len(self.client_secret) if self.client_secret else 0}")
-            
-            # Get token header for debugging
-            header = jwt.get_unverified_header(jwe_token)
-            logger.debug(f"🔍 JWE Header: {header}")
-            
-            # Try multiple key derivation approaches
-            approaches = [
-                ("SHA-256 derived key", self._create_sha256_key),
-                ("Base64 decoded secret", self._create_base64_key),
-                ("Direct UTF-8 bytes", self._create_direct_key),
-                ("PBKDF2 derived key", self._create_pbkdf2_key)
-            ]
-            
-            for approach_name, key_method in approaches:
-                try:
-                    logger.debug(f"🔑 Trying {approach_name}...")
-                    key = key_method()
-                    
-                    if key:
-                        # Create JWE object and attempt decryption
-                        jwe_token_obj = jwe.JWE()
-                        jwe_token_obj.deserialize(jwe_token)
-                        
-                        # Decrypt using the key
-                        decrypted_payload = jwe_token_obj.decrypt(key)
-                        
-                        if decrypted_payload:
-                            logger.info(f"✅ JWE decryption successful using {approach_name}")
-                            
-                            # Handle both bytes and string returns
-                            if isinstance(decrypted_payload, bytes):
-                                result = decrypted_payload.decode('utf-8')
-                                logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
-                                return result
-                            elif isinstance(decrypted_payload, str):
-                                logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
-                                return decrypted_payload
-                            else:
-                                logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
-                                continue
-                                
-                except Exception as approach_error:
-                    logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
-                    continue
-            
-            logger.error("❌ All JWE decryption approaches failed")
-            return None
-            
-        except Exception as e:
-            logger.error(f"❌ JWE decryption failed: {str(e)}")
-            logger.error(f"❌ Exception type: {type(e).__name__}")
-            return None
+    # COMMENTED OUT: JWE decryption methods no longer used
+    # The system now uses Auth0 API validation directly for JWE tokens
+    # These methods were causing 20ms+ delay per request with failed attempts
     
-    def _create_sha256_key(self):
-        """Create JWK using SHA-256 derived key (32 bytes for AES-256-GCM)"""
-        try:
-            if not self.client_secret:
-                return None
-            import hashlib
-            secret_hash = hashlib.sha256(self.client_secret.encode('utf-8')).digest()
-            return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_hash).decode().rstrip('='))
-        except Exception as e:
-            logger.debug(f"SHA-256 key creation failed: {e}")
-            return None
+    # def decrypt_jwe_token(self, jwe_token):
+    #     """
+    #     Decrypt a JWE token using the client secret.
+    #     For Auth0 JWE with alg='dir', the client secret is used directly as the encryption key.
+    #     Try multiple approaches to handle different Auth0 configurations.
+    #     """
+    #     if not JWE_AVAILABLE:
+    #         logger.warning("⚠️ JWE library not available, attempting Auth0 API fallback")
+    #         return None
+    #     
+    #     if not self.client_secret:
+    #         logger.warning("⚠️ Auth0 client secret required for JWE decryption, attempting fallback")
+    #         logger.warning("⚠️ Set AUTH0_CLIENT_SECRET environment variable to enable JWE decryption")
+    #         return None
+    #     
+    #     try:
+    #         logger.debug("🔓 Attempting JWE token decryption...")
+    #         logger.debug(f"🔍 Client secret available: {bool(self.client_secret)}")
+    #         logger.debug(f"🔍 Client secret length: {len(self.client_secret) if self.client_secret else 0}")
+    #         
+    #         # Get token header for debugging
+    #         header = jwt.get_unverified_header(jwe_token)
+    #         logger.debug(f"🔍 JWE Header: {header}")
+    #         
+    #         # Try multiple key derivation approaches
+    #         approaches = [
+    #             ("SHA-256 derived key", self._create_sha256_key),
+    #             ("Base64 decoded secret", self._create_base64_key),
+    #             ("Direct UTF-8 bytes", self._create_direct_key),
+    #             ("PBKDF2 derived key", self._create_pbkdf2_key)
+    #         ]
+    #         
+    #         for approach_name, key_method in approaches:
+    #             try:
+    #                 logger.debug(f"🔑 Trying {approach_name}...")
+    #                 key = key_method()
+    #                 
+    #                 if key:
+    #                     # Create JWE object and attempt decryption
+    #                     jwe_token_obj = jwe.JWE()
+    #                     jwe_token_obj.deserialize(jwe_token)
+    #                     
+    #                     # Decrypt using the key
+    #                     decrypted_payload = jwe_token_obj.decrypt(key)
+    #                     
+    #                     if decrypted_payload:
+    #                         logger.info(f"✅ JWE decryption successful using {approach_name}")
+    #                         
+    #                         # Handle both bytes and string returns
+    #                         if isinstance(decrypted_payload, bytes):
+    #                             result = decrypted_payload.decode('utf-8')
+    #                             logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
+    #                             return result
+    #                         elif isinstance(decrypted_payload, str):
+    #                             logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
+    #                             return decrypted_payload
+    #                         else:
+    #                             logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
+    #                             continue
+    #                             
+    #             except Exception as approach_error:
+    #                 logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
+    #                 continue
+    #         
+    #         logger.error("❌ All JWE decryption approaches failed")
+    #         return None
+    #         
+    #     except Exception as e:
+    #         logger.error(f"❌ JWE decryption failed: {str(e)}")
+    #         logger.error(f"❌ Exception type: {type(e).__name__}")
+    #         return None
     
-    def _create_base64_key(self):
-        """Create JWK using base64 decoded client secret"""
-        try:
-            if not self.client_secret:
-                return None
-            # Try to decode client secret as base64
-            decoded_secret = base64.urlsafe_b64decode(self.client_secret + '==')
-            if len(decoded_secret) == 32:  # Perfect for AES-256
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret).decode().rstrip('='))
-            elif len(decoded_secret) > 32:
-                # Truncate to 32 bytes
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret[:32]).decode().rstrip('='))
-            else:
-                # Pad to 32 bytes
-                padded = decoded_secret + b'\x00' * (32 - len(decoded_secret))
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
-        except Exception as e:
-            logger.debug(f"Base64 key creation failed: {e}")
-            return None
+    # def _create_sha256_key(self):
+    #     """Create JWK using SHA-256 derived key (32 bytes for AES-256-GCM)"""
+    #     try:
+    #         if not self.client_secret:
+    #             return None
+    #         import hashlib
+    #         secret_hash = hashlib.sha256(self.client_secret.encode('utf-8')).digest()
+    #         return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_hash).decode().rstrip('='))
+    #     except Exception as e:
+    #         logger.debug(f"SHA-256 key creation failed: {e}")
+    #         return None
     
-    def _create_direct_key(self):
-        """Create JWK using direct UTF-8 bytes of client secret"""
-        try:
-            if not self.client_secret:
-                return None
-            secret_bytes = self.client_secret.encode('utf-8')
-            if len(secret_bytes) == 32:
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes).decode().rstrip('='))
-            elif len(secret_bytes) > 32:
-                # Truncate to 32 bytes
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes[:32]).decode().rstrip('='))
-            else:
-                # Pad to 32 bytes
-                padded = secret_bytes + b'\x00' * (32 - len(secret_bytes))
-                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
-        except Exception as e:
-            logger.debug(f"Direct key creation failed: {e}")
-            return None
+    # def _create_base64_key(self):
+    #     """Create JWK using base64 decoded client secret"""
+    #     try:
+    #         if not self.client_secret:
+    #             return None
+    #         # Try to decode client secret as base64
+    #         decoded_secret = base64.urlsafe_b64decode(self.client_secret + '==')
+    #         if len(decoded_secret) == 32:  # Perfect for AES-256
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret).decode().rstrip('='))
+    #         elif len(decoded_secret) > 32:
+    #             # Truncate to 32 bytes
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret[:32]).decode().rstrip('='))
+    #         else:
+    #             # Pad to 32 bytes
+    #             padded = decoded_secret + b'\x00' * (32 - len(decoded_secret))
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
+    #     except Exception as e:
+    #         logger.debug(f"Base64 key creation failed: {e}")
+    #         return None
     
-    def _create_pbkdf2_key(self):
-        """Create JWK using PBKDF2 key derivation"""
-        try:
-            if not self.client_secret:
-                return None
-            from cryptography.hazmat.primitives import hashes
-            from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-            from cryptography.hazmat.backends import default_backend
-            
-            # Use PBKDF2 to derive a 32-byte key
-            kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
-                length=32,
-                salt=b'auth0_salt',  # Fixed salt for consistency
-                iterations=100000,
-                backend=default_backend()
-            )
-            derived_key = kdf.derive(self.client_secret.encode('utf-8'))
-            return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(derived_key).decode().rstrip('='))
-        except Exception as e:
-            logger.debug(f"PBKDF2 key creation failed: {e}")
-            return None
+    # def _create_direct_key(self):
+    #     """Create JWK using direct UTF-8 bytes of client secret"""
+    #     try:
+    #         if not self.client_secret:
+    #             return None
+    #         secret_bytes = self.client_secret.encode('utf-8')
+    #         if len(secret_bytes) == 32:
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes).decode().rstrip('='))
+    #         elif len(secret_bytes) > 32:
+    #             # Truncate to 32 bytes
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(secret_bytes[:32]).decode().rstrip('='))
+    #         else:
+    #             # Pad to 32 bytes
+    #             padded = secret_bytes + b'\x00' * (32 - len(secret_bytes))
+    #             return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
+    #     except Exception as e:
+    #         logger.debug(f"Direct key creation failed: {e}")
+    #         return None
+    
+    # def _create_pbkdf2_key(self):
+    #     """Create JWK using PBKDF2 key derivation"""
+    #     try:
+    #         if not self.client_secret:
+    #             return None
+    #         from cryptography.hazmat.primitives import hashes
+    #         from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+    #         from cryptography.hazmat.backends import default_backend
+    #         
+    #         # Use PBKDF2 to derive a 32-byte key
+    #         kdf = PBKDF2HMAC(
+    #             algorithm=hashes.SHA256(),
+    #             length=32,
+    #             salt=b'auth0_salt',  # Fixed salt for consistency
+    #             iterations=100000,
+    #             backend=default_backend()
+    #         )
+    #         derived_key = kdf.derive(self.client_secret.encode('utf-8'))
+    #         return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(derived_key).decode().rstrip('='))
+    #     except Exception as e:
+    #         logger.debug(f"PBKDF2 key creation failed: {e}")
+    #         return None
     
     def validate_token(self, token):
         """
@@ -573,20 +577,14 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             # Check if this is a JWE token
             if self.is_jwe_token(token):
                 logger.debug("🔍 Detected JWE (encrypted) token")
+                logger.info("🔄 Skipping local JWE decryption, using Auth0 API validation directly")
                 
-                # Try to decrypt the JWE token
-                decrypted_jwt = self.decrypt_jwe_token(token)
-                
-                if decrypted_jwt:
-                    logger.debug("✅ JWE token decrypted, now validating inner JWT")
-                    return self.validate_jwt(decrypted_jwt)
+                # For JWE tokens, skip decryption attempts and use Auth0 API directly
+                user_info = self.get_user_info_from_auth0_api(token)
+                if user_info:
+                    return user_info
                 else:
-                    logger.warning("⚠️ JWE decryption failed, trying Auth0 API fallback")
-                    user_info = self.get_user_info_from_auth0_api(token)
-                    if user_info:
-                        return user_info
-                    else:
-                        raise exceptions.AuthenticationFailed('JWE decryption and API fallback both failed')
+                    raise exceptions.AuthenticationFailed('JWE token validation via Auth0 API failed')
             else:
                 logger.debug("🔍 Detected standard JWT token")
                 return self.validate_jwt(token)
