@@ -88,6 +88,7 @@ export async function GET(request, { params }) {
             client_secret: process.env.AUTH0_CLIENT_SECRET,
             code: code,
             redirect_uri: `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`,
+            audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
           }),
         });
         
