@@ -25,7 +25,10 @@ export async function GET(request) {
     // Call backend API to get user profile
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
-      const response = await fetch(`${backendUrl}/api/users/profile/`, {
+      
+      console.log('[User Current] Calling backend:', `${backendUrl}/api/users/me/`);
+      
+      const response = await fetch(`${backendUrl}/api/users/me/`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -35,26 +38,42 @@ export async function GET(request) {
         },
       });
       
+      console.log('[User Current] Backend response status:', response.status);
+      
       if (response.ok) {
         const userData = await response.json();
         console.log('[User Current] Backend user data retrieved:', {
-          email: userData.email,
-          tenantId: userData.tenant_id,
-          onboardingCompleted: userData.onboarding_completed
+          email: userData.user?.email,
+          tenantId: userData.tenant?.id,
+          onboardingStatus: userData.onboarding_status,
+          setupDone: userData.setup_done
         });
+        
+        // Check onboarding completion from multiple sources
+        const onboardingCompleted = userData.setup_done === true || 
+                                   userData.onboarding_status === 'complete' ||
+                                   userData.onboarding?.onboarding_completed === true;
         
         // Transform backend data to frontend format
         const userProfile = {
-          email: userData.email,
+          email: userData.user.email,
           sub: sessionData.user.sub,
-          name: userData.name || sessionData.user.name,
-          picture: userData.picture || sessionData.user.picture,
-          tenantId: userData.tenant_id,
-          needsOnboarding: !userData.onboarding_completed,
-          onboardingCompleted: userData.onboarding_completed || false,
-          currentStep: userData.current_onboarding_step,
+          name: userData.user.name || sessionData.user.name,
+          picture: userData.user.picture || sessionData.user.picture,
+          tenantId: userData.tenant?.id || null,
+          needsOnboarding: !onboardingCompleted,
+          onboardingCompleted: onboardingCompleted,
+          currentStep: onboardingCompleted ? 'complete' : (userData.onboarding?.current_step || 'business_info'),
           isNewUser: false
         };
+        
+        console.log('[User Current] Transformed user profile:', {
+          email: userProfile.email,
+          tenantId: userProfile.tenantId,
+          needsOnboarding: userProfile.needsOnboarding,
+          onboardingCompleted: userProfile.onboardingCompleted,
+          currentStep: userProfile.currentStep
+        });
         
         return NextResponse.json(userProfile);
       } else if (response.status === 404) {
@@ -75,24 +94,41 @@ export async function GET(request) {
         
         return NextResponse.json(newUserProfile);
       } else {
-        console.error('[User Current] Backend API error:', response.status, response.statusText);
-        throw new Error(`Backend API returned ${response.status}`);
+        const errorText = await response.text();
+        console.error('[User Current] Backend API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText,
+          url: `${backendUrl}/api/users/me/`
+        });
+        throw new Error(`Backend API returned ${response.status}: ${errorText}`);
       }
     } catch (fetchError) {
       console.error('[User Current] Failed to fetch from backend:', fetchError);
       
-      // Fallback: return session user data with new user defaults
+      // Fallback: Check session for onboarding status
+      const sessionOnboardingCompleted = sessionData.user.onboardingCompleted === true ||
+                                        sessionData.user.onboarding_completed === true ||
+                                        sessionData.user.needsOnboarding === false ||
+                                        sessionData.user.needs_onboarding === false;
+      
       const fallbackProfile = {
         email: sessionData.user.email,
         sub: sessionData.user.sub,
         name: sessionData.user.name,
         picture: sessionData.user.picture,
-        tenantId: null,
-        needsOnboarding: true,
-        onboardingCompleted: false,
-        currentStep: 'business_info',
+        tenantId: sessionData.user.tenantId || null,
+        needsOnboarding: !sessionOnboardingCompleted,
+        onboardingCompleted: sessionOnboardingCompleted,
+        currentStep: sessionOnboardingCompleted ? 'complete' : 'business_info',
         isNewUser: true
       };
+      
+      console.log('[User Current] Using fallback profile:', {
+        email: fallbackProfile.email,
+        onboardingCompleted: fallbackProfile.onboardingCompleted,
+        needsOnboarding: fallbackProfile.needsOnboarding
+      });
       
       return NextResponse.json(fallbackProfile);
     }

@@ -37,19 +37,23 @@ export async function POST(request) {
     try {
       const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
       
-      console.log('[SetupComplete] Calling Django onboarding completion endpoint');
+      console.log('[SetupComplete] Calling Django onboarding completion endpoint:', `${apiBaseUrl}/api/onboarding/complete/`);
       
-      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'X-User-Email': userEmail,
+          'X-User-Sub': user.sub,
         },
         body: JSON.stringify({
           completed_at: completedAt
         })
       });
+      
+      console.log('[SetupComplete] Backend response status:', backendResponse.status);
       
       if (backendResponse.ok) {
         const result = await backendResponse.json();
@@ -60,8 +64,35 @@ export async function POST(request) {
         console.error('[SetupComplete] ❌ Django onboarding completion failed:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
-          error: errorText
+          error: errorText,
+          url: `${apiBaseUrl}/api/onboarding/complete/`
         });
+        
+        // Try alternative endpoint path in case of routing issues
+        try {
+          console.log('[SetupComplete] Trying alternative endpoint: /api/onboarding/complete');
+          const altResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-User-Email': userEmail,
+              'X-User-Sub': user.sub,
+            },
+            body: JSON.stringify({
+              completed_at: completedAt
+            })
+          });
+          
+          if (altResponse.ok) {
+            const altResult = await altResponse.json();
+            console.log('[SetupComplete] ✅ Alternative endpoint successful:', altResult);
+            backendUpdateSuccessful = true;
+          }
+        } catch (altError) {
+          console.error('[SetupComplete] Alternative endpoint also failed:', altError);
+        }
       }
     } catch (backendError) {
       console.error('[SetupComplete] ❌ Error calling Django onboarding completion:', backendError.message);
@@ -79,7 +110,8 @@ export async function POST(request) {
           needs_onboarding: false,
           currentStep: 'completed',
           current_onboarding_step: 'completed',
-          setupCompletedAt: completedAt
+          setupCompletedAt: completedAt,
+          lastUpdated: completedAt
         }
       };
       

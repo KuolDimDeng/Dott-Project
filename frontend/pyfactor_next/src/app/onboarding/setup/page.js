@@ -292,7 +292,9 @@ export default function SetupPage() {
         
         // Save completion state via API
         try {
-          await fetch('/api/onboarding/setup/complete', {
+          console.log('[SetupPage] Calling onboarding completion API...');
+          
+          const completionResponse = await fetch('/api/onboarding/setup/complete', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -302,6 +304,24 @@ export default function SetupPage() {
               completedAt: new Date().toISOString()
             })
           });
+          
+          if (completionResponse.ok) {
+            const completionResult = await completionResponse.json();
+            console.log('[SetupPage] ✅ Onboarding completion successful:', completionResult);
+            
+            // Verify backend was updated
+            if (completionResult.backend_updated) {
+              console.log('[SetupPage] ✅ Backend onboarding status updated successfully');
+            } else {
+              console.warn('[SetupPage] ⚠️ Backend update failed, but continuing...');
+            }
+          } else {
+            const errorText = await completionResponse.text();
+            console.error('[SetupPage] ❌ Onboarding completion API failed:', {
+              status: completionResponse.status,
+              error: errorText
+            });
+          }
           
           const duration = Date.now() - setupStartTime;
           setSetupDuration(duration);
@@ -315,6 +335,18 @@ export default function SetupPage() {
           logger.debug('[SetupPage] Setup completed successfully');
         } catch (error) {
           logger.error('[SetupPage] Error completing setup:', error);
+          
+          // Even if completion API fails, continue with setup
+          console.warn('[SetupPage] Continuing setup despite completion API error');
+          
+          const duration = Date.now() - setupStartTime;
+          setSetupDuration(duration);
+          
+          // Update cache anyway
+          setCache('setup_complete', true);
+          setCache('setup_timestamp', Date.now());
+          setCache('setup_duration', duration);
+          setCache('onboarding_status', 'complete');
         }
         
         setSetupComplete(true);
