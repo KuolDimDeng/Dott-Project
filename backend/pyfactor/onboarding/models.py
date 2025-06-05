@@ -178,9 +178,25 @@ class OnboardingProgress(models.Model):
         """
         Override save to ensure tenant_id is set and update session activity
         """
-        # Set tenant_id from user if not provided
+        # FIXED: Set tenant_id from the user's tenant, not user.id directly
+        # tenant_id should be UUID, but user.id is integer (BigAutoField)
         if not self.tenant_id and hasattr(self.user, 'id'):
-            self.tenant_id = self.user.id
+            # Try to get the tenant for this user
+            from custom_auth.models import Tenant
+            try:
+                # First try to find tenant where user is owner
+                tenant = Tenant.objects.filter(owner_id=self.user.id).first()
+                if tenant:
+                    self.tenant_id = tenant.id
+                else:
+                    # If no tenant found, we'll let the calling code handle tenant creation
+                    # Don't set tenant_id to user.id as this causes type mismatch
+                    pass
+            except Exception as e:
+                # If tenant lookup fails, don't set tenant_id incorrectly
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not determine tenant_id for user {self.user.id}: {str(e)}")
             
         # Update session activity timestamp if session_id is set
         if self.session_id:
