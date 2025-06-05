@@ -38,7 +38,9 @@
     "analyze": "ANALYZE=true next build",
     "start:optimized": "NODE_OPTIONS=\"--max-old-space-size=8192\" next start",
     "clear": "rm -rf .next && rm -rf node_modules/.cache",
-    "fix": "./fix-modules.sh"
+    "fix": "./fix-modules.sh",
+    "verify-tailwind": "node verify-tailwind-setup.js",
+    "fix-auth0-logout": "node fix-auth0-logout.js"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",

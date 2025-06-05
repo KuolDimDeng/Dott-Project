@@ -8,7 +8,7 @@ const getAuth0Config = () => {
   const config = {
     domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
     audience: 'https://api.dottapps.com', // HARDCODED: This forces JWT tokens
-    clientId: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
+    clientId: '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF'  // Updated to match logout client ID
   };
   
   console.log('🚨 [Auth0Config] EMERGENCY FIX: Using hardcoded configuration to force JWT tokens');
