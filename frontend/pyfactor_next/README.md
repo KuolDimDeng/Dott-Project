@@ -266,3 +266,4 @@ The application uses Tailwind CSS for styling, providing:
 - Refresh button for manual cache invalidation
 - Spinner indicators for loading states
 # Environment update: Wed Jun  4 18:51:47 MDT 2025
+# Force deployment: Wed Jun  4 19:13:13 MDT 2025
