@@ -190,4 +190,4 @@ When testing the onboarding flow, you should now see:
 - Fewer redirects to the sign-in page
 - Preserved form data between sessions
 - Clearer error messaging when authentication issues occur
-- More reliable progress through onboarding steps 
+- More reliable progress through onboarding steps # Debug deployment trigger - Thu Jun  5 16:01:17 MDT 2025
