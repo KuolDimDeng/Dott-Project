@@ -1001,3 +1001,17 @@ REST_AUTH_SERIALIZERS = {
 REST_AUTH_REGISTER_SERIALIZERS = {
     'REGISTER_SERIALIZER': 'users.serializers.CustomRegisterSerializer',
 }
+
+# Debug: Print all Auth0 environment variables during startup
+print("🔍 [DEBUG] Django Settings - Auth0 Environment Variables:")
+print(f"   AUTH0_DOMAIN: {os.getenv('AUTH0_DOMAIN', 'NOT_SET')}")
+print(f"   AUTH0_CLIENT_ID: {os.getenv('AUTH0_CLIENT_ID', 'NOT_SET')}")
+print(f"   AUTH0_CLIENT_SECRET: {os.getenv('AUTH0_CLIENT_SECRET', 'NOT_SET')[:8]}..." if os.getenv('AUTH0_CLIENT_SECRET') else "   AUTH0_CLIENT_SECRET: NOT_SET")
+print(f"   AUTH0_AUDIENCE: {os.getenv('AUTH0_AUDIENCE', 'NOT_SET')}")
+print(f"   AUTH0_ISSUER_BASE_URL: {os.getenv('AUTH0_ISSUER_BASE_URL', 'NOT_SET')}")
+print(f"   AUTH0_CUSTOM_DOMAIN: {os.getenv('AUTH0_CUSTOM_DOMAIN', 'NOT_SET')}")
+print(f"   Environment: {os.getenv('ENVIRONMENT', 'NOT_SET')}")
+print(f"   Debug mode: {DEBUG}")
+
+# Auth0 Configuration
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')

@@ -4,6 +4,18 @@ const path = require('path');
 // Get environment variables with fallbacks
 const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
+// Debug: Print all Auth0 environment variables during Next.js build
+console.log("🔍 [DEBUG] Next.js Build - Auth0 Environment Variables:");
+console.log(`   AUTH0_SECRET: ${process.env.AUTH0_SECRET ? process.env.AUTH0_SECRET.substring(0, 8) + '...' : 'NOT_SET'}`);
+console.log(`   AUTH0_BASE_URL: ${process.env.AUTH0_BASE_URL || 'NOT_SET'}`);
+console.log(`   AUTH0_ISSUER_BASE_URL: ${process.env.AUTH0_ISSUER_BASE_URL || 'NOT_SET'}`);
+console.log(`   AUTH0_CLIENT_ID: ${process.env.AUTH0_CLIENT_ID || 'NOT_SET'}`);
+console.log(`   AUTH0_CLIENT_SECRET: ${process.env.AUTH0_CLIENT_SECRET ? process.env.AUTH0_CLIENT_SECRET.substring(0, 8) + '...' : 'NOT_SET'}`);
+console.log(`   AUTH0_AUDIENCE: ${process.env.AUTH0_AUDIENCE || 'NOT_SET'}`);
+console.log(`   AUTH0_SCOPE: ${process.env.AUTH0_SCOPE || 'NOT_SET'}`);
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT_SET'}`);
+console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || 'NOT_SET'}`);
+
 const nextConfig = {
   // Basic Next.js settings optimized for development speed
   reactStrictMode: true,

@@ -433,6 +433,13 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.debug(f"🔍 Client secret available: {bool(self.client_secret)}")
             logger.debug(f"🔍 Client secret length: {len(self.client_secret) if self.client_secret else 0}")
             
+            # Debug: Show first and last 4 characters of client secret for verification
+            secret_preview = f"{self.client_secret[:4]}...{self.client_secret[-4:]}" if self.client_secret and len(self.client_secret) >= 8 else "TOO_SHORT"
+            logger.debug(f"🔍 Client secret preview: {secret_preview}")
+            
+            # Also log the AUTH0_CLIENT_ID being used for verification
+            logger.debug(f"🔍 Using AUTH0_CLIENT_ID: {getattr(settings, 'AUTH0_CLIENT_ID', 'NOT_SET')}")
+            
             # Get token header for debugging
             header = jwt.get_unverified_header(jwe_token)
             logger.debug(f"🔍 JWE Header: {header}")
