@@ -2444,7 +2444,11 @@ class SaveStep1View(APIView):
             
             # Update OnboardingProgress with this business
             try:
-                OnboardingProgress.objects.filter(user=request.user).update(business_id=business.id)
+                # FIXED: Remove business_id update since the column doesn't exist in the database
+                # The OnboardingProgress is already linked to the user and tenant, 
+                # business relationship can be established through those
+                # OnboardingProgress.objects.filter(user=request.user).update(business_id=business.id)
+                logger.info(f"Business {business.id} linked to user {request.user.email} via tenant relationship")
             except Exception as e:
                 logger.warning(f"Failed to update OnboardingProgress with new business: {str(e)}")
             
