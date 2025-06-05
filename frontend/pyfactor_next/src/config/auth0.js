@@ -1,20 +1,22 @@
 // Auth0 Configuration and Utilities
-// Version: 2025-06-04 - JWT Token Fix with Proper Environment Variables
+// Version: 2025-06-05 - EMERGENCY FIX: Hardcoded audience to force JWT tokens
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
-// Auth0 Configuration with fallbacks (no more hardcoded emergency values)
+// EMERGENCY FIX: Hardcoded Auth0 Configuration to bypass environment variable issues
 const getAuth0Config = () => {
+  // HARDCODED VALUES to force JWT tokens (not JWE)
   const config = {
-    domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com',
-    audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
-    clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
+    domain: 'dev-cbyy63jovi6zrcos.us.auth0.com',
+    audience: 'https://api.dottapps.com', // HARDCODED: This forces JWT tokens
+    clientId: 'GZ5tqWE0VWusmykGZXfoxRkKJ6MMvIvJ'
   };
   
-  console.log('[Auth0Config] Using configuration:', {
+  console.log('🚨 [Auth0Config] EMERGENCY FIX: Using hardcoded configuration to force JWT tokens');
+  console.log('[Auth0Config] Configuration:', {
     domain: config.domain,
     audience: config.audience,
     clientId: config.clientId.substring(0, 8) + '...',
-    source: process.env.NEXT_PUBLIC_AUTH0_DOMAIN ? 'environment' : 'fallback'
+    source: 'HARDCODED_EMERGENCY_FIX'
   });
   
   return config;
@@ -80,14 +82,14 @@ export const auth0Utils = {
       // EMERGENCY: Force fresh token request to avoid cached JWE tokens
       const token = await client.getTokenSilently({
         ignoreCache: true, // Force fresh token
-        audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com', // Use hardcoded value
+        audience: 'https://api.dottapps.com', // HARDCODED: Force JWT tokens (not JWE)
         cacheLocation: 'memory', // Avoid localStorage cache
         responseType: 'code', // Explicit response type
         grantType: 'authorization_code' // Explicit grant type
       });
       
       console.log('[Auth0] Real access token retrieved (forced fresh)');
-      console.log('[Auth0] Using HARDCODED audience:', process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com');
+      console.log('[Auth0] Using HARDCODED audience: https://api.dottapps.com');
       
       // DEBUG: Check token format
       if (token.startsWith('eyJ')) {
