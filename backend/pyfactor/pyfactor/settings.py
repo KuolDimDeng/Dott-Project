@@ -1015,3 +1015,4 @@ print(f"   Debug mode: {DEBUG}")
 
 # Auth0 Configuration
 AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+# Force deployment refresh Fri Jun  6 05:44:20 MDT 2025
