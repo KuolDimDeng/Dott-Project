@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { withAuth0 } from '@auth0/nextjs-auth0/edge';
 
 export async function GET(request, { params }) {
   try {
