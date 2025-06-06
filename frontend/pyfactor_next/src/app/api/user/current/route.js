@@ -15,7 +15,7 @@ export async function GET(request) {
       console.log('🔥 [USER_CURRENT] No session cookie found, returning null user');
       return NextResponse.json({ user: null }, { status: 401 });
     }
-
+    
     // Parse session data
     let session;
     try {
@@ -24,7 +24,7 @@ export async function GET(request) {
       console.error('🔥 [USER_CURRENT] Error parsing session cookie:', parseError);
       return NextResponse.json({ user: null }, { status: 401 });
     }
-
+    
     console.log('🔥 [USER_CURRENT] Session data:', {
       hasUser: !!session?.user,
       email: session?.user?.email,
@@ -35,7 +35,7 @@ export async function GET(request) {
       console.log('🔥 [USER_CURRENT] No session found, returning null user');
       return NextResponse.json({ user: null }, { status: 401 });
     }
-
+    
     // Get access token
     const accessToken = session.accessToken;
     if (!accessToken) {
@@ -56,13 +56,13 @@ export async function GET(request) {
           'X-User-Sub': session.user.sub,
         },
       });
-
+      
       console.log('🔥 [USER_CURRENT] Backend response status:', backendResponse.status);
 
       if (backendResponse.ok) {
         const userData = await backendResponse.json();
         console.log('🔥 [USER_CURRENT] Raw backend response:', userData);
-
+        
         // Transform backend response to frontend format
         const transformedUser = {
           email: userData.user?.email || session.user.email,
@@ -137,7 +137,7 @@ export async function GET(request) {
       console.log('🔥 [USER_CURRENT] Exception fallback user data:', fallbackUser);
       return NextResponse.json({ user: fallbackUser });
     }
-
+    
   } catch (error) {
     console.error('🔥 [USER_CURRENT] General error:', error);
     return NextResponse.json({ 

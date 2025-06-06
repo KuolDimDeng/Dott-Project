@@ -80,7 +80,7 @@ if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.starts
 # Auth0 Settings (Primary Authentication)
 # Dynamic configuration using environment variables
 AUTH0_CUSTOM_DOMAIN = os.getenv('AUTH0_CUSTOM_DOMAIN', 'auth.dottapps.com')
-AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
+AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'auth.dottapps.com')
 AUTH0_ISSUER_DOMAIN = os.getenv('AUTH0_ISSUER_DOMAIN', AUTH0_DOMAIN)  # Default to AUTH0_DOMAIN if not specified
 AUTH0_CLIENT_ID = os.getenv('AUTH0_CLIENT_ID', '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF')
 AUTH0_CLIENT_SECRET = os.getenv('AUTH0_CLIENT_SECRET', '')

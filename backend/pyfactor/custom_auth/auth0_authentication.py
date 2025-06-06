@@ -548,52 +548,52 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         logger.info(f"🔑 General JWE decryption for algorithm: {algorithm}")
         
         # Try the original multiple key derivation approaches for non-dir algorithms
-        approaches = [
+            approaches = [
             ("Direct client secret as key", self._create_direct_secret_key),
             ("Standard base64 decoded secret", self._create_standard_base64_key),
             ("Base64url decoded secret (Auth0 standard)", self._create_base64url_key),
             ("Hex decoded secret", self._create_hex_key),
-            ("SHA-256 derived key", self._create_sha256_key),
-            ("Base64 decoded secret", self._create_base64_key),
-            ("Direct UTF-8 bytes", self._create_direct_key),
-            ("PBKDF2 derived key", self._create_pbkdf2_key)
-        ]
-        
-        for approach_name, key_method in approaches:
-            try:
-                logger.debug(f"🔑 Trying {approach_name}...")
-                key = key_method()
-                
-                if key:
-                    # Create JWE object and attempt decryption
-                    jwe_token_obj = jwe.JWE()
-                    jwe_token_obj.deserialize(jwe_token)
+                ("SHA-256 derived key", self._create_sha256_key),
+                ("Base64 decoded secret", self._create_base64_key),
+                ("Direct UTF-8 bytes", self._create_direct_key),
+                ("PBKDF2 derived key", self._create_pbkdf2_key)
+            ]
+            
+            for approach_name, key_method in approaches:
+                try:
+                    logger.debug(f"🔑 Trying {approach_name}...")
+                    key = key_method()
                     
-                    # Decrypt using the key
-                    decrypted_payload = jwe_token_obj.decrypt(key)
-                    
-                    if decrypted_payload:
-                        logger.info(f"✅ JWE decryption successful using {approach_name}")
+                    if key:
+                        # Create JWE object and attempt decryption
+                        jwe_token_obj = jwe.JWE()
+                        jwe_token_obj.deserialize(jwe_token)
                         
-                        # Handle both bytes and string returns
-                        if isinstance(decrypted_payload, bytes):
-                            result = decrypted_payload.decode('utf-8')
-                            logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
-                            return result
-                        elif isinstance(decrypted_payload, str):
-                            logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
-                            return decrypted_payload
-                        else:
-                            logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
-                            continue
+                        # Decrypt using the key
+                        decrypted_payload = jwe_token_obj.decrypt(key)
+                        
+                        if decrypted_payload:
+                            logger.info(f"✅ JWE decryption successful using {approach_name}")
                             
-            except Exception as approach_error:
-                logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
-                continue
-        
+                            # Handle both bytes and string returns
+                            if isinstance(decrypted_payload, bytes):
+                                result = decrypted_payload.decode('utf-8')
+                                logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
+                                return result
+                            elif isinstance(decrypted_payload, str):
+                                logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
+                                return decrypted_payload
+                            else:
+                                logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
+                                continue
+                                
+                except Exception as approach_error:
+                    logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
+                    continue
+            
         logger.error("❌ All general JWE decryption approaches failed")
-        return None
-    
+            return None
+            
     def _create_dir_hex_key(self, target_length):
         """
         RFC 7518 Section 4.5: Create key for 'dir' algorithm using hex decoding
@@ -917,10 +917,10 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 
                 # If local decryption failed, fall back to Auth0 API
                 logger.info("🔄 Local JWE decryption failed, falling back to Auth0 API validation...")
-                user_info = self.get_user_info_from_auth0_api(token)
-                if user_info:
-                    return user_info
-                else:
+                    user_info = self.get_user_info_from_auth0_api(token)
+                    if user_info:
+                        return user_info
+                    else:
                     raise exceptions.AuthenticationFailed('JWE token validation failed: both local decryption and Auth0 API validation failed')
             else:
                 logger.debug("🔍 Detected standard JWT token")

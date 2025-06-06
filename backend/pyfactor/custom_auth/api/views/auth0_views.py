@@ -109,15 +109,15 @@ class Auth0UserCreateView(APIView):
                 user.email_verified = data.get('email_verified', user.email_verified)
                 user.save()
                 logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated successfully")
-
+            
             # Check for existing tenant
             logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for existing tenant with owner_id: {user.id}")
             existing_tenant = Tenant.objects.filter(owner_id=user.id).first()
-            
-            if existing_tenant:
+                    
+                    if existing_tenant:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing tenant: {existing_tenant.id} (name: {existing_tenant.name})")
                 tenant = existing_tenant
-            else:
+                    else:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] No existing tenant found, creating new one")
                 # Create new tenant
                 tenant = Tenant.objects.create(
@@ -142,7 +142,7 @@ class Auth0UserCreateView(APIView):
             
             logger.info(f"🔥 [AUTH0_CREATE_USER] Progress lookup result - created: {progress_created}, progress_id: {progress.id}")
             logger.info(f"🔥 [AUTH0_CREATE_USER] Progress details - status: {progress.onboarding_status}, step: {progress.current_step}, tenant_id: {progress.tenant_id}")
-            
+                            
             if not progress_created:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing progress record {progress.id}")
                 # Update tenant_id if it's None or different
@@ -166,14 +166,14 @@ class Auth0UserCreateView(APIView):
             )
             
             logger.info(f"🔥 [AUTH0_CREATE_USER] Onboarding complete check: {onboarding_complete}")
-            
-            current_step = progress.current_step or 'business_info'
+                            
+                            current_step = progress.current_step or 'business_info'
             if onboarding_complete:
-                current_step = 'complete'
+                            current_step = 'complete'
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Setting current_step to 'complete'")
-            
+                        
             response_data = {
-                'success': True,
+                            'success': True,
                 'tenantId': str(tenant.id),
                 'currentStep': current_step,
                 'isExistingUser': not created,
@@ -190,9 +190,9 @@ class Auth0UserCreateView(APIView):
             
             logger.info(f"🔥 [AUTH0_CREATE_USER] Final response data: {response_data}")
             logger.info("🔥 [AUTH0_CREATE_USER] === USER CREATION FLOW COMPLETE ===")
-            
+                    
             return Response(response_data, status=200)
-
+                
         except Exception as e:
             logger.error(f"🔥 [AUTH0_CREATE_USER] ERROR: {str(e)}")
             logger.error(f"🔥 [AUTH0_CREATE_USER] Exception type: {type(e).__name__}")
@@ -230,7 +230,7 @@ class Auth0UserProfileView(APIView):
                     pass
             except Exception as e:
                 logger.warning(f"🔥 [USER_PROFILE] Error getting tenant: {str(e)}")
-
+            
             # Get onboarding progress
             onboarding_progress = None
             try:
@@ -314,7 +314,7 @@ class Auth0UserProfileView(APIView):
             logger.info("🔥 [USER_PROFILE] === USER PROFILE LOOKUP COMPLETE ===")
             
             return Response(response_data, status=200)
-
+            
         except Exception as e:
             logger.error(f"🔥 [USER_PROFILE] ERROR: {str(e)}")
             logger.error(f"🔥 [USER_PROFILE] Exception type: {type(e).__name__}")
@@ -383,9 +383,9 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     
                     # IMPORTANT: Don't overwrite completed onboarding status
                     if progress.onboarding_status != 'complete':
-                        progress.onboarding_status = 'subscription'
-                        progress.current_step = 'subscription'
-                        progress.next_step = 'subscription'
+                    progress.onboarding_status = 'subscription'
+                    progress.current_step = 'subscription'
+                    progress.next_step = 'subscription'
                     
                     if 'business_info' not in progress.completed_steps:
                         progress.completed_steps.append('business_info')
