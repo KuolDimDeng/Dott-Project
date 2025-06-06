@@ -126,7 +126,7 @@ REST_FRAMEWORK = {
 }
 
 # Security settings for production Docker deployment
-if not DEBUG:
+    if not DEBUG:
 SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

@@ -790,7 +790,7 @@ class DeclarativeDatabaseSync:
         migration_queries = [
             # Migrate Business data
             '''
-            INSERT INTO simplified_business (id, name, business_num, owner_id, tenant_id, created_at, updated_at, is_active)
+        INSERT INTO simplified_business (id, name, business_num, owner_id, tenant_id, created_at, updated_at, is_active)
             SELECT 
                 b.id,
                 b.name,

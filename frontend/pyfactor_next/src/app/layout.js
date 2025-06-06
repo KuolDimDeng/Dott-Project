@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 // Menu privilege system has been replaced with page privileges
 // import MenuPrivilegeInitializer from '@/components/MenuPrivilegeInitializer';
 // DO NOT directly import scripts here as they will run in server context
+import TailwindCDNBlocker from '@/components/TailwindCDNBlocker';
 // Scripts will be loaded via next/script in the component
 
 const inter = Inter({ subsets: ['latin'] });
@@ -25,6 +26,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={inter.className}>
         {children}
+        <TailwindCDNBlocker />
         <Toaster 
           position="top-right"
           toastOptions={{

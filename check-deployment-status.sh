@@ -1,37 +1,34 @@
 #!/bin/bash
 
-echo "🔍 Monitoring Vercel Security Checkpoint Status..."
-echo "======================================================="
+echo "🔍 Checking deployment status..."
+echo "⏰ Timestamp: $(date)"
+echo ""
 
-while true; do
-    # Check frontend status
-    FRONTEND_STATUS=$(curl -s -I "https://dottapps.com/" | grep "HTTP" | awk '{print $2}')
-    
-    # Check backend status  
-    BACKEND_STATUS=$(curl -s -I "https://api.dottapps.com/health/" | grep "HTTP" | awk '{print $2}')
-    
-    TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    echo "[$TIMESTAMP] Frontend: $FRONTEND_STATUS | Backend: $BACKEND_STATUS"
-    
-    if [ "$FRONTEND_STATUS" = "200" ]; then
-        echo ""
-        echo "🎉 SUCCESS! Vercel security checkpoint has cleared!"
-        echo "🚀 Frontend is now accessible at https://dottapps.com/"
-        echo ""
-        echo "Ready to test Auth0 authentication flow:"
-        echo "1. Go to https://dottapps.com/auth/login"
-        echo "2. Login with Auth0"
-        echo "3. Verify no duplicate tenant creation"
-        echo "4. Check backend logs for JWT validation success"
-        break
-    fi
-    
-    if [ "$FRONTEND_STATUS" = "429" ]; then
-        echo "    ⏳ Security checkpoint still active, waiting..."
-    else
-        echo "    ⚠️  Unexpected status: $FRONTEND_STATUS"
-    fi
-    
-    sleep 30
-done 
+# Check if the backend is responding
+BACKEND_URL="https://dott-backend.onrender.com"
+HEALTH_ENDPOINT="${BACKEND_URL}/health/"
+
+echo "🌐 Testing backend health endpoint..."
+echo "URL: ${HEALTH_ENDPOINT}"
+echo ""
+
+# Test the health endpoint
+HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${HEALTH_ENDPOINT}" || echo "000")
+
+if [ "$HTTP_STATUS" = "200" ]; then
+    echo "✅ Backend is responding (HTTP $HTTP_STATUS)"
+    echo "🎉 Deployment appears successful!"
+elif [ "$HTTP_STATUS" = "500" ]; then
+    echo "❌ Backend is up but has internal server error (HTTP $HTTP_STATUS)"
+    echo "🔧 This suggests the IndentationError is still present"
+elif [ "$HTTP_STATUS" = "000" ]; then
+    echo "❌ Backend is not responding (connection failed)"
+    echo "🚧 Deployment may still be in progress"
+else
+    echo "⚠️ Backend returned HTTP $HTTP_STATUS"
+    echo "🔄 Deployment status unclear"
+fi
+
+echo ""
+echo "💡 If you're still seeing IndentationError, wait 2-3 minutes for Render to complete the deployment."
+echo "💡 Render can take time to pull latest changes and rebuild the container." 

@@ -52,7 +52,7 @@ def main():
         # Get records from the NextJS table
         print("Fetching tenant records...")
         cursor.execute("""
-            SELECT id, name, owner_id, schema_name, created_at, updated_at, rls_enabled, rls_setup_date, is_active 
+        SELECT id, name, owner_id, schema_name, created_at, updated_at, rls_enabled, rls_setup_date, is_active 
             FROM custom_auth_tenant
         """)
         tenant_records = cursor.fetchall()

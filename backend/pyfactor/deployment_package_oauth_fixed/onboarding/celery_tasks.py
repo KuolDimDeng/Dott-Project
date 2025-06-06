@@ -28,7 +28,7 @@ def get_models():
 
 # RLS: Importing tenant context functions
 from custom_auth.rls import set_current_tenant_id, tenant_context
-    return get_user_model(), UserProfile
+return get_user_model(), UserProfile
 
 @shared_task(
     name='onboarding.notification.send',

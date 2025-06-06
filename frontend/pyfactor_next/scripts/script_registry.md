@@ -555,3 +555,12 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 - **Impact**: Resolves Google Sign-In authentication failures
 - **Testing**: Manual OAuth flow testing required
 Version0046_fix_youtube_redirect_oauth_callback_mismatch.mjs - OAuth redirect URI mismatch fix - Status: Completed
+
+## Version0047_fix_auth_login_route_and_tailwind_cdn.mjs
+- **Purpose**: Fix missing /api/auth/login route and remove Tailwind CDN usage
+- **Changes**:
+  - Created /api/auth/login route that redirects to Auth0 handler
+  - Added TailwindCDNBlocker component to prevent CDN scripts in production
+  - Created security headers utility for CSP
+- **Date**: 2025-06-06T12:05:19.723Z
+- **Status**: Completed
