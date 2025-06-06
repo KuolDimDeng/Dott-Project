@@ -441,7 +441,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         """
         Decrypt a JWE token using the client secret.
         For Auth0 JWE with alg='dir', the client secret is used directly as the encryption key.
-        Try multiple approaches to handle different Auth0 configurations.
+        RFC 7518 Section 4.5: Direct Encryption with a Shared Symmetric Key.
         """
         if not JWE_AVAILABLE:
             logger.warning("⚠️ JWE library not available, will use Auth0 API fallback")
@@ -460,63 +460,247 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             secret_preview = f"{self.client_secret[:4]}...{self.client_secret[-4:]}" if self.client_secret and len(self.client_secret) >= 8 else "TOO_SHORT"
             logger.debug(f"🔍 Client secret preview: {secret_preview}")
             
-            # Also log the AUTH0_CLIENT_ID being used for verification
-            logger.debug(f"🔍 Using AUTH0_CLIENT_ID: {getattr(settings, 'AUTH0_CLIENT_ID', 'NOT_SET')}")
-            
-            # Get token header for debugging
+            # Get token header for algorithm-specific handling
             header = jwt.get_unverified_header(jwe_token)
             logger.debug(f"🔍 JWE Header: {header}")
             
-            # Try multiple key derivation approaches
-            approaches = [
-                ("Direct client secret as key", self._create_direct_secret_key),
-                ("Standard base64 decoded secret", self._create_standard_base64_key),
-                ("Base64url decoded secret (Auth0 standard)", self._create_base64url_key),
-                ("Hex decoded secret (for dir alg)", self._create_hex_key),
-                ("SHA-256 derived key", self._create_sha256_key),
-                ("Base64 decoded secret", self._create_base64_key),
-                ("Direct UTF-8 bytes", self._create_direct_key),
-                ("PBKDF2 derived key", self._create_pbkdf2_key)
-            ]
+            algorithm = header.get('alg', '')
+            encryption = header.get('enc', '')
+            logger.info(f"🔍 JWE Algorithm: {algorithm}, Encryption: {encryption}")
             
-            for approach_name, key_method in approaches:
-                try:
-                    logger.debug(f"🔑 Trying {approach_name}...")
-                    key = key_method()
-                    
-                    if key:
-                        # Create JWE object and attempt decryption
-                        jwe_token_obj = jwe.JWE()
-                        jwe_token_obj.deserialize(jwe_token)
-                        
-                        # Decrypt using the key
-                        decrypted_payload = jwe_token_obj.decrypt(key)
-                        
-                        if decrypted_payload:
-                            logger.info(f"✅ JWE decryption successful using {approach_name}")
-                            
-                            # Handle both bytes and string returns
-                            if isinstance(decrypted_payload, bytes):
-                                result = decrypted_payload.decode('utf-8')
-                                logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
-                                return result
-                            elif isinstance(decrypted_payload, str):
-                                logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
-                                return decrypted_payload
-                            else:
-                                logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
-                                continue
-                                
-                except Exception as approach_error:
-                    logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
-                    continue
-            
-            logger.error("❌ All JWE decryption approaches failed - will try Auth0 API fallback")
-            return None
-            
+            # RFC 7518 Section 4.5: Handle 'dir' algorithm specifically
+            if algorithm == 'dir':
+                logger.info("🔑 Using RFC 7518 Section 4.5: Direct Encryption with Shared Symmetric Key")
+                return self._decrypt_jwe_with_dir_algorithm(jwe_token, encryption)
+            else:
+                logger.info(f"🔑 Using general approach for algorithm: {algorithm}")
+                return self._decrypt_jwe_general(jwe_token, algorithm, encryption)
+                
         except Exception as e:
             logger.error(f"❌ JWE decryption failed: {str(e)} - will try Auth0 API fallback")
             logger.error(f"❌ Exception type: {type(e).__name__}")
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+            return None
+    
+    def _decrypt_jwe_with_dir_algorithm(self, jwe_token, encryption):
+        """
+        RFC 7518 Section 4.5: Direct Encryption with a Shared Symmetric Key
+        For 'dir' algorithm, the shared symmetric key is used directly as the CEK.
+        """
+        logger.info("🔑 Implementing RFC 7518 Section 4.5: Direct encryption with shared symmetric key")
+        
+        # For A256GCM, we need exactly 32 bytes
+        required_key_length = 32 if encryption == 'A256GCM' else 16 if encryption == 'A128GCM' else 24
+        logger.debug(f"🔍 Required key length for {encryption}: {required_key_length} bytes")
+        
+        # Auth0 64-character client secrets are typically hex-encoded 32-byte keys
+        dir_approaches = [
+            ("64-char hex secret for dir algorithm", self._create_dir_hex_key, required_key_length),
+            ("64-char secret first 32 bytes", self._create_dir_first_32_bytes, required_key_length),
+            ("64-char secret as base64", self._create_dir_base64_key, required_key_length),
+            ("64-char secret UTF-8 truncated", self._create_dir_utf8_key, required_key_length),
+            ("Full 64-char secret SHA256", self._create_dir_sha256_key, required_key_length),
+        ]
+        
+        for approach_name, key_method, target_length in dir_approaches:
+            try:
+                logger.debug(f"🔑 Trying {approach_name}...")
+                key = key_method(target_length)
+                
+                if key:
+                    # Create JWE object and attempt decryption
+                    jwe_token_obj = jwe.JWE()
+                    jwe_token_obj.deserialize(jwe_token)
+                    
+                    # Decrypt using the key (RFC 7518: direct use as CEK)
+                    decrypted_payload = jwe_token_obj.decrypt(key)
+                    
+                    if decrypted_payload:
+                        logger.info(f"✅ RFC 7518 dir algorithm decryption successful using {approach_name}")
+                        
+                        # Handle both bytes and string returns
+                        if isinstance(decrypted_payload, bytes):
+                            result = decrypted_payload.decode('utf-8')
+                            logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
+                            return result
+                        elif isinstance(decrypted_payload, str):
+                            logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
+                            return decrypted_payload
+                        else:
+                            logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
+                            continue
+                            
+            except Exception as approach_error:
+                logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
+                continue
+        
+        logger.error("❌ All RFC 7518 dir algorithm approaches failed")
+        return None
+    
+    def _decrypt_jwe_general(self, jwe_token, algorithm, encryption):
+        """
+        General JWE decryption for non-'dir' algorithms
+        """
+        logger.info(f"🔑 General JWE decryption for algorithm: {algorithm}")
+        
+        # Try the original multiple key derivation approaches for non-dir algorithms
+        approaches = [
+            ("Direct client secret as key", self._create_direct_secret_key),
+            ("Standard base64 decoded secret", self._create_standard_base64_key),
+            ("Base64url decoded secret (Auth0 standard)", self._create_base64url_key),
+            ("Hex decoded secret", self._create_hex_key),
+            ("SHA-256 derived key", self._create_sha256_key),
+            ("Base64 decoded secret", self._create_base64_key),
+            ("Direct UTF-8 bytes", self._create_direct_key),
+            ("PBKDF2 derived key", self._create_pbkdf2_key)
+        ]
+        
+        for approach_name, key_method in approaches:
+            try:
+                logger.debug(f"🔑 Trying {approach_name}...")
+                key = key_method()
+                
+                if key:
+                    # Create JWE object and attempt decryption
+                    jwe_token_obj = jwe.JWE()
+                    jwe_token_obj.deserialize(jwe_token)
+                    
+                    # Decrypt using the key
+                    decrypted_payload = jwe_token_obj.decrypt(key)
+                    
+                    if decrypted_payload:
+                        logger.info(f"✅ JWE decryption successful using {approach_name}")
+                        
+                        # Handle both bytes and string returns
+                        if isinstance(decrypted_payload, bytes):
+                            result = decrypted_payload.decode('utf-8')
+                            logger.debug(f"✅ Decrypted payload (from bytes): {result[:100]}...")
+                            return result
+                        elif isinstance(decrypted_payload, str):
+                            logger.debug(f"✅ Decrypted payload (string): {decrypted_payload[:100]}...")
+                            return decrypted_payload
+                        else:
+                            logger.warning(f"⚠️ Unexpected decryption result type: {type(decrypted_payload)}")
+                            continue
+                            
+            except Exception as approach_error:
+                logger.debug(f"❌ {approach_name} failed: {str(approach_error)}")
+                continue
+        
+        logger.error("❌ All general JWE decryption approaches failed")
+        return None
+    
+    def _create_dir_hex_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Create key for 'dir' algorithm using hex decoding
+        Auth0 64-character secrets are often hex-encoded 32-byte keys
+        """
+        try:
+            if not self.client_secret or len(self.client_secret) != 64:
+                logger.debug(f"❌ Expected 64-char hex secret, got {len(self.client_secret) if self.client_secret else 0}")
+                return None
+            
+            # Decode 64-character hex string to 32 bytes
+            key_bytes = bytes.fromhex(self.client_secret)
+            logger.debug(f"🔍 Hex decoded key length: {len(key_bytes)} bytes (target: {target_length})")
+            
+            if len(key_bytes) == target_length:
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm hex key: {len(key_bytes)} bytes")
+                return key
+            else:
+                logger.debug(f"❌ Hex key length mismatch: {len(key_bytes)} != {target_length}")
+                return None
+        except ValueError as e:
+            logger.debug(f"❌ Invalid hex in client secret: {e}")
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir hex key creation failed: {e}")
+            return None
+    
+    def _create_dir_first_32_bytes(self, target_length):
+        """
+        RFC 7518 Section 4.5: Use first 32 characters as UTF-8 bytes
+        """
+        try:
+            if not self.client_secret or len(self.client_secret) < target_length:
+                return None
+            
+            # Take first target_length characters and encode as UTF-8
+            key_bytes = self.client_secret[:target_length].encode('utf-8')
+            if len(key_bytes) == target_length:
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm first-{target_length} key")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir first-32 key creation failed: {e}")
+            return None
+    
+    def _create_dir_base64_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Decode client secret as base64
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            # Try standard base64 decode
+            secret_with_padding = self.client_secret
+            missing_padding = len(secret_with_padding) % 4
+            if missing_padding:
+                secret_with_padding += '=' * (4 - missing_padding)
+            
+            key_bytes = base64.b64decode(secret_with_padding)
+            if len(key_bytes) >= target_length:
+                # Use first target_length bytes
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm base64 key: {len(key_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir base64 key creation failed: {e}")
+            return None
+    
+    def _create_dir_utf8_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Use client secret UTF-8 bytes directly
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            key_bytes = self.client_secret.encode('utf-8')
+            if len(key_bytes) >= target_length:
+                # Use first target_length bytes
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm UTF-8 key: {len(key_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir UTF-8 key creation failed: {e}")
+            return None
+    
+    def _create_dir_sha256_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: SHA-256 hash of client secret
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            import hashlib
+            key_bytes = hashlib.sha256(self.client_secret.encode('utf-8')).digest()
+            if len(key_bytes) >= target_length:
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm SHA-256 key: {len(key_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir SHA-256 key creation failed: {e}")
             return None
     
     def _create_sha256_key(self):
