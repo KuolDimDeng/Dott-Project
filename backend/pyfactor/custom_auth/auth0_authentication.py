@@ -469,6 +469,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             
             # Try multiple key derivation approaches
             approaches = [
+                ("Base64url decoded secret (Auth0 standard)", self._create_base64url_key),
                 ("Hex decoded secret (for dir alg)", self._create_hex_key),
                 ("SHA-256 derived key", self._create_sha256_key),
                 ("Base64 decoded secret", self._create_base64_key),
@@ -608,6 +609,26 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
         except Exception as e:
             logger.debug(f"Hex key creation failed: {e}")
+            return None
+    
+    def _create_base64url_key(self):
+        """Create JWK using base64url decoded client secret"""
+        try:
+            if not self.client_secret:
+                return None
+            # Try to decode client secret as base64url
+            decoded_secret = base64.urlsafe_b64decode(self.client_secret + '==')
+            if len(decoded_secret) == 32:  # Perfect for AES-256
+                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret).decode().rstrip('='))
+            elif len(decoded_secret) > 32:
+                # Truncate to 32 bytes
+                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret[:32]).decode().rstrip('='))
+            else:
+                # Pad to 32 bytes
+                padded = decoded_secret + b'\x00' * (32 - len(decoded_secret))
+                return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
+        except Exception as e:
+            logger.debug(f"Base64url key creation failed: {e}")
             return None
     
     def validate_token(self, token):
