@@ -500,6 +500,10 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             ("64-char secret as base64", self._create_dir_base64_key, required_key_length),
             ("64-char secret UTF-8 truncated", self._create_dir_utf8_key, required_key_length),
             ("Full 64-char secret SHA256", self._create_dir_sha256_key, required_key_length),
+            ("Auth0 base64url with padding", self._create_dir_base64url_padded_key, required_key_length),
+            ("Auth0 base64url no padding", self._create_dir_base64url_no_padding_key, required_key_length),
+            ("Auth0 raw secret as bytes", self._create_dir_raw_secret_key, required_key_length),
+            ("Auth0 secret with HKDF", self._create_dir_hkdf_key, required_key_length),
         ]
         
         for approach_name, key_method, target_length in dir_approaches:
@@ -1038,6 +1042,134 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 user = User.objects.create(**user_data)
                 logger.info(f"✅ Created new user from Auth0: {email} ({auth0_id})")
                 return user
+
+    def _create_dir_base64url_padded_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Decode Auth0 client secret as base64url with padding
+        Auth0 64-character secrets are often base64url encoded
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            # Try base64url decode with padding
+            # Add padding if needed for base64url decoding
+            secret_with_padding = self.client_secret
+            missing_padding = len(secret_with_padding) % 4
+            if missing_padding:
+                secret_with_padding += '=' * (4 - missing_padding)
+            
+            key_bytes = base64.urlsafe_b64decode(secret_with_padding)
+            logger.debug(f"🔍 Base64url padded decoded key length: {len(key_bytes)} bytes (target: {target_length})")
+            
+            if len(key_bytes) >= target_length:
+                # Use first target_length bytes
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm base64url padded key: {len(key_bytes)} bytes")
+                return key
+            elif len(key_bytes) < target_length:
+                # Pad to target length
+                padded_bytes = key_bytes + b'\x00' * (target_length - len(key_bytes))
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm base64url padded (with padding) key: {len(padded_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir base64url padded key creation failed: {e}")
+            return None
+    
+    def _create_dir_base64url_no_padding_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Decode Auth0 client secret as base64url without padding
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            # Try base64url decode without padding
+            key_bytes = base64.urlsafe_b64decode(self.client_secret)
+            logger.debug(f"🔍 Base64url no-padding decoded key length: {len(key_bytes)} bytes (target: {target_length})")
+            
+            if len(key_bytes) >= target_length:
+                # Use first target_length bytes
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm base64url no-padding key: {len(key_bytes)} bytes")
+                return key
+            elif len(key_bytes) < target_length:
+                # Pad to target length
+                padded_bytes = key_bytes + b'\x00' * (target_length - len(key_bytes))
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm base64url no-padding (with padding) key: {len(padded_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir base64url no-padding key creation failed: {e}")
+            return None
+    
+    def _create_dir_raw_secret_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Use Auth0 client secret raw bytes directly
+        For 64-character secrets, use them as UTF-8 bytes directly
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            # Convert secret to bytes as UTF-8
+            key_bytes = self.client_secret.encode('utf-8')
+            logger.debug(f"🔍 Raw secret key length: {len(key_bytes)} bytes (target: {target_length})")
+            
+            if len(key_bytes) >= target_length:
+                # Use first target_length bytes
+                key_bytes = key_bytes[:target_length]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm raw secret key: {len(key_bytes)} bytes")
+                return key
+            elif len(key_bytes) < target_length:
+                # Pad to target length with zeros
+                padded_bytes = key_bytes + b'\x00' * (target_length - len(key_bytes))
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded_bytes).decode().rstrip('='))
+                logger.debug(f"✅ Created RFC 7518 dir algorithm raw secret (with padding) key: {len(padded_bytes)} bytes")
+                return key
+            return None
+        except Exception as e:
+            logger.debug(f"❌ Dir raw secret key creation failed: {e}")
+            return None
+    
+    def _create_dir_hkdf_key(self, target_length):
+        """
+        RFC 7518 Section 4.5: Use HKDF key derivation for Auth0 client secret
+        This is a more advanced approach for key derivation
+        """
+        try:
+            if not self.client_secret:
+                return None
+            
+            from cryptography.hazmat.primitives import hashes
+            from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+            from cryptography.hazmat.backends import default_backend
+            
+            # Use HKDF to derive key
+            hkdf = HKDF(
+                algorithm=hashes.SHA256(),
+                length=target_length,
+                salt=b'auth0_jwe_dir',  # Fixed salt for Auth0 JWE dir algorithm
+                info=b'auth0_dir_key_derivation',
+                backend=default_backend()
+            )
+            
+            # Use client secret as input key material
+            input_key_material = self.client_secret.encode('utf-8')
+            derived_key = hkdf.derive(input_key_material)
+            
+            key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(derived_key).decode().rstrip('='))
+            logger.debug(f"✅ Created RFC 7518 dir algorithm HKDF key: {len(derived_key)} bytes")
+            return key
+        except Exception as e:
+            logger.debug(f"❌ Dir HKDF key creation failed: {e}")
+            return None
 
 
 class Auth0Client:
