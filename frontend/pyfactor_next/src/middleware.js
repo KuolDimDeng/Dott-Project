@@ -31,6 +31,37 @@ export function middleware(request) {
 }
 
 // Define the middleware config to match the paths we want to handle
+// Add proper scope to token requests
+function addScopeToTokenRequests(request) {
+  const url = new URL(request.url);
+  
+  // For token endpoints, ensure scope includes email
+  if (url.pathname.includes('/api/auth/token') || 
+      url.pathname.includes('/api/auth/access-token') ||
+      url.pathname.includes('/authorize')) {
+    
+    // Add email scope if not present
+    if (!url.searchParams.has('scope')) {
+      url.searchParams.set('scope', 'openid profile email');
+    } else if (!url.searchParams.get('scope').includes('email')) {
+      const currentScope = url.searchParams.get('scope');
+      url.searchParams.set('scope', `${currentScope} email`);
+    }
+    
+    // Create new request with updated URL
+    return NextRequest.next({
+      request: {
+        headers: request.headers,
+        method: request.method,
+        url: url.toString(),
+        body: request.body
+      }
+    });
+  }
+  
+  return request;
+}
+
 export const config = {
   // Match all paths except static files, images, etc.
   matcher: [

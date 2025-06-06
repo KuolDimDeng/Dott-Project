@@ -208,4 +208,28 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 
 | Script | Purpose | Execution Date | Status |
 |--------|---------|---------------|--------|
+| Version0100_commit_and_deploy_auth0_edge_import_fix.mjs | Commit and deploy Auth0 Edge import fix | 2025-06-06T16:09:19.072Z | Complete |
 | Version0099_fix_auth0_edge_import.mjs | Fix Auth0 Edge import compatibility issue | 2025-06-06T16:08:40.740Z | Complete |
+
+### Version0101_fix_auth0_token_email_claim.mjs
+- **Version**: 0101 v1.0
+- **Purpose**: Fix Auth0 token missing email claim issue causing dashboard redirect problems
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T16:48:04.754Z
+- **Target Files**:
+  - src/config/auth0.js - Updated to ensure email claims are included in tokens
+  - src/app/api/auth/callback/route.js - Enhanced email claim handling
+  - src/middleware.js - Added scope to token requests
+- **Description**: Fixes issue where users are redirected to onboarding instead of dashboard after signing in again
+- **Key Features**:
+  - Ensures Auth0 tokens include email claims
+  - Adds email scope to token requests
+  - Synchronizes email between ID token and access token
+  - Improves debugging of token claims
+  - Creates proper backups of modified files
+- **Requirements Addressed**: 
+  - Fix 403 Forbidden errors in backend API calls
+  - Ensure proper user redirection after authentication
+  - Fix backend authentication errors related to missing email claims
+
