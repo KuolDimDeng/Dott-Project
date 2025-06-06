@@ -28,70 +28,109 @@ class HrConfig(AppConfig):
             return
             
         with connection.cursor() as cursor:
-            # Enable RLS on timesheet tables
-            cursor.execute("ALTER TABLE hr_timesheetsetting ENABLE ROW LEVEL SECURITY;")
-            cursor.execute("ALTER TABLE hr_companyholiday ENABLE ROW LEVEL SECURITY;")
-            cursor.execute("ALTER TABLE hr_timesheet ENABLE ROW LEVEL SECURITY;")
-            cursor.execute("ALTER TABLE hr_timesheetentry ENABLE ROW LEVEL SECURITY;")
-            cursor.execute("ALTER TABLE hr_timeoffrequest ENABLE ROW LEVEL SECURITY;")
-            cursor.execute("ALTER TABLE hr_timeoffbalance ENABLE ROW LEVEL SECURITY;")
+            # Check if tables exist before enabling RLS
+            tables_to_check = [
+                'hr_timesheetsetting',
+                'hr_companyholiday', 
+                'hr_timesheet',
+                'hr_timesheetentry',
+                'hr_timeoffrequest',
+                'hr_timeoffbalance'
+            ]
+            
+            existing_tables = []
+            for table in tables_to_check:
+                cursor.execute("""
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = %s
+                    );
+                """, [table])
+                result = cursor.fetchone()
+                if result and result[0]:
+                    existing_tables.append(table)
+            
+            # Only proceed if tables exist
+            if not existing_tables:
+                return
+                
+            # Enable RLS on existing timesheet tables
+            for table in existing_tables:
+                try:
+                    cursor.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;")
+                except Exception as e:
+                    # Log but continue if RLS is already enabled
+                    print(f"Warning: Could not enable RLS on {table}: {e}")
             
             # Create policies that isolate data by business_id - We'll drop and recreate
             # Drop existing policies if they exist
             try:
-                cursor.execute("DROP POLICY IF EXISTS timesheetsetting_isolation_policy ON hr_timesheetsetting;")
-                cursor.execute("DROP POLICY IF EXISTS companyholiday_isolation_policy ON hr_companyholiday;")
-                cursor.execute("DROP POLICY IF EXISTS timesheet_isolation_policy ON hr_timesheet;")
-                cursor.execute("DROP POLICY IF EXISTS timesheetentry_isolation_policy ON hr_timesheetentry;")
-                cursor.execute("DROP POLICY IF EXISTS timeoffrequest_isolation_policy ON hr_timeoffrequest;")
-                cursor.execute("DROP POLICY IF EXISTS timeoffbalance_isolation_policy ON hr_timeoffbalance;")
+                if 'hr_timesheetsetting' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS timesheetsetting_isolation_policy ON hr_timesheetsetting;")
+                if 'hr_companyholiday' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS companyholiday_isolation_policy ON hr_companyholiday;")
+                if 'hr_timesheet' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS timesheet_isolation_policy ON hr_timesheet;")
+                if 'hr_timesheetentry' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS timesheetentry_isolation_policy ON hr_timesheetentry;")
+                if 'hr_timeoffrequest' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS timeoffrequest_isolation_policy ON hr_timeoffrequest;")
+                if 'hr_timeoffbalance' in existing_tables:
+                    cursor.execute("DROP POLICY IF EXISTS timeoffbalance_isolation_policy ON hr_timeoffbalance;")
             except Exception as e:
                 # Ignore errors if policies don't exist
                 pass
                 
-            # Create policies
+            # Create policies only for existing tables
             # For TimesheetSetting
-            cursor.execute("""
-                CREATE POLICY timesheetsetting_isolation_policy 
-                ON hr_timesheetsetting 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+            if 'hr_timesheetsetting' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY timesheetsetting_isolation_policy 
+                    ON hr_timesheetsetting 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For CompanyHoliday
-            cursor.execute("""
-                CREATE POLICY companyholiday_isolation_policy 
-                ON hr_companyholiday 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+            if 'hr_companyholiday' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY companyholiday_isolation_policy 
+                    ON hr_companyholiday 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For Timesheet
-            cursor.execute("""
-                CREATE POLICY timesheet_isolation_policy 
-                ON hr_timesheet 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+            if 'hr_timesheet' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY timesheet_isolation_policy 
+                    ON hr_timesheet 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For TimesheetEntry - isolated via parent Timesheet
-            cursor.execute("""
-                CREATE POLICY timesheetentry_isolation_policy 
-                ON hr_timesheetentry 
-                USING (EXISTS (
-                    SELECT 1 FROM hr_timesheet 
-                    WHERE hr_timesheet.id = hr_timesheetentry.timesheet_id 
-                    AND hr_timesheet.business_id::text = current_setting('app.current_tenant', TRUE)
-                ));
-            """)
+            if 'hr_timesheetentry' in existing_tables and 'hr_timesheet' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY timesheetentry_isolation_policy 
+                    ON hr_timesheetentry 
+                    USING (EXISTS (
+                        SELECT 1 FROM hr_timesheet 
+                        WHERE hr_timesheet.id = hr_timesheetentry.timesheet_id 
+                        AND hr_timesheet.business_id::text = current_setting('app.current_tenant', TRUE)
+                    ));
+                """)
             
             # For TimeOffRequest
-            cursor.execute("""
-                CREATE POLICY timeoffrequest_isolation_policy 
-                ON hr_timeoffrequest 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+            if 'hr_timeoffrequest' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY timeoffrequest_isolation_policy 
+                    ON hr_timeoffrequest 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For TimeOffBalance
-            cursor.execute("""
-                CREATE POLICY timeoffbalance_isolation_policy 
-                ON hr_timeoffbalance 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+            if 'hr_timeoffbalance' in existing_tables:
+                cursor.execute("""
+                    CREATE POLICY timeoffbalance_isolation_policy 
+                    ON hr_timeoffbalance 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)

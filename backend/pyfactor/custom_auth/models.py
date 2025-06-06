@@ -93,8 +93,13 @@ class User(AbstractUser):
     # Tenant relationship
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True, blank=True, related_name='users')
     
-    # Additional fields
+    # Auth0 additional fields
     auth0_sub = models.CharField(max_length=255, null=True, blank=True, help_text='Auth0 subject identifier')
+    name = models.CharField(max_length=255, null=True, blank=True, help_text='Full name from Auth0')
+    picture = models.URLField(null=True, blank=True, help_text='Profile picture URL from Auth0')
+    email_verified = models.BooleanField(default=False, help_text='Email verification status from Auth0')
+    
+    # Additional fields
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     business_id = models.UUIDField(null=True, blank=True)
     

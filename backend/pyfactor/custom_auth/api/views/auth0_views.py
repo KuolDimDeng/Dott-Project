@@ -14,7 +14,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress
-from custom_auth.authentication.auth0_authentication import Auth0JWTAuthentication
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 logger = logging.getLogger(__name__)
