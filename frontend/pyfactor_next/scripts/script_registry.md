@@ -211,6 +211,20 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 | Version0100_commit_and_deploy_auth0_edge_import_fix.mjs | Commit and deploy Auth0 Edge import fix | 2025-06-06T16:09:19.072Z | Complete |
 | Version0099_fix_auth0_edge_import.mjs | Fix Auth0 Edge import compatibility issue | 2025-06-06T16:08:40.740Z | Complete |
 
+### Version0102_commit_and_deploy_auth0_email_claim_fix.mjs
+- **Version**: 0102 v1.0
+- **Purpose**: Deploy the Auth0 token email claim fix to production
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T16:49:13.247Z
+- **Target Files**:
+  - src/config/auth0.js - Email claim fix
+  - src/middleware.js - Email scope enforcement
+  - scripts/Version0101_fix_auth0_token_email_claim.mjs - Fix script
+  - scripts/AUTH0_TOKEN_EMAIL_CLAIM_FIX_SUMMARY.md - Documentation
+- **Description**: Commits and deploys the Auth0 token email claim fix to resolve the issue with users being redirected to onboarding instead of dashboard after signing in again
+- **Deployment Method**: Git push to Dott_Main_Dev_Deploy branch to trigger Vercel deployment
+
 ### Version0101_fix_auth0_token_email_claim.mjs
 - **Version**: 0101 v1.0
 - **Purpose**: Fix Auth0 token missing email claim issue causing dashboard redirect problems
@@ -233,3 +247,55 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - Ensure proper user redirection after authentication
   - Fix backend authentication errors related to missing email claims
 
+### Version0103_fix_auth0_jwe_token_and_rate_limiting.mjs
+- **Version**: 0103 v1.0
+- **Purpose**: Fix JWE token handling and add rate limit protection for Auth0 authentication
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T14:42:00.000Z
+- **Target Files**:
+  - backend/pyfactor/custom_auth/auth0_authentication.py - Enhanced with JWE support and caching
+  - backend/pyfactor/custom_auth/connection_limiter.py - Added circuit breaker pattern
+  - scripts/AUTH0_ACTION_EMAIL_CLAIM_JWE_SUPPORT.js - Updated Auth0 Action template
+  - scripts/AUTH0_JWE_TOKEN_RATE_LIMITING_FIX_SUMMARY.md - Documentation
+
+### Version0104_commit_and_deploy_auth0_jwe_token_fix.mjs
+- **Version**: 0104 v1.0
+- **Purpose**: Commit and deploy the JWE token and rate limiting protection fix
+- **Status**: ⏳ PENDING EXECUTION
+- **Creation Date**: 2025-06-06
+- **Target Files**: Multiple files from Version0103
+- **Description**: Commits and pushes the Auth0 JWE token and rate limiting fixes to production
+- **Key Features**:
+  - Automatically commits all changes to git
+  - Pushes to the Dott_Main_Dev_Deploy branch to trigger deployment
+  - Updates deployment documentation
+  - Provides verification instructions for after deployment
+- **Requirements Addressed**: 
+  - Deploy JWE token validation fixes to production
+  - Deploy rate limiting protection to production
+  - Deploy Auth0 custom domain consistency fixes
+
+### test_auth0_jwe_token_and_rate_limiting.mjs
+- **Purpose**: Test utility to verify the Auth0 JWE token and rate limiting fixes
+- **Status**: ✅ AVAILABLE
+- **Creation Date**: 2025-06-06
+- **Description**: Provides tools to test both the JWE token validation and rate limiting protection
+- **Key Features**:
+  - Tests JWE token validation by checking authentication endpoints
+  - Simulates high load to test rate limiting effectiveness
+  - Generates detailed test reports with metrics
+  - Can be run after deployment to verify fixes are working properly
+- **Description**: Extends the Auth0 email claim fix to work with JWE encrypted tokens and adds comprehensive rate limit protection
+- **Key Features**:
+  - Implements multi-layered token handling for JWE support
+  - Creates 7-tier ultra-redundant caching system with varying TTLs
+  - Adds circuit breaker pattern for rate limit protection
+  - Provides updated Auth0 Action template with improved email claim handling
+  - Creates detailed technical documentation
+- **Requirements Addressed**: 
+  - Fix JWE token validation failures
+  - Address Auth0 API rate limiting errors
+  - Improve resilience against Auth0 API outages
+  - Ensure email claims work consistently across token types
+- **Deployment Method**: Git push to Dott_Main_Dev_Deploy branch to trigger Vercel and backend deployment

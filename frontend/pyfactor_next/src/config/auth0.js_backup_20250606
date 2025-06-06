@@ -1,0 +1,427 @@
+// Auth0 Configuration and Utilities
+// Version: 2025-06-06 - Enhanced with comprehensive debugging
+import { createAuth0Client } from '@auth0/auth0-spa-js';
+import authDebugger from '@/utils/authDebugger';
+
+// Get Auth0 configuration from environment variables or use defaults
+const getAuth0Config = () => {
+  // Always prefer environment variables, fallback to custom domain
+  const config = {
+    domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com',
+    audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
+    clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF'
+  };
+  
+  // Log configuration for debugging
+  console.log('[Auth0Config] Initial configuration:', {
+    domain: config.domain,
+    audience: config.audience,
+    clientId: config.clientId.substring(0, 8) + '...',
+    source: 'ENVIRONMENT_VARIABLES'
+  });
+  
+  // Detect if using default Auth0 domain instead of custom domain
+  const domainInfo = authDebugger.detectCustomDomain(config.domain);
+  
+  // Override domain if using default Auth0 domain
+  if (!domainInfo.isCustomDomain) {
+    console.warn('⚠️ [Auth0Config] Using default Auth0 domain! Overriding with custom domain');
+    config.domain = 'auth.dottapps.com';
+    
+    // Log the override
+    authDebugger.logAuthEvent({
+      type: 'config_override',
+      message: 'Overriding default Auth0 domain with custom domain',
+      originalDomain: domainInfo.domain,
+      newDomain: config.domain
+    });
+  }
+  
+  // Enhanced logging via authDebugger
+  return authDebugger.logAuth0Config(config);
+};
+
+// Auth0 client instance
+let auth0Client = null;
+
+/**
+ * Initialize Auth0 client with JWT-optimized configuration
+ */
+export const initAuth0 = async () => {
+  if (!auth0Client) {
+    const authConfig = getAuth0Config();
+    
+    // Detect custom domain usage
+    const domainInfo = authDebugger.detectCustomDomain(authConfig.domain);
+    
+    const config = {
+      domain: authConfig.domain,
+      clientId: authConfig.clientId,
+      authorizationParams: {
+        redirect_uri: typeof window !== 'undefined' ? window.location.origin + '/auth/callback' : '',
+        // Use audience to force JWT tokens (not JWE)
+        audience: authConfig.audience,
+        response_type: 'code',
+        scope: 'openid profile email'
+      },
+      cacheLocation: 'localstorage',
+      useRefreshTokens: true,
+      // Always use custom domain if available
+      useCustomDomain: domainInfo.isCustomDomain
+    };
+    
+    // Log final configuration for debugging
+    console.log('[Auth0Config] Final Auth0 Client Configuration:', {
+      domain: config.domain,
+      audience: config.authorizationParams.audience,
+      useCustomDomain: config.useCustomDomain,
+      tokenType: 'JWT (forced via audience)'
+    });
+    
+    // Log initialization event
+    authDebugger.logAuthEvent({
+      type: 'client_init',
+      config: {
+        domain: config.domain,
+        audience: config.authorizationParams.audience,
+        useCustomDomain: config.useCustomDomain
+      }
+    });
+
+    try {
+      auth0Client = await createAuth0Client(config);
+      console.log('✅ [Auth0Config] Auth0 client initialized successfully');
+    } catch (error) {
+      console.error('❌ [Auth0Config] Error initializing Auth0 client:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Auth0 client initialization error: ${error.message}`,
+        stack: error.stack
+      });
+      
+      throw error;
+    }
+  }
+  return auth0Client;
+};
+
+/**
+ * Get Auth0 client instance
+ */
+export const getAuth0Client = async () => {
+  if (!auth0Client) {
+    await initAuth0();
+  }
+  return auth0Client;
+};
+
+// Auth0 utility functions
+export const auth0Utils = {
+  /**
+   * Get real access token from Auth0
+   */
+  getAccessToken: async () => {
+    try {
+      const client = await getAuth0Client();
+      const authConfig = getAuth0Config();
+      
+      // Log token request
+      authDebugger.logAuthEvent({
+        type: 'token_request',
+        audience: authConfig.audience,
+        domain: authConfig.domain
+      });
+      
+      // Force fresh token request
+      const token = await client.getTokenSilently({
+        ignoreCache: true, // Force fresh token
+        audience: authConfig.audience, // Use configured audience
+        cacheLocation: 'memory', // Avoid localStorage cache
+        responseType: 'code', // Explicit response type
+        grantType: 'authorization_code' // Explicit grant type
+      });
+      
+      console.log('[Auth0] Real access token retrieved (forced fresh)');
+      console.log('[Auth0] Using audience:', authConfig.audience);
+      
+      // Analyze token format and log
+      const tokenInfo = authDebugger.logTokenDetails(token);
+      
+      // Log token retrieval
+      authDebugger.logAuthEvent({
+        type: 'token_received',
+        tokenType: tokenInfo.type || 'unknown',
+        audience: authConfig.audience,
+        domain: authConfig.domain,
+        valid: tokenInfo.valid
+      });
+      
+      return token;
+    } catch (error) {
+      console.error('[Auth0] Error getting access token:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Error getting access token: ${error.message}`,
+        stack: error.stack
+      });
+      
+      // Fallback: try from API route
+      try {
+        console.log('[Auth0] Attempting fallback to API route for token');
+        
+        authDebugger.logAuthEvent({
+          type: 'token_fallback',
+          message: 'Using API route fallback for token'
+        });
+        
+        const response = await fetch('/api/auth/token');
+        
+        // Log API response
+        authDebugger.logApiResponse('/api/auth/token', response);
+        
+        if (response.ok) {
+          const data = await response.json();
+          
+          // Analyze fallback token
+          if (data.accessToken) {
+            authDebugger.logTokenDetails(data.accessToken);
+          }
+          
+          return data.accessToken;
+        }
+      } catch (apiError) {
+        console.error('[Auth0] API fallback failed:', apiError);
+        
+        // Log API fallback error
+        authDebugger.logAuthEvent({
+          type: 'error',
+          message: `API fallback failed: ${apiError.message}`,
+          stack: apiError.stack
+        });
+      }
+      
+      return null;
+    }
+  },
+  
+  /**
+   * Get user from Auth0
+   */
+  getUser: async () => {
+    try {
+      const client = await getAuth0Client();
+      
+      // Log user request
+      authDebugger.logAuthEvent({
+        type: 'user_request',
+        message: 'Requesting user from Auth0 client'
+      });
+      
+      const user = await client.getUser();
+      console.log('[Auth0] User retrieved from Auth0');
+      
+      // Log user received (limited info for privacy)
+      if (user) {
+        console.log('[Auth0] User info:', {
+          sub: user.sub?.substring(0, 10) + '...',
+          email: user.email ? `${user.email.split('@')[0]}@...` : undefined,
+          hasEmail: !!user.email
+        });
+        
+        authDebugger.logAuthEvent({
+          type: 'user_received',
+          hasUser: !!user,
+          hasEmail: !!user.email,
+          hasSub: !!user.sub
+        });
+      } else {
+        console.warn('[Auth0] No user received from Auth0');
+        
+        authDebugger.logAuthEvent({
+          type: 'warning',
+          message: 'No user received from Auth0'
+        });
+      }
+      
+      return user;
+    } catch (error) {
+      console.error('[Auth0] Error getting user:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Error getting user: ${error.message}`,
+        stack: error.stack
+      });
+      
+      // Fallback: try from API route
+      try {
+        console.log('[Auth0] Attempting fallback to API route for user');
+        
+        authDebugger.logAuthEvent({
+          type: 'user_fallback',
+          message: 'Using API route fallback for user'
+        });
+        
+        const response = await fetch('/api/auth/me');
+        
+        // Log API response
+        authDebugger.logApiResponse('/api/auth/me', response);
+        
+        if (response.ok) {
+          const userData = await response.json();
+          
+          // Log fallback user received
+          if (userData) {
+            authDebugger.logAuthEvent({
+              type: 'user_fallback_received',
+              hasUser: !!userData,
+              hasEmail: !!userData.email,
+              hasSub: !!userData.sub
+            });
+          }
+          
+          return userData;
+        }
+      } catch (apiError) {
+        console.error('[Auth0] API fallback failed:', apiError);
+        
+        // Log API fallback error
+        authDebugger.logAuthEvent({
+          type: 'error',
+          message: `API fallback failed: ${apiError.message}`,
+          stack: apiError.stack
+        });
+      }
+      
+      return null;
+    }
+  },
+
+  /**
+   * Check if user is authenticated
+   */
+  isAuthenticated: async () => {
+    try {
+      const client = await getAuth0Client();
+      const authenticated = await client.isAuthenticated();
+      
+      console.log(`[Auth0] Authentication status: ${authenticated ? 'Authenticated' : 'Not authenticated'}`);
+      
+      // Log authentication check
+      authDebugger.logAuthEvent({
+        type: 'auth_check',
+        authenticated
+      });
+      
+      return authenticated;
+    } catch (error) {
+      console.error('[Auth0] Error checking authentication:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Authentication check error: ${error.message}`,
+        stack: error.stack
+      });
+      
+      return false;
+    }
+  },
+
+  /**
+   * Login with Auth0
+   */
+  login: async (options = {}) => {
+    try {
+      const client = await getAuth0Client();
+      
+      // Get Auth0 config for debugging
+      const authConfig = getAuth0Config();
+      
+      // Enhanced options with domain info
+      const enhancedOptions = {
+        authorizationParams: {
+          screen_hint: 'login',
+          ...options
+        }
+      };
+      
+      // Log login attempt with domain info
+      console.log('[Auth0] Initiating login with redirect', {
+        domain: authConfig.domain,
+        useCustomDomain: !authConfig.domain.includes('.auth0.com'),
+        options: enhancedOptions
+      });
+      
+      // Log login event
+      authDebugger.logAuthEvent({
+        type: 'login_initiated',
+        domain: authConfig.domain,
+        useCustomDomain: !authConfig.domain.includes('.auth0.com'),
+        options: enhancedOptions
+      });
+      
+      await client.loginWithRedirect(enhancedOptions);
+    } catch (error) {
+      console.error('[Auth0] Login failed:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Login failed: ${error.message}`,
+        stack: error.stack
+      });
+      
+      throw error;
+    }
+  },
+
+  /**
+   * Logout from Auth0
+   */
+  logout: async () => {
+    try {
+      const client = await getAuth0Client();
+      
+      // Log logout attempt
+      console.log('[Auth0] Initiating logout');
+      
+      // Log logout event
+      authDebugger.logAuthEvent({
+        type: 'logout_initiated',
+        returnTo: typeof window !== 'undefined' ? window.location.origin : ''
+      });
+      
+      await client.logout({
+        logoutParams: {
+          returnTo: typeof window !== 'undefined' ? window.location.origin : ''
+        }
+      });
+    } catch (error) {
+      console.error('[Auth0] Logout failed:', error);
+      
+      // Log error event
+      authDebugger.logAuthEvent({
+        type: 'error',
+        message: `Logout failed: ${error.message}`,
+        stack: error.stack
+      });
+      
+      throw error;
+    }
+  },
+  
+  /**
+   * Get authentication debugging summary
+   */
+  getDebugSummary: () => {
+    return authDebugger.getAuthDebugSummary();
+  }
+};
+
+export default auth0Utils;
