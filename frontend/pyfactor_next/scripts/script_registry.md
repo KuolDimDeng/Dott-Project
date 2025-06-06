@@ -1,10 +1,42 @@
 # Frontend Scripts Registry
-Last Updated: 2025-06-06 07:45:00
+Last Updated: 2025-06-06 10:07:00
 
 ## Purpose
 This registry tracks all scripts in the frontend/pyfactor_next/scripts directory, their purpose, and execution status.
 
 ## Script Inventory
+### Version0099_fix_auth0_edge_import.mjs
+- **Version**: 0099 v1.0
+- **Purpose**: Fix Auth0 Edge import compatibility issue
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T16:07:00.000Z
+- **Target Files**:
+  - src/app/api/auth/[...auth0]/route.js - Removed incompatible Edge import
+- **Description**: Fixes build failure caused by importing from non-exported @auth0/nextjs-auth0/edge path
+- **Key Features**:
+  - Removes import from Edge Runtime which is not exported in current Auth0 SDK version
+  - Adds clear commented explanation of the change
+  - Creates proper backup of modified file
+- **Requirements Addressed**: 
+  - Fix build failure in production deployment
+  - Ensure compatibility with Next.js 15+ and Auth0 SDK
+
+### Version0098_commit_and_deploy_auth0_custom_domain_fix.mjs
+- **Version**: 0098 v1.0
+- **Purpose**: Commit and push Auth0 custom domain fix to trigger deployment
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T15:59:15.692Z
+- **Description**: Commits and pushes Auth0 custom domain fix to Dott_Main_Dev_Deploy branch for deployment
+- **Key Features**:
+  - Commits all changes related to Auth0 custom domain fix
+  - Pushes to deployment branch to trigger Vercel build
+  - Updates script registry with deployment information
+- **Requirements Addressed**: 
+  - Fix Auth0 domain mismatch causing 500 errors
+  - Trigger deployment of fixes to production
+
 
 ### Version0097_fix_auth0_custom_domain_with_debug.mjs
 - **Version**: 0097 v1.0
@@ -172,3 +204,8 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - ✅ Configured Vercel for pnpm (vercel.json deployed)
   - ✅ Updated build and deploy commands
   - ✅
+
+
+| Script | Purpose | Execution Date | Status |
+|--------|---------|---------------|--------|
+| Version0099_fix_auth0_edge_import.mjs | Fix Auth0 Edge import compatibility issue | 2025-06-06T16:08:40.740Z | Complete |

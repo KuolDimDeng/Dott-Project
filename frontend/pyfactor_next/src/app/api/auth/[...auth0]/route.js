@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { withAuth0 } from '@auth0/nextjs-auth0/edge';
+// Remove Edge Runtime import as it's not compatible with current Auth0 SDK version
+// import { withAuth0 } from '@auth0/nextjs-auth0/edge';
 
 export async function GET(request, { params }) {
   try {
