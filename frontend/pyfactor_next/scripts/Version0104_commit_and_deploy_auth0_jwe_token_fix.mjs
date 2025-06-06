@@ -13,6 +13,11 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get current file information (ES module equivalent of __filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Configuration
 const BRANCH_NAME = 'Dott_Main_Dev_Deploy';
@@ -50,7 +55,8 @@ function runCommand(command) {
 // Main execution
 async function main() {
   try {
-    logInfo('Starting deployment process for Auth0 JWE token and rate limiting fix...');
+    const scriptName = path.basename(__filename);
+    logInfo(`Starting deployment process for Auth0 JWE token and rate limiting fix...`);
 
     // 1. Add all changes to git
     logInfo('Adding all changes to git...');
