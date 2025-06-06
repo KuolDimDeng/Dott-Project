@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Optional, Tuple, Any
 import base64
 import hashlib
+import traceback
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -348,6 +349,8 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
         Authenticate the request and return a two-tuple of (user, token).
         """
         logger.debug(f"🔍 Auth0 authentication attempt for: {request.path}")
+        logger.debug(f"🔍 Request method: {request.method}")
+        logger.debug(f"🔍 Request headers: {dict(request.META.items()) if hasattr(request, 'META') else 'No META'}")
         
         token = self.get_token_from_request(request)
         if not token:
@@ -356,21 +359,41 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             
         logger.debug(f"🎫 Token received (length: {len(token)})")
         logger.debug(f"🎫 Token preview: {token[:50]}...")
+        logger.debug(f"🎫 Token type detection: JWE={self.is_jwe_token(token)}")
         
         try:
             # Decode and validate the JWT/JWE token
+            logger.info(f"🔄 Starting token validation for {request.path}")
             user_info = self.validate_token(token)
             logger.info(f"✅ Token validation successful for user: {user_info.get('sub', 'unknown')}")
+            logger.debug(f"✅ User info received: {json.dumps(user_info, indent=2)}")
             
             # Get or create user based on Auth0 info
+            logger.info(f"🔄 Getting/creating user for: {user_info.get('email', 'unknown')}")
             user = self.get_or_create_user(user_info)
             logger.info(f"✅ User authentication successful: {user.email}")
+            logger.debug(f"✅ Final user object: id={user.pk}, email={user.email}, tenant={getattr(user, 'tenant_id', 'None')}")
             
             return (user, token)
             
         except Exception as e:
             logger.error(f"❌ Auth0 authentication failed for {request.path}: {str(e)}")
             logger.error(f"❌ Error type: {type(e).__name__}")
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
+            
+            # Additional debug info about the token
+            try:
+                header = jwt.get_unverified_header(token)
+                logger.error(f"❌ Token header: {header}")
+            except Exception as header_error:
+                logger.error(f"❌ Could not decode token header: {header_error}")
+                
+            try:
+                payload = jwt.decode(token, options={"verify_signature": False})
+                logger.error(f"❌ Token payload (unverified): {json.dumps(payload, indent=2)}")
+            except Exception as payload_error:
+                logger.error(f"❌ Could not decode token payload: {payload_error}")
+                
             raise exceptions.AuthenticationFailed(f"Invalid token: {str(e)}")
     
     def get_token_from_request(self, request):
