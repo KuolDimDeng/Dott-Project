@@ -1,10 +1,58 @@
 # Frontend Scripts Registry
-Last Updated: 2025-06-06 07:02:00
+Last Updated: 2025-06-06 07:45:00
 
 ## Purpose
 This registry tracks all scripts in the frontend/pyfactor_next/scripts directory, their purpose, and execution status.
 
 ## Script Inventory
+
+### Version0096_fix_auth_login_infinite_redirect.mjs
+- **Version**: 0096 v1.0
+- **Purpose**: Fix infinite redirect loop in Auth0 login route causing 500 errors
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T07:44:15.000Z
+- **Target Files**:
+  - src/app/api/auth/login/route.js - Fixed infinite redirect loop
+- **Description**: Fixes the 500 Internal Server Error when accessing the login route by preventing infinite redirect loop
+- **Key Features**:
+  - Replaces self-referential redirect with proper Auth0 authorization URL
+  - Maintains all necessary headers to prevent RSC payload errors
+  - Creates proper backup of the original file
+  - Updates script registry
+- **Requirements Addressed**: 
+  - Fix Auth0 login flow in production environment
+  - Ensure proper redirection to Auth0 authorization endpoint
+- **Documentation**: See AUTH0_LOGIN_REDIRECT_FIX_SUMMARY.md
+
+### Version0095_fix_auth_login_redirect.mjs
+- **Version**: 0095 v1.0
+- **Purpose**: Fix Auth0 login redirect inconsistencies
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Target Files**:
+  - src/app/api/auth/login/route.js - Updated to ensure consistent redirects
+- **Description**: Fixes inconsistent redirect behavior in Auth0 login route
+- **Key Features**:
+  - Removes unnecessary middleware rewrite headers
+  - Ensures consistent use of NextResponse.redirect()
+  - Creates proper backup of the original file
+- **Requirements Addressed**: 
+  - Fix redirect inconsistencies in Auth0 login flow
+
+### Version0094_add_withAuth0_import.mjs
+- **Version**: 0094 v1.0
+- **Purpose**: Add withAuth0 import to Auth0 route for improved middleware
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Target Files**:
+  - src/app/api/auth/[...auth0]/route.js - Added withAuth0 import
+- **Description**: Adds the withAuth0 import from @auth0/nextjs-auth0/edge to improve Auth0 middleware
+- **Key Features**:
+  - Adds missing import for Auth0 edge middleware
+  - Creates proper backup of the original file
+- **Requirements Addressed**: 
+  - Improve Auth0 middleware for better performance
 
 ### Version0053_fix_rsc_payload_error_final.mjs
 - **Version**: 0053 v1.0
