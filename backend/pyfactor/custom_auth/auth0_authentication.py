@@ -469,6 +469,8 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             
             # Try multiple key derivation approaches
             approaches = [
+                ("Direct client secret as key", self._create_direct_secret_key),
+                ("Standard base64 decoded secret", self._create_standard_base64_key),
                 ("Base64url decoded secret (Auth0 standard)", self._create_base64url_key),
                 ("Hex decoded secret (for dir alg)", self._create_hex_key),
                 ("SHA-256 derived key", self._create_sha256_key),
@@ -629,6 +631,72 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 return jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
         except Exception as e:
             logger.debug(f"Base64url key creation failed: {e}")
+            return None
+    
+    def _create_direct_secret_key(self):
+        """Create JWK using client secret directly as the key (for 64-char secrets)"""
+        try:
+            if not self.client_secret:
+                return None
+            logger.debug(f"🔍 Attempting direct secret usage (length: {len(self.client_secret)})")
+            
+            # For 64-character secrets, use first 32 chars directly
+            if len(self.client_secret) >= 32:
+                # Take first 32 characters and encode as bytes
+                key_bytes = self.client_secret[:32].encode('utf-8')
+                if len(key_bytes) == 32:
+                    key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(key_bytes).decode().rstrip('='))
+                    logger.debug("✅ Created direct secret key (first 32 chars)")
+                    return key
+            
+            # For shorter secrets, pad to 32 bytes
+            key_bytes = self.client_secret.encode('utf-8')
+            if len(key_bytes) < 32:
+                padded = key_bytes + b'\x00' * (32 - len(key_bytes))
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
+                logger.debug(f"✅ Created padded direct secret key: {len(key_bytes)} -> 32 bytes")
+                return key
+                
+            return None
+        except Exception as e:
+            logger.debug(f"Direct secret key creation failed: {e}")
+            return None
+
+    def _create_standard_base64_key(self):
+        """Create JWK using standard base64 (not base64url) decoded client secret"""
+        try:
+            if not self.client_secret:
+                return None
+            logger.debug(f"🔍 Attempting standard base64 decode of {len(self.client_secret)}-char secret")
+            
+            # Add padding if needed for standard base64 decoding
+            secret_with_padding = self.client_secret
+            missing_padding = len(secret_with_padding) % 4
+            if missing_padding:
+                secret_with_padding += '=' * (4 - missing_padding)
+            
+            # Try to decode client secret as standard base64
+            decoded_secret = base64.b64decode(secret_with_padding)
+            logger.debug(f"🔍 Standard base64 decoded secret length: {len(decoded_secret)} bytes")
+            
+            if len(decoded_secret) == 32:  # Perfect for AES-256
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(decoded_secret).decode().rstrip('='))
+                logger.debug("✅ Created 32-byte standard base64 key for AES-256")
+                return key
+            elif len(decoded_secret) > 32:
+                # Truncate to 32 bytes
+                truncated = decoded_secret[:32]
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(truncated).decode().rstrip('='))
+                logger.debug(f"✅ Created truncated standard base64 key: {len(decoded_secret)} -> 32 bytes")
+                return key
+            else:
+                # Pad to 32 bytes
+                padded = decoded_secret + b'\x00' * (32 - len(decoded_secret))
+                key = jwk.JWK(kty='oct', k=base64.urlsafe_b64encode(padded).decode().rstrip('='))
+                logger.debug(f"✅ Created padded standard base64 key: {len(decoded_secret)} -> 32 bytes")
+                return key
+        except Exception as e:
+            logger.debug(f"Standard base64 key creation failed: {e}")
             return None
     
     def validate_token(self, token):
