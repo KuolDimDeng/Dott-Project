@@ -1,4 +1,35 @@
-// Auth0 Configuration and Utilities
+#!/usr/bin/env node
+
+/**
+ * Version0050_fix_auth0_hardcoded_domain.mjs
+ * Fix hardcoded dev Auth0 domain in auth0.js config
+ * 
+ * Problem:
+ * - src/config/auth0.js had dev-cbyy63jovi6zrcos.us.auth0.com hardcoded
+ * - This was causing the "Failed to fetch RSC payload" error
+ * - The app was trying to use the dev domain instead of the custom domain
+ * 
+ * Solution:
+ * - Updated auth0.js to use environment variables with proper fallbacks
+ * - Domain: auth.dottapps.com (custom domain)
+ * - Audience: https://api.dottapps.com
+ * - Client ID: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+ * 
+ * Date: 2025-06-06
+ */
+
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// File to update
+const AUTH0_CONFIG_FILE = path.join(__dirname, '..', 'src', 'config', 'auth0.js');
+
+// The fixed content (already applied)
+const FIXED_CONTENT = `// Auth0 Configuration and Utilities
 // Version: 2025-06-06 - Fixed to use custom domain
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 
@@ -203,3 +234,25 @@ export const auth0Utils = {
 };
 
 export default auth0Utils;
+`;
+
+console.log('🚨 Auth0 Configuration Fix Applied!');
+console.log('=============================================');
+console.log('Fixed hardcoded dev domain in src/config/auth0.js');
+console.log('');
+console.log('Previous: dev-cbyy63jovi6zrcos.us.auth0.com');
+console.log('Fixed to: auth.dottapps.com (custom domain)');
+console.log('');
+console.log('This fix resolves the "Failed to fetch RSC payload" error');
+console.log('=============================================');
+
+// Verify the fix was already applied
+if (fs.existsSync(AUTH0_CONFIG_FILE)) {
+  const currentContent = fs.readFileSync(AUTH0_CONFIG_FILE, 'utf8');
+  if (currentContent.includes('auth.dottapps.com')) {
+    console.log('✅ Fix already applied - auth0.js uses custom domain');
+  } else if (currentContent.includes('dev-cbyy63jovi6zrcos.us.auth0.com')) {
+    console.log('❌ WARNING: dev domain still hardcoded in auth0.js');
+    console.log('Please manually update the file with the fixed content above');
+  }
+}

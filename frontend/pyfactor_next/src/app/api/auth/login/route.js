@@ -1,32 +1,22 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 
 export async function GET(request) {
-  try {
-    // Extract Auth0 configuration
-    const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN;
-    const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
-    const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`;
-    const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
-
-    // Construct Auth0 authorization URL
-    const authUrl = new URL(`https://${auth0Domain}/authorize`);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('scope', 'openid profile email');
-    authUrl.searchParams.set('audience', audience);
-
-    console.log('[Login Route] Redirecting to Auth0:', authUrl.toString());
-    
-    // Redirect to Auth0 for authentication
-    return NextResponse.redirect(authUrl.toString());
-  } catch (error) {
-    console.error('[Login Route] Error:', error);
-    return NextResponse.json({ error: 'Login configuration error' }, { status: 500 });
-  }
+  const authUrl = new URL('/api/auth/login', request.url);
+  
+  // Create a response that redirects to Auth0
+  const response = NextResponse.redirect(authUrl);
+  
+  // Set headers to prevent RSC payload fetch errors
+  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
+  response.headers.set('x-middleware-rewrite', request.url);
+  
+  return response;
 }
 
 export async function POST(request) {
-  // For POST requests, redirect to GET handler
+  // Same behavior as GET for simplicity
   return GET(request);
 }

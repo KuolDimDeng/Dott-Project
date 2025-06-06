@@ -1,10 +1,48 @@
 # Frontend Scripts Registry
-Last Updated: 2025-06-01 11:15:00
+Last Updated: 2025-06-06 07:02:00
 
 ## Purpose
 This registry tracks all scripts in the frontend/pyfactor_next/scripts directory, their purpose, and execution status.
 
 ## Script Inventory
+### Version0052_fix_tailwind_cdn_and_rsc_payload.mjs
+- **Version**: 0052 v1.0
+- **Purpose**: Fix "Failed to fetch RSC payload" error and Tailwind CDN warning
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Execution Date**: 2025-06-06T13:12:11.373Z
+- **Target Files**:
+  - src/middleware.js - Updated to handle auth routes
+  - src/app/api/auth/login/route.js - Created/updated to fix RSC payload error
+  - src/app/api/auth/[...auth0]/route.js - Added headers to prevent RSC payload error
+  - src/components/TailwindCDNBlocker.js - Created to block Tailwind CDN usage
+  - src/app/layout.js - Updated to include TailwindCDNBlocker
+- **Description**: Comprehensive fix for "Failed to fetch RSC payload" errors and Tailwind CDN warnings
+- **Key Features**:
+  - Fixed middleware to handle auth routes correctly
+  - Added proper headers to prevent RSC payload fetching
+  - Created component to detect and block Tailwind CDN scripts
+  - Added component to root layout
+  - Created comprehensive documentation
+- **Requirements Addressed**: 
+  - Fix navigation errors when redirecting to Auth0
+  - Remove Tailwind CDN usage in production
+
+### Version0051_verify_no_hardcoded_env_vars.mjs
+- **Version**: 0051 v1.0
+- **Purpose**: Verify that Vercel environment variables are not hardcoded in the codebase
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Execution Date**: 2025-06-06T13:09:43.655Z
+- **Target**: All JavaScript, TypeScript, and JSON files in src directory
+- **Description**: Comprehensive search to ensure no Auth0 or other sensitive environment variables are hardcoded
+- **Key Features**:
+  - Searches for all Vercel environment variables in source files
+  - Generates detailed verification report
+  - Checks JS, JSX, TS, TSX, and JSON files
+  - Excludes node_modules and build directories
+  - Reports exact file locations if any hardcoded values found
+- **Results**: ✅ No hardcoded environment variables found
+- **Requirements Addressed**: Security best practices, no hardcoded sensitive data
+
 
 ### Version0001_update_backend_url_deployment.js
 - **Version**: 0001
@@ -562,5 +600,4 @@ Version0046_fix_youtube_redirect_oauth_callback_mismatch.mjs - OAuth redirect UR
   - Created /api/auth/login route that redirects to Auth0 handler
   - Added TailwindCDNBlocker component to prevent CDN scripts in production
   - Created security headers utility for CSP
-- **Date**: 2025-06-06T12:05:19.723Z
-- **Status**: Completed
+- **Date**:
