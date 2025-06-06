@@ -25,10 +25,10 @@ def get_models():
     """
     from django.contrib.auth import get_user_model
     from users.models import UserProfile
+    return get_user_model(), UserProfile
 
 # RLS: Importing tenant context functions
 from custom_auth.rls import set_current_tenant_id, tenant_context
-    return get_user_model(), UserProfile
 
 @shared_task(
     name='onboarding.notification.send',

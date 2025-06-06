@@ -20,9 +20,9 @@ class ServiceUnavailableError(OnboardingError):
 
 class SchemaError(OnboardingError):
     """Raised when schema operations fail"""
-    def __init__(tenant_id: uuid.UUID:
+    def __init__(self, message, tenant_id=None):
         super().__init__(message, code='schema_error')
-        self.schema_name = schema_name
+        self.tenant_id = tenant_id
 
 class SetupError(OnboardingError):
     """Raised when setup operations fail"""

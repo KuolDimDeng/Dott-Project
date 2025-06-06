@@ -49,8 +49,8 @@ class ConnectionPoolManager:
         if schema_name and schema_name != 'public':
             with connection.cursor() as cursor:
                 # RLS: Use tenant context instead of schema
-        # cursor.execute(f'SET search_path TO {schema_name}')
-        set_current_tenant_id(tenant_id),public')
+                # cursor.execute(f'SET search_path TO {schema_name}')
+                # set_current_tenant_id(tenant_id)
         
         # Store in the pool
         connection_pool[pool_key] = {
