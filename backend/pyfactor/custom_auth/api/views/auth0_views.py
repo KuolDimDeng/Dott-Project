@@ -113,7 +113,7 @@ class Auth0UserCreateView(APIView):
             # Check for existing tenant
             logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for existing tenant with owner_id: {user.id}")
             existing_tenant = Tenant.objects.filter(owner_id=user.id).first()
-                    
+            
             if existing_tenant:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing tenant: {existing_tenant.id} (name: {existing_tenant.name})")
                 tenant = existing_tenant
