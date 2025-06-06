@@ -1,10 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export async function GET(request) {
   console.log('🔥 [USER_CURRENT] === STARTING USER CURRENT API ===');
   
   try {
-    const session = await getSession(request);
+    // Get session cookie
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
+    
+    if (!sessionCookie) {
+      console.log('🔥 [USER_CURRENT] No session cookie found, returning null user');
+      return NextResponse.json({ user: null }, { status: 401 });
+    }
+
+    // Parse session data
+    let session;
+    try {
+      session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    } catch (parseError) {
+      console.error('🔥 [USER_CURRENT] Error parsing session cookie:', parseError);
+      return NextResponse.json({ user: null }, { status: 401 });
+    }
+
     console.log('🔥 [USER_CURRENT] Session data:', {
       hasUser: !!session?.user,
       email: session?.user?.email,
