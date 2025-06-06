@@ -67,17 +67,17 @@ class HrConfig(AppConfig):
             # Drop existing policies if they exist
             try:
                 if 'hr_timesheetsetting' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS timesheetsetting_isolation_policy ON hr_timesheetsetting;")
+                    cursor.execute("DROP POLICY IF EXISTS timesheetsetting_isolation_policy ON hr_timesheetsetting;")
                 if 'hr_companyholiday' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS companyholiday_isolation_policy ON hr_companyholiday;")
+                    cursor.execute("DROP POLICY IF EXISTS companyholiday_isolation_policy ON hr_companyholiday;")
                 if 'hr_timesheet' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS timesheet_isolation_policy ON hr_timesheet;")
+                    cursor.execute("DROP POLICY IF EXISTS timesheet_isolation_policy ON hr_timesheet;")
                 if 'hr_timesheetentry' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS timesheetentry_isolation_policy ON hr_timesheetentry;")
+                    cursor.execute("DROP POLICY IF EXISTS timesheetentry_isolation_policy ON hr_timesheetentry;")
                 if 'hr_timeoffrequest' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS timeoffrequest_isolation_policy ON hr_timeoffrequest;")
+                    cursor.execute("DROP POLICY IF EXISTS timeoffrequest_isolation_policy ON hr_timeoffrequest;")
                 if 'hr_timeoffbalance' in existing_tables:
-                cursor.execute("DROP POLICY IF EXISTS timeoffbalance_isolation_policy ON hr_timeoffbalance;")
+                    cursor.execute("DROP POLICY IF EXISTS timeoffbalance_isolation_policy ON hr_timeoffbalance;")
             except Exception as e:
                 # Ignore errors if policies don't exist
                 pass
@@ -85,52 +85,52 @@ class HrConfig(AppConfig):
             # Create policies only for existing tables
             # For TimesheetSetting
             if 'hr_timesheetsetting' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY timesheetsetting_isolation_policy 
-                ON hr_timesheetsetting 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+                cursor.execute("""
+                    CREATE POLICY timesheetsetting_isolation_policy 
+                    ON hr_timesheetsetting 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For CompanyHoliday
             if 'hr_companyholiday' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY companyholiday_isolation_policy 
-                ON hr_companyholiday 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+                cursor.execute("""
+                    CREATE POLICY companyholiday_isolation_policy 
+                    ON hr_companyholiday 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For Timesheet
             if 'hr_timesheet' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY timesheet_isolation_policy 
-                ON hr_timesheet 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+                cursor.execute("""
+                    CREATE POLICY timesheet_isolation_policy 
+                    ON hr_timesheet 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For TimesheetEntry - isolated via parent Timesheet
             if 'hr_timesheetentry' in existing_tables and 'hr_timesheet' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY timesheetentry_isolation_policy 
-                ON hr_timesheetentry 
-                USING (EXISTS (
-                    SELECT 1 FROM hr_timesheet 
-                    WHERE hr_timesheet.id = hr_timesheetentry.timesheet_id 
-                    AND hr_timesheet.business_id::text = current_setting('app.current_tenant', TRUE)
-                ));
-            """)
+                cursor.execute("""
+                    CREATE POLICY timesheetentry_isolation_policy 
+                    ON hr_timesheetentry 
+                    USING (EXISTS (
+                        SELECT 1 FROM hr_timesheet 
+                        WHERE hr_timesheet.id = hr_timesheetentry.timesheet_id 
+                        AND hr_timesheet.business_id::text = current_setting('app.current_tenant', TRUE)
+                    ));
+                """)
             
             # For TimeOffRequest
             if 'hr_timeoffrequest' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY timeoffrequest_isolation_policy 
-                ON hr_timeoffrequest 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+                cursor.execute("""
+                    CREATE POLICY timeoffrequest_isolation_policy 
+                    ON hr_timeoffrequest 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
             
             # For TimeOffBalance
             if 'hr_timeoffbalance' in existing_tables:
-            cursor.execute("""
-                CREATE POLICY timeoffbalance_isolation_policy 
-                ON hr_timeoffbalance 
-                USING (business_id::text = current_setting('app.current_tenant', TRUE));
-            """)
+                cursor.execute("""
+                    CREATE POLICY timeoffbalance_isolation_policy 
+                    ON hr_timeoffbalance 
+                    USING (business_id::text = current_setting('app.current_tenant', TRUE));
+                """)
