@@ -1138,9 +1138,14 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               // Store tenant ID and redirect
               // Initialize app cache if it doesn't exist
               if (typeof window !== 'undefined') {
-                appCache.getAll() = appCache.getAll() || {};
-                appCache.getAll().tenant = appCache.getAll().tenant || {};
-                appCache.get('tenant.id') = result.tenantId;
+                // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+                if (!appCache.get('tenant')) appCache.set('tenant', {});
+                appCache.set('tenant.id', result.tenantId);
               }
               
               setTenantId(result.tenantId);

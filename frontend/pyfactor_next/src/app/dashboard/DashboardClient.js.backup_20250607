@@ -1,19 +1,30 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import DashboardWrapper from './DashboardWrapper';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { COOKIE_NAMES, ONBOARDING_STATUS } from '@/constants/onboarding';
+import { appCache } from '../utils/appCache';
 import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
 import dynamic from 'next/dynamic';
 import React from 'react';
 import DashboardLoader from '@/components/DashboardLoader';
+import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
+import { appCache } from '../utils/appCache';
 import { useSession } from 'next-auth/react';
+import { appCache } from '../utils/appCache';
 import { v4 as uuidv4 } from 'uuid';
 import cls from '@/utils/cls';
 import styles from '@/styles/DashboardClient.module.css';
+import { appCache } from '../utils/appCache';
 import { useSafeSearchParams } from '@/utils/searchParamsUtils';
 
 // Import HttpsConfig component for HTTPS support
@@ -1127,9 +1138,9 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               // Store tenant ID and redirect
               // Initialize app cache if it doesn't exist
               if (typeof window !== 'undefined') {
-                window.__APP_CACHE = window.__APP_CACHE || {};
-                window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-                window.__APP_CACHE.tenant.id = result.tenantId;
+                appCache.getAll() = appCache.getAll() || {};
+                appCache.getAll().tenant = appCache.getAll().tenant || {};
+                appCache.get('tenant.id') = result.tenantId;
               }
               
               setTenantId(result.tenantId);

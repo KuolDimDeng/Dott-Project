@@ -1,6 +1,9 @@
 // src/app/onboarding/state/OnboardingStateManager.js
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { generateRequestId } from '@/lib/authUtils';
+import { appCache } from '../utils/appCache';
 import { FormStateManager, FORM_EVENTS } from './FormStateManager';
 
 // Constants for onboarding events and states
@@ -469,8 +472,8 @@ export class OnboardingStateManager extends FormStateManager {
           
           // For cases where tenant ID might be set elsewhere 
           const tenantId = this.state.onboarding.tenant_id || 
-            (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.tenantId) || 
-            (typeof window !== 'undefined' && window.__APP_CACHE?.tenantId);
+            (typeof window !== 'undefined' && appCache.getAll()
+            (typeof window !== 'undefined' && appCache.getAll()
           if (tenantId) {
             cognitoAttributes['custom:tenant_ID'] = tenantId;
             cognitoAttributes['custom:businessid'] = tenantId;

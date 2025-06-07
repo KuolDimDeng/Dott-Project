@@ -54,7 +54,12 @@ import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined' && !appCache.getAll()) {
-  appCache.getAll() = { auth: {}, user: {}, tenant: {} };
+  // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
 }
 
 const DashAppBar = ({

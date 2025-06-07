@@ -123,3 +123,21 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Created centralized appCache.js utility to replace direct window.__APP_CACHE usage
   - Fixed all direct window.__APP_CACHE references in components
 - **Status**: ✅ Completed
+
+## Version0164_deploy_amplify_cognito_removal.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Deploy changes to remove all Amplify/Cognito references and fix window.__APP_CACHE usage
+- **Changes**:
+  - Created summary document of all changes made
+  - Committed all changes with descriptive message
+  - Pushed changes to trigger deployment
+- **Status**: ✅ Completed
+
+## Version0165_fix_appCache_syntax_errors.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Fix syntax errors in appCache usage that were causing the build to fail
+- **Changes**:
+  - Fixed invalid assignment to function calls (appCache.getAll())
+  - Properly initialized app cache with set() method instead of direct assignment
+  - Fixed syntax error in OnboardingStateManager.js
+- **Status**: ✅ Completed

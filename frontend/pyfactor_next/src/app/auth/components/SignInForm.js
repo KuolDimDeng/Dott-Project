@@ -28,10 +28,15 @@ import { getCsrfToken } from 'next-auth/react';
 
 // Initialize global app cache for auth
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().auth = appCache.getAll().auth || {};
-  appCache.getAll().user = appCache.getAll().user || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+  if (!appCache.get('auth')) appCache.set('auth', {});
+  if (!appCache.get('user')) appCache.set('user', {});
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
   appCache.getAll().tenants = appCache.getAll().tenants || {};
   
   // Define global functions for cache access if not already defined
@@ -107,8 +112,13 @@ if (typeof window !== 'undefined') {
         }
         
         // Store in AppCache with namespacing
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+        if (!appCache.get('tenant')) appCache.set('tenant', {});
         appCache.get('tenant.id') = tenantInfo.tenantId;
         appCache.getAll().tenantId = tenantInfo.tenantId;
         
@@ -234,8 +244,13 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
     // Ensure tenant ID is stored in all locations for resilience
     if (tenantId) {
       // Store in AppCache with namespacing
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+      if (!appCache.get('tenant')) appCache.set('tenant', {});
       appCache.get('tenant.id') = tenantId;
       appCache.getAll().tenantId = tenantId;
       
@@ -266,7 +281,7 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         
         // Store user ID for RLS policies
         setCacheValue('user_id', userId, { ttl: 24 * 60 * 60 * 1000 });
-        appCache.getAll().user = appCache.getAll().user || {};
+        if (!appCache.get('user')) appCache.set('user', {});
         appCache.set('user.id', userId);
         appCache.set('user.sub', userId);
         appCache.set('user.email', userEmail);
@@ -283,7 +298,7 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         idToken = await getIdToken(currentUser);
         
         // Store the token for future API requests
-        appCache.getAll().auth = appCache.getAll().auth || {};
+        if (!appCache.get('auth')) appCache.set('auth', {});
         appCache.set('auth.idToken', idToken);
       } catch (tokenError) {
         logger.warn('[SignInForm] Error getting ID token:', tokenError);
@@ -659,8 +674,13 @@ export default function SignInForm() {
               
               // Also store in appCache.getAll() directly
               if (typeof window !== 'undefined') {
-                appCache.getAll() = appCache.getAll() || {};
-                appCache.getAll().user = appCache.getAll().user || {};
+                // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+                if (!appCache.get('user')) appCache.set('user', {});
                 appCache.set('user.attributes', userAttributes);
                 appCache.set('user.email', userAttributes.email || formData.username);
                 
@@ -678,7 +698,7 @@ export default function SignInForm() {
                     sessionStorage.setItem('hasSession', 'true');
                     
                     // Also store in APP_CACHE
-                    appCache.getAll().auth = appCache.getAll().auth || {};
+                    if (!appCache.get('auth')) appCache.set('auth', {});
                     appCache.set('auth.idToken', session.tokens.idToken.toString());
                     appCache.set('auth.token', session.tokens.idToken.toString());
                     appCache.set('auth.accessToken', session.tokens.accessToken.toString());
@@ -744,7 +764,7 @@ export default function SignInForm() {
                   
                   // Store tenant ID immediately for faster sign-in
                   if (typeof window !== 'undefined' && appCache.getAll()) {
-                    appCache.getAll().tenant = appCache.getAll().tenant || {};
+                    if (!appCache.get('tenant')) appCache.set('tenant', {});
                     appCache.get('tenant.id') = businessId;
                     appCache.getAll().tenantId = businessId;
                   }
@@ -819,7 +839,7 @@ export default function SignInForm() {
                   try {
                     // First ensure tenant namespace is initialized
                     if (typeof window !== 'undefined' && appCache.getAll()) {
-                      appCache.getAll().tenant = appCache.getAll().tenant || {};
+                      if (!appCache.get('tenant')) appCache.set('tenant', {});
                       appCache.get('tenant.id') = tenantId;
                       appCache.getAll().tenantId = tenantId;
                     }
@@ -882,7 +902,7 @@ export default function SignInForm() {
                         try {
                           // First ensure tenant namespace is initialized
                           if (typeof window !== 'undefined' && appCache.getAll()) {
-                            appCache.getAll().tenant = appCache.getAll().tenant || {};
+                            if (!appCache.get('tenant')) appCache.set('tenant', {});
                             appCache.get('tenant.id') = tenantId;
                             appCache.getAll().tenantId = tenantId;
                           }
