@@ -80,9 +80,17 @@ export async function GET(request) {
       ? auth0Domain 
       : `https://${auth0Domain}`;
       
-    const cleanDomainUrl = domainUrl.endsWith('/') 
-      ? domainUrl.slice(0, -1) 
-      : domainUrl;
+    // Normalize domain to ensure consistent format
+    const normalizeDomain = (domain) => {
+      // Add https if protocol is missing
+      let normalizedDomain = domain.startsWith('http') ? domain : `https://${domain}`;
+      // Remove trailing slash if present
+      normalizedDomain = normalizedDomain.endsWith('/') ? normalizedDomain.slice(0, -1) : normalizedDomain;
+      console.log('[Auth Login Route] Normalized domain:', normalizedDomain);
+      return normalizedDomain;
+    };
+    
+    const cleanDomainUrl = normalizeDomain(domainUrl);
     
     const loginUrl = `${cleanDomainUrl}/authorize?${loginParams}`;
     
@@ -96,6 +104,23 @@ export async function GET(request) {
     
     return response;
   } catch (error) {
+    // Enhanced error handling with telemetry
+    const errorDetails = {
+      message: error.message,
+      stack: error.stack,
+      auth0Domain,
+      baseUrl,
+      clientIdAvailable: !!clientId,
+      nodeEnv: process.env.NODE_ENV
+    };
+    console.error('[Auth Login Route] Error details:', JSON.stringify(errorDetails, null, 2));
+    
+    // Log specific error types to help with troubleshooting
+    if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      console.error('[Auth Login Route] Network error: Unable to connect to Auth0 domain. This could indicate DNS issues or networking problems.');
+    } else if (error.message.includes('certificate')) {
+      console.error('[Auth Login Route] SSL error: There may be issues with the SSL certificate for the Auth0 domain.');
+    }
     console.error('[Auth Login Route] Error:', error);
     return NextResponse.json({ 
       error: 'Login redirect failed', 
