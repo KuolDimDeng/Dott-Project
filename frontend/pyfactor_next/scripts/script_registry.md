@@ -22,6 +22,7 @@ This document tracks all scripts used for the pyfactor project, their execution 
 
 | Script Name | Purpose | Date | Status |
 |-------------|---------|------|--------|
+| Version0131_fix_auth0_user_syntax_direct.mjs | Fix syntax errors directly in create-auth0-user route | 6/7/2025 | Complete |
 | Version0130_fix_auth0_user_syntax_error.mjs | Fix syntax errors in create-auth0-user route | 6/7/2025 | Complete |
 | Version0129_fix_auth0_login_rewrite_error.mjs | Fix auth0 login route error with rewrite logic | 6/6/2025 | Complete |
 | Version0128_commit_and_deploy_auth0_login_fix.mjs | Commit and deploy auth0 login 500 error fix | 6/6/2025 | Complete |

@@ -177,17 +177,17 @@ export async function POST(request) {
                 maxAge: 60 * 60 * 24 * 30 // 30 days
               });
             }
-          };
+          }
         } catch (cookieError) {
           console.error('[AUTH DEBUG] ❌ Error updating session cookie:', cookieError);
           // Continue with response even if cookie update fails
         }
-        // Return response if it exists
-        if (response) {
-          return response;
-        }
-        // User does not exist in backend
-        console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
+        
+        if (response) { return response; }
+      } else {
+          console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
+      }
+    } catch (error) {
       console.warn('[Create Auth0 User] Error checking existing user:', error.message);
     }
     }
