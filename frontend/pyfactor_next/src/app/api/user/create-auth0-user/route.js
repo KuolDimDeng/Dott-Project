@@ -6,8 +6,7 @@ export async function POST(request) {
   console.log('[AUTH DEBUG] 📥 create-auth0-user POST request received');
   const startTime = Date.now();
   try {
-        console.log('[AUTH DEBUG] 🍪 Updating session cookies with tenant ID:', existingUser.tenant_id);
-        const cookieStore = await cookies();
+    const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
@@ -134,9 +133,6 @@ export async function POST(request) {
           const sessionCookie = cookieStore.get('appSession');
           
           if (sessionCookie) {
-            const sessionCookie = cookieStore.get('appSession');
-          
-          if (sessionCookie) {
             console.log('[AUTH DEBUG] 🍪 Found existing appSession cookie');
             const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
             console.log('[AUTH DEBUG] 📄 Session data parsed successfully. User sub:', sessionData.user?.sub || 'not found');
@@ -177,17 +173,21 @@ export async function POST(request) {
                 maxAge: 60 * 60 * 24 * 30 // 30 days
               });
             }
-          };
+          }
         } catch (cookieError) {
           console.error('[AUTH DEBUG] ❌ Error updating session cookie:', cookieError);
           // Continue with response even if cookie update fails
         }
+        
         // Return response if it exists
         if (response) {
           return response;
         }
+      } else {
         // User does not exist in backend
         console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
+      }
+    } catch (error) {
       console.warn('[Create Auth0 User] Error checking existing user:', error.message);
     }
     }
