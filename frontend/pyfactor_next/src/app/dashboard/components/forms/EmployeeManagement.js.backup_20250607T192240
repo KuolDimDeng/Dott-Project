@@ -1,22 +1,38 @@
-'use client';
 import appCache from '../utils/appCache';
+
+'use client';
 import React, { useState, useEffect, useCallback, memo, Fragment, useRef, useMemo } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { v4 as uuidv4 } from 'uuid';
+import { appCache } from '../utils/appCache';
 import { axiosInstance, backendHrApiInstance, resetCircuitBreakers } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { countries } from 'countries-list';
+import { appCache } from '../utils/appCache';
 import { format, parseISO } from 'date-fns';
 import EmployeePermissions from './EmployeePermissions';
+import { appCache } from '../utils/appCache';
 import { refreshUserSession, ensureAuthProvider } from '@/utils/refreshUserSession';
+import { appCache } from '../utils/appCache';
 import { Dialog, Transition } from '@headlessui/react';
+import { appCache } from '../utils/appCache';
 import { toast } from 'react-hot-toast';
+import { appCache } from '../utils/appCache';
 import { useTable, usePagination, useSortBy } from 'react-table';
+import { appCache } from '../utils/appCache';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
 // Import the API utilities
 import api from '@/utils/api';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { employeeApi } from '@/utils/apiClient';
+import { appCache } from '../utils/appCache';
 import { invalidateCache } from '@/utils/apiHelpers';
+import { appCache } from '../utils/appCache';
 import { verifyBackendConnection } from '@/lib/axiosConfig';
 import BackendConnectionCheck from '../BackendConnectionCheck';
 

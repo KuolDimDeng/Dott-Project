@@ -672,7 +672,7 @@ const DashAppBar = ({
     }
     
     // Check app cache
-    if (typeof window !== 'undefined' && appCache.getAll()) {
+    if (typeof window !== 'undefined' && appCache.getAll()
       return appCache.get('tenant.businessName');
     }
     

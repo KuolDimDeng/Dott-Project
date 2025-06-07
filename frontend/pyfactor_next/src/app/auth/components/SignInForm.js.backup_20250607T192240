@@ -251,10 +251,8 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
   appCache.set('tenant', {});
 }
       if (!appCache.get('tenant')) appCache.set('tenant', {});
-      appCache.set('tenant.id', tenantId);
-      // Initialize appCache properly
-      if (!appCache.get('tenant')) appCache.set('tenant', {});
-      appCache.set('tenant.tenantId', tenantId);
+      appCache.get('tenant.id') = tenantId;
+      appCache.getAll().tenantId = tenantId;
       
       // Store in localStorage as fallback
       localStorage.setItem('tenant_id', tenantId);
@@ -842,10 +840,8 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
                     // First ensure tenant namespace is initialized
                     if (typeof window !== 'undefined' && appCache.getAll()) {
                       if (!appCache.get('tenant')) appCache.set('tenant', {});
-                      appCache.set('tenant.id', tenantId);
-                      // Initialize appCache properly
-      if (!appCache.get('tenant')) appCache.set('tenant', {});
-      appCache.set('tenant.tenantId', tenantId);
+                      appCache.get('tenant.id') = tenantId;
+                      appCache.getAll().tenantId = tenantId;
                     }
                     
                     // Store using the utility function
@@ -907,10 +903,8 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
                           // First ensure tenant namespace is initialized
                           if (typeof window !== 'undefined' && appCache.getAll()) {
                             if (!appCache.get('tenant')) appCache.set('tenant', {});
-                            appCache.set('tenant.id', tenantId);
-                            // Initialize appCache properly
-      if (!appCache.get('tenant')) appCache.set('tenant', {});
-      appCache.set('tenant.tenantId', tenantId);
+                            appCache.get('tenant.id') = tenantId;
+                            appCache.getAll().tenantId = tenantId;
                           }
                           
                           // Store using the utility function
