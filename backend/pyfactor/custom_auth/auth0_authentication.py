@@ -912,70 +912,23 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
     def validate_token(self, token):
         """
         Validate JWT/JWE token against Auth0's public keys.
-        MODIFIED: Skip JWE validation entirely and treat all tokens as JWT.
-        """
-        logger.debug("🔍 Starting JWT token validation (JWE VALIDATION DISABLED)...")
-        
-        try:
-            # We're explicitly skipping JWE validation and treating all tokens as JWT
-            # This is a temporary fix until the JWE decryption issues are resolved
-            if self.is_jwe_token(token):
-                logger.info("⚠️ JWE token detected but JWE validation is DISABLED - treating as JWT")
-                logger.info("⚠️ This could fail if the token is actually encrypted")
-                # Skip directly to Auth0 API validation for JWE tokens
-                user_info = self.get_user_info_from_auth0_api(token)
-                if user_info:
-                    return user_info
-                else:
-                    # If API validation fails, try JWT validation anyway
-                    logger.info("🔄 API validation failed, attempting JWT validation as fallback")
-                    try:
-                        return self.validate_jwt(token)
-                    except Exception as jwt_error:
-                        logger.error(f"❌ JWT fallback validation failed: {str(jwt_error)}")
-                        raise exceptions.AuthenticationFailed('Authentication failed: both API and JWT validation failed')
-            else:
-                logger.debug("🔍 Detected standard JWT token")
-                return self.validate_jwt(token)
-                
-        except Exception as e:
-            logger.error(f"❌ Token validation error: {str(e)}")
-            logger.error(f"❌ Error type: {type(e).__name__}")
-            raise exceptions.AuthenticationFailed(f'Token validation error: {str(e)}')
-        """
-        Validate JWT/JWE token against Auth0's public keys.
+        Properly handle JWE tokens by using Auth0 API fallback.
         """
         logger.debug("🔍 Starting JWT/JWE token validation...")
         
         try:
-            # First, let's decode the header without verification to see what we're working with
-            unverified_header = jwt.get_unverified_header(token)
-            logger.debug(f"🔍 Token Header: {unverified_header}")
-            
-            # Check if this is a JWE token
+            # Check if this is a JWE token first
             if self.is_jwe_token(token):
                 logger.debug("🔍 Detected JWE (encrypted) token")
-                logger.info("🔄 Attempting local JWE decryption first...")
+                logger.info("🔄 JWE token detected - using Auth0 API validation...")
                 
-                # Try local JWE decryption first
-                decrypted_payload = self.decrypt_jwe_token(token)
-                if decrypted_payload:
-                    # Parse the decrypted JWT payload
-                    try:
-                        payload = json.loads(decrypted_payload)
-                        logger.info("✅ JWE local decryption successful!")
-                        logger.debug(f"✅ Decrypted payload: {json.dumps(payload, indent=2)}")
-                        return payload
-                    except json.JSONDecodeError as e:
-                        logger.error(f"❌ Failed to parse decrypted JWE payload as JSON: {str(e)}")
-                
-                # If local decryption failed, fall back to Auth0 API
-                logger.info("🔄 Local JWE decryption failed, falling back to Auth0 API validation...")
+                # For JWE tokens, use Auth0 API validation directly
                 user_info = self.get_user_info_from_auth0_api(token)
                 if user_info:
-                        return user_info
+                    logger.info("✅ JWE token validated successfully via Auth0 API")
+                    return user_info
                 else:
-                    raise exceptions.AuthenticationFailed('JWE token validation failed: both local decryption and Auth0 API validation failed')
+                    raise exceptions.AuthenticationFailed('JWE token validation failed: Auth0 API validation failed')
             else:
                 logger.debug("🔍 Detected standard JWT token")
                 return self.validate_jwt(token)

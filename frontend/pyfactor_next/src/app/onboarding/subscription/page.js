@@ -347,9 +347,10 @@ export default function SubscriptionPage() {
         setCache('subscription_data', subscriptionData, { ttl: 86400000 }); // 24 hours
         
         // For free plan, complete setup in background and go directly to dashboard
+        let setupTenantId = null;
         try {
           // Trigger background setup completion
-          await fetch('/api/onboarding/setup/complete', {
+          const setupResponse = await fetch('/api/onboarding/setup/complete', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -361,7 +362,18 @@ export default function SubscriptionPage() {
             })
           });
           
-          logger.debug('[SubscriptionPage] Background setup completed successfully');
+          if (setupResponse.ok) {
+            const setupResult = await setupResponse.json();
+            logger.debug('[SubscriptionPage] Background setup completed successfully:', setupResult);
+            
+            // Get tenant ID from setup completion response
+            if (setupResult.tenantId) {
+              setupTenantId = setupResult.tenantId;
+              logger.info('[SubscriptionPage] Got tenant ID from setup completion:', setupTenantId);
+            }
+          } else {
+            logger.warn('[SubscriptionPage] Setup completion API failed:', setupResponse.status);
+          }
         } catch (setupError) {
           logger.warn('[SubscriptionPage] Background setup failed, continuing anyway:', setupError);
           // Continue to dashboard redirect even if background setup fails
@@ -369,29 +381,33 @@ export default function SubscriptionPage() {
         
         // Always attempt dashboard redirect regardless of background setup
         try {
-          let foundTenantId = null;
+          let foundTenantId = setupTenantId; // Start with tenant ID from setup completion
           
-          // Method 1: Try to get tenant ID from profile
-          try {
-            const profileResponse = await fetch('/api/auth/profile');
-            if (profileResponse.ok) {
-              const profile = await profileResponse.json();
-              logger.info('[SubscriptionPage] Profile API response:', profile);
-              if (profile && (profile.tenantId || profile.tenant_id)) {
-                foundTenantId = profile.tenantId || profile.tenant_id;
-                logger.info('[SubscriptionPage] Got tenant ID from profile:', foundTenantId);
+          // Method 1: Try to get tenant ID from profile (only if not already found)
+          if (!foundTenantId) {
+            try {
+              const profileResponse = await fetch('/api/auth/profile');
+              if (profileResponse.ok) {
+                const profile = await profileResponse.json();
+                logger.info('[SubscriptionPage] Profile API response:', profile);
+                if (profile && (profile.tenantId || profile.tenant_id)) {
+                  foundTenantId = profile.tenantId || profile.tenant_id;
+                  logger.info('[SubscriptionPage] Got tenant ID from profile:', foundTenantId);
+                } else {
+                  logger.warn('[SubscriptionPage] Profile response missing tenantId:', {
+                    hasProfile: !!profile,
+                    profileKeys: profile ? Object.keys(profile) : [],
+                    profile: profile
+                  });
+                }
               } else {
-                logger.warn('[SubscriptionPage] Profile response missing tenantId:', {
-                  hasProfile: !!profile,
-                  profileKeys: profile ? Object.keys(profile) : [],
-                  profile: profile
-                });
+                logger.warn('[SubscriptionPage] Profile API failed:', profileResponse.status);
               }
-            } else {
-              logger.warn('[SubscriptionPage] Profile API failed:', profileResponse.status);
+            } catch (profileError) {
+              logger.warn('[SubscriptionPage] Profile fetch failed:', profileError);
             }
-          } catch (profileError) {
-            logger.warn('[SubscriptionPage] Profile fetch failed:', profileError);
+          } else {
+            logger.info('[SubscriptionPage] Already have tenant ID from setup completion, skipping profile API');
           }
           
           // Method 2: Try to get tenant ID from session if profile didn't work

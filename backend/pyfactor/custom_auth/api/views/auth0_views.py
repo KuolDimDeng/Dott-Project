@@ -293,6 +293,7 @@ class Auth0UserProfileView(APIView):
                     'id': str(tenant.id) if tenant else None,
                     'name': tenant.name if tenant else None,
                 } if tenant else None,
+                'tenantId': str(tenant.id) if tenant else None,  # Top-level tenant ID for easy access
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
                 'onboarding': {
@@ -618,14 +619,31 @@ class Auth0OnboardingCompleteView(APIView):
             logger.info(f"  - Completed at: {progress.completed_at}")
             logger.info(f"🎯 [ONBOARDING_COMPLETE] === COMPLETION REQUEST FINISHED ===")
             
-            return Response({
+            # Get the user's tenant for the response
+            tenant = None
+            try:
+                tenant = Tenant.objects.filter(owner_id=user.id).first()
+                if not tenant and progress.tenant_id:
+                    # Try to get tenant from progress if not found by owner
+                    tenant = Tenant.objects.filter(id=progress.tenant_id).first()
+                logger.info(f"🎯 [ONBOARDING_COMPLETE] Found tenant: {tenant.id if tenant else 'None'}")
+            except Exception as e:
+                logger.warning(f"🎯 [ONBOARDING_COMPLETE] Error getting tenant: {str(e)}")
+            
+            # Prepare response with tenant information
+            response_data = {
                 'success': True,
                 'message': 'Onboarding completed successfully',
                 'data': {
                     'onboarding_completed': True,
-                    'redirect_url': '/dashboard'
+                    'tenantId': str(tenant.id) if tenant else None,
+                    'redirect_url': f'/tenant/{tenant.id}/dashboard' if tenant else '/dashboard'
                 }
-            })
+            }
+            
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] Response data: {response_data}")
+            
+            return Response(response_data)
             
         except Exception as e:
             logger.error(f"🚨 [ONBOARDING_COMPLETE] Error completing onboarding: {str(e)}")

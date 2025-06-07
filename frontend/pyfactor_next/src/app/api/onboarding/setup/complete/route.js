@@ -59,6 +59,12 @@ export async function POST(request) {
         const result = await backendResponse.json();
         console.log('[SetupComplete] ✅ Django onboarding completion successful:', result);
         backendUpdateSuccessful = true;
+        
+        // Store tenant ID if returned by backend
+        if (result.data && result.data.tenantId) {
+          sessionData.tenantId = result.data.tenantId;
+          console.log('[SetupComplete] Got tenant ID from backend:', result.data.tenantId);
+        }
       } else {
         const errorText = await backendResponse.text();
         console.error('[SetupComplete] ❌ Django onboarding completion failed:', {
@@ -89,6 +95,12 @@ export async function POST(request) {
             const altResult = await altResponse.json();
             console.log('[SetupComplete] ✅ Alternative endpoint successful:', altResult);
             backendUpdateSuccessful = true;
+            
+            // Store tenant ID if returned by backend
+            if (altResult.data && altResult.data.tenantId) {
+              sessionData.tenantId = altResult.data.tenantId;
+              console.log('[SetupComplete] Got tenant ID from alternative endpoint:', altResult.data.tenantId);
+            }
           }
         } catch (altError) {
           console.error('[SetupComplete] Alternative endpoint also failed:', altError);
@@ -111,7 +123,8 @@ export async function POST(request) {
           currentStep: 'completed',
           current_onboarding_step: 'completed',
           setupCompletedAt: completedAt,
-          lastUpdated: completedAt
+          lastUpdated: completedAt,
+          tenantId: sessionData.tenantId // Include tenant ID from backend response
         }
       };
       
@@ -124,7 +137,8 @@ export async function POST(request) {
         needs_onboarding: false,
         current_step: 'completed',
         setup_completed_at: completedAt,
-        backend_updated: backendUpdateSuccessful
+        backend_updated: backendUpdateSuccessful,
+        tenantId: sessionData.tenantId // Include tenant ID in response
       });
       
       // Update session cookie with new onboarding status
