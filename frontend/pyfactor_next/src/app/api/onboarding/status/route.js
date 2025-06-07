@@ -1,11 +1,17 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/status/route.js
+/**
+ * Onboarding Status API Routes
+ * 
+ * This file handles API routes for managing onboarding status with a hierarchical storage approach:
+ * 1. Primary: Backend Database (Django OnboardingProgress model)
+ * 2. Secondary: Auth0 User Attributes
+ * 3. Tertiary: Browser localStorage (client-side only)
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { getSession } from '@auth0/nextjs-auth0/edge';
 
-/**
- * GET /api/onboarding/status
- * Retrieves the current onboarding status from Cognito user attributes
- */
+// Constants
 const VALID_ONBOARDING_STATES = [
   'not_started',
   'business_info',
@@ -31,10 +37,15 @@ const isValidStateTransition = (currentState, newState) => {
 
 /**
  * GET /api/onboarding/status
- * Retrieves the current onboarding status from Cognito user attributes
+ * Retrieves the current onboarding status with hierarchical fallbacks:
+ * 1. First tries the backend API
+ * 2. If that fails, checks Auth0 user attributes
+ * 3. Client-side code handles localStorage fallback
  */
 export async function GET(request) {
+  console.log('🔍 [OnboardingStatus] Checking onboarding status with hierarchical storage');
   try {
+    // Get tenant ID from query params
     const { searchParams } = new URL(request.url);
     const tenantId = searchParams.get('tenantId');
     
@@ -42,74 +53,44 @@ export async function GET(request) {
       return NextResponse.json({ error: 'tenantId is required' }, { status: 400 });
     }
     
-    // Check for cached onboarding status in URL if available (enhances persistence)
-    const cachedStatus = searchParams.get('cachedStatus');
-    if (cachedStatus === 'complete') {
-      console.log('[Onboarding Status] Using cached complete status for tenant:', tenantId);
-      return NextResponse.json({
-        status: 'complete',
-        currentStep: 'complete',
-        completedSteps: ['business_info', 'subscription', 'payment', 'setup'],
-        businessInfoCompleted: true,
-        subscriptionCompleted: true,
-        paymentCompleted: true,
-        setupCompleted: true,
-        tenantId: tenantId
-      });
+    // Get user session from Auth0
+    const { session } = await getSession(request, new Response());
+    
+    if (!session?.user) {
+      logger.warn('[OnboardingStatus] No authenticated user session found');
+      return NextResponse.json(
+        { 
+          status: 'not_started',
+          currentStep: 'business_info',
+          completedSteps: [],
+          businessInfoCompleted: false,
+          subscriptionCompleted: false,
+          paymentCompleted: false,
+          setupCompleted: false,
+          tenantId,
+          _source: 'unauthenticated_default'
+        }, 
+        { status: 200 }
+      );
     }
     
-    // Check for cached onboarding status in URL if available (enhances persistence)
-    const urlCachedStatus = searchParams.get('cachedStatus');
-    if (urlCachedStatus === 'complete') {
-      console.log('[Onboarding Status] Using cached complete status for tenant:', tenantId);
-      return NextResponse.json({
-        status: 'complete',
-        currentStep: 'complete',
-        completedSteps: ['business_info', 'subscription', 'payment', 'setup'],
-        businessInfoCompleted: true,
-        subscriptionCompleted: true,
-        paymentCompleted: true,
-        setupCompleted: true,
-        tenantId: tenantId
-      });
-    }
-    
-    // Get session cookie to get user info
-    const sessionCookie = request.cookies.get('appSession');
-    
-    if (!sessionCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
-    }
-    
-    let sessionData;
-    try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    } catch (error) {
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
-    }
-    
-    if (!sessionData.user) {
-      return NextResponse.json({ error: 'No user in session' }, { status: 401 });
-    }
-    
-    console.log('[Onboarding Status] Checking onboarding for tenant:', tenantId);
-    
-    // Call backend API to get onboarding status
+    // Primary source: Backend API
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
       const response = await fetch(`${backendUrl}/api/onboarding/status/?tenant_id=${tenantId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.accessToken}`,
-          'X-User-Email': sessionData.user.email,
-          'X-User-Sub': sessionData.user.sub,
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-User-Email': session.user.email,
+          'X-User-Sub': session.user.sub,
         },
+        cache: 'no-store'
       });
       
       if (response.ok) {
         const onboardingData = await response.json();
-        console.log('[Onboarding Status] Backend onboarding data:', onboardingData);
+        logger.debug('[OnboardingStatus] Backend API success', onboardingData);
         
         // Transform backend data to frontend format
         const status = {
@@ -120,154 +101,123 @@ export async function GET(request) {
           subscriptionCompleted: onboardingData.subscription_completed || false,
           paymentCompleted: onboardingData.payment_completed || false,
           setupCompleted: onboardingData.setup_completed || false,
-          tenantId: tenantId
+          tenantId,
+          _source: 'backend_api'
         };
         
         return NextResponse.json(status);
       } else if (response.status === 404) {
-        // Onboarding not found - return default new user status
-        console.log('[Onboarding Status] Onboarding not found, returning default status');
-        
-        const defaultStatus = {
-          status: 'not_started',
-          currentStep: 'business_info',
-          completedSteps: [],
-          businessInfoCompleted: false,
-          subscriptionCompleted: false,
-          paymentCompleted: false,
-          setupCompleted: false,
-          tenantId: tenantId
-        };
-        
-        return NextResponse.json(defaultStatus);
+        // 404 means the onboarding record doesn't exist yet, which is not an error
+        logger.info('[OnboardingStatus] Backend API returned 404, onboarding not started yet');
       } else {
-        console.error('[Onboarding Status] Backend API error:', response.status, response.statusText);
-        throw new Error(`Backend API returned ${response.status}`);
+        // Any other error status
+        logger.error('[OnboardingStatus] Backend API error:', response.status, response.statusText);
+        // Continue to fallbacks
       }
-    } catch (fetchError) {
-      console.error('[Onboarding Status] Failed to fetch from backend:', fetchError);
-      
-      // Check if user has completed onboarding previously
-      try {
-        // Try to load from local storage as a fallback
-        const localStorageCheck = typeof localStorage !== 'undefined' && 
-          localStorage.getItem(`onboarding_${tenantId}`);
-          
-        if (localStorageCheck === 'complete') {
-          console.log('[Onboarding Status] Using locally cached complete status');
-          return NextResponse.json({
-            status: 'complete',
-            currentStep: 'complete',
-            completedSteps: ['business_info', 'subscription', 'payment', 'setup'],
-            businessInfoCompleted: true,
-            subscriptionCompleted: true,
-            paymentCompleted: true,
-            setupCompleted: true,
-            tenantId: tenantId
-          });
-        }
-      } catch (e) {
-        console.log('[Onboarding Status] Error checking local storage:', e);
-      }
-      
-      // Check if user has completed onboarding previously
-      try {
-        // Try to load from local storage as a fallback
-        const localStorageCheck = typeof localStorage !== 'undefined' && 
-          localStorage.getItem(`onboarding_${tenantId}`);
-          
-        if (localStorageCheck === 'complete') {
-          console.log('[Onboarding Status] Using locally cached complete status');
-          return NextResponse.json({
-            status: 'complete',
-            currentStep: 'complete',
-            completedSteps: ['business_info', 'subscription', 'payment', 'setup'],
-            businessInfoCompleted: true,
-            subscriptionCompleted: true,
-            paymentCompleted: true,
-            setupCompleted: true,
-            tenantId: tenantId
-          });
-        }
-      } catch (e) {
-        console.log('[Onboarding Status] Error checking local storage:', e);
-      }
-      
-      // Fallback: return default status for new users
-      const fallbackStatus = {
-        status: 'not_started',
-        currentStep: 'business_info',
-        completedSteps: [],
-        businessInfoCompleted: false,
-        subscriptionCompleted: false,
-        paymentCompleted: false,
-        setupCompleted: false,
-        tenantId: tenantId
-      };
-      
-      return NextResponse.json(fallbackStatus);
+    } catch (apiError) {
+      logger.error('[OnboardingStatus] Backend API fetch error:', apiError);
+      // Continue to fallbacks
     }
     
+    // Secondary source: Auth0 user attributes
+    try {
+      const userOnboardingStatus = session.user.custom_onboarding;
+      
+      if (userOnboardingStatus) {
+        logger.debug('[OnboardingStatus] Using Auth0 user attributes', { userOnboardingStatus });
+        
+        const completedSteps = VALID_ONBOARDING_STATES.slice(
+          0, 
+          VALID_ONBOARDING_STATES.indexOf(userOnboardingStatus) + 1
+        ).filter(step => step !== 'not_started');
+        
+        const status = {
+          status: userOnboardingStatus,
+          currentStep: userOnboardingStatus,
+          completedSteps,
+          businessInfoCompleted: completedSteps.includes('business_info'),
+          subscriptionCompleted: completedSteps.includes('subscription'),
+          paymentCompleted: completedSteps.includes('payment'),
+          setupCompleted: completedSteps.includes('setup'),
+          tenantId,
+          _source: 'auth0_attributes'
+        };
+        
+        return NextResponse.json(status);
+      }
+    } catch (auth0Error) {
+      logger.error('[OnboardingStatus] Auth0 attributes error:', auth0Error);
+      // Continue to default fallback
+    }
+    
+    // If we reach here, both backend and Auth0 fallbacks failed
+    // Client-side code will handle localStorage as tertiary fallback
+    
+    // Default fallback (will be overridden by localStorage on client if available)
+    logger.warn('[OnboardingStatus] All backend sources failed, returning default status');
+    return NextResponse.json({
+      status: 'not_started',
+      currentStep: 'business_info',
+      completedSteps: [],
+      businessInfoCompleted: false,
+      subscriptionCompleted: false,
+      paymentCompleted: false,
+      setupCompleted: false,
+      tenantId,
+      _source: 'api_default'
+    });
+    
   } catch (error) {
-    console.error('[Onboarding Status] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error('[OnboardingStatus] Unhandled error:', error);
+    return NextResponse.json({ 
+      error: 'Internal server error',
+      message: error.message
+    }, { status: 500 });
   }
 }
 
 /**
  * POST /api/onboarding/status
- * Updates the onboarding status in Cognito user attributes
- */
-/**
- * POST /api/onboarding/status
- * Updates the onboarding status in Cognito user attributes with atomic operations
+ * Updates the onboarding status in the hierarchical storage system:
+ * 1. First updates the backend database
+ * 2. Then updates Auth0 user attributes
+ * 3. Client-side code handles localStorage updates
  */
 export async function POST(request) {
   try {
-    // Get auth tokens from request headers
-    const accessToken = request.headers.get('Authorization')?.replace('Bearer ', '');
-    const idToken = request.headers.get('X-Id-Token');
+    // Get user session from Auth0
+    const { session } = await getSession(request, new Response());
     
-    if (!accessToken || !idToken) {
-      logger.error('[OnboardingStatus] No auth tokens in request headers');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
-
-    const { status, lastStep } = await request.json();
+    
+    // Parse request body
+    const body = await request.json();
+    const { status, lastStep, ...additionalData } = body;
+    
+    // Validate status
     if (!status || !VALID_ONBOARDING_STATES.includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status provided' },
         { status: 400 }
       );
     }
-
-    // Get current status first
-    const currentUserResponse = await fetch(
-      'https://cognito-idp.us-east-1.amazonaws.com/',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-amz-json-1.1',
-          'X-Amz-Target': 'AWSCognitoIdentityProviderService.GetUser',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-Session-ID': idToken
-        },
-      }
-    );
-
-    if (!currentUserResponse.ok) {
-      throw new Error('Failed to fetch current user attributes');
+    
+    const tenantId = request.headers.get('X-Tenant-ID') || additionalData.tenantId;
+    if (!tenantId) {
+      return NextResponse.json(
+        { error: 'Tenant ID is required' },
+        { status: 400 }
+      );
     }
-
-    const currentUserData = await currentUserResponse.json();
-    const currentStatus =
-      currentUserData.UserAttributes.find(
-        (attr) => attr.Name === 'custom:onboarding'
-      )?.Value || 'not_started';
-
+    
+    // Get current status from Auth0 user attributes
+    const currentStatus = session.user.custom_onboarding || 'not_started';
+    
     // Validate state transition
     if (!isValidStateTransition(currentStatus, status)) {
-      logger.warn('Invalid state transition attempted:', {
+      logger.warn('[OnboardingStatus] Invalid state transition attempted:', {
         from: currentStatus,
         to: status,
       });
@@ -276,106 +226,108 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-
-    // Prepare attributes update
-    const userAttributes = [
-      {
-        Name: 'custom:onboarding',
-        Value: status,
-      },
-    ];
-
-    if (lastStep && VALID_ONBOARDING_STATES.includes(lastStep)) {
-      userAttributes.push({
-        Name: 'custom:lastStep',
-        Value: lastStep,
-      });
-    }
-
-    if (status === 'complete') {
-      userAttributes.push({
-        Name: 'custom:onboardingCompletedAt',
-        Value: new Date().toISOString(),
-      });
-      
-      // Enhanced persistence for onboarding completion
-      userAttributes.push({
-        Name: 'custom:onboardingComplete',
-        Value: 'true',
-      });
-      
-      // Also store tenant ID to help with future lookups
-      if (request.headers.get('X-Tenant-ID')) {
-        userAttributes.push({
-          Name: 'custom:tenantId',
-          Value: request.headers.get('X-Tenant-ID'),
-        });
-      }
-      
-      // Try to persist in local storage on client side
-      try {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(`onboarding_${request.headers.get('X-Tenant-ID')}`, 'complete');
-        }
-      } catch (e) {
-        console.log('[Onboarding Status] Error setting local storage:', e);
-      }
-    }
-
-    // Update attributes with retry logic
-    let retryCount = 0;
-    while (retryCount < 3) {
-      try {
-        const updateResponse = await fetch(
-          'https://cognito-idp.us-east-1.amazonaws.com/',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-amz-json-1.1',
-              'X-Amz-Target':
-                'AWSCognitoIdentityProviderService.UpdateUserAttributes',
-              'Authorization': `Bearer ${accessToken}`,
-              'X-Session-ID': idToken
-            },
-            body: JSON.stringify({
-              UserAttributes: userAttributes,
-              SessionId: idToken
-            }),
-          }
-        );
-
-        if (!updateResponse.ok) {
-          throw new Error('Failed to update user attributes');
-        }
-
-        logger.debug('Onboarding status updated:', {
-          previousStatus: currentStatus,
-          newStatus: status,
-          lastStep: lastStep || status,
-        });
-
-        return NextResponse.json({
+    
+    let backendResult = null;
+    
+    // Primary storage: Backend API
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+      const response = await fetch(`${backendUrl}/api/onboarding/status/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.accessToken}`,
+          'X-User-Email': session.user.email,
+          'X-User-Sub': session.user.sub,
+          'X-Tenant-ID': tenantId
+        },
+        body: JSON.stringify({
           status,
-          lastStep: lastStep || status,
-          completedAt: status === 'complete' ? new Date().toISOString() : null,
-          previousStatus: currentStatus,
-        });
-      } catch (error) {
-        retryCount++;
-        if (retryCount === 3) throw error;
-        await new Promise((resolve) =>
-          setTimeout(resolve, 1000 * Math.pow(2, retryCount))
-        );
+          last_step: lastStep || status,
+          tenant_id: tenantId,
+          ...additionalData
+        })
+      });
+      
+      if (response.ok) {
+        backendResult = await response.json();
+        logger.debug('[OnboardingStatus] Backend API update success', backendResult);
+      } else {
+        logger.error('[OnboardingStatus] Backend API update error:', response.status, response.statusText);
       }
+    } catch (apiError) {
+      logger.error('[OnboardingStatus] Backend API update failed:', apiError);
     }
+    
+    // Secondary storage: Update Auth0 user attributes
+    // Use the Auth0 Management API to update the user's attributes
+    try {
+      const managementApiToken = process.env.AUTH0_MANAGEMENT_API_TOKEN;
+      const auth0Domain = process.env.AUTH0_ISSUER_BASE_URL || 'https://auth.dottapps.com';
+      
+      if (!managementApiToken) {
+        logger.warn('[OnboardingStatus] No Auth0 Management API token available, skipping Auth0 attribute update');
+      } else {
+        // Build user metadata updates
+        const userMetadata = {
+          custom_onboarding: status
+        };
+        
+        if (lastStep) {
+          userMetadata.custom_lastStep = lastStep;
+        }
+        
+        if (status === 'complete') {
+          userMetadata.custom_onboardingComplete = 'true';
+          userMetadata.custom_onboardingCompletedAt = new Date().toISOString();
+          userMetadata.custom_tenantId = tenantId;
+        }
+        
+        // Update Auth0 user metadata
+        const auth0Response = await fetch(`${auth0Domain}/api/v2/users/${session.user.sub}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${managementApiToken}`
+          },
+          body: JSON.stringify({
+            user_metadata: userMetadata
+          })
+        });
+        
+        if (auth0Response.ok) {
+          logger.debug('[OnboardingStatus] Auth0 attributes updated successfully');
+        } else {
+          logger.error('[OnboardingStatus] Auth0 attributes update failed:', 
+            auth0Response.status, 
+            auth0Response.statusText
+          );
+        }
+      }
+    } catch (auth0Error) {
+      logger.error('[OnboardingStatus] Auth0 attributes update error:', auth0Error);
+    }
+    
+    // Return result (with preference for backend result if available)
+    const resultToReturn = backendResult || {
+      status,
+      lastStep: lastStep || status,
+      completedAt: status === 'complete' ? new Date().toISOString() : null,
+      previousStatus: currentStatus,
+      tenantId,
+      _persisted: backendResult ? 'backend_and_auth0' : 'auth0_only'
+    };
+    
+    return NextResponse.json(resultToReturn);
+    
   } catch (error) {
-    logger.error('Error updating onboarding status:', error);
+    logger.error('[OnboardingStatus] Unhandled error:', error);
     return NextResponse.json(
       {
         error: 'Failed to update onboarding status',
         details: error.message,
       },
-      { status: error.message.includes('Unauthorized') ? 401 : 500 }
+      { status: 500 }
     );
   }
 }

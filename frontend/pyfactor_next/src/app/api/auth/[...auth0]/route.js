@@ -45,10 +45,33 @@ export async function GET(request, { params }) {
         try {
           const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
           if (sessionData.user) {
-            // Look for onboarding completion status in user data
-            const userAttributes = sessionData.user['https://dottapps.com/user_metadata'] || {};
-            onboardingComplete = userAttributes.onboardingComplete === 'true';
-            tenantId = userAttributes.tenantId || '';
+            // Check all possible locations for onboarding status
+            const userMetadata = sessionData.user['https://dottapps.com/user_metadata'] || {};
+            const appMetadata = sessionData.user['https://dottapps.com/app_metadata'] || {};
+            
+            // Check for onboarding completion in various metadata locations
+            onboardingComplete = 
+              userMetadata.onboardingComplete === 'true' || 
+              userMetadata.custom_onboardingComplete === 'true' ||
+              userMetadata.custom_onboarding === 'complete' ||
+              appMetadata.onboardingComplete === 'true';
+            
+            // Extract tenant ID from various possible locations
+            tenantId = userMetadata.tenantId || 
+                      userMetadata.custom_tenantId || 
+                      sessionData.user.custom_tenantId ||
+                      sessionData.user.tenantId || 
+                      '';
+                      
+            console.log('[Auth Route] Extracted from session - onboardingComplete:', onboardingComplete, 'tenantId:', tenantId);
+            
+            // If we have a tenant ID but onboarding status is unclear, 
+            // try to check localStorage as a last resort
+            if (tenantId && !onboardingComplete) {
+              // Can't directly access localStorage from server, but we'll set a flag
+              // to check it on the client side during the signin redirect
+              console.log('[Auth Route] Will check localStorage on client side');
+            }
           }
         } catch (error) {
           console.error('[Auth Route] Error extracting session data:', error);
@@ -59,6 +82,10 @@ export async function GET(request, { params }) {
       let returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?logout=true`;
       if (onboardingComplete && tenantId) {
         returnToUrl += `&preserveOnboarding=true&tenantId=${tenantId}`;
+      } else if (tenantId) {
+        // If we have tenantId but couldn't confirm onboarding status, 
+        // add a flag to check localStorage on client side
+        returnToUrl += `&checkLocalStorage=true&tenantId=${tenantId}`;
       }
       
       const logoutUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/v2/logout?` +

@@ -2,6 +2,7 @@
 
 This document tracks all scripts used for the pyfactor project, their execution status, and their purpose.
 
+
 ## Usage Guidelines
 
 1. **All scripts should be registered here** after creation
@@ -18,6 +19,68 @@ This document tracks all scripts used for the pyfactor project, their execution 
 - 🔒 REQUIRES AUTHORIZATION
 
 ## Script Inventory
+### Version0119_commit_and_deploy_signout_fix.mjs
+- **Version**: 0119 v1.0
+- **Purpose**: Commit and deploy signout onboarding redirect fix
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-07
+- **Execution Date**: 2025-06-07
+- **Target Files**:
+  - All files modified by Version0118
+- **Description**: Commits the changes made by Version0118_fix_signout_onboarding_redirect.mjs and
+  deploys them to the production environment via the Dott_Main_Dev_Deploy branch.
+- **Key Changes**:
+  - Runs the Version0118 script if not already executed
+  - Creates a summary document for the fix
+  - Commits all changes to git
+  - Pushes to the deployment branch
+- **Related Scripts**: 
+  - Version0118_fix_signout_onboarding_redirect.mjs
+  - Version0117_commit_and_deploy_onboarding_status_service.mjs
+
+### Version0118_fix_signout_onboarding_redirect.mjs
+- **Version**: 0118 v1.0
+- **Purpose**: Fix signout redirect to onboarding issue
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-07
+- **Execution Date**: 2025-06-07
+- **Target Files**:
+  - src/app/api/auth/[...auth0]/route.js
+  - src/utils/onboardingRedirectHelper.js
+  - src/app/auth/signin/page.js
+- **Description**: Fixes the issue where signing out still redirects to onboarding by properly
+  checking the onboarding status from all storage locations and correcting the session metadata extraction.
+- **Key Changes**:
+  - Enhanced extraction of onboarding status from session metadata
+  - Added support for checking multiple metadata formats
+  - Created helper utility to manage onboarding redirects
+  - Updated signin page to use the helper for redirect decisions
+- **Related Scripts**: 
+  - Version0116_implement_robust_onboarding_status_service.mjs
+  - Version0117_commit_and_deploy_onboarding_status_service.mjs
+
+
+### Version0114_fix_post_auth0_onboarding_redirect.mjs
+- **Version**: 0114 v1.0
+- **Purpose**: Fix post-auth0 onboarding redirect issue
+- **Status**: 🔄 PENDING EXECUTION
+- **Creation Date**: 2025-06-06
+- **Execution Date**: -
+- **Target Files**:
+  - src/app/api/auth/callback/route.js - Enhanced onboarding persistence in callbacks
+  - src/app/auth/callback/page.js - Improved onboarding status verification
+  - src/utils/tenantUtils.js - Added robust onboarding status functions
+- **Description**: Fixes the issue where users are redirected to onboarding after signing out and back in, even after completing the process
+- **Key Features**:
+  - Multiple layers of onboarding status persistence (API, localStorage)
+  - Enhanced auth callback flow for better state maintenance
+  - Improved tenant utilities for more reliable status checking
+  - Added comprehensive documentation in ONBOARDING_STATUS_PERSISTENCE_FIX.md
+- **Requirements Addressed**:
+  - Users should be redirected to dashboard, not onboarding, after signing out and back in when onboarding is complete
+  - The Dashboard button should be shown in the AppBar after authentication
+  - Improved reliability of onboarding status across auth cycles
+- **Deployment Method**: Pending commit and push to Dott_Main_Dev_Deploy branch
 
 ### Version0113_enforce_jwt_disable_jwe.mjs
 - **Version**: 0113 v1.0
@@ -39,7 +102,7 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Fix 500 Internal Server Error at https://dottapps.com/api/auth/login
   - Prevent users being redirected to onboarding after signing out and back in
   - Fix authentication with backend API
-- **Deployment Method**: Created but needs to be pushed to Dott_Main_Dev_Deploy branch
+- **Deployment Method**: Committed and pushed to Dott_Main_Dev_Deploy branch to trigger Vercel and Render deployments
 
 ### Version0112_fix_duplicate_cachedStatus_declaration.mjs
 - **Version**: 0112 v1.0
