@@ -1177,7 +1177,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
       const useMockMode = typeof window !== 'undefined' && 
         appCache.getAll() && 
         appCache.getAll().debug && 
-        appCache.set('debug.useMockMode', == true);
+        appCache.set('debug.useMockMode', true);
       
       if (useMockMode) {
         logger.info('[EmployeeManagement] Using mock data mode from localStorage setting');
@@ -1287,7 +1287,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
     const currentMockMode = typeof window !== 'undefined' && 
       appCache.getAll() && 
       appCache.getAll().debug && 
-      appCache.set('debug.useMockMode', == true);
+      appCache.set('debug.useMockMode', true);
     
     const newMockMode = !currentMockMode;
     
@@ -2495,7 +2495,7 @@ const PersonalInformationTab = () => {
         }
         
         // 2. If API fails, try to get data from AWS App Cache
-        if (!userData && appCache.getAll()
+        if (!userData && appCache.getAll()) {
           console.log('Using App Cache for user profile data');
           const cachedProfile = appCache.get('userProfile.data').profile;
           userData = {

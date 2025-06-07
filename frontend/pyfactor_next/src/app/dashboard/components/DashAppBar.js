@@ -303,8 +303,8 @@ const DashAppBar = ({
       
       // Store in app cache for persistence
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+        if (!appCache.getAll()) { appCache.set('tenant', {}); appCache.set('user', {}); }
+        if (!appCache.get('tenant')) { appCache.set('tenant', {}); }
         appCache.set('tenant.businessName', newBusinessName);
       }
     }
@@ -707,7 +707,7 @@ const DashAppBar = ({
     
     if (typeof window !== 'undefined') {
       // Initialize app cache if needed
-      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll()) { appCache.set('tenant', {}); appCache.set('user', {}); }
       if (!appCache.getAll().auth) appCache.getAll().auth = {};
       if (!appCache.getAll().user) appCache.getAll().user = {};
       

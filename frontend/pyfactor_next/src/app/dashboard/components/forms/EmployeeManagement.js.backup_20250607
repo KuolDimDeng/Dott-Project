@@ -613,7 +613,7 @@ const EmployeeManagement = () => {
               
               // Store tokens in app cache for other components to access
               if (typeof window !== 'undefined' && appCache.getAll()) {
-                appCache.getAll().auth = appCache.getAll().auth || {};
+                if (!appCache.get('auth')) appCache.set('auth', {});
                 appCache.set('auth.token', session.tokens.idToken?.toString());
                 appCache.set('auth.provider', 'cognito');
               }
@@ -963,8 +963,13 @@ const EmployeeManagement = () => {
           
           // Store token in APP_CACHE for future use
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().auth = appCache.getAll().auth || {};
+            // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
+            if (!appCache.get('auth')) appCache.set('auth', {});
             appCache.set('auth.token', authToken);
           }
         } else {
@@ -1288,7 +1293,12 @@ const EmployeeManagement = () => {
     
     // Update AppCache
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
+      // Initialize app cache properly
+if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
+  appCache.set('auth', {});
+  appCache.set('user', {});
+  appCache.set('tenant', {});
+}
       appCache.getAll().debug = appCache.getAll().debug || {};
       appCache.set('debug.useMockMode', newMockMode);
     }

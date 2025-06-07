@@ -472,8 +472,7 @@ export class OnboardingStateManager extends FormStateManager {
           
           // For cases where tenant ID might be set elsewhere 
           const tenantId = this.state.onboarding.tenant_id || 
-            (typeof window !== 'undefined' && appCache.getAll()
-            (typeof window !== 'undefined' && appCache.getAll()
+            (typeof window !== 'undefined' && appCache.getAll() && appCache.get('tenant.id'))
           if (tenantId) {
             cognitoAttributes['custom:tenant_ID'] = tenantId;
             cognitoAttributes['custom:businessid'] = tenantId;

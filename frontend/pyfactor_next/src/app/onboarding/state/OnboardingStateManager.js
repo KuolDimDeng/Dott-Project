@@ -1,10 +1,9 @@
+import { appCache } from '../utils/appCache'
+import { logger } from '@/utils/logger'
+import { generateRequestId } from '@/lib/authUtils'
+import { FormStateManager, FORM_EVENTS } from './FormStateManager'
+
 // src/app/onboarding/state/OnboardingStateManager.js
-import { appCache } from '../utils/appCache';
-import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
-import { generateRequestId } from '@/lib/authUtils';
-import { appCache } from '../utils/appCache';
-import { FormStateManager, FORM_EVENTS } from './FormStateManager';
 
 // Constants for onboarding events and states
 export const ONBOARDING_EVENTS = {

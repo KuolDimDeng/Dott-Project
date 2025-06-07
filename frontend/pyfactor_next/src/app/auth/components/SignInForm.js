@@ -119,8 +119,8 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
   appCache.set('tenant', {});
 }
         if (!appCache.get('tenant')) appCache.set('tenant', {});
-        appCache.get('tenant.id') = tenantInfo.tenantId;
-        appCache.getAll().tenantId = tenantInfo.tenantId;
+        appCache.set('tenant.id', tenantInfo.tenantId);
+        if (appCache.getAll()) { appCache.set('tenantId', tenantInfo.tenantId); }
         
         // Store metadata in AppCache if provided
         if (tenantInfo.metadata) {
