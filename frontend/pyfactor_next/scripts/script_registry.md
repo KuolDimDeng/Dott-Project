@@ -53,3 +53,8 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0112_fix_duplicate_cachedStatus_declaration.mjs | Fix duplicate cachedStatus declaration | 2025-06-02 | ✅ Completed |
 | Version0111_fix_post_signout_onboarding_redirect_fixed.mjs | Fix post-signout onboarding redirect (fixed version) | 2025-06-02 | ✅ Completed |
 | Version0111_fix_post_signout_onboarding_redirect.mjs | Fix post-signout onboarding redirect | 2025-06-02 | ❌ Failed |
+| Version0145_commit_and_deploy_auth0_verify_fallback.mjs | Commit and deploy Auth0 cross-origin verification fallback page | 2025-06-07 | Completed |
+| Version0148_fix_auth0_login_500_error.mjs | Fix Auth0 login 500 error by resolving domain handling issues | 2025-06-07 | Completed |
+
+| Version0149_fix_auth0_login_route_domain_issue.mjs | Fix Auth0 login route 500 error with domain consistency | 2025-06-07 | Completed | Fixed variable scope and domain consistency issues in login route |
+| Version0150_commit_and_deploy_auth0_login_route_fix.mjs | Deploy Auth0 login route fix to production | 2025-06-07 | Completed | Committed and pushed changes to Dott_Main_Dev_Deploy branch |
