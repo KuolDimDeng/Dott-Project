@@ -21,7 +21,9 @@ This document tracks all scripts used for the pyfactor project, their execution 
 ## Script Registry
 
 | Script Name | Purpose | Date | Status |
-| Version0133_commit_and_deploy_auth0_login_domain_fix.mjs | Commit and deploy Auth0 login domain configuration fix | Pending | 2025-06-07 |
+| Version0135_commit_and_deploy_auth0_debug_logging.mjs | Commit and deploy enhanced Auth0 debug logging | Pending | 2025-06-07 |
+| Version0134_enhance_auth0_debug_logging.mjs | Add enhanced debug logging to track Auth0 authentication issues | Completed | 2025-06-07 |
+| Version0133_commit_and_deploy_auth0_login_domain_fix.mjs | Commit and deploy Auth0 login domain configuration fix | Completed | 2025-06-07 |
 | Version0132_fix_auth0_login_domain_configuration.mjs | Fix Auth0 login route 500 error with domain configuration | Completed | 2025-06-07 |
 |-------------|---------|------|--------|
 | Version0131_fix_auth0_user_syntax_direct.mjs | Fix syntax errors directly in create-auth0-user route | 6/7/2025 | Complete |
