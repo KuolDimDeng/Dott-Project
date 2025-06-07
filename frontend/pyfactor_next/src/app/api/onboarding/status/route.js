@@ -59,8 +59,8 @@ export async function GET(request) {
     }
     
     // Check for cached onboarding status in URL if available (enhances persistence)
-    const cachedStatus = searchParams.get('cachedStatus');
-    if (cachedStatus === 'complete') {
+    const urlCachedStatus = searchParams.get('cachedStatus');
+    if (urlCachedStatus === 'complete') {
       console.log('[Onboarding Status] Using cached complete status for tenant:', tenantId);
       return NextResponse.json({
         status: 'complete',

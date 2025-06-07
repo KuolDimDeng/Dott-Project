@@ -19,6 +19,24 @@ This document tracks all scripts used for the pyfactor project, their execution 
 
 ## Script Inventory
 
+### Version0112_fix_duplicate_cachedStatus_declaration.mjs
+- **Version**: 0112 v1.0
+- **Purpose**: Fix build error caused by duplicate variable declaration
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06
+- **Target Files**:
+  - src/app/api/onboarding/status/route.js - Fixed duplicate cachedStatus declaration
+- **Description**: Fixes build error that occurred after Version0111 was deployed
+- **Key Features**:
+  - Renamed second cachedStatus declaration to urlCachedStatus
+  - Ensured onboarding persistence functionality remains intact
+  - Fixed Vercel build error
+- **Requirements Addressed**:
+  - Fix production build failure
+  - Maintain onboarding persistence functionality
+- **Deployment Method**: Committed and pushed to Dott_Main_Dev_Deploy branch
+
 ### Version0111_fix_post_signout_onboarding_redirect_fixed.mjs
 - **Version**: 0111 v1.1
 - **Purpose**: Fix post-signout onboarding redirect issue
