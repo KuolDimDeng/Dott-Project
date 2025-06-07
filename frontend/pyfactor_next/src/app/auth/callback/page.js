@@ -231,12 +231,23 @@ export default function Auth0CallbackPage() {
         }
         
         // 3. NEW USER - No tenant or needs onboarding  
-        if (backendUser.isNewUser || backendUser.needsOnboarding || !backendUser.tenantId) {
+        if ((!backendUser.tenantId && (backendUser.isNewUser || backendUser.needsOnboarding))) {
           setStatus('Setting up your account...');
-          console.log('[Auth0Callback] New user detected, redirecting to onboarding');
+          console.log('[Auth0Callback] New user without tenant ID detected, redirecting to onboarding');
           
           setTimeout(() => {
             router.push('/onboarding/business-info');
+          }, 1500);
+          return;
+        }
+        
+        // 3.5 EXISTING USER WITH TENANT - Has tenant ID but marked as needsOnboarding
+        if (backendUser.tenantId) {
+          setStatus('Loading your dashboard...');
+          console.log('[Auth0Callback] Existing user with tenant ID detected, redirecting to dashboard');
+          
+          setTimeout(() => {
+            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
           }, 1500);
           return;
         }

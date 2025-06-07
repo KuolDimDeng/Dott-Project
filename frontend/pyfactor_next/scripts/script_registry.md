@@ -479,3 +479,8 @@ This document tracks all scripts used for the pyfactor project, their execution 
 - **Target Files**:
   - src/utils/CognitoAttributes.js - Fixed attributes
 - **Description**: Fixes Cognito attributes onboarding for proper user management
+
+
+| Version0122_fix_existing_user_onboarding_redirect.mjs | 2025-06-07 | Fixes issue where existing users with tenant IDs are redirected to onboarding instead of dashboard | ✅ |
+
+| Version0123_commit_and_deploy_onboarding_redirect_fix.mjs | 2025-06-07 | Commits and deploys fix for existing users being redirected to onboarding | ✅ |
