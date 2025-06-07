@@ -389,6 +389,8 @@ export default function SubscriptionForm() {
         setProcessingStatus('Setting up your free account...');
         
         // Set cookies for free plan
+        const expiresDate = new Date();
+        expiresDate.setFullYear(expiresDate.getFullYear() + 1);
         document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
         document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
@@ -435,6 +437,8 @@ export default function SubscriptionForm() {
   
   const handleFreePlanSelection = async () => {
     logger.debug('[SubscriptionForm] Free plan selected');
+    logger.info('[SubscriptionForm] Starting free plan selection process');
+    logger.info('[SubscriptionForm] Starting free plan selection process');
     setSelectedPlan('free');
     setBillingCycle('monthly');
     setPlanData({
@@ -505,14 +509,48 @@ export default function SubscriptionForm() {
     
     // If we couldn't get tenant ID from Cognito, try AppCache
     if (!tenantId || !isValidUUID(tenantId)) {
-      const appCache = window.__APP_CACHE || {};
+      // Try to get tenant ID from AppCache
+      const appCache = typeof window !== 'undefined' ? (window.__APP_CACHE || {}) : {};
       const tenant = appCache.tenant || {};
-      tenantId = tenant.id;
       
+      if (tenant.id && isValidUUID(tenant.id)) {
+        tenantId = tenant.id;
+        logger.debug('[SubscriptionForm] Using tenant ID from AppCache:', tenantId);
+      } else {
+        // Try localStorage as last resort
+        try {
+          const localTenantId = localStorage.getItem('tenantId');
+          if (localTenantId && isValidUUID(localTenantId)) {
+            tenantId = localTenantId;
+            logger.debug('[SubscriptionForm] Using tenant ID from localStorage:', tenantId);
+          }
+        } catch (storageError) {
+          logger.warn('[SubscriptionForm] Error accessing localStorage:', storageError);
+        }
+      }
+      
+      // If we still don't have a valid tenant ID, log and redirect without it
       if (!tenantId || !isValidUUID(tenantId)) {
-        // As a last resort, redirect without tenant ID
         logger.warn('[SubscriptionForm] No valid tenant ID found, redirecting to dashboard without tenant path');
-        window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true`;
+        window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&missingTenant=true`;
+        return;
+      }
+    }
+    
+    // Log the final destination for debugging
+    logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
+    
+    // Redirect with tenant ID if we have it
+    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
+        return;
+      }
+    }
+    
+    // Log the final destination for debugging
+    logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
+    
+    // Redirect with tenant ID if we have it
+    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
         return;
       }
     }

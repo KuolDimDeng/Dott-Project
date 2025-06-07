@@ -63,3 +63,8 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0153_commit_and_deploy_csp_fix.mjs | Commit and deploy the Content Security Policy fix | 2025-06-07 | Completed | Committed and pushed CSP fix to Dott_Main_Dev_Deploy branch |
 | Version0154_fix_auth0_login_domain_handling.mjs | Fix Auth0 login domain handling in login route | 2025-06-07 | Completed | Fixed domain normalization and URL construction to ensure consistent handling |
 | Version0155_commit_and_deploy_auth0_login_domain_fix.mjs | Deploy Auth0 login domain handling fix | 2025-06-07 | Completed | Deployed fix for inconsistent Auth0 domain handling causing 500 error |
+| Version0156_fix_auth0_domain_validation.mjs | Fix Auth0 domain validation across authentication flow | 2025-06-07 | ✅ Completed | Fixed inconsistent domain validation to resolve 500 errors with graceful fallbacks |
+| Version0157_commit_and_deploy_auth0_domain_validation.mjs | Deploy Auth0 domain validation fix | 2025-06-07 | ✅ Completed | Deployed comprehensive fix for Auth0 domain validation issues |
+| Version0158_fix_free_plan_redirect.mjs | Fix free plan redirect to use tenant ID | 2025-06-07 | ✅ Executed | Fixes issue where free plan selection redirects to /dashboard instead of /tenant/{tenantId}/dashboard |
+| Version0159_commit_and_deploy_free_plan_redirect_fix.mjs | Commit and deploy free plan redirect fix | 2025-06-07 | ✅ Executed | Deploys the fix for free plan redirect to use tenant-specific path |
+| Version0158_fix_free_plan_redirect.mjs | Fix free plan redirect to use tenant ID | 2025-06-07 | 🔄 Pending | Fixes issue where free plan selection redirects to /dashboard instead of /tenant/{tenantId}/dashboard |
