@@ -25,7 +25,7 @@ from urllib.parse import urljoin
 # Add JWE support with fallback
 try:
     from jwcrypto import jwe, jwk
-    JWE_AVAILABLE = True
+    JWE_AVAILABLE = False  # Explicitly disabled to force JWT-only mode
     logger = logging.getLogger(__name__)
     logger.info("✅ JWE support available for encrypted Auth0 tokens")
     logger.info("✅ jwcrypto library imported successfully")
@@ -422,6 +422,28 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             return None
     
     def is_jwe_token(self, token):
+        """
+        Check if the token is a JWE (encrypted) token by examining its structure.
+        MODIFIED: More lenient check to avoid JWE false positives.
+        """
+        try:
+            # Only consider it a JWE if it has exactly 5 parts AND explicit JWE header indicators
+            parts = token.split('.')
+            if len(parts) == 5:
+                # Get header to check for JWE indicators
+                try:
+                    header = jwt.get_unverified_header(token)
+                    # Only if it has both 'enc' and 'alg' consider it a JWE
+                    is_jwe = 'enc' in header and 'alg' in header
+                    if is_jwe:
+                        logger.info("⚠️ Detected potential JWE token but JWE validation is DISABLED")
+                    return is_jwe
+                except Exception:
+                    # If header parsing fails, it's not a valid JWT/JWE
+                    return False
+            return False
+        except Exception:
+            return False
         """
         Check if the token is a JWE (encrypted) token by examining its structure.
         """
@@ -888,6 +910,38 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             return None
     
     def validate_token(self, token):
+        """
+        Validate JWT/JWE token against Auth0's public keys.
+        MODIFIED: Skip JWE validation entirely and treat all tokens as JWT.
+        """
+        logger.debug("🔍 Starting JWT token validation (JWE VALIDATION DISABLED)...")
+        
+        try:
+            # We're explicitly skipping JWE validation and treating all tokens as JWT
+            # This is a temporary fix until the JWE decryption issues are resolved
+            if self.is_jwe_token(token):
+                logger.info("⚠️ JWE token detected but JWE validation is DISABLED - treating as JWT")
+                logger.info("⚠️ This could fail if the token is actually encrypted")
+                # Skip directly to Auth0 API validation for JWE tokens
+                user_info = self.get_user_info_from_auth0_api(token)
+                if user_info:
+                    return user_info
+                else:
+                    # If API validation fails, try JWT validation anyway
+                    logger.info("🔄 API validation failed, attempting JWT validation as fallback")
+                    try:
+                        return self.validate_jwt(token)
+                    except Exception as jwt_error:
+                        logger.error(f"❌ JWT fallback validation failed: {str(jwt_error)}")
+                        raise exceptions.AuthenticationFailed('Authentication failed: both API and JWT validation failed')
+            else:
+                logger.debug("🔍 Detected standard JWT token")
+                return self.validate_jwt(token)
+                
+        except Exception as e:
+            logger.error(f"❌ Token validation error: {str(e)}")
+            logger.error(f"❌ Error type: {type(e).__name__}")
+            raise exceptions.AuthenticationFailed(f'Token validation error: {str(e)}')
         """
         Validate JWT/JWE token against Auth0's public keys.
         """

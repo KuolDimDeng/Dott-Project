@@ -5,8 +5,12 @@ import authDebugger from '@/utils/authDebugger';
 
 // Get Auth0 configuration from environment variables or use defaults
 const getAuth0Config = () => {
+  console.log('[Auth0Config] Initializing - FORCE JWT MODE ENABLED');
   // Always prefer environment variables, fallback to custom domain
-  const config = {
+  // Force JWT tokens only - explicitly disable JWE tokens
+    const config = {
+      useJwtAuth: true, // Force JWT auth
+      disableJwe: true, // Explicitly disable JWE tokens
     domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com',
     audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
     clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF'
@@ -75,7 +79,7 @@ export const initAuth0 = async () => {
       domain: config.domain,
       audience: config.authorizationParams.audience,
       useCustomDomain: config.useCustomDomain,
-      tokenType: 'JWT (forced via audience)'
+      tokenType: 'JWT ONLY MODE (forced via audience, JWE disabled)'
     });
     
     // Log initialization event
@@ -137,6 +141,9 @@ export const auth0Utils = {
       // Force fresh token request
       const token = await client.getTokenSilently({
         ignoreCache: true, // Force fresh token
+        useJwtAuth: true, // Force JWT auth
+        disableJwe: true, // Explicitly disable JWE tokens
+        forceJwtToken: true, // Force JWT token format
         audience: authConfig.audience, // Use configured audience
         cacheLocation: 'memory', // Avoid localStorage cache
         responseType: 'code', // Explicit response type

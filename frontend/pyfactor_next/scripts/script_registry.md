@@ -19,6 +19,28 @@ This document tracks all scripts used for the pyfactor project, their execution 
 
 ## Script Inventory
 
+### Version0113_enforce_jwt_disable_jwe.mjs
+- **Version**: 0113 v1.0
+- **Purpose**: Enforce JWT token use only and disable JWE token validation
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Creation Date**: 2025-06-07
+- **Execution Date**: 2025-06-07
+- **Target Files**:
+  - src/config/auth0.js - Updated to enforce JWT tokens
+  - custom_auth/auth0_authentication.py - Modified to skip JWE validation
+  - src/app/api/onboarding/status/route.js - Enhanced onboarding persistence
+- **Description**: Fixes issues with JWE token validation and prevents unnecessary onboarding redirects
+- **Key Features**:
+  - Disabled JWE validation by setting JWE_AVAILABLE = False
+  - Added explicit JWT forcing flags in frontend configuration
+  - Enhanced onboarding state persistence across sign-out/sign-in cycles
+  - Added comprehensive documentation in JWT_ONLY_MODE_SUMMARY.md
+- **Requirements Addressed**:
+  - Fix 500 Internal Server Error at https://dottapps.com/api/auth/login
+  - Prevent users being redirected to onboarding after signing out and back in
+  - Fix authentication with backend API
+- **Deployment Method**: Created but needs to be pushed to Dott_Main_Dev_Deploy branch
+
 ### Version0112_fix_duplicate_cachedStatus_declaration.mjs
 - **Version**: 0112 v1.0
 - **Purpose**: Fix build error caused by duplicate variable declaration
