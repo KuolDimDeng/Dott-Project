@@ -1,110 +1,55 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import authDebugger from '@/utils/authDebugger';
 
 /**
- * Get Auth0 authorization URL with enhanced debugging
- * @returns {string} Auth0 authorization URL
+ * Auth0 login route handler
+ * This provides a dedicated endpoint for Auth0 login redirects
  */
-function getAuth0AuthorizationUrl() {
-  // Get Auth0 domain with preference for custom domain
-  const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com';
-  const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
-  const redirectUri = `${process.env.NEXT_PUBLIC_BASE_URL}/api/auth/callback`;
-  const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
-  
-  // Log domain information for debugging
-  const domainInfo = authDebugger.detectCustomDomain(auth0Domain);
-  
-  // Force the use of custom domain if default domain was detected
-  const effectiveDomain = auth0Domain.includes('.auth0.com') 
-    ? 'auth.dottapps.com' // Force custom domain if default is detected
-    : auth0Domain;
-  
-  if (effectiveDomain !== auth0Domain) {
-    console.warn(`⚠️ [Auth Login Route] Overriding default domain with custom domain: ${effectiveDomain}`);
-    authDebugger.logAuthEvent({
-      type: 'domain_override',
-      originalDomain: auth0Domain,
-      effectiveDomain,
-      reason: 'Forcing custom domain to prevent token issuer mismatch'
-    });
-  }
-  
-  // Create Auth0 authorization URL
-  const queryParams = new URLSearchParams({
-    response_type: 'code',
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    scope: 'openid profile email',
-    audience: audience,
-  });
-  
-  const authUrl = `https://${effectiveDomain}/authorize?${queryParams.toString()}`;
-  
-  // Log complete Auth0 configuration for debugging
-  console.log('[Auth Login Route] Auth0 Configuration:', {
-    domain: effectiveDomain,
-    clientId: clientId ? `${clientId.substring(0, 8)}...` : undefined,
-    redirectUri,
-    audience,
-    authUrl: `${authUrl.substring(0, 50)}...`,
-    environment: process.env.NODE_ENV
-  });
-  
-  // Log auth event
-  authDebugger.logAuthEvent({
-    type: 'login_redirect',
-    authUrl: authUrl,
-    domain: effectiveDomain,
-    clientId: clientId ? `${clientId.substring(0, 8)}...` : undefined,
-    redirectUri,
-    audience
-  });
-  
-  return authUrl;
-}
-
 export async function GET(request) {
-  console.log('[Auth Login Route] Processing login request');
-  
   try {
-    // Get Auth0 authorization URL with enhanced logging
-    const authUrl = getAuth0AuthorizationUrl();
+    console.log('[Auth Login Route] Processing login request');
     
-    console.log(`[Auth Login Route] Redirecting to Auth0: ${authUrl}`);
+    // Get Auth0 configuration from environment variables
+    const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com';
+    const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+    const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
     
-    // Create a response that redirects to Auth0
-    const response = NextResponse.redirect(authUrl);
+    console.log('[Auth Login Route] Using Auth0 domain:', auth0Domain);
+    console.log('[Auth Login Route] Base URL:', baseUrl);
     
-    // Set headers to prevent RSC payload fetch errors
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
+    // Verify required configuration
+    if (!auth0Domain) {
+      throw new Error('Auth0 domain not configured');
+    }
     
-    // Log complete response headers for debugging
-    console.log('[Auth Login Route] Response headers:', Object.fromEntries([...response.headers.entries()]));
+    if (!clientId) {
+      throw new Error('Auth0 client ID not configured');
+    }
     
+    // Create Auth0 authorize URL with validated parameters
+    const loginParams = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: `${baseUrl}/api/auth/callback`,
+      scope: 'openid profile email',
+      audience: audience,
+    });
+    
+    const loginUrl = `https://${auth0Domain}/authorize?${loginParams}`;
+    
+    console.log('[Auth Login Route] Redirecting to Auth0:', loginUrl);
+    
+    // Create redirect response with headers to prevent RSC payload fetch
+    const response = NextResponse.redirect(loginUrl);
+    response.headers.set('x-middleware-rewrite', request.url);
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     return response;
   } catch (error) {
-    console.error('[Auth Login Route] Error during login redirect:', error);
-    
-    // Log auth error event
-    authDebugger.logAuthEvent({
-      type: 'error',
-      message: `Login redirect error: ${error.message}`,
-      stack: error.stack
-    });
-    
-    // Return error response
-    return new NextResponse(
-      JSON.stringify({ error: 'Authentication redirect failed' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
+    console.error('[Auth Login Route] Error:', error);
+    return NextResponse.json({ 
+      error: 'Login redirect failed', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, { status: 500 });
   }
-}
-
-export async function POST(request) {
-  // Same behavior as GET for simplicity
-  return GET(request);
 }
