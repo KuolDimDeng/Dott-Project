@@ -21,6 +21,8 @@ This document tracks all scripts used for the pyfactor project, their execution 
 ## Script Registry
 
 | Script Name | Purpose | Date | Status |
+| Version0141_commit_and_deploy_auth_flow_logging_fixed.mjs | Commit and deploy the comprehensive auth flow logging (fixed paths) | 2025-06-07 | 🔄 Pending Execution |
+| Version0140_add_comprehensive_auth_flow_logging_fixed.mjs | Add detailed debug logging throughout the auth flow with fixed paths | 2025-06-07 | ✅ Completed |
 | Version0138_add_comprehensive_auth_flow_logging.mjs | Add detailed debug logging throughout the auth and onboarding flow | 2025-06-07 | 🔄 Pending Execution |
 | Version0139_commit_and_deploy_auth_flow_logging.mjs | Commit and deploy the comprehensive auth flow logging | 2025-06-07 | 🔄 Pending Execution |
 | Version0137_commit_and_deploy_auth0_domain_fix.mjs | Commit and deploy Auth0 domain configuration fix | 2025-06-07 | ✅ Completed |

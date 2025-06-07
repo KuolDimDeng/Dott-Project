@@ -1,7 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+
+// Added comprehensive debug logging
+const AUTH_DEBUG = process.env.AUTH_DEBUG === 'true' || true;;
 
 // This middleware handles authentication-related routes to prevent RSC payload errors
 export function middleware(request) {
+  if (AUTH_DEBUG) {
+    console.debug('[MIDDLEWARE] Processing request:', request.nextUrl.pathname);
+  }
   const url = new URL(request.url);
   const pathname = url.pathname;
   

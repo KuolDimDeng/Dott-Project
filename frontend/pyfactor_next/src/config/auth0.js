@@ -8,7 +8,31 @@ const getAuth0Config = () => {
   console.log('[Auth0Config] Initializing - FORCE JWT MODE ENABLED');
   // Always prefer environment variables, fallback to custom domain
   // Force JWT tokens only - explicitly disable JWE tokens
-    const config = {
+    if (AUTH_DEBUG) {
+    console.debug('[AUTH0-CONFIG] Generating Auth0 configuration');
+    console.debug('[AUTH0-CONFIG] Environment variables:', {
+      AUTH0_DOMAIN: process.env.AUTH0_DOMAIN || 'Not set',
+      AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID ? 'Set' : 'Not set',
+      AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET ? 'Set' : 'Not set',
+      AUTH0_SECRET: process.env.AUTH0_SECRET ? 'Set' : 'Not set',
+      AUTH0_BASE_URL: process.env.AUTH0_BASE_URL || 'Not set',
+      AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL || 'Not set'
+    });
+  }
+  
+  // Domain validation to catch misconfiguration
+  const domain = process.env.AUTH0_DOMAIN;
+  if (!domain || typeof domain !== 'string') {
+    console.error('[AUTH0-CONFIG] Invalid Auth0 domain:', domain);
+    throw new Error('Invalid Auth0 configuration: Domain is not properly configured');
+  }
+  
+  if (!domain.includes('.') || domain.startsWith('http')) {
+    console.error('[AUTH0-CONFIG] Malformed Auth0 domain:', domain);
+    throw new Error('Invalid Auth0 domain format: Domain should be a hostname without protocol');
+  }
+  
+  const config = {
       useJwtAuth: true, // Force JWT auth
       disableJwe: true, // Explicitly disable JWE tokens
     domain: process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com',

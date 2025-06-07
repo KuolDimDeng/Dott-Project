@@ -1,11 +1,24 @@
 import { NextResponse } from 'next/server';
 
+// Added comprehensive debug logging
+const AUTH_DEBUG = process.env.AUTH_DEBUG === 'true' || true;
+
 /**
  * Auth0 login route handler
  * This provides a dedicated endpoint for Auth0 login redirects
  * Version: Updated to fix 500 error and improve domain handling
  */
 export async function GET(request) {
+  if (AUTH_DEBUG) {
+    console.debug('[AUTH0-LOGIN] Auth login route called');
+    console.debug('[AUTH0-LOGIN] Available environment variables:', {
+      AUTH0_DOMAIN: process.env.AUTH0_DOMAIN || 'Not set',
+      AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID ? 'Set' : 'Not set',
+      AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET ? 'Set' : 'Not set',
+      AUTH0_BASE_URL: process.env.AUTH0_BASE_URL || 'Not set',
+      NODE_ENV: process.env.NODE_ENV || 'Not set'
+    });
+  }
   try {
     console.log('[Auth Login Route] Processing login request');
     
