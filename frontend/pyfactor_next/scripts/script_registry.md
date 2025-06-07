@@ -67,4 +67,39 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0157_commit_and_deploy_auth0_domain_validation.mjs | Deploy Auth0 domain validation fix | 2025-06-07 | ✅ Completed | Deployed comprehensive fix for Auth0 domain validation issues |
 | Version0158_fix_free_plan_redirect.mjs | Fix free plan redirect to use tenant ID | 2025-06-07 | ✅ Executed | Fixes issue where free plan selection redirects to /dashboard instead of /tenant/{tenantId}/dashboard |
 | Version0159_commit_and_deploy_free_plan_redirect_fix.mjs | Commit and deploy free plan redirect fix | 2025-06-07 | ✅ Executed | Deploys the fix for free plan redirect to use tenant-specific path |
+| Version0160_fix_commit_and_deploy_free_plan_redirect.mjs | Fix commit and deploy for free plan redirect | 2025-06-07 | ✅ Executed | Fixes git paths and completes deployment of the free plan redirect fix |
 | Version0158_fix_free_plan_redirect.mjs | Fix free plan redirect to use tenant ID | 2025-06-07 | 🔄 Pending | Fixes issue where free plan selection redirects to /dashboard instead of /tenant/{tenantId}/dashboard |
+
+## Version0161_fix_auth0_tenant_id_propagation.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Fix Auth0 tenant ID propagation and 500 error on login
+- **Changes**:
+  - Updated business-info API to store tenant_id in Auth0 session
+  - Fixed SubscriptionForm to get tenant_id from multiple sources
+  - Created TenantStorage utility for centralized tenant ID management
+  - Fixed auth login route Auth0 domain configuration
+  - Removed Cognito references and replaced with Auth0
+- **Files Modified**:
+  - src/app/api/onboarding/business-info/route.js
+  - src/components/Onboarding/SubscriptionForm.jsx
+  - src/app/api/auth/login/route.js
+  - src/utils/tenantStorage.js (created)
+  - src/components/Onboarding/BusinessInfoForm.jsx
+- **Execution**: Completed successfully
+
+## Version0161_fix_auth0_tenant_id_propagation.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Fix Auth0 tenant ID propagation and 500 error on login
+- **Changes**:
+  - Updated business-info API to store tenant_id in Auth0 session
+  - Fixed SubscriptionForm to get tenant_id from multiple sources
+  - Created TenantStorage utility for centralized tenant ID management
+  - Fixed auth login route Auth0 domain configuration
+  - Removed Cognito references and replaced with Auth0
+- **Files Modified**:
+  - src/app/api/onboarding/business-info/route.js
+  - src/components/Onboarding/SubscriptionForm.jsx
+  - src/app/api/auth/login/route.js
+  - src/utils/tenantStorage.js (created)
+  - src/components/Onboarding/BusinessInfoForm.jsx
+- **Execution**: Completed successfully
