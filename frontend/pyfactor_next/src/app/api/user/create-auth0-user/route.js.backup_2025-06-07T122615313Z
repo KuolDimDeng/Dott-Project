@@ -183,7 +183,7 @@ export async function POST(request) {
           // Continue with response even if cookie update fails
         }
         
-        if (response) { return response; }
+        return response;
       } else {
           console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
       }
