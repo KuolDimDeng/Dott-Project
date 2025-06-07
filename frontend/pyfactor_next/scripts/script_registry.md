@@ -262,8 +262,9 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
 ### Version0104_commit_and_deploy_auth0_jwe_token_fix.mjs
 - **Version**: 0104 v1.0
 - **Purpose**: Commit and deploy the JWE token and rate limiting protection fix
-- **Status**: ⏳ PENDING EXECUTION
+- **Status**: ✅ EXECUTED SUCCESSFULLY
 - **Creation Date**: 2025-06-06
+- **Execution Date**: 2025-06-06T20:46:07.008Z
 - **Target Files**: Multiple files from Version0103
 - **Description**: Commits and pushes the Auth0 JWE token and rate limiting fixes to production
 - **Key Features**:
@@ -275,6 +276,44 @@ This registry tracks all scripts in the frontend/pyfactor_next/scripts directory
   - Deploy JWE token validation fixes to production
   - Deploy rate limiting protection to production
   - Deploy Auth0 custom domain consistency fixes
+- **Deployment Status**: ✅ DEPLOYED TO PRODUCTION
+
+### Version0105_fix_auth0_jwe_key_derivation.mjs
+- **Version**: 0105 v1.0
+- **Purpose**: Fix Auth0 JWE token decryption key derivation for the dir algorithm
+- **Status**: ✅ CREATED
+- **Creation Date**: 2025-06-06
+- **Target Files**:
+  - backend/pyfactor/custom_auth/auth0_authentication.py - Enhanced with Auth0-specific JWE key derivation methods
+  - scripts/AUTH0_JWE_KEY_DERIVATION_FIX_SUMMARY.md - Documentation
+- **Description**: Addresses continued JWE token validation failures by adding Auth0-specific key derivation methods
+- **Key Features**:
+  - Adds multiple Auth0-specific key derivation approaches for the dir algorithm
+  - Implements PBKDF2 with client_id salt
+  - Adds ConcatKDF with alg/enc context
+  - Implements PKCS7 padding of client secret
+  - Adds specialized base64 decoding methods
+  - Provides detailed logging for troubleshooting
+- **Requirements Addressed**: 
+  - Fix JWE token validation errors in backend
+  - Address Auth0 API rate limiting issues
+  - Improve authentication reliability
+
+### Version0106_commit_and_deploy_auth0_jwe_key_fix.mjs
+- **Version**: 0106 v1.0
+- **Purpose**: Commit and deploy the Auth0 JWE key derivation fix
+- **Status**: ⏳ PENDING EXECUTION
+- **Creation Date**: 2025-06-06
+- **Target Files**: Multiple files from Version0105
+- **Description**: Commits and pushes the Auth0 JWE key derivation fix to production
+- **Key Features**:
+  - Automatically commits all changes to git
+  - Pushes to the Dott_Main_Dev_Deploy branch to trigger deployment
+  - Provides verification instructions for after deployment
+- **Requirements Addressed**: 
+  - Deploy JWE key derivation fixes to production
+  - Address JWE token validation failures
+  - Fix Auth0 API rate limiting errors
 
 ### test_auth0_jwe_token_and_rate_limiting.mjs
 - **Purpose**: Test utility to verify the Auth0 JWE token and rate limiting fixes
