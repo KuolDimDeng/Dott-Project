@@ -35,8 +35,31 @@ export async function GET(request, { params }) {
     if (route === 'logout') {
       console.log('[Auth Route] Processing logout request');
       
-      // **TEMP FIX: Use signin URL (likely whitelisted) with logout parameter**
-      const returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?logout=true`;
+      // Get current session to extract important data before logout
+      const sessionCookie = request.cookies.get('appSession');
+      let onboardingComplete = false;
+      let tenantId = '';
+      
+      // Try to extract onboarding status and tenant ID from session before deleting
+      if (sessionCookie) {
+        try {
+          const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          if (sessionData.user) {
+            // Look for onboarding completion status in user data
+            const userAttributes = sessionData.user['https://dottapps.com/user_metadata'] || {};
+            onboardingComplete = userAttributes.onboardingComplete === 'true';
+            tenantId = userAttributes.tenantId || '';
+          }
+        } catch (error) {
+          console.error('[Auth Route] Error extracting session data:', error);
+        }
+      }
+      
+      // Create return URL with preserved onboarding status if completed
+      let returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?logout=true`;
+      if (onboardingComplete && tenantId) {
+        returnToUrl += `&preserveOnboarding=true&tenantId=${tenantId}`;
+      }
       
       const logoutUrl = `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}/v2/logout?` +
         new URLSearchParams({
@@ -132,8 +155,19 @@ export async function GET(request, { params }) {
           accessTokenExpiresAt: Date.now() + (tokens.expires_in * 1000),
         };
         
+        // Check URL params for preserved onboarding status
+        const url = new URL(request.url);
+        const preserveOnboarding = url.searchParams.get('preserveOnboarding') === 'true';
+        const preservedTenantId = url.searchParams.get('tenantId');
+        
+        // Build callback URL with preserved information if available
+        let callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`;
+        if (preserveOnboarding && preservedTenantId) {
+          callbackUrl += `?cachedStatus=complete&tenantId=${preservedTenantId}`;
+        }
+        
         // Redirect to frontend callback with session cookie
-        const response = NextResponse.redirect(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`);
+        const response = NextResponse.redirect(callbackUrl);
         
         // Set session cookie
         const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
