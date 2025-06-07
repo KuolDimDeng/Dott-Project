@@ -120,17 +120,74 @@ export async function POST(request) {
           existingTenantId = existingUser.tenant_id;
         
         // User exists - return their existing data
-        return NextResponse.json({
+        console.log('[Create Auth0 User] RETURNING EXISTING USER WITH TENANT ID:', existingUser.tenant_id);
+        
+        // Prepare the response with both tenant_id and tenantId for consistency
+        const response = NextResponse.json({
           success: true,
           message: 'Existing user found',
           isExistingUser: true,
           user_id: existingUser.id,
           tenant_id: existingUser.tenant_id,
+          tenantId: existingUser.tenant_id, // Add tenantId for frontend consistency
           email: existingUser.email,
           needs_onboarding: existingUser.needs_onboarding !== false,
           onboardingCompleted: existingUser.onboarding_completed === true,
           current_step: existingUser.current_onboarding_step || 'business_info'
         });
+        
+        // Update session cookie with tenant ID
+        // This ensures the session has the correct tenant ID
+        try {
+          const cookieStore = await cookies();
+          const sessionCookie = cookieStore.get('appSession');
+          
+          if (sessionCookie) {
+            const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            
+            // Update user object in session with tenant ID
+            const updatedSession = {
+              ...sessionData,
+              user: {
+                ...sessionData.user,
+                tenant_id: existingUser.tenant_id,
+                tenantId: existingUser.tenant_id,
+                needsOnboarding: existingUser.needs_onboarding !== false,
+                onboardingCompleted: existingUser.onboarding_completed === true
+              }
+            };
+            
+            response.cookies.set('appSession', Buffer.from(JSON.stringify(updatedSession)).toString('base64'), {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 60 * 60 * 24 * 7 // 7 days
+            });
+            
+            // Store tenant ID in dedicated cookie for future lookups
+            response.cookies.set('user_tenant_id', existingUser.tenant_id, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 60 * 60 * 24 * 30 // 30 days
+            });
+            
+            if (sessionData.user?.sub) {
+              const auth0SubHash = Buffer.from(sessionData.user.sub).toString('base64').substring(0, 16);
+              response.cookies.set(`tenant_${auth0SubHash}`, existingUser.tenant_id, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: 'lax',
+                maxAge: 60 * 60 * 24 * 30 // 30 days
+              });
+            }
+          }
+        } catch (cookieError) {
+          console.error('[Create Auth0 User] Error updating session cookie:', cookieError);
+          // Continue with response even if cookie update fails
+        }
+        
+        return response;
       } else {
           console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');
       }

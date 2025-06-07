@@ -484,3 +484,7 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0122_fix_existing_user_onboarding_redirect.mjs | 2025-06-07 | Fixes issue where existing users with tenant IDs are redirected to onboarding instead of dashboard | ✅ |
 
 | Version0123_commit_and_deploy_onboarding_redirect_fix.mjs | 2025-06-07 | Commits and deploys fix for existing users being redirected to onboarding | ✅ |
+
+| Version0124_fix_tenant_id_auth0_session.mjs | 2025-06-07 | Fixes issue where tenant ID isn't properly passed to Auth0 session | ✅ |
+
+| Version0125_commit_and_deploy_tenant_id_fix.mjs | 2025-06-07 | Commits and deploys fix for tenant ID not being properly stored in Auth0 session | ✅ |
