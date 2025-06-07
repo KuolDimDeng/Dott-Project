@@ -39,9 +39,8 @@ export async function GET(request) {
     
     console.log('[Auth Login Route] Redirecting to Auth0:', loginUrl);
     
-    // Create redirect response with headers to prevent RSC payload fetch
+    // Create redirect response with proper cache headers
     const response = NextResponse.redirect(loginUrl);
-    response.headers.set('x-middleware-rewrite', request.url);
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     return response;
   } catch (error) {

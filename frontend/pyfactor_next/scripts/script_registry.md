@@ -489,3 +489,5 @@ This document tracks all scripts used for the pyfactor project, their execution 
 
 | Version0125_commit_and_deploy_tenant_id_fix.mjs | 2025-06-07 | Commits and deploys fix for tenant ID not being properly stored in Auth0 session | ✅ |
 | Version0127_fix_auth0_login_route_500_error.mjs | Fix Auth0 login route 500 error | 2025-06-06 | Complete |
+
+| Version0128_commit_and_deploy_auth0_login_fix.mjs | Deploy Auth0 login route 500 error fix | 2025-06-06 | Complete |
