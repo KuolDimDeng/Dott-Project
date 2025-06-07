@@ -1,6 +1,10 @@
+import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
+import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { getCurrentUser  } from '@/config/amplifyUnified';
 
 // Increase initial polling interval and add exponential backoff
@@ -117,9 +121,9 @@ export function useSetupPolling() {
       
       // Get from app cache if available
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.polling = window.__APP_CACHE.polling || {};
-        last429Time = window.__APP_CACHE.polling.last429ErrorTime;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().polling = appCache.getAll().polling || {};
+        last429Time = appCache.get('polling.last429ErrorTime');
       }
       
       if (last429Time) {
@@ -143,8 +147,8 @@ export function useSetupPolling() {
           return;
         } else {
           // Clear the 429 timestamp if enough time has passed
-          if (typeof window !== 'undefined' && window.__APP_CACHE?.polling) {
-            delete window.__APP_CACHE.polling.last429ErrorTime;
+          if (typeof window !== 'undefined' && appCache.getAll()
+            delete appCache.get('polling.last429ErrorTime');
           }
         }
       }
@@ -186,9 +190,9 @@ export function useSetupPolling() {
           
           // Store the last 429 timestamp to avoid polling too soon
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.polling = window.__APP_CACHE.polling || {};
-            window.__APP_CACHE.polling.last429ErrorTime = Date.now().toString();
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().polling = appCache.getAll().polling || {};
+            appCache.set('polling.last429ErrorTime', Date.now().toString());
           }
           
           // Force a refresh of the user's Cognito attributes to update onboarding status

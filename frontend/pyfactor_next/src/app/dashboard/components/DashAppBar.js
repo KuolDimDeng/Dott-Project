@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
 /**
@@ -24,24 +26,35 @@ import React, {
   memo
 } from 'react';
 import Image from 'next/image';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
+import { appCache } from '../utils/appCache';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
+import { appCache } from '../utils/appCache';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
+import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
+import { appCache } from '../utils/appCache';
 import { useToast } from '@/hooks/useToast';
+import { appCache } from '../utils/appCache';
 import { useSession } from '@/hooks/useSession';
+import { appCache } from '../utils/appCache';
 import { useProfile } from '@/hooks/useProfile';
+import { appCache } from '../utils/appCache';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
+import { appCache } from '../utils/appCache';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
+import { appCache } from '../utils/appCache';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !window.__APP_CACHE) {
-  window.__APP_CACHE = { auth: {}, user: {}, tenant: {} };
+if (typeof window !== 'undefined' && !appCache.getAll()) {
+  appCache.getAll() = { auth: {}, user: {}, tenant: {} };
 }
 
 const DashAppBar = ({
@@ -285,9 +298,9 @@ const DashAppBar = ({
       
       // Store in app cache for persistence
       if (typeof window !== 'undefined') {
-        if (!window.__APP_CACHE) window.__APP_CACHE = {};
-        if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
-        window.__APP_CACHE.tenant.businessName = newBusinessName;
+        if (!appCache.getAll()) appCache.getAll() = {};
+        if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+        appCache.set('tenant.businessName', newBusinessName);
       }
     }
   }, [userAttributes, userData, profileData, cachedProfileData, user, businessName]);
@@ -363,20 +376,20 @@ const DashAppBar = ({
 
   // Function to safely get tenant-specific data from app cache
   const getTenantCacheData = useCallback((category, key) => {
-    if (typeof window === 'undefined' || !window.__APP_CACHE) return null;
+    if (typeof window === 'undefined' || !appCache.getAll()) return null;
     if (!tenantId) return null;
     
     // Ensure we only access data for the current tenant
     const tenantSpecificKey = `${tenantId}_${key}`;
     
     // First check for tenant-specific data
-    if (window.__APP_CACHE[category] && window.__APP_CACHE[category][tenantSpecificKey]) {
-      return window.__APP_CACHE[category][tenantSpecificKey];
+    if (appCache.getAll()[category] && appCache.getAll()[category][tenantSpecificKey]) {
+      return appCache.getAll()[category][tenantSpecificKey];
     }
     
     // Fallback: check if there's generic data for this tenant
-    if (category === 'tenant' && window.__APP_CACHE.tenant[tenantId]) {
-      return window.__APP_CACHE.tenant[tenantId][key];
+    if (category === 'tenant' && appCache.getAll().tenant[tenantId]) {
+      return appCache.getAll().tenant[tenantId][key];
     }
     
     return null;
@@ -384,45 +397,45 @@ const DashAppBar = ({
 
   // Function to safely store tenant-specific data in app cache
   const setTenantCacheData = useCallback((category, key, value) => {
-    if (typeof window === 'undefined' || !window.__APP_CACHE) return;
+    if (typeof window === 'undefined' || !appCache.getAll()) return;
     if (!tenantId) return;
     
     // Create category if it doesn't exist
-    if (!window.__APP_CACHE[category]) {
-      window.__APP_CACHE[category] = {};
+    if (!appCache.getAll()[category]) {
+      appCache.getAll()[category] = {};
     }
     
     // Store with tenant-specific key
     const tenantSpecificKey = `${tenantId}_${key}`;
-    window.__APP_CACHE[category][tenantSpecificKey] = value;
+    appCache.getAll()[category][tenantSpecificKey] = value;
     
     // Also store in tenant-specific structure
     if (category === 'tenant') {
-      if (!window.__APP_CACHE.tenant[tenantId]) {
-        window.__APP_CACHE.tenant[tenantId] = {};
+      if (!appCache.getAll().tenant[tenantId]) {
+        appCache.getAll().tenant[tenantId] = {};
       }
-      window.__APP_CACHE.tenant[tenantId][key] = value;
+      appCache.getAll().tenant[tenantId][key] = value;
     }
   }, [tenantId]);
 
   // Function to clear cached data for a specific tenant
   const clearTenantCache = useCallback(() => {
-    if (typeof window === 'undefined' || !window.__APP_CACHE || !tenantId) return;
+    if (typeof window === 'undefined' || !appCache.getAll() || !tenantId) return;
     
     // Remove all tenant-specific keys from each category
-    Object.keys(window.__APP_CACHE).forEach(category => {
-      if (typeof window.__APP_CACHE[category] === 'object') {
-        Object.keys(window.__APP_CACHE[category]).forEach(key => {
+    Object.keys(appCache.getAll()).forEach(category => {
+      if (typeof appCache.getAll()[category] === 'object') {
+        Object.keys(appCache.getAll()[category]).forEach(key => {
           if (key.startsWith(`${tenantId}_`)) {
-            delete window.__APP_CACHE[category][key];
+            delete appCache.getAll()[category][key];
           }
         });
       }
     });
     
     // Clear tenant-specific object
-    if (window.__APP_CACHE.tenant && window.__APP_CACHE.tenant[tenantId]) {
-      delete window.__APP_CACHE.tenant[tenantId];
+    if (appCache.getAll().tenant && appCache.getAll().tenant[tenantId]) {
+      delete appCache.getAll().tenant[tenantId];
     }
   }, [tenantId]);
 
@@ -541,7 +554,7 @@ const DashAppBar = ({
     }
     
     // Try to get from app cache for this specific tenant
-    if (typeof window !== 'undefined' && window.__APP_CACHE) {
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       const cachedName = getTenantCacheData('tenant', 'businessName');
       
       if (cachedName) {
@@ -654,8 +667,8 @@ const DashAppBar = ({
     }
     
     // Check app cache
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.businessName) {
-      return window.__APP_CACHE.tenant.businessName;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      return appCache.get('tenant.businessName');
     }
     
     // Only use these fallbacks if Cognito data is unavailable
@@ -689,17 +702,17 @@ const DashAppBar = ({
     
     if (typeof window !== 'undefined') {
       // Initialize app cache if needed
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
-      if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll().auth) appCache.getAll().auth = {};
+      if (!appCache.getAll().user) appCache.getAll().user = {};
       
       // Check app cache for email (primary source)
-      if (window.__APP_CACHE.auth.email) {
-        return window.__APP_CACHE.auth.email;
+      if (appCache.get('auth.email')) {
+        return appCache.get('auth.email');
       }
       
-      if (window.__APP_CACHE.user.email) {
-        return window.__APP_CACHE.user.email;
+      if (appCache.get('user.email')) {
+        return appCache.get('user.email');
       }
       
       // Try to get from Auth0 session storage
@@ -709,7 +722,7 @@ const DashAppBar = ({
           const parsed = JSON.parse(sessionData);
           if (parsed.user && parsed.user.email) {
             // Store in app cache for future use
-            window.__APP_CACHE.auth.email = parsed.user.email;
+            appCache.set('auth.email', parsed.user.email);
             return parsed.user.email;
           }
         } catch (error) {

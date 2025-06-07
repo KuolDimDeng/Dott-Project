@@ -9,9 +9,9 @@ const generateRequestId = () => {
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().auth = appCache.getAll().auth || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
 }
 
 // Determine if we should use relative paths for internal Next.js API routes
@@ -37,15 +37,15 @@ const getTenantAndTokenInfo = async () => {
   
   if (typeof window !== 'undefined') {
     // Ensure APP_CACHE is initialized
-    window.__APP_CACHE = window.__APP_CACHE || {};
-    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-    window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+    appCache.getAll() = appCache.getAll() || {};
+    appCache.getAll().auth = appCache.getAll().auth || {};
+    appCache.getAll().tenant = appCache.getAll().tenant || {};
     
     // Try to get token from APP_CACHE
-    token = window.__APP_CACHE.auth.idToken;
+    token = appCache.get('auth.idToken');
     
     // Try to get tenant ID from APP_CACHE
-    tenantId = window.__APP_CACHE.tenant.id || window.__APP_CACHE.tenant.tenantId || window.__APP_CACHE.businessid;
+    tenantId = appCache.get('tenant.id') || appCache.get('tenant.tenantId') || appCache.getAll().businessid;
     
     // If we don't have a token or tenantId yet, try to get directly from Cognito
     if (!token || !tenantId) {
@@ -58,7 +58,7 @@ const getTenantAndTokenInfo = async () => {
           token = session.tokens.idToken.toString();
           
           // Store in AppCache for future use
-          window.__APP_CACHE.auth.idToken = token;
+          appCache.set('auth.idToken', token);
           
           // Extract tenant ID from token payload
           try {
@@ -71,7 +71,7 @@ const getTenantAndTokenInfo = async () => {
                       payload['custom:tenantId'];
             
             if (tenantId) {
-              window.__APP_CACHE.tenant.id = tenantId;
+              appCache.get('tenant.id') = tenantId;
             }
           } catch (e) {
             console.warn('[Axios] Error extracting tenant ID from token:', e);
@@ -182,9 +182,9 @@ axiosInstance.interceptors.response.use(
       // Redirect to login if token expired/invalid
       if (typeof window !== 'undefined') {
         // Clear auth data
-        if (window.__APP_CACHE?.auth) {
-          delete window.__APP_CACHE.auth.token;
-          delete window.__APP_CACHE.auth.user;
+        if (appCache.getAll()
+          delete appCache.get('auth.token');
+          delete appCache.get('auth.user');
         }
         
         // Only redirect if not already on login page
@@ -192,17 +192,17 @@ axiosInstance.interceptors.response.use(
           console.log('[Axios] Authentication error, redirecting to login...');
           
           // Instead of immediate redirect, set a flag to avoid interrupting current operation
-          if (window.__APP_CACHE) {
-            window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-            window.__APP_CACHE.auth.redirectNeeded = true;
+          if (appCache.getAll()) {
+            appCache.getAll().auth = appCache.getAll().auth || {};
+            appCache.set('auth.redirectNeeded', true);
           }
           
           // After a short delay, check if we should actually redirect
           setTimeout(() => {
-            const redirectNeeded = window.__APP_CACHE?.auth?.redirectNeeded;
+            const redirectNeeded = appCache.getAll()
             if (redirectNeeded) {
-              if (window.__APP_CACHE?.auth) {
-                delete window.__APP_CACHE.auth.redirectNeeded;
+              if (appCache.getAll()
+                delete appCache.get('auth.redirectNeeded');
               }
               window.location.href = '/login';
             }
@@ -218,17 +218,17 @@ axiosInstance.interceptors.response.use(
       
       // Instead of immediate redirect, set a flag
       if (typeof window !== 'undefined') {
-        if (window.__APP_CACHE) {
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-          window.__APP_CACHE.auth.loginRedirectNeeded = true;
+        if (appCache.getAll()) {
+          appCache.getAll().auth = appCache.getAll().auth || {};
+          appCache.set('auth.loginRedirectNeeded', true);
         }
         
         // After a short delay, check if we should actually redirect
         setTimeout(() => {
-          const redirectNeeded = window.__APP_CACHE?.auth?.loginRedirectNeeded;
+          const redirectNeeded = appCache.getAll()
           if (redirectNeeded) {
-            if (window.__APP_CACHE?.auth) {
-              delete window.__APP_CACHE.auth.loginRedirectNeeded;
+            if (appCache.getAll()
+              delete appCache.get('auth.loginRedirectNeeded');
             }
             window.location.href = '/dashboard';
           }

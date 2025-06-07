@@ -1,6 +1,10 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 const REFRESH_COOLDOWN_MS = 15000; // 15 seconds between refreshes
@@ -135,11 +139,11 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       
       // Store the tokens in APP_CACHE for resilience
       if (typeof window !== 'undefined' && session.tokens?.accessToken) {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-        window.__APP_CACHE.auth.accessToken = session.tokens.accessToken.toString();
-        window.__APP_CACHE.auth.idToken = session.tokens.idToken.toString();
-        window.__APP_CACHE.auth.refreshed = Date.now();
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().auth = appCache.getAll().auth || {};
+        appCache.set('auth.accessToken', session.tokens.accessToken.toString());
+        appCache.set('auth.idToken', session.tokens.idToken.toString());
+        appCache.set('auth.refreshed', Date.now());
       }
       
       return !!session.tokens?.accessToken;
@@ -162,9 +166,9 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       
       // Store tenant ID in APP_CACHE immediately for resilience
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-        window.__APP_CACHE.tenant.id = tenantId;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        appCache.get('tenant.id') = tenantId;
       }
       
       const tryFetch = async () => {
@@ -210,22 +214,22 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     
     // Clear recovery attempts counter if this isn't a recovery attempt
     if (!urlParams.get('recovery')) {
-      if (window.__APP_CACHE) {
-        window.__APP_CACHE.recoveryAttempts = 0;
+      if (appCache.getAll()) {
+        appCache.getAll().recoveryAttempts = 0;
       }
     } else {
       // This is a recovery attempt
       console.log('[DashboardLoader] This is a recovery attempt, ensuring clean state');
       
       // Clear any pending operations
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.operations = {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().operations = {};
       
       // Track the number of sequential recovery attempts
       const attemptParam = urlParams.get('attempt');
       if (attemptParam) {
         const attemptCount = parseInt(attemptParam, 10);
-        window.__APP_CACHE.recoveryAttempts = attemptCount;
+        appCache.getAll().recoveryAttempts = attemptCount;
         
         // If too many attempts, try clearing more aggressive caches
         if (attemptCount > 3) {
@@ -282,8 +286,8 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
         
         // Record in APP_CACHE for resilience
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.lastError = {
+          appCache.getAll() = appCache.getAll() || {};
+          appCache.getAll().lastError = {
             type: message.includes('ChunkLoadError') ? 'ChunkLoadError' : 'NetworkError',
             message: message,
             timestamp: Date.now()
@@ -403,9 +407,9 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     
     // Handle tenant ID from meta tag - store it in APP_CACHE for resilience immediately
     if (tenantIdMeta && typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-      window.__APP_CACHE.tenant.id = tenantIdMeta;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      appCache.get('tenant.id') = tenantIdMeta;
       
       // If we already have a tenant ID in the path, don't redirect
       if (!pathTenantId) {

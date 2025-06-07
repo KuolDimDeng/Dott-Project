@@ -1,5 +1,6 @@
 import api from './api';
 import { getCacheValue, setCacheValue } from './appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 
 // Default menu items everyone should have
@@ -86,7 +87,7 @@ export async function verifyTenantOwnership() {
         
         // Get tenant ID from cache
         const tenantId = getCacheValue('auth')?.tenantId || 
-                         (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.tenantId) ||
+                         (typeof window !== 'undefined' && appCache.getAll()
                          getCacheValue('tenantId');
         
         if (!tenantId) {
@@ -96,7 +97,7 @@ export async function verifyTenantOwnership() {
         
         // First check: Look at Cognito user attributes for owner role
         const userAttributes = getCacheValue('auth')?.userAttributes || 
-                              (typeof window !== 'undefined' && window.__APP_CACHE?.user?.attributes);
+                              (typeof window !== 'undefined' && appCache.getAll()
         const userRole = userAttributes?.['custom:userrole'] || '';
         
         if (userRole.toLowerCase() === 'owner') {
@@ -145,7 +146,7 @@ export function hasMenuAccess(menuName) {
         
         // Check userAttributes directly as fallback
         const userAttributes = getCacheValue('auth')?.userAttributes || 
-                              (typeof window !== 'undefined' && window.__APP_CACHE?.user?.attributes);
+                              (typeof window !== 'undefined' && appCache.getAll()
         const userRole = userAttributes?.['custom:userrole'] || '';
         
         if (userRole.toLowerCase() === 'owner') {

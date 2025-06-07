@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
 /**
@@ -5,9 +7,12 @@
  * This module is kept separate to avoid circular dependencies
  */
 
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
+import { appCache } from '../utils/appCache';
 import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
+import { appCache } from '../utils/appCache';
 import { useCallback, useState, useEffect } from 'react';
 
 /**
@@ -196,11 +201,11 @@ export const fetchTenantInfo = async (tenantId) => {
       // Store tenant info in app cache for easier access
       if (isBrowser && data.tenant) {
         // Initialize app cache if needed
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-        window.__APP_CACHE.tenant.data = data.tenant;
-        window.__APP_CACHE.tenant.name = data.tenant.name || '';
-        window.__APP_CACHE.tenant.lastUpdated = new Date().toISOString();
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        appCache.set('tenant.data', data.tenant);
+        appCache.set('tenant.name', data.tenant.name || '');
+        appCache.set('tenant.lastUpdated', new Date().toISOString());
       }
       
       logger.debug(`[TenantContext] Tenant info fetched:`, data.tenant);

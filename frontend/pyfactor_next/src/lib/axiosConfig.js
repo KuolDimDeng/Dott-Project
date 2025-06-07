@@ -2,6 +2,7 @@
 // Uses dynamic imports for client-only dependencies
 
 import axios from 'axios';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import https from 'https';
 
@@ -161,8 +162,8 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
   try {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
-      tenantId = window.__APP_CACHE.tenant.id;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      tenantId = appCache.get('tenant.id');
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for HR API: ${tenantId}`);
     } else {
       // Try to get tenant ID from Cognito if needed
@@ -193,8 +194,8 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     config.headers['X-Use-Mock-Data'] = 'false';
     
     // Get auth token from APP_CACHE if available
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token) {
-      const token = window.__APP_CACHE.auth.token;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      const token = appCache.get('auth.token');
       if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for HR API`);
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -213,8 +214,8 @@ payrollApiInstance.interceptors.request.use(async (config) => {
   try {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
-      tenantId = window.__APP_CACHE.tenant.id;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      tenantId = appCache.get('tenant.id');
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for Payroll API: ${tenantId}`);
     } else {
       // Try to get tenant ID from Cognito if needed
@@ -248,8 +249,8 @@ payrollApiInstance.interceptors.request.use(async (config) => {
     config.headers['X-Payroll-RDS'] = 'true';
     
     // Get auth token from APP_CACHE if available
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.token) {
-      const token = window.__APP_CACHE.auth.token;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      const token = appCache.get('auth.token');
       if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for Payroll API`);
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -391,8 +392,8 @@ axiosInstance.interceptors.request.use(
           const { fetchAuthSession } = await import('@/config/amplifyUnified');
           
           // Use AWS AppCache for tenant ID - prioritize this over other sources
-          if (window.__APP_CACHE?.tenant?.id) {
-            const cachedTenantId = window.__APP_CACHE.tenant.id;
+          if (appCache.getAll()
+            const cachedTenantId = appCache.get('tenant.id');
             config.headers = {
               ...config.headers,
               'X-Tenant-ID': cachedTenantId
@@ -410,8 +411,8 @@ axiosInstance.interceptors.request.use(
           }
           
           // Use AWS AppCache for auth tokens if available
-          if (window.__APP_CACHE?.auth?.token) {
-            config.headers.Authorization = `Bearer ${window.__APP_CACHE.auth.token}`;
+          if (appCache.getAll()
+            config.headers.Authorization = `Bearer ${appCache.get('auth.token')}`;
             logger.debug('[AxiosConfig] Using auth token from APP_CACHE');
           } else {
             // Fall back to Amplify Auth
@@ -802,8 +803,8 @@ const verifyBackendConnection = async () => {
     // Get tenant ID from APP_CACHE or Cognito
     let tenantId = null;
     if (typeof window !== 'undefined') {
-      if (window.__APP_CACHE?.tenant?.id) {
-        tenantId = window.__APP_CACHE.tenant.id;
+      if (appCache.getAll()
+        tenantId = appCache.get('tenant.id');
         logger.debug(`[BackendConnectionCheck] Using tenant ID from APP_CACHE: ${tenantId}`);
       } else {
         try {
@@ -995,8 +996,8 @@ const diagnoseAndFixBackendConnection = async () => {
   try {
     if (typeof window !== 'undefined') {
       // Use APP_CACHE if available
-      if (window.__APP_CACHE?.tenant?.id) {
-        tenantId = window.__APP_CACHE.tenant.id;
+      if (appCache.getAll()
+        tenantId = appCache.get('tenant.id');
       } else {
         // Try to dynamically import and use tenantUtils
         const { getTenantId } = await import('@/utils/tenantUtils');
@@ -1070,8 +1071,8 @@ const resetConnectionSystem = async () => {
     
     // Clear any cached connection errors
     if (typeof window !== 'undefined') {
-      if (window.__APP_CACHE) {
-        delete window.__APP_CACHE.connectionErrors;
+      if (appCache.getAll()) {
+        delete appCache.getAll().connectionErrors;
         logger.info('[ConnectionReset] Cleared cached connection errors');
       }
     }

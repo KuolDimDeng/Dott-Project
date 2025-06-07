@@ -1,11 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().preferences = appCache.getAll().preferences || {};
 }
 
 /**
@@ -22,15 +25,15 @@ export function getLanguageParam() {
     // If not found in current URL, check app cache or use default
     if (!langParam && typeof window !== 'undefined') {
       // Initialize app cache if needed
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().preferences = appCache.getAll().preferences || {};
       
-      langParam = window.__APP_CACHE.preferences.language || 'en';
+      langParam = appCache.get('preferences.language') || 'en';
     } else if (langParam && typeof window !== 'undefined') {
       // Save the language preference for future use
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.preferences = window.__APP_CACHE.preferences || {};
-      window.__APP_CACHE.preferences.language = langParam;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().preferences = appCache.getAll().preferences || {};
+      appCache.set('preferences.language', langParam);
     } else {
       langParam = 'en';
     }

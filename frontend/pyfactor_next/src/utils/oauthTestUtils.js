@@ -1,11 +1,16 @@
+import appCache from '../utils/appCache';
+
 /**
  * OAuth Testing Utilities
  * 
  * Helper functions to test and verify OAuth flow functionality
  */
 
+import { appCache } from '../utils/appCache';
 import { cognitoAuth } from '@/lib/cognitoDirectAuth';
+import { appCache } from '../utils/appCache';
 import { CognitoAttributes } from '@/utils/CognitoAttributes';
+import { appCache } from '../utils/appCache';
 import { OAuthDebugUtils } from '@/utils/oauthDebugUtils';
 
 export const OAuthTestUtils = {
@@ -118,7 +123,7 @@ export const OAuthTestUtils = {
       console.log('Method 4 - JWT token:', method4);
       
       // Method 5: From app cache
-      const method5 = window.__APP_CACHE?.tenantId || window.__APP_CACHE?.tenant?.id;
+      const method5 = appCache.getAll()
       results.methods.appCache = method5;
       console.log('Method 5 - App cache:', method5);
       

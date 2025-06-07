@@ -1,22 +1,38 @@
+import appCache from '../utils/appCache';
+
 'use client';
 import React, { useState, useEffect, useCallback, memo, Fragment, useRef, useMemo } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { v4 as uuidv4 } from 'uuid';
+import { appCache } from '../utils/appCache';
 import { axiosInstance, backendHrApiInstance, resetCircuitBreakers } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { countries } from 'countries-list';
+import { appCache } from '../utils/appCache';
 import { format, parseISO } from 'date-fns';
 import EmployeePermissions from './EmployeePermissions';
+import { appCache } from '../utils/appCache';
 import { refreshUserSession, ensureAuthProvider } from '@/utils/refreshUserSession';
+import { appCache } from '../utils/appCache';
 import { Dialog, Transition } from '@headlessui/react';
+import { appCache } from '../utils/appCache';
 import { toast } from 'react-hot-toast';
+import { appCache } from '../utils/appCache';
 import { useTable, usePagination, useSortBy } from 'react-table';
+import { appCache } from '../utils/appCache';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 // Import the API utilities
 import api from '@/utils/api';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { employeeApi } from '@/utils/apiClient';
+import { appCache } from '../utils/appCache';
 import { invalidateCache } from '@/utils/apiHelpers';
+import { appCache } from '../utils/appCache';
 import { verifyBackendConnection } from '@/lib/axiosConfig';
 import BackendConnectionCheck from '../BackendConnectionCheck';
 
@@ -596,10 +612,10 @@ const EmployeeManagement = () => {
               refreshed = true;
               
               // Store tokens in app cache for other components to access
-              if (typeof window !== 'undefined' && window.__APP_CACHE) {
-                window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-                window.__APP_CACHE.auth.token = session.tokens.idToken?.toString();
-                window.__APP_CACHE.auth.provider = 'cognito';
+              if (typeof window !== 'undefined' && appCache.getAll()) {
+                appCache.getAll().auth = appCache.getAll().auth || {};
+                appCache.set('auth.token', session.tokens.idToken?.toString());
+                appCache.set('auth.provider', 'cognito');
               }
             }
           }
@@ -947,9 +963,9 @@ const EmployeeManagement = () => {
           
           // Store token in APP_CACHE for future use
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-            window.__APP_CACHE.auth.token = authToken;
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().auth = appCache.getAll().auth || {};
+            appCache.set('auth.token', authToken);
           }
         } else {
           logger.error('[EmployeeManagement] No token available in Amplify session');
@@ -1154,9 +1170,9 @@ const EmployeeManagement = () => {
       
       // Check for mock mode flag in AppCache
       const useMockMode = typeof window !== 'undefined' && 
-        window.__APP_CACHE && 
-        window.__APP_CACHE.debug && 
-        window.__APP_CACHE.debug.useMockMode === true;
+        appCache.getAll() && 
+        appCache.getAll().debug && 
+        appCache.set('debug.useMockMode', == true);
       
       if (useMockMode) {
         logger.info('[EmployeeManagement] Using mock data mode from localStorage setting');
@@ -1264,17 +1280,17 @@ const EmployeeManagement = () => {
   const toggleMockMode = useCallback(() => {
     // Get current mock mode from AppCache
     const currentMockMode = typeof window !== 'undefined' && 
-      window.__APP_CACHE && 
-      window.__APP_CACHE.debug && 
-      window.__APP_CACHE.debug.useMockMode === true;
+      appCache.getAll() && 
+      appCache.getAll().debug && 
+      appCache.set('debug.useMockMode', == true);
     
     const newMockMode = !currentMockMode;
     
     // Update AppCache
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.debug = window.__APP_CACHE.debug || {};
-      window.__APP_CACHE.debug.useMockMode = newMockMode;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().debug = appCache.getAll().debug || {};
+      appCache.set('debug.useMockMode', newMockMode);
     }
     
     // Show notification
@@ -2411,7 +2427,7 @@ const PersonalInformationTab = () => {
     const fetchPersonalInfo = async () => {
       try {
         // Get tenant ID from context or cache
-        const tenantId = window.__APP_CACHE?.tenant?.currentTenantId || 
+        const tenantId = appCache.getAll()
                           window.getCacheValue?.('tenantId') || 
                           localStorage.getItem('tenantId');
         
@@ -2469,9 +2485,9 @@ const PersonalInformationTab = () => {
         }
         
         // 2. If API fails, try to get data from AWS App Cache
-        if (!userData && window.__APP_CACHE?.userProfile?.data?.profile) {
+        if (!userData && appCache.getAll()
           console.log('Using App Cache for user profile data');
-          const cachedProfile = window.__APP_CACHE.userProfile.data.profile;
+          const cachedProfile = appCache.get('userProfile.data').profile;
           userData = {
             first_name: cachedProfile.firstName || cachedProfile.first_name || '',
             last_name: cachedProfile.lastName || cachedProfile.last_name || '',

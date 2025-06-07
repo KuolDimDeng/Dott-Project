@@ -1,27 +1,43 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState, useRef } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, usePathname } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { isPublicRoute } from '@/lib/authUtils';
+import { appCache } from '../utils/appCache';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import { appCache } from '../utils/appCache';
 import { refreshUserSession } from '@/utils/refreshUserSession';
+import { appCache } from '../utils/appCache';
 import { initializeTenant } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
 import { initializeTenantContext } from '@/utils/tenantContext';
+import { appCache } from '../utils/appCache';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
 // These providers are now handled in providers.js
 import AuthErrorBoundary from '@/components/ErrorBoundary';
 import LoadingFallback from '@/components/ClientOnly/LoadingFallback';
+import { appCache } from '../utils/appCache';
 import { setupRenderDebugging } from '@/utils/debugReactRendering';
 import dynamic from 'next/dynamic';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import DynamicComponents from '@/components/DynamicComponents';
 import tokenRefreshService from '@/utils/tokenRefresh';
 import MigrationComponent from '@/components/MigrationComponent';
+import { appCache } from '../utils/appCache';
 import { getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 import AuthTokenManager from '@/components/AuthTokenManager';
+import { appCache } from '../utils/appCache';
 import { tokenService } from '@/services/tokenService';
+import { appCache } from '../utils/appCache';
 import { setupAmplifyResilience } from '@/config/amplifyConfig';
+import { appCache } from '../utils/appCache';
 import { initNetworkResilience } from '@/utils/networkMonitor';
 // Removed GlobalEventDebugger - was causing input field issues
 
@@ -168,8 +184,8 @@ export default function ClientLayout({ children }) {
                 // Clear all relevant storage
                 try {
                   if (typeof window !== 'undefined') {
-                    if (window.__APP_CACHE) {
-                      window.__APP_CACHE = {}; // Reset entire app cache
+                    if (appCache.getAll()) {
+                      appCache.getAll() = {}; // Reset entire app cache
                     }
                     sessionStorage.clear();
                     // No longer clearing cookies as they're not used for authentication
@@ -243,13 +259,13 @@ export default function ClientLayout({ children }) {
                 // Clear redirect-related data in storage
                 try {
                   if (typeof window !== 'undefined') {
-                    window.__APP_CACHE = window.__APP_CACHE || {};
-                    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                    appCache.getAll() = appCache.getAll() || {};
+                    appCache.getAll().auth = appCache.getAll().auth || {};
                     
-                    delete window.__APP_CACHE.auth.signin_attempts;
-                    delete window.__APP_CACHE.auth.business_auth_errors;
-                    delete window.__APP_CACHE.auth.business_info_auth_errors;
-                    delete window.__APP_CACHE.auth.redirect_loop_count;
+                    delete appCache.get('auth.signin_attempts');
+                    delete appCache.get('auth.business_auth_errors');
+                    delete appCache.get('auth.business_info_auth_errors');
+                    delete appCache.get('auth.redirect_loop_count');
                   }
                   sessionStorage.removeItem('signinRedirectTime');
                   sessionStorage.removeItem('lastRedirectPath');

@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 const handleSelectPlan = (plan) => {
   if (isSubmitting) return;
   
@@ -26,21 +28,21 @@ const handleSelectPlan = (plan) => {
     try {
       // Initialize app cache
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().setup = appCache.getAll().setup || {};
         
         // Store setup configuration
-        window.__APP_CACHE.setup.skipDatabaseCreation = true;
-        window.__APP_CACHE.setup.useRLS = true;
-        window.__APP_CACHE.setup.skipSchemaCreation = true;
-        window.__APP_CACHE.setup.freePlanSelected = true;
+        appCache.set('setup.skipDatabaseCreation', true);
+        appCache.set('setup.useRLS', true);
+        appCache.set('setup.skipSchemaCreation', true);
+        appCache.set('setup.freePlanSelected', true);
         
         // Store onboarding state
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-        window.__APP_CACHE.onboarding.step = 'complete';
-        window.__APP_CACHE.onboarding.status = 'COMPLETE';
-        window.__APP_CACHE.onboarding.setupCompleted = true;
-        window.__APP_CACHE.onboarding.setupTimestamp = Date.now();
+        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        appCache.set('onboarding.step', 'complete');
+        appCache.set('onboarding.status', 'COMPLETE');
+        appCache.set('onboarding.setupCompleted', true);
+        appCache.set('onboarding.setupTimestamp', Date.now());
       }
     } catch (e) {
       // Ignore storage errors

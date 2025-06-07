@@ -1,8 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { cognitoAuth } from '@/lib/cognitoDirectAuth';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import { setCacheValue } from '@/utils/appCache';
 
@@ -72,13 +78,13 @@ export default function DirectOAuthCallback() {
         setCacheValue('oauth_provider', 'google');
         setCacheValue('oauth_user_email', user.email);
         
-        if (typeof window !== 'undefined' && window.__APP_CACHE) {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-          window.__APP_CACHE.auth.had_session = true;
-          window.__APP_CACHE.auth.last_login = new Date().toISOString();
-          window.__APP_CACHE.auth.provider = 'google';
-          window.__APP_CACHE.auth.oauth_user = user;
+        if (typeof window !== 'undefined' && appCache.getAll()) {
+          appCache.getAll() = appCache.getAll() || {};
+          appCache.getAll().auth = appCache.getAll().auth || {};
+          appCache.set('auth.had_session', true);
+          appCache.set('auth.last_login', new Date().toISOString());
+          appCache.set('auth.provider', 'google');
+          appCache.set('auth.oauth_user', user);
         }
 
         setStatus('Completing sign in...');

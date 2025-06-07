@@ -1,41 +1,50 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { appCache } from '../utils/appCache';
 import {
   signInWithConfig as amplifySignIn,
   signInWithRedirect,
   directOAuthSignIn,
   signIn
 } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
 import { ensureUserCreatedAt , prepareForSignIn} from '@/utils/authUtils';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import ReactivationDialog from './ReactivationDialog';
+import { appCache } from '../utils/appCache';
 import { checkDisabledAccount } from '@/lib/account-reactivation';
+import { appCache } from '../utils/appCache';
 import { getCsrfToken } from 'next-auth/react';
 
 // Initialize global app cache for auth
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-  window.__APP_CACHE.user = window.__APP_CACHE.user || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-  window.__APP_CACHE.tenants = window.__APP_CACHE.tenants || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().auth = appCache.getAll().auth || {};
+  appCache.getAll().user = appCache.getAll().user || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  appCache.getAll().tenants = appCache.getAll().tenants || {};
   
   // Define global functions for cache access if not already defined
   if (!window.setCacheValue) {
     window.setCacheValue = function(key, value, options = {}) {
       try {
-        if (!window.__APP_CACHE) return false;
+        if (!appCache.getAll()) return false;
         
         const now = Date.now();
         const ttl = options.ttl || 3600000; // Default 1 hour
         
         // Create cache entry with metadata
-        window.__APP_CACHE[key] = {
+        appCache.getAll()[key] = {
           value,
           timestamp: now,
           expiresAt: now + ttl,
@@ -53,17 +62,17 @@ if (typeof window !== 'undefined') {
   if (!window.getCacheValue) {
     window.getCacheValue = function(key) {
       try {
-        if (!window.__APP_CACHE) return null;
+        if (!appCache.getAll()) return null;
         
         // Check if the key exists in cache
-        const cacheEntry = window.__APP_CACHE[key];
+        const cacheEntry = appCache.getAll()[key];
         if (!cacheEntry) return null;
         
         // Check if the entry is a structured entry with expiration
         if (cacheEntry.expiresAt && cacheEntry.value !== undefined) {
           // Check if the entry has expired
           if (Date.now() > cacheEntry.expiresAt) {
-            delete window.__APP_CACHE[key];
+            delete appCache.getAll()[key];
             return null;
           }
           
@@ -98,15 +107,15 @@ if (typeof window !== 'undefined') {
         }
         
         // Store in AppCache with namespacing
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-        window.__APP_CACHE.tenant.id = tenantInfo.tenantId;
-        window.__APP_CACHE.tenantId = tenantInfo.tenantId;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        appCache.get('tenant.id') = tenantInfo.tenantId;
+        appCache.getAll().tenantId = tenantInfo.tenantId;
         
         // Store metadata in AppCache if provided
         if (tenantInfo.metadata) {
           Object.entries(tenantInfo.metadata).forEach(([key, value]) => {
-            window.__APP_CACHE.tenant[key] = value;
+            appCache.getAll().tenant[key] = value;
           });
         }
         
@@ -127,9 +136,9 @@ const getTenantIdFromSources = async () => {
     // Try to get from cache first
     if (typeof window !== 'undefined') {
       // Check APP_CACHE
-      if (window.__APP_CACHE && window.__APP_CACHE.tenant && window.__APP_CACHE.tenant.id) {
-        logger.debug('[SignInForm] Found tenant ID in APP_CACHE:', window.__APP_CACHE.tenant.id);
-        return window.__APP_CACHE.tenant.id;
+      if (appCache.getAll() && appCache.getAll().tenant && appCache.get('tenant.id')) {
+        logger.debug('[SignInForm] Found tenant ID in APP_CACHE:', appCache.get('tenant.id'));
+        return appCache.get('tenant.id');
       }
       
       // Check sessionStorage
@@ -225,10 +234,10 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
     // Ensure tenant ID is stored in all locations for resilience
     if (tenantId) {
       // Store in AppCache with namespacing
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-      window.__APP_CACHE.tenant.id = tenantId;
-      window.__APP_CACHE.tenantId = tenantId;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      appCache.get('tenant.id') = tenantId;
+      appCache.getAll().tenantId = tenantId;
       
       // Store in localStorage as fallback
       localStorage.setItem('tenant_id', tenantId);
@@ -257,10 +266,10 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         
         // Store user ID for RLS policies
         setCacheValue('user_id', userId, { ttl: 24 * 60 * 60 * 1000 });
-        window.__APP_CACHE.user = window.__APP_CACHE.user || {};
-        window.__APP_CACHE.user.id = userId;
-        window.__APP_CACHE.user.sub = userId;
-        window.__APP_CACHE.user.email = userEmail;
+        appCache.getAll().user = appCache.getAll().user || {};
+        appCache.set('user.id', userId);
+        appCache.set('user.sub', userId);
+        appCache.set('user.email', userEmail);
       } catch (attrError) {
         logger.warn('[SignInForm] Error getting user attributes:', attrError);
         // Continue anyway with default values
@@ -274,8 +283,8 @@ const safeRedirectToDashboard = async (router, tenantId, options = {}) => {
         idToken = await getIdToken(currentUser);
         
         // Store the token for future API requests
-        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-        window.__APP_CACHE.auth.idToken = idToken;
+        appCache.getAll().auth = appCache.getAll().auth || {};
+        appCache.set('auth.idToken', idToken);
       } catch (tokenError) {
         logger.warn('[SignInForm] Error getting ID token:', tokenError);
         // Continue anyway
@@ -593,10 +602,10 @@ export default function SignInForm() {
       // Store auth session flag in AppCache
       setCacheValue('auth_had_session', true);
       
-      // Also store in window.__APP_CACHE directly
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        window.__APP_CACHE.auth.had_session = true;
-        window.__APP_CACHE.auth.last_login = new Date().toISOString();
+      // Also store in appCache.getAll() directly
+      if (typeof window !== 'undefined' && appCache.getAll()) {
+        appCache.set('auth.had_session', true);
+        appCache.set('auth.last_login', new Date().toISOString());
       }
       
       // Ensure the user has custom:created_at set
@@ -624,10 +633,10 @@ export default function SignInForm() {
             setCacheValue('auth_email', formData.username);
             setCacheValue('auth_needs_verification', true);
             
-            // Also store in window.__APP_CACHE directly
-            if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.auth) {
-              window.__APP_CACHE.auth.email = formData.username;
-              window.__APP_CACHE.auth.needs_verification = true;
+            // Also store in appCache.getAll() directly
+            if (typeof window !== 'undefined' && appCache.getAll() && appCache.getAll().auth) {
+              appCache.set('auth.email', formData.username);
+              appCache.set('auth.needs_verification', true);
             }
             
             // Redirect to verification page
@@ -648,12 +657,12 @@ export default function SignInForm() {
               // Store user attributes in AppCache for better performance
               setCacheValue('user_attributes', userAttributes, { ttl: 3600000 }); // 1 hour cache
               
-              // Also store in window.__APP_CACHE directly
+              // Also store in appCache.getAll() directly
               if (typeof window !== 'undefined') {
-                window.__APP_CACHE = window.__APP_CACHE || {};
-                window.__APP_CACHE.user = window.__APP_CACHE.user || {};
-                window.__APP_CACHE.user.attributes = userAttributes;
-                window.__APP_CACHE.user.email = userAttributes.email || formData.username;
+                appCache.getAll() = appCache.getAll() || {};
+                appCache.getAll().user = appCache.getAll().user || {};
+                appCache.set('user.attributes', userAttributes);
+                appCache.set('user.email', userAttributes.email || formData.username);
                 
                 // Ensure auth data is also stored in sessionStorage as a fallback
                 try {
@@ -669,12 +678,12 @@ export default function SignInForm() {
                     sessionStorage.setItem('hasSession', 'true');
                     
                     // Also store in APP_CACHE
-                    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-                    window.__APP_CACHE.auth.idToken = session.tokens.idToken.toString();
-                    window.__APP_CACHE.auth.token = session.tokens.idToken.toString();
-                    window.__APP_CACHE.auth.accessToken = session.tokens.accessToken.toString();
-                    window.__APP_CACHE.auth.hasSession = true;
-                    window.__APP_CACHE.auth.provider = 'cognito';
+                    appCache.getAll().auth = appCache.getAll().auth || {};
+                    appCache.set('auth.idToken', session.tokens.idToken.toString());
+                    appCache.set('auth.token', session.tokens.idToken.toString());
+                    appCache.set('auth.accessToken', session.tokens.accessToken.toString());
+                    appCache.set('auth.hasSession', true);
+                    appCache.set('auth.provider', 'cognito');
                     
                     logger.debug('[SignInForm] Successfully stored tokens in sessionStorage and APP_CACHE');
                   }
@@ -722,10 +731,10 @@ export default function SignInForm() {
               setCacheValue('onboarding_status', onboardingStatus, { ttl: 3600000 }); // 1 hour cache
               setCacheValue('setup_done', setupDone, { ttl: 3600000 }); // 1 hour cache
               
-              // Also store in window.__APP_CACHE directly
-              if (typeof window !== 'undefined' && window.__APP_CACHE && window.__APP_CACHE.user) {
-                window.__APP_CACHE.user.onboarding_status = onboardingStatus;
-                window.__APP_CACHE.user.setup_done = setupDone;
+              // Also store in appCache.getAll() directly
+              if (typeof window !== 'undefined' && appCache.getAll() && appCache.getAll().user) {
+                appCache.set('user.onboarding_status', onboardingStatus);
+                appCache.set('user.setup_done', setupDone);
               }
               
               // Improved tenant verification and creation (async for faster sign-in)
@@ -734,10 +743,10 @@ export default function SignInForm() {
                   logger.debug('[SignInForm] Starting async tenant creation for business ID:', businessId);
                   
                   // Store tenant ID immediately for faster sign-in
-                  if (typeof window !== 'undefined' && window.__APP_CACHE) {
-                    window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-                    window.__APP_CACHE.tenant.id = businessId;
-                    window.__APP_CACHE.tenantId = businessId;
+                  if (typeof window !== 'undefined' && appCache.getAll()) {
+                    appCache.getAll().tenant = appCache.getAll().tenant || {};
+                    appCache.get('tenant.id') = businessId;
+                    appCache.getAll().tenantId = businessId;
                   }
                   
                   try {
@@ -809,10 +818,10 @@ export default function SignInForm() {
                   // Store the tenant ID for reliable access
                   try {
                     // First ensure tenant namespace is initialized
-                    if (typeof window !== 'undefined' && window.__APP_CACHE) {
-                      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-                      window.__APP_CACHE.tenant.id = tenantId;
-                      window.__APP_CACHE.tenantId = tenantId;
+                    if (typeof window !== 'undefined' && appCache.getAll()) {
+                      appCache.getAll().tenant = appCache.getAll().tenant || {};
+                      appCache.get('tenant.id') = tenantId;
+                      appCache.getAll().tenantId = tenantId;
                     }
                     
                     // Store using the utility function
@@ -872,10 +881,10 @@ export default function SignInForm() {
                       if (tenantId) {
                         try {
                           // First ensure tenant namespace is initialized
-                          if (typeof window !== 'undefined' && window.__APP_CACHE) {
-                            window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-                            window.__APP_CACHE.tenant.id = tenantId;
-                            window.__APP_CACHE.tenantId = tenantId;
+                          if (typeof window !== 'undefined' && appCache.getAll()) {
+                            appCache.getAll().tenant = appCache.getAll().tenant || {};
+                            appCache.get('tenant.id') = tenantId;
+                            appCache.getAll().tenantId = tenantId;
                           }
                           
                           // Store using the utility function

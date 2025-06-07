@@ -1,15 +1,24 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboardingProgress.js
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { appCache } from '../utils/appCache';
 import { useSession } from '@/hooks/useSession';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
+import { appCache } from '../utils/appCache';
 import { persistenceService } from '@/services/persistenceService';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { RoutingManager } from '@/lib/routingManager';
+import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
 import * as OnboardingUtils from '@/utils/onboardingUtils';
+import { appCache } from '../utils/appCache';
 import { saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
 
 /**
@@ -177,13 +186,13 @@ export function useOnboardingProgress() {
     try {
       // Ensure app cache exists
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
         
         // Store in app cache
-        window.__APP_CACHE.onboarding.step = normalizedStep;
-        window.__APP_CACHE.onboarding.status = normalizedStep;
-        window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+        appCache.set('onboarding.step', normalizedStep);
+        appCache.set('onboarding.status', normalizedStep);
+        appCache.set('onboarding.lastUpdated', new Date().toISOString());
         
         // Update Cognito attributes in background
         saveUserPreferences({
@@ -211,17 +220,17 @@ export function useOnboardingProgress() {
     // Store in app cache
     try {
       // Ensure app cache exists
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().onboarding = appCache.getAll().onboarding || {};
       
       // Store in app cache
-      window.__APP_CACHE.onboarding.step = normalizedStep;
-      window.__APP_CACHE.onboarding.status = normalizedStep;
-      window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+      appCache.set('onboarding.step', normalizedStep);
+      appCache.set('onboarding.status', normalizedStep);
+      appCache.set('onboarding.lastUpdated', new Date().toISOString());
       
       // Update completed state if step is 'complete'
       if (normalizedStep === 'complete') {
-        window.__APP_CACHE.onboarding.completed = true;
+        appCache.set('onboarding.completed', true);
       }
       
       logger.debug(`Onboarding state set in AppCache to ${normalizedStep}`);

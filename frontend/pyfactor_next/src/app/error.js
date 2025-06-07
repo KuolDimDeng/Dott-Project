@@ -21,8 +21,8 @@ export default function Error({ error, reset }) {
       removeCacheValue('last_error');
       
       // Store the current error for diagnostics
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        window.__APP_CACHE.last_error = {
+      if (typeof window !== 'undefined' && appCache.getAll()) {
+        appCache.getAll().last_error = {
           message: error?.message || 'Unknown error',
           stack: error?.stack || '',
           timestamp: new Date().toISOString()

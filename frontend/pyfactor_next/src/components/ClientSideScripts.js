@@ -1,5 +1,8 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect } from 'react';
 // Import OAuth debugger to make functions available globally
 import '@/utils/oauthDebugger';
@@ -11,8 +14,8 @@ import '@/utils/oauthDebugger';
 export default function ClientSideScripts() {
   useEffect(() => {
     // Initialize AppCache structure
-    if (!window.__APP_CACHE) {
-      window.__APP_CACHE = { 
+    if (!appCache.getAll()) {
+      appCache.getAll() = { 
         auth: { provider: 'auth0', initialized: true }, 
         user: {}, 
         tenant: {},
@@ -25,13 +28,13 @@ export default function ClientSideScripts() {
     if (!window.setCacheValue) {
       window.setCacheValue = function(key, value, options = {}) {
         try {
-          if (!window.__APP_CACHE) return false;
+          if (!appCache.getAll()) return false;
           
           const now = Date.now();
           const ttl = options.ttl || 3600000; // Default 1 hour
           
           // Create cache entry with metadata
-          window.__APP_CACHE[key] = {
+          appCache.getAll()[key] = {
             value,
             timestamp: now,
             expiresAt: now + ttl,
@@ -49,17 +52,17 @@ export default function ClientSideScripts() {
     if (!window.getCacheValue) {
       window.getCacheValue = function(key) {
         try {
-          if (!window.__APP_CACHE) return null;
+          if (!appCache.getAll()) return null;
           
           // Check if the key exists in cache
-          const cacheEntry = window.__APP_CACHE[key];
+          const cacheEntry = appCache.getAll()[key];
           if (!cacheEntry) return null;
           
           // Check if the entry is a structured entry with expiration
           if (cacheEntry.expiresAt && cacheEntry.value !== undefined) {
             // Check if the entry has expired
             if (Date.now() > cacheEntry.expiresAt) {
-              delete window.__APP_CACHE[key];
+              delete appCache.getAll()[key];
               return null;
             }
             
@@ -125,9 +128,9 @@ export default function ClientSideScripts() {
           window.setCacheValue('tenantId', tenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
           
           // Always ensure tenant namespace exists
-          if (window.__APP_CACHE) {
-            window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-            window.__APP_CACHE.tenant.id = tenantId;
+          if (appCache.getAll()) {
+            appCache.getAll().tenant = appCache.getAll().tenant || {};
+            appCache.get('tenant.id') = tenantId;
           }
           
           console.log('[ClientSideScripts] Tenant ID stored in AppCache');
@@ -145,9 +148,9 @@ export default function ClientSideScripts() {
           window.setCacheValue('tenantId', queryTenantId, { ttl: 24 * 60 * 60 * 1000 }); // 24 hours
           
           // Always ensure tenant namespace exists
-          if (window.__APP_CACHE) {
-            window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-            window.__APP_CACHE.tenant.id = queryTenantId;
+          if (appCache.getAll()) {
+            appCache.getAll().tenant = appCache.getAll().tenant || {};
+            appCache.get('tenant.id') = queryTenantId;
           }
           
           console.log('[ClientSideScripts] Tenant ID from query stored in AppCache');

@@ -1,10 +1,14 @@
+import appCache from '../utils/appCache';
+
 /**
  * AWS Amplify Resiliency Utilities
  * 
  * Provides enhanced error handling and retries for AWS Amplify operations
  */
 
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
+import { appCache } from '../utils/appCache';
 import { 
   trackCognitoFailure, 
   trackCognitoSuccess, 
@@ -13,7 +17,9 @@ import {
   resetCognitoCircuit, 
   getCognitoCircuitState 
 } from './networkMonitor';
+import { appCache } from '../utils/appCache';
 import { getFallbackTenantId } from './tenantFallback';
+import { appCache } from '../utils/appCache';
 import { updateUserAttributes } from '@/config/amplifyUnified';
 
 // Cached values for fallback
@@ -46,10 +52,10 @@ export const cacheUserAttributes = (attributes) => {
         }
         
         // Always store in APP_CACHE
-        if (window.__APP_CACHE) {
-          window.__APP_CACHE.user = window.__APP_CACHE.user || {};
-          window.__APP_CACHE.user.attributes = { ...attributes };
-          window.__APP_CACHE.user.timestamp = Date.now();
+        if (appCache.getAll()) {
+          appCache.getAll().user = appCache.getAll().user || {};
+          appCache.set('user.attributes', { ...attributes });
+          appCache.set('user.timestamp', Date.now());
         }
       }
     } catch (e) {
@@ -98,12 +104,12 @@ if (typeof window !== 'undefined') {
     }
     
     // Then check APP_CACHE as a backup
-    if (window.__APP_CACHE && window.__APP_CACHE.user && window.__APP_CACHE.user.attributes) {
-      const appCacheTimestamp = window.__APP_CACHE.user.timestamp || 0;
+    if (appCache.getAll() && appCache.getAll().user && appCache.get('user.attributes')) {
+      const appCacheTimestamp = appCache.get('user.timestamp') || 0;
       
       // Use APP_CACHE if it's newer or if we don't have attributes yet
       if (!cachedValues.userAttributes || (appCacheTimestamp > cachedValues.timestamp)) {
-        cachedValues.userAttributes = { ...window.__APP_CACHE.user.attributes };
+        cachedValues.userAttributes = { ...appCache.get('user.attributes') };
         cachedValues.timestamp = appCacheTimestamp;
         logger.debug(`[AmplifyResiliency] Loaded cached user attributes from APP_CACHE (${(Date.now() - appCacheTimestamp) / 1000}s old)`);
       }
@@ -700,9 +706,9 @@ export const getResiliantCacheValue = async (key, cognitoFetchFn, options = {}) 
   
   try {
     // First try AppCache if available
-    if (typeof window !== 'undefined' && window.__APP_CACHE) {
-      const cachedValue = window.__APP_CACHE[key];
-      const cachedTime = window.__APP_CACHE[key + '_timestamp'];
+    if (typeof window !== 'undefined' && appCache.getAll()) {
+      const cachedValue = appCache.getAll()[key];
+      const cachedTime = appCache.getAll()[key + '_timestamp'];
       
       // If we have a valid cached value and it's not expired
       if (cachedValue && cachedTime && (Date.now() - cachedTime < cacheTTL)) {
@@ -723,9 +729,9 @@ export const getResiliantCacheValue = async (key, cognitoFetchFn, options = {}) 
     
     // Save to AppCache for future use
     if (typeof window !== 'undefined') {
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      window.__APP_CACHE[key] = value;
-      window.__APP_CACHE[key + '_timestamp'] = Date.now();
+      if (!appCache.getAll()) appCache.getAll() = {};
+      appCache.getAll()[key] = value;
+      appCache.getAll()[key + '_timestamp'] = Date.now();
     }
     
     // Track success for circuit breaker

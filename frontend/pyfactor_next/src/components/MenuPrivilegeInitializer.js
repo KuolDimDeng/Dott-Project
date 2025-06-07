@@ -1,8 +1,13 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { verifyTenantOwnership } from '@/utils/menuPrivileges';
 import { getCacheValue } from '@/utils/appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 /**
@@ -15,7 +20,7 @@ export default function MenuPrivilegeInitializer() {
       try {
         // Check if we're authenticated
         const isAuthenticated = getCacheValue('auth')?.isAuthenticated || 
-                               (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.isAuthenticated);
+                               (typeof window !== 'undefined' && appCache.getAll()
         
         if (!isAuthenticated) {
           logger.debug('[MenuPrivilegeInitializer] User not authenticated yet, waiting...');
@@ -60,7 +65,7 @@ export default function MenuPrivilegeInitializer() {
       // Retry initialization periodically in case first attempt didn't have auth data
       const initInterval = setInterval(() => {
         const isAuthenticated = getCacheValue('auth')?.isAuthenticated || 
-                               window.__APP_CACHE?.auth?.isAuthenticated;
+                               appCache.getAll()
         
         if (isAuthenticated) {
           initMenuPrivileges();

@@ -1,7 +1,12 @@
+import appCache from '../utils/appCache';
+
 'use client'
 
+import { appCache } from '../utils/appCache';
 import { useState, useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
 import { clearCache } from '@/utils/appCache';
 
@@ -165,7 +170,7 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         window.__LAST_REDIRECT_ERROR = null;
         
         // Reset APP_CACHE explicitly
-        window.__APP_CACHE = {};
+        appCache.getAll() = {};
       }
 
       // Call API endpoint to clear cookies on server side

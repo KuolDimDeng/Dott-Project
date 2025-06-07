@@ -1,8 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import {
   signIn as authSignIn,
   signUp as authSignUp,
@@ -15,10 +21,15 @@ import {
   resendSignUpCode as authResendSignUpCode,
   updateUserAttributes
 } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { SafeHub } from '@/utils/safeHub';
+import { appCache } from '../utils/appCache';
 import { CognitoNetworkDiagnostic } from '@/utils/cognitoNetworkDiagnostic';
+import { appCache } from '../utils/appCache';
 import { useSession } from './useSession';
+import { appCache } from '../utils/appCache';
 import { setupHubDeduplication } from '@/utils/refreshUserSession';
+import { appCache } from '../utils/appCache';
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
 
 // Initialize Hub protection on import
@@ -66,9 +77,9 @@ function formatAuthErrorMessage(error) {
 function getAppCache() {
   if (typeof window === 'undefined') return null;
   
-  if (!window.__APP_CACHE) window.__APP_CACHE = {};
-  if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
-  return window.__APP_CACHE.auth;
+  if (!appCache.getAll()) appCache.getAll() = {};
+  if (!appCache.getAll().auth) appCache.getAll().auth = {};
+  return appCache.getAll().auth;
 }
 
 export const useAuth = () => {

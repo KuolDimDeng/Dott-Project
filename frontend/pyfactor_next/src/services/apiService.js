@@ -1,9 +1,16 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { axiosInstance, retryRequest } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { getTenantContext, setTenantContext, extractTenantFromResponse } from '@/utils/tenantContext';
+import { appCache } from '../utils/appCache';
 import { dataCache } from '@/utils/enhancedCache';
+import { appCache } from '../utils/appCache';
 import { getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 /**
@@ -413,11 +420,11 @@ export const getAuthTokens = async () => {
   try {
     // Initialize global cache if needed
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().auth = appCache.getAll().auth || {};
       
       // Get tokens from AppCache only
-      const { accessToken, idToken } = window.__APP_CACHE.auth;
+      const { accessToken, idToken } = appCache.getAll().auth;
       
       if (accessToken && idToken) {
         return { accessToken, idToken };
@@ -441,11 +448,11 @@ export const logout = async () => {
     
     // Clear auth tokens from AppCache
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-      window.__APP_CACHE.auth.accessToken = null;
-      window.__APP_CACHE.auth.idToken = null;
-      window.__APP_CACHE.auth.refreshToken = null;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().auth = appCache.getAll().auth || {};
+      appCache.set('auth.accessToken', null);
+      appCache.set('auth.idToken', null);
+      appCache.set('auth.refreshToken', null);
     }
   } catch (error) {
     logger.error('[ApiService] Error logging out:', error);

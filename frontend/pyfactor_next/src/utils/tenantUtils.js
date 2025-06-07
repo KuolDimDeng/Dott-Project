@@ -1,8 +1,11 @@
+import appCache from '../utils/appCache';
+
 /**
  * Tenant Utilities
  * Handles tenant-related operations and storage
  */
 
+import { appCache } from '../utils/appCache';
 import { getCurrentUser } from '@/config/amplifyUnified';
 
 // Constants
@@ -247,8 +250,8 @@ export const clearTenantStorage = async () => {
       
       // Clear APP_CACHE
       try {
-        if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
-          delete window.__APP_CACHE.tenant;
+        if (appCache.getAll() && appCache.getAll().tenant) {
+          delete appCache.getAll().tenant;
         }
       } catch (e) {
         console.warn('Could not clear APP_CACHE:', e);
@@ -310,12 +313,12 @@ export const storeTenantInfo = async ({ tenantId, metadata = {} }) => {
     
     // Store in APP_CACHE for cross-component resilience
     if (typeof window !== 'undefined') {
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
       
-      window.__APP_CACHE.tenant.id = tenantId;
-      window.__APP_CACHE.tenant.metadata = metadata;
-      window.__APP_CACHE.tenant.timestamp = Date.now();
+      appCache.get('tenant.id') = tenantId;
+      appCache.set('tenant.metadata', metadata);
+      appCache.set('tenant.timestamp', Date.now());
       
       // Also try to store in sessionStorage for persistence
       try {

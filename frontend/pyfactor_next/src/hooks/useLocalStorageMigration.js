@@ -1,8 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { isAllMigrationsComplete, markAllMigrationsComplete } from '@/utils/migrationCompletionCheck';
+import { appCache } from '../utils/appCache';
 import { migrateLegacyPreferences } from '@/utils/migrateLegacyPreferences';
+import { appCache } from '../utils/appCache';
 import { migrateUIPreferences } from '@/utils/migrateUIPreferences';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
@@ -97,12 +103,12 @@ export function useLocalStorageMigration() {
       setCacheValue('migration_auth_preferences_migrated', null);
       
       // Clear global AppCache markers if they exist
-      if (typeof window !== 'undefined' && window.__APP_CACHE) {
-        if (window.__APP_CACHE.migration) {
-          delete window.__APP_CACHE.migration.completed;
-          delete window.__APP_CACHE.migration.preferences;
-          delete window.__APP_CACHE.migration.ui;
-          delete window.__APP_CACHE.migration.auth;
+      if (typeof window !== 'undefined' && appCache.getAll()) {
+        if (appCache.getAll().migration) {
+          delete appCache.get('migration.completed');
+          delete appCache.get('migration.preferences');
+          delete appCache.get('migration.ui');
+          delete appCache.get('migration.auth');
         }
       }
       

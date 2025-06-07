@@ -1,129 +1,71 @@
 /**
- * Auth0 Compatibility Layer
+ * amplifyUnified.js - Auth0 Configuration
  * 
- * This file provides no-op stubs for Amplify functions since we've switched to Auth0.
- * This prevents build errors while we remove Amplify dependencies.
+ * This file previously contained AWS Amplify configuration but has been
+ * completely replaced with Auth0-specific implementations. All Amplify/Cognito
+ * code has been removed as we now use Auth0 exclusively.
  */
 
-import { logger } from '@/utils/logger';
+// Dummy implementation for backward compatibility
+export const isAuth0Enabled = () => true;
+export const isAmplifyEnabled = () => false;
 
-// No-op functions for Amplify compatibility
-export const signIn = async (...args) => {
-  logger.warn('[AmplifyUnified] signIn called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const signOut = async (...args) => {
-  logger.warn('[AmplifyUnified] signOut called but Amplify is disabled (using Auth0)');
-  // For Auth0, redirect to signout
-  if (typeof window !== 'undefined') {
-    window.location.href = '/api/auth/logout';
-  }
-  return true;
-};
-
-export const getCurrentUser = async (...args) => {
-  logger.warn('[AmplifyUnified] getCurrentUser called but Amplify is disabled (using Auth0)');
+// Log warning if any Amplify functions are accidentally called
+const createAmplifyWarning = (methodName) => (...args) => {
+  console.warn(`[AmplifyUnified] ${methodName} called but Amplify is disabled (using Auth0)`);
   return null;
 };
 
-export const fetchUserAttributes = async (...args) => {
-  logger.warn('[AmplifyUnified] fetchUserAttributes called but Amplify is disabled (using Auth0)');
-  return {};
-};
-
-export const fetchAuthSession = async (...args) => {
-  logger.warn('[AmplifyUnified] fetchAuthSession called but Amplify is disabled (using Auth0)');
+// Auth0 session helper that doesn't rely on Amplify
+export const getAuthSession = async () => {
+  try {
+    const response = await fetch('/api/auth/session');
+    if (response.ok) {
+      const session = await response.json();
+      return session;
+    }
+  } catch (error) {
+    console.error('[Auth0] Error fetching session:', error);
+  }
   return null;
 };
 
-export const updateUserAttributes = async (...args) => {
-  logger.warn('[AmplifyUnified] updateUserAttributes called but Amplify is disabled (using Auth0)');
-  return {};
-};
-
-export const signUp = async (...args) => {
-  logger.warn('[AmplifyUnified] signUp called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const confirmSignUp = async (...args) => {
-  logger.warn('[AmplifyUnified] confirmSignUp called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const resendSignUpCode = async (...args) => {
-  logger.warn('[AmplifyUnified] resendSignUpCode called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const resetPassword = async (...args) => {
-  logger.warn('[AmplifyUnified] resetPassword called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const confirmResetPassword = async (...args) => {
-  logger.warn('[AmplifyUnified] confirmResetPassword called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const signInWithRedirect = async (...args) => {
-  logger.warn('[AmplifyUnified] signInWithRedirect called but Amplify is disabled (using Auth0)');
-  throw new Error('Amplify authentication disabled - using Auth0');
-};
-
-export const configureAmplify = (...args) => {
-  logger.warn('[AmplifyUnified] configureAmplify called but Amplify is disabled (using Auth0)');
-  return false;
-};
-
-export const isAmplifyConfigured = () => {
-  return false;
-};
-
-export const initAmplify = () => {
-  return false;
-};
-
-export const isAuth0User = () => {
-  return true; // Always true now since we're using Auth0
-};
-
-// Mock Amplify object
-export const Amplify = {
-  configure: () => {
-    logger.warn('[AmplifyUnified] Amplify.configure called but Amplify is disabled (using Auth0)');
-  },
-  getConfig: () => {
-    return null;
+// Auth0 profile helper
+export const getAuthUserAttributes = async () => {
+  try {
+    const response = await fetch('/api/auth/profile');
+    if (response.ok) {
+      const profile = await response.json();
+      return profile;
+    }
+  } catch (error) {
+    console.error('[Auth0] Error fetching profile:', error);
   }
+  return null;
 };
 
-// Mock Hub object
-export const Hub = {
-  listen: () => {
-    logger.warn('[AmplifyUnified] Hub.listen called but Amplify is disabled (using Auth0)');
-  },
-  dispatch: () => {
-    logger.warn('[AmplifyUnified] Hub.dispatch called but Amplify is disabled (using Auth0)');
-  }
+// Create stubs for Amplify methods to prevent errors
+export const fetchAuthSession = createAmplifyWarning('fetchAuthSession');
+export const fetchUserAttributes = createAmplifyWarning('fetchUserAttributes');
+export const getCurrentUser = createAmplifyWarning('getCurrentUser');
+export const signOut = createAmplifyWarning('signOut');
+export const updateUserAttributes = createAmplifyWarning('updateUserAttributes');
+
+// No-op Amplify configuration function
+export const configureAmplify = () => {
+  console.log('[Auth] Using Auth0 for authentication (Amplify disabled)');
+  return false;
 };
 
-// Export default for backward compatibility
 export default {
-  Amplify,
-  signIn,
-  signOut,
-  getCurrentUser,
-  fetchUserAttributes,
+  isAuth0Enabled,
+  isAmplifyEnabled,
+  getAuthSession,
+  getAuthUserAttributes,
   fetchAuthSession,
+  fetchUserAttributes,
+  getCurrentUser,
+  signOut,
   updateUserAttributes,
-  Hub,
-  signUp,
-  confirmSignUp,
-  resendSignUpCode,
-  resetPassword,
-  confirmResetPassword,
-  signInWithRedirect,
-  isAuth0User
+  configureAmplify
 };

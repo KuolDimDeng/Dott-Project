@@ -1,6 +1,9 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Create a context for the user
@@ -18,9 +21,9 @@ const isDashboardRoute = (pathname) => {
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-  window.__APP_CACHE.user = window.__APP_CACHE.user || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().auth = appCache.getAll().auth || {};
+  appCache.getAll().user = appCache.getAll().user || {};
 }
 
 /**
@@ -61,14 +64,14 @@ export const UserProvider = ({ children }) => {
               
               // Store in app cache
               if (typeof window !== 'undefined') {
-                window.__APP_CACHE.user = {
-                  ...window.__APP_CACHE.user,
+                appCache.getAll().user = {
+                  ...appCache.getAll().user,
                   ...userData
                 };
                 
                 // Store email in auth cache too for consistency
                 if (userData.email) {
-                  window.__APP_CACHE.auth.email = userData.email;
+                  appCache.set('auth.email', userData.email);
                 }
               }
               
@@ -83,22 +86,22 @@ export const UserProvider = ({ children }) => {
           // For non-dashboard routes, use APP_CACHE with localStorage/cookies as fallback
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            if (!window.__APP_CACHE) window.__APP_CACHE = {};
-            if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
-            if (!window.__APP_CACHE.user) window.__APP_CACHE.user = {};
+            if (!appCache.getAll()) appCache.getAll() = {};
+            if (!appCache.getAll().auth) appCache.getAll().auth = {};
+            if (!appCache.getAll().user) appCache.getAll().user = {};
           }
           
           // Get email from APP_CACHE, then try Cognito
           const email = typeof window !== 'undefined' ? 
-            window.__APP_CACHE.auth.email ||
-            window.__APP_CACHE.user.email || '' : '';
+            appCache.get('auth.email') ||
+            appCache.get('user.email') || '' : '';
           
           // Get name details from APP_CACHE
           const firstName = typeof window !== 'undefined' ? 
-            window.__APP_CACHE.user.firstName || '' : '';
+            appCache.get('user.firstName') || '' : '';
             
           const lastName = typeof window !== 'undefined' ? 
-            window.__APP_CACHE.user.lastName || '' : '';
+            appCache.get('user.lastName') || '' : '';
           
           // Create a username from first name and last name, or email if not available
           const username = firstName && lastName 
@@ -123,8 +126,8 @@ export const UserProvider = ({ children }) => {
                                              attributes['custom:lastname'] || '';
                       
                       // Update app cache with Cognito data
-                      window.__APP_CACHE.user = {
-                        ...window.__APP_CACHE.user,
+                      appCache.getAll().user = {
+                        ...appCache.getAll().user,
                         email: cognitoEmail || email,
                         firstName: cognitoFirstName || firstName,
                         lastName: cognitoLastName || lastName
@@ -132,7 +135,7 @@ export const UserProvider = ({ children }) => {
                       
                       // Also update auth cache
                       if (cognitoEmail) {
-                        window.__APP_CACHE.auth.email = cognitoEmail;
+                        appCache.set('auth.email', cognitoEmail);
                       }
                       
                       // Update user data if we got new info
@@ -159,14 +162,14 @@ export const UserProvider = ({ children }) => {
           
           // Store in app cache
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE.user = {
-              ...window.__APP_CACHE.user,
+            appCache.getAll().user = {
+              ...appCache.getAll().user,
               ...userData
             };
             
             // Store email in auth cache too for consistency
             if (userData.email) {
-              window.__APP_CACHE.auth.email = userData.email;
+              appCache.set('auth.email', userData.email);
             }
           }
           
@@ -183,13 +186,13 @@ export const UserProvider = ({ children }) => {
       try {
         // Clear the user data from app cache
         if (typeof window !== 'undefined') {
-          if (window.__APP_CACHE.auth) {
-            delete window.__APP_CACHE.auth.email;
-            delete window.__APP_CACHE.auth.token;
+          if (appCache.getAll().auth) {
+            delete appCache.get('auth.email');
+            delete appCache.get('auth.token');
           }
           
-          if (window.__APP_CACHE.user) {
-            window.__APP_CACHE.user = {};
+          if (appCache.getAll().user) {
+            appCache.getAll().user = {};
           }
         }
         

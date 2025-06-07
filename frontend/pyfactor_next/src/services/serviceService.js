@@ -1,5 +1,8 @@
+import { appCache } from '../utils/appCache';
 import { apiService } from './apiService';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/enhancedCache';
 
 /**
@@ -49,8 +52,8 @@ const MOCK_SERVICES = [
 // Add initialization of global app cache at the top of the file
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.offline = window.__APP_CACHE.offline || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().offline = appCache.getAll().offline || {};
 }
 
 /**
@@ -376,9 +379,9 @@ export const storeServicesOffline = (services) => {
     
     // Store in app cache
     if (typeof window !== 'undefined') {
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.offline) window.__APP_CACHE.offline = {};
-      window.__APP_CACHE.offline.services = offlineData;
+      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll().offline) appCache.getAll().offline = {};
+      appCache.set('offline.services', offlineData);
       
       logger.debug(`Stored ${services.length} services in app cache for offline use`);
     } else {
@@ -397,8 +400,8 @@ export const getOfflineServices = () => {
   try {
     // Get from app cache
     if (typeof window !== 'undefined' && 
-        window.__APP_CACHE?.offline?.services) {
-      const offlineData = window.__APP_CACHE.offline.services;
+        appCache.getAll()
+      const offlineData = appCache.get('offline.services');
       
       // Check if data is stale (older than 24 hours)
       const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;

@@ -1,9 +1,12 @@
+import appCache from '../utils/appCache';
+
 /**
  * @file pageAccess.js
  * @description Utility functions for page-level access control
  */
 
 import { getCacheValue, setCacheValue } from './appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import api from './api';
 
@@ -140,7 +143,7 @@ export async function verifyTenantOwnership() {
     
     // Check Cognito user attributes for owner role
     const userAttributes = getCacheValue('auth')?.userAttributes || 
-                          (typeof window !== 'undefined' && window.__APP_CACHE?.user?.attributes);
+                          (typeof window !== 'undefined' && appCache.getAll()
     const userRole = userAttributes?.['custom:userrole'] || '';
     
     if (userRole.toLowerCase() === 'owner') {
@@ -152,7 +155,7 @@ export async function verifyTenantOwnership() {
     
     // Get tenant ID from cache
     const tenantId = getCacheValue('auth')?.tenantId || 
-                     (typeof window !== 'undefined' && window.__APP_CACHE?.auth?.tenantId) ||
+                     (typeof window !== 'undefined' && appCache.getAll()
                      getCacheValue('tenantId');
     
     if (!tenantId) {

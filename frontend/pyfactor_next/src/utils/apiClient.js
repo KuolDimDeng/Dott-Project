@@ -1,9 +1,14 @@
+import { appCache } from '../utils/appCache';
 import { apiRequest, invalidateCache } from './apiHelpers';
+import { appCache } from '../utils/appCache';
 import { axiosInstance, backendHrApiInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { getTenantId } from './tenantUtils';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import axios from 'axios';
 import { getAppCacheItem, setAppCacheItem } from '@/utils/appCache';
+import { appCache } from '../utils/appCache';
 import { fetchWithAuth } from '@/utils/api';
 
 // Helper function to handle API errors
@@ -133,8 +138,8 @@ export const employeeApi = {
       
       // Try to get from APP_CACHE first
       if (typeof window !== 'undefined') {
-        if (window.__APP_CACHE?.tenant?.id) {
-          tenantId = window.__APP_CACHE.tenant.id;
+        if (appCache.getAll()
+          tenantId = appCache.get('tenant.id');
         } else if (window.getCacheValue && window.getCacheValue('tenantId')) {
           tenantId = window.getCacheValue('tenantId');
         }

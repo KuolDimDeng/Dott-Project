@@ -1,7 +1,10 @@
+import appCache from '../utils/appCache';
+
 /**
  * Middleware to set RLS tenant ID in database sessions
  * Supports both production and development modes
  */
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/serverLogger';
 
 /**
@@ -265,23 +268,23 @@ export function getTenantCacheKey(baseKey, tenantId) {
  * @param {string} tenantId - Tenant ID to clear
  */
 export function clearTenantCache(tenantId) {
-  if (typeof window === 'undefined' || !window.__APP_CACHE || !tenantId) return;
+  if (typeof window === 'undefined' || !appCache.getAll() || !tenantId) return;
   
   try {
     // Remove all tenant-specific keys from each category
-    Object.keys(window.__APP_CACHE).forEach(category => {
-      if (typeof window.__APP_CACHE[category] === 'object') {
-        Object.keys(window.__APP_CACHE[category]).forEach(key => {
+    Object.keys(appCache.getAll()).forEach(category => {
+      if (typeof appCache.getAll()[category] === 'object') {
+        Object.keys(appCache.getAll()[category]).forEach(key => {
           if (key.startsWith(`${tenantId}_`)) {
-            delete window.__APP_CACHE[category][key];
+            delete appCache.getAll()[category][key];
           }
         });
       }
     });
     
     // Clear tenant-specific object
-    if (window.__APP_CACHE.tenant && window.__APP_CACHE.tenant[tenantId]) {
-      delete window.__APP_CACHE.tenant[tenantId];
+    if (appCache.getAll().tenant && appCache.getAll().tenant[tenantId]) {
+      delete appCache.getAll().tenant[tenantId];
     }
   } catch (error) {
     console.error('[RLS] Error clearing tenant cache:', error);

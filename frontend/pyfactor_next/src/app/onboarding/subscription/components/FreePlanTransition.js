@@ -1,8 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
 
 export default function FreePlanTransition() {
@@ -23,12 +29,12 @@ export default function FreePlanTransition() {
     // Store in app cache instead of localStorage for redundancy
     try {
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.setup = window.__APP_CACHE.setup || {};
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().setup = appCache.getAll().setup || {};
         
-        window.__APP_CACHE.setup.skipDatabaseCreation = true;
-        window.__APP_CACHE.setup.useRLS = true;
-        window.__APP_CACHE.setup.skipSchemaCreation = true;
+        appCache.set('setup.skipDatabaseCreation', true);
+        appCache.set('setup.useRLS', true);
+        appCache.set('setup.skipSchemaCreation', true);
       }
     } catch (e) {
       // Ignore storage errors

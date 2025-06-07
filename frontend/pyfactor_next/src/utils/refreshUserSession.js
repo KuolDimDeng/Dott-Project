@@ -1,4 +1,6 @@
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { parseJwt } from '@/lib/authUtils';
 import { setCacheValue, getCacheValue } from './appCache';
 
@@ -12,17 +14,17 @@ export function migrateToAccessTokens() {
   
   try {
     // Initialize APP_CACHE if needed
-    if (!window.__APP_CACHE) {
-      window.__APP_CACHE = {};
+    if (!appCache.getAll()) {
+      appCache.getAll() = {};
     }
     
-    if (!window.__APP_CACHE.auth) {
-      window.__APP_CACHE.auth = {};
+    if (!appCache.getAll().auth) {
+      appCache.getAll().auth = {};
     }
     
     // Check if we need to migrate from ID token to access token
-    const legacyIdToken = window.__APP_CACHE.auth.idToken || getCacheValue('idToken');
-    const currentAccessToken = window.__APP_CACHE.auth.token || getCacheValue('token');
+    const legacyIdToken = appCache.get('auth.idToken') || getCacheValue('idToken');
+    const currentAccessToken = appCache.get('auth.token') || getCacheValue('token');
     
     if (legacyIdToken && !currentAccessToken) {
       logger.info('[Auth] Migrating from ID token to access token auth');
@@ -30,11 +32,11 @@ export function migrateToAccessTokens() {
       // For Auth0, we prefer using access tokens for API calls
       // If we only have an ID token, we'll try to use it temporarily
       // but should trigger a proper token refresh
-      window.__APP_CACHE.auth.token = legacyIdToken;
+      appCache.set('auth.token', legacyIdToken);
       setCacheValue('token', legacyIdToken);
       
       // Mark that we need a proper refresh
-      window.__APP_CACHE.auth.needsRefresh = true;
+      appCache.set('auth.needsRefresh', true);
       
       logger.info('[Auth] Temporary migration completed - refresh needed');
     }
@@ -59,19 +61,19 @@ export function ensureAuthProvider() {
   if (typeof window !== 'undefined') {
     try {
       // Initialize APP_CACHE if needed
-      if (!window.__APP_CACHE) {
-        window.__APP_CACHE = {};
+      if (!appCache.getAll()) {
+        appCache.getAll() = {};
       }
       
       // Initialize auth section if needed
-      if (!window.__APP_CACHE.auth) {
-        window.__APP_CACHE.auth = {};
+      if (!appCache.getAll().auth) {
+        appCache.getAll().auth = {};
       }
       
       // Set provider to auth0 for the current authentication system
-      if (!window.__APP_CACHE.auth.provider) {
+      if (!appCache.get('auth.provider')) {
         logger.info('[Auth] Setting missing auth provider to "auth0" in APP_CACHE');
-        window.__APP_CACHE.auth.provider = 'auth0';
+        appCache.set('auth.provider', 'auth0');
       }
       
       return true;
@@ -105,7 +107,7 @@ export const refreshUserSession = async () => {
     // Auth0 SDK handles this automatically
     // We just need to check if we have valid tokens
     
-    const authProvider = window.__APP_CACHE?.auth?.provider || 'auth0';
+    const authProvider = appCache.getAll()
     
     if (authProvider === 'auth0') {
       // For Auth0, check if we have a valid session
@@ -113,7 +115,7 @@ export const refreshUserSession = async () => {
       logger.info('[Auth] Using Auth0 authentication - automatic token management');
       
       // Check if we have basic auth info
-      const hasToken = !!(window.__APP_CACHE?.auth?.token || getCacheValue('token'));
+      const hasToken = !!(appCache.getAll()
       
       if (hasToken) {
         lastSuccessfulRefresh = Date.now();
@@ -140,27 +142,27 @@ export const refreshUserSession = async () => {
  */
 function storeTokensInAppCache(tokens) {
   try {
-    if (!window.__APP_CACHE) {
-      window.__APP_CACHE = {};
+    if (!appCache.getAll()) {
+      appCache.getAll() = {};
     }
     
-    if (!window.__APP_CACHE.auth) {
-      window.__APP_CACHE.auth = {};
+    if (!appCache.getAll().auth) {
+      appCache.getAll().auth = {};
     }
     
     // Store the access token in APP_CACHE as the primary token for API authorization
     if (tokens.accessToken) {
-      window.__APP_CACHE.auth.token = tokens.accessToken; // Use access token as the primary token
+      appCache.set('auth.token', tokens.accessToken); // Use access token as the primary token
       setCacheValue('token', tokens.accessToken);
       
       // Set the auth provider to 'auth0' for the current authentication system
-      window.__APP_CACHE.auth.provider = 'auth0';
+      appCache.set('auth.provider', 'auth0');
       
       // Parse and store token expiry
       const decodedToken = parseJwt(tokens.accessToken);
       if (decodedToken && decodedToken.exp) {
         const expiry = decodedToken.exp * 1000; // Convert to milliseconds
-        window.__APP_CACHE.auth.tokenExpiry = expiry;
+        appCache.set('auth.tokenExpiry', expiry);
         setCacheValue('tokenExpiry', expiry);
       }
       
@@ -169,21 +171,21 @@ function storeTokensInAppCache(tokens) {
     
     // Store ID token separately if provided
     if (tokens.idToken) {
-      window.__APP_CACHE.auth.idToken = tokens.idToken;
+      appCache.set('auth.idToken', tokens.idToken);
       setCacheValue('idToken', tokens.idToken);
       logger.debug('[Auth] ID token stored in APP_CACHE');
     }
     
     // Store refresh token if provided
     if (tokens.refreshToken) {
-      window.__APP_CACHE.auth.refreshToken = tokens.refreshToken;
+      appCache.set('auth.refreshToken', tokens.refreshToken);
       setCacheValue('refreshToken', tokens.refreshToken);
       logger.debug('[Auth] Refresh token stored in APP_CACHE');
     }
     
     // Mark timestamp
     const timestamp = Date.now();
-    window.__APP_CACHE.auth.tokenTimestamp = timestamp;
+    appCache.set('auth.tokenTimestamp', timestamp);
     setCacheValue('tokenTimestamp', timestamp);
     setCacheValue('hasSession', true);
     
@@ -217,9 +219,9 @@ export async function clearUserSession() {
     logger.debug('[Session] Starting session cleanup');
     
     // Clear tokens from APP_CACHE
-    if (window.__APP_CACHE && window.__APP_CACHE.auth) {
-      window.__APP_CACHE.auth = {
-        provider: window.__APP_CACHE.auth.provider // Keep the provider info
+    if (appCache.getAll() && appCache.getAll().auth) {
+      appCache.getAll().auth = {
+        provider: appCache.get('auth.provider') // Keep the provider info
       };
     }
     
@@ -244,9 +246,9 @@ export async function clearUserSession() {
 
 export const getStoredTokens = () => {
   try {
-    const token = window.__APP_CACHE?.auth?.token || getCacheValue('token');
-    const idToken = window.__APP_CACHE?.auth?.idToken || getCacheValue('idToken');
-    const refreshToken = window.__APP_CACHE?.auth?.refreshToken || getCacheValue('refreshToken');
+    const token = appCache.getAll()
+    const idToken = appCache.getAll()
+    const refreshToken = appCache.getAll()
     
     return {
       accessToken: token,

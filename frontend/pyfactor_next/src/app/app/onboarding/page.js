@@ -1,7 +1,12 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 export default function OnboardingPage() {
@@ -13,8 +18,8 @@ export default function OnboardingPage() {
     
     // Helper to initialize app cache
     if (typeof window !== 'undefined') {
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll().auth) appCache.getAll().auth = {};
     }
     
     // Function to check authentication
@@ -30,14 +35,14 @@ export default function OnboardingPage() {
           
           // Store in app cache
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE.auth.authSuccess = true;
+            appCache.set('auth.authSuccess', true);
             
             // Try to extract email from token
             try {
               const idToken = session.tokens.idToken.toString();
               const payload = JSON.parse(atob(idToken.split('.')[1]));
               if (payload.email) {
-                window.__APP_CACHE.auth.email = payload.email;
+                appCache.set('auth.email', payload.email);
               }
             } catch (e) {
               logger.warn('[OnboardingPage] Could not extract email from token:', e);
@@ -54,8 +59,8 @@ export default function OnboardingPage() {
       
       // Fallback to app cache
       if (typeof window !== 'undefined' && 
-          window.__APP_CACHE?.auth?.authSuccess && 
-          window.__APP_CACHE?.auth?.email) {
+          appCache.getAll()
+          appCache.getAll()
         logger.debug('[OnboardingPage] User authenticated via app cache');
         setIsLoading(false);
         return;

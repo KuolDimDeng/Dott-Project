@@ -1,8 +1,14 @@
+import { appCache } from '../utils/appCache';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
+import { appCache } from '../utils/appCache';
 import { jwtDecode } from 'jwt-decode';
+import { appCache } from '../utils/appCache';
 import { fetchUserAttributes } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -10,10 +16,12 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { appCache } from '../utils/appCache';
 import { 
   updateTenantIdInCognito, 
   getTenantIdFromCognito 
 } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
 import { 
   saveOnboardingStatus, 
   getOnboardingStatus as getUserOnboardingStatus,
@@ -42,10 +50,10 @@ export async function validateSession(providedTokens) {
         
         // Store in AppCache instead of cookies
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-          window.__APP_CACHE.auth.accessToken = tokens.accessToken;
-          window.__APP_CACHE.auth.idToken = tokens.idToken;
+          appCache.getAll() = appCache.getAll() || {};
+          appCache.getAll().auth = appCache.getAll().auth || {};
+          appCache.set('auth.accessToken', tokens.accessToken);
+          appCache.set('auth.idToken', tokens.idToken);
         }
       } catch (refreshError) {
         logger.warn('[OnboardingUtils] Token refresh failed, falling back to fetchAuthSession:', refreshError);
@@ -59,10 +67,10 @@ export async function validateSession(providedTokens) {
         
         // Store in AppCache instead of cookies
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-          window.__APP_CACHE.auth.accessToken = tokens.accessToken;
-          window.__APP_CACHE.auth.idToken = tokens.idToken;
+          appCache.getAll() = appCache.getAll() || {};
+          appCache.getAll().auth = appCache.getAll().auth || {};
+          appCache.set('auth.accessToken', tokens.accessToken);
+          appCache.set('auth.idToken', tokens.idToken);
         }
       }
     }
@@ -90,18 +98,18 @@ export async function validateSession(providedTokens) {
 function getAppCacheValues() {
   const cache = {};
   if (typeof window !== 'undefined') {
-    window.__APP_CACHE = window.__APP_CACHE || {};
-    window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-    window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+    appCache.getAll() = appCache.getAll() || {};
+    appCache.getAll().auth = appCache.getAll().auth || {};
+    appCache.getAll().onboarding = appCache.getAll().onboarding || {};
     
     // Add auth tokens
-    cache.accessToken = window.__APP_CACHE.auth.accessToken;
-    cache.idToken = window.__APP_CACHE.auth.idToken;
+    cache.accessToken = appCache.get('auth.accessToken');
+    cache.idToken = appCache.get('auth.idToken');
     
     // Add onboarding status
-    cache.onboardingStep = window.__APP_CACHE.onboarding.step;
-    cache.onboardedStatus = window.__APP_CACHE.onboarding.status;
-    cache.setupCompleted = window.__APP_CACHE.onboarding.completed;
+    cache.onboardingStep = appCache.get('onboarding.step');
+    cache.onboardedStatus = appCache.get('onboarding.status');
+    cache.setupCompleted = appCache.get('onboarding.completed');
   }
   return cache;
 }
@@ -218,11 +226,11 @@ export async function completeOnboarding() {
       
       // Update AppCache
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-        window.__APP_CACHE.onboarding.status = 'complete';
-        window.__APP_CACHE.onboarding.step = 'complete';
-        window.__APP_CACHE.onboarding.completed = true;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        appCache.set('onboarding.status', 'complete');
+        appCache.set('onboarding.step', 'complete');
+        appCache.set('onboarding.completed', true);
       }
       
       logger.debug('[OnboardingUtils] Attributes updated via Amplify', {

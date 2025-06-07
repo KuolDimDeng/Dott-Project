@@ -3,9 +3,9 @@ const LOCK_TIMEOUT = 30000; // 30 seconds timeout
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
 }
 
 /**
@@ -16,12 +16,12 @@ export const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Ensure app cache exists
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
   
   // Check if lock already exists
-  const existingLock = window.__APP_CACHE.tenant.locks.initialization;
+  const existingLock = appCache.get('tenant.locks').initialization;
   if (existingLock) {
     // Check if lock is stale (older than timeout)
     const now = Date.now();
@@ -38,7 +38,7 @@ export const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  window.__APP_CACHE.tenant.locks.initialization = lockData;
+  appCache.get('tenant.locks').initialization = lockData;
   return true;
 };
 
@@ -49,10 +49,10 @@ export const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
   
   // Ensure app cache exists
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-  window.__APP_CACHE.tenant.locks = window.__APP_CACHE.tenant.locks || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
   
   // Remove lock
-  delete window.__APP_CACHE.tenant.locks.initialization;
+  delete appCache.get('tenant.locks').initialization;
 };

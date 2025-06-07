@@ -1,9 +1,15 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -11,7 +17,9 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { appCache } from '../utils/appCache';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
 
 // Subscription plans
@@ -267,31 +275,31 @@ export default function SubscriptionForm() {
       
       // Set up the AppCache for the subscription
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.subscription = window.__APP_CACHE.subscription || {};
-        window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().subscription = appCache.getAll().subscription || {};
+        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
         
         // Store subscription details
-        window.__APP_CACHE.subscription.plan = plan.id;
-        window.__APP_CACHE.subscription.billingCycle = billingCycle;
-        window.__APP_CACHE.subscription.isComplete = true;
-        window.__APP_CACHE.subscription.timestamp = new Date().toISOString();
+        appCache.set('subscription.plan', plan.id);
+        appCache.set('subscription.billingCycle', billingCycle);
+        appCache.set('subscription.isComplete', true);
+        appCache.set('subscription.timestamp', new Date().toISOString());
         
         // Update onboarding status
         if (plan.id === 'free' || plan.id === 'basic') {
-          window.__APP_CACHE.onboarding.status = 'complete';
-          window.__APP_CACHE.onboarding.step = 'complete';
-          window.__APP_CACHE.onboarding.completed = true;
+          appCache.set('onboarding.status', 'complete');
+          appCache.set('onboarding.step', 'complete');
+          appCache.set('onboarding.completed', true);
         } else {
-          window.__APP_CACHE.onboarding.status = 'subscription';
-          window.__APP_CACHE.onboarding.step = 'subscription';
+          appCache.set('onboarding.status', 'subscription');
+          appCache.set('onboarding.step', 'subscription');
         }
       }
       
       // Check for development mode
       const devMode = process.env.NODE_ENV === 'development';
       const bypassAuth = typeof window !== 'undefined' && 
-                         window.__APP_CACHE?.debug?.bypassAuth === true;
+                         appCache.getAll()
       
       // Update Cognito attributes FIRST before redirecting
       try {
@@ -302,11 +310,11 @@ export default function SubscriptionForm() {
           
           // Store in AppCache
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE.cognito = window.__APP_CACHE.cognito || {};
-            window.__APP_CACHE.cognito.subplan = plan.id;
-            window.__APP_CACHE.cognito.subscriptioninterval = billingCycle;
-            window.__APP_CACHE.cognito.onboarding = plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription';
-            window.__APP_CACHE.cognito.updated_at = new Date().toISOString();
+            appCache.getAll().cognito = appCache.getAll().cognito || {};
+            appCache.set('cognito.subplan', plan.id);
+            appCache.set('cognito.subscriptioninterval', billingCycle);
+            appCache.set('cognito.onboarding', plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription');
+            appCache.set('cognito.updated_at', new Date().toISOString());
           }
         } else {
           // Safe attributes that won't cause permission issues
@@ -415,9 +423,9 @@ export default function SubscriptionForm() {
           
           // Set complete status in AppCache
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE.onboarding.status = 'complete';
-            window.__APP_CACHE.onboarding.step = 'complete';
-            window.__APP_CACHE.onboarding.completed = true;
+            appCache.set('onboarding.status', 'complete');
+            appCache.set('onboarding.step', 'complete');
+            appCache.set('onboarding.completed', true);
           }
           
           // Redirect directly to dashboard
@@ -452,21 +460,21 @@ export default function SubscriptionForm() {
     
     // Store free plan selection in AppCache
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.subscription = window.__APP_CACHE.subscription || {};
-      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().subscription = appCache.getAll().subscription || {};
+      appCache.getAll().onboarding = appCache.getAll().onboarding || {};
       
       // Set subscription details
-      window.__APP_CACHE.subscription.plan = 'free';
-      window.__APP_CACHE.subscription.billingCycle = 'monthly';
-      window.__APP_CACHE.subscription.isComplete = true;
-      window.__APP_CACHE.subscription.timestamp = new Date().toISOString();
+      appCache.set('subscription.plan', 'free');
+      appCache.set('subscription.billingCycle', 'monthly');
+      appCache.set('subscription.isComplete', true);
+      appCache.set('subscription.timestamp', new Date().toISOString());
       
       // Set onboarding as complete
-      window.__APP_CACHE.onboarding.status = 'complete';
-      window.__APP_CACHE.onboarding.step = 'complete';
-      window.__APP_CACHE.onboarding.completed = true;
-      window.__APP_CACHE.onboarding.freePlanSelected = true;
+      appCache.set('onboarding.status', 'complete');
+      appCache.set('onboarding.step', 'complete');
+      appCache.set('onboarding.completed', true);
+      appCache.set('onboarding.freePlanSelected', true);
     }
     
     // First check for Cognito tenant ID by fetching user attributes
@@ -510,7 +518,7 @@ export default function SubscriptionForm() {
     // If we couldn't get tenant ID from Cognito, try AppCache
     if (!tenantId || !isValidUUID(tenantId)) {
       // Try to get tenant ID from AppCache
-      const appCache = typeof window !== 'undefined' ? (window.__APP_CACHE || {}) : {};
+      const appCache = typeof window !== 'undefined' ? (appCache.getAll() || {}) : {};
       const tenant = appCache.tenant || {};
       
       if (tenant.id && isValidUUID(tenant.id)) {

@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 /**
  * Tenant Fallback Utilities
  * 
@@ -5,7 +7,9 @@
  * API calls fail or network connectivity issues occur.
  */
 
+import { appCache } from '../utils/appCache';
 import { isValidUUID, generateDeterministicTenantId } from './tenantUtils';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 
 // Storage keys
@@ -62,11 +66,11 @@ export const getFallbackTenantId = () => {
 
     // Try AppCache for tenant ID
     if (typeof window !== 'undefined' && 
-        window.__APP_CACHE?.tenant?.id && 
-        isValidUUID(window.__APP_CACHE.tenant.id)) {
-      logger.debug("[TenantFallback] Using tenant ID from AppCache:", window.__APP_CACHE.tenant.id);
-      localStorage.setItem(STORAGE_KEYS.TENANT_ID, window.__APP_CACHE.tenant.id);
-      return window.__APP_CACHE.tenant.id;
+        appCache.getAll()
+        isValidUUID(appCache.get('tenant.id'))) {
+      logger.debug("[TenantFallback] Using tenant ID from AppCache:", appCache.get('tenant.id'));
+      localStorage.setItem(STORAGE_KEYS.TENANT_ID, appCache.get('tenant.id'));
+      return appCache.get('tenant.id');
     }
 
     // Last resort: check for a last known tenant ID
@@ -173,9 +177,9 @@ export const trackSuccessfulTenant = (tenantId) => {
     
     // Also store in AppCache
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-      window.__APP_CACHE.tenant.id = tenantId;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      appCache.get('tenant.id') = tenantId;
     }
   } catch (error) {
     logger.error("[TenantFallback] Error tracking successful tenant:", error);
@@ -369,9 +373,9 @@ export const storeReliableTenantId = (tenantId) => {
     
     // Also store in AppCache
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-      window.__APP_CACHE.tenant.id = tenantId;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      appCache.get('tenant.id') = tenantId;
     }
     
     return true;

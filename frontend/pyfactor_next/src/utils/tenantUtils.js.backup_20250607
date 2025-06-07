@@ -15,6 +15,49 @@ const TENANT_CACHE_PREFIX = 'tenant_';
  * Get the current tenant ID
  * @returns {Promise<string>} The tenant ID
  */
+
+/**
+ * Persists onboarding completion status to help prevent lost state
+ * after sign out / sign in cycles
+ * @param {string} tenantId - The tenant ID
+ * @param {string} status - The onboarding status
+ */
+export const persistOnboardingStatus = (tenantId, status) => {
+  if (!tenantId) return;
+  
+  try {
+    // Store in localStorage for client-side persistence
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(`onboarding_${tenantId}`, status);
+    }
+    
+    // Could also store in an HTTP-only cookie for more security
+    // if needed in the future
+  } catch (error) {
+    console.error('Error persisting onboarding status:', error);
+  }
+};
+
+/**
+ * Retrieves persisted onboarding status
+ * @param {string} tenantId - The tenant ID
+ * @returns {string|null} The persisted onboarding status or null
+ */
+export const getPersistedOnboardingStatus = (tenantId) => {
+  if (!tenantId) return null;
+  
+  try {
+    // Retrieve from localStorage
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(`onboarding_${tenantId}`);
+    }
+  } catch (error) {
+    console.error('Error getting persisted onboarding status:', error);
+  }
+  
+  return null;
+};
+
 export const getTenantId = async () => {
   try {
     // With Auth0, check localStorage first

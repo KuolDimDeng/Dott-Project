@@ -1,5 +1,8 @@
+import { appCache } from '../utils/appCache';
 import { fetchAuthSession  } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
+import { appCache } from '../utils/appCache';
 import { logMemoryUsage, trackMemory, detectMemorySpike } from '@/utils/memoryDebug';
 
 /**
@@ -30,14 +33,14 @@ export async function completeOnboarding() {
   try {
     // Initialize app cache if needed
     if (typeof window !== 'undefined') {
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().onboarding = appCache.getAll().onboarding || {};
       
       // Store in app cache
-      window.__APP_CACHE.onboarding.status = 'complete';
-      window.__APP_CACHE.onboarding.setupDone = true;
-      window.__APP_CACHE.onboarding.completedAt = new Date().toISOString();
-      window.__APP_CACHE.onboarding.lastUpdated = new Date().toISOString();
+      appCache.set('onboarding.status', 'complete');
+      appCache.set('onboarding.setupDone', true);
+      appCache.set('onboarding.completedAt', new Date().toISOString());
+      appCache.set('onboarding.lastUpdated', new Date().toISOString());
     }
   } catch (storageError) {
     logger.warn(`[completeOnboarding:${requestId}] Failed to set app cache:`, storageError.message);

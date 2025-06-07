@@ -1,10 +1,17 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { getCurrentUser, signOut  } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { saveUserPreference, getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Auth-specific preference keys
@@ -54,8 +61,8 @@ export function useAuth() {
       // If migration is not complete, perform migration
       if (typeof window !== 'undefined') {
         // Check if there are any auth-related items in localStorage that need migration
-        // Get values from window.__APP_CACHE first, then fall back to localStorage for migration
-        const appCache = window.__APP_CACHE || {};
+        // Get values from appCache.getAll() first, then fall back to localStorage for migration
+        const appCache = appCache.getAll() || {};
         const auth = appCache.auth || {};
         
         const needsReauth = auth.needsReauthentication === true || 
@@ -197,9 +204,9 @@ export function useAuth() {
       
       // Store in global AppCache for easy access
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-        window.__APP_CACHE.auth.needsReauthentication = required;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().auth = appCache.getAll().auth || {};
+        appCache.set('auth.needsReauthentication', required);
       }
     } catch (error) {
       logger.error('[useAuth] Error setting reauthentication flag:', error);
@@ -222,9 +229,9 @@ export function useAuth() {
       
       // Store in global AppCache for easy access
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE = window.__APP_CACHE || {};
-        window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-        window.__APP_CACHE.auth.lastAuthTime = now;
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().auth = appCache.getAll().auth || {};
+        appCache.set('auth.lastAuthTime', now);
       }
     } catch (error) {
       logger.error('[useAuth] Error updating last auth time:', error);

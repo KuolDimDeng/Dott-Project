@@ -1,6 +1,10 @@
+import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/cacheUtils';
+import { appCache } from '../utils/appCache';
 import { getTenantId } from '@/utils/tenantUtils';
 
 /**
@@ -264,8 +268,8 @@ export const ultraOptimizedInventoryService = {
     inventoryCache.clearTenant();
     
     // Clear from app cache if available
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.offline) {
-      delete window.__APP_CACHE.offline[`ultra_products_${tenantId}`];
+    if (typeof window !== 'undefined' && appCache.getAll()
+      delete appCache.getAll().offline[`ultra_products_${tenantId}`];
       logger.debug('Cleared ultra product cache from APP_CACHE');
     }
   },
@@ -294,9 +298,9 @@ export const ultraOptimizedInventoryService = {
       };
       
       // Initialize app cache
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.offline = window.__APP_CACHE.offline || {};
-      window.__APP_CACHE.offline[`ultra_products_${tenantId}`] = offlineData;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().offline = appCache.getAll().offline || {};
+      appCache.getAll().offline[`ultra_products_${tenantId}`] = offlineData;
       
       logger.debug(`Stored ${products.length} ultra products in APP_CACHE for offline use`);
     } catch (error) {
@@ -318,11 +322,11 @@ export const ultraOptimizedInventoryService = {
       const tenantId = getTenantId() || 'default';
       
       // Check if app cache exists
-      if (!window.__APP_CACHE?.offline?.[`ultra_products_${tenantId}`]) {
+      if (!appCache.getAll()
         return [];
       }
       
-      const offlineData = window.__APP_CACHE.offline[`ultra_products_${tenantId}`];
+      const offlineData = appCache.getAll().offline[`ultra_products_${tenantId}`];
       
       // Check if data is stale (older than 24 hours)
       const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;

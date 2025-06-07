@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 /**
  * AWS App Cache Utility
  * 
@@ -71,7 +73,7 @@ export const appCache = {
       return [];
     }
     
-    return Object.keys(window.__APP_CACHE || {})
+    return Object.keys(appCache.getAll() || {})
       .filter(key => key.startsWith(prefix));
   }
 }; 

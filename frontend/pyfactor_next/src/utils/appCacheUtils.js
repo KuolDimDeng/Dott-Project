@@ -1,3 +1,5 @@
+import appCache from '../utils/appCache';
+
 /**
  * Application Cache Utilities (Server Compatible)
  * 
@@ -8,6 +10,7 @@
  */
 
 import { getCacheValue, setCacheValue, removeCacheValue, clearCache } from './appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 
 /**
@@ -99,8 +102,8 @@ export { getCacheValue, setCacheValue, removeCacheValue, clearCache };
  */
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined' && !window.__APP_CACHE) {
-  window.__APP_CACHE = { 
+if (typeof window !== 'undefined' && !appCache.getAll()) {
+  appCache.getAll() = { 
     auth: {}, 
     user: {}, 
     tenant: {},
@@ -118,23 +121,23 @@ if (typeof window !== 'undefined' && !window.__APP_CACHE) {
  */
 export function getFromCache(key, category = 'user', tenantId = null) {
   try {
-    if (typeof window === 'undefined' || !window.__APP_CACHE) return null;
+    if (typeof window === 'undefined' || !appCache.getAll()) return null;
     
     // Get tenant-specific key if tenant ID provided
     const cacheKey = tenantId ? `${tenantId}_${key}` : key;
     
     // First check category 
-    if (window.__APP_CACHE[category] && window.__APP_CACHE[category][cacheKey] !== undefined) {
+    if (appCache.getAll()[category] && appCache.getAll()[category][cacheKey] !== undefined) {
       logger.debug('[AppCacheUtils] Server-side cache access for', tenantId ? 'tenantId' : key);
-      return window.__APP_CACHE[category][cacheKey];
+      return appCache.getAll()[category][cacheKey];
     }
     
     // If tenant ID provided, check tenant-specific namespace
-    if (tenantId && window.__APP_CACHE.tenants && window.__APP_CACHE.tenants[tenantId]) {
+    if (tenantId && appCache.getAll().tenants && appCache.getAll().tenants[tenantId]) {
       // Look in tenant-specific namespace
-      if (window.__APP_CACHE.tenants[tenantId][key] !== undefined) {
+      if (appCache.getAll().tenants[tenantId][key] !== undefined) {
         logger.debug('[AppCacheUtils] Server-side cache access for', key, 'in tenant', tenantId);
-        return window.__APP_CACHE.tenants[tenantId][key];
+        return appCache.getAll().tenants[tenantId][key];
       }
     }
     
@@ -159,33 +162,33 @@ export function storeInCache(key, value, category = 'user', tenantId = null) {
     if (typeof window === 'undefined') return false;
     
     // Initialize cache if needed
-    if (!window.__APP_CACHE) {
-      window.__APP_CACHE = { auth: {}, user: {}, tenant: {}, tenants: {} };
+    if (!appCache.getAll()) {
+      appCache.getAll() = { auth: {}, user: {}, tenant: {}, tenants: {} };
     }
     
     // Create category if it doesn't exist
-    if (!window.__APP_CACHE[category]) {
-      window.__APP_CACHE[category] = {};
+    if (!appCache.getAll()[category]) {
+      appCache.getAll()[category] = {};
     }
     
     // Get tenant-specific key if tenant ID provided
     const cacheKey = tenantId ? `${tenantId}_${key}` : key;
     
     // Store in category
-    window.__APP_CACHE[category][cacheKey] = value;
+    appCache.getAll()[category][cacheKey] = value;
     
     // Also store in tenant-specific namespace if tenant ID provided
     if (tenantId) {
       // Initialize tenant namespace if needed
-      if (!window.__APP_CACHE.tenants) {
-        window.__APP_CACHE.tenants = {};
+      if (!appCache.getAll().tenants) {
+        appCache.getAll().tenants = {};
       }
-      if (!window.__APP_CACHE.tenants[tenantId]) {
-        window.__APP_CACHE.tenants[tenantId] = {};
+      if (!appCache.getAll().tenants[tenantId]) {
+        appCache.getAll().tenants[tenantId] = {};
       }
       
       // Store in tenant namespace
-      window.__APP_CACHE.tenants[tenantId][key] = value;
+      appCache.getAll().tenants[tenantId][key] = value;
     }
     
     logger.debug('[AppCacheUtils] Data cached successfully', { key: tenantId ? cacheKey : key });
@@ -206,19 +209,19 @@ export function storeInCache(key, value, category = 'user', tenantId = null) {
  */
 export function removeFromCache(key, category = 'user', tenantId = null) {
   try {
-    if (typeof window === 'undefined' || !window.__APP_CACHE) return false;
+    if (typeof window === 'undefined' || !appCache.getAll()) return false;
     
     // Get tenant-specific key if tenant ID provided
     const cacheKey = tenantId ? `${tenantId}_${key}` : key;
     
     // Remove from category
-    if (window.__APP_CACHE[category]) {
-      delete window.__APP_CACHE[category][cacheKey];
+    if (appCache.getAll()[category]) {
+      delete appCache.getAll()[category][cacheKey];
     }
     
     // Also remove from tenant-specific namespace if tenant ID provided
-    if (tenantId && window.__APP_CACHE.tenants && window.__APP_CACHE.tenants[tenantId]) {
-      delete window.__APP_CACHE.tenants[tenantId][key];
+    if (tenantId && appCache.getAll().tenants && appCache.getAll().tenants[tenantId]) {
+      delete appCache.getAll().tenants[tenantId][key];
     }
     
     return true;
@@ -236,22 +239,22 @@ export function removeFromCache(key, category = 'user', tenantId = null) {
  */
 export function clearTenantCache(tenantId) {
   try {
-    if (typeof window === 'undefined' || !window.__APP_CACHE || !tenantId) return false;
+    if (typeof window === 'undefined' || !appCache.getAll() || !tenantId) return false;
     
     // Remove all tenant-specific keys from each category
-    Object.keys(window.__APP_CACHE).forEach(category => {
-      if (typeof window.__APP_CACHE[category] === 'object') {
-        Object.keys(window.__APP_CACHE[category]).forEach(key => {
+    Object.keys(appCache.getAll()).forEach(category => {
+      if (typeof appCache.getAll()[category] === 'object') {
+        Object.keys(appCache.getAll()[category]).forEach(key => {
           if (key.startsWith(`${tenantId}_`)) {
-            delete window.__APP_CACHE[category][key];
+            delete appCache.getAll()[category][key];
           }
         });
       }
     });
     
     // Clear tenant-specific namespace
-    if (window.__APP_CACHE.tenants && window.__APP_CACHE.tenants[tenantId]) {
-      delete window.__APP_CACHE.tenants[tenantId];
+    if (appCache.getAll().tenants && appCache.getAll().tenants[tenantId]) {
+      delete appCache.getAll().tenants[tenantId];
     }
     
     return true;

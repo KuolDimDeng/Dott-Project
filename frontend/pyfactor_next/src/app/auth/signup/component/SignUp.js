@@ -1,11 +1,17 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { useAuth } from '@/hooks/auth';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import NextLink from 'next/link';
+import { appCache } from '../utils/appCache';
 import { Box, Button, TextField, Typography, Alert, CircularProgress, Container, Paper, Divider } from '@/components/ui/TailwindComponents';
 
 const REDIRECT_DELAY = 1500; // Delay before redirect after successful signup
@@ -275,13 +281,13 @@ export default function SignUp() {
       try {
         // Initialize app cache if needed
         if (typeof window !== 'undefined') {
-          if (!window.__APP_CACHE) window.__APP_CACHE = {};
-          if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+          if (!appCache.getAll()) appCache.getAll() = {};
+          if (!appCache.getAll().auth) appCache.getAll().auth = {};
           
           // Store verification data in app cache
-          window.__APP_CACHE.auth.signupCodeSent = true;
-          window.__APP_CACHE.auth.signupCodeTimestamp = Date.now();
-          window.__APP_CACHE.auth.signupEmail = formData.email;
+          appCache.set('auth.signupCodeSent', true);
+          appCache.set('auth.signupCodeTimestamp', Date.now());
+          appCache.set('auth.signupEmail', formData.email);
           
           // Store in sessionStorage as fallback for older code
           try {
@@ -448,10 +454,10 @@ export default function SignUp() {
                     setError('');
                     // Initialize app cache if it doesn't exist
                     if (typeof window !== 'undefined') {
-                      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-                      if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+                      if (!appCache.getAll()) appCache.getAll() = {};
+                      if (!appCache.getAll().auth) appCache.getAll().auth = {};
                       // Remove loading state from app cache
-                      delete window.__APP_CACHE.auth.loadingState;
+                      delete appCache.get('auth.loadingState');
                       // For backward compatibility
                       sessionStorage.removeItem('auth_loading_state');
                     }
@@ -504,10 +510,10 @@ export default function SignUp() {
                             setError('');
                             // Initialize app cache if it doesn't exist
                             if (typeof window !== 'undefined') {
-                              if (!window.__APP_CACHE) window.__APP_CACHE = {};
-                              if (!window.__APP_CACHE.auth) window.__APP_CACHE.auth = {};
+                              if (!appCache.getAll()) appCache.getAll() = {};
+                              if (!appCache.getAll().auth) appCache.getAll().auth = {};
                               // Remove loading state from app cache
-                              delete window.__APP_CACHE.auth.loadingState;
+                              delete appCache.get('auth.loadingState');
                               // For backward compatibility
                               sessionStorage.removeItem('auth_loading_state');
                             }
@@ -522,8 +528,8 @@ export default function SignUp() {
                           onClick={() => {
                             // Clear app cache
                             if (typeof window !== 'undefined') {
-                              if (window.__APP_CACHE && window.__APP_CACHE.auth) {
-                                window.__APP_CACHE.auth = {};
+                              if (appCache.getAll() && appCache.getAll().auth) {
+                                appCache.getAll().auth = {};
                               }
                               // Also clear sessionStorage for backward compatibility
                               sessionStorage.clear();

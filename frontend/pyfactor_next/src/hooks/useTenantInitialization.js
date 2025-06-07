@@ -1,19 +1,30 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useCallback, useEffect, useState, useRef } from 'react';
+import { appCache } from '../utils/appCache';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { getTenantId, storeTenantInfo } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
 import { useAuth } from './auth';
+import { appCache } from '../utils/appCache';
 import { signIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { reconfigureAmplify } from '@/config/amplifyConfig';
 // Import standardized constants
+import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   STORAGE_KEYS,
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
+import { appCache } from '../utils/appCache';
 import { useSession } from 'next-auth/react';
 
 // Lock keys
@@ -33,8 +44,8 @@ const sessionRefreshInProgress = {
 
 // Initialize global app cache if on client side
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
 }
 
 /**
@@ -45,11 +56,11 @@ const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Ensure the cache exists
-  if (!window.__APP_CACHE) window.__APP_CACHE = {};
-  if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+  if (!appCache.getAll()) appCache.getAll() = {};
+  if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
   
   // Check if lock already exists
-  const existingLock = window.__APP_CACHE.tenant.initLock;
+  const existingLock = appCache.get('tenant.initLock');
   if (existingLock) {
     // Check if lock is stale (older than timeout)
     const now = Date.now();
@@ -66,7 +77,7 @@ const acquireTenantLock = () => {
     timestamp: Date.now(),
     requestId: Math.random().toString(36).substring(2)
   };
-  window.__APP_CACHE.tenant.initLock = lockData;
+  appCache.set('tenant.initLock', lockData);
   return true;
 };
 
@@ -75,8 +86,8 @@ const acquireTenantLock = () => {
  */
 const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
-  if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
-    window.__APP_CACHE.tenant.initLock = null;
+  if (appCache.getAll() && appCache.getAll().tenant) {
+    appCache.set('tenant.initLock', null);
   }
 };
 
@@ -101,12 +112,12 @@ const getSafeTenantId = () => {
     let source = null;
     
     // Ensure app cache exists
-    if (!window.__APP_CACHE) window.__APP_CACHE = {};
-    if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+    if (!appCache.getAll()) appCache.getAll() = {};
+    if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
     
     // Try app cache first
     try {
-      tenantId = window.__APP_CACHE.tenant.id;
+      tenantId = appCache.get('tenant.id');
       if (tenantId) {
         source = 'app_cache';
         logger.debug('[TenantUtils] Retrieved tenant ID from app cache:', tenantId);
@@ -137,8 +148,8 @@ const getSafeTenantId = () => {
             const cognitoTenantId = attributes?.['custom:tenant_ID'] || attributes?.['custom:tenantId'] || attributes?.['custom:businessid'];
             if (cognitoTenantId && !tenantId) {
               // Store for future use
-              if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
-                window.__APP_CACHE.tenant.id = cognitoTenantId;
+              if (appCache.getAll() && appCache.getAll().tenant) {
+                appCache.get('tenant.id') = cognitoTenantId;
               }
               logger.debug('[TenantUtils] Retrieved and stored tenant ID from Cognito:', cognitoTenantId);
             }
@@ -224,13 +235,13 @@ export function useTenantInitialization() {
     
     // Initialize app cache if needed
     if (typeof window !== 'undefined') {
-      if (!window.__APP_CACHE) window.__APP_CACHE = {};
-      if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+      if (!appCache.getAll()) appCache.getAll() = {};
+      if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
     }
     
     // Get from app cache next
     const cachedTenantId = 
-      typeof window !== 'undefined' ? window.__APP_CACHE.tenant.id : null;
+      typeof window !== 'undefined' ? appCache.get('tenant.id') : null;
     
     if (cachedTenantId) {
       return cachedTenantId;
@@ -242,8 +253,8 @@ export function useTenantInitialization() {
         const storageTenantId = sessionStorage.getItem('tenantId');
         if (storageTenantId) {
           // Store in app cache for future use
-          if (window.__APP_CACHE && window.__APP_CACHE.tenant) {
-            window.__APP_CACHE.tenant.id = storageTenantId;
+          if (appCache.getAll() && appCache.getAll().tenant) {
+            appCache.get('tenant.id') = storageTenantId;
           }
           return storageTenantId;
         }
@@ -347,10 +358,10 @@ export function useTenantInitialization() {
         
         // Store tenant ID in app cache only, remove cookie usage
         if (typeof window !== 'undefined') {
-          if (!window.__APP_CACHE) window.__APP_CACHE = {};
-          if (!window.__APP_CACHE.tenant) window.__APP_CACHE.tenant = {};
+          if (!appCache.getAll()) appCache.getAll() = {};
+          if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
           
-          window.__APP_CACHE.tenant.id = tenantId;
+          appCache.get('tenant.id') = tenantId;
         }
         
         return result;

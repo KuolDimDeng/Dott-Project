@@ -438,6 +438,7 @@ export default function SubscriptionForm() {
   const handleFreePlanSelection = async () => {
     logger.debug('[SubscriptionForm] Free plan selected');
     logger.info('[SubscriptionForm] Starting free plan selection process');
+    logger.info('[SubscriptionForm] Starting free plan selection process');
     setSelectedPlan('free');
     setBillingCycle('monthly');
     setPlanData({
@@ -532,6 +533,15 @@ export default function SubscriptionForm() {
       if (!tenantId || !isValidUUID(tenantId)) {
         logger.warn('[SubscriptionForm] No valid tenant ID found, redirecting to dashboard without tenant path');
         window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&missingTenant=true`;
+        return;
+      }
+    }
+    
+    // Log the final destination for debugging
+    logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
+    
+    // Redirect with tenant ID if we have it
+    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
         return;
       }
     }

@@ -1,4 +1,5 @@
 // src/services/persistenceService.js
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 export const STORAGE_KEYS = {
@@ -13,7 +14,7 @@ export const STORAGE_KEYS = {
 
 // Initialize global app cache
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
+  appCache.getAll() = appCache.getAll() || {};
   window.__PERSISTENCE_STORE = window.__PERSISTENCE_STORE || {};
 }
 

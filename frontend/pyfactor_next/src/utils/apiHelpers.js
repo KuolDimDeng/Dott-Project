@@ -1,6 +1,9 @@
+import appCache from '../utils/appCache';
+
 /**
  * Utility functions for API requests
  */
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import axiosInstance from './axiosInstance';
 import { getCacheValue } from './appCache';
@@ -50,9 +53,9 @@ export const getApiHeaders = async () => {
           idToken = session.tokens.idToken.toString();
           
           // Store in AppCache for future use
-          if (window.__APP_CACHE) {
-            window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
-            window.__APP_CACHE.auth.idToken = idToken;
+          if (appCache.getAll()) {
+            appCache.getAll().auth = appCache.getAll().auth || {};
+            appCache.set('auth.idToken', idToken);
           }
           
           // Also try to extract tenant ID from token
@@ -63,9 +66,9 @@ export const getApiHeaders = async () => {
             
             tenantId = payload['custom:businessid'] || payload['custom:tenant_ID'];
             
-            if (tenantId && window.__APP_CACHE) {
-              window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-              window.__APP_CACHE.tenant.id = tenantId;
+            if (tenantId && appCache.getAll()) {
+              appCache.getAll().tenant = appCache.getAll().tenant || {};
+              appCache.get('tenant.id') = tenantId;
             }
           } catch (e) {
             logger.warn('[apiHelpers] Error extracting tenant ID from token:', e);
@@ -76,8 +79,8 @@ export const getApiHeaders = async () => {
       }
       
       // Fall back to AppCache if Cognito failed
-      if (!idToken && window.__APP_CACHE?.auth?.idToken) {
-        idToken = window.__APP_CACHE.auth.idToken;
+      if (!idToken && appCache.getAll()
+        idToken = appCache.get('auth.idToken');
         logger.debug('[apiHelpers] Using cached idToken from AppCache');
       }
       
@@ -88,8 +91,8 @@ export const getApiHeaders = async () => {
       }
       
       // Do the same for tenant ID
-      if (!tenantId && window.__APP_CACHE?.tenant?.id) {
-        tenantId = window.__APP_CACHE.tenant.id;
+      if (!tenantId && appCache.getAll()
+        tenantId = appCache.get('tenant.id');
       }
       
       if (!tenantId) {
@@ -329,8 +332,8 @@ export const apiRequest = async (method, endpoint, data = null, params = {}) => 
     }
     
     // Add tenant ID from AppCache if available and not already in params
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id) {
-      const tenantId = window.__APP_CACHE.tenant.id;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      const tenantId = appCache.get('tenant.id');
       
       if (tenantId) {
         // Add to headers if not already there

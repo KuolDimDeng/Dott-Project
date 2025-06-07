@@ -1,6 +1,10 @@
+import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/cacheUtils';
+import { appCache } from '../utils/appCache';
 import { getTenantId } from '@/utils/tenantUtils';
 
 /**
@@ -196,8 +200,8 @@ export const optimizedInventoryService = {
     inventoryCache.clearTenant();
     
     // Clear from app cache if available
-    if (typeof window !== 'undefined' && window.__APP_CACHE?.offline) {
-      delete window.__APP_CACHE.offline.products;
+    if (typeof window !== 'undefined' && appCache.getAll()
+      delete appCache.get('offline.products');
       logger.debug('Cleared product cache from APP_CACHE');
     }
   },
@@ -226,9 +230,9 @@ export const optimizedInventoryService = {
       };
       
       // Initialize app cache
-      window.__APP_CACHE = window.__APP_CACHE || {};
-      window.__APP_CACHE.offline = window.__APP_CACHE.offline || {};
-      window.__APP_CACHE.offline[`products_${tenantId}`] = offlineData;
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().offline = appCache.getAll().offline || {};
+      appCache.getAll().offline[`products_${tenantId}`] = offlineData;
       
       logger.debug(`Stored ${products.length} products in APP_CACHE for offline use`);
     } catch (error) {
@@ -250,11 +254,11 @@ export const optimizedInventoryService = {
       const tenantId = getTenantId() || 'default';
       
       // Check if app cache exists
-      if (!window.__APP_CACHE?.offline?.[`products_${tenantId}`]) {
+      if (!appCache.getAll()
         return [];
       }
       
-      const offlineData = window.__APP_CACHE.offline[`products_${tenantId}`];
+      const offlineData = appCache.getAll().offline[`products_${tenantId}`];
       
       // Check if data is stale (older than 24 hours)
       const isStale = Date.now() - offlineData.timestamp > 24 * 60 * 60 * 1000;

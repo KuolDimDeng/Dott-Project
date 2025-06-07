@@ -1,17 +1,23 @@
+import appCache from '../utils/appCache';
+
 "use client";
 
 import React, { useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { appCache } from '../utils/appCache';
 import { Form, Input, Button, Checkbox, message } from 'antd';
+import { appCache } from '../utils/appCache';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
+import { appCache } from '../utils/appCache';
 import { signIn } from '@/utils/auth';
 import logger from '@/utils/logger';
 
 // Initialize global app cache
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().auth = appCache.getAll().auth || {};
 }
 
 const REDIRECT_DELAY = 1500; // milliseconds to wait before redirecting
@@ -99,8 +105,8 @@ const SignIn = ({ defaultEmail = '', defaultPassword = '', onSuccess, redirectUr
         
         // Store email in app cache
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE.auth.verificationEmail = email;
-          window.__APP_CACHE.auth.needsVerification = true;
+          appCache.set('auth.verificationEmail', email);
+          appCache.set('auth.needsVerification', true);
           
           // Fallback to sessionStorage for backward compatibility
           try {
@@ -133,8 +139,8 @@ const SignIn = ({ defaultEmail = '', defaultPassword = '', onSuccess, redirectUr
         
         // Store email in app cache
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE.auth.verificationEmail = email;
-          window.__APP_CACHE.auth.needsVerification = true;
+          appCache.set('auth.verificationEmail', email);
+          appCache.set('auth.needsVerification', true);
           
           // Fallback to sessionStorage for backward compatibility
           try {

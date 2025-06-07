@@ -103,3 +103,23 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - src/utils/tenantStorage.js (created)
   - src/components/Onboarding/BusinessInfoForm.jsx
 - **Execution**: Completed successfully
+
+## Version0162_deploy_auth0_tenant_fix.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Deploy Auth0 tenant ID propagation fixes
+- **Changes**:
+  - Ran Version0161 fix script
+  - Committed all changes
+  - Pushed to remote repository
+  - Triggered deployment if on main branch
+- **Status**: Deployment triggered
+
+## Version0163_remove_amplify_cognito_references.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Remove remaining Amplify/Cognito references and fix window.__APP_CACHE usage
+- **Changes**:
+  - Updated amplifyUnified.js to remove all Amplify code and provide Auth0-only implementation
+  - Updated CognitoAttributes.js to remove Cognito code and provide Auth0-only implementation
+  - Created centralized appCache.js utility to replace direct window.__APP_CACHE usage
+  - Fixed all direct window.__APP_CACHE references in components
+- **Status**: ✅ Completed

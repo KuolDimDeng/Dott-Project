@@ -1,9 +1,13 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/store/onboardingStore.js
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { create } from 'zustand';
+import { appCache } from '../utils/appCache';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
 import { setCacheValue } from '@/utils/appCache';
 
@@ -67,9 +71,9 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-            window.__APP_CACHE.onboarding.businessInfo = {
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            appCache.set('onboarding.businessInfo', {
               businessName: info.businessName || '',
               businessType: info.businessType || '',
               businessSubtypes: info.businessSubtypes || '',
@@ -79,7 +83,7 @@ const useOnboardingStore = create((set, get) => ({
               legalStructure: info.legalStructure || '',
               dateFounded: info.dateFounded || '',
               timestamp: Date.now()
-            };
+            });
           }
           
           console.log('💾 Saved business info to app cache for development mode', info);
@@ -135,14 +139,14 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-            window.__APP_CACHE.onboarding.subscription = {
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            appCache.set('onboarding.subscription', {
               plan: subscription.plan || '',
               interval: subscription.interval || '',
               timestamp: Date.now(),
               details: subscription
-            };
+            });
           }
           
           // Set a cookie for server-side access
@@ -204,9 +208,9 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-            window.__APP_CACHE.onboarding.payment = {
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            appCache.set('onboarding.payment', {
               id: payment.id || '',
               verified: true,
               paymentMethod: {
@@ -216,7 +220,7 @@ const useOnboardingStore = create((set, get) => ({
               },
               timestamp: Date.now(),
               details: payment
-            };
+            });
           }
           
           console.log('💾 Saved payment info to app cache for development mode', payment);
@@ -268,11 +272,11 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            window.__APP_CACHE = window.__APP_CACHE || {};
-            window.__APP_CACHE.onboarding = window.__APP_CACHE.onboarding || {};
-            window.__APP_CACHE.onboarding.status = ONBOARDING_STATES.COMPLETE;
-            window.__APP_CACHE.onboarding.setupdone = true;
-            window.__APP_CACHE.onboarding.completedAt = new Date().toISOString();
+            appCache.getAll() = appCache.getAll() || {};
+            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            appCache.set('onboarding.status', ONBOARDING_STATES.COMPLETE);
+            appCache.set('onboarding.setupdone', true);
+            appCache.set('onboarding.completedAt', new Date().toISOString());
           }
           
           console.log('💾 Saved setup completion to app cache for development mode');

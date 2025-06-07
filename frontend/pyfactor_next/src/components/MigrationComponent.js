@@ -1,17 +1,24 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useEffect, useState } from 'react';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { clearLegacyStorage, migrateUserDataToCognito } from '@/utils/migrationUtils';
+import { appCache } from '../utils/appCache';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
 import { getUserPreference, saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
 import { setCacheValue } from '@/utils/appCache';
 
 // Initialize global app cache at the top of the file
 if (typeof window !== 'undefined') {
-  window.__APP_CACHE = window.__APP_CACHE || {};
-  window.__APP_CACHE.tenant = window.__APP_CACHE.tenant || {};
-  window.__APP_CACHE.migration = window.__APP_CACHE.migration || {};
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  appCache.getAll().migration = appCache.getAll().migration || {};
 }
 
 /**
@@ -128,7 +135,7 @@ export async function migrateToSingleTruthSource() {
     
     // Tenant ID migration - prioritize finding a valid UUID
     // First check app cache, then localStorage, then cookies
-    const appCacheTenantId = typeof window !== 'undefined' && window.__APP_CACHE?.tenant?.id;
+    const appCacheTenantId = typeof window !== 'undefined' && appCache.getAll()
     const localTenantId = localStorage.getItem('tenantId');
     const cookieTenantId = getCookieValue('tenantId') || getCookieValue('businessid');
     const effectiveTenantId = findValidUUID(appCacheTenantId, localTenantId, cookieTenantId);
@@ -148,7 +155,7 @@ export async function migrateToSingleTruthSource() {
       
       // Store in app cache
       if (typeof window !== 'undefined') {
-        window.__APP_CACHE.tenant.id = effectiveTenantId;
+        appCache.get('tenant.id') = effectiveTenantId;
       }
       
       logger.info('[migrateToSingleTruthSource] Migrated tenant ID:', effectiveTenantId);
@@ -166,7 +173,7 @@ export async function migrateToSingleTruthSource() {
     
     // Add onboarding status migrations
     const onboardingStatus = 
-      (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.status) ||
+      (typeof window !== 'undefined' && appCache.getAll()
       localStorage.getItem('onboardingStatus') || 
       localStorage.getItem('onboardingStep') || 
       getCookieValue('onboardingStep') || 
@@ -178,15 +185,15 @@ export async function migrateToSingleTruthSource() {
       
       // Also store in app cache
       if (typeof window !== 'undefined') {
-        if (!window.__APP_CACHE) window.__APP_CACHE = {};
-        if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
-        window.__APP_CACHE.onboarding.status = onboardingStatus.toLowerCase();
+        if (!appCache.getAll()) appCache.getAll() = {};
+        if (!appCache.getAll().onboarding) appCache.getAll().onboarding = {};
+        appCache.set('onboarding.status', onboardingStatus.toLowerCase());
       }
     }
     
     // Check if onboarding is complete
     const setupCompleted = 
-      (typeof window !== 'undefined' && window.__APP_CACHE?.onboarding?.completed === true) ||
+      (typeof window !== 'undefined' && appCache.getAll()
       localStorage.getItem('setupCompleted') === 'true' || 
       getCookieValue('setupCompleted') === 'true';
                           
@@ -197,10 +204,10 @@ export async function migrateToSingleTruthSource() {
       
       // Also store in app cache
       if (typeof window !== 'undefined') {
-        if (!window.__APP_CACHE) window.__APP_CACHE = {};
-        if (!window.__APP_CACHE.onboarding) window.__APP_CACHE.onboarding = {};
-        window.__APP_CACHE.onboarding.status = 'complete';
-        window.__APP_CACHE.onboarding.completed = true;
+        if (!appCache.getAll()) appCache.getAll() = {};
+        if (!appCache.getAll().onboarding) appCache.getAll().onboarding = {};
+        appCache.set('onboarding.status', 'complete');
+        appCache.set('onboarding.completed', true);
       }
     }
     
@@ -208,8 +215,8 @@ export async function migrateToSingleTruthSource() {
     Object.entries(attributeMappings).forEach(([sourceKey, targetKey]) => {
       // Check app cache first, then localStorage, then cookies
       const appCacheValue = typeof window !== 'undefined' && 
-                          window.__APP_CACHE?.business && 
-                          window.__APP_CACHE.business[sourceKey];
+                          appCache.getAll()
+                          appCache.getAll().business[sourceKey];
       const sourceValue = appCacheValue || 
                           localStorage.getItem(sourceKey) || 
                           getCookieValue(sourceKey);
@@ -220,9 +227,9 @@ export async function migrateToSingleTruthSource() {
         
         // Also store in app cache
         if (typeof window !== 'undefined') {
-          if (!window.__APP_CACHE) window.__APP_CACHE = {};
-          if (!window.__APP_CACHE.business) window.__APP_CACHE.business = {};
-          window.__APP_CACHE.business[sourceKey] = sourceValue;
+          if (!appCache.getAll()) appCache.getAll() = {};
+          if (!appCache.getAll().business) appCache.getAll().business = {};
+          appCache.getAll().business[sourceKey] = sourceValue;
         }
         
         logger.debug(`[migrateToSingleTruthSource] Migrating ${sourceKey} to ${targetKey}:`, sourceValue);
@@ -246,10 +253,10 @@ export async function migrateToSingleTruthSource() {
       
       // Mark migration as complete in app cache
       if (typeof window !== 'undefined') {
-        if (!window.__APP_CACHE) window.__APP_CACHE = {};
-        if (!window.__APP_CACHE.migration) window.__APP_CACHE.migration = {};
-        window.__APP_CACHE.migration.completed = true;
-        window.__APP_CACHE.migration.timestamp = new Date().toISOString();
+        if (!appCache.getAll()) appCache.getAll() = {};
+        if (!appCache.getAll().migration) appCache.getAll().migration = {};
+        appCache.set('migration.completed', true);
+        appCache.set('migration.timestamp', new Date().toISOString());
       }
       
       // Also mark in localStorage for backward compatibility
@@ -261,10 +268,10 @@ export async function migrateToSingleTruthSource() {
       
       // Mark migration as complete in app cache
       if (typeof window !== 'undefined') {
-        if (!window.__APP_CACHE) window.__APP_CACHE = {};
-        if (!window.__APP_CACHE.migration) window.__APP_CACHE.migration = {};
-        window.__APP_CACHE.migration.completed = true;
-        window.__APP_CACHE.migration.timestamp = new Date().toISOString();
+        if (!appCache.getAll()) appCache.getAll() = {};
+        if (!appCache.getAll().migration) appCache.getAll().migration = {};
+        appCache.set('migration.completed', true);
+        appCache.set('migration.timestamp', new Date().toISOString());
       }
       
       // Also mark in localStorage for backward compatibility

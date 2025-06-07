@@ -1,8 +1,14 @@
+import appCache from '../utils/appCache';
+
 'use client';
 
+import { appCache } from '../utils/appCache';
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import {
   signIn as authSignIn,
   signUp as authSignUp,
@@ -144,19 +150,19 @@ export function useAuth() {
         
         // Update global AppCache
         if (typeof window !== 'undefined') {
-          window.__APP_CACHE = window.__APP_CACHE || {};
-          window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+          appCache.getAll() = appCache.getAll() || {};
+          appCache.getAll().auth = appCache.getAll().auth || {};
           
           // Store tokens
-          window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
-          window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+          appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());
+          appCache.set('auth.accessToken', sessionResponse.tokens.accessToken.toString());
           if (sessionResponse.tokens.refreshToken) {
-            window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+            appCache.set('auth.refreshToken', sessionResponse.tokens.refreshToken.toString());
           }
           
           // Add session timestamp
-          window.__APP_CACHE.auth.lastAuthTime = Date.now();
-          window.__APP_CACHE.auth.tokenTimestamp = Date.now();
+          appCache.set('auth.lastAuthTime', Date.now());
+          appCache.set('auth.tokenTimestamp', Date.now());
         }
         
         logger.debug('[Auth] Session tokens stored successfully in AppCache');
@@ -601,19 +607,19 @@ export function useAuth() {
                 
                 // Update global AppCache
                 if (typeof window !== 'undefined') {
-                  window.__APP_CACHE = window.__APP_CACHE || {};
-                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  appCache.getAll() = appCache.getAll() || {};
+                  appCache.getAll().auth = appCache.getAll().auth || {};
                   
                   // Store tokens
-                  window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
-                  window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+                  appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());
+                  appCache.set('auth.accessToken', sessionResponse.tokens.accessToken.toString());
                   if (sessionResponse.tokens.refreshToken) {
-                    window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+                    appCache.set('auth.refreshToken', sessionResponse.tokens.refreshToken.toString());
                   }
                   
                   // Add session timestamp
-                  window.__APP_CACHE.auth.lastAuthTime = Date.now();
-                  window.__APP_CACHE.auth.tokenTimestamp = Date.now();
+                  appCache.set('auth.lastAuthTime', Date.now());
+                  appCache.set('auth.tokenTimestamp', Date.now());
                 }
                 
                 logger.debug('[Auth] Session tokens stored successfully in AppCache');
@@ -651,19 +657,19 @@ export function useAuth() {
                 
                 // Update global AppCache
                 if (typeof window !== 'undefined') {
-                  window.__APP_CACHE = window.__APP_CACHE || {};
-                  window.__APP_CACHE.auth = window.__APP_CACHE.auth || {};
+                  appCache.getAll() = appCache.getAll() || {};
+                  appCache.getAll().auth = appCache.getAll().auth || {};
                   
                   // Store tokens
-                  window.__APP_CACHE.auth.idToken = sessionResponse.tokens.idToken.toString();
-                  window.__APP_CACHE.auth.accessToken = sessionResponse.tokens.accessToken.toString();
+                  appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());
+                  appCache.set('auth.accessToken', sessionResponse.tokens.accessToken.toString());
                   if (sessionResponse.tokens.refreshToken) {
-                    window.__APP_CACHE.auth.refreshToken = sessionResponse.tokens.refreshToken.toString();
+                    appCache.set('auth.refreshToken', sessionResponse.tokens.refreshToken.toString());
                   }
                   
                   // Add session timestamp
-                  window.__APP_CACHE.auth.lastAuthTime = Date.now();
-                  window.__APP_CACHE.auth.tokenTimestamp = Date.now();
+                  appCache.set('auth.lastAuthTime', Date.now());
+                  appCache.set('auth.tokenTimestamp', Date.now());
                 }
                 
                 logger.debug('[Auth] Session tokens stored successfully in AppCache');
