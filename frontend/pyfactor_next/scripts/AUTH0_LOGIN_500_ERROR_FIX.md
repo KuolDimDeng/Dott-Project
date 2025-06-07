@@ -1,33 +1,38 @@
-# Auth0 Login Route 500 Error Fix
+# Auth0 Login 500 Error Fix
 
-## Issue
-The application was experiencing 500 Internal Server Errors when users attempted to log in via the Auth0 authentication flow. The error occurred specifically at the `/api/auth/login` endpoint.
+## Issue Summary
+Users were experiencing a 500 Internal Server Error when accessing the login endpoint at https://dottapps.com/api/auth/login. The error occurred due to a mismatch between the configured Auth0 domain in the environment variables (auth.dottapps.com) and the implementation in the login route handler.
 
 ## Root Cause Analysis
-1. The Auth0 route handling in the catch-all `[...auth0]/route.js` file had compatibility issues
-2. The login route was being handled by the catch-all route, which could cause conflicts
-3. The route handler didn't have sufficient error handling to report the specific error
+1. The login route was not properly handling the Auth0 custom domain configuration.
+2. The error handling in the login route was insufficient, resulting in unhandled exceptions that cascaded to 500 errors.
+3. The auth.dottapps.com custom domain was not being properly utilized in the login route's redirection logic.
 
-## Changes Made
-1. Enhanced error handling in the catch-all `[...auth0]/route.js` file:
-   - Added comprehensive try/catch blocks
-   - Improved logging to identify potential issues
-   - Added validation for required configuration parameters
-   
-2. Created a dedicated `login/route.js` handler to ensure compatibility:
-   - This provides a direct route for login functionality
-   - Includes detailed error reporting
-   - Prevents potential conflicts with the catch-all route
+## Solution Implemented
+1. Enhanced the login route handler to properly handle the Auth0 custom domain configuration.
+2. Improved error handling to prevent unhandled exceptions.
+3. Added fallback domain handling to ensure compatibility with both tenant and custom domains.
+4. Implemented detailed logging to help troubleshoot any future issues.
 
-3. The solution ensures:
-   - Better error visibility - specific error messages instead of generic 500 errors
-   - Improved reliability - dedicated route handler for critical login functionality
-   - Consistent behavior - ensures uniform handling across environments
+## Code Changes
+### In `/frontend/pyfactor_next/src/app/api/auth/login/route.js`:
+- Added proper error handling around Auth0 client initialization
+- Ensured domain configuration is consistent with environment variables
+- Implemented fallback mechanism for domain resolution
+- Added detailed logging for easier debugging
 
-## Testing
-This fix should be deployed to the production environment and tested by:
-1. Attempting to log in via the standard login flow
-2. Verifying the redirect to Auth0 occurs properly
-3. Confirming successful authentication and redirect back to the application
+### In `/frontend/pyfactor_next/src/app/api/auth/[...auth0]/route.js`:
+- Verified compatibility with the custom domain configuration
+- Enhanced error handling for edge cases
 
-If any issues persist, the detailed logging will provide better visibility into the root cause.
+## Testing and Verification
+The fix was tested by:
+1. Verifying successful login redirects with the custom domain
+2. Ensuring proper handling of error cases
+3. Confirming the login endpoint returns proper status codes in all scenarios
+
+## Deployment
+The fix is deployed to production via the Vercel deployment pipeline.
+
+## Monitoring
+Continue to monitor application logs for any Auth0-related errors. The enhanced logging will provide more detailed information about any issues that might occur.
