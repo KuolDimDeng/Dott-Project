@@ -61,3 +61,5 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0151_verify_auth0_hardcoded_values.mjs | Verify Auth0 hardcoded values | 2025-06-07 | Completed | Identified 7 hardcoded values, generated recommendations |
 | Version0152_fix_content_security_policy.mjs | Fix Content-Security-Policy to include Auth0 custom domain | 2025-06-07 | Completed | Updated CSP in next.config.js to fix 500 error with Auth0 login |
 | Version0153_commit_and_deploy_csp_fix.mjs | Commit and deploy the Content Security Policy fix | 2025-06-07 | Completed | Committed and pushed CSP fix to Dott_Main_Dev_Deploy branch |
+| Version0154_fix_auth0_login_domain_handling.mjs | Fix Auth0 login domain handling in login route | 2025-06-07 | Completed | Fixed domain normalization and URL construction to ensure consistent handling |
+| Version0155_commit_and_deploy_auth0_login_domain_fix.mjs | Deploy Auth0 login domain handling fix | 2025-06-07 | Completed | Deployed fix for inconsistent Auth0 domain handling causing 500 error |

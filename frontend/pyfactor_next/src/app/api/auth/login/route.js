@@ -102,18 +102,22 @@ export async function GET(request) {
     loginParams.append('state', state);
     
     // Normalize domain to ensure consistent format
+    // Ensure domain is in the correct format
     const normalizeDomain = (domain) => {
-      // Add https if protocol is missing
-      let normalizedDomain = domain.startsWith('http') ? domain : `https://${domain}`;
+      // Remove any protocol prefix if present
+      let cleanDomain = domain.replace(/^https?:\/\//i, '');
+      
       // Remove trailing slash if present
-      normalizedDomain = normalizedDomain.endsWith('/') ? normalizedDomain.slice(0, -1) : normalizedDomain;
-      console.log('[Auth Login Route] Normalized domain:', normalizedDomain);
-      return normalizedDomain;
+      cleanDomain = cleanDomain.endsWith('/') ? cleanDomain.slice(0, -1) : cleanDomain;
+      
+      console.log('[Auth Login Route] Normalized domain:', cleanDomain);
+      return cleanDomain;
     };
     
-    const cleanDomainUrl = normalizeDomain(auth0Domain);
+    const cleanDomain = normalizeDomain(auth0Domain);
     
-    const loginUrl = `${cleanDomainUrl}/authorize?${loginParams}`;
+    // Construct the URL in the same way as [...auth0]/route.js for consistency
+    const loginUrl = `https://${cleanDomain}/authorize?${loginParams}`;
     
     console.log('[Auth Login Route] Redirecting to Auth0:', loginUrl);
     
