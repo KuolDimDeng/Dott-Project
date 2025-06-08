@@ -9,6 +9,23 @@ const AUTH_DEBUG = process.env.AUTH_DEBUG === 'true' || true;
  * Version: Updated to fix 500 error and improve domain handling
  */
 export async function GET(request) {
+  // Check if this is a prefetch request and block it
+  const headers = request.headers;
+  const isPrefetch = headers.get('x-purpose') === 'prefetch' || 
+                     headers.get('purpose') === 'prefetch' ||
+                     headers.get('sec-fetch-dest') === 'empty';
+  
+  if (isPrefetch) {
+    // Return a response that tells Next.js not to prefetch this route
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'X-Robots-Tag': 'noindex',
+        'Cache-Control': 'no-store, must-revalidate',
+      },
+    });
+  }
+  
   // Pre-declare variables for proper error handling scope
   let auth0Domain = 'auth.dottapps.com'; // Default to custom domain
   let clientId = null;
@@ -100,6 +117,27 @@ export async function GET(request) {
     // Add state parameter for security
     const state = Buffer.from(Date.now().toString()).toString('base64');
     loginParams.append('state', state);
+    
+    // Handle additional parameters from the request
+    const { searchParams } = new URL(request.url);
+    
+    // Add login_hint if provided (for email pre-fill)
+    const loginHint = searchParams.get('login_hint');
+    if (loginHint) {
+      loginParams.append('login_hint', loginHint);
+    }
+    
+    // Add connection if specified (e.g., google-oauth2)
+    const connection = searchParams.get('connection');
+    if (connection) {
+      loginParams.append('connection', connection);
+    }
+    
+    // Add screen_hint if specified (e.g., signup)
+    const screenHint = searchParams.get('screen_hint');
+    if (screenHint) {
+      loginParams.append('screen_hint', screenHint);
+    }
     
     // Normalize domain to ensure consistent format
     // Ensure domain is in the correct format
