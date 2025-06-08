@@ -224,3 +224,20 @@ This document tracks all scripts used for the pyfactor project, their execution 
 
 
 
+
+## Version0161_fix_auth0_tenant_id_propagation.mjs
+- **Date**: 2025-06-08
+- **Purpose**: Fix Auth0 tenant ID propagation and 500 error on login
+- **Changes**:
+  - Updated business-info API to store tenant_id in Auth0 session
+  - Fixed SubscriptionForm to get tenant_id from multiple sources
+  - Created TenantStorage utility for centralized tenant ID management
+  - Fixed auth login route Auth0 domain configuration
+  - Removed Cognito references and replaced with Auth0
+- **Files Modified**:
+  - src/app/api/onboarding/business-info/route.js
+  - src/components/Onboarding/SubscriptionForm.jsx
+  - src/app/api/auth/login/route.js
+  - src/utils/tenantStorage.js (created)
+  - src/components/Onboarding/BusinessInfoForm.jsx
+- **Execution**: Completed successfully
