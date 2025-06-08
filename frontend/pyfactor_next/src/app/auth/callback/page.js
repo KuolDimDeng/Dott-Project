@@ -238,37 +238,37 @@ export default function Auth0CallbackPage() {
           
           setTimeout(() => {
             // Clear any stale session data before redirecting to onboarding
-      if (typeof window !== 'undefined') {
-        // Force session refresh on next page load
-        sessionStorage.setItem('session_needs_refresh', 'true');
-      }
-      router.push('/onboarding');
+            if (typeof window !== 'undefined') {
+              // Force session refresh on next page load
+              sessionStorage.setItem('session_needs_refresh', 'true');
+            }
+            router.push('/onboarding');
           }, 1500);
           return;
         }
         
         // 3.5 EXISTING USER WITH TENANT - Has tenant ID but marked as needsOnboarding
         if (backendUser.tenantId) {
-        console.log('[Auth0Callback] Existing user with tenant, updating session and redirecting to dashboard');
-        
-        // Update the session with the tenant ID
-        try {
-          await fetch('/api/auth/update-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tenantId: backendUser.tenantId,
-              needsOnboarding: false,
-              onboardingCompleted: true
-            })
-          });
-        } catch (error) {
-          console.error('[Auth0Callback] Failed to update session:', error);
-        }
-        
-        router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-        return;
-      }, 1500);
+          console.log('[Auth0Callback] Existing user with tenant, updating session and redirecting to dashboard');
+          
+          setTimeout(async () => {
+            // Update the session with the tenant ID
+            try {
+              await fetch('/api/auth/update-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tenantId: backendUser.tenantId,
+                  needsOnboarding: false,
+                  onboardingCompleted: true
+                })
+              });
+            } catch (error) {
+              console.error('[Auth0Callback] Failed to update session:', error);
+            }
+            
+            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
+          }, 1500);
           return;
         }
         
