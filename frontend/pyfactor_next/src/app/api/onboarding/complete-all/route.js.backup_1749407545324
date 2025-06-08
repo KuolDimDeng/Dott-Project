@@ -292,22 +292,6 @@ export async function POST(request) {
       backendSuccess: backendResult.success
     });
     
-    // Also update the session via the update endpoint for redundancy
-    try {
-      await fetch(new URL('/api/auth/update-session', request.url).href, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantId: tenantId,
-          needsOnboarding: false,
-          onboardingCompleted: true,
-          currentStep: 'completed'
-        })
-      });
-    } catch (error) {
-      console.error('[CompleteOnboarding] Failed to call update-session:', error);
-    }
-    
     return response;
     
   } catch (error) {

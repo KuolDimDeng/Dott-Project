@@ -91,7 +91,7 @@ export async function GET() {
     let profileData = {
       ...user,
       // Ensure consistent field names for onboarding status
-      needsOnboarding: user.needsOnboarding === true || (user.needsOnboarding === undefined && user.onboardingCompleted !== true),
+      needsOnboarding: user.needsOnboarding !== false,
       onboardingCompleted: user.onboardingCompleted === true,
       currentStep: user.currentStep || user.current_onboarding_step || 'business_info',
       tenantId: user.tenantId || user.tenant_id,
