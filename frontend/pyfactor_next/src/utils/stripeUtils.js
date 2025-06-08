@@ -3,7 +3,8 @@
  * Handles Stripe loading and initialization
  */
 
-import { Cache as cache } from '@aws-amplify/core';
+// Simple cache for Stripe loading status
+const memoryCache = new Map();
 
 const STRIPE_CACHE_KEY = 'stripeLoaded';
 const STRIPE_SCRIPT_ID = 'stripe-js';
@@ -33,9 +34,9 @@ export const loadStripeScript = () => {
  * Check if Stripe is loaded
  * @returns {Promise<boolean>}
  */
-export const isStripeLoaded = async () => {
+export const isStripeLoaded = () => {
   try {
-    return await cache.getItem(STRIPE_CACHE_KEY) || false;
+    return memoryCache.get(STRIPE_CACHE_KEY) || false;
   } catch (error) {
     console.error('Error checking Stripe loaded state:', error);
     return false;
@@ -63,9 +64,9 @@ export const initializeStripe = async (publicKey) => {
  * Clear Stripe cache
  * @returns {Promise<void>}
  */
-export const clearStripeCache = async () => {
+export const clearStripeCache = () => {
   try {
-    await cache.removeItem(STRIPE_CACHE_KEY);
+    memoryCache.delete(STRIPE_CACHE_KEY);
   } catch (error) {
     console.error('Error clearing Stripe cache:', error);
     throw error;

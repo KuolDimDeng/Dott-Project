@@ -1,9 +1,5 @@
-import { generateClient } from 'aws-amplify/api';
 import { getCache, setCache } from './cacheClient';
 import { logger } from './logger';
-
-// Create an API client
-const client = generateClient();
 
 /**
  * Execute a GraphQL query with in-memory caching

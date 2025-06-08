@@ -1,9 +1,5 @@
-import { generateClient } from 'aws-amplify/api';
 import { logger } from './logger';
 import { getCache, setCache } from './cacheClient';
-
-// Create an API client
-const apiClient = generateClient();
 
 /**
  * Utility function for making API calls with caching support

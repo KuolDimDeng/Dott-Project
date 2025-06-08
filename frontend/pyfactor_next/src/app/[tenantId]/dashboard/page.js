@@ -53,59 +53,31 @@ export default function TenantDashboard() {
 
     logger.info(`[TenantDashboard] Processing tenant-specific dashboard for: ${tenantId}`);
     
-    // Only use Cognito attributes for tenant ID
+    // Store tenant ID in app cache for future reference
     try {
-      // Update Cognito attributes with the tenant ID
-      const updateCognitoAttributes = async () => {
-        try {
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          await updateUserAttributes({
-            userAttributes: {
-              'custom:tenant_ID': tenantId,
-              'custom:businessid': tenantId
-            }
-          });
-          logger.info('[TenantDashboard] Successfully updated Cognito attributes with tenant ID');
-          
-          // Perform a health check to ensure connectivity
-          try {
-            const healthCheck = await monitoredFetch('/api/health', {
-              method: 'HEAD',
-              cache: 'no-store',
-              headers: { 'Cache-Control': 'no-cache' },
-              timeout: 3000 // 3-second timeout
-            });
-            
-            if (!healthCheck.ok) {
-              logger.warn('[TenantDashboard] Health check failed, but continuing anyway');
-            }
-          } catch (healthError) {
-            logger.warn('[TenantDashboard] Health check error, but continuing:', healthError);
-            // Don't block the dashboard load for health check errors
-          }
-          
-          // Store tenant ID in app cache for resilience
-          if (typeof window !== 'undefined') {
-            if (!appCache.getAll()) appCache.init();
-            if (!appCache.get('tenant')) appCache.set('tenant', {});
-            appCache.set('tenant.id', tenantId);
-          }
-        } catch (cognitoError) {
-          // Log but continue - we can still load the dashboard even if attribute update fails
-          logger.warn('[TenantDashboard] Could not update Cognito attributes:', cognitoError);
-          
-          // Check if we have a network error
-          if (cognitoError.message && (
-              cognitoError.message.includes('NetworkError') || 
-              cognitoError.message.includes('Network Error') ||
-              cognitoError.message.includes('Failed to fetch')
-          )) {
-            setNetworkError(true);
-          }
-        }
-      };
+      // Store tenant ID in app cache for resilience
+      if (typeof window !== 'undefined') {
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('tenant')) appCache.set('tenant', {});
+        appCache.set('tenant.id', tenantId);
+      }
       
-      updateCognitoAttributes();
+      // Perform a health check to ensure connectivity  
+      try {
+        const healthCheck = await monitoredFetch('/api/health', {
+          method: 'HEAD',
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+          timeout: 3000 // 3-second timeout
+        });
+        
+        if (!healthCheck.ok) {
+          logger.warn('[TenantDashboard] Health check failed, but continuing anyway');
+        }
+      } catch (healthError) {
+        logger.warn('[TenantDashboard] Health check error, but continuing:', healthError);
+        // Don't block the dashboard load for health check errors
+      }
       
       // Load the dashboard component after a short delay to allow everything to initialize
       const timer = setTimeout(() => {

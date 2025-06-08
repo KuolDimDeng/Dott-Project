@@ -215,33 +215,19 @@ export default function SubscriptionForm() {
     return plan.price[billingCycle];
   };
   
-  // Import required functions
-  const updateCognitoAttributes = async (attributes) => {
+  // Auth0 user metadata update function (simplified)
+  const updateUserMetadata = async (metadata) => {
     try {
-      // Make sure we're not trying to update any restricted attributes
-      const safeAttributes = { ...attributes };
-      
-      // Remove any potentially restricted attributes
-      const restrictedPrefixes = ['custom:tenant', 'custom:business'];
-      Object.keys(safeAttributes).forEach(key => {
-        if (restrictedPrefixes.some(prefix => key.startsWith(prefix))) {
-          logger.warn(`[SubscriptionForm] Removing restricted attribute from direct update: ${key}`);
-          delete safeAttributes[key];
-        }
-      });
-      
-      const { updateUserAttributes } = await import('aws-amplify/auth');
-      await updateUserAttributes({
-        userAttributes: safeAttributes
-      });
+      logger.info('[SubscriptionForm] Storing subscription metadata locally');
+      // Store in session storage for now - will be handled by backend API
+      if (typeof window !== 'undefined') {
+        const currentData = JSON.parse(sessionStorage.getItem('auth0_user_metadata') || '{}');
+        const updatedData = { ...currentData, ...metadata };
+        sessionStorage.setItem('auth0_user_metadata', JSON.stringify(updatedData));
+      }
       return { success: true };
     } catch (error) {
-      logger.error('[SubscriptionForm] Error updating Cognito attributes:', error);
-      
-      if (error.message && error.message.includes('unauthorized attribute')) {
-        logger.warn('[SubscriptionForm] Attempted to update restricted attribute, check for: tenant_id, businessid, etc.');
-      }
-      
+      logger.error('[SubscriptionForm] Error storing user metadata:', error);
       return { success: false, error };
     }
   };

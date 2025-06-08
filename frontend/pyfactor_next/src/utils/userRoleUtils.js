@@ -3,7 +3,8 @@
  * Handles user role case sensitivity and validation
  */
 
-import { Cache as cache } from '@aws-amplify/core';
+// Simple cache for user roles
+const memoryCache = new Map();
 
 const ROLE_CACHE_KEY = 'userRole';
 
@@ -22,10 +23,10 @@ export const normalizeRoleCase = (role) => {
  * @param {string} role - The role to store
  * @returns {Promise<void>}
  */
-export const storeNormalizedRole = async (role) => {
+export const storeNormalizedRole = (role) => {
   try {
     const normalizedRole = normalizeRoleCase(role);
-    await cache.setItem(ROLE_CACHE_KEY, normalizedRole);
+    memoryCache.set(ROLE_CACHE_KEY, normalizedRole);
   } catch (error) {
     console.error('Error storing normalized role:', error);
     throw error;
@@ -36,9 +37,9 @@ export const storeNormalizedRole = async (role) => {
  * Get normalized user role
  * @returns {Promise<string>} The normalized role
  */
-export const getNormalizedRole = async () => {
+export const getNormalizedRole = () => {
   try {
-    const role = await cache.getItem(ROLE_CACHE_KEY);
+    const role = memoryCache.get(ROLE_CACHE_KEY);
     return role ? normalizeRoleCase(role) : null;
   } catch (error) {
     console.error('Error getting normalized role:', error);
@@ -50,9 +51,9 @@ export const getNormalizedRole = async () => {
  * Clear role cache
  * @returns {Promise<void>}
  */
-export const clearRoleCache = async () => {
+export const clearRoleCache = () => {
   try {
-    await cache.removeItem(ROLE_CACHE_KEY);
+    memoryCache.delete(ROLE_CACHE_KEY);
   } catch (error) {
     console.error('Error clearing role cache:', error);
     throw error;

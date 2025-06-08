@@ -1,20 +1,11 @@
 import { appCache } from '../utils/appCache';
-import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
-import { jwtDecode } from 'jwt-decode';
-import { fetchUserAttributes } from '@/config/amplifyUnified';
 import { 
-  COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
   STORAGE_KEYS,
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import {
-  updateTenantIdInCognito, 
-  getTenantIdFromCognito 
-} from '@/utils/tenantUtils';
 import {
   saveOnboardingStatus, 
   getOnboardingStatus as getUserOnboardingStatus,
@@ -25,695 +16,327 @@ import {
   updateOnboardingData
 } from '@/utils/userPreferences';
 
-export async function validateSession(providedTokens) {
+/**
+ * Onboarding Utilities - Updated for Auth0-only approach
+ * 
+ * This utility now uses Auth0 session management instead of AWS Amplify/Cognito.
+ * Session validation and user data management is handled via Auth0 APIs.
+ */
+
+/**
+ * Validate Auth0 session
+ * @param {Object} options - Options for session validation
+ * @returns {Promise<Object>} Validation result
+ */
+export async function validateSession(options = {}) {
   try {
-    let tokens = providedTokens || {};
+    logger.debug('[OnboardingUtils] Validating Auth0 session');
     
-    // If no tokens provided, try to get them from the current session
-    if (!tokens.idToken || !tokens.accessToken) {
-      // Attempt to refresh the session first to ensure tokens are valid
-      try {
-        // Force refresh to ensure we have the latest tokens
-        const session = await fetchAuthSession({ forceRefresh: true });
-        tokens = {
-          accessToken: session.tokens.accessToken.toString(),
-          idToken: session.tokens.idToken.toString()
-        };
-        
-        // Store in AppCache instead of cookies
-        if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.init();
-          if (!appCache.get('auth')) appCache.set('auth', {});
-          appCache.set('auth.accessToken', tokens.accessToken);
-          appCache.set('auth.idToken', tokens.idToken);
-        }
-      } catch (refreshError) {
-        logger.warn('[OnboardingUtils] Token refresh failed, falling back to fetchAuthSession:', refreshError);
-        
-        // Fallback to regular session fetch
-        const session = await fetchAuthSession();
-        tokens = {
-          accessToken: session.tokens.accessToken.toString(),
-          idToken: session.tokens.idToken.toString()
-        };
-        
-        // Store in AppCache instead of cookies
-        if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.init();
-          if (!appCache.get('auth')) appCache.set('auth', {});
-          appCache.set('auth.accessToken', tokens.accessToken);
-          appCache.set('auth.idToken', tokens.idToken);
-        }
+    // Check Auth0 session via API
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
       }
-    }
-
-    logger.debug('[OnboardingUtils] Session tokens:', {
-      hasIdToken: !!tokens.idToken,
-      hasAccessToken: !!tokens.accessToken,
-      idTokenLength: tokens.idToken?.length,
-      accessTokenLength: tokens.accessToken?.length
     });
-
-    // Only get current user on client side
-    const user = await getCurrentUser();
-    if (!user) {
-      throw new Error('No current user found');
-    }
-
-    return { tokens, user };
-  } catch (error) {
-    logger.error('[OnboardingUtils] Session validation failed:', error);
-    throw error;
-  }
-}
-
-function getAppCacheValues() {
-  const cache = {};
-  if (typeof window !== 'undefined') {
-    if (!appCache.getAll()) appCache.init();
-    if (!appCache.get('auth')) appCache.set('auth', {});
-    appCache.set('onboarding', appCache.getAll().onboarding || {});
     
-    // Add auth tokens
-    cache.accessToken = appCache.get('auth.accessToken');
-    cache.idToken = appCache.get('auth.idToken');
-    
-    // Add onboarding status
-    cache.onboardingStep = appCache.get('onboarding.step');
-    cache.onboardedStatus = appCache.get('onboarding.status');
-    cache.setupCompleted = appCache.get('onboarding.completed');
-  }
-  return cache;
-}
-
-export async function updateOnboardingStep(step, additionalAttributes = {}, tokens = null) {
-  try {
-    // Validate session with provided tokens
-    const { tokens: validTokens } = await validateSession(tokens);
-
-    // Format attributes - ensure step is lowercase for consistency
-    const stepValue = step || 'business_info';
-    
-    const formattedAttributes = {
-      'custom:onboarding': String(stepValue),
-      'custom:updated_at': new Date().toISOString(),
-      ...Object.entries(additionalAttributes).reduce((acc, [key, value]) => ({
-        ...acc,
-        [key.startsWith('custom:') ? key : `custom:${key}`]: String(value)
-      }), {})
-    };
-
-    logger.debug('[OnboardingUtils] Updating step:', {
-      step: stepValue,
-      attributes: Object.keys(formattedAttributes)
-    });
-
-    // Server-side update using AWS SDK
-    if (typeof window === 'undefined') {
-      try {
-        // Import AWS SDK v3 - must use dynamic import for server-side
-        const { CognitoIdentityProviderClient, UpdateUserAttributesCommand } = await import('@aws-sdk/client-cognito-identity-provider');
-        
-        // Configure the Cognito Identity Provider client
-        const client = new CognitoIdentityProviderClient({
-          region: 'us-east-1'
-        });
-        
-        // Format attributes for AWS SDK
-        const userAttributes = Object.entries(formattedAttributes).map(([key, value]) => ({
-          Name: key,
-          Value: value
-        }));
-        
-        // Make the update request using the SDK
-        const updateParams = {
-          AccessToken: validTokens.accessToken,
-          UserAttributes: userAttributes
-        };
-        
-        const command = new UpdateUserAttributesCommand(updateParams);
-        await client.send(command);
-        logger.debug('[OnboardingUtils] Server-side attributes updated successfully');
-      } catch (error) {
-        logger.error('[OnboardingUtils] Server-side attribute update failed:', {
-          error: error.message,
-          code: error.code,
-          statusCode: error.statusCode
-        });
-        throw new Error(`Failed to update attributes: ${error.message}`);
-      }
-    } else {
-      // Client-side update using Amplify
-      await updateUserAttributes({
-        userAttributes: formattedAttributes
-      });
+    if (response.ok) {
+      const userData = await response.json();
+      logger.debug('[OnboardingUtils] Auth0 session is valid');
       
-      // Also update in AppCache for better performance
-      setCacheValue('onboarding_step', stepValue);
-      
-      // Update onboarding status in app cache for immediate use
-      if (additionalAttributes['custom:setupdone'] || additionalAttributes.setupdone) {
-        setCacheValue('onboarding_status', 'complete');
-      } else {
-        setCacheValue('onboarding_status', stepValue);
-      }
-    }
-
-    logger.debug('[OnboardingUtils] Step updated successfully');
-    return true;
-  } catch (error) {
-    logger.error('[OnboardingUtils] Failed to update step:', {
-      error: error.message,
-      code: error.code,
-      step
-    });
-    throw error;
-  }
-}
-
-export async function completeOnboarding() {
-  try {
-    // Track performance and attempt status
-    const startTime = performance.now();
-    let attributeUpdateSuccess = false;
-    const requestId = crypto.randomUUID();
-    
-    logger.debug('[OnboardingUtils] Starting onboarding completion', {
-      requestId,
-      timestamp: new Date().toISOString()
-    });
-    
-    // Define attributes to update - using lowercase values
-    const userAttributes = {
-      'custom:onboarding': 'complete',
-      'custom:setupdone': 'true',
-      'custom:updated_at': new Date().toISOString(),
-      'custom:onboardingCompletedAt': new Date().toISOString()
-    };
-    
-    try {
-      // First attempt: Use Amplify updateUserAttributes
-      await updateUserAttributes({ userAttributes });
-      attributeUpdateSuccess = true;
-      
-      // Update AppCache
+      // Store user data in AppCache for quick access
       if (typeof window !== 'undefined') {
         if (!appCache.getAll()) appCache.init();
-        appCache.set('onboarding', appCache.getAll().onboarding || {});
-        appCache.set('onboarding.status', 'complete');
-        appCache.set('onboarding.step', 'complete');
-        appCache.set('onboarding.completed', true);
+        if (!appCache.get('auth')) appCache.set('auth', {});
+        appCache.set('auth.user', userData);
+        appCache.set('auth.lastValidated', Date.now());
       }
       
-      logger.debug('[OnboardingUtils] Attributes updated via Amplify', {
-        requestId,
-        method: 'direct_amplify',
-        elapsedMs: performance.now() - startTime
-      });
-    } catch (updateError) {
-      logger.error('[OnboardingUtils] Amplify update failed', {
-        requestId,
-        error: updateError.message,
-        code: updateError.code,
-        elapsedMs: performance.now() - startTime
-      });
-      
-      // If Amplify update fails, try the direct API call as a backup
-      try {
-        // Get current session for authentication
-        const { tokens } = await fetchAuthSession();
-        
-        // Make direct API call to update attributes
-        const response = await fetch('/api/user/update-attributes', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokens.accessToken}`,
-            'X-Request-ID': requestId
-          },
-          body: JSON.stringify({
-            attributes: userAttributes,
-            forceUpdate: true
-          })
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          attributeUpdateSuccess = true;
-          
-          logger.debug('[OnboardingUtils] Attributes updated via API call', {
-            requestId,
-            method: 'api_call',
-            result,
-            elapsedMs: performance.now() - startTime
-          });
-        } else {
-          throw new Error(`API returned status ${response.status}`);
+      return {
+        isValid: true,
+        user: userData,
+        sessionData: userData,
+        tokens: {
+          accessToken: 'auth0-session', // Placeholder since Auth0 handles tokens internally
+          idToken: 'auth0-session'
         }
-      } catch (apiError) {
-        logger.error('[OnboardingUtils] API update failed', {
-          requestId,
-          error: apiError.message,
-          elapsedMs: performance.now() - startTime
-        });
-        
-        // Final attempt: Try using the onboarding complete endpoint
-        try {
-          const completeResponse = await fetch('/api/onboarding/complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Request-ID': requestId
-            }
-          });
-          
-          if (completeResponse.ok) {
-            attributeUpdateSuccess = true;
-            
-            logger.debug('[OnboardingUtils] Completion via dedicated endpoint succeeded', {
-              requestId,
-              method: 'complete_endpoint',
-              elapsedMs: performance.now() - startTime
-            });
-          } else {
-            throw new Error(`Complete endpoint returned status ${completeResponse.status}`);
-          }
-        } catch (completeError) {
-          logger.error('[OnboardingUtils] All update methods failed', {
-            requestId,
-            completeError: completeError.message,
-            elapsedMs: performance.now() - startTime
-          });
-          throw new Error('Failed to complete onboarding after multiple attempts');
-        }
-      }
+      };
+    } else if (response.status === 401) {
+      logger.warn('[OnboardingUtils] Auth0 session is invalid or expired');
+      return {
+        isValid: false,
+        error: 'Session expired or invalid',
+        needsLogin: true
+      };
+    } else {
+      throw new Error(`Session validation failed: ${response.status}`);
     }
-    
-    logger.debug('[OnboardingUtils] Onboarding completion process finished', {
-      requestId,
-      success: attributeUpdateSuccess,
-      elapsedMs: performance.now() - startTime
-    });
-    
-    return attributeUpdateSuccess;
   } catch (error) {
-    logger.error('[OnboardingUtils] Failed to complete onboarding:', {
-      error: error.message,
-      code: error.code,
-      stack: error.stack
-    });
-    throw error;
-  }
-}
-
-/**
- * Gets the onboarding status from multiple sources and ensures they are in sync
- * Prioritizes the Cognito attributes as the source of truth
- * 
- * @returns {Promise<Object>} The onboarding status data
- */
-export async function getOnboardingStatus() {
-  try {
-    // Check AppCache first
-    const cachedStatus = getCacheValue('onboarding_status');
-    if (cachedStatus) {
-      return cachedStatus;
-    }
+    logger.error('[OnboardingUtils] Error validating session:', error);
     
-    // Then try Cognito
-    return await getUserOnboardingStatus('not_started');
-  } catch (error) {
-    logger.error('[OnboardingUtils] Error getting onboarding status:', error);
-    return 'not_started';
-  }
-}
-
-/**
- * Updates the onboarding status across all storage mechanisms (Cognito, cookies, app cache)
- * @param {string} status - The new onboarding status, use ONBOARDING_STATUS constants
- * @param {Object} options - Additional options
- * @param {boolean} options.updateCognito - Whether to update Cognito attributes (default true)
- * @param {boolean} options.wait - Whether to wait for Cognito update to complete (default false)
- * @returns {Promise<boolean>} True if successful
- */
-export const updateOnboardingStatus = async (status, options = {}) => {
-  try {
-    const normalizedStatus = (status || '').toLowerCase();
-    const { step = normalizedStatus, setupDone = normalizedStatus === 'complete' } = options;
-    
-    logger.debug(`[OnboardingUtils] Updating onboarding status: ${normalizedStatus}, step: ${step}, setupDone: ${setupDone}`);
-    
-    // Save to Cognito
-    const attributes = {
-      [PREF_KEYS.ONBOARDING_STATUS]: normalizedStatus,
-      [PREF_KEYS.ONBOARDING_STEP]: step,
-    };
-    
-    // Add setup done flag if provided
-    if (setupDone !== undefined) {
-      attributes['custom:setupdone'] = setupDone ? 'true' : 'false';
-    }
-    
-    // Update timestamp
-    attributes['custom:updated_at'] = new Date().toISOString();
-    
-    // Update in Cognito
-    await updateOnboardingData({
-      status: normalizedStatus,
-      step: step
-    });
-    
-    // Update in AppCache
-    setCacheValue('onboarding_status', normalizedStatus);
-    setCacheValue('onboarding_step', step);
-    setCacheValue('setup_done', setupDone);
-    
-    return true;
-  } catch (error) {
-    logger.error('[OnboardingUtils] Error updating onboarding status:', error);
-    return false;
-  }
-};
-
-/**
- * Checks if the user has completed onboarding by examining all sources
- * @returns {boolean} True if onboarding is complete
- */
-export const isOnboardingComplete = () => {
-  try {
-    // Check cookies first (most reliable client-side indicator)
-    const cookieStatus = getCacheValue('onboarding_status')?.toLowerCase();
-    const cookieSetupCompleted = getCacheValue('setup_done');
-    const cookieOnboardingStep = getCacheValue('onboarding_step')?.toLowerCase();
-    
-    // Check app cache as backup
+    // Check for cached session data as fallback
     if (typeof window !== 'undefined') {
-      const appCacheStatus = getCacheValue('onboarding_status')?.toLowerCase();
-      const appCacheSetupDone = getCacheValue('setup_done');
+      const cachedUser = appCache.get('auth.user');
+      const lastValidated = appCache.get('auth.lastValidated');
       
-      // Return true if ANY source indicates completion (using case-insensitive comparison)
-      return (
-        cookieStatus === 'complete' ||
-        cookieSetupCompleted === true ||
-        cookieOnboardingStep === 'complete' ||
-        appCacheStatus === 'complete' ||
-        appCacheSetupDone === true
-      );
+      // If we have cached data and it's less than 5 minutes old, use it
+      if (cachedUser && lastValidated && (Date.now() - lastValidated < 5 * 60 * 1000)) {
+        logger.info('[OnboardingUtils] Using cached session data');
+        return {
+          isValid: true,
+          user: cachedUser,
+          sessionData: cachedUser,
+          cached: true
+        };
+      }
     }
     
-    // If window is not defined, just use cache data
-    return (
-      cookieStatus === 'complete' ||
-      cookieSetupCompleted === true ||
-      cookieOnboardingStep === 'complete'
-    );
-  } catch (error) {
-    logger.error('[onboardingUtils] Error checking onboarding status:', error);
-    return false;
-  }
-};
-
-/**
- * Gets the current onboarding step (for routing)
- * @returns {string} The current onboarding step path
- */
-export const getCurrentOnboardingStep = async () => {
-  try {
-    // Check AppCache first
-    const cachedStep = getCacheValue('onboarding_step');
-    if (cachedStep) {
-      return cachedStep;
-    }
-    
-    // Then try Cognito
-    return await getOnboardingStep('business_info');
-  } catch (error) {
-    logger.error('[OnboardingUtils] Error getting current onboarding step:', error);
-    return 'business_info';
-  }
-};
-
-/**
- * Gets business information from Cognito
- * @returns {Promise<Object>} Business information
- */
-export async function getBusinessInfo() {
-  try {
-    // Import auth utilities
-    const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-    
-    // Get user attributes from Cognito
-    const attributes = await fetchUserAttributes();
-    
-    // Extract business info
-    const businessInfo = {
-      businessName: attributes['custom:businessname'] || '',
-      businessType: attributes['custom:businesstype'] || '',
-      businessSubtypes: attributes['custom:businesssubtypes'] || '',
-      dateFounded: attributes['custom:datefounded'] || '',
-      country: attributes['custom:country'] || '',
-      businessState: attributes['custom:state'] || '',
-      legalStructure: attributes['custom:legalstructure'] || '',
-      tenantId: attributes['custom:tenant_id'] || 
-               attributes['custom:businessid'] || 
-               attributes['custom:tenant_ID'] || ''
-    };
-    
-    logger.debug('[onboardingUtils] Got business info from Cognito:', businessInfo);
-    return businessInfo;
-  } catch (error) {
-    logger.error('[onboardingUtils] Error getting business info from Cognito:', error);
     return {
-      businessName: '',
-      businessType: '',
-      tenantId: ''
+      isValid: false,
+      error: error.message,
+      needsLogin: true
     };
   }
 }
 
 /**
- * Updates business information in Cognito
- * @param {Object} info - Business information to update
- * @returns {Promise<boolean>} Success status
+ * Get current user from Auth0 session
+ * @returns {Promise<Object|null>} Current user or null
  */
-export async function updateBusinessInfo(info) {
+export async function getCurrentUser() {
   try {
-    if (!info) return false;
-    
-    logger.debug('[OnboardingUtils] Updating business info:', Object.keys(info));
-    
-    // Prepare the attributes to update
-    const attributes = {};
-    
-    if (info.businessName) {
-      attributes[PREF_KEYS.BUSINESS_NAME] = info.businessName;
-    }
-    
-    if (info.businessType) {
-      attributes[PREF_KEYS.BUSINESS_TYPE] = info.businessType;
-    }
-    
-    // Add other business info attributes as needed
-    if (info.businessCountry) {
-      attributes['custom:businesscountry'] = info.businessCountry;
-    }
-    
-    if (info.businessState) {
-      attributes['custom:businessstate'] = info.businessState;
-    }
-    
-    // Update onboarding step/status
-    attributes[PREF_KEYS.ONBOARDING_STEP] = 'subscription';
-    attributes[PREF_KEYS.ONBOARDING_STATUS] = 'in_progress';
-    
-    // Update in Cognito
-    await saveUserPreferences(attributes);
-    
-    // Update in AppCache
-    setCacheValue('business_info', info);
-    setCacheValue('onboarding_step', 'subscription');
-    setCacheValue('onboarding_status', 'in_progress');
-    
-    return true;
-  } catch (error) {
-    logger.error('[OnboardingUtils] Error updating business info:', error);
-    return false;
-  }
-}
-
-/**
- * Validates business information and formats it for update
- * @param {Object} info - Business information to validate
- * @returns {Promise<Object>} Formatted attributes for update
- */
-export async function validateBusinessInfo(info) {
-  try {
-    if (!info) {
-      throw new Error('Business information is required');
-    }
-    
-    logger.debug('[OnboardingUtils] Validating business info:', {
-      hasName: !!info.businessName,
-      hasType: !!info.businessType
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      credentials: 'include'
     });
     
-    // Basic validation
-    if (!info.businessName || info.businessName.trim() === '') {
-      throw new Error('Business name is required');
+    if (response.ok) {
+      const userData = await response.json();
+      return userData;
+    } else {
+      return null;
     }
-    
-    if (!info.businessType || info.businessType.trim() === '') {
-      throw new Error('Business type is required');
-    }
-    
-    // Format attributes for update
-    const attributes = {
-      [PREF_KEYS.BUSINESS_NAME]: info.businessName.trim(),
-      [PREF_KEYS.BUSINESS_TYPE]: info.businessType.trim(),
-      [PREF_KEYS.ONBOARDING_STEP]: 'subscription',
-      [PREF_KEYS.ONBOARDING_STATUS]: 'in_progress',
-      'custom:business_info_done': 'TRUE',
-      'custom:updated_at': new Date().toISOString()
-    };
-    
-    // Add optional fields if provided
-    if (info.businessCountry) {
-      attributes['custom:businesscountry'] = info.businessCountry.trim();
-    }
-    
-    if (info.businessState) {
-      attributes['custom:businessstate'] = info.businessState.trim();
-    }
-    
-    if (info.legalStructure) {
-      attributes['custom:legalstructure'] = info.legalStructure.trim();
-    }
-    
-    return attributes;
   } catch (error) {
-    logger.error('[OnboardingUtils] Business info validation failed:', error);
-    throw error;
+    logger.error('[OnboardingUtils] Error getting current user:', error);
+    return null;
   }
 }
 
 /**
- * Updates subscription information in Cognito
- * @param {Object} subscription - Subscription information to update
- * @returns {Promise<boolean>} Success status
+ * Update user attributes via Auth0 session
+ * @param {Object} attributes - Attributes to update
+ * @returns {Promise<Object>} Update result
  */
-export async function updateSubscriptionInfo(subscription) {
+export async function updateUserAttributes(attributes) {
   try {
-    logger.debug('[OnboardingUtils] Updating subscription info:', subscription);
-    
-    // Validate subscription data
-    if (!subscription || typeof subscription !== 'object') {
-      throw new Error('Invalid subscription data');
-    }
-    
-    // Update the user's subscription info in Cognito attributes
-    const attributes = {
-      'custom:subscription_plan': subscription.plan || '',
-      'custom:subscription_status': subscription.status || '',
-      'custom:subscription_id': subscription.id || '',
-      'custom:updated_at': new Date().toISOString()
-    };
-    
-    await updateUserAttributes({
-      userAttributes: attributes
-    });
-    
-    logger.debug('[OnboardingUtils] Subscription info updated successfully');
-    return true;
-  } catch (error) {
-    logger.error('[OnboardingUtils] Failed to update subscription info:', error);
-    throw error;
-  }
-}
-
-/**
- * Validate subscription data
- * @param {Object} subscription - The subscription object to validate
- * @returns {boolean} - True if valid, throws error if invalid
- */
-export function validateSubscription(subscription) {
-  if (!subscription || typeof subscription !== 'object') {
-    throw new Error('Subscription data is required');
-  }
-  
-  if (!subscription.plan) {
-    throw new Error('Subscription plan is required');
-  }
-  
-  const validPlans = ['free', 'basic', 'premium', 'enterprise'];
-  if (!validPlans.includes(subscription.plan.toLowerCase())) {
-    throw new Error('Invalid subscription plan');
-  }
-  
-  if (subscription.status && !['active', 'inactive', 'pending', 'cancelled'].includes(subscription.status.toLowerCase())) {
-    throw new Error('Invalid subscription status');
-  }
-  
-  return true;
-}
-
-/**
- * Validate if a string is a valid UUID
- * @param {string} id - The ID to check
- * @returns {boolean} - True if valid UUID
- */
-function isValidUUID(id) {
-  if (!id || typeof id !== 'string') {
-    return false;
-  }
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
-}
-
-/**
- * Gets or creates a tenant ID for the user
- * @returns {Promise<string|null>} The tenant ID or null on error
- */
-export async function getOrCreateTenantId() {
-  try {
-    // First try to get the tenant ID from Cognito
-    const cognitoTenantId = await getTenantIdFromCognito();
-    
-    // Validate that the tenant ID is in UUID format
-    if (cognitoTenantId && isValidUUID(cognitoTenantId)) {
-      logger.debug('[onboardingUtils] Found valid tenant ID in Cognito:', cognitoTenantId);
-      return cognitoTenantId;
-    } else if (cognitoTenantId) {
-      logger.warn('[onboardingUtils] Found invalid tenant ID format in Cognito:', cognitoTenantId);
-    }
-    
-    // If no valid tenant ID exists, create one via the API
-    const response = await fetch('/api/tenant/create', {
+    const response = await fetch('/api/auth/update-user', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-      }
+      },
+      credentials: 'include',
+      body: JSON.stringify({ attributes })
     });
     
-    if (!response.ok) {
-      logger.error('[onboardingUtils] Failed to create tenant ID from API:', {
-        status: response.status,
-        statusText: response.statusText
-      });
-      return null;
+    if (response.ok) {
+      const result = await response.json();
+      logger.info('[OnboardingUtils] Successfully updated user attributes');
+      return result;
+    } else {
+      throw new Error(`Failed to update user attributes: ${response.status}`);
     }
-    
-    const data = await response.json();
-    if (data && data.tenantId && isValidUUID(data.tenantId)) {
-      // Store the new tenant ID in Cognito
-      await updateTenantIdInCognito(data.tenantId);
-      logger.info('[onboardingUtils] Created and stored new tenant ID in Cognito:', data.tenantId);
-      return data.tenantId;
-    }
-    
-    logger.error('[onboardingUtils] API returned invalid or missing tenant ID:', data);
-    return null;
   } catch (error) {
-    logger.error('[onboardingUtils] Error getting or creating tenant ID:', error);
+    logger.error('[OnboardingUtils] Error updating user attributes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get user attributes from Auth0 session
+ * @returns {Promise<Object>} User attributes
+ */
+export async function fetchUserAttributes() {
+  try {
+    const user = await getCurrentUser();
+    if (user) {
+      // Convert user data to attributes format
+      return {
+        name: user.name,
+        given_name: user.given_name,
+        family_name: user.family_name,
+        email: user.email,
+        picture: user.picture,
+        tenant_id: user.tenant_id || user.tenantId,
+        businessName: user.businessName,
+        subscriptionPlan: user.subscriptionPlan,
+        onboardingCompleted: user.onboardingCompleted,
+        needsOnboarding: user.needsOnboarding
+      };
+    }
+    return {};
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error fetching user attributes:', error);
+    return {};
+  }
+}
+
+/**
+ * Update tenant ID in user session
+ * @param {string} tenantId - Tenant ID to update
+ * @returns {Promise<Object>} Update result
+ */
+export async function updateTenantIdInSession(tenantId) {
+  try {
+    return await updateUserAttributes({
+      tenant_id: tenantId,
+      tenantId: tenantId
+    });
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error updating tenant ID:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get tenant ID from user session
+ * @returns {Promise<string|null>} Tenant ID or null
+ */
+export async function getTenantIdFromSession() {
+  try {
+    const user = await getCurrentUser();
+    return user?.tenant_id || user?.tenantId || null;
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error getting tenant ID:', error);
     return null;
   }
 }
+
+/**
+ * Check if user needs onboarding
+ * @returns {Promise<boolean>} True if user needs onboarding
+ */
+export async function userNeedsOnboarding() {
+  try {
+    const user = await getCurrentUser();
+    return user?.needsOnboarding !== false || user?.onboardingCompleted !== true;
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error checking onboarding status:', error);
+    return true; // Default to needing onboarding if we can't determine
+  }
+}
+
+/**
+ * Mark onboarding as completed
+ * @returns {Promise<Object>} Update result
+ */
+export async function markOnboardingCompleted() {
+  try {
+    return await updateUserAttributes({
+      needsOnboarding: false,
+      onboardingCompleted: true,
+      onboarding_completed: true,
+      currentStep: 'completed',
+      onboardingCompletedAt: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error marking onboarding completed:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update onboarding step
+ * @param {string} step - Current onboarding step
+ * @returns {Promise<Object>} Update result
+ */
+export async function updateOnboardingStep(step) {
+  try {
+    return await updateUserAttributes({
+      currentStep: step,
+      current_onboarding_step: step,
+      lastUpdated: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error updating onboarding step:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get current onboarding step
+ * @returns {Promise<string>} Current step
+ */
+export async function getCurrentOnboardingStep() {
+  try {
+    const user = await getCurrentUser();
+    return user?.currentStep || user?.current_onboarding_step || 'business_info';
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error getting current step:', error);
+    return 'business_info';
+  }
+}
+
+/**
+ * Clear onboarding state (for testing/debugging)
+ * @returns {Promise<void>}
+ */
+export async function clearOnboardingState() {
+  try {
+    await updateUserAttributes({
+      needsOnboarding: true,
+      onboardingCompleted: false,
+      currentStep: 'business_info',
+      tenant_id: null,
+      businessName: null,
+      subscriptionPlan: null
+    });
+    
+    // Clear AppCache
+    if (typeof window !== 'undefined') {
+      appCache.clear();
+    }
+    
+    logger.info('[OnboardingUtils] Cleared onboarding state');
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error clearing onboarding state:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get onboarding progress
+ * @returns {Promise<Object>} Progress information
+ */
+export async function getOnboardingProgress() {
+  try {
+    const user = await getCurrentUser();
+    
+    const steps = ['business_info', 'subscription', 'payment', 'setup', 'completed'];
+    const currentStep = user?.currentStep || 'business_info';
+    const currentIndex = steps.indexOf(currentStep);
+    const progress = currentIndex >= 0 ? ((currentIndex / (steps.length - 1)) * 100) : 0;
+    
+    return {
+      currentStep,
+      progress: Math.round(progress),
+      totalSteps: steps.length,
+      completedSteps: currentIndex + 1,
+      isCompleted: user?.onboardingCompleted === true
+    };
+  } catch (error) {
+    logger.error('[OnboardingUtils] Error getting onboarding progress:', error);
+    return {
+      currentStep: 'business_info',
+      progress: 0,
+      totalSteps: 5,
+      completedSteps: 0,
+      isCompleted: false
+    };
+  }
+}
+
+// Export legacy function names for compatibility
+export const fetchAuthSession = validateSession;
+export const updateTenantIdInCognito = updateTenantIdInSession;
+export const getTenantIdFromCognito = getTenantIdFromSession;
