@@ -246,13 +246,13 @@ export async function POST(request) {
         firstName,
         lastName,
         tenantId,
-        role: role || 'employee', // This will be mapped to 4-6 char values in cognito.js (e.g., EMPLOYEE -> EMPL)
+        role: role || 'user', // Default role for invited users is 'user'
         emailVerified: false, // Do not mark as verified until they confirm
         // Include owner attributes to ensure proper tenant association
         ...ownerAttributes
       };
       
-      logger.info(`[API:invite] Creating user with tenant ID: ${tenantId} and role: ${role || 'employee'}`);
+      logger.info(`[API:invite] Creating user with tenant ID: ${tenantId} and role: ${role || 'user'}`);
       
       let createUserResult;
       let existingUser = false;

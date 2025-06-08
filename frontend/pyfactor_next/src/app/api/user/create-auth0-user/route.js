@@ -250,6 +250,7 @@ export async function POST(request) {
           name: user.name || '',
           picture: user.picture || '',
           tenant_id: tenantId,
+          role: 'owner', // New signups get owner role by default
           needs_onboarding: true,
           onboarding_status: 'business_info'
         })

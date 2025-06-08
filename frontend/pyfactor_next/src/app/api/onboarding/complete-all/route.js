@@ -75,6 +75,10 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
         businessType: onboardingData.businessType,
         subscriptionPlan: onboardingData.selectedPlan,
         
+        // Assign owner role to the person completing onboarding
+        role: 'owner',
+        userRole: 'owner',
+        
         // Timestamps
         onboardingCompletedAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString()
@@ -127,6 +131,7 @@ async function createTenantInBackend(user, onboardingData, tenantId, accessToken
       owner_last_name: onboardingData.lastName,
       phone_number: onboardingData.phoneNumber,
       address: onboardingData.address,
+      role: 'owner', // Assign owner role
       onboarding_completed: true,
       onboarding_completed_at: new Date().toISOString()
     };

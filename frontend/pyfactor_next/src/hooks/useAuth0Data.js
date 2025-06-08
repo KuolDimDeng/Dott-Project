@@ -7,6 +7,7 @@ export const useAuth0Data = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [businessName, setBusinessName] = useState(null);
+  const [role, setRole] = useState('user');
 
   const fetchAuth0Session = useCallback(async () => {
     try {
@@ -37,8 +38,12 @@ export const useAuth0Data = () => {
             name: sessionData.user.name,
             picture: sessionData.user.picture,
             sub: sessionData.user.sub,
+            role: sessionData.user.role || sessionData.user.userRole || 'user',
             ...sessionData.user
           };
+          
+          // Set role from session
+          setRole(userData.role);
           
           // Cache the session data
           setCache('auth0_session', { user: userData }, { ttl: 300000 }); // 5 minutes
@@ -138,6 +143,21 @@ export const useAuth0Data = () => {
     return '';
   }, []);
 
+  // Get user role
+  const getUserRole = useCallback(() => {
+    return role || 'user';
+  }, [role]);
+
+  // Check if user is owner
+  const isOwner = useCallback(() => {
+    return role === 'owner';
+  }, [role]);
+
+  // Check if user can manage other users
+  const canManageUsers = useCallback(() => {
+    return role === 'owner';
+  }, []);
+
   // Get business name synchronously (returns current cached value)
   const getBusinessNameSync = useCallback(() => {
     // Return the state value
@@ -172,10 +192,14 @@ export const useAuth0Data = () => {
     isLoading,
     error,
     businessName,
+    role,
     getUserInitials,
     getFullName,
     getBusinessName,
     getBusinessNameSync,
+    getUserRole,
+    isOwner,
+    canManageUsers,
     refetch: fetchAuth0Session
   };
 }; 
