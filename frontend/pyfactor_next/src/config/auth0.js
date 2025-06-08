@@ -456,4 +456,18 @@ export const auth0Utils = {
   }
 };
 
+// Export the fetchAuth0SessionData function for compatibility
+export const fetchAuth0SessionData = async () => {
+  try {
+    const response = await fetch('/api/auth/session');
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error('[Auth0] Error fetching session data:', error);
+    return null;
+  }
+};
+
 export default auth0Utils;

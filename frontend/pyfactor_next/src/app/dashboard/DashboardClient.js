@@ -36,9 +36,8 @@ function checkForUserOnboardingData() {
     // Check Cognito attributes first
     return new Promise(async (resolve) => {
       try {
-        const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+        // Auth0 doesn't use fetchUserAttributes
+        const userAttributes = {};
         
         // Check for business name in user attributes
         if (userAttributes['custom:businessname'] || 
@@ -65,8 +64,8 @@ function checkForUserOnboardingData() {
 function getUserBusinessName() {
   return new Promise(async (resolve) => {
     try {
-      const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+      // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
       
       // Try to get business name from Cognito attributes
       const businessName = userAttributes['custom:businessname'] || null;
@@ -83,8 +82,8 @@ function getUserBusinessName() {
 function getUserBusinessType() {
   return new Promise(async (resolve) => {
     try {
-      const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+      // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
       
       // Try to get business type from Cognito attributes
       const businessType = userAttributes['custom:businesstype'] || null;
@@ -171,8 +170,8 @@ const syncTenantIDs = async (isAuthFlow = false) => {
     let cognitoTenantId = null;
     
     try {
-      const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+      // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
       cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
       
       if (cognitoTenantId) {
@@ -490,8 +489,8 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       async function getBestBusinessName() {
         try {
           // Try to get business name from Cognito attributes
-          const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+          // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
           
           // Look for business name in custom attributes
           const cognitoBusinessName = 
@@ -752,8 +751,8 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       let tenantId = null;
       
       try {
-        const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+        // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
         tenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
         
         if (tenantId) {
@@ -819,8 +818,8 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
         let cognitoTenantId = null;
         
         try {
-          const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+          // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
           cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
           
           if (cognitoTenantId) {
@@ -1097,8 +1096,8 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
           console.log('[DashboardClient] Creating tenant for user with business ID:', businessId);
           
           // Get user attributes
-          const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      const userAttributes = await fetchUserAttributes();
+          // Auth0 doesn't use fetchUserAttributes
+      const userAttributes = {};
           
           // Call tenant manager API
           const tenantResponse = await fetch('/api/tenant/tenant-manager', {

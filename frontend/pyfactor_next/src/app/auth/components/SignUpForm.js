@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signUp, signIn } from '@/config/amplifyUnified';
+// Auth0 doesn't use separate signUp - redirect to login with signup hint
 import { logger } from '@/utils/logger';
 import { clearAllAuthData } from '@/utils/authUtils';
 import { setCacheValue } from '@/utils/appCache';
@@ -120,38 +120,17 @@ export default function SignUpForm() {
         hasLastName: !!formData.lastName
       });
       
-      // Actual sign-up process
-      const { isSignUpComplete, userId, nextStep } = await signUp({
-        username: formData.username,
-        password: formData.password,
-        options: {
-          userAttributes: {
-            email: formData.username,
-            given_name: formData.firstName,
-            family_name: formData.lastName,
-          },
-          autoSignIn: false // Don't automatically sign in after signup
-        }
+      // Redirect to Auth0 signup
+      // Store signup data temporarily
+      await setCacheValue('pendingSignup', {
+        email: formData.username,
+        firstName: formData.firstName,
+        lastName: formData.lastName
       });
       
-      logger.debug('[SignUpForm] Sign-up result', { 
-        isSignUpComplete, 
-        userId,
-        nextStep: nextStep?.signUpStep 
-      });
-      
-      // Store information needed for verification in AppCache (not localStorage)
-      setCacheValue('auth_email', formData.username);
-      setCacheValue('auth_needs_verification', 'true');
-      setCacheValue('auth_signup_timestamp', Date.now());
-      
-      // Show success message
-      setSuccessMessage('Account created successfully! Please check your email for a verification code.');
-      
-      // Redirect to verification page
-      setTimeout(() => {
-        router.push(`/auth/verify-email?email=${encodeURIComponent(formData.username)}`);
-      }, 1500);
+      // Redirect to Auth0 login with signup hint
+      window.location.href = `/api/auth/login?screen_hint=signup&login_hint=${encodeURIComponent(formData.username)}`;
+      return;
     } catch (error) {
       logger.error('[SignUpForm] Sign-up error:', error);
       

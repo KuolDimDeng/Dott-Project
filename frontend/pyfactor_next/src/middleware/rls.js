@@ -1,5 +1,4 @@
-import { appCache } from '@/utils/appCache';
-import { appCacheFallback } from '@/utils/appCacheFallback';
+// appCache should not be imported in server-side code as it uses window
 
 /**
  * Middleware to set RLS tenant ID in database sessions

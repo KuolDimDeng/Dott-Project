@@ -9,7 +9,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
-import { getSession } from '@auth0/nextjs-auth0';
+// Auth0 v4.x doesn't export getSession directly
+// We'll use serverUtils instead
 
 // Constants
 const VALID_ONBOARDING_STATES = [
@@ -54,9 +55,11 @@ export async function GET(request) {
     }
     
     // Get user session from Auth0
-    const { session } = await getSession(request, new Response());
+    const { validateServerSession } = await import('@/utils/serverUtils');
+    const sessionValidation = await validateServerSession();
+    const session = sessionValidation;
     
-    if (!session?.user) {
+    if (!sessionValidation?.user) {
       logger.warn('[OnboardingStatus] No authenticated user session found');
       return NextResponse.json(
         { 
@@ -81,9 +84,9 @@ export async function GET(request) {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
-          'X-User-Email': session.user.email,
-          'X-User-Sub': session.user.sub,
+          'Authorization': `Bearer ${sessionValidation.tokens?.accessToken || ""}`,
+          'X-User-Email': sessionValidation.user?.email || "",
+          'X-User-Sub': sessionValidation.user?.userId || "",
         },
         cache: 'no-store'
       });
@@ -121,7 +124,7 @@ export async function GET(request) {
     
     // Secondary source: Auth0 user attributes
     try {
-      const userOnboardingStatus = session.user.custom_onboarding;
+      const userOnboardingStatus = sessionValidation.user?.attributes?.custom_onboarding;
       
       if (userOnboardingStatus) {
         logger.debug('[OnboardingStatus] Using Auth0 user attributes', { userOnboardingStatus });
@@ -186,9 +189,11 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     // Get user session from Auth0
-    const { session } = await getSession(request, new Response());
+    const { validateServerSession } = await import('@/utils/serverUtils');
+    const sessionValidation = await validateServerSession();
+    const session = sessionValidation;
     
-    if (!session?.user) {
+    if (!sessionValidation?.user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
     
@@ -213,7 +218,7 @@ export async function POST(request) {
     }
     
     // Get current status from Auth0 user attributes
-    const currentStatus = session.user.custom_onboarding || 'not_started';
+    const currentStatus = sessionValidation.user?.attributes?.custom_onboarding || 'not_started';
     
     // Validate state transition
     if (!isValidStateTransition(currentStatus, status)) {
@@ -236,9 +241,9 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
-          'X-User-Email': session.user.email,
-          'X-User-Sub': session.user.sub,
+          'Authorization': `Bearer ${sessionValidation.tokens?.accessToken || ""}`,
+          'X-User-Email': sessionValidation.user?.email || "",
+          'X-User-Sub': sessionValidation.user?.userId || "",
           'X-Tenant-ID': tenantId
         },
         body: JSON.stringify({
@@ -284,7 +289,7 @@ export async function POST(request) {
         }
         
         // Update Auth0 user metadata
-        const auth0Response = await fetch(`${auth0Domain}/api/v2/users/${session.user.sub}`, {
+        const auth0Response = await fetch(`${auth0Domain}/api/v2/users/${sessionValidation.user?.userId || ""}`, {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',

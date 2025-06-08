@@ -1,27 +1,12 @@
 /**
- * SafeHub - A wrapper around AWS Amplify Hub that provides safe fallbacks
- * Prevents "Hub is undefined" errors that can crash the application
+ * SafeHub - A stub for AWS Amplify Hub compatibility
+ * Since we're using Auth0 instead of AWS Amplify, this provides safe fallbacks
  */
 
 import { logger } from '@/utils/logger';
 
-// Try to import Hub with fallback
-let AmplifyHub = null;
-try {
-  const amplifyCore = require('aws-amplify');
-  AmplifyHub = amplifyCore.Hub;
-} catch (error) {
-  try {
-    // Try alternate import path
-    const amplifyUnified = require('@/config/amplifyUnified');
-    AmplifyHub = amplifyUnified.Hub;
-  } catch (altError) {
-    logger.warn('[SafeHub] Hub not available, using safe fallbacks');
-  }
-}
-
 /**
- * Safe Hub wrapper that provides fallbacks when Hub is not available
+ * Safe Hub wrapper that provides fallbacks
  */
 export const SafeHub = {
   /**
@@ -31,58 +16,29 @@ export const SafeHub = {
    * @returns {function} Unsubscribe function
    */
   listen: (channel, listener) => {
-    try {
-      if (AmplifyHub && typeof AmplifyHub.listen === 'function') {
-        logger.debug(`[SafeHub] Setting up listener for channel: ${channel}`);
-        return AmplifyHub.listen(channel, listener);
-      } else {
-        logger.warn(`[SafeHub] Hub.listen not available for channel: ${channel}, returning noop unsubscribe`);
-        return () => {}; // Return noop unsubscribe function
-      }
-    } catch (error) {
-      logger.error(`[SafeHub] Error setting up listener for channel ${channel}:`, error);
-      return () => {}; // Return noop unsubscribe function
-    }
+    logger.debug(`[SafeHub] Hub.listen called for channel: ${channel} (no-op with Auth0)`);
+    return () => {}; // Return noop unsubscribe function
   },
 
   /**
    * Safely dispatch Hub events
    * @param {string} channel - The channel to dispatch to
-   * @param {object} payload - The payload to send
+   * @param {object} event - The event object
+   * @param {string} [source='Unknown'] - The source of the event
    */
-  dispatch: (channel, payload) => {
-    try {
-      if (AmplifyHub && typeof AmplifyHub.dispatch === 'function') {
-        logger.debug(`[SafeHub] Dispatching to channel: ${channel}`, payload);
-        return AmplifyHub.dispatch(channel, payload);
-      } else {
-        logger.warn(`[SafeHub] Hub.dispatch not available for channel: ${channel}, ignoring dispatch`);
-      }
-    } catch (error) {
-      logger.error(`[SafeHub] Error dispatching to channel ${channel}:`, error);
-    }
+  dispatch: (channel, event, source = 'Unknown') => {
+    logger.debug(`[SafeHub] Hub.dispatch called for channel: ${channel} (no-op with Auth0)`, {
+      event,
+      source
+    });
   },
 
   /**
-   * Safely remove Hub listeners
-   * @param {string} channel - The channel to remove from
+   * Safely remove Hub listener
+   * @param {string} channel - The channel to remove listener from
    * @param {function} listener - The listener function to remove
    */
   remove: (channel, listener) => {
-    try {
-      if (AmplifyHub && typeof AmplifyHub.remove === 'function') {
-        logger.debug(`[SafeHub] Removing listener from channel: ${channel}`);
-        return AmplifyHub.remove(channel, listener);
-      } else {
-        logger.warn(`[SafeHub] Hub.remove not available for channel: ${channel}, ignoring remove`);
-      }
-    } catch (error) {
-      logger.error(`[SafeHub] Error removing listener from channel ${channel}:`, error);
-    }
+    logger.debug(`[SafeHub] Hub.remove called for channel: ${channel} (no-op with Auth0)`);
   }
 };
-
-// Also export individual methods for convenience
-export const { listen, dispatch, remove } = SafeHub;
-
-export default SafeHub; 

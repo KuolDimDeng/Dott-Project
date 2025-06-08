@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { appCache } from '@/utils/awsAppCache';
+import { appCache } from '@/utils/appCache';
 import { fetchAuthSession } from '@/config/amplifyUnified';
 import { Dialog } from '@headlessui/react';
 import { 

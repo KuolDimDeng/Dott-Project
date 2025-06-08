@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardWrapper from '../../DashboardWrapper';
 import { fetchAuthSession } from '@/config/amplifyUnified';
-import { appCache } from '@/utils/awsAppCache';
+import { appCache } from '@/utils/appCache';
 
 const DealsPage = () => {
   const router = useRouter();
