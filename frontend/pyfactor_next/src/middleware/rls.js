@@ -267,7 +267,13 @@ export function getTenantCacheKey(baseKey, tenantId) {
  * @param {string} tenantId - Tenant ID to clear
  */
 export function clearTenantCache(tenantId) {
-  if (typeof window === 'undefined' || !appCache.getAll() || !tenantId) return;
+  if (typeof window === 'undefined' || !tenantId) return;
+  
+  // Ensure appCache is available
+  if (!appCache || typeof appCache.getAll !== 'function') {
+    console.warn('[RLS] appCache not available for clearing tenant cache');
+    return;
+  }
   
   try {
     // Remove all tenant-specific keys from each category

@@ -20,10 +20,14 @@ const isDashboardRoute = (pathname) => {
 };
 
 // Initialize global app cache if it doesn't exist
-if (typeof window !== 'undefined') {
-  if (!appCache.getAll()) appCache.init();
-  if (!appCache.get('auth')) appCache.set('auth', {});
-  if (!appCache.get('user')) appCache.set('user', {});
+if (typeof window !== 'undefined' && appCache) {
+  try {
+    if (!appCache.getAll()) appCache.init();
+    if (!appCache.get('auth')) appCache.set('auth', {});
+    if (!appCache.get('user')) appCache.set('user', {});
+  } catch (error) {
+    console.warn('[UserContext] Error initializing appCache:', error);
+  }
 }
 
 /**

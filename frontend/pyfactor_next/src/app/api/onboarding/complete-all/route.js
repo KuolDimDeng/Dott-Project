@@ -132,7 +132,7 @@ async function createTenantInBackend(user, onboardingData, tenantId, accessToken
     
     console.log('[CompleteOnboarding] Creating tenant in backend:', { tenantId, businessName: onboardingData.businessName });
     
-    const response = await fetch(`${apiBaseUrl}/api/onboarding/complete-tenant/`, {
+    const response = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
