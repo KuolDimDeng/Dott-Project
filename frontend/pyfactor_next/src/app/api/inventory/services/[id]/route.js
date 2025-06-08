@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPool } from '@/utils/dbConnect';
 import { serverLogger as logger } from '@/utils/logger';
-import { getTenantId } from '@/utils/serverTenantUtils';
+import { getTenantId } from '@/lib/tenantUtils';
 import { isUUID } from '@/utils/uuid-helpers';
 
 /**

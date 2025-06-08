@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getTenantId } from '@/lib/tenantUtils';
 import { validateServerSession } from '@/utils/serverUtils';
-import { createCognitoUser, generateRandomPassword } from '@/utils/cognito';
+// Removed AWS Cognito import - now using Auth0
 import { SendEmailCommand, SESClient } from '@aws-sdk/client-ses';
 import { logger } from '@/utils/logger';
 import { generateVerificationToken, generateVerificationUrl } from '@/utils/tokenUtils';

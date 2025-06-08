@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import ConnectBank from './ConnectBank';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { getAttributeValue } from '@/utils/cognitoUtils';
+// Removed AWS Cognito utils import - now using Auth0
 
 /**
  * ConnectBankManagement component

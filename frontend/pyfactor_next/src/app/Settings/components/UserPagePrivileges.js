@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/TailwindComponents';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { logger } from '@/utils/logger';
-import { sendInvitation } from '@/utils/cognitoUtils';
+// Removed AWS Cognito utils import - now using Auth0
 import { employeeApi } from '@/utils/apiClient';
 import api from '@/utils/api';
 import { getCacheValue } from '@/utils/appCache';

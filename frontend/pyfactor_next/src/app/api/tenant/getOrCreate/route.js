@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createDbPool } from '../db-config';
 import { getJwtFromRequest } from '@/utils/auth/authUtils';
 import { generateDeterministicTenantId, formatSchemaName } from '@/utils/tenant';
-import { updateCognitoAttribute, updateUserAttributesServer } from '@/utils/cognito';
+// Removed AWS Cognito import - now using Auth0
 
 // Import logger for better debugging
 import { logger } from '@/utils/serverLogger';

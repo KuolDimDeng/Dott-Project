@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { requireAuth } from '@/utils/serverAuth';
-import { saveUserPreferences } from '@/utils/userPreferences.server';
+// Removed server user preferences - now using Auth0
 import { logger } from '@/utils/logger';
 
 /**

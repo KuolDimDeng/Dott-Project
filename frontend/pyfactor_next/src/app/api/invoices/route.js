@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getPool, query } from '@/utils/db/database';
 import { v4 as uuidv4 } from 'uuid';
-import { getTenantId } from '@/utils/serverTenantUtils';
+import { getTenantId } from '@/lib/tenantUtils';
 
 export async function GET(req) {
   try {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { validateServerSession } from '@/utils/serverUtils';
-import { updateUserAttributesServer } from '@/utils/cognito';
+// Removed AWS Cognito import - now using Auth0
 import { logger } from '@/utils/serverLogger';
 import { v4 as uuidv4 } from 'uuid';
 

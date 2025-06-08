@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUserAttributesFromCognito, updateTenantIdInCognito } from '@/utils/serverTenantUtils';
+// Removed AWS Cognito server utils - now using Auth0
 import { serverLogger } from '@/utils/logger';
 
 /**
