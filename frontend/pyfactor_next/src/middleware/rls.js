@@ -1,4 +1,5 @@
 import { appCache } from '../utils/appCache';
+import { appCacheFallback } from '../utils/appCacheFallback';
 
 /**
  * Middleware to set RLS tenant ID in database sessions
@@ -269,27 +270,28 @@ export function getTenantCacheKey(baseKey, tenantId) {
 export function clearTenantCache(tenantId) {
   if (typeof window === 'undefined' || !tenantId) return;
   
-  // Ensure appCache is available
-  if (!appCache || typeof appCache.getAll !== 'function') {
-    console.warn('[RLS] appCache not available for clearing tenant cache');
+  // Ensure appCache is available, use fallback if needed
+  const cache = appCache || appCacheFallback;
+  if (!cache || typeof cache.getAll !== 'function') {
+    console.warn('[RLS] No cache available for clearing tenant cache');
     return;
   }
   
   try {
     // Remove all tenant-specific keys from each category
-    Object.keys(appCache.getAll()).forEach(category => {
-      if (typeof appCache.getAll()[category] === 'object') {
-        Object.keys(appCache.getAll()[category]).forEach(key => {
+    Object.keys(cache.getAll()).forEach(category => {
+      if (typeof cache.getAll()[category] === 'object') {
+        Object.keys(cache.getAll()[category]).forEach(key => {
           if (key.startsWith(`${tenantId}_`)) {
-            delete appCache.getAll()[category][key];
+            delete cache.getAll()[category][key];
           }
         });
       }
     });
     
     // Clear tenant-specific object
-    if (appCache.getAll().tenant && appCache.getAll().tenant[tenantId]) {
-      delete appCache.getAll().tenant[tenantId];
+    if (cache.getAll().tenant && cache.getAll().tenant[tenantId]) {
+      delete cache.getAll().tenant[tenantId];
     }
   } catch (error) {
     console.error('[RLS] Error clearing tenant cache:', error);
