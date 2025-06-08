@@ -4,7 +4,7 @@ const path = require('path');
 // Get environment variables with fallbacks
 const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// Debug: Print all Auth0 environment variables during Next.js build
+// Debug: Print all Auth0 environment variables during Next.js build - Fixed AWS JWT dependency
 console.log("🔍 [DEBUG] Next.js Build - Auth0 Environment Variables:");
 console.log(`   AUTH0_SECRET: ${process.env.AUTH0_SECRET ? process.env.AUTH0_SECRET.substring(0, 8) + '...' : 'NOT_SET'}`);
 console.log(`   AUTH0_BASE_URL: ${process.env.AUTH0_BASE_URL || 'NOT_SET'}`);
