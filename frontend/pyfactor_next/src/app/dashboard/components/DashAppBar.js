@@ -145,6 +145,7 @@ const DashAppBar = ({
   const [userInitials, setUserInitials] = useState(null);
   const [showSubscriptionPopup, setShowSubscriptionPopup] = useState(false);
   const [businessName, setBusinessName] = useState(null);
+  const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
   
   // Add a flag to track if we've attempted to fetch profile data
@@ -454,7 +455,7 @@ const DashAppBar = ({
       logger.debug('[AppBar] Using Auth0 for user authentication and data');
       
       // Get business name from Auth0 cache
-      let businessName = getAuth0BusinessName() || '';
+      let businessName = await getAuth0BusinessName() || '';
       
       // Get subscription type - default to free for Auth0 users
       const subscriptionType = 'free';
@@ -829,13 +830,19 @@ const DashAppBar = ({
   // Update business name from Auth0 business info cache
   useEffect(() => {
     if (!auth0Loading) {
-      const auth0BusinessName = getAuth0BusinessName();
-      if (auth0BusinessName && auth0BusinessName !== businessName) {
-        logger.debug('[DashAppBar] Setting business name from Auth0 cache:', auth0BusinessName);
-        setBusinessName(auth0BusinessName);
-      }
+      const fetchBusinessName = async () => {
+        const auth0BusinessName = await getAuth0BusinessName();
+        if (auth0BusinessName) {
+          logger.debug('[DashAppBar] Setting business name from Auth0 cache:', auth0BusinessName);
+          setFetchedBusinessName(auth0BusinessName);
+          if (!businessName) {
+            setBusinessName(auth0BusinessName);
+          }
+        }
+      };
+      fetchBusinessName();
     }
-  }, [auth0Loading, getAuth0BusinessName, businessName]);
+  }, [auth0Loading, getAuth0BusinessName]);
 
   return (
     <>
@@ -867,7 +874,7 @@ const DashAppBar = ({
               <div className="flex items-center">
                 {/* Business name - make it visible on all screen sizes and add fallback display */}
                 <div className="text-white flex items-center mr-3">
-                  <span className="font-semibold">{businessName || getAuth0BusinessName() || ''}</span>
+                  <span className="font-semibold">{businessName || fetchedBusinessName || ''}</span>
                   <span className="mx-2 h-4 w-px bg-white/30"></span>
                 </div>
                 
@@ -883,7 +890,7 @@ const DashAppBar = ({
                 >
                   {/* Display business name on mobile inside the subscription button */}
                   <span className="whitespace-nowrap text-xs md:hidden mr-1">
-                    {(businessName || getAuth0BusinessName()) ? `${businessName || getAuth0BusinessName()}:` : ''}
+                    {(businessName || fetchedBusinessName) ? `${businessName || fetchedBusinessName}:` : ''}
                   </span>
                   <span className="whitespace-nowrap text-xs inline-block">
                     {displayLabel}
@@ -1035,7 +1042,7 @@ const DashAppBar = ({
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
                   <span className="font-semibold">Business: </span>
-                  <span>{businessName || getAuth0BusinessName() || ''}</span>
+                  <span>{businessName || fetchedBusinessName || ''}</span>
                 </div>
               </div>
 

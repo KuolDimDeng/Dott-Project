@@ -109,8 +109,12 @@ export async function GET(request, { params }) {
         }
       }
       
-      // Create return URL with preserved onboarding status if completed
-      let returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/signin?logout=true`;
+      // Create return URL - redirect to home page on logout
+      let returnToUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/`;
+      // Add logout=true parameter to indicate the user just signed out
+      returnToUrl += '?logout=true';
+      
+      // Preserve onboarding status if completed
       if (onboardingComplete && tenantId) {
         returnToUrl += `&preserveOnboarding=true&tenantId=${tenantId}`;
       } else if (tenantId) {

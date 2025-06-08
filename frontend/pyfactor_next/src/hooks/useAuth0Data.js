@@ -104,12 +104,36 @@ export const useAuth0Data = () => {
     return userData.email?.split('@')[0] || '';
   }, [user]);
 
-  // Get business name from cached business info
-  const getBusinessName = useCallback(() => {
+  // Get business name from cached business info or profile
+  const getBusinessName = useCallback(async () => {
+    // First check cached business info
     const cachedBusinessInfo = getCache('business_info');
     if (cachedBusinessInfo) {
       return cachedBusinessInfo.legal_name || cachedBusinessInfo.businessName || '';
     }
+    
+    // If not cached, try to get from profile API
+    try {
+      const response = await fetch('/api/auth/profile');
+      if (response.ok) {
+        const profileData = await response.json();
+        
+        // Cache the business info if available
+        if (profileData.businessInfo) {
+          setCache('business_info', profileData.businessInfo, { ttl: 300000 }); // 5 minutes
+          return profileData.businessInfo.businessName || '';
+        }
+        
+        // Fall back to businessName field
+        if (profileData.businessName) {
+          setCache('business_info', { businessName: profileData.businessName }, { ttl: 300000 });
+          return profileData.businessName;
+        }
+      }
+    } catch (error) {
+      logger.error('[useAuth0Data] Error fetching business info:', error);
+    }
+    
     return '';
   }, []);
 

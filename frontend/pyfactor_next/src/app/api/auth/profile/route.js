@@ -145,8 +145,40 @@ export async function GET() {
             current_onboarding_step: backendUser.current_onboarding_step
           });
           
-          // Get tenant from backend if not in session
+          // Try to fetch tenant/business info if we have a tenant ID
           const backendTenantId = backendUser.tenant_id || backendUser.tenantId;
+          let businessInfo = null;
+          
+          if (backendTenantId) {
+            try {
+              console.log('[Profile API] Fetching tenant business info for:', backendTenantId);
+              const tenantResponse = await fetch(`${apiBaseUrl}/api/tenants/${backendTenantId}/`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${accessToken}`,
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                }
+              });
+              
+              if (tenantResponse.ok) {
+                const tenantData = await tenantResponse.json();
+                businessInfo = {
+                  businessName: tenantData.legal_name || tenantData.business_name || tenantData.name,
+                  businessType: tenantData.business_type,
+                  subscriptionPlan: tenantData.subscription_plan,
+                  country: tenantData.country,
+                  state: tenantData.state,
+                  legalStructure: tenantData.legal_structure
+                };
+                console.log('[Profile API] Tenant business info fetched:', businessInfo);
+              }
+            } catch (tenantError) {
+              console.warn('[Profile API] Error fetching tenant info:', tenantError.message);
+            }
+          }
+          
+          // Use the tenant ID we already fetched
           const sessionTenantId = user.tenantId || user.tenant_id;
           const finalTenantId = sessionTenantId || backendTenantId;
           
@@ -165,6 +197,11 @@ export async function GET() {
             tenant_id: finalTenantId,
             tenantId: finalTenantId, // Alias for compatibility
             
+            // Business info from backend or session
+            businessName: businessInfo?.businessName || user.businessName || profileData.businessName,
+            businessType: businessInfo?.businessType || user.businessType || profileData.businessType,
+            subscriptionPlan: businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan,
+            
             // Onboarding status: if user has tenant in backend, they've completed onboarding
             needsOnboarding: finalTenantId && hasCompletedOnboarding ? false : 
                            (user.needsOnboarding !== undefined ? user.needsOnboarding : 
@@ -182,7 +219,10 @@ export async function GET() {
             first_name: backendUser.first_name,
             last_name: backendUser.last_name,
             date_joined: backendUser.date_joined,
-            last_login: backendUser.last_login
+            last_login: backendUser.last_login,
+            
+            // Additional business info
+            businessInfo: businessInfo
           };
           
           console.log('🚨 [PROFILE API] === AFTER BACKEND MERGE ===');
