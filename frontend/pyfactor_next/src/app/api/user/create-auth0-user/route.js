@@ -6,6 +6,20 @@ export async function POST(request) {
   console.log('[AUTH DEBUG] 📥 create-auth0-user POST request received');
   const startTime = Date.now();
   try {
+    // Parse request body if present
+    let requestBody = {};
+    try {
+      const body = await request.text();
+      if (body) {
+        requestBody = JSON.parse(body);
+      }
+    } catch (bodyError) {
+      console.log('[Create Auth0 User] No request body or invalid JSON, continuing with empty body');
+    }
+    
+    const { checkOnly = false } = requestBody;
+    console.log('[Create Auth0 User] Request options:', { checkOnly });
+    
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     

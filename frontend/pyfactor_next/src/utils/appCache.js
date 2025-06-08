@@ -150,12 +150,18 @@ if (typeof window !== 'undefined' && !window.__appCache) {
   window.__appCache = {};
 }
 
+// Legacy function aliases for backwards compatibility
+export const getCacheValue = get;
+export const setCacheValue = set;
+export const removeCacheValue = remove;
+
 export const appCache = {
   get,
   set,
   remove,
   clear,
-  getAll
+  getAll,
+  init: clear // alias for clear function
 };
 
 export default {
@@ -163,5 +169,6 @@ export default {
   set,
   remove,
   clear,
-  getAll
+  getAll,
+  init: clear
 };

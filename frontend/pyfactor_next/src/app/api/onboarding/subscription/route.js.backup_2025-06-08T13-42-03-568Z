@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
-import { v4 as uuidv4 } from 'uuid';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -311,8 +310,7 @@ export async function POST(request) {
           requires_payment: subscriptionData.requires_payment
         },
         backendStatus: backendSuccess ? 'saved' : 'failed',
-        tenant_id: backendData.tenant_id || uuidv4(), // Generate UUID if backend doesn't provide one
-        generatedFallback: !backendData.tenant_id,
+        tenant_id: backendData.tenant_id || null,
         // **🎯 CRITICAL FIX: Indicate onboarding completion for free plans**
         onboardingComplete: subscriptionData.selected_plan === 'free',
         autoCompleted: subscriptionData.selected_plan === 'free'

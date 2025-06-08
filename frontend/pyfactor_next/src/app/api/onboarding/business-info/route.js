@@ -4,6 +4,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
+import { v4 as uuidv4 } from 'uuid';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -344,7 +345,8 @@ export async function POST(request) {
               next_step: 'subscription',
               current_step: 'subscription',
               redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null,
+              tenant_id: backendData.tenant_id || uuidv4(),
+              generatedFallback: !backendData.tenant_id,
               debug: {
                 sessionUpdated: true,
                 cookieSize: cookieString.length,
@@ -399,7 +401,8 @@ export async function POST(request) {
               next_step: 'subscription',
               current_step: 'subscription',
               redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || null,
+              tenant_id: backendData.tenant_id || uuidv4(),
+              generatedFallback: !backendData.tenant_id,
               warning: 'Session update failed - you may need to refresh the page',
               error: sessionUpdateError.message,
               debug: {
@@ -747,7 +750,8 @@ export async function POST(request) {
           legalStructure: businessData.legalStructure
         },
         backendStatus: backendSuccess ? 'saved' : 'failed',
-        tenant_id: backendData.tenant_id || null
+        tenant_id: backendData.tenant_id || uuidv4(),
+        generatedFallback: !backendData.tenant_id
       };
       
       // Return success response
