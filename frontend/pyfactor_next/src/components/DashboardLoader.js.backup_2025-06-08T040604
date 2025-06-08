@@ -409,7 +409,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     if (tenantIdMeta && typeof window !== 'undefined') {
       if (!appCache.getAll()) appCache.set('app', {});
       appCache.getAll().tenant = appCache.getAll().tenant || {};
-      appCache.set('tenant.id', tenantIdMeta);
+      appCache.get('tenant.id') = tenantIdMeta;
       
       // If we already have a tenant ID in the path, don't redirect
       if (!pathTenantId) {

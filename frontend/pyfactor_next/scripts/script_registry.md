@@ -210,3 +210,5 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Ran Version0171_fix_additional_appCache_errors.mjs
   - Committed and pushed all changes
 - **Status**: ✅ Completed
+| Version0173_fix_remaining_appCache_errors.mjs | Fix remaining appCache syntax errors | Completed | 2025-06-08 |
+| Version0174_deploy_remaining_appCache_fixes.mjs | Deploy remaining appCache syntax error fixes | Completed | 2025-06-08 |
