@@ -266,8 +266,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
 // Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchUserAttributes } = await import('@/config/amplifyUnified');
 const userAttributes = await getAuth0UserProfile();
-                // Auth0 migration: using Auth0 profile instead of Cognito fetchUserAttributes
-                // const cognitoAttributes = await fetchUserAttributes();
+        const userAttributes = await fetchUserAttributes();
         
         userId = userAttributes.sub || '';
         userEmail = userAttributes.email || '';

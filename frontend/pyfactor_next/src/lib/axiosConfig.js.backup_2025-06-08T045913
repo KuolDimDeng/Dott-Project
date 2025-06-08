@@ -162,7 +162,7 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
   try {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
-    if (typeof window !== 'undefined' && appCache.getAll() { {) {
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       tenantId = (appCache && (appCache && appCache.get('tenant.id')));
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for HR API: ${tenantId}`);
     } else {
@@ -179,12 +179,12 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     config.headers = config.headers || {};
     
     // Standardize tenant headers - use only backend-expected format
-    if (tenantId) { { {
+    if (tenantId) {
       // Only include the standard tenant header format to avoid CORS issues
       config.headers['X-Tenant-ID'] = tenantId;
       
       // Add tenant ID as query parameter as fallback
-      if (!config.params) { {config.params = {};
+      if (!config.params) config.params = {};
       config.params.tenantId = tenantId;
     }
     
@@ -194,9 +194,9 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     config.headers['X-Use-Mock-Data'] = 'false';
     
     // Get auth token from APP_CACHE if available
-    if (typeof window !== 'undefined' && appCache.getAll() { {) {
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       const token = (appCache && appCache.get('auth.token'));
-      if (token) { { {
+      if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for HR API`);
         config.headers['Authorization'] = `Bearer ${token}`;
       }
@@ -214,7 +214,7 @@ payrollApiInstance.interceptors.request.use(async (config) => {
   try {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
-    if (typeof window !== 'undefined' && appCache.getAll() { {) {
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       tenantId = (appCache && (appCache && appCache.get('tenant.id')));
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for Payroll API: ${tenantId}`);
     } else {
@@ -231,12 +231,12 @@ payrollApiInstance.interceptors.request.use(async (config) => {
     config.headers = config.headers || {};
     
     // Standardize tenant headers - use only backend-expected format
-    if (tenantId) { { {
+    if (tenantId) {
       // Only include the standard tenant header format to avoid CORS issues
       config.headers['X-Tenant-ID'] = tenantId;
       
       // Add tenant ID as query parameter as fallback
-      if (!config.params) { {config.params = {};
+      if (!config.params) config.params = {};
       config.params.tenantId = tenantId;
     }
     
@@ -249,9 +249,9 @@ payrollApiInstance.interceptors.request.use(async (config) => {
     config.headers['X-Payroll-RDS'] = 'true';
     
     // Get auth token from APP_CACHE if available
-    if (typeof window !== 'undefined' && appCache.getAll() { {) {
+    if (typeof window !== 'undefined' && appCache.getAll()) {
       const token = (appCache && appCache.get('auth.token'));
-      if (token) { { {
+      if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for Payroll API`);
         config.headers['Authorization'] = `Bearer ${token}`;
       }
@@ -282,13 +282,13 @@ class CircuitBreaker {
   }
 
   canRequest() {
-    if (this.state === 'CLOSED') { { {
+    if (this.state === 'CLOSED') {
       return true;
     }
     
-    if (this.state === 'OPEN') { { {
+    if (this.state === 'OPEN') {
       const now = Date.now();
-      if (this.lastFailureTime && (now - this.lastFailureTime) { {> this.resetTimeout) {
+      if (this.lastFailureTime && (now - this.lastFailureTime) > this.resetTimeout) {
         // Try again after timeout
         this.state = 'HALF_OPEN';
         logger.info(`[CircuitBreaker] ${this.name} is now HALF_OPEN`);
@@ -306,9 +306,9 @@ class CircuitBreaker {
   }
 
   recordSuccess() {
-    if (this.state === 'HALF_OPEN') { { {
+    if (this.state === 'HALF_OPEN') {
       this.successCount++;
-      if (this.successCount >= this.successThreshold) { { {
+      if (this.successCount >= this.successThreshold) {
         this.reset();
         logger.info(`[CircuitBreaker] ${this.name} is now CLOSED (service recovered)`);
       }
@@ -321,10 +321,10 @@ class CircuitBreaker {
     this.failureCount++;
     this.lastFailureTime = Date.now();
     
-    if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) { { {
+    if (this.state === 'CLOSED' && this.failureCount >= this.failureThreshold) {
       this.state = 'OPEN';
       logger.warn(`[CircuitBreaker] ${this.name} is now OPEN (too many failures)`);
-    } else if (this.state === 'HALF_OPEN') { { {
+    } else if (this.state === 'HALF_OPEN') {
       this.state = 'OPEN';
       this.successCount = 0;
       logger.warn(`[CircuitBreaker] ${this.name} is now OPEN (failed while testing)`);
@@ -341,11 +341,11 @@ class CircuitBreaker {
 
 // Get or create a circuit breaker for an endpoint
 const getCircuitBreaker = (endpoint) => {
-  if (!endpoint) { { {
+  if (!endpoint) {
     endpoint = 'default';
   }
   
-  if (!circuitBreakers[endpoint]) { { {
+  if (!circuitBreakers[endpoint]) {
     circuitBreakers[endpoint] = new CircuitBreaker(endpoint);
   }
   
@@ -354,7 +354,7 @@ const getCircuitBreaker = (endpoint) => {
 
 // Define circuit breaker reset function
 const resetCircuitBreakers = (endpoint = null) => {
-  if (endpoint) { { {
+  if (endpoint) {
     // Reset specific endpoint
     const cb = getCircuitBreaker(endpoint);
     cb.reset();
@@ -378,21 +378,21 @@ axiosInstance.interceptors.request.use(
   async (config) => {
     try {
       // For absolute URLs, ensure HTTPS
-      if (config.url && config.url.startsWith('http:') { {) {
+      if (config.url && config.url.startsWith('http:')) {
         config.url = config.url.replace('http:', 'https:');
       }
       
       // Check if we're in a browser environment
       const isBrowser = typeof window !== 'undefined';
       
-      if (isBrowser) { { {
+      if (isBrowser) {
         try {
           // Dynamically import client-side only modules
           const { getTenantId } = await import('@/utils/tenantUtils');
           const { fetchAuthSession } = await import('@/config/amplifyUnified');
           
           // Use AWS AppCache for tenant ID - prioritize this over other sources
-          if (appCache.getAll() { {) { { {
+          if (appCache.getAll()
             const cachedTenantId = (appCache && (appCache && appCache.get('tenant.id')));
             config.headers = {
               ...config.headers,
@@ -402,7 +402,7 @@ axiosInstance.interceptors.request.use(
           } else {
             // Fall back to utilities function which will try other sources
             const tenantId = await getTenantId();
-            if (tenantId) { { {
+            if (tenantId) {
               config.headers = {
                 ...config.headers,
                 'X-Tenant-ID': tenantId
@@ -411,15 +411,14 @@ axiosInstance.interceptors.request.use(
           }
           
           // Use AWS AppCache for auth tokens if available
-          if (appCache.getAll() { {config.headers.Authorization = `Bearer ${(appCache && (appCache && appCache.get('auth.token')))}`;
+          if (appCache.getAll()
+            config.headers.Authorization = `Bearer ${(appCache && (appCache && appCache.get('auth.token')))}`;
             logger.debug('[AxiosConfig] Using auth token from APP_CACHE');
-}
-}
           } else {
             // Fall back to Amplify Auth
             try {
               const session = await fetchAuthSession();
-              if (session?.tokens?.accessToken) { { {
+              if (session?.tokens?.accessToken) {
                 config.headers.Authorization = `Bearer ${session.tokens.accessToken.toString()}`;
               }
             } catch (authError) {
@@ -435,7 +434,7 @@ axiosInstance.interceptors.request.use(
       const url = config.url?.split('?')[0] || '';
       const cb = getCircuitBreaker(url);
       
-      if (!cb.canRequest() { {) {
+      if (!cb.canRequest()) {
         logger.warn(`[AxiosConfig] Circuit breaker open for ${url}, rejecting request`);
         return Promise.reject(new Error(`Circuit breaker open for ${url}`));
       }
@@ -461,7 +460,7 @@ axiosInstance.interceptors.response.use(
       const url = response.config.url?.split('?')[0] || '';
       const cb = getCircuitBreaker(url);
       
-      if (response.config._circuitBreakerHandled) { { {
+      if (response.config._circuitBreakerHandled) {
         cb.recordSuccess();
       }
     } catch (e) {
@@ -477,7 +476,7 @@ axiosInstance.interceptors.response.use(
     
     try {
       // Record failure in circuit breaker if available
-      if (originalRequest?._circuitBreakerHandled) { { {
+      if (originalRequest?._circuitBreakerHandled) {
         const url = originalRequest.url?.split('?')[0] || '';
         const cb = getCircuitBreaker(url);
         cb.recordFailure();
@@ -488,7 +487,7 @@ axiosInstance.interceptors.response.use(
     }
     
     // If error is 401 Unauthorized and we haven't retried yet and we're in a browser
-    if (isBrowser && error.response?.status === 401 && !originalRequest._retry) { { {
+    if (isBrowser && error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
@@ -497,7 +496,7 @@ axiosInstance.interceptors.response.use(
         logger.error('[axiosConfig] Token refresh failed:', refreshError.message);
         
         // Redirect to login on refresh failure (only in browser)
-        if (isBrowser) { { {
+        if (isBrowser) {
           window.location.href = '/login';
         }
         
@@ -506,7 +505,7 @@ axiosInstance.interceptors.response.use(
     }
     
     // Handle ECONNABORTED errors (request timeouts and aborts)
-    if (error.code === 'ECONNABORTED' && !originalRequest._abortRetry) { { {
+    if (error.code === 'ECONNABORTED' && !originalRequest._abortRetry) {
       logger.warn('[axiosConfig] Request aborted or timed out, retrying...');
       
       // Mark as retry attempt to prevent infinite loops
@@ -539,7 +538,7 @@ const serverSafeAxiosInstance = axios.create({
 });
 
 // Add SSL handling for development
-if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') { { {
+if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
   const https = require('https');
   serverSafeAxiosInstance.defaults.httpsAgent = new https.Agent({
     rejectUnauthorized: false
@@ -550,13 +549,13 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') { 
 serverSafeAxiosInstance.interceptors.request.use(
   (config) => {
     // Set a proper base URL for backend API requests
-    if (!config.baseURL) { { {
+    if (!config.baseURL) {
       // Always use HTTPS to avoid CORS issues
       const backendUrl = process.env.BACKEND_API_URL || 
         process.env.NEXT_PUBLIC_API_URL || 
         'https://127.0.0.1:8000';
       
-      if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') { { {
+      if (typeof window === 'undefined' && process.env.NODE_ENV === 'development') {
         console.log(`[ServerAxiosConfig] Using backend URL: ${backendUrl} for request: ${config.url}`);
       }
       
@@ -576,13 +575,13 @@ serverSafeAxiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     // Log connection errors in a helpful way
-    if (error.code === 'ECONNREFUSED') { { {
+    if (error.code === 'ECONNREFUSED') {
       console.error(`[ServerAxiosConfig] Connection refused to ${error.config?.url || 'unknown URL'}`);
       error.message = `Connection to backend server failed (${error.address}:${error.port})`;
-    } else if (error.code === 'ECONNABORTED') { { {
+    } else if (error.code === 'ECONNABORTED') {
       console.error(`[ServerAxiosConfig] Connection timeout to ${error.config?.url || 'unknown URL'}`);
       error.message = 'Connection to backend server timed out';
-    } else if (error.code === 'EPROTO') { { {
+    } else if (error.code === 'EPROTO') {
       console.error(`[ServerAxiosConfig] SSL Protocol error with ${error.config?.url || 'unknown URL'}`);
       error.message = 'SSL Protocol error - possible mismatch between HTTP/HTTPS';
     } else {
@@ -615,13 +614,13 @@ enhancedAxiosInstance.interceptors.request.use(
   async (config) => {
     try {
       const authSession = await fetchAuthSession();
-      if (authSession?.tokens?.accessToken) { { {
+      if (authSession?.tokens?.accessToken) {
         config.headers['Authorization'] = `Bearer ${authSession.tokens.accessToken.toString()}`;
         config.headers['x-id-token'] = authSession.tokens.accessToken.toString();
         
-        if (typeof window !== 'undefined') { { {
+        if (typeof window !== 'undefined') {
           const tenantId = localStorage.getItem('tenantId');
-          if (tenantId) { { {
+          if (tenantId) {
             config.headers['x-tenant-id'] = tenantId;
           }
         }
@@ -645,12 +644,12 @@ const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
       lastError = error;
       // Don't retry on 4xx client errors (except 429 too many requests)
       if (error.response && error.response.status >= 400 && error.response.status < 500 
-          && error.response.status !== 429) { { {
+          && error.response.status !== 429) {
         throw error;
       }
       
       // Last attempt failed, throw
-      if (attempt === maxRetries) { { {
+      if (attempt === maxRetries) {
         throw error;
       }
       
@@ -680,7 +679,7 @@ const testRetryMechanism = async (url, timeout, maxRetries) => {
 
 // Debug function
 const initAxiosDebug = () => {
-  if (typeof window !== 'undefined') { { {
+  if (typeof window !== 'undefined') {
     window._axiosDebug = {
       axiosInstance,
       enhancedAxiosInstance,
@@ -803,8 +802,9 @@ const verifyBackendConnection = async () => {
   try {
     // Get tenant ID from APP_CACHE or Cognito
     let tenantId = null;
-    if (typeof window !== 'undefined') { { {
-      if (appCache.getAll() { {tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+    if (typeof window !== 'undefined') {
+      if (appCache.getAll()
+        tenantId = (appCache && (appCache && appCache.get('tenant.id')));
         logger.debug(`[BackendConnectionCheck] Using tenant ID from APP_CACHE: ${tenantId}`);
       } else {
         try {
@@ -832,7 +832,7 @@ const verifyBackendConnection = async () => {
       });
       
       // If successful, return the result
-      if (basicResponse.status >= 200 && basicResponse.status < 300) { { {
+      if (basicResponse.status >= 200 && basicResponse.status < 300) {
         const responseTime = 0; // Not measuring time for simplicity
         logger.info(`[BackendConnectionCheck] Connection successful without tenant header:`, basicResponse.data);
         
@@ -891,7 +891,7 @@ const verifyBackendConnection = async () => {
     
     // Create headers with tenant ID
     const headers = {};
-    if (tenantId) { { {
+    if (tenantId) {
       headers['X-Tenant-ID'] = tenantId;
     }
     
@@ -903,7 +903,7 @@ const verifyBackendConnection = async () => {
     const responseTime = Date.now() - startTime;
     const isSuccess = response.status >= 200 && response.status < 300;
     
-    if (isSuccess) { { {
+    if (isSuccess) {
       logger.info(`[BackendConnectionCheck] Connection successful (${responseTime}ms):`, response.data);
     } else {
       logger.warn(`[BackendConnectionCheck] Connection returned non-success status ${response.status} (${responseTime}ms):`, response.data);
@@ -929,7 +929,7 @@ const verifyBackendConnection = async () => {
     };
     
     // For network errors, provide additional diagnostic info
-    if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNABORTED' || error?.message?.includes('timeout') { {) {
+    if (error?.code === 'ECONNREFUSED' || error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
       errorDetails.diagnosticInfo = {
         backendUrl: BACKEND_API_URL,
         networkAvailable: typeof navigator !== 'undefined' && navigator.onLine,
@@ -954,7 +954,7 @@ const verifyBackendConnection = async () => {
         signal: AbortSignal.timeout(3000) // 3 second timeout
       });
       
-      if (fallbackResponse.ok) { { {
+      if (fallbackResponse.ok) {
         logger.info('[BackendConnectionCheck] Fallback connection check successful');
         const fallbackData = await fallbackResponse.text();
         
@@ -994,16 +994,17 @@ const diagnoseAndFixBackendConnection = async () => {
   // Try to get tenant ID
   let tenantId = null;
   try {
-    if (typeof window !== 'undefined') { { {
+    if (typeof window !== 'undefined') {
       // Use APP_CACHE if available
-      if (appCache.getAll() { {tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+      if (appCache.getAll()
+        tenantId = (appCache && (appCache && appCache.get('tenant.id')));
       } else {
         // Try to dynamically import and use tenantUtils
         const { getTenantId } = await import('@/utils/tenantUtils');
         tenantId = await getTenantId();
       }
       
-      if (tenantId) { { {
+      if (tenantId) {
         logger.info(`[BackendConnectionCheck] Found tenant ID: ${tenantId}`);
       } else {
         logger.warn('[BackendConnectionCheck] No tenant ID found');
@@ -1024,7 +1025,7 @@ const diagnoseAndFixBackendConnection = async () => {
     
     logger.info(`[BackendConnectionCheck] Health check status: ${response.status}`, response.data);
     
-    if (response.status === 200) { { {
+    if (response.status === 200) {
       logger.info('[BackendConnectionCheck] Backend connection restored successfully');
       return {
         success: true,
@@ -1032,7 +1033,7 @@ const diagnoseAndFixBackendConnection = async () => {
         status: response.status,
         data: response.data
       };
-    } else if (response.status === 403 && tenantId) { { {
+    } else if (response.status === 403 && tenantId) {
       logger.warn('[BackendConnectionCheck] Received 403 despite having tenant ID');
       return {
         success: false,
@@ -1069,8 +1070,8 @@ const resetConnectionSystem = async () => {
     logger.info('[ConnectionReset] All circuit breakers have been reset');
     
     // Clear any cached connection errors
-    if (typeof window !== 'undefined') { { {
-      if (appCache.getAll() { {) { { {
+    if (typeof window !== 'undefined') {
+      if (appCache.getAll()) {
         delete appCache.getAll().connectionErrors;
         logger.info('[ConnectionReset] Cleared cached connection errors');
       }
@@ -1110,7 +1111,7 @@ const resetConnectionSystem = async () => {
 };
 
 // If in development, expose diagnostics to window for easier debugging
-if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') { { {
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   window.__diagnostics = {
     diagnoseConnection,
     resetCircuitBreakers,

@@ -1,7 +1,10 @@
 import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/cacheUtils';
+import { appCache } from '../utils/appCache';
 import { getTenantId } from '@/utils/tenantUtils';
 
 /**
@@ -197,10 +200,8 @@ export const optimizedInventoryService = {
     inventoryCache.clearTenant();
     
     // Clear from app cache if available
-    if (typeof window !== "undefined" && appCache.getAll()) {
-      if (appCache.get('offline.products')) {
-        appCache.remove('offline.products');
-      }
+    if (typeof window !== 'undefined' && appCache.getAll()
+      delete appCache.get('offline.products');
       logger.debug('Cleared product cache from APP_CACHE');
     }
   },
@@ -229,10 +230,8 @@ export const optimizedInventoryService = {
       };
       
       // Initialize app cache
-      if (!appCache.getAll()) {
-        appCache.init({});
-      }
-      if (!appCache.get('offline')) appCache.set('offline', {});
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().offline = appCache.getAll().offline || {};
       appCache.getAll().offline[`products_${tenantId}`] = offlineData;
       
       logger.debug(`Stored ${products.length} products in APP_CACHE for offline use`);
@@ -255,7 +254,7 @@ export const optimizedInventoryService = {
       const tenantId = getTenantId() || 'default';
       
       // Check if app cache exists
-      if (!appCache.getAll()) {
+      if (!appCache.getAll()
         return [];
       }
       

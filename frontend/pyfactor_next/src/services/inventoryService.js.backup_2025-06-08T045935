@@ -1128,12 +1128,10 @@ export const storeProductsOffline = (products) => {
 export const getOfflineProducts = () => {
   try {
     // Get from app cache
-    if (typeof window !== 'undefined' && appCache.getAll()) {
+    if (typeof window !== 'undefined' && 
+        appCache.getAll()
       logger.debug(`Retrieved ${appCache.get('offline.products').length} products from app cache`);
       return appCache.get('offline.products');
-    }
-  }
-}
     } else {
       logger.debug('No products found in app cache for offline use');
       return [];

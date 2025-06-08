@@ -268,11 +268,9 @@ export const ultraOptimizedInventoryService = {
     inventoryCache.clearTenant();
     
     // Clear from app cache if available
-    if (typeof window !== 'undefined' && appCache.getAll()) {
+    if (typeof window !== 'undefined' && appCache.getAll()
       delete appCache.getAll().offline[`ultra_products_${tenantId}`];
       logger.debug('Cleared ultra product cache from APP_CACHE');
-    }
-  }
 }
     }
   },

@@ -9,21 +9,28 @@ import { SafeHub } from '../utils/safeHub';
 import { useSession } from './useSession';
 // Removed setupHubDeduplication import - using Auth0
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
-import { useAuth0 } from '@auth0/auth0-react';
 
-// Auth0 migration: Importing Auth0 hooks instead of Amplify
-const authSignIn = () => console.warn('Using Auth0 instead of Amplify authSignIn');
-const authSignUp = () => console.warn('Using Auth0 instead of Amplify authSignUp');
-const authConfirmSignUp = () => console.warn('Using Auth0 instead of Amplify authConfirmSignUp');
-const authResetPassword = () => console.warn('Using Auth0 instead of Amplify authResetPassword');
-const authConfirmResetPassword = () => console.warn('Using Auth0 instead of Amplify authConfirmResetPassword');
-const authGetCurrentUser = () => console.warn('Using Auth0 instead of Amplify authGetCurrentUser');
-const authFetchAuthSession = () => console.warn('Using Auth0 instead of Amplify authFetchAuthSession');
-const authSignOut = () => console.warn('Using Auth0 instead of Amplify authSignOut');
-const authResendSignUpCode = () => console.warn('Using Auth0 instead of Amplify authResendSignUpCode');
-const updateUserAttributes = () => console.warn('Using Auth0 instead of Amplify updateUserAttributes');
 
-// Auth0 migration: Removed Hub protection initialization
+
+
+
+
+
+
+  signIn as authSignIn,
+  signUp as authSignUp,
+  confirmSignUp as authConfirmSignUp,
+  resetPassword as authResetPassword,
+  confirmResetPassword as authConfirmResetPassword,
+  getCurrentUser as authGetCurrentUser,
+  fetchAuthSession as authFetchAuthSession,
+  signOut as authSignOut,
+  resendSignUpCode as authResendSignUpCode,
+  updateUserAttributes
+} from '@/config/amplifyUnified';
+
+// Initialize Hub protection on import
+setupHubDeduplication();
 
 const MAX_RETRIES = 5;
 const RETRY_DELAY = 2000;
@@ -265,8 +272,13 @@ export const useAuth = () => {
     setAuthError(null);
 
     try {
-      // Auth0 migration: Removed Cognito connectivity test
-      console.log("[Auth] Starting Auth0 sign-in process");
+      // Quick connectivity test before attempting sign-in
+      const connectivityTest = await CognitoNetworkDiagnostic.quickConnectivityTest();
+      if (connectivityTest.status === 'failed') {
+        logger.warn('[Auth] Network connectivity issue detected:', connectivityTest);
+        setAuthError('Network connectivity issue. Please check your internet connection and try again.');
+        return { success: false, error: connectivityTest.message };
+      }
 
       // Regular sign-in flow with enhanced error handling
       const signInData = await retryOperation(async () => {
@@ -301,7 +313,12 @@ export const useAuth = () => {
             name: error.name
           });
           
-          // Auth0 migration: Removed Cognito network diagnostic
+          // Run network diagnostic on error
+          if (error.message?.includes('network') || error.name === 'NetworkError') {
+            logger.info('[Auth] Running network diagnostic due to network error...');
+            const diagnostic = await CognitoNetworkDiagnostic.runFullDiagnostic();
+            logger.debug('[Auth] Network diagnostic results:', diagnostic);
+          }
           
           return {
             success: false,
@@ -403,10 +420,9 @@ export const useAuth = () => {
   const handleSignOut = useCallback(async () => {
     logger.debug('[Auth] Signing out user...');
     try {
-      // Auth0 migration: Using Auth0 signOut
-      const { logout } = useAuth0();
-      await logout({ returnTo: window.location.origin });
-      const signOutResult = { success: true };
+      const signOutResult = await authSignOut({
+        global: true
+      });
       
       // Fix the error by checking if signOutResult exists before accessing properties
       if (signOutResult && signOutResult.success) {
@@ -714,7 +730,9 @@ export const useAuth = () => {
   }, [retryOperation]);
 
   useEffect(() => {
-    // Auth0 migration: Removed Hub protection initialization
+    // Make sure Hub protection is initialized
+    setupHubDeduplication();
+    
     const handleAuthEvents = async ({ payload }) => {
       logger.debug('[Auth] Auth event received:', payload.event);
       

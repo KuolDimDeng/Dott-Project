@@ -128,7 +128,7 @@ axiosInstance.interceptors.request.use(async (config) => {
     config.headers['X-Use-Mock-Data'] = 'false';
     
     // Add flag for payroll-specific endpoints
-    if (config.url?.includes('/payroll/')) {
+    if (config.url?.includes('/payroll/') { {) {
       config.headers['X-Payroll-RDS'] = 'true';
     }
 

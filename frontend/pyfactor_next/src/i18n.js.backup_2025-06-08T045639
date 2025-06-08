@@ -1,13 +1,13 @@
 'use client';
 
 import i18next from 'i18next';
-// Import appCache if needed for language preferences
-// import { appCache } from './utils/appCache';
+import { appCache } from './utils/appCache.js';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
-import { appCache } from './utils/appCache';
+import { appCache } from './utils/appCache.js';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
 import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
+import { appCache } from './utils/appCache.js';
 import { getLanguageForCountry } from '@/services/countryDetectionService';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
@@ -154,8 +154,8 @@ if (typeof window !== 'undefined' && !i18nInstance.isInitialized) {
       lookup() {
         try {
           // Get country from cache if available
-          if (typeof window !== 'undefined') { // appCache.getAll() removed during Auth0 migration
-            const country = null; // appCache.getAll().user_country - removed during Auth0 migration
+          if (typeof window !== 'undefined' && appCache.getAll()) {
+            const country = appCache.getAll().user_country;
             if (country) {
               const language = getLanguageForCountry(country);
               console.log(`🌍 Country detector: ${country} -> ${language}`);

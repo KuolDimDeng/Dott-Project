@@ -1,7 +1,10 @@
 import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/cacheUtils';
+import { appCache } from '../utils/appCache';
 import { getTenantId } from '@/utils/tenantUtils';
 
 /**
@@ -197,7 +200,7 @@ export const optimizedInventoryService = {
     inventoryCache.clearTenant();
     
     // Clear from app cache if available
-    if (typeof window !== "undefined" && appCache.getAll()) {
+    if (typeof window !== "undefined" && appCache.getAll()) { { { {
       if (appCache.get('offline.products')) {
         appCache.remove('offline.products');
       }
@@ -229,9 +232,7 @@ export const optimizedInventoryService = {
       };
       
       // Initialize app cache
-      if (!appCache.getAll()) {
-        appCache.init({});
-      }
+      if (!appCache.getAll()) { { {appCache.init({});
       if (!appCache.get('offline')) appCache.set('offline', {});
       appCache.getAll().offline[`products_${tenantId}`] = offlineData;
       
@@ -250,14 +251,14 @@ export const optimizedInventoryService = {
       // Skip if window is not available
       if (typeof window === 'undefined') {
         return [];
-      }
+}
       
       const tenantId = getTenantId() || 'default';
       
       // Check if app cache exists
-      if (!appCache.getAll()) {
+      if (!appCache.getAll()
         return [];
-      }
+}
       
       const offlineData = appCache.getAll().offline[`products_${tenantId}`];
       
@@ -271,7 +272,7 @@ export const optimizedInventoryService = {
     } catch (error) {
       logger.error('Error retrieving offline products:', error);
       return [];
-    }
+}
   },
 
   /**
