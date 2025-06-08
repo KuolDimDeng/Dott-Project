@@ -41,6 +41,7 @@ export async function testSESConfiguration(testEmail) {
       recipient: testEmail,
       note: 'AWS SES has been removed from the codebase. Consider using SendGrid, Mailgun, or another email service.'
     }
+  };
 }
 
 /**
