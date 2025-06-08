@@ -767,8 +767,8 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
                   // Store tenant ID immediately for faster sign-in
                   if (typeof window !== 'undefined' && appCache.getAll()) {
                     if (!appCache.get('tenant')) appCache.set('tenant', {});
-                    appCache.set('tenant.id', businessId);
-                    appCache.set('tenant.id', businessId);
+                    appCache.get('tenant.id') = businessId;
+                    appCache.getAll().tenantId = businessId;
                   }
                   
                   try {

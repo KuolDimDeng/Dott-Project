@@ -169,3 +169,24 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Committed and pushed all fixes from Version0167_fix_remaining_appCache_syntax_errors.mjs
   - Fixed syntax errors in 5 key files
 - **Status**: ✅ Completed
+
+## Version0169_fix_specific_appCache_errors.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Fix specific appCache syntax errors identified in build failure logs
+- **Changes**:
+  - Fixed invalid assignments in SignInForm.js
+  - Fixed duplicate imports and 'use client' directive in DashboardClient.js
+  - Fixed syntax error in DashAppBar.js if statement
+  - Fixed 'use client' directive position in EmployeeManagement.js
+  - Fixed import path in OnboardingStateManager.js
+  - Created missing logger.js utility
+- **Status**: ✅ Completed
+
+## Version0170_deploy_specific_appCache_fixes.mjs
+- **Date**: 2025-06-07
+- **Purpose**: Deploy fixes for specific appCache syntax errors
+- **Changes**:
+  - Created SPECIFIC_APPCACHE_ERRORS_FIX_SUMMARY.md documentation
+  - Ran Version0169_fix_specific_appCache_errors.mjs
+  - Committed and pushed all changes
+- **Status**: ✅ Completed

@@ -139,8 +139,8 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       
       // Store the tokens in APP_CACHE for resilience
       if (typeof window !== 'undefined' && session.tokens?.accessToken) {
-        if (!appCache.getAll()) appCache.set('app', {});
-        if (!appCache.get('auth')) appCache.set('auth', {});
+        appCache.getAll() = appCache.getAll() || {};
+        appCache.getAll().auth = appCache.getAll().auth || {};
         appCache.set('auth.accessToken', session.tokens.accessToken.toString());
         appCache.set('auth.idToken', session.tokens.idToken.toString());
         appCache.set('auth.refreshed', Date.now());
@@ -166,7 +166,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       
       // Store tenant ID in APP_CACHE immediately for resilience
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.set('app', {});
+        appCache.getAll() = appCache.getAll() || {};
         appCache.getAll().tenant = appCache.getAll().tenant || {};
         appCache.get('tenant.id') = tenantId;
       }
@@ -222,7 +222,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       console.log('[DashboardLoader] This is a recovery attempt, ensuring clean state');
       
       // Clear any pending operations
-      if (!appCache.getAll()) appCache.set('app', {});
+      appCache.getAll() = appCache.getAll() || {};
       appCache.getAll().operations = {};
       
       // Track the number of sequential recovery attempts
@@ -286,7 +286,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
         
         // Record in APP_CACHE for resilience
         if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.set('app', {});
+          appCache.getAll() = appCache.getAll() || {};
           appCache.getAll().lastError = {
             type: message.includes('ChunkLoadError') ? 'ChunkLoadError' : 'NetworkError',
             message: message,
@@ -407,7 +407,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     
     // Handle tenant ID from meta tag - store it in APP_CACHE for resilience immediately
     if (tenantIdMeta && typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.set('app', {});
+      appCache.getAll() = appCache.getAll() || {};
       appCache.getAll().tenant = appCache.getAll().tenant || {};
       appCache.get('tenant.id') = tenantIdMeta;
       
