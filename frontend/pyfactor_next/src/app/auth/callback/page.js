@@ -234,10 +234,10 @@ export default function Auth0CallbackPage() {
         // 3. NEW USER - No tenant or needs onboarding  
         if ((!backendUser.tenantId && (backendUser.isNewUser || backendUser.needsOnboarding))) {
           setStatus('Setting up your account...');
-          console.log('[Auth0Callback] New user without tenant ID detected, redirecting to onboarding');
+          console.log('[Auth0Callback] New user without tenant ID detected, redirecting to simplified onboarding');
           
           setTimeout(() => {
-            router.push('/onboarding/business-info');
+            router.push('/onboarding');
           }, 1500);
           return;
         }
@@ -270,30 +270,19 @@ export default function Auth0CallbackPage() {
               
               if (onboardingStatus && onboardingStatus.status !== 'completed') {
                 setStatus('Resuming your setup...');
-                const currentStep = onboardingStatus.currentStep || 'business_info';
-                
-                const stepRoutes = {
-                  business_info: '/onboarding/business-info',
-                  subscription: '/onboarding/subscription', 
-                  payment: '/onboarding/payment',
-                  setup: '/onboarding/setup',
-                  completed: `/tenant/${backendUser.tenantId}/dashboard`
-                };
-                
-                const resumeRoute = stepRoutes[currentStep] || '/onboarding/business-info';
-                console.log('[Auth0Callback] Resuming onboarding at step:', currentStep, 'route:', resumeRoute);
+                console.log('[Auth0Callback] User needs to complete onboarding, redirecting to simplified form');
                 
                 setTimeout(() => {
-                  router.push(resumeRoute);
+                  router.push('/onboarding');
                 }, 1500);
                 return;
               }
             }
           } catch (error) {
             console.warn('[Auth0Callback] Could not check onboarding status:', error);
-            // Fallback to business info if onboarding status check fails
+            // Fallback to simplified onboarding if status check fails
             setTimeout(() => {
-              router.push('/onboarding/business-info');
+              router.push('/onboarding');
             }, 1500);
             return;
           }
@@ -347,8 +336,8 @@ export default function Auth0CallbackPage() {
           <div className="text-sm text-gray-500 space-y-1 mt-6">
             <p>🎯 Smart routing in progress...</p>
             <div className="text-xs text-left bg-gray-100 p-2 rounded max-w-xs mx-auto">
-              <div>✓ New User → /onboarding/business-info</div>
-              <div>✓ Incomplete → Resume at current step</div>
+              <div>✓ New User → /onboarding</div>
+              <div>✓ Incomplete → /onboarding</div>
               <div>✓ Complete → /tenant/[id]/dashboard</div>
               <div>✓ Fallback → /dashboard</div>
             </div>

@@ -12,27 +12,27 @@ const BUTTON_CONFIGS = {
   [ONBOARDING_STATES.NOT_STARTED]: {
     text: 'Get Started',
     variant: 'primary',
-    route: '/onboarding/business-info'
+    route: '/onboarding'
   },
   [ONBOARDING_STATES.BUSINESS_INFO]: {
     text: 'Continue Setup',
     variant: 'primary',
-    route: '/onboarding/subscription'
+    route: '/onboarding'
   },
   [ONBOARDING_STATES.SUBSCRIPTION]: {
     text: 'Continue Setup',
     variant: 'primary',
-    route: '/onboarding/payment'
+    route: '/onboarding'
   },
   [ONBOARDING_STATES.PAYMENT]: {
     text: 'Complete Setup',
     variant: 'primary',
-    route: '/onboarding/setup'
+    route: '/onboarding'
   },
   [ONBOARDING_STATES.SETUP]: {
     text: 'Finish Setup',
     variant: 'primary',
-    route: '/onboarding/complete'
+    route: '/onboarding'
   },
   [ONBOARDING_STATES.COMPLETE]: {
     text: 'Go to Dashboard',

@@ -151,16 +151,8 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
       return {
         text: t('complete_onboarding', 'COMPLETE ONBOARDING'),
         action: () => {
-          // Redirect to the appropriate step based on current onboarding step
-          const stepRoutes = {
-            business_info: '/onboarding/business-info',
-            subscription: '/onboarding/subscription',
-            payment: '/onboarding/payment',
-            setup: '/onboarding/setup'
-          };
-          
-          const targetRoute = stepRoutes[currentStep] || '/onboarding/business-info';
-          router.push(targetRoute);
+          // All onboarding steps now go to the simplified form
+          router.push('/onboarding');
         }
       };
     }
@@ -199,12 +191,12 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
             
             // **FALLBACK: Redirect to onboarding instead of broken dashboard**
             logger.warn('[AuthButton] No tenant ID found, redirecting to onboarding');
-            router.push('/onboarding/business-info');
+            router.push('/onboarding');
             
           } catch (error) {
             logger.error('[AuthButton] Error fetching tenant ID for dashboard redirect:', error);
             // **LAST RESORT: Redirect to onboarding instead of broken dashboard**
-            router.push('/onboarding/business-info');
+            router.push('/onboarding');
           }
         }
       };

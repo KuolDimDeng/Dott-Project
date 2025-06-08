@@ -4,8 +4,8 @@ import { getOnboardingStatus } from '@/utils/onboardingUtils_Auth0';
 
 /**
  * Smart routing logic to determine where to send users based on their status
- * 🎯 NEW USER → /onboarding/business-info
- * 🎯 INCOMPLETE → Resume at their step
+ * 🎯 NEW USER → /onboarding (simplified form)
+ * 🎯 INCOMPLETE → /onboarding (simplified form)
  * 🎯 COMPLETE → /tenant/{tenantId}/dashboard
  */
 
@@ -17,10 +17,10 @@ export const ROUTE_TYPES = {
 };
 
 export const ONBOARDING_ROUTES = {
-  business_info: '/onboarding/business-info',
-  subscription: '/onboarding/subscription',
-  payment: '/onboarding/payment', 
-  setup: '/onboarding/setup',
+  business_info: '/onboarding',
+  subscription: '/onboarding',
+  payment: '/onboarding', 
+  setup: '/onboarding',
   complete: '/dashboard'
 };
 
@@ -57,7 +57,7 @@ export async function determineUserRoute(options = {}) {
     if (user.needsOnboarding || !user.tenantId || !user.onboardingCompleted) {
       return {
         type: ROUTE_TYPES.NEW_USER,
-        route: '/onboarding/business-info',
+        route: '/onboarding',
         reason: 'New user needs onboarding'
       };
     }
@@ -67,7 +67,7 @@ export async function determineUserRoute(options = {}) {
     
     if (onboardingStatus.status !== 'completed') {
       const currentStep = onboardingStatus.currentStep || 'business_info';
-      const route = ONBOARDING_ROUTES[currentStep] || '/onboarding/business-info';
+      const route = ONBOARDING_ROUTES[currentStep] || '/onboarding';
       
       return {
         type: ROUTE_TYPES.RESUME_ONBOARDING,
@@ -142,7 +142,7 @@ export async function checkRouteAccess(pathname, user = null) {
       if (userData.needsOnboarding || !userData.onboardingCompleted || !userData.tenantId) {
         return {
           allowed: false,
-          redirectTo: '/onboarding/business-info',
+          redirectTo: '/onboarding',
           reason: 'Onboarding required'
         };
       }

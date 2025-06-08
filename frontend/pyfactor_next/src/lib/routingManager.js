@@ -13,11 +13,11 @@ export class RoutingManager {
       SIGNOUT: '/auth/signout'
     },
     ONBOARDING: {
-      BUSINESS_INFO: '/onboarding/business-info',
-      SUBSCRIPTION: '/onboarding/subscription',
-      PAYMENT: '/onboarding/payment',
-      SETUP: '/onboarding/setup',
-      DATABASE: '/onboarding/database',
+      BUSINESS_INFO: '/onboarding',
+      SUBSCRIPTION: '/onboarding',
+      PAYMENT: '/onboarding',
+      SETUP: '/onboarding',
+      DATABASE: '/onboarding',
     },
     DJANGO: {
       TOKEN_VERIFY: '/api/onboarding/token/verify',
