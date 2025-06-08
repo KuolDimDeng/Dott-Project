@@ -5,7 +5,7 @@ import { appCache } from '@/utils/appCache';
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { cognitoAuth } from '@/lib/cognitoDirectAuth';
+// Removed AWS Cognito import - now using Auth0
 import { logger } from '@/utils/logger';
 
 export default function DirectOAuthCallback() {

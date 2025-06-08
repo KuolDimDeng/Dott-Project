@@ -44,61 +44,65 @@ export default function TenantDashboard() {
   };
   
   useEffect(() => {
-    if (!tenantId) {
-      logger.error('[TenantDashboard] No tenant ID found in URL params');
-      setError('Missing tenant ID in URL parameters');
-      setIsLoading(false);
-      return;
-    }
-
-    logger.info(`[TenantDashboard] Processing tenant-specific dashboard for: ${tenantId}`);
-    
-    // Store tenant ID in app cache for future reference
-    try {
-      // Store tenant ID in app cache for resilience
-      if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.init();
-        if (!appCache.get('tenant')) appCache.set('tenant', {});
-        appCache.set('tenant.id', tenantId);
-      }
-      
-      // Perform a health check to ensure connectivity  
-      try {
-        const healthCheck = await monitoredFetch('/api/health', {
-          method: 'HEAD',
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
-          timeout: 3000 // 3-second timeout
-        });
-        
-        if (!healthCheck.ok) {
-          logger.warn('[TenantDashboard] Health check failed, but continuing anyway');
-        }
-      } catch (healthError) {
-        logger.warn('[TenantDashboard] Health check error, but continuing:', healthError);
-        // Don't block the dashboard load for health check errors
-      }
-      
-      // Load the dashboard component after a short delay to allow everything to initialize
-      const timer = setTimeout(() => {
+    const initializeDashboard = async () => {
+      if (!tenantId) {
+        logger.error('[TenantDashboard] No tenant ID found in URL params');
+        setError('Missing tenant ID in URL parameters');
         setIsLoading(false);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    } catch (error) {
-      logger.error('[TenantDashboard] Error initializing tenant dashboard:', error);
-      setError('Error initializing tenant dashboard');
-      setIsLoading(false);
-      
-      // Check if we have a network error
-      if (error.message && (
-          error.message.includes('NetworkError') || 
-          error.message.includes('Network Error') ||
-          error.message.includes('Failed to fetch')
-      )) {
-        setNetworkError(true);
+        return;
       }
-    }
+
+      logger.info(`[TenantDashboard] Processing tenant-specific dashboard for: ${tenantId}`);
+      
+      // Store tenant ID in app cache for future reference
+      try {
+        // Store tenant ID in app cache for resilience
+        if (typeof window !== 'undefined') {
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.get('tenant')) appCache.set('tenant', {});
+          appCache.set('tenant.id', tenantId);
+        }
+        
+        // Perform a health check to ensure connectivity  
+        try {
+          const healthCheck = await monitoredFetch('/api/health', {
+            method: 'HEAD',
+            cache: 'no-store',
+            headers: { 'Cache-Control': 'no-cache' },
+            timeout: 3000 // 3-second timeout
+          });
+          
+          if (!healthCheck.ok) {
+            logger.warn('[TenantDashboard] Health check failed, but continuing anyway');
+          }
+        } catch (healthError) {
+          logger.warn('[TenantDashboard] Health check error, but continuing:', healthError);
+          // Don't block the dashboard load for health check errors
+        }
+        
+        // Load the dashboard component after a short delay to allow everything to initialize
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 500);
+        
+        return () => clearTimeout(timer);
+      } catch (error) {
+        logger.error('[TenantDashboard] Error initializing tenant dashboard:', error);
+        setError('Error initializing tenant dashboard');
+        setIsLoading(false);
+        
+        // Check if we have a network error
+        if (error.message && (
+            error.message.includes('NetworkError') || 
+            error.message.includes('Network Error') ||
+            error.message.includes('Failed to fetch')
+        )) {
+          setNetworkError(true);
+        }
+      }
+    };
+
+    initializeDashboard();
   }, [tenantId, isDirect, fromSignIn, retryCount]);
   
   if (isLoading) {

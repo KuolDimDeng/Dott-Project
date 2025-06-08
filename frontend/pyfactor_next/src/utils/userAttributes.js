@@ -1,6 +1,4 @@
-import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { resilientUpdateUserAttributes } from './amplifyResiliency';
 
 export const ONBOARDING_STATES = {
   NOT_STARTED: 'not_started',
@@ -87,19 +85,34 @@ export const getSubscriptionPlanColor = (plan) => {
 
 export async function getUserAttributes() {
   try {
-    // Get current session using v6 API
-    const { tokens } = await fetchAuthSession();
-    if (!tokens?.idToken) {
-      throw new Error('No valid session');
+    // Use Auth0 session management instead of AWS Amplify
+    const response = await fetch('/api/auth/me', {
+      method: 'GET',
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      throw new Error('No valid Auth0 session');
     }
 
-    // Get current user using v6 API
-    const user = await getCurrentUser();
+    const user = await response.json();
     if (!user) {
       throw new Error('No current user found');
     }
 
-    return user.attributes || {};
+    // Convert Auth0 user data to attributes format
+    return {
+      name: user.name,
+      given_name: user.given_name,
+      family_name: user.family_name,
+      email: user.email,
+      picture: user.picture,
+      tenant_id: user.tenant_id || user.tenantId,
+      businessName: user.businessName,
+      subscriptionPlan: user.subscriptionPlan,
+      onboardingCompleted: user.onboardingCompleted,
+      needsOnboarding: user.needsOnboarding
+    };
   } catch (error) {
     logger.error('[UserAttributes] Failed to get attributes:', error);
     throw error;
@@ -108,41 +121,26 @@ export async function getUserAttributes() {
 
 export async function setUserAttributes(attributes) {
   try {
-    // Get current session using v6 API
-    const { tokens } = await fetchAuthSession();
-    if (!tokens?.idToken) {
-      throw new Error('No valid session');
+    // Use Auth0 user update API instead of AWS Amplify
+    const response = await fetch('/api/auth/update-user', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({ attributes })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update user attributes: ${response.status}`);
     }
 
-    // Format attributes according to Amplify v6 requirements
-    const formattedAttributes = {};
-    Object.entries(attributes).forEach(([key, value]) => {
-      // Ensure all values are strings and lowercase
-      formattedAttributes[key] = String(value).toLowerCase();
-    });
-
-    // Add updated_at timestamp
-    formattedAttributes['custom:updated_at'] = new Date().toISOString();
-
-    // Validate attributes before updating
-    await validateAttributes(formattedAttributes);
-
-    logger.debug('[UserAttributes] Updating attributes:', {
-      attributes: Object.keys(formattedAttributes)
-    });
-
-    // Update user attributes using resilient implementation
-    await resilientUpdateUserAttributes({
-      userAttributes: formattedAttributes
-    });
-
+    const result = await response.json();
     logger.debug('[UserAttributes] Attributes updated successfully');
-
-    return true;
+    return result;
   } catch (error) {
     logger.error('[UserAttributes] Failed to update attributes:', {
       error: error.message,
-      code: error.code,
       attributes: Object.keys(attributes)
     });
     throw error;

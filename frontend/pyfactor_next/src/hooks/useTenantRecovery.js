@@ -1,23 +1,19 @@
 import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchUserAttributes, getCurrentUser  } from '@/config/amplifyUnified';
 import { 
   getFallbackTenantId, 
   storeReliableTenantId, 
   getRecoveryDashboardUrl,
   executeEmergencyRecovery
 } from '@/utils/tenantFallback';
+import {
   initNetworkMonitoring, 
   checkApiHealth, 
   listenToNetworkEvents,
-  isCognitoUnreliable,
   shouldRunHealthCheck
 } from '@/utils/networkMonitor';
 import { isValidUUID } from '@/utils/tenantUtils';
-  resilientFetchUserAttributes,
-  resilientGetCurrentUser
-} from '@/utils/amplifyResiliency';
 import { logger } from '@/utils/logger';
 
 // Recovery cooldown timing constants

@@ -6,8 +6,7 @@ import { appCache } from '../utils/appCache';
  * Helper functions to test and verify OAuth flow functionality
  */
 
-import { cognitoAuth } from '@/lib/cognitoDirectAuth';
-import { CognitoAttributes } from '@/utils/CognitoAttributes';
+// Removed AWS Cognito imports - now using Auth0
 import { OAuthDebugUtils } from '@/utils/oauthDebugUtils';
 
 export const OAuthTestUtils = {
