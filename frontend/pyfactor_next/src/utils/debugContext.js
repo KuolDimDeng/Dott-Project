@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Simplified debug utility with no-op functions
  * This version removes all the monkey patching and complex debugging

@@ -1,5 +1,6 @@
 'use client';
 
+
 // In DashboardClientLayout.js
 import dynamic from 'next/dynamic';
 import React, { useEffect, useState, Suspense, useRef } from 'react';

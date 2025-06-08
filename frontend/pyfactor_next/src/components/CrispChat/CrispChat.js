@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';
 // Removed Amplify imports - using Auth0 session data instead

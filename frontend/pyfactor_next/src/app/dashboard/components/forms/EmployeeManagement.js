@@ -3,7 +3,8 @@
 
 
 
-import appCache from '../../../../utils/appCache';
+
+import { appCache } from '../../../../utils/appCache';
 import React, { useState, useEffect, useCallback, memo, Fragment, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
@@ -1287,7 +1288,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
   appCache.set('user', {});
   appCache.set('tenant', {});
 }
-      appCache.getAll().debug = appCache.getAll().debug || {};
+      if (!appCache.get('debug')) appCache.set('debug', {});
       appCache.set('debug.useMockMode', newMockMode);
     }
     

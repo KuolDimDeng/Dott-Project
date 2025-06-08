@@ -1,12 +1,10 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * @file pageAccess.js
  * @description Utility functions for page-level access control
  */
 
-import { getCacheValue, setCacheValue } from './appCache';
-import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import api from './api';
 
@@ -142,8 +140,7 @@ export async function verifyTenantOwnership() {
     }
     
     // Check Cognito user attributes for owner role
-    const userAttributes = getCacheValue('auth')?.userAttributes || 
-                          (typeof window !== 'undefined' && appCache.getAll()
+    const userAttributes = getCacheValue('auth')?.userAttributes || (typeof window !== 'undefined' && appCache.getAll()) || {};
     const userRole = userAttributes?.['custom:userrole'] || '';
     
     if (userRole.toLowerCase() === 'owner') {
@@ -154,9 +151,7 @@ export async function verifyTenantOwnership() {
     }
     
     // Get tenant ID from cache
-    const tenantId = getCacheValue('auth')?.tenantId || 
-                     (typeof window !== 'undefined' && appCache.getAll()
-                     getCacheValue('tenantId');
+    const tenantId = getCacheValue('auth')?.tenantId || (typeof window !== 'undefined' && appCache.getAll()) ? getCacheValue('tenantId') : null;
     
     if (!tenantId) {
       logger.warn('[verifyTenantOwnership] No tenant ID found in cache');

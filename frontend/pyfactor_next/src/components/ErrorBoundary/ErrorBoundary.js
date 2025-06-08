@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/ErrorBoundary/ErrorBoundary.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/ErrorBoundary/ErrorBoundary.js
 
 import { useState } from 'react';
 import { ErrorBoundary as ReactErrorBoundary } from 'react-error-boundary';

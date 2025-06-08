@@ -5,15 +5,11 @@ import { getCurrentUser,
   updateUserAttributes as amplifyUpdateAttributes,
   fetchUserAttributes
  } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { cookies } from 'next/headers';
-import { appCache } from '../utils/appCache';
 import { isServerSide } from '@/utils/env-helpers';
 
 // Import server logger for server-side contexts
-import { appCache } from '../utils/appCache';
 import { createServerLogger } from '@/utils/serverLogger';
 
 // Create server logger for server-side operations
@@ -22,7 +18,6 @@ const serverLogger = createServerLogger('cognito');
 // Helper to get the appropriate logger based on context
 const getLogger = () => isServerSide() ? serverLogger : logger;
 
-import { appCache } from '../utils/appCache';
 import { CognitoIdentityProviderClient, AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 /**

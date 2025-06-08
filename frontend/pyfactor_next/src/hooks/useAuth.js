@@ -1,17 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useState, useEffect, useCallback } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { getCurrentUser, signOut  } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { saveUserPreference, getUserPreference, PREF_KEYS } from '@/utils/userPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Auth-specific preference keys
@@ -204,8 +199,8 @@ export function useAuth() {
       
       // Store in global AppCache for easy access
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().auth = appCache.getAll().auth || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('auth')) appCache.set('auth', {});
         appCache.set('auth.needsReauthentication', required);
       }
     } catch (error) {
@@ -229,8 +224,8 @@ export function useAuth() {
       
       // Store in global AppCache for easy access
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().auth = appCache.getAll().auth || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('auth')) appCache.set('auth', {});
         appCache.set('auth.lastAuthTime', now);
       }
     } catch (error) {

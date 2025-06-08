@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * React DatePicker Stub
  * 
@@ -5,7 +7,6 @@
  * to prevent errors when the actual library is not available.
  */
 
-'use client';
 import React from 'react';
 
 // Basic stub component that mimics DatePicker

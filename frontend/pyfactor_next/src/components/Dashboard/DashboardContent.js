@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * PRIMARY DASHBOARD CONTENT FILE
  * 
@@ -8,7 +10,6 @@
  * - /src/app/[tenantId]/dashboard/page.js
  */
 
-'use client';
 
 import React, { useState, useCallback, useEffect, lazy, Suspense, useMemo, useRef } from 'react';
 import useClientEffect from '@/hooks/useClientEffect';

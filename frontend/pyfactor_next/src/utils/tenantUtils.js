@@ -1,11 +1,10 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * Tenant Utilities
  * Handles tenant-related operations and storage
  */
 
-import { appCache } from '../utils/appCache';
 import { getCurrentUser } from '@/config/amplifyUnified';
 
 // Constants
@@ -313,10 +312,10 @@ export const storeTenantInfo = async ({ tenantId, metadata = {} }) => {
     
     // Store in APP_CACHE for cross-component resilience
     if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.getAll() = {};
-      if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.getAll().tenant) appCache.set('tenant', {});
       
-      appCache.get('tenant.id') = tenantId;
+      appCache.set('tenant.id', tenantId);
       appCache.set('tenant.metadata', metadata);
       appCache.set('tenant.timestamp', Date.now());
       

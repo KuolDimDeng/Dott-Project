@@ -1,5 +1,6 @@
 "use client";
 
+
 import { logger } from './logger';
 
 // Simple in-memory cache for data

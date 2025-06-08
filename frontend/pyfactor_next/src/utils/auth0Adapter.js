@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * auth0Adapter.js
  * 
@@ -6,7 +8,6 @@
  * before migrating to Auth0.
  */
 
-'use client';
 
 import { useAuth0 } from '@auth0/auth0-react';
 

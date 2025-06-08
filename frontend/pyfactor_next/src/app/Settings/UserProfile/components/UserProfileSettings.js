@@ -1,5 +1,6 @@
-// UserProfileSettings.js
 'use client';
+
+// UserProfileSettings.js
 import React, { useState, useEffect } from 'react';
 import { axiosInstance } from '@/lib/axiosConfig';
 

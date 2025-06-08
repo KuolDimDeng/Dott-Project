@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/layout.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/layout.js
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';

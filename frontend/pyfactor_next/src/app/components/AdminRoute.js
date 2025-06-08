@@ -1,5 +1,6 @@
-// src/components/AdminRoute.js
 'use client';
+
+// src/components/AdminRoute.js
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApi } from '../dashboard/components/components/axiosConfig';

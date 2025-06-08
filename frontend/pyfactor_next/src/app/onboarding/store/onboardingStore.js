@@ -1,15 +1,12 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/store/onboardingStore.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/store/onboardingStore.js
 
 import { appCache } from '../utils/appCache';
 import { create } from 'zustand';
-import { appCache } from '../utils/appCache';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';
-import { setCacheValue } from '@/utils/appCache';
 
 // Create the store
 const useOnboardingStore = create((set, get) => ({
@@ -71,8 +68,8 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('onboarding')) appCache.set('onboarding', {});
             appCache.set('onboarding.businessInfo', {
               businessName: info.businessName || '',
               businessType: info.businessType || '',
@@ -139,8 +136,8 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('onboarding')) appCache.set('onboarding', {});
             appCache.set('onboarding.subscription', {
               plan: subscription.plan || '',
               interval: subscription.interval || '',
@@ -208,8 +205,8 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('onboarding')) appCache.set('onboarding', {});
             appCache.set('onboarding.payment', {
               id: payment.id || '',
               verified: true,
@@ -272,8 +269,8 @@ const useOnboardingStore = create((set, get) => ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('onboarding')) appCache.set('onboarding', {});
             appCache.set('onboarding.status', ONBOARDING_STATES.COMPLETE);
             appCache.set('onboarding.setupdone', true);
             appCache.set('onboarding.completedAt', new Date().toISOString());

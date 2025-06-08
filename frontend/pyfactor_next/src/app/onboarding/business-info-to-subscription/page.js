@@ -1,5 +1,6 @@
 'use client';
 
+
 import TransitionPage from '../TransitionPage';
 import { ONBOARDING_STEPS } from '@/constants/onboarding';
 

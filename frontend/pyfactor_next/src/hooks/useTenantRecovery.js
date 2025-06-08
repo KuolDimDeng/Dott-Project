@@ -1,32 +1,23 @@
 import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { fetchUserAttributes, getCurrentUser  } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { 
   getFallbackTenantId, 
   storeReliableTenantId, 
   getRecoveryDashboardUrl,
   executeEmergencyRecovery
 } from '@/utils/tenantFallback';
-import { appCache } from '../utils/appCache';
-import { 
   initNetworkMonitoring, 
   checkApiHealth, 
   listenToNetworkEvents,
   isCognitoUnreliable,
   shouldRunHealthCheck
 } from '@/utils/networkMonitor';
-import { appCache } from '../utils/appCache';
 import { isValidUUID } from '@/utils/tenantUtils';
-import { appCache } from '../utils/appCache';
-import {
   resilientFetchUserAttributes,
   resilientGetCurrentUser
 } from '@/utils/amplifyResiliency';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 // Recovery cooldown timing constants
@@ -315,9 +306,7 @@ export const useTenantRecovery = (options = {}) => {
       }
       
       // Cache tenant ID from AppCache if available
-      if (typeof window !== 'undefined' && 
-          appCache.getAll()
-          isValidUUID(appCache.get('tenant.id'))) {
+      if (typeof window !== 'undefined' && appCache.getAll() && isValidUUID(appCache.get('tenant.id'))) {
         logger.info("[TenantRecovery] Using tenant ID from AppCache:", appCache.get('tenant.id'));
         storeReliableTenantId(appCache.get('tenant.id'));
         

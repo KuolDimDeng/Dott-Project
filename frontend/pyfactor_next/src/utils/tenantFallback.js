@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * Tenant Fallback Utilities
@@ -7,9 +7,7 @@ import appCache from '../utils/appCache';
  * API calls fail or network connectivity issues occur.
  */
 
-import { appCache } from '../utils/appCache';
 import { isValidUUID, generateDeterministicTenantId } from './tenantUtils';
-import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 
 // Storage keys
@@ -65,9 +63,7 @@ export const getFallbackTenantId = () => {
     }
 
     // Try AppCache for tenant ID
-    if (typeof window !== 'undefined' && 
-        appCache.getAll()
-        isValidUUID(appCache.get('tenant.id'))) {
+    if (typeof window !== 'undefined' && appCache.getAll() && isValidUUID(appCache.get('tenant.id'))) {
       logger.debug("[TenantFallback] Using tenant ID from AppCache:", appCache.get('tenant.id'));
       localStorage.setItem(STORAGE_KEYS.TENANT_ID, appCache.get('tenant.id'));
       return appCache.get('tenant.id');
@@ -177,9 +173,9 @@ export const trackSuccessfulTenant = (tenantId) => {
     
     // Also store in AppCache
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().tenant = appCache.getAll().tenant || {};
-      appCache.get('tenant.id') = tenantId;
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('tenant')) appCache.set('tenant', {});
+      appCache.set('tenant.id', tenantId);
     }
   } catch (error) {
     logger.error("[TenantFallback] Error tracking successful tenant:", error);
@@ -373,9 +369,9 @@ export const storeReliableTenantId = (tenantId) => {
     
     // Also store in AppCache
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().tenant = appCache.getAll().tenant || {};
-      appCache.get('tenant.id') = tenantId;
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('tenant')) appCache.set('tenant', {});
+      appCache.set('tenant.id', tenantId);
     }
     
     return true;

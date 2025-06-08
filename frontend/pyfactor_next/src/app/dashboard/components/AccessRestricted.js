@@ -1,8 +1,9 @@
+'use client';
+
 /**
  * @component AccessRestricted
  * @description A component that displays a message when a user doesn't have access to a page
  */
-'use client';
 
 import React from 'react';
 

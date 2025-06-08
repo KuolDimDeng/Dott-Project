@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState, useEffect } from 'react';
 import { CookiesProvider } from 'react-cookie';
 import { Auth0Provider } from '@auth0/nextjs-auth0';

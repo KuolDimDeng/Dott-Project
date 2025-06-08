@@ -1,5 +1,6 @@
-// src/components/LoadingState/LoadingStateWithProgress.js
 'use client';
+
+// src/components/LoadingState/LoadingStateWithProgress.js
 
 import React from 'react';
 import Image from 'next/image';

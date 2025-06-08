@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useState, useEffect } from 'react';
 import { saveUserPreference, getUIDensityPreference, PREF_KEYS } from '@/utils/userPreferences';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';

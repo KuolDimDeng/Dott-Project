@@ -1,5 +1,6 @@
-import { auth0Utils } from '@/config/auth0';
 'use client';
+
+import { auth0Utils } from '@/config/auth0';
 
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';

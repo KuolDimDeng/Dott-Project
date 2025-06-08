@@ -1,6 +1,7 @@
+'use client';
+
 // Tenant Dashboard page (Client Component)
 // This page needs 'use client' because it accesses browser APIs like localStorage
-'use client';
 
 import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * DEPRECATED: REDIRECTOR FILE
  * 
@@ -9,7 +11,6 @@
  * This file exists only to maintain backward compatibility with existing imports.
  */
 
-'use client';
 
 // Re-export the primary DashboardContent component
 export { default } from '@/components/Dashboard/DashboardContent';

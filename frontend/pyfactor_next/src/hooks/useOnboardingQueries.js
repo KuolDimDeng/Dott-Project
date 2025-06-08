@@ -1,5 +1,6 @@
-// src/hooks/useOnboardingQueries.js
 'use client';
+
+// src/hooks/useOnboardingQueries.js
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSession } from '@/hooks/useSession';

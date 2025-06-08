@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/providers/AmplifyProvider.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/providers/AmplifyProvider.js
 
 import React, { useEffect, useState } from 'react';
 import { logger } from '@/utils/logger';

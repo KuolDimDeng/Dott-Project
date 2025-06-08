@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LoadingSpinner/index.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LoadingSpinner/index.js
 
 import { useTranslation } from 'react-i18next';
 

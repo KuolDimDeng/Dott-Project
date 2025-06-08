@@ -1,10 +1,9 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * Middleware to set RLS tenant ID in database sessions
  * Supports both production and development modes
  */
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/serverLogger';
 
 /**

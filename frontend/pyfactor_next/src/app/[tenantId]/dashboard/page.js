@@ -1,16 +1,13 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { useParams, useSearchParams } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/clientLogger';
 import DashboardLoader from '@/components/DashboardLoader';
 import DashboardContent from '@/components/Dashboard/DashboardContent';
-import { appCache } from '../utils/appCache';
 import { monitoredFetch } from '@/utils/networkMonitor';
 
 /**
@@ -89,9 +86,9 @@ export default function TenantDashboard() {
           
           // Store tenant ID in app cache for resilience
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().tenant = appCache.getAll().tenant || {};
-            appCache.get('tenant.id') = tenantId;
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('tenant')) appCache.set('tenant', {});
+            appCache.set('tenant.id', tenantId);
           }
         } catch (cognitoError) {
           // Log but continue - we can still load the dashboard even if attribute update fails

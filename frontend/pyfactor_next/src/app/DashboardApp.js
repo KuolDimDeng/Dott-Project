@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useEffect, useState, useCallback } from 'react';
 import { useTenantInitialization } from '@/hooks/useTenantInitialization';
 import { fetchUserAttributes, fetchAuthSession } from '@/config/amplifyUnified';

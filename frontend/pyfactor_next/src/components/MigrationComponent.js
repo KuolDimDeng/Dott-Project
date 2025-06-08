@@ -1,24 +1,19 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { clearLegacyStorage, migrateUserDataToCognito } from '@/utils/migrationUtils';
-import { appCache } from '../utils/appCache';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
-import { appCache } from '../utils/appCache';
 import { getUserPreference, saveUserPreference, PREF_KEYS } from '@/utils/userPreferences';
-import { setCacheValue } from '@/utils/appCache';
 
 // Initialize global app cache at the top of the file
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
-  appCache.getAll().migration = appCache.getAll().migration || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
+  if (!appCache.get('migration')) appCache.set('migration', {});
 }
 
 /**
@@ -155,7 +150,7 @@ export async function migrateToSingleTruthSource() {
       
       // Store in app cache
       if (typeof window !== 'undefined') {
-        appCache.get('tenant.id') = effectiveTenantId;
+        appCache.set('tenant.id', effectiveTenantId);
       }
       
       logger.info('[migrateToSingleTruthSource] Migrated tenant ID:', effectiveTenantId);
@@ -185,8 +180,8 @@ export async function migrateToSingleTruthSource() {
       
       // Also store in app cache
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().onboarding) appCache.getAll().onboarding = {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.getAll().onboarding) appCache.set('onboarding', {});
         appCache.set('onboarding.status', onboardingStatus.toLowerCase());
       }
     }
@@ -204,8 +199,8 @@ export async function migrateToSingleTruthSource() {
       
       // Also store in app cache
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().onboarding) appCache.getAll().onboarding = {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.getAll().onboarding) appCache.set('onboarding', {});
         appCache.set('onboarding.status', 'complete');
         appCache.set('onboarding.completed', true);
       }
@@ -227,8 +222,8 @@ export async function migrateToSingleTruthSource() {
         
         // Also store in app cache
         if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.getAll() = {};
-          if (!appCache.getAll().business) appCache.getAll().business = {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.getAll().business) appCache.set('business', {});
           appCache.getAll().business[sourceKey] = sourceValue;
         }
         
@@ -253,8 +248,8 @@ export async function migrateToSingleTruthSource() {
       
       // Mark migration as complete in app cache
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().migration) appCache.getAll().migration = {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.getAll().migration) appCache.set('migration', {});
         appCache.set('migration.completed', true);
         appCache.set('migration.timestamp', new Date().toISOString());
       }
@@ -268,8 +263,8 @@ export async function migrateToSingleTruthSource() {
       
       // Mark migration as complete in app cache
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().migration) appCache.getAll().migration = {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.getAll().migration) appCache.set('migration', {});
         appCache.set('migration.completed', true);
         appCache.set('migration.timestamp', new Date().toISOString());
       }

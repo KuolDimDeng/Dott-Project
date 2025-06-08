@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Payment/usePaymentForm.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/components/steps/Payment/usePaymentForm.js
 
 import { useRouter } from 'next/navigation';
 import { useSession } from '@/hooks/useSession';

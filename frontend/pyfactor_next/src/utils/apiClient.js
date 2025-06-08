@@ -8,7 +8,6 @@ import { getTenantId } from './tenantUtils';
 import { logger } from './logger';
 import axios from 'axios';
 import { getAppCacheItem, setAppCacheItem } from '@/utils/appCache';
-import { appCache } from '../utils/appCache';
 import { fetchWithAuth } from '@/utils/api';
 
 // Helper function to handle API errors

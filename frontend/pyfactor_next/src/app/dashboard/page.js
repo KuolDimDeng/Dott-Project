@@ -1,6 +1,7 @@
+'use client';
+
 // Dashboard page (Client Component)
 
-'use client';
 
 import React from 'react';
 import Link from 'next/link';

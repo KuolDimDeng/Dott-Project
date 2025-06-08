@@ -1,16 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { axiosInstance, retryRequest } from '@/lib/axiosConfig';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { getTenantContext, setTenantContext, extractTenantFromResponse } from '@/utils/tenantContext';
-import { appCache } from '../utils/appCache';
 import { dataCache } from '@/utils/enhancedCache';
-import { appCache } from '../utils/appCache';
 import { getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 /**
@@ -420,8 +416,8 @@ export const getAuthTokens = async () => {
   try {
     // Initialize global cache if needed
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().auth = appCache.getAll().auth || {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('auth')) appCache.set('auth', {});
       
       // Get tokens from AppCache only
       const { accessToken, idToken } = appCache.getAll().auth;
@@ -448,8 +444,8 @@ export const logout = async () => {
     
     // Clear auth tokens from AppCache
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().auth = appCache.getAll().auth || {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('auth')) appCache.set('auth', {});
       appCache.set('auth.accessToken', null);
       appCache.set('auth.idToken', null);
       appCache.set('auth.refreshToken', null);

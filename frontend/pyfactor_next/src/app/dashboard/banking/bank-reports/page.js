@@ -1,4 +1,5 @@
 'use client';
+
 import React from 'react';
 import BankReport from '../../components/forms/BankReport';
 

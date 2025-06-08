@@ -1,12 +1,10 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 export default function OnboardingPage() {
@@ -18,8 +16,8 @@ export default function OnboardingPage() {
     
     // Helper to initialize app cache
     if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.getAll() = {};
-      if (!appCache.getAll().auth) appCache.getAll().auth = {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.getAll().auth) appCache.set('auth', {});
     }
     
     // Function to check authentication
@@ -58,9 +56,7 @@ export default function OnboardingPage() {
       }
       
       // Fallback to app cache
-      if (typeof window !== 'undefined' && 
-          appCache.getAll()
-          appCache.getAll()
+      if (typeof window !== 'undefined' && appCache.getAll()) {
         logger.debug('[OnboardingPage] User authenticated via app cache');
         setIsLoading(false);
         return;

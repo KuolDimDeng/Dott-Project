@@ -1,16 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useState, useEffect } from 'react';
-import { appCache } from '../utils/appCache';
 import { isAllMigrationsComplete, markAllMigrationsComplete } from '@/utils/migrationCompletionCheck';
-import { appCache } from '../utils/appCache';
 import { migrateLegacyPreferences } from '@/utils/migrateLegacyPreferences';
-import { appCache } from '../utils/appCache';
 import { migrateUIPreferences } from '@/utils/migrateUIPreferences';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 /**
  * Hook to check and manage migration status from localStorage to Cognito

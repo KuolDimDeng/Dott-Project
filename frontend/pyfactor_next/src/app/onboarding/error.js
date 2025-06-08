@@ -1,5 +1,6 @@
 'use client';
 
+
 export default function Error({ error, reset }) {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-50">

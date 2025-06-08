@@ -1,5 +1,6 @@
-// src/components/ErrorBoundary/ErrorFallback.js
 'use client';
+
+// src/components/ErrorBoundary/ErrorFallback.js
 
 import React from 'react';
 import { ErrorOutlineIcon } from '@/app/components/icons';

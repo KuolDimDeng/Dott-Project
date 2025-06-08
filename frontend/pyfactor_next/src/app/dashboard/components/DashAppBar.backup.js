@@ -1,6 +1,7 @@
-import appCache from '../utils/appCache';
-
 'use client';
+
+import { appCache } from '../utils/appCache';
+
 
 /**
  * @component DashAppBar
@@ -26,20 +27,14 @@ import React, {
   memo
 } from 'react';
 import Image from 'next/image';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
-import { appCache } from '../utils/appCache';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
-import { appCache } from '../utils/appCache';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
-import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
-import { appCache } from '../utils/appCache';
 import { useUserProfile } from '@/contexts/UserProfileContext';
 
 // Initialize global app cache if it doesn't exist
@@ -306,8 +301,8 @@ const DashAppBar = ({
       
       // Store in app cache for persistence
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.getAll() = {};
-        if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.getAll().tenant) appCache.set('tenant', {});
         appCache.set('tenant.businessName', newBusinessName);
       }
     }
@@ -767,9 +762,9 @@ const DashAppBar = ({
     
     if (typeof window !== 'undefined') {
       // Initialize app cache if needed
-      if (!appCache.getAll()) appCache.getAll() = {};
-      if (!appCache.getAll().auth) appCache.getAll().auth = {};
-      if (!appCache.getAll().user) appCache.getAll().user = {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.getAll().auth) appCache.set('auth', {});
+      if (!appCache.getAll().user) appCache.set('user', {});
       
       // Check app cache for email (primary source)
       if (appCache.get('auth.email')) {
@@ -934,8 +929,8 @@ const DashAppBar = ({
               
               // Store in app cache for persistence
               if (typeof window !== 'undefined') {
-                if (!appCache.getAll()) appCache.getAll() = {};
-                if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+                if (!appCache.getAll()) appCache.init();
+                if (!appCache.getAll().tenant) appCache.set('tenant', {});
                 appCache.set('tenant.businessName', businessName);
               }
             }
@@ -947,8 +942,8 @@ const DashAppBar = ({
               
               // Store initials in cache for persistence
               if (typeof window !== 'undefined') {
-                if (!appCache.getAll()) appCache.getAll() = {};
-                if (!appCache.getAll().user) appCache.getAll().user = {};
+                if (!appCache.getAll()) appCache.init();
+                if (!appCache.getAll().user) appCache.set('user', {});
                 appCache.set('user.initials', initials);
                 appCache.set('user.firstName', firstName);
                 appCache.set('user.lastName', lastName);
@@ -1006,9 +1001,9 @@ const DashAppBar = ({
         try {
           // Initialize app cache if needed
           if (typeof window !== 'undefined') {
-            if (!appCache.getAll()) appCache.getAll() = {};
-            if (!appCache.getAll().auth) appCache.getAll().auth = {};
-            if (!appCache.getAll().user) appCache.getAll().user = {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.getAll().auth) appCache.set('auth', {});
+            if (!appCache.getAll().user) appCache.set('user', {});
           }
           
           // Try to get token from app cache first
@@ -1026,8 +1021,8 @@ const DashAppBar = ({
                 idToken = session.tokens.idToken.toString();
                 // Store in app cache for future use
                 if (typeof window !== 'undefined') {
-                  appCache.getAll() = appCache.getAll() || {};
-                  appCache.getAll().auth = appCache.getAll().auth || {};
+                  if (!appCache.getAll()) appCache.init();
+                  if (!appCache.get('auth')) appCache.set('auth', {});
                   appCache.set('auth.idToken', idToken);
                 }
                 logger.debug('[AppBar] Retrieved token from auth session');
@@ -1149,8 +1144,8 @@ const DashAppBar = ({
             idToken = session.tokens.idToken.toString();
             // Store in app cache for future use
             if (typeof window !== 'undefined') {
-              appCache.getAll() = appCache.getAll() || {};
-              appCache.getAll().auth = appCache.getAll().auth || {};
+              if (!appCache.getAll()) appCache.init();
+              if (!appCache.get('auth')) appCache.set('auth', {});
               appCache.set('auth.idToken', idToken);
             }
             logger.debug('[AppBar] Retrieved token from auth session for initials');

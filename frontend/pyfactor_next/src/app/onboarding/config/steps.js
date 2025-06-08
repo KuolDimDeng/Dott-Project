@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Onboarding steps configuration
  * This file defines the steps, their metadata, and navigation logic for the onboarding flow

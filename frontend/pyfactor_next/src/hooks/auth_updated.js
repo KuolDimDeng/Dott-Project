@@ -1,14 +1,11 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import {
   signIn as authSignIn,
   signUp as authSignUp,
@@ -150,8 +147,8 @@ export function useAuth() {
         
         // Update global AppCache
         if (typeof window !== 'undefined') {
-          appCache.getAll() = appCache.getAll() || {};
-          appCache.getAll().auth = appCache.getAll().auth || {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.get('auth')) appCache.set('auth', {});
           
           // Store tokens
           appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());
@@ -607,8 +604,8 @@ export function useAuth() {
                 
                 // Update global AppCache
                 if (typeof window !== 'undefined') {
-                  appCache.getAll() = appCache.getAll() || {};
-                  appCache.getAll().auth = appCache.getAll().auth || {};
+                  if (!appCache.getAll()) appCache.init();
+                  if (!appCache.get('auth')) appCache.set('auth', {});
                   
                   // Store tokens
                   appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());
@@ -657,8 +654,8 @@ export function useAuth() {
                 
                 // Update global AppCache
                 if (typeof window !== 'undefined') {
-                  appCache.getAll() = appCache.getAll() || {};
-                  appCache.getAll().auth = appCache.getAll().auth || {};
+                  if (!appCache.getAll()) appCache.init();
+                  if (!appCache.get('auth')) appCache.set('auth', {});
                   
                   // Store tokens
                   appCache.set('auth.idToken', sessionResponse.tokens.idToken.toString());

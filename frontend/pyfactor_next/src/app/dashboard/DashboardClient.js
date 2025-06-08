@@ -4,6 +4,7 @@
 
 
 
+
 import { appCache } from '../../utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/utils/logger';
@@ -65,7 +66,6 @@ function getUserBusinessName() {
   return new Promise(async (resolve) => {
     try {
       const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
       
       // Try to get business name from Cognito attributes
@@ -84,7 +84,6 @@ function getUserBusinessType() {
   return new Promise(async (resolve) => {
     try {
       const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
       
       // Try to get business type from Cognito attributes
@@ -173,7 +172,6 @@ const syncTenantIDs = async (isAuthFlow = false) => {
     
     try {
       const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
       cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
       
@@ -228,7 +226,6 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
     try {
       // Try to get the session for auth
       const { fetchAuthSession } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const session = await getAuth0Session();
       if (session?.tokens?.idToken) {
         headers['Authorization'] = `Bearer ${session.tokens.idToken.toString()}`;
@@ -263,7 +260,6 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
             // Save this to Cognito attributes for future use
             try {
               const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
                 userAttributes: {
                   'custom:businessid': fallbackData.tenantId
@@ -290,7 +286,6 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
       // Save this to Cognito attributes for future use
       try {
         const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
           userAttributes: {
             'custom:businessid': data.tenantId
@@ -496,7 +491,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
         try {
           // Try to get business name from Cognito attributes
           const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
           
           // Look for business name in custom attributes
@@ -677,7 +671,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
             if (tenantId) {
               // Update Cognito with the tenant ID
               const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
                 userAttributes: {
                   'custom:tenant_ID': tenantId,
@@ -760,7 +753,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       
       try {
         const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
         tenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
         
@@ -828,7 +820,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
         
         try {
           const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
           cognitoTenantId = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];
           
@@ -865,7 +856,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               // Update Cognito with this tenant ID
               try {
                 const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
                   userAttributes: {
                     'custom:businessid': data.tenantId
@@ -905,7 +895,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               // Update Cognito with this tenant ID
               try {
                 const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
                   userAttributes: {
                     'custom:businessid': tenantId
@@ -1109,7 +1098,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
           
           // Get user attributes
           const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const userAttributes = await fetchUserAttributes();
           
           // Call tenant manager API
@@ -1132,7 +1120,6 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
               
               // Update user attributes with tenant ID
               const { updateUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       await updateUserAttributes({
                 userAttributes: {
                   'custom:tenant_id': result.tenantId,
@@ -1235,7 +1222,6 @@ async function getBusinessNameFromCognito() {
   try {
     // Get attributes from Cognito
     const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const attributes = await fetchUserAttributes();
     
     // Check for business name in various attributes
@@ -1275,7 +1261,6 @@ async function getOnboardingStatusFromCognito() {
   try {
     // Get attributes from Cognito
     const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const attributes = await fetchUserAttributes();
     
     // Get onboarding status
@@ -1329,7 +1314,6 @@ const generateBusinessName = async () => {
   try {
     // Get attributes from Cognito
     const { fetchUserAttributes } = await import('@/utils/auth0Adapter');
-      import('@/utils/auth0Adapter');
       const attributes = await fetchUserAttributes();
     
     // Try to find business name in user attributes

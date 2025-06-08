@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useState, useEffect } from 'react';
 import { saveUserPreference, getSidebarCollapsedState, saveSidebarCollapsedState, PREF_KEYS } from '@/utils/userPreferences';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';

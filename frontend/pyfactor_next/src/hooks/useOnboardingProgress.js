@@ -1,24 +1,17 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboardingProgress.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboardingProgress.js
 
 import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { appCache } from '../utils/appCache';
 import { useSession } from '@/hooks/useSession';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
-import { appCache } from '../utils/appCache';
 import { persistenceService } from '@/services/persistenceService';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { RoutingManager } from '@/lib/routingManager';
-import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
 import * as OnboardingUtils from '@/utils/onboardingUtils';
-import { appCache } from '../utils/appCache';
 import { saveUserPreferences, PREF_KEYS } from '@/utils/userPreferences';
 
 /**
@@ -186,8 +179,8 @@ export function useOnboardingProgress() {
     try {
       // Ensure app cache exists
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('onboarding')) appCache.set('onboarding', {});
         
         // Store in app cache
         appCache.set('onboarding.step', normalizedStep);
@@ -220,8 +213,8 @@ export function useOnboardingProgress() {
     // Store in app cache
     try {
       // Ensure app cache exists
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('onboarding')) appCache.set('onboarding', {});
       
       // Store in app cache
       appCache.set('onboarding.step', normalizedStep);

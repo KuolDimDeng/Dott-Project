@@ -1,0 +1,66 @@
+import appCache from '../utils/appCache';
+
+'use client';
+
+import { appCache } from '../utils/appCache';
+import { logger } from '@/utils/logger';
+
+// Initialize global app cache if it doesn't exist
+if (typeof window !== 'undefined') {
+  appCache.getAll() = appCache.getAll() || {};
+  appCache.getAll().preferences = appCache.getAll().preferences || {};
+}
+
+/**
+ * Gets the language parameter from the URL, app cache, or defaults to 'en'
+ * @returns {string} The language code (e.g., 'en', 'fr', etc.)
+ */
+export function getLanguageParam() {
+  let langParam;
+  try {
+    // Try to get from current URL first
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+    langParam = urlParams.get('lng');
+    
+    // If not found in current URL, check app cache or use default
+    if (!langParam && typeof window !== 'undefined') {
+      // Initialize app cache if needed
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().preferences = appCache.getAll().preferences || {};
+      
+      langParam = appCache.get('preferences.language') || 'en';
+    } else if (langParam && typeof window !== 'undefined') {
+      // Save the language preference for future use
+      appCache.getAll() = appCache.getAll() || {};
+      appCache.getAll().preferences = appCache.getAll().preferences || {};
+      appCache.set('preferences.language', langParam);
+    } else {
+      langParam = 'en';
+    }
+  } catch (error) {
+    // Default to English if there's an error
+    langParam = 'en';
+    logger.error('[LanguageUtils] Error getting language parameter:', error);
+  }
+  
+  return langParam;
+}
+
+/**
+ * Appends the language parameter to a URL path
+ * @param {string} path - The URL path to append the language parameter to
+ * @returns {string} The URL path with the language parameter appended
+ */
+export function appendLanguageParam(path) {
+  const langParam = getLanguageParam();
+  return `${path}?lng=${langParam}`;
+}
+
+/**
+ * Creates a query string with the language parameter
+ * @returns {string} The query string with the language parameter (e.g., '?lng=en')
+ */
+export function getLanguageQueryString() {
+  const langParam = getLanguageParam();
+  return `?lng=${langParam}`;
+}

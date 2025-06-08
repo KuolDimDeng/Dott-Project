@@ -1,5 +1,6 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LanguageSelector/LanguageSelector.js
 'use client';
+
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/components/LanguageSelector/LanguageSelector.js
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -1,5 +1,6 @@
 'use client';
 
+
 import DashboardWrapper from './DashboardWrapper';
 import ClientDataSync from '@/components/clientDataSync';
 

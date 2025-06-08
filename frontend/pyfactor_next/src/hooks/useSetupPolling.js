@@ -1,10 +1,7 @@
 import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback } from 'react';
-import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { getCurrentUser  } from '@/config/amplifyUnified';
 
 // Increase initial polling interval and add exponential backoff
@@ -121,8 +118,8 @@ export function useSetupPolling() {
       
       // Get from app cache if available
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().polling = appCache.getAll().polling || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('polling')) appCache.set('polling', {});
         last429Time = appCache.get('polling.last429ErrorTime');
       }
       
@@ -190,8 +187,8 @@ export function useSetupPolling() {
           
           // Store the last 429 timestamp to avoid polling too soon
           if (typeof window !== 'undefined') {
-            appCache.getAll() = appCache.getAll() || {};
-            appCache.getAll().polling = appCache.getAll().polling || {};
+            if (!appCache.getAll()) appCache.init();
+            if (!appCache.get('polling')) appCache.set('polling', {});
             appCache.set('polling.last429ErrorTime', Date.now().toString());
           }
           

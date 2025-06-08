@@ -1,5 +1,6 @@
 'use client';
 
+
 // Enhanced Amplify v6 configuration with network error resilience
 // Updated: Environment variables refreshed for OAuth scope fix - Force rebuild
 // Build timestamp: 2025-01-15T17:15:00Z - OAuth scopes fix: array to string conversion

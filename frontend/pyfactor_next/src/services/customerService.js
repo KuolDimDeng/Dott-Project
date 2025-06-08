@@ -1,5 +1,5 @@
 import axios from 'axios';
-import appCache from '@/utils/appCache';
+import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
 const API_BASE_URL = '/api/customers';

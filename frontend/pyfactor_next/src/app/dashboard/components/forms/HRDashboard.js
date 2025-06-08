@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState, useEffect } from 'react';
 // Remove the import of EmployeeManagement since this component shouldn't handle it
 // import EmployeeManagement from './EmployeeManagement';

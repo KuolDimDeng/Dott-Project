@@ -1,5 +1,6 @@
-// src/components/CookieBanner.js
 'use client';
+
+// src/components/CookieBanner.js
 
 import React, { useState, useEffect } from 'react';
 import NextLink from 'next/link';

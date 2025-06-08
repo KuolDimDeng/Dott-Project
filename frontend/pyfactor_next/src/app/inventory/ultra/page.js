@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useEffect } from 'react';
 import UltraOptimizedInventoryList from '../components/UltraOptimizedInventoryList';
 import { useRouter } from 'next/navigation';

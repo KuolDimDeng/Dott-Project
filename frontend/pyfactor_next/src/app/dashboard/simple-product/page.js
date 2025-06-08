@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import SimpleProductForm from '../components/forms/fixed/SimpleProductForm';
 import { createTestInput } from '@/utils/eventMonitor';

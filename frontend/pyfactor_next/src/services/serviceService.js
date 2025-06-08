@@ -1,8 +1,6 @@
 import { appCache } from '../utils/appCache';
 import { apiService } from './apiService';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/enhancedCache';
 
 /**
@@ -52,8 +50,8 @@ const MOCK_SERVICES = [
 // Add initialization of global app cache at the top of the file
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().offline = appCache.getAll().offline || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('offline')) appCache.set('offline', {});
 }
 
 /**
@@ -379,8 +377,8 @@ export const storeServicesOffline = (services) => {
     
     // Store in app cache
     if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.getAll() = {};
-      if (!appCache.getAll().offline) appCache.getAll().offline = {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.getAll().offline) appCache.set('offline', {});
       appCache.set('offline.services', offlineData);
       
       logger.debug(`Stored ${services.length} services in app cache for offline use`);

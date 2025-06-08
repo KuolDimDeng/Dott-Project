@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/error/page.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/auth/error/page.js
 
 import { useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

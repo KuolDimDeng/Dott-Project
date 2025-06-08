@@ -1,15 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -17,9 +14,7 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import { appCache } from '../utils/appCache';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
-import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
 
 // Subscription plans
@@ -275,9 +270,9 @@ export default function SubscriptionForm() {
       
       // Set up the AppCache for the subscription
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().subscription = appCache.getAll().subscription || {};
-        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('subscription')) appCache.set('subscription', {});
+        if (!appCache.get('onboarding')) appCache.set('onboarding', {});
         
         // Store subscription details
         appCache.set('subscription.plan', plan.id);
@@ -310,7 +305,7 @@ export default function SubscriptionForm() {
           
           // Store in AppCache
           if (typeof window !== 'undefined') {
-            appCache.getAll().cognito = appCache.getAll().cognito || {};
+            if (!appCache.get('cognito')) appCache.set('cognito', {});
             appCache.set('cognito.subplan', plan.id);
             appCache.set('cognito.subscriptioninterval', billingCycle);
             appCache.set('cognito.onboarding', plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription');
@@ -460,9 +455,9 @@ export default function SubscriptionForm() {
     
     // Store free plan selection in AppCache
     if (typeof window !== 'undefined') {
-      appCache.getAll() = appCache.getAll() || {};
-      appCache.getAll().subscription = appCache.getAll().subscription || {};
-      appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.get('subscription')) appCache.set('subscription', {});
+      if (!appCache.get('onboarding')) appCache.set('onboarding', {});
       
       // Set subscription details
       appCache.set('subscription.plan', 'free');

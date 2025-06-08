@@ -1,5 +1,6 @@
 'use client';
 
+
 import { updateUserAttributes as amplifyUpdateAttributes, fetchAuthSession  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
 import { getFallbackTenantId, storeReliableTenantId } from './tenantFallback';

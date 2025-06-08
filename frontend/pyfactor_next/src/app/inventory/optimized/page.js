@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useEffect } from 'react';
 import OptimizedInventoryList from '../components/OptimizedInventoryList';
 import { useRouter } from 'next/navigation';

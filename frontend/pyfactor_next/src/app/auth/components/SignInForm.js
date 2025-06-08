@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { appCache } from '../../../utils/appCache';
@@ -28,7 +29,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
   if (!appCache.get('auth')) appCache.set('auth', {});
   if (!appCache.get('user')) appCache.set('user', {});
   if (!appCache.get('tenant')) appCache.set('tenant', {});
-  appCache.getAll().tenants = appCache.getAll().tenants || {};
+  if (!appCache.get('tenants')) appCache.set('tenants', {});
   
   // Define global functions for cache access if not already defined
   if (!window.setCacheValue) {

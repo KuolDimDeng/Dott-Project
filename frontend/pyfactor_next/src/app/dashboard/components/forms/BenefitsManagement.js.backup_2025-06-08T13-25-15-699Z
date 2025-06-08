@@ -1,0 +1,180 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { Tab } from '@headlessui/react';
+import { fetchAuthSession  } from '@/config/amplifyUnified';
+import { getCacheValue } from '@/utils/appCache';
+
+// Import components for tabs
+import MyBenefits from './benefits/MyBenefits';
+import BenefitsAdmin from './benefits/BenefitsAdmin';
+import BenefitsSettings from './benefits/BenefitsSettings';
+
+/**
+ * Benefits Management Component
+ * Handles employee benefits information, enrollment, and management
+ * with a tab-based interface similar to PayManagement
+ */
+const BenefitsManagement = () => {
+  console.log('[DEBUG] BenefitsManagement component initializing');
+  console.log('[DEBUG] BenefitsManagement component initializing');
+  const [activeTab, setActiveTab] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [userData, setUserData] = useState(null);
+  const [isManager, setIsManager] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch user data to determine role permissions
+  // Log component mount/unmount
+  useEffect(() => {
+    console.log('[DEBUG] BenefitsManagement component mounted');
+    return () => {
+      console.log('[DEBUG] BenefitsManagement component unmounted');
+    };
+  }, []);
+
+  // Log component mount/unmount
+  useEffect(() => {
+    console.log('[DEBUG] BenefitsManagement component mounted');
+    return () => {
+      console.log('[DEBUG] BenefitsManagement component unmounted');
+    };
+  }, []);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Get user session
+        const session = await fetchAuthSession();
+        
+        // Get user attributes from the token
+        if (session?.tokens?.idToken?.payload) {
+          const userInfo = session.tokens.idToken.payload;
+          
+          // Check for manager or owner roles
+          const userRoles = userInfo['custom:roles'] || '';
+          const userRole = userInfo['custom:userrole'] || '';
+          const isUserManager = userRoles.includes('manager') || userRoles.includes('hr_admin');
+          const isUserOwner = userRoles.includes('owner') || userRoles.includes('admin') || userRole === 'owner';
+          
+          setUserData(userInfo);
+          setIsManager(isUserManager);
+          setIsOwner(isUserOwner);
+        } else {
+          // Attempt to fetch from app cache if session doesn't have what we need
+          const cachedUserData = await getCacheValue('userData');
+          if (cachedUserData) {
+            const userRoles = cachedUserData['custom:roles'] || '';
+            const userRole = cachedUserData['custom:userrole'] || '';
+            const isUserManager = userRoles.includes('manager') || userRoles.includes('hr_admin');
+            const isUserOwner = userRoles.includes('owner') || userRoles.includes('admin') || userRole === 'owner';
+            
+            setUserData(cachedUserData);
+            setIsManager(isUserManager);
+            setIsOwner(isUserOwner);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const handleTabChange = (index) => {
+    setActiveTab(index);
+  };
+  
+  console.log('[DEBUG] BenefitsManagement component rendering');
+  return (
+    <div className="p-4" data-component="benefits-management">
+      <h1 className="text-2xl font-bold mb-6">Benefits Management</h1>
+      
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <Tab.Group selectedIndex={activeTab} onChange={handleTabChange}>
+          <Tab.List className="flex border-b border-gray-200 bg-gray-50">
+            <Tab 
+              className={({ selected }) => `
+                py-4 px-6 text-sm font-medium outline-none whitespace-nowrap
+                ${selected 
+                  ? 'text-blue-600 border-b-2 border-blue-500 bg-white' 
+                  : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+              `}
+            >
+              My Benefits
+            </Tab>
+            
+            {(isManager || isOwner) && (
+              <Tab 
+                className={({ selected }) => `
+                  py-4 px-6 text-sm font-medium outline-none whitespace-nowrap
+                  ${selected 
+                    ? 'text-blue-600 border-b-2 border-blue-500 bg-white' 
+                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                Benefits Admin
+              </Tab>
+            )}
+            
+            {isOwner && (
+              <Tab 
+                className={({ selected }) => `
+                  py-4 px-6 text-sm font-medium outline-none whitespace-nowrap
+                  ${selected 
+                    ? 'text-blue-600 border-b-2 border-blue-500 bg-white' 
+                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'}
+                `}
+              >
+                Benefits Settings
+              </Tab>
+            )}
+          </Tab.List>
+          
+          <Tab.Panels className="p-6">
+            <Tab.Panel>
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                </div>
+              ) : (
+                <MyBenefits userData={userData} />
+              )}
+            </Tab.Panel>
+            
+            {(isManager || isOwner) && (
+              <Tab.Panel>
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  <BenefitsAdmin userData={userData} isOwner={isOwner} />
+                )}
+              </Tab.Panel>
+            )}
+            
+            {isOwner && (
+              <Tab.Panel>
+                {loading ? (
+                  <div className="flex justify-center items-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : (
+                  <BenefitsSettings userData={userData} />
+                )}
+              </Tab.Panel>
+            )}
+          </Tab.Panels>
+        </Tab.Group>
+      </div>
+    </div>
+  );
+};
+
+export default BenefitsManagement; 

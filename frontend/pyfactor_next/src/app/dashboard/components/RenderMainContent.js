@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import ErrorBoundary from './ErrorBoundary';
 // Remove the direct imports and replace with lazy loading

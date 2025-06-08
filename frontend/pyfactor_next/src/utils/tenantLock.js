@@ -3,8 +3,8 @@ const LOCK_TIMEOUT = 30000; // 30 seconds timeout
 
 // Initialize global app cache if it doesn't exist
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
   appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
 }
 
@@ -16,8 +16,8 @@ export const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Ensure app cache exists
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
   appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
   
   // Check if lock already exists
@@ -49,8 +49,8 @@ export const releaseTenantLock = () => {
   if (typeof window === 'undefined') return;
   
   // Ensure app cache exists
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
   appCache.set('tenant.locks', appCache.get('tenant.locks') || {});
   
   // Remove lock

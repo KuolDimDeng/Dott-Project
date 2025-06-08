@@ -1,5 +1,6 @@
 'use client';
 
+
 // Import only the logger, not the axiosConfig
 import { logger } from './logger';
 import axios from 'axios';

@@ -1,5 +1,6 @@
 'use client';
 
+
 import i18next from 'i18next';
 // Import appCache if needed for language preferences
 // import { appCache } from './utils/appCache';
@@ -9,7 +10,6 @@ import { appCache } from './utils/appCache';
 import { i18n as i18nConfig } from '../next-i18next.config.mjs';
 import { getCognitoLanguageDetector, saveLanguagePreference } from '@/utils/userPreferences';
 import { getLanguageForCountry } from '@/services/countryDetectionService';
-import { getCacheValue, setCacheValue } from '@/utils/appCache';
 
 // Import translation resources for all languages
 import enCommon from '../public/locales/en/common.json';

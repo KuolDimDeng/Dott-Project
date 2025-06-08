@@ -1,16 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { signOut } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { CircularProgress } from '@/components/ui/TailwindComponents';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 export default function SignOut() {
@@ -27,11 +23,11 @@ export default function SignOut() {
           // Initialize global app cache if not exists
           if (typeof window !== 'undefined') {
             if (!appCache.getAll()) {
-              appCache.getAll() = {};
+              appCache.init();
             }
             
             // Clear app cache
-            appCache.getAll() = {};
+            appCache.init();
             logger.info("[SignOut] Cleared global app cache");
             
             // Clear sessionStorage for backward compatibility

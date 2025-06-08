@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/error.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/error.js
 
 import React, { useEffect } from 'react';
 import { removeCacheValue } from '@/utils/appCache';
@@ -22,11 +23,11 @@ export default function Error({ error, reset }) {
       
       // Store the current error for diagnostics
       if (typeof window !== 'undefined' && appCache.getAll()) {
-        appCache.getAll().last_error = {
+        appCache.set('last_error', {
           message: error?.message || 'Unknown error',
           stack: error?.stack || '',
           timestamp: new Date().toISOString()
-        };
+        });
       }
     } catch (cleanupError) {
       console.error('[pyfactor] Error during cleanup:', cleanupError);

@@ -1,5 +1,6 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/component/ChartComponents.js
 'use client';
+
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/component/ChartComponents.js
 import React, { useState, useEffect, useRef } from 'react';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { axiosInstance } from '@/lib/axiosConfig';

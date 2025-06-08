@@ -1,8 +1,8 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useEffect } from 'react';
 // Import OAuth debugger to make functions available globally
 import '@/utils/oauthDebugger';
@@ -129,8 +129,8 @@ export default function ClientSideScripts() {
           
           // Always ensure tenant namespace exists
           if (appCache.getAll()) {
-            appCache.getAll().tenant = appCache.getAll().tenant || {};
-            appCache.get('tenant.id') = tenantId;
+            if (!appCache.get('tenant')) appCache.set('tenant', {});
+            appCache.set('tenant.id', tenantId);
           }
           
           console.log('[ClientSideScripts] Tenant ID stored in AppCache');
@@ -149,8 +149,8 @@ export default function ClientSideScripts() {
           
           // Always ensure tenant namespace exists
           if (appCache.getAll()) {
-            appCache.getAll().tenant = appCache.getAll().tenant || {};
-            appCache.get('tenant.id') = queryTenantId;
+            if (!appCache.get('tenant')) appCache.set('tenant', {});
+            appCache.set('tenant.id', queryTenantId);
           }
           
           console.log('[ClientSideScripts] Tenant ID from query stored in AppCache');

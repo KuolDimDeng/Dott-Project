@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboarding.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/hooks/useOnboarding.js
 
 import { useState, useEffect } from 'react';
 import { 

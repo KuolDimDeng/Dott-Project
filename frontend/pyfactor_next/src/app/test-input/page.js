@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { useState, useRef, useEffect } from 'react';
 
 // Create a component that directly manipulates the DOM for testing

@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Helper utility to extract user initials from profile data
  * Only returns initials when valid user data is available

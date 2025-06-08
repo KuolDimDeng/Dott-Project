@@ -1,6 +1,7 @@
+'use client';
+
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import React, { useReducer, useMemo, memo } from 'react';
-'use client';
 
 // Tailwind UI components to replace MUI components
 // Comprehensive set of components based on Tailwind CSS

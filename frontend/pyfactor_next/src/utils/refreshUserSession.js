@@ -1,8 +1,6 @@
 import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { parseJwt } from '@/lib/authUtils';
-import { setCacheValue, getCacheValue } from './appCache';
 
 /**
  * Migration function to convert ID tokens to access tokens
@@ -15,11 +13,11 @@ export function migrateToAccessTokens() {
   try {
     // Initialize APP_CACHE if needed
     if (!appCache.getAll()) {
-      appCache.getAll() = {};
+      appCache.init();
     }
     
     if (!appCache.getAll().auth) {
-      appCache.getAll().auth = {};
+      appCache.set('auth', {});
     }
     
     // Check if we need to migrate from ID token to access token
@@ -62,12 +60,12 @@ export function ensureAuthProvider() {
     try {
       // Initialize APP_CACHE if needed
       if (!appCache.getAll()) {
-        appCache.getAll() = {};
+        appCache.init();
       }
       
       // Initialize auth section if needed
       if (!appCache.getAll().auth) {
-        appCache.getAll().auth = {};
+        appCache.set('auth', {});
       }
       
       // Set provider to auth0 for the current authentication system
@@ -115,7 +113,7 @@ export const refreshUserSession = async () => {
       logger.info('[Auth] Using Auth0 authentication - automatic token management');
       
       // Check if we have basic auth info
-      const hasToken = !!(appCache.getAll()
+      const hasToken = !!(appCache.getAll() && appCache.get('auth.token'));
       
       if (hasToken) {
         lastSuccessfulRefresh = Date.now();
@@ -143,11 +141,11 @@ export const refreshUserSession = async () => {
 function storeTokensInAppCache(tokens) {
   try {
     if (!appCache.getAll()) {
-      appCache.getAll() = {};
+      appCache.init();
     }
     
     if (!appCache.getAll().auth) {
-      appCache.getAll().auth = {};
+      appCache.set('auth', {});
     }
     
     // Store the access token in APP_CACHE as the primary token for API authorization
@@ -220,9 +218,9 @@ export async function clearUserSession() {
     
     // Clear tokens from APP_CACHE
     if (appCache.getAll() && appCache.getAll().auth) {
-      appCache.getAll().auth = {
+      appCache.set('auth', {
         provider: appCache.get('auth.provider') // Keep the provider info
-      };
+      });
     }
     
     // Clear tokens from appCache utility

@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Simplified utility for debugging React component rendering issues
  * This version removes all the monkey patching and complex debugging

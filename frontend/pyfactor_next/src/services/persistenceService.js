@@ -14,7 +14,7 @@ export const STORAGE_KEYS = {
 
 // Initialize global app cache
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
+  if (!appCache.getAll()) appCache.init();
   window.__PERSISTENCE_STORE = window.__PERSISTENCE_STORE || {};
 }
 

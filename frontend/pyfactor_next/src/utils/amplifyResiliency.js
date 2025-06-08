@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * AWS Amplify Resiliency Utilities
@@ -19,7 +19,6 @@ import {
 } from './networkMonitor';
 // Removed duplicate import
 import { getFallbackTenantId } from './tenantFallback';
-import { appCache } from '../utils/appCache';
 import { updateUserAttributes } from '@/config/amplifyUnified';
 
 // Cached values for fallback
@@ -53,7 +52,7 @@ export const cacheUserAttributes = (attributes) => {
         
         // Always store in APP_CACHE
         if (appCache.getAll()) {
-          appCache.getAll().user = appCache.getAll().user || {};
+          if (!appCache.get('user')) appCache.set('user', {});
           appCache.set('user.attributes', { ...attributes });
           appCache.set('user.timestamp', Date.now());
         }

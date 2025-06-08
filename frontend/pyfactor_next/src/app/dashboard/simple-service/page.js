@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import SimpleServiceForm from '../components/forms/fixed/SimpleServiceForm';
 import { Toaster } from 'react-hot-toast';

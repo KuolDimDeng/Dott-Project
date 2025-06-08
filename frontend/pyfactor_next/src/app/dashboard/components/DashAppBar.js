@@ -6,7 +6,8 @@
 
 
 
-import appCache from '../../../utils/appCache';
+
+import { appCache } from '../../../utils/appCache';
 
 
 
@@ -705,8 +706,8 @@ const DashAppBar = ({
     if (typeof window !== 'undefined') {
       // Initialize app cache if needed
       if (!appCache.getAll()) { appCache.set('tenant', {}); appCache.set('user', {}); }
-      if (!appCache.getAll().auth) appCache.getAll().auth = {};
-      if (!appCache.getAll().user) appCache.getAll().user = {};
+      if (!appCache.getAll().auth) appCache.set('auth', {});
+      if (!appCache.getAll().user) appCache.set('user', {});
       
       // Check app cache for email (primary source)
       if (appCache.get('auth.email')) {

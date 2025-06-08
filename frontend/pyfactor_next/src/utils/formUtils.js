@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Stubbed utility functions for backward compatibility
  */

@@ -1,16 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
+
+
 import { useEffect, useState } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { cognitoAuth } from '@/lib/cognitoDirectAuth';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { setCacheValue } from '@/utils/appCache';
 
 export default function DirectOAuthCallback() {
   const router = useRouter();
@@ -79,8 +75,8 @@ export default function DirectOAuthCallback() {
         setCacheValue('oauth_user_email', user.email);
         
         if (typeof window !== 'undefined' && appCache.getAll()) {
-          appCache.getAll() = appCache.getAll() || {};
-          appCache.getAll().auth = appCache.getAll().auth || {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.get('auth')) appCache.set('auth', {});
           appCache.set('auth.had_session', true);
           appCache.set('auth.last_login', new Date().toISOString());
           appCache.set('auth.provider', 'google');

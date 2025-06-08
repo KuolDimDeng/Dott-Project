@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';

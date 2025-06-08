@@ -1,14 +1,9 @@
 import { appCache } from '../utils/appCache';
 import { fetchAuthSession, getCurrentUser, updateUserAttributes  } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { getRefreshedAccessToken, isTokenExpired } from '@/utils/auth';
-import { appCache } from '../utils/appCache';
 import { jwtDecode } from 'jwt-decode';
-import { appCache } from '../utils/appCache';
 import { fetchUserAttributes } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -16,13 +11,11 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import { appCache } from '../utils/appCache';
-import { 
+import {
   updateTenantIdInCognito, 
   getTenantIdFromCognito 
 } from '@/utils/tenantUtils';
-import { appCache } from '../utils/appCache';
-import { 
+import {
   saveOnboardingStatus, 
   getOnboardingStatus as getUserOnboardingStatus,
   saveOnboardingStep,
@@ -31,7 +24,6 @@ import {
   PREF_KEYS,
   updateOnboardingData
 } from '@/utils/userPreferences';
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
 
 export async function validateSession(providedTokens) {
   try {
@@ -50,8 +42,8 @@ export async function validateSession(providedTokens) {
         
         // Store in AppCache instead of cookies
         if (typeof window !== 'undefined') {
-          appCache.getAll() = appCache.getAll() || {};
-          appCache.getAll().auth = appCache.getAll().auth || {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.get('auth')) appCache.set('auth', {});
           appCache.set('auth.accessToken', tokens.accessToken);
           appCache.set('auth.idToken', tokens.idToken);
         }
@@ -67,8 +59,8 @@ export async function validateSession(providedTokens) {
         
         // Store in AppCache instead of cookies
         if (typeof window !== 'undefined') {
-          appCache.getAll() = appCache.getAll() || {};
-          appCache.getAll().auth = appCache.getAll().auth || {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.get('auth')) appCache.set('auth', {});
           appCache.set('auth.accessToken', tokens.accessToken);
           appCache.set('auth.idToken', tokens.idToken);
         }
@@ -98,9 +90,9 @@ export async function validateSession(providedTokens) {
 function getAppCacheValues() {
   const cache = {};
   if (typeof window !== 'undefined') {
-    appCache.getAll() = appCache.getAll() || {};
-    appCache.getAll().auth = appCache.getAll().auth || {};
-    appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+    if (!appCache.getAll()) appCache.init();
+    if (!appCache.get('auth')) appCache.set('auth', {});
+    appCache.set('onboarding', appCache.getAll().onboarding || {});
     
     // Add auth tokens
     cache.accessToken = appCache.get('auth.accessToken');
@@ -226,8 +218,8 @@ export async function completeOnboarding() {
       
       // Update AppCache
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        if (!appCache.getAll()) appCache.init();
+        appCache.set('onboarding', appCache.getAll().onboarding || {});
         appCache.set('onboarding.status', 'complete');
         appCache.set('onboarding.step', 'complete');
         appCache.set('onboarding.completed', true);

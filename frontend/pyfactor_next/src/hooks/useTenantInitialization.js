@@ -1,30 +1,22 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { appCache } from '../utils/appCache';
 import { v4 as uuidv4, v5 as uuidv5 } from 'uuid';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { getTenantId, storeTenantInfo } from '@/utils/tenantUtils';
-import { appCache } from '../utils/appCache';
 import { useAuth } from './auth';
-import { appCache } from '../utils/appCache';
 import { signIn, fetchUserAttributes, fetchAuthSession, updateUserAttributes } from '@/config/amplifyUnified';
-import { appCache } from '../utils/appCache';
 import { reconfigureAmplify } from '@/config/amplifyConfig';
 // Import standardized constants
-import { appCache } from '../utils/appCache';
 import { 
   COGNITO_ATTRIBUTES,
   STORAGE_KEYS,
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import { appCache } from '../utils/appCache';
 import { useSession } from 'next-auth/react';
 
 // Lock keys
@@ -44,8 +36,8 @@ const sessionRefreshInProgress = {
 
 // Initialize global app cache if on client side
 if (typeof window !== 'undefined') {
-  appCache.getAll() = appCache.getAll() || {};
-  appCache.getAll().tenant = appCache.getAll().tenant || {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.get('tenant')) appCache.set('tenant', {});
 }
 
 /**
@@ -56,8 +48,8 @@ const acquireTenantLock = () => {
   if (typeof window === 'undefined') return false;
   
   // Ensure the cache exists
-  if (!appCache.getAll()) appCache.getAll() = {};
-  if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+  if (!appCache.getAll()) appCache.init();
+  if (!appCache.getAll().tenant) appCache.set('tenant', {});
   
   // Check if lock already exists
   const existingLock = appCache.get('tenant.initLock');
@@ -112,8 +104,8 @@ const getSafeTenantId = () => {
     let source = null;
     
     // Ensure app cache exists
-    if (!appCache.getAll()) appCache.getAll() = {};
-    if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+    if (!appCache.getAll()) appCache.init();
+    if (!appCache.getAll().tenant) appCache.set('tenant', {});
     
     // Try app cache first
     try {
@@ -149,7 +141,7 @@ const getSafeTenantId = () => {
             if (cognitoTenantId && !tenantId) {
               // Store for future use
               if (appCache.getAll() && appCache.getAll().tenant) {
-                appCache.get('tenant.id') = cognitoTenantId;
+                appCache.set('tenant.id', cognitoTenantId);
               }
               logger.debug('[TenantUtils] Retrieved and stored tenant ID from Cognito:', cognitoTenantId);
             }
@@ -235,8 +227,8 @@ export function useTenantInitialization() {
     
     // Initialize app cache if needed
     if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.getAll() = {};
-      if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+      if (!appCache.getAll()) appCache.init();
+      if (!appCache.getAll().tenant) appCache.set('tenant', {});
     }
     
     // Get from app cache next
@@ -254,7 +246,7 @@ export function useTenantInitialization() {
         if (storageTenantId) {
           // Store in app cache for future use
           if (appCache.getAll() && appCache.getAll().tenant) {
-            appCache.get('tenant.id') = storageTenantId;
+            appCache.set('tenant.id', storageTenantId);
           }
           return storageTenantId;
         }
@@ -358,10 +350,10 @@ export function useTenantInitialization() {
         
         // Store tenant ID in app cache only, remove cookie usage
         if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.getAll() = {};
-          if (!appCache.getAll().tenant) appCache.getAll().tenant = {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.getAll().tenant) appCache.set('tenant', {});
           
-          appCache.get('tenant.id') = tenantId;
+          appCache.set('tenant.id', tenantId);
         }
         
         return result;

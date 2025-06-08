@@ -1,5 +1,6 @@
 'use client';
 
+
 import withPageAccess from '../../components/withPageAccess';
 import { PAGE_ACCESS } from '@/utils/pageAccess';
 import React, { useState } from 'react';

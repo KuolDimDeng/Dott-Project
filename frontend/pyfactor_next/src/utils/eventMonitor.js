@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Event debugging utility that works with React state updates
  */

@@ -1,5 +1,6 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/hooks/useStepTransition.js
 'use client';
+
+///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/onboarding/hooks/useStepTransition.js
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';

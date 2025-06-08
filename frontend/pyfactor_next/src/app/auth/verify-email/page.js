@@ -1,13 +1,12 @@
-import appCache from '../utils/appCache';
-
 'use client';
+
+import { appCache } from '@/utils/appCache';
+
 
 import React, { useEffect } from 'react';
 import VerifyEmailPage from './VerifyEmailPage';
 import AuthLayout from '../components/AuthLayout';
-import { appCache } from '../utils/appCache';
 import { useTranslation } from 'react-i18next';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 export default function VerifyEmail() {
@@ -18,9 +17,9 @@ export default function VerifyEmail() {
     try {
       // Initialize app cache if it doesn't exist
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().tenant = appCache.getAll().tenant || {};
-        appCache.getAll().auth = appCache.getAll().auth || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('tenant')) appCache.set('tenant', {});
+        if (!appCache.get('auth')) appCache.set('auth', {});
         
         // Get tenant ID from app cache or fallback to sessionStorage
         const tenantId = 
@@ -30,9 +29,9 @@ export default function VerifyEmail() {
         
         if (tenantId) {
           // Store in app cache in multiple locations for backward compatibility
-          appCache.get('tenant.id') = tenantId;
+          appCache.set('tenant.id', tenantId);
           appCache.set('auth.tenantId', tenantId);
-          appCache.getAll().tenantId = tenantId; // Legacy location
+          appCache.set('tenantId', tenantId); // Legacy location
           
           logger.debug('Stored tenant ID in app cache:', tenantId);
         }

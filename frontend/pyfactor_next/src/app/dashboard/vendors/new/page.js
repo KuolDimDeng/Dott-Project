@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import DashboardWrapper from '../../DashboardWrapper';
 import VendorManagement from '@/app/dashboard/components/forms/VendorManagement';

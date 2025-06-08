@@ -1,4 +1,5 @@
 'use client';
+
 import { useParams } from 'next/navigation';
 import InvoiceDetails from '../../dashboard/components/forms/InvoiceDetails';
 

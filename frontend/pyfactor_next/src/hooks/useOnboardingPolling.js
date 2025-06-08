@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/utils/logger';
 import { getOnboardingStatus } from '@/utils/onboardingUtils';

@@ -1,13 +1,10 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { useEffect } from 'react';
-import { appCache } from '../utils/appCache';
 import { verifyTenantOwnership } from '@/utils/menuPrivileges';
-import { getCacheValue } from '@/utils/appCache';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 
 /**

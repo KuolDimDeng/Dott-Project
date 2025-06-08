@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Stubbed component for backward compatibility
  */

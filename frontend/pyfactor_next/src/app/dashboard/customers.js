@@ -1,5 +1,6 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/customers.js
 'use client';
+
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/customers.js
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';

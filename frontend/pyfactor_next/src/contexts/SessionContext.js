@@ -1,5 +1,6 @@
 'use client';
 
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { fetchAuthSession, getCurrentUser, fetchUserAttributes } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';

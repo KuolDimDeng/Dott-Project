@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * @component MainListItems
  * @description 
@@ -13,7 +15,6 @@
  * Any changes require explicit approval from the project owner.
  */
 
-'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';

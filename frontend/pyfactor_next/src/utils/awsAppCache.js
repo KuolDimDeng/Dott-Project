@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * AWS App Cache Utility
@@ -18,7 +18,7 @@ import {
  * App Cache client that provides a consistent API for caching
  * similar to AWS AppSync cache implementation
  */
-export const appCache = {
+const awsAppCache = {
   /**
    * Get a value from cache
    * 

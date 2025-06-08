@@ -1,18 +1,17 @@
-import appCache from '../utils/appCache';
-
 'use client';
+
+
+import { appCache } from '../utils/appCache';
+
 
 /**
  * Utility module for tenant context operations that don't require the full React context
  * This module is kept separate to avoid circular dependencies
  */
 
-import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import useAuthStore from '@/store/authStore';
-import { appCache } from '../utils/appCache';
 import { getTenantId, forceValidateTenantId, validateTenantIdFormat } from './tenantUtils';
-import { appCache } from '../utils/appCache';
 import { useCallback, useState, useEffect } from 'react';
 
 /**
@@ -201,8 +200,8 @@ export const fetchTenantInfo = async (tenantId) => {
       // Store tenant info in app cache for easier access
       if (isBrowser && data.tenant) {
         // Initialize app cache if needed
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('tenant')) appCache.set('tenant', {});
         appCache.set('tenant.data', data.tenant);
         appCache.set('tenant.name', data.tenant.name || '');
         appCache.set('tenant.lastUpdated', new Date().toISOString());

@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 const handleSelectPlan = (plan) => {
   if (isSubmitting) return;
@@ -28,8 +28,8 @@ const handleSelectPlan = (plan) => {
     try {
       // Initialize app cache
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().setup = appCache.getAll().setup || {};
+        if (!appCache.getAll()) appCache.init();
+        if (!appCache.get('setup')) appCache.set('setup', {});
         
         // Store setup configuration
         appCache.set('setup.skipDatabaseCreation', true);
@@ -38,7 +38,7 @@ const handleSelectPlan = (plan) => {
         appCache.set('setup.freePlanSelected', true);
         
         // Store onboarding state
-        appCache.getAll().onboarding = appCache.getAll().onboarding || {};
+        if (!appCache.get('onboarding')) appCache.set('onboarding', {});
         appCache.set('onboarding.step', 'complete');
         appCache.set('onboarding.status', 'COMPLETE');
         appCache.set('onboarding.setupCompleted', true);

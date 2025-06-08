@@ -1,6 +1,7 @@
 'use client';
 
-import appCache from '../utils/appCache';
+
+import { appCache } from '../utils/appCache';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';

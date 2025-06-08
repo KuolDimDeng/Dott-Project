@@ -1,5 +1,6 @@
 'use client';
 
+
 export default function StepConnector({ active, completed }) {
   // Base classes for the connector line
   const baseClasses = "absolute top-[24px] left-[calc(50%+16px)] right-[calc(50%+16px)] h-1 -translate-y-1/2 rounded";

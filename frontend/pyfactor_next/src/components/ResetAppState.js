@@ -1,14 +1,10 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 'use client'
 
-import { appCache } from '../utils/appCache';
 import { useState, useEffect } from 'react';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { updateTenantIdInCognito } from '@/utils/tenantUtils';
-import { clearCache } from '@/utils/appCache';
 
 /**
  * ResetAppState - A component that provides a button to reset all application state
@@ -170,7 +166,7 @@ export default function ResetAppState({ children, buttonText = "Reset Applicatio
         window.__LAST_REDIRECT_ERROR = null;
         
         // Reset APP_CACHE explicitly
-        appCache.getAll() = {};
+        appCache.init();
       }
 
       // Call API endpoint to clear cookies on server side

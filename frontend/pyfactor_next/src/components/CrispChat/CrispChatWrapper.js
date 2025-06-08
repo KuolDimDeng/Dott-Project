@@ -1,5 +1,6 @@
-// src/components/CrispChat/CrispChatWrapper.js
 'use client';
+
+// src/components/CrispChat/CrispChatWrapper.js
 
 import { useEffect, useState } from 'react';
 import { useUser } from '@auth0/nextjs-auth0';

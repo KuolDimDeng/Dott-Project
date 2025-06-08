@@ -1,5 +1,6 @@
-// src/components/ErrorStep/ErrorStep.js
 'use client';
+
+// src/components/ErrorStep/ErrorStep.js
 
 import React from 'react';
 import { logger } from '@/utils/logger';

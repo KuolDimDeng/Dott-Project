@@ -1,5 +1,6 @@
-// src/components/ErrorBoundary/ToastErrorBoundary.js
 'use client';
+
+// src/components/ErrorBoundary/ToastErrorBoundary.js
 
 import React from 'react';
 

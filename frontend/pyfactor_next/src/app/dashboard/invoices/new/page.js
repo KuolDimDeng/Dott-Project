@@ -1,5 +1,6 @@
 'use client';
 
+
 import React from 'react';
 import DashboardWrapper from '../../DashboardWrapper';
 import InvoiceManagement from '@/app/dashboard/components/forms/InvoiceManagement';

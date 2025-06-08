@@ -1,5 +1,6 @@
-import React, { useReducer } from 'react';
 'use client';
+
+import React, { useReducer } from 'react';
 
 import React, { useState, useEffect, Fragment, useRef, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';

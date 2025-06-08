@@ -1,8 +1,9 @@
+'use client';
+
 /**
  * @file withPageAccess.js
  * @description Higher-order component for page access control
  */
-'use client';
 
 import React, { useEffect, useState } from 'react';
 import { hasPageAccess, PAGE_ACCESS } from '@/utils/pageAccess';

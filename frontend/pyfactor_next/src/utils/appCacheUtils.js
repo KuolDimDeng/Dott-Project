@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * Application Cache Utilities (Server Compatible)
@@ -9,8 +9,6 @@ import appCache from '../utils/appCache';
  * This version provides both async and sync variants to work in Server Components.
  */
 
-import { getCacheValue, setCacheValue, removeCacheValue, clearCache } from './appCache';
-import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 
 /**
@@ -181,7 +179,7 @@ export function storeInCache(key, value, category = 'user', tenantId = null) {
     if (tenantId) {
       // Initialize tenant namespace if needed
       if (!appCache.getAll().tenants) {
-        appCache.getAll().tenants = {};
+        appCache.set('tenants', {});
       }
       if (!appCache.getAll().tenants[tenantId]) {
         appCache.getAll().tenants[tenantId] = {};

@@ -4,7 +4,8 @@
 
 
 
-import appCache from '../utils/appCache';
+
+import { appCache } from '../utils/appCache';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
@@ -174,7 +175,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       // Store tenant ID in APP_CACHE immediately for resilience
       if (typeof window !== 'undefined') {
         if (!appCache.getAll()) appCache.set('app', {});
-        appCache.getAll().tenant = appCache.getAll().tenant || {};
+        if (!appCache.get('tenant')) appCache.set('tenant', {});
         appCache.set('tenant.id', tenantId);
       }
       
@@ -222,7 +223,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     // Clear recovery attempts counter if this isn't a recovery attempt
     if (!urlParams.get('recovery')) {
       if (appCache.getAll()) {
-        appCache.getAll().recoveryAttempts = 0;
+        appCache.set('recoveryAttempts', 0);
       }
     } else {
       // This is a recovery attempt
@@ -230,13 +231,13 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       
       // Clear any pending operations
       if (!appCache.getAll()) appCache.set('app', {});
-      appCache.getAll().operations = {};
+      appCache.set('operations', {});
       
       // Track the number of sequential recovery attempts
       const attemptParam = urlParams.get('attempt');
       if (attemptParam) {
         const attemptCount = parseInt(attemptParam, 10);
-        appCache.getAll().recoveryAttempts = attemptCount;
+        appCache.set('recoveryAttempts', attemptCount);
         
         // If too many attempts, try clearing more aggressive caches
         if (attemptCount > 3) {
@@ -294,11 +295,11 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
         // Record in APP_CACHE for resilience
         if (typeof window !== 'undefined') {
           if (!appCache.getAll()) appCache.set('app', {});
-          appCache.getAll().lastError = {
+          appCache.set('lastError', {
             type: message.includes('ChunkLoadError') ? 'ChunkLoadError' : 'NetworkError',
             message: message,
             timestamp: Date.now()
-          };
+          });
         }
         
         // Automatically trigger recovery for severe errors
@@ -415,7 +416,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
     // Handle tenant ID from meta tag - store it in APP_CACHE for resilience immediately
     if (tenantIdMeta && typeof window !== 'undefined') {
       if (!appCache.getAll()) appCache.set('app', {});
-      appCache.getAll().tenant = appCache.getAll().tenant || {};
+      if (!appCache.get('tenant')) appCache.set('tenant', {});
       appCache.set('tenant.id', tenantIdMeta);
       
       // If we already have a tenant ID in the path, don't redirect

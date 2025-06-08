@@ -1,18 +1,16 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
 import { appCache } from '../utils/appCache';
+
+
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
-import { appCache } from '../utils/appCache';
 import { signOut } from '@/config/amplifyUnified';
 
 // Add global window-level cache to ensure cross-component deduplication
 if (typeof window !== 'undefined') {
   // Initialize global cache object if it doesn't exist
-  appCache.getAll() = appCache.getAll() || {};
+  if (!appCache.getAll()) appCache.init();
   // Initialize profile request tracking
   window.__PENDING_PROFILE_REQUEST = window.__PENDING_PROFILE_REQUEST || null;
 }
@@ -116,7 +114,7 @@ export const getCurrentUser = async (isDashboardRoute = false) => {
     
     // Store in global cache if available
     if (typeof window !== 'undefined' && appCache.getAll()) {
-      appCache.getAll().userProfile = transformedUser;
+      appCache.set('userProfile', transformedUser);
     }
     
     return transformedUser;
@@ -147,7 +145,7 @@ export const logout = async () => {
   
   // Clear global cache if available
   if (typeof window !== 'undefined' && appCache.getAll()) {
-    appCache.getAll().userProfile = null;
+    appCache.set('userProfile', null);
   }
   
   // Call Auth API to complete logout
@@ -169,7 +167,7 @@ export const clearUserCache = () => {
   
   // Clear global cache if available
   if (typeof window !== 'undefined' && appCache.getAll()) {
-    appCache.getAll().userProfile = null;
+    appCache.set('userProfile', null);
   }
 };
 
@@ -222,13 +220,16 @@ export const getUserProfile = async (tenantId) => {
   }
   
   // Check for cached data in global app cache
-  if (typeof window !== 'undefined' && appCache.getAll()
-    const { data, timestamp } = appCache.getAll().userProfile;
-    if (data && (now - timestamp < CACHE_TTL)) {
-      logger.debug('[UserService] Using global-cached profile data');
-      currentUserCache = data;
-      lastCacheTime = timestamp;
-      return data;
+  if (typeof window !== 'undefined' && appCache.getAll()) {
+    const userProfile = appCache.get('userProfile');
+    if (userProfile) {
+      const { data, timestamp } = userProfile;
+      if (data && (now - timestamp < CACHE_TTL)) {
+        logger.debug('[UserService] Using global-cached profile data');
+        currentUserCache = data;
+        lastCacheTime = timestamp;
+        return data;
+      }
     }
   }
   
@@ -268,11 +269,11 @@ export const getUserProfile = async (tenantId) => {
       
       // Update global cache
       if (typeof window !== 'undefined') {
-        appCache.getAll() = appCache.getAll() || {};
-        appCache.getAll().userProfile = {
+        if (!appCache.getAll()) appCache.init();
+        appCache.set('userProfile', {
           data,
           timestamp: now
-        };
+        });
       }
       
       return data;

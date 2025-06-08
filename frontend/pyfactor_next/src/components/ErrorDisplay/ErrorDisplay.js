@@ -1,5 +1,6 @@
-// src/components/ErrorDisplay/ErrorDisplay.js
 'use client';
+
+// src/components/ErrorDisplay/ErrorDisplay.js
 
 import { useTranslation } from 'react-i18next';
 

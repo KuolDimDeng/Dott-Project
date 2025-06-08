@@ -1,17 +1,14 @@
-import appCache from '../utils/appCache';
-
 'use client';
 
+import { appCache } from '../utils/appCache';
+
+
 import React, { useState, useEffect } from 'react';
-import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { appCache } from '../utils/appCache';
 import { useAuth } from '@/hooks/auth';
-import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import ConfigureAmplify from '@/components/ConfigureAmplify';
 import NextLink from 'next/link';
-import { appCache } from '../utils/appCache';
 import { Box, Button, TextField, Typography, Alert, CircularProgress, Container, Paper, Divider } from '@/components/ui/TailwindComponents';
 
 const REDIRECT_DELAY = 1500; // Delay before redirect after successful signup
@@ -281,8 +278,8 @@ export default function SignUp() {
       try {
         // Initialize app cache if needed
         if (typeof window !== 'undefined') {
-          if (!appCache.getAll()) appCache.getAll() = {};
-          if (!appCache.getAll().auth) appCache.getAll().auth = {};
+          if (!appCache.getAll()) appCache.init();
+          if (!appCache.getAll().auth) appCache.set('auth', {});
           
           // Store verification data in app cache
           appCache.set('auth.signupCodeSent', true);
@@ -454,8 +451,8 @@ export default function SignUp() {
                     setError('');
                     // Initialize app cache if it doesn't exist
                     if (typeof window !== 'undefined') {
-                      if (!appCache.getAll()) appCache.getAll() = {};
-                      if (!appCache.getAll().auth) appCache.getAll().auth = {};
+                      if (!appCache.getAll()) appCache.init();
+                      if (!appCache.getAll().auth) appCache.set('auth', {});
                       // Remove loading state from app cache
                       delete appCache.get('auth.loadingState');
                       // For backward compatibility
@@ -510,8 +507,8 @@ export default function SignUp() {
                             setError('');
                             // Initialize app cache if it doesn't exist
                             if (typeof window !== 'undefined') {
-                              if (!appCache.getAll()) appCache.getAll() = {};
-                              if (!appCache.getAll().auth) appCache.getAll().auth = {};
+                              if (!appCache.getAll()) appCache.init();
+                              if (!appCache.getAll().auth) appCache.set('auth', {});
                               // Remove loading state from app cache
                               delete appCache.get('auth.loadingState');
                               // For backward compatibility
@@ -529,7 +526,7 @@ export default function SignUp() {
                             // Clear app cache
                             if (typeof window !== 'undefined') {
                               if (appCache.getAll() && appCache.getAll().auth) {
-                                appCache.getAll().auth = {};
+                                appCache.set('auth', {});
                               }
                               // Also clear sessionStorage for backward compatibility
                               sessionStorage.clear();

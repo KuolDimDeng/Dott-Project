@@ -1,5 +1,6 @@
-// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/component/ChartContainer.js
 'use client';
+
+// /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/chart/component/ChartContainer.js
 import React, { useState, useEffect } from 'react';
 import ChartComponent from './ChartComponents';
 

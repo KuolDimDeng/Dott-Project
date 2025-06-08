@@ -1,5 +1,6 @@
 'use client';
 
+
 import { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { LockClosedIcon } from '@heroicons/react/24/outline';

@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * react-chartjs-2 Stub
  * 
@@ -5,7 +7,6 @@
  * to prevent errors when the actual library is not available.
  */
 
-'use client';
 import React from 'react';
 import Chart from './chart-stub';
 

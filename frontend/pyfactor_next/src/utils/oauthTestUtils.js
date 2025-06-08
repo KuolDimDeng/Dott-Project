@@ -1,4 +1,4 @@
-import appCache from '../utils/appCache';
+import { appCache } from '../utils/appCache';
 
 /**
  * OAuth Testing Utilities
@@ -6,11 +6,8 @@ import appCache from '../utils/appCache';
  * Helper functions to test and verify OAuth flow functionality
  */
 
-import { appCache } from '../utils/appCache';
 import { cognitoAuth } from '@/lib/cognitoDirectAuth';
-import { appCache } from '../utils/appCache';
 import { CognitoAttributes } from '@/utils/CognitoAttributes';
-import { appCache } from '../utils/appCache';
 import { OAuthDebugUtils } from '@/utils/oauthDebugUtils';
 
 export const OAuthTestUtils = {

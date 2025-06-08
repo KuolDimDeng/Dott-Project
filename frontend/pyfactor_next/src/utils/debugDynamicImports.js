@@ -1,5 +1,6 @@
 'use client';
 
+
 /**
  * Simplified debug utility for dynamic imports
  * This version removes all the monkey patching and complex debugging

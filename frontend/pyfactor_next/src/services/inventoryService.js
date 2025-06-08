@@ -1,21 +1,14 @@
-import appCache from '../utils/appCache';
-
 'use client';
+
 
 import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
-import { appCache } from '../utils/appCache';
 import { fetchData } from './apiService';
-import { appCache } from '../utils/appCache';
 import { inventoryCache } from '@/utils/enhancedCache';
-import { appCache } from '../utils/appCache';
 import { checkAndFixTenantId } from '@/utils/fixTenantId';
-import { appCache } from '../utils/appCache';
 import { axiosInstance } from '@/lib/axiosConfig';
 import userService from './userService';
-import { appCache } from '../utils/appCache';
 import { getTenantHeaders } from '@/utils/tenantUtils';
-import { appCache } from '../utils/appCache';
 import { setTokens, forceValidateTenantId, getTenantId, getSchemaName } from '@/utils/tenantUtils';
 
 // Add initialization of global app cache after imports
@@ -1129,23 +1122,15 @@ export const getOfflineProducts = () => {
   try {
     // Get from app cache
     if (typeof window !== 'undefined' && appCache.getAll()) {
-      logger.debug(`Retrieved ${appCache.get('offline.products').length} products from app cache`);
-      return appCache.get('offline.products');
-    }
-    }
-  
-      // Get offline products
-  getOfflineProducts() {
-    if (typeof window !== 'undefined' && appCache) {
-      if (appCache.get('offline.products')) {
-        return appCache.get('offline.products');
+      const offlineProducts = appCache.get('offline.products');
+      if (offlineProducts && offlineProducts.length) {
+        logger.debug(`Retrieved ${offlineProducts.length} products from app cache`);
+        return offlineProducts;
       }
-    } else {
-      logger.debug('No products found in app cache for offline use');
-      return [];
     }
+    return [];
   } catch (error) {
-    logger.error('Failed to get offline products:', error);
+    logger.error('Error retrieving offline products:', error);
     return [];
   }
 };
@@ -1342,5 +1327,3 @@ export const inventoryService = {
 };
 
 export default inventoryService;
-}
-}
