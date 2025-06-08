@@ -229,7 +229,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
       // Try to get the session for auth
       const { fetchAuthSession } = await import('@/utils/auth0Adapter');
       import('@/utils/auth0Adapter');
-      const session = await getAuth0Session();
+      const session = await fetchAuthSession();
       if (session?.tokens?.idToken) {
         headers['Authorization'] = `Bearer ${session.tokens.idToken.toString()}`;
       }
@@ -644,10 +644,11 @@ export default function DashboardClient({ newAccount, plan, createTenant, busine
       
       try {
         // Check Cognito identity and attributes
+        const { fetchAuthSession, fetchUserAttributes } = await         
         try {
           // Get Cognito session
-          const session = await getAuth0Session();
-          const identityToken = session?.id_token || session?.idToken;
+          const session = await fetchAuthSession();
+          const identityToken = session?.tokens?.idToken?.toString();
           
           if (!identityToken) {
             throw new Error('No valid identity token found');

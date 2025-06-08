@@ -163,7 +163,7 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
     if (typeof window !== 'undefined' && appCache.getAll()) {
-      tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+      tenantId = (appCache && appCache.get('tenant.id'));
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for HR API: ${tenantId}`);
     } else {
       // Try to get tenant ID from Cognito if needed
@@ -195,7 +195,7 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
     
     // Get auth token from APP_CACHE if available
     if (typeof window !== 'undefined' && appCache.getAll()
-      const token = (appCache && (appCache && appCache.get('auth.token')));
+      const token = (appCache && appCache.get('auth.token'));
       if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for HR API`);
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -215,7 +215,7 @@ payrollApiInstance.interceptors.request.use(async (config) => {
     // Get tenant ID from APP_CACHE if available
     let tenantId = null;
     if (typeof window !== 'undefined' && appCache.getAll()) {
-      tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+      tenantId = (appCache && appCache.get('tenant.id'));
       logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for Payroll API: ${tenantId}`);
     } else {
       // Try to get tenant ID from Cognito if needed
@@ -250,7 +250,7 @@ payrollApiInstance.interceptors.request.use(async (config) => {
     
     // Get auth token from APP_CACHE if available
     if (typeof window !== 'undefined' && appCache.getAll()
-      const token = (appCache && (appCache && appCache.get('auth.token')));
+      const token = (appCache && appCache.get('auth.token'));
       if (token) {
         logger.debug(`[AxiosConfig] Using auth token from APP_CACHE for Payroll API`);
         config.headers['Authorization'] = `Bearer ${token}`;
@@ -393,7 +393,7 @@ axiosInstance.interceptors.request.use(
           
           // Use AWS AppCache for tenant ID - prioritize this over other sources
           if (appCache.getAll()
-            const cachedTenantId = (appCache && (appCache && appCache.get('tenant.id')));
+            const cachedTenantId = (appCache && appCache.get('tenant.id'));
             config.headers = {
               ...config.headers,
               'X-Tenant-ID': cachedTenantId
@@ -412,7 +412,7 @@ axiosInstance.interceptors.request.use(
           
           // Use AWS AppCache for auth tokens if available
           if (appCache.getAll()
-            config.headers.Authorization = `Bearer ${(appCache && (appCache && appCache.get('auth.token')))}`;
+            config.headers.Authorization = `Bearer ${(appCache && appCache.get('auth.token'))}`;
             logger.debug('[AxiosConfig] Using auth token from APP_CACHE');
           } else {
             // Fall back to Amplify Auth
@@ -804,7 +804,7 @@ const verifyBackendConnection = async () => {
     let tenantId = null;
     if (typeof window !== 'undefined') {
       if (appCache.getAll()
-        tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+        tenantId = (appCache && appCache.get('tenant.id'));
         logger.debug(`[BackendConnectionCheck] Using tenant ID from APP_CACHE: ${tenantId}`);
       } else {
         try {
@@ -997,7 +997,7 @@ const diagnoseAndFixBackendConnection = async () => {
     if (typeof window !== 'undefined') {
       // Use APP_CACHE if available
       if (appCache.getAll()
-        tenantId = (appCache && (appCache && appCache.get('tenant.id')));
+        tenantId = (appCache && appCache.get('tenant.id'));
       } else {
         // Try to dynamically import and use tenantUtils
         const { getTenantId } = await import('@/utils/tenantUtils');

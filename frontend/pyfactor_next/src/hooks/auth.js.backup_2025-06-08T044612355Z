@@ -4,10 +4,11 @@ import appCache from '../utils/appCache';
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { SafeHub } from '../utils/safeHub';
-// Removed CognitoNetworkDiagnostic import - using Auth0
+import {
+import { SafeHub } from '@/utils/safeHub';
+import { CognitoNetworkDiagnostic } from '@/utils/cognitoNetworkDiagnostic';
 import { useSession } from './useSession';
-// Removed setupHubDeduplication import - using Auth0
+import { setupHubDeduplication } from '@/utils/refreshUserSession';
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
 
 

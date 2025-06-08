@@ -196,6 +196,8 @@ const user = await getAuth0UserProfile();
 // Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchAuthSession } = await import('@/config/amplifyUnified');
 const session = await getAuth0Session();
+const session = await getAuth0Session();
+      const session = await fetchAuthSession();
       
       if (session && session.tokens) {
         const claims = session.tokens.idToken?.payload || {};
@@ -818,18 +820,20 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
 // Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchAuthSession } = await import('@/config/amplifyUnified');
 const session = await getAuth0Session();
+const session = await getAuth0Session();
+                  const session = await fetchAuthSession();
                   
                   if (session && session.tokens) {
                     // Store tokens in sessionStorage for fallback
-                    sessionStorage.setItem('idToken', session?.id_token || session?.idToken);
+                    sessionStorage.setItem('idToken', session.tokens.idToken.toString());
                     sessionStorage.setItem('accessToken', session.tokens.accessToken.toString());
                     sessionStorage.setItem('tokenTimestamp', Date.now().toString());
                     sessionStorage.setItem('hasSession', 'true');
                     
                     // Also store in APP_CACHE
                     if (!appCache.get('auth')) appCache.set('auth', {});
-                    appCache.set('auth.idToken', session?.id_token || session?.idToken);
-                    appCache.set('auth.token', session?.id_token || session?.idToken);
+                    appCache.set('auth.idToken', session.tokens.idToken.toString());
+                    appCache.set('auth.token', session.tokens.idToken.toString());
                     appCache.set('auth.accessToken', session.tokens.accessToken.toString());
                     appCache.set('auth.hasSession', true);
                     appCache.set('auth.provider', 'cognito');
