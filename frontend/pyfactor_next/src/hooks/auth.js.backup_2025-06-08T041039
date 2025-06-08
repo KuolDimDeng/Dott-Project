@@ -1,23 +1,17 @@
 'use client';
 
 import appCache from '../utils/appCache';
+
+
+
+
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
 import {
-import { SafeHub } from '@/utils/safeHub';
-import { CognitoNetworkDiagnostic } from '@/utils/cognitoNetworkDiagnostic';
-import { useSession } from './useSession';
-import { setupHubDeduplication } from '@/utils/refreshUserSession';
-import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
-
-
-
-
-
-
-
-
   signIn as authSignIn,
   signUp as authSignUp,
   confirmSignUp as authConfirmSignUp,
@@ -29,6 +23,16 @@ import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
   resendSignUpCode as authResendSignUpCode,
   updateUserAttributes
 } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
+import { SafeHub } from '@/utils/safeHub';
+import { appCache } from '../utils/appCache';
+import { CognitoNetworkDiagnostic } from '@/utils/cognitoNetworkDiagnostic';
+import { appCache } from '../utils/appCache';
+import { useSession } from './useSession';
+import { appCache } from '../utils/appCache';
+import { setupHubDeduplication } from '@/utils/refreshUserSession';
+import { appCache } from '../utils/appCache';
+import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
 
 // Initialize Hub protection on import
 setupHubDeduplication();

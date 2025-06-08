@@ -212,3 +212,5 @@ This document tracks all scripts used for the pyfactor project, their execution 
 - **Status**: ✅ Completed
 | Version0173_fix_remaining_appCache_errors.mjs | Fix remaining appCache syntax errors | Completed | 2025-06-08 |
 | Version0174_deploy_remaining_appCache_fixes.mjs | Deploy remaining appCache syntax error fixes | Completed | 2025-06-08 |
+| Version0175_fix_appCache_import_errors.mjs | Fix appCache import errors causing build failure | Completed | 2025-06-08 |
+| Version0176_deploy_appCache_import_fixes.mjs | Deploy appCache import error fixes | Completed | 2025-06-08 |

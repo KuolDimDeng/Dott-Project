@@ -1,14 +1,11 @@
-'use client';
-
 import appCache from '../utils/appCache';
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 'use client';
 
-
-
-
+import { appCache } from '../utils/appCache';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { appCache } from '../utils/appCache';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 const REFRESH_COOLDOWN_MS = 15000; // 15 seconds between refreshes
 const RECOVERY_COOLDOWN_MS = 10000; // 10 seconds between recovery attempts

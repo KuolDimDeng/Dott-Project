@@ -1,15 +1,35 @@
 'use client';
 
+
+
+
+
+
+
+import React, { useState, useEffect } from 'react';
+import { appCache } from '../utils/appCache';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { appCache } from '../../../utils/appCache';
-import { useAuth0 } from '@auth0/auth0-react';
-
+import { appCache } from '../utils/appCache';
+import {
   signInWithConfig as amplifySignIn,
   signInWithRedirect,
   directOAuthSignIn,
   signIn
 } from '@/config/amplifyUnified';
+import { appCache } from '../utils/appCache';
+import { logger } from '@/utils/logger';
+import { appCache } from '../utils/appCache';
+import { createTenantForUser, updateUserWithTenantId, fixOnboardingStatusCase, storeTenantId } from '@/utils/tenantUtils';
+import { appCache } from '../utils/appCache';
+import { ensureUserCreatedAt , prepareForSignIn} from '@/utils/authUtils';
+import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import ReactivationDialog from './ReactivationDialog';
+import { appCache } from '../utils/appCache';
+import { checkDisabledAccount } from '@/lib/account-reactivation';
+import { appCache } from '../utils/appCache';
+import { getCsrfToken } from 'next-auth/react';
+
 // Initialize global app cache for auth
 if (typeof window !== 'undefined') {
   // Initialize app cache properly
@@ -586,7 +606,14 @@ export default function SignInForm() {
       }
       
       // Production authentication flow - using enhanced signIn function that ensures configuration
-      const authResult = await loginWithAuth0();
+      const authResult = await signIn({
+        username: formData.username,
+        password: formData.password,
+        options: {
+          // Using standard SRP authentication for security
+          authFlowType: 'USER_SRP_AUTH'
+        }
+      });
       
       logger.debug('[SignInForm] Sign-in result', { 
         isSignedIn: authResult.isSignedIn,
