@@ -196,7 +196,7 @@ export async function GET() {
             sessionCurrentStep: user.currentStep || user.current_onboarding_step,
             backendCurrentStep: backendUser.current_onboarding_step,
             finalCurrentStep: profileData.currentStep,
-            sessionNeedsOnboarding: sessionNeedsOnboarding,
+            sessionNeedsOnboarding: user.needsOnboarding,
             backendNeedsOnboarding: backendUser.needs_onboarding,
             finalNeedsOnboarding: profileData.needsOnboarding,
             sessionBusinessInfoCompleted: user.businessInfoCompleted,

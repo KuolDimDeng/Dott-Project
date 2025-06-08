@@ -12,7 +12,7 @@ import DashboardLoader from '@/components/DashboardLoader';
 import { storeTenantId, getTenantIdFromCognito } from '@/utils/tenantUtils';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { UserProfileProvider } from '@/contexts/UserProfileContext';
-import { fetchUserAttributes } from '@/config/amplifyUnified';
+// import { fetchUserAttributes } from '@/config/amplifyUnified'; // No longer using Cognito
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
 
@@ -104,38 +104,65 @@ export default function TenantDashboard() {
         // Check cookie auth token
         const idToken = Cookies.get('idToken') || sessionStorage.getItem('idToken');
         
-        // Normal authentication flow
+        // Normal authentication flow - Check Auth0 authentication
         try {
-          // First try Cognito
-          const fetchedUserAttributes = await fetchUserAttributes();
-          setUserAttributes(fetchedUserAttributes);
-          logger.debug('[TenantDashboard] User attributes:', fetchedUserAttributes);
+          // Check Auth0 authentication
+          const authResponse = await fetch('/api/auth/me');
+          
+          if (!authResponse.ok) {
+            throw new Error('Not authenticated');
+          }
+          
+          const authData = await authResponse.json();
+          
+          if (!authData.authenticated) {
+            throw new Error('Not authenticated');
+          }
+          
+          logger.debug('[TenantDashboard] Auth0 user authenticated:', authData.user?.email);
+          
+          // Get user profile to check tenant and onboarding status
+          const profileResponse = await fetch('/api/auth/profile');
+          
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            
+            // Check if user has access to this tenant
+            const userTenantId = profileData.tenantId || profileData.tenant_id;
+            
+            if (userTenantId !== tenantId) {
+              logger.warn('[TenantDashboard] Tenant ID mismatch:', {
+                urlTenantId: tenantId,
+                userTenantId
+              });
+              
+              // Redirect to correct tenant dashboard
+              if (userTenantId) {
+                router.push(`/tenant/${userTenantId}/dashboard`);
+                return;
+              }
+            }
+            
+            // Check if user needs onboarding
+            if (profileData.needsOnboarding && !profileData.onboardingCompleted) {
+              logger.info('[TenantDashboard] User needs onboarding, redirecting');
+              router.push('/onboarding');
+              return;
+            }
+            
+            setUserAttributes(profileData);
+          }
           
           // If the fetch succeeds, we're authenticated
           setAuthChecked(true);
           
-          // Check if tenant ID matches what's in Cognito
-          const cognitoTenantId = fetchedUserAttributes['custom:tenant_ID'] || 
-                                 fetchedUserAttributes['custom:businessid'] || 
-                                 getFallbackTenantId();
-          
-          // If tenant IDs don't match, either store the new one or redirect
-          if (cognitoTenantId && cognitoTenantId !== tenantId) {
-            // For now, we'll allow the access but update our tracking
-            // This could be modified to redirect if desired
-            logger.warn('[TenantDashboard] Tenant ID mismatch:', {
-              urlTenantId: tenantId,
-              cognitoTenantId
-            });
-            
-            // Store the current tenant ID as the active one
-            storeTenantId(tenantId);
-          }
+          // Store the current tenant ID as the active one
+          storeTenantId(tenantId);
           
           // Set tenant as active
           setTenantStatus('active');
         } catch (authError) {
-          logger.warn('[TenantDashboard] Cognito auth check failed:', authError);
+          logger.warn('[TenantDashboard] Auth0 auth check failed:', authError);
           
           // If we have idToken in cookies/storage but Cognito check failed,
           // try emergency fallback
