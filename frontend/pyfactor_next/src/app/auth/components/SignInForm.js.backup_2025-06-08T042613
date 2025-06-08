@@ -170,6 +170,7 @@ const getTenantIdFromSources = async () => {
 // Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
 const user = await getAuth0UserProfile();
+const user = await getAuth0UserProfile();
       const currentUser = await getCurrentUser();
       
       if (currentUser) {

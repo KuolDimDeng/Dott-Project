@@ -218,5 +218,9 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0178_deploy_amplify_removal_and_appCache_fixes.mjs | Deploy Amplify removal and appCache fixes | Completed | 2025-06-08 |
 | Version0179_fix_amplify_import_syntax_errors.mjs | 2025-06-08 | Fixes syntax errors in components with incorrect Amplify imports | Completed |
 | Version0180_deploy_amplify_import_syntax_fixes.mjs | 2025-06-08 | Deploys fixes for Amplify import syntax errors | Completed |
+| Version0181_fix_remaining_amplify_syntax_errors.mjs | 2025-06-08 | Fixes remaining syntax errors in files with Amplify imports | Completed |
+| Version0182_deploy_remaining_amplify_fixes.mjs | 2025-06-08 | Deploys fixes for remaining Amplify syntax errors | Completed |
+
+
 
 
