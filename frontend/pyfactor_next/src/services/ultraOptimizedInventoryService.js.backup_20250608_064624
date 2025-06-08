@@ -273,6 +273,7 @@ export const ultraOptimizedInventoryService = {
       logger.debug('Cleared ultra product cache from APP_CACHE');
     }
   }
+}
   },
 
   /**

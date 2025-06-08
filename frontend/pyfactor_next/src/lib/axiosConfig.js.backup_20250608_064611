@@ -134,7 +134,7 @@ axiosInstance.interceptors.request.use(async (config) => {
 
     return config;
   } catch (error) {
-    logger.error('[AxiosConfig] Error in API request interceptor:', error);
+    logger.error('[AxiosConfig] Error in AWS RDS request interceptor:', error);
     return config;
   }
 });
@@ -152,7 +152,7 @@ serverAxiosInstance.interceptors.request.use(async (config) => {
     
     return config;
   } catch (error) {
-    logger.error('[AxiosConfig] Error in API request interceptor:', error);
+    logger.error('[AxiosConfig] Error in AWS RDS request interceptor:', error);
     return config;
   }
 });
@@ -204,7 +204,7 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
 
     return config;
   } catch (error) {
-    logger.error('[AxiosConfig] Error in API request interceptor:', error);
+    logger.error('[AxiosConfig] Error in HR API request interceptor:', error);
     return config;
   }
 });
@@ -259,7 +259,7 @@ payrollApiInstance.interceptors.request.use(async (config) => {
 
     return config;
   } catch (error) {
-    logger.error('[AxiosConfig] Error in API request interceptor:', error);
+    logger.error('[AxiosConfig] Error in Payroll API request interceptor:', error);
     return config;
   }
 });

@@ -6,9 +6,9 @@ import appCache from '../utils/appCache';
  * Provides enhanced error handling and retries for AWS Amplify operations
  */
 
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { 
   trackCognitoFailure, 
   trackCognitoSuccess, 
@@ -17,7 +17,7 @@ import {
   resetCognitoCircuit, 
   getCognitoCircuitState 
 } from './networkMonitor';
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { getFallbackTenantId } from './tenantFallback';
 import { appCache } from '../utils/appCache';
 import { updateUserAttributes } from '@/config/amplifyUnified';

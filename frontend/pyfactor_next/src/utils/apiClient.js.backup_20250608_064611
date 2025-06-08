@@ -1,10 +1,10 @@
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { apiRequest, invalidateCache } from './apiHelpers';
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { axiosInstance, backendHrApiInstance } from '@/lib/axiosConfig';
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { getTenantId } from './tenantUtils';
-// Removed duplicate import
+import { appCache } from '../utils/appCache';
 import { logger } from './logger';
 import axios from 'axios';
 import { getAppCacheItem, setAppCacheItem } from '@/utils/appCache';

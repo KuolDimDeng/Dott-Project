@@ -1134,7 +1134,7 @@ export const getOfflineProducts = () => {
     }
     }
   
-      // Get offline products
+    // Get offline products
   getOfflineProducts() {
     if (typeof window !== 'undefined' && appCache) {
       if (appCache.get('offline.products')) {
@@ -1342,5 +1342,4 @@ export const inventoryService = {
 };
 
 export default inventoryService;
-}
 }
