@@ -91,8 +91,7 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
-      // Remove domain to let browser handle it automatically
-      // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
     };
     
     return { updatedCookie, cookieOptions, success: true };
@@ -265,8 +264,6 @@ export async function POST(request) {
     // 8. Create response with updated session cookie
     const response = NextResponse.json(responseData);
     
-    console.log('[CompleteOnboarding] Setting updated session cookie with onboarding complete status');
-    console.log('[CompleteOnboarding] Cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
     response.cookies.set('appSession', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
     
     // Set additional cookies for compatibility

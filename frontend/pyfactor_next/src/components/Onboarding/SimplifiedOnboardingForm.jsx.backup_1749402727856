@@ -175,18 +175,7 @@ export default function SimplifiedOnboardingForm() {
         
         // Force a full page reload to refresh the session
         // Using window.location.href instead of router.push to ensure session is refreshed
-        // Refresh the session to ensure onboarding status is updated
-        setTimeout(async () => {
-          try {
-            console.log('[SimplifiedOnboarding] Refreshing session before redirect...');
-            await fetch('/api/auth/refresh-session', { method: 'POST' });
-          } catch (error) {
-            console.error('[SimplifiedOnboarding] Session refresh failed:', error);
-          }
-          
-          console.log('[SimplifiedOnboarding] Redirecting to dashboard...');
-          window.location.href = result.redirect_url;
-        }, 500); // 500ms delay to ensure cookie is set // 500ms delay to ensure cookie is set
+        window.location.href = result.redirect_url;
       } else {
         throw new Error(result.message || 'Failed to complete onboarding');
       }
