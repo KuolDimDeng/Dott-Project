@@ -6,6 +6,7 @@ export const useAuth0Data = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [businessName, setBusinessName] = useState(null);
 
   const fetchAuth0Session = useCallback(async () => {
     try {
@@ -137,18 +138,44 @@ export const useAuth0Data = () => {
     return '';
   }, []);
 
+  // Get business name synchronously (returns current cached value)
+  const getBusinessNameSync = useCallback(() => {
+    // Return the state value
+    return businessName || '';
+  }, [businessName]);
+
   // Initialize on mount
   useEffect(() => {
     fetchAuth0Session();
   }, [fetchAuth0Session]);
+  
+  // Fetch business name when user is loaded
+  useEffect(() => {
+    if (user && !isLoading) {
+      // If user has businessName in session, use it
+      if (user.businessName) {
+        setBusinessName(user.businessName);
+        setCache('business_info', { businessName: user.businessName }, { ttl: 300000 });
+      } else {
+        // Otherwise fetch it
+        getBusinessName().then(name => {
+          if (name) {
+            setBusinessName(name);
+          }
+        });
+      }
+    }
+  }, [user, isLoading, getBusinessName]);
 
   return {
     user,
     isLoading,
     error,
+    businessName,
     getUserInitials,
     getFullName,
     getBusinessName,
+    getBusinessNameSync,
     refetch: fetchAuth0Session
   };
 }; 

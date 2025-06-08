@@ -103,8 +103,10 @@ const DashAppBar = ({
     user: auth0User, 
     isLoading: auth0Loading, 
     error: auth0Error,
+    businessName: auth0BusinessName,
     getFullName: getAuth0FullName,
-    getBusinessName: getAuth0BusinessName
+    getBusinessName: getAuth0BusinessName,
+    getBusinessNameSync: getAuth0BusinessNameSync
   } = useAuth0Data();
   
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
@@ -216,11 +218,30 @@ const DashAppBar = ({
       hasProfileData: !!propProfileData,
     });
     
+    // Immediately try to fetch business name on mount
+    const fetchInitialBusinessName = async () => {
+      try {
+        const profileResponse = await fetch('/api/auth/profile');
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          if (profileData?.businessName && isMounted.current) {
+            logger.info('[DashAppBar] Initial business name from profile:', profileData.businessName);
+            setBusinessName(profileData.businessName);
+            setFetchedBusinessName(profileData.businessName);
+          }
+        }
+      } catch (error) {
+        logger.error('[DashAppBar] Error fetching initial business name:', error);
+      }
+    };
+    
+    fetchInitialBusinessName();
+    
     // Cleanup function to prevent updates after unmount
     return () => {
       isMounted.current = false;
     };
-  }, [userAttributes, propUserData, propProfileData]);
+  }, []);
 
   // Simple utility function to generate user initials (replaces CognitoAttributes.getUserInitials)
   const generateInitialsFromNames = (firstName, lastName, email) => {
@@ -247,13 +268,22 @@ const DashAppBar = ({
     }
   }, [cachedProfileData, profileData]);
 
-  // Process business name updates - use refs to track state and avoid loops
+  // Process business name updates - prioritize Auth0 business name
   useEffect(() => {
+    // Prioritize auth0BusinessName from the hook
+    if (auth0BusinessName && auth0BusinessName !== businessName) {
+      logger.debug('[DashAppBar] Setting business name from Auth0 hook:', auth0BusinessName);
+      setBusinessName(auth0BusinessName);
+      setFetchedBusinessName(auth0BusinessName);
+      return;
+    }
+    
     // Skip if we've already set it and there's no change in dependencies
     if (hasSetBusinessNameRef.current && 
         userAttributes === prevPropsRef.current.userAttributes &&
         userData === prevPropsRef.current.userData &&
-        profileData === prevPropsRef.current.profileData) {
+        profileData === prevPropsRef.current.profileData &&
+        !auth0BusinessName) {
       return;
     }
     
@@ -274,11 +304,12 @@ const DashAppBar = ({
     const cachedName = cachedProfileData?.businessName;
     
     // Check if we have a valid business name from any source
-    const newBusinessName = cognitoName || userDataName || profileDataName || cachedName || '';
+    const newBusinessName = auth0BusinessName || cognitoName || userDataName || profileDataName || cachedName || '';
     
     // Reduced logging for production
     if (process.env.NODE_ENV !== 'production') {
       logger.debug('[DashAppBar] Business name sources:', {
+        auth0BusinessName,
         cognitoName,
         userDataName,
         profileDataName,
@@ -291,7 +322,8 @@ const DashAppBar = ({
       if (process.env.NODE_ENV !== 'production') {
         logger.debug('[DashAppBar] Setting business name from data source:', {
           name: newBusinessName,
-          source: cognitoName ? 'cognito' : 
+          source: auth0BusinessName ? 'auth0' :
+                  cognitoName ? 'cognito' : 
                   userDataName ? 'userData' : 
                   profileDataName ? 'profileData' : 
                   'cachedData'
@@ -307,7 +339,7 @@ const DashAppBar = ({
         appCache.set('tenant.businessName', newBusinessName);
       }
     }
-  }, [userAttributes, userData, profileData, cachedProfileData, user, businessName]);
+  }, [auth0BusinessName, userAttributes, userData, profileData, cachedProfileData, user, businessName]);
   
   // Separate effect for updating parent userData - runs only when needed to avoid loops
   useEffect(() => {
@@ -827,22 +859,55 @@ const DashAppBar = ({
     }
   }, [auth0User, auth0Loading, generateInitialsFromNames]);
 
-  // Update business name from Auth0 business info cache
+  // Fetch business name from session and profile
   useEffect(() => {
-    if (!auth0Loading) {
-      const fetchBusinessName = async () => {
-        const auth0BusinessName = await getAuth0BusinessName();
-        if (auth0BusinessName) {
-          logger.debug('[DashAppBar] Setting business name from Auth0 cache:', auth0BusinessName);
-          setFetchedBusinessName(auth0BusinessName);
-          if (!businessName) {
-            setBusinessName(auth0BusinessName);
+    const fetchBusinessNameData = async () => {
+      try {
+        // First try to get from session
+        const sessionResponse = await fetch('/api/auth/session');
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          if (sessionData?.user?.businessName) {
+            logger.debug('[DashAppBar] Found business name in session:', sessionData.user.businessName);
+            setBusinessName(sessionData.user.businessName);
+            setFetchedBusinessName(sessionData.user.businessName);
+            return;
           }
         }
-      };
-      fetchBusinessName();
+        
+        // If not in session, try profile API
+        const profileResponse = await fetch('/api/auth/profile');
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          if (profileData?.businessName) {
+            logger.debug('[DashAppBar] Found business name in profile:', profileData.businessName);
+            setBusinessName(profileData.businessName);
+            setFetchedBusinessName(profileData.businessName);
+            return;
+          }
+        }
+        
+        // Finally, try the async getBusinessName function
+        if (!auth0Loading) {
+          const auth0BusinessName = await getAuth0BusinessName();
+          if (auth0BusinessName) {
+            logger.debug('[DashAppBar] Found business name from Auth0 hook:', auth0BusinessName);
+            setFetchedBusinessName(auth0BusinessName);
+            if (!businessName) {
+              setBusinessName(auth0BusinessName);
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('[DashAppBar] Error fetching business name:', error);
+      }
+    };
+    
+    // Only fetch if we don't already have a business name
+    if (!businessName && !fetchedBusinessName) {
+      fetchBusinessNameData();
     }
-  }, [auth0Loading, getAuth0BusinessName]);
+  }, [auth0Loading, getAuth0BusinessName, businessName, fetchedBusinessName]);
 
   return (
     <>

@@ -62,7 +62,10 @@ export async function GET() {
       current_onboarding_step: user.current_onboarding_step,
       businessInfoCompleted: user.businessInfoCompleted,
       lastUpdated: user.lastUpdated,
-      tenantId: user.tenantId || user.tenant_id
+      tenantId: user.tenantId || user.tenant_id,
+      businessName: user.businessName,
+      businessType: user.businessType,
+      subscriptionPlan: user.subscriptionPlan
     });
     
     console.log('🚨 [PROFILE API] === SESSION DATA ANALYSIS ===');
@@ -95,7 +98,11 @@ export async function GET() {
       onboardingCompleted: user.onboardingCompleted === true,
       currentStep: user.currentStep || user.current_onboarding_step || 'business_info',
       tenantId: user.tenantId || user.tenant_id,
-      businessInfoCompleted: user.businessInfoCompleted === true
+      businessInfoCompleted: user.businessInfoCompleted === true,
+      // Include business info from session
+      businessName: user.businessName,
+      businessType: user.businessType,
+      subscriptionPlan: user.subscriptionPlan
     };
     
     console.log('🚨 [PROFILE API] === INITIAL PROFILE DATA (FROM SESSION) ===');
@@ -145,37 +152,18 @@ export async function GET() {
             current_onboarding_step: backendUser.current_onboarding_step
           });
           
-          // Try to fetch tenant/business info if we have a tenant ID
+          // Business info is already in session from onboarding
           const backendTenantId = backendUser.tenant_id || backendUser.tenantId;
           let businessInfo = null;
           
-          if (backendTenantId) {
-            try {
-              console.log('[Profile API] Fetching tenant business info for:', backendTenantId);
-              const tenantResponse = await fetch(`${apiBaseUrl}/api/tenants/${backendTenantId}/`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                }
-              });
-              
-              if (tenantResponse.ok) {
-                const tenantData = await tenantResponse.json();
-                businessInfo = {
-                  businessName: tenantData.legal_name || tenantData.business_name || tenantData.name,
-                  businessType: tenantData.business_type,
-                  subscriptionPlan: tenantData.subscription_plan,
-                  country: tenantData.country,
-                  state: tenantData.state,
-                  legalStructure: tenantData.legal_structure
-                };
-                console.log('[Profile API] Tenant business info fetched:', businessInfo);
-              }
-            } catch (tenantError) {
-              console.warn('[Profile API] Error fetching tenant info:', tenantError.message);
-            }
+          // Check if business info is already in the session user data
+          if (user.businessName) {
+            businessInfo = {
+              businessName: user.businessName,
+              businessType: user.businessType,
+              subscriptionPlan: user.subscriptionPlan || 'free'
+            };
+            console.log('[Profile API] Business info from session:', businessInfo);
           }
           
           // Use the tenant ID we already fetched
