@@ -959,7 +959,12 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.debug(f"✅ Successfully retrieved signing key")
             
             # Build expected issuer
-            expected_issuer = f"https://{self.issuer_domain}/"
+            # Check if issuer_domain already contains https://
+            if self.issuer_domain and self.issuer_domain.startswith("https://"):
+                # Remove trailing slash if present and add it back to ensure consistency
+                expected_issuer = self.issuer_domain.rstrip("/") + "/"
+            else:
+                expected_issuer = f"https://{self.issuer_domain}/"
             logger.debug(f"🔍 Expected issuer: {expected_issuer}")
             logger.debug(f"🔍 Expected audience: {self.audience}")
             
