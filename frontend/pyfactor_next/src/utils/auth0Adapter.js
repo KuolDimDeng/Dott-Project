@@ -1,0 +1,288 @@
+/**
+ * auth0Adapter.js
+ * 
+ * This adapter provides Amplify-compatible functions using Auth0 functionality.
+ * It serves as a drop-in replacement for AWS Amplify functions that were used
+ * before migrating to Auth0.
+ */
+
+'use client';
+
+import { useAuth0 } from '@auth0/auth0-react';
+
+/**
+ * Fetches user attributes from Auth0 user profile
+ * (equivalent to Amplify's fetchUserAttributes)
+ */
+export async function fetchUserAttributes() {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.user) {
+      console.warn('[Auth0Adapter] No user found in Auth0 context');
+      return {};
+    }
+    
+    // Format user attributes to match expected structure
+    const { user } = auth0;
+    return {
+      sub: user?.sub,
+      email: user?.email,
+      email_verified: user?.email_verified,
+      name: user?.name,
+      given_name: user?.given_name,
+      family_name: user?.family_name,
+      // Map known Auth0 metadata fields to expected Cognito custom attributes
+      'custom:tenant_ID': user?.['https://dottapps.com/tenant_id'] || '',
+      'custom:tenantId': user?.['https://dottapps.com/tenant_id'] || '',
+      'custom:tenant_id': user?.['https://dottapps.com/tenant_id'] || '',
+      'custom:businessid': user?.['https://dottapps.com/tenant_id'] || '',
+      'custom:businessname': user?.['https://dottapps.com/business_name'] || '',
+      'custom:businesstype': user?.['https://dottapps.com/business_type'] || '',
+      'custom:businesscountry': user?.['https://dottapps.com/business_country'] || '',
+      'custom:onboarding': user?.['https://dottapps.com/onboarding_status'] || '',
+      'custom:setupdone': user?.['https://dottapps.com/setup_done'] || '',
+      ...user
+    };
+  } catch (error) {
+    console.error('[Auth0Adapter] Error fetching user attributes:', error);
+    return {};
+  }
+}
+
+/**
+ * Fetches authentication session from Auth0
+ * (equivalent to Amplify's fetchAuthSession)
+ */
+export async function fetchAuthSession({ forceRefresh = false } = {}) {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.isAuthenticated) {
+      console.warn('[Auth0Adapter] No authenticated session in Auth0 context');
+      return { tokens: null };
+    }
+    
+    const { getAccessTokenSilently, getIdTokenClaims } = auth0;
+    
+    // Force token refresh if needed
+    const options = forceRefresh ? { cacheMode: 'no-cache' } : {};
+    
+    // Get tokens
+    const accessToken = await getAccessTokenSilently(options);
+    const idTokenClaims = await getIdTokenClaims(options);
+    
+    if (!accessToken || !idTokenClaims) {
+      console.warn('[Auth0Adapter] Failed to get Auth0 tokens');
+      return { tokens: null };
+    }
+    
+    // Return in a format compatible with Amplify's fetchAuthSession
+    return {
+      tokens: {
+        accessToken: {
+          toString: () => accessToken
+        },
+        idToken: {
+          toString: () => idTokenClaims.__raw,
+          payload: idTokenClaims
+        }
+      }
+    };
+  } catch (error) {
+    console.error('[Auth0Adapter] Error fetching auth session:', error);
+    return { tokens: null };
+  }
+}
+
+/**
+ * Updates user attributes in Auth0
+ * (equivalent to Amplify's updateUserAttributes)
+ * 
+ * Note: This requires backend support as client-side updates to user_metadata
+ * require the Auth0 Management API.
+ */
+export async function updateUserAttributes({ userAttributes = {} }) {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.isAuthenticated) {
+      console.warn('[Auth0Adapter] No authenticated session for updating attributes');
+      return false;
+    }
+    
+    const { getAccessTokenSilently } = auth0;
+    const token = await getAccessTokenSilently();
+    
+    // Call backend API to update user attributes
+    const response = await fetch('/api/user/update-attributes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ attributes: userAttributes })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to update attributes: ${response.status}`);
+    }
+    
+    console.log('[Auth0Adapter] Successfully updated user attributes');
+    return true;
+  } catch (error) {
+    console.error('[Auth0Adapter] Error updating user attributes:', error);
+    return false;
+  }
+}
+
+/**
+ * Gets the current user from Auth0
+ * (equivalent to Amplify's getCurrentUser)
+ */
+export async function getCurrentUser() {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.isAuthenticated || !auth0?.user) {
+      console.warn('[Auth0Adapter] No authenticated user in Auth0 context');
+      return null;
+    }
+    
+    return {
+      username: auth0.user.email,
+      userId: auth0.user.sub,
+      ...auth0.user
+    };
+  } catch (error) {
+    console.error('[Auth0Adapter] Error getting current user:', error);
+    return null;
+  }
+}
+
+/**
+ * Gets an ID token for the current user
+ * (equivalent to Amplify's getIdToken)
+ */
+export async function getIdToken() {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.isAuthenticated) {
+      console.warn('[Auth0Adapter] No authenticated session for getting ID token');
+      return null;
+    }
+    
+    const { getIdTokenClaims } = auth0;
+    const claims = await getIdTokenClaims();
+    
+    return claims?.__raw || null;
+  } catch (error) {
+    console.error('[Auth0Adapter] Error getting ID token:', error);
+    return null;
+  }
+}
+
+/**
+ * Signs in with email and password
+ * (equivalent to Amplify's signIn)
+ */
+export async function loginWithAuth0() {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0) {
+      console.warn('[Auth0Adapter] Auth0 context not available');
+      return { isSignedIn: false };
+    }
+    
+    const { loginWithRedirect } = auth0;
+    
+    // Trigger Auth0 login
+    await loginWithRedirect();
+    
+    // This won't actually be reached due to redirect
+    return { isSignedIn: true, nextStep: { signInStep: 'DONE' } };
+  } catch (error) {
+    console.error('[Auth0Adapter] Error signing in:', error);
+    return { isSignedIn: false, error };
+  }
+}
+
+/**
+ * Stores tenant ID in user attributes
+ */
+export async function storeTenantId(tenantId) {
+  try {
+    if (!tenantId) {
+      console.warn('[Auth0Adapter] No tenant ID provided for storage');
+      return false;
+    }
+    
+    // Update user attributes with tenant ID
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:tenant_ID': tenantId,
+        'custom:tenantId': tenantId,
+        'custom:tenant_id': tenantId,
+        'custom:businessid': tenantId
+      }
+    });
+    
+    // Also store in local storage as fallback
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tenant_id', tenantId);
+      localStorage.setItem('tenantId', tenantId);
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('[Auth0Adapter] Error storing tenant ID:', error);
+    return false;
+  }
+}
+
+/**
+ * Sets metadata when a tenant ID is first created for a user
+ */
+export async function ensureUserCreatedAt() {
+  try {
+    // Using static import to avoid async issues
+    const auth0 = useAuth0();
+    if (!auth0?.isAuthenticated || !auth0?.user) {
+      console.warn('[Auth0Adapter] No authenticated user for ensuring created_at');
+      return false;
+    }
+    
+    // Check if created_at already exists
+    const { user } = auth0;
+    if (user['https://dottapps.com/created_at']) {
+      return true; // Already has created_at
+    }
+    
+    // Update user attributes with created_at
+    const timestamp = new Date().toISOString();
+    await updateUserAttributes({
+      userAttributes: {
+        'custom:created_at': timestamp,
+        'custom:updated_at': timestamp
+      }
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('[Auth0Adapter] Error ensuring user created_at:', error);
+    return false;
+  }
+}
+
+export default {
+  fetchUserAttributes,
+  fetchAuthSession,
+  updateUserAttributes,
+  getCurrentUser,
+  getIdToken,
+  loginWithAuth0,
+  storeTenantId,
+  ensureUserCreatedAt
+};

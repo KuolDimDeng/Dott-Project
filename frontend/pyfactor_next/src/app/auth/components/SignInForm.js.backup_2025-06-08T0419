@@ -167,9 +167,7 @@ const getTenantIdFromSources = async () => {
     // Try to get from Cognito
     try {
       // Auth0 equivalent - replaced Amplify import
-// Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { getCurrentUser, fetchUserAttributes } = await import('@/config/amplifyUnified');
-const user = await getAuth0UserProfile();
 const user = await getAuth0UserProfile();
       const currentUser = await getCurrentUser();
       
@@ -194,9 +192,7 @@ const user = await getAuth0UserProfile();
     // Try to get from auth session
     try {
       // Auth0 equivalent - replaced Amplify import
-// Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchAuthSession } = await import('@/config/amplifyUnified');
-const session = await getAuth0Session();
 const session = await getAuth0Session();
       const session = await fetchAuthSession();
       
@@ -268,9 +264,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
       
       try {
         // Auth0 equivalent - replaced Amplify import
-// Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchUserAttributes } = await import('@/config/amplifyUnified');
-const userAttributes = await getAuth0UserProfile();
 const userAttributes = await getAuth0UserProfile();
         const userAttributes = await fetchUserAttributes();
         
@@ -463,72 +457,6 @@ const userAttributes = await getAuth0UserProfile();
   }
 };
 
-
-// Auth0 helper functions to replace Amplify functionality
-const getAuth0UserProfile = async () => {
-  try {
-    // Get user profile from Auth0
-    const { getAccessTokenSilently, user } = useAuth0();
-    const token = await getAccessTokenSilently();
-    
-    // Format user attributes to match expected structure
-    return {
-      sub: user?.sub,
-      email: user?.email,
-      email_verified: user?.email_verified,
-      name: user?.name,
-      given_name: user?.given_name,
-      family_name: user?.family_name,
-      ...user
-    };
-  } catch (error) {
-    logger.error('Error getting Auth0 user profile:', error);
-    return {};
-  }
-};
-
-const getAuth0Session = async () => {
-  try {
-    const { getAccessTokenSilently, getIdTokenClaims } = useAuth0();
-    const accessToken = await getAccessTokenSilently();
-    const idTokenClaims = await getIdTokenClaims();
-    
-    return {
-      tokens: {
-        accessToken: accessToken,
-        idToken: {
-          toString: () => idTokenClaims.__raw,
-          payload: idTokenClaims
-        }
-      }
-    };
-  } catch (error) {
-    logger.error('Error getting Auth0 session:', error);
-    return { tokens: null };
-  }
-};
-
-// Helper to fix onboarding status case sensitivity issues
-const fixOnboardingStatusCase = (status) => {
-  if (!status) return 'pending';
-  
-  const normalized = status.toLowerCase();
-  switch (normalized) {
-    case 'business_info':
-    case 'business-info':
-      return 'business-info';
-    case 'complete':
-      return 'complete';
-    case 'subscription':
-      return 'subscription';
-    case 'payment':
-      return 'payment';
-    case 'setup':
-      return 'setup';
-    default:
-      return normalized;
-  }
-};
 
 // Auth0 helper functions to replace Amplify functionality
 const getAuth0UserProfile = async () => {
@@ -818,9 +746,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
                 try {
                   // Get the tokens from the current session
                   // Auth0 equivalent - replaced Amplify import
-// Previously: // Auth0 equivalent - replaced Amplify import
 // Previously: const { fetchAuthSession } = await import('@/config/amplifyUnified');
-const session = await getAuth0Session();
 const session = await getAuth0Session();
                   const session = await fetchAuthSession();
                   

@@ -214,3 +214,9 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0174_deploy_remaining_appCache_fixes.mjs | Deploy remaining appCache syntax error fixes | Completed | 2025-06-08 |
 | Version0175_fix_appCache_import_errors.mjs | Fix appCache import errors causing build failure | Completed | 2025-06-08 |
 | Version0176_deploy_appCache_import_fixes.mjs | Deploy appCache import error fixes | Completed | 2025-06-08 |
+| Version0177_remove_amplify_and_fix_appCache_errors.mjs | Remove all Amplify/Cognito references and fix appCache errors | Completed | 2025-06-08 |
+| Version0178_deploy_amplify_removal_and_appCache_fixes.mjs | Deploy Amplify removal and appCache fixes | Completed | 2025-06-08 |
+| Version0179_fix_amplify_import_syntax_errors.mjs | 2025-06-08 | Fixes syntax errors in components with incorrect Amplify imports | Completed |
+| Version0180_deploy_amplify_import_syntax_fixes.mjs | 2025-06-08 | Deploys fixes for Amplify import syntax errors | Completed |
+
+
