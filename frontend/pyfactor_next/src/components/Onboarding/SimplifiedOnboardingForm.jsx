@@ -36,7 +36,7 @@ const PLANS = [
     id: 'professional',
     name: 'Professional',
     description: 'Advanced features for growing businesses',
-    price: '$29/month',
+    price: '$15/month',
     features: [
       'Unlimited projects',
       'Advanced analytics',
@@ -49,7 +49,7 @@ const PLANS = [
     id: 'enterprise',
     name: 'Enterprise',
     description: 'Complete solution for large organizations',
-    price: '$99/month',
+    price: '$35/month',
     features: [
       'Everything in Professional',
       'SSO integration',
