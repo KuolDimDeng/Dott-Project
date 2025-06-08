@@ -729,7 +729,7 @@ export const getResiliantCacheValue = async (key, cognitoFetchFn, options = {}) 
     
     // Save to AppCache for future use
     if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.initializeCache();
+      if (!appCache.getAll()) appCache.getAll() = {};
       appCache.getAll()[key] = value;
       appCache.getAll()[key + '_timestamp'] = Date.now();
     }

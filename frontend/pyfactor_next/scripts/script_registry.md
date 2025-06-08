@@ -1,6 +1,9 @@
 Script Registry
 
-This document tracks all scripts used for the pyfactor project, their execution status, and their purpose.
+This document tracks a
+| Version0197_fix_syntax_errors_blocking_build.mjs | Fixes syntax errors in multiple files causing build failures | ✅ Executed | 2025-06-08 |
+| Version0198_deploy_syntax_error_fixes.mjs | Commits and deploys syntax error fixes | ✅ Executed | 2025-06-08 |
+ll scripts used for the pyfactor project, their execution status, and their purpose.
 
 
 ## Usage Guidelines

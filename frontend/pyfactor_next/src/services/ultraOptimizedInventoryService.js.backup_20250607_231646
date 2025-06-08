@@ -249,7 +249,7 @@ export const ultraOptimizedInventoryService = {
           });
         }, { timeout: 5000 });
       }
-  } catch (error) {
+    } catch (error) {
       logger.error('Error prefetching essential data:', error);
     }
   },
@@ -274,7 +274,7 @@ export const ultraOptimizedInventoryService = {
     }
   }
 }
-  }
+    }
   },
 
   /**
@@ -419,6 +419,6 @@ export const ultraOptimizedInventoryService = {
       } catch (error) {
         logger.warn(`Background refresh failed for ${type} data:`, error);
       }
-  }, 100);
+    }, 100);
   }
 };

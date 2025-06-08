@@ -1132,14 +1132,8 @@ export const getOfflineProducts = () => {
       logger.debug(`Retrieved ${appCache.get('offline.products').length} products from app cache`);
       return appCache.get('offline.products');
     }
-    }
-  
-  // Get offline products
-  getOfflineProducts() {
-    if (typeof window !== 'undefined' && appCache) {
-      if (appCache.get('offline.products')) {
-        return appCache.get('offline.products');
-      }
+  }
+}
     } else {
       logger.debug('No products found in app cache for offline use');
       return [];

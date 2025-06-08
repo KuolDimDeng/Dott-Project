@@ -138,7 +138,7 @@ export const employeeApi = {
       
       // Try to get from APP_CACHE first
       if (typeof window !== 'undefined') {
-        if (appCache.getAll()) {
+        if (appCache.getAll()
           tenantId = appCache.get('tenant.id');
         } else if (window.getCacheValue && window.getCacheValue('tenantId')) {
           tenantId = window.getCacheValue('tenantId');
