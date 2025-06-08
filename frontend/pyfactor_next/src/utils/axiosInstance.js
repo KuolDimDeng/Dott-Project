@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { appCache } from './appCache';
 
 // Create a UUID function for browsers that don't support crypto.randomUUID
 const generateRequestId = () => {

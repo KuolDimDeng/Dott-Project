@@ -1,4 +1,6 @@
 // tenantLock.js
+import { appCache } from './appCache';
+
 const LOCK_TIMEOUT = 30000; // 30 seconds timeout
 
 // Initialize global app cache if it doesn't exist
