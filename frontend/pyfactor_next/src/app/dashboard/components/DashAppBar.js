@@ -875,7 +875,21 @@ const DashAppBar = ({
           }
         }
         
-        // If not in session, try profile API
+        // If not in session, try our new business info API
+        if (tenantId) {
+          const businessInfoResponse = await fetch(`/api/tenant/business-info?tenantId=${tenantId}`);
+          if (businessInfoResponse.ok) {
+            const businessInfo = await businessInfoResponse.json();
+            if (businessInfo?.businessName) {
+              logger.debug('[DashAppBar] Found business name from business info API:', businessInfo.businessName);
+              setBusinessName(businessInfo.businessName);
+              setFetchedBusinessName(businessInfo.businessName);
+              return;
+            }
+          }
+        }
+        
+        // If not in business info API, try profile API
         const profileResponse = await fetch('/api/auth/profile');
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
@@ -907,7 +921,7 @@ const DashAppBar = ({
     if (!businessName && !fetchedBusinessName) {
       fetchBusinessNameData();
     }
-  }, [auth0Loading, getAuth0BusinessName, businessName, fetchedBusinessName]);
+  }, [auth0Loading, getAuth0BusinessName, businessName, fetchedBusinessName, tenantId]);
 
   return (
     <>
