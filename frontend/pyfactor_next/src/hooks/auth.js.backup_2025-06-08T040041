@@ -77,8 +77,8 @@ function formatAuthErrorMessage(error) {
 function getAppCache() {
   if (typeof window === 'undefined') return null;
   
-  if (!appCache.getAll()) appCache.set('app', {});
-  if (!appCache.get('auth')) appCache.set('auth', {});
+  if (!appCache.getAll()) appCache.getAll() = {};
+  if (!appCache.getAll().auth) appCache.getAll().auth = {};
   return appCache.getAll().auth;
 }
 

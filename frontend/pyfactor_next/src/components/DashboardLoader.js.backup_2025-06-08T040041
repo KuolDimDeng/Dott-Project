@@ -168,7 +168,7 @@ export default function DashboardLoader({ message = 'Loading your dashboard...' 
       if (typeof window !== 'undefined') {
         if (!appCache.getAll()) appCache.set('app', {});
         appCache.getAll().tenant = appCache.getAll().tenant || {};
-        appCache.set('tenant.id', tenantId);
+        appCache.get('tenant.id') = tenantId;
       }
       
       const tryFetch = async () => {

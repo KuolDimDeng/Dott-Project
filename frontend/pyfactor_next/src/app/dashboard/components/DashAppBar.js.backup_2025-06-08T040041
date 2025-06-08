@@ -2,8 +2,6 @@
 
 
 
-
-
 import appCache from '../../../utils/appCache';
 
 
@@ -32,30 +30,30 @@ import React, {
   memo
 } from 'react';
 import Image from 'next/image';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useRouter } from 'next/navigation';
 import DashboardLanguageSelector from './LanguageSelector';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useNotification } from '@/context/NotificationContext';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useToast } from '@/hooks/useToast';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useSession } from '@/hooks/useSession';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useProfile } from '@/hooks/useProfile';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
-import appCache from '../../../utils/appCache';
+import { appCache } from '../utils/appCache';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
 // Initialize global app cache if it doesn't exist
