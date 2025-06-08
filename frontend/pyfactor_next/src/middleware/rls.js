@@ -1,5 +1,5 @@
-import { appCache } from '../utils/appCache';
-import { appCacheFallback } from '../utils/appCacheFallback';
+import { appCache } from '@/utils/appCache';
+import { appCacheFallback } from '@/utils/appCacheFallback';
 
 /**
  * Middleware to set RLS tenant ID in database sessions

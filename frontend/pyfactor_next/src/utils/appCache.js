@@ -154,6 +154,8 @@ if (typeof window !== 'undefined' && !window.__appCache) {
 export const getCacheValue = get;
 export const setCacheValue = set;
 export const removeCacheValue = remove;
+export const clearCache = clear;
+export const clearCacheKey = remove;
 
 export const appCache = {
   get,

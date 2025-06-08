@@ -441,29 +441,9 @@ const SettingsManagement = () => {
     try {
       setIsSubmitting(true);
       
-      // Initialize Cognito client
-      const client = new CognitoIdentityProviderClient({
-        region: process.env.NEXT_PUBLIC_AWS_REGION || 'us-west-2'
-      });
-      
-      // Determine which command to use based on desired status
-      let command;
-      if (newStatus === 'Active') {
-        const { AdminEnableUserCommand } = await import('@aws-sdk/client-cognito-identity-provider');
-        command = new AdminEnableUserCommand({
-          UserPoolId: process.env.NEXT_PUBLIC_AWS_USER_POOL_ID,
-          Username: userId
-        });
-      } else {
-        const { AdminDisableUserCommand } = await import('@aws-sdk/client-cognito-identity-provider');
-        command = new AdminDisableUserCommand({
-          UserPoolId: process.env.NEXT_PUBLIC_AWS_USER_POOL_ID,
-          Username: userId
-        });
-      }
-      
-      // Execute the command
-      await client.send(command);
+      // TODO: Implement Auth0 user status toggle
+      // For now, we'll just update the local state
+      logger.warn('[SettingsManagement] User status toggle not yet implemented for Auth0');
       
       // Update local state
       setUsers(prevUsers => 
@@ -472,7 +452,7 @@ const SettingsManagement = () => {
         )
       );
       
-      notifySuccess(`User status changed to ${newStatus}`);
+      notifySuccess(`User status changed to ${newStatus} (local only - Auth0 integration pending)`);
       
       // Refresh the user list
       fetchCognitoUsers();

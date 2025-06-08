@@ -1,6 +1,6 @@
 'use client';
 
-import { appCache } from '../utils/appCache';
+import { appCache } from '@/utils/appCache';
 
 
 import { useEffect, useState } from 'react';

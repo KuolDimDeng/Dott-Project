@@ -1,5 +1,3 @@
-import { appCache } from '../utils/appCache';
-
 /**
  * AWS App Cache Utility
  * 
@@ -11,7 +9,8 @@ import {
   getCacheValue, 
   setCacheValue, 
   removeCacheValue, 
-  clearCache 
+  clearCache,
+  appCache
 } from './appCache';
 
 /**
@@ -76,4 +75,6 @@ const awsAppCache = {
     return Object.keys(appCache.getAll() || {})
       .filter(key => key.startsWith(prefix));
   }
-}; 
+};
+
+export default awsAppCache; 

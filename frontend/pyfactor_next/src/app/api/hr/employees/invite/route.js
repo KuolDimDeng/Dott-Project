@@ -1,28 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getTenantId } from '@/lib/tenantUtils';
 import { validateServerSession } from '@/utils/serverUtils';
-// Removed AWS Cognito import - now using Auth0
-import { SendEmailCommand, SESClient } from '@aws-sdk/client-ses';
+// Removed AWS Cognito and SES imports - now using Auth0
 import { logger } from '@/utils/logger';
 import { generateVerificationToken, generateVerificationUrl } from '@/utils/tokenUtils';
 import { cookies, headers } from 'next/headers';
 import CognitoAttributes from '@/utils/CognitoAttributes';
-
-// Initialize SES client for sending emails
-const sesClient = new SESClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-  }
-});
-
-// Add more detailed logging about SES configuration
-logger.info('SES Client initialized with region:', process.env.AWS_REGION || 'us-east-1');
-logger.info('SES Email Sender configured as:', process.env.SES_EMAIL_SENDER || '(not set)');
-logger.info('SES Region configured as:', process.env.SES_REGION || '(not set)');
-logger.info('AWS Access Key ID available:', process.env.AWS_ACCESS_KEY_ID ? 'Yes' : 'No');
-logger.info('AWS Secret Access Key available:', process.env.AWS_SECRET_ACCESS_KEY ? 'Yes' : 'No');
 
 /**
  * Send an invitation email to a new employee
@@ -131,35 +114,22 @@ This is an automated message. Please do not reply to this email.
   });
   
   try {
-    logger.info(`[EMAIL DEBUG] Sending email to ${email} with SES...`);
-    const command = new SendEmailCommand(params);
-    logger.info(`[EMAIL DEBUG] SES command created, about to send...`);
-    const result = await sesClient.send(command);
-    logger.info(`[EMAIL DEBUG] Email send result:`, result);
-    logger.info(`[EMAIL DEBUG] Successfully sent email to ${email} with message ID: ${result.MessageId}`);
-    return { success: true, messageId: result.MessageId };
+    // TODO: Implement email sending without AWS SES
+    logger.warn(`[EMAIL DEBUG] AWS SES has been removed. Email would be sent to ${email}`);
+    logger.info(`[EMAIL DEBUG] Email parameters:`, {
+      to: email,
+      subject: params.Message.Subject.Data,
+      note: 'Email service needs to be implemented with SendGrid, Mailgun, or another provider'
+    });
+    
+    // Return a mock success response
+    return { 
+      success: false, 
+      error: 'Email service not configured - AWS SES has been removed',
+      mockMessageId: `mock-${Date.now()}-${email}` 
+    };
   } catch (error) {
-    logger.error(`[EMAIL DEBUG] Error sending email to ${email}:`, error);
-    logger.error(`[EMAIL DEBUG] Error name: ${error.name}`);
-    logger.error(`[EMAIL DEBUG] Error message: ${error.message}`);
-    logger.error(`[EMAIL DEBUG] Error type: ${error.constructor.name}`);
-    if (error.$metadata) {
-      logger.error(`[EMAIL DEBUG] Error metadata:`, error.$metadata);
-    }
-    
-    // Check for common SES errors
-    if (error.name === 'MessageRejected') {
-      logger.error(`[EMAIL DEBUG] SES rejected the message: ${error.message}`);
-    } else if (error.name === 'MailFromDomainNotVerifiedException') {
-      logger.error(`[EMAIL DEBUG] The FROM domain is not verified in SES: ${params.Source}`);
-    } else if (error.name === 'ConfigurationSetDoesNotExistException') {
-      logger.error(`[EMAIL DEBUG] The SES configuration set doesn't exist`);
-    } else if (error.name === 'AccountSendingPausedException') {
-      logger.error(`[EMAIL DEBUG] AWS account sending is paused`);
-    } else if (error.name === 'ResourceNotFoundException') {
-      logger.error(`[EMAIL DEBUG] SES resource not found - usually means the sender email is not verified`);
-    }
-    
+    logger.error(`[EMAIL DEBUG] Error in email handler:`, error);
     throw error;
   }
 }
