@@ -173,8 +173,9 @@ export default function SimplifiedOnboardingForm() {
           redirectUrl: result.redirect_url
         });
         
-        // Redirect to dashboard
-        router.push(result.redirect_url);
+        // Force a full page reload to refresh the session
+        // Using window.location.href instead of router.push to ensure session is refreshed
+        window.location.href = result.redirect_url;
       } else {
         throw new Error(result.message || 'Failed to complete onboarding');
       }

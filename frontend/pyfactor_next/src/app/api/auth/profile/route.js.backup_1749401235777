@@ -17,13 +17,7 @@ export async function GET() {
     
     if (!sessionCookie) {
       console.log('🚨 [PROFILE API] ❌ NO SESSION COOKIE FOUND');
-      return NextResponse.json(null, { status: 200 }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+      return NextResponse.json(null, { status: 200 });
     }
     
     let sessionData;
@@ -32,26 +26,14 @@ export async function GET() {
       console.log('🚨 [PROFILE API] ✅ Session cookie parsed successfully');
     } catch (parseError) {
       console.error('🚨 [PROFILE API] ❌ Error parsing session cookie:', parseError);
-      return NextResponse.json(null, { status: 200 }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+      return NextResponse.json(null, { status: 200 });
     }
     
     const { user, accessToken } = sessionData;
     
     if (!user) {
       console.log('🚨 [PROFILE API] ❌ No user data in session');
-      return NextResponse.json(null, { status: 200 }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+      return NextResponse.json(null, { status: 200 });
     }
     
     console.log('🚨 [PROFILE API] RAW SESSION USER DATA:', {
@@ -268,13 +250,7 @@ export async function GET() {
       dataSource: accessToken ? 'session+backend' : 'session-only'
     });
     
-    return NextResponse.json(profileData, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+    return NextResponse.json(profileData);
     
   } catch (error) {
     console.error('🚨 [PROFILE API] ❌ CRITICAL ERROR:', {
@@ -283,12 +259,6 @@ export async function GET() {
       stack: error.stack
     });
     console.error('[Profile API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 }, {
-        headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
-      });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

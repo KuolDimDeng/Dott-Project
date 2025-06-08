@@ -237,12 +237,7 @@ export default function Auth0CallbackPage() {
           console.log('[Auth0Callback] New user without tenant ID detected, redirecting to simplified onboarding');
           
           setTimeout(() => {
-            // Clear any stale session data before redirecting to onboarding
-      if (typeof window !== 'undefined') {
-        // Force session refresh on next page load
-        sessionStorage.setItem('session_needs_refresh', 'true');
-      }
-      router.push('/onboarding');
+            router.push('/onboarding');
           }, 1500);
           return;
         }
