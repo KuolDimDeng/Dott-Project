@@ -99,12 +99,17 @@ export async function GET() {
     };
     
     console.log('🚨 [PROFILE API] === INITIAL PROFILE DATA (FROM SESSION) ===');
-    console.log('🚨 [PROFILE API] Initial profile construction:', {
+    console.log('🚨 [PROFILE API] Initial profile construction:');
+    console.log('🚨 [PROFILE API] - needsOnboarding calculation: user.needsOnboarding !== false =', user.needsOnboarding, '!== false =', user.needsOnboarding !== false);
+    console.log('🚨 [PROFILE API] - onboardingCompleted calculation: user.onboardingCompleted === true =', user.onboardingCompleted, '=== true =', user.onboardingCompleted === true);
+    console.log('🚨 [PROFILE API] - currentStep calculation:', user.currentStep, '||', user.current_onboarding_step, '|| business_info =', user.currentStep || user.current_onboarding_step || 'business_info');
+    console.log('🚨 [PROFILE API] - businessInfoCompleted calculation: user.businessInfoCompleted === true =', user.businessInfoCompleted, '=== true =', user.businessInfoCompleted === true);
+    
+    console.log('[Profile API] Initial profile data from session:', {
       email: profileData.email,
       needsOnboarding: profileData.needsOnboarding,
       onboardingCompleted: profileData.onboardingCompleted,
       currentStep: profileData.currentStep,
-      tenantId: profileData.tenantId,
       businessInfoCompleted: profileData.businessInfoCompleted
     });
     
@@ -145,35 +150,46 @@ export async function GET() {
             current_onboarding_step: backendUser.current_onboarding_step
           });
           
-          // Get tenant from backend if not in session
-          const backendTenantId = backendUser.tenant_id || backendUser.tenantId;
-          const sessionTenantId = user.tenantId || user.tenant_id;
-          const finalTenantId = sessionTenantId || backendTenantId;
+          // Merge backend data, but prioritize session data for onboarding status
+          // (session data is more up-to-date after recent actions)
+          const oldCurrentStep = profileData.currentStep;
+          const sessionOnboardingComplete = user.onboardingCompleted;
+          const sessionNeedsOnboarding = user.needsOnboarding;
           
-          // Determine onboarding status - if user has tenant, they don't need onboarding
-          const hasCompletedOnboarding = backendTenantId && (
-            backendUser.onboarding_completed === true || 
-            backendUser.onboarding_status === 'complete' ||
-            backendUser.setup_done === true
-          );
+          console.log('🚨 [PROFILE API] BEFORE MERGE - Session vs Backend:', {
+            sessionNeedsOnboarding: user.needsOnboarding,
+            backendNeedsOnboarding: backendUser.needs_onboarding,
+            sessionCurrentStep: user.currentStep || user.current_onboarding_step,
+            backendCurrentStep: backendUser.current_onboarding_step,
+            sessionBusinessInfo: user.businessInfoCompleted,
+            willPrioritizeSession: user.needsOnboarding !== undefined
+          });
           
-          // Merge backend data, prioritizing tenant info from backend
+          console.log('🚨 [PROFILE API] === BACKEND DATA MERGE LOGIC ===');
+          console.log('🚨 [PROFILE API] Merge calculations:');
+          console.log('🚨 [PROFILE API] - user.needsOnboarding !== undefined:', user.needsOnboarding !== undefined);
+          console.log('🚨 [PROFILE API] - Will use session needsOnboarding:', user.needsOnboarding !== undefined ? user.needsOnboarding : (backendUser.needs_onboarding !== false));
+          console.log('🚨 [PROFILE API] - user.onboardingCompleted !== undefined:', user.onboardingCompleted !== undefined);
+          console.log('🚨 [PROFILE API] - Will use session onboardingCompleted:', user.onboardingCompleted !== undefined ? user.onboardingCompleted : (backendUser.onboarding_completed === true));
+          console.log('🚨 [PROFILE API] - Will use currentStep:', user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info');
+          console.log('🚨 [PROFILE API] - Will use businessInfoCompleted:', user.businessInfoCompleted !== undefined ? user.businessInfoCompleted : false);
+          
           profileData = {
             ...profileData,
             // Backend data
             id: backendUser.id,
-            tenant_id: finalTenantId,
-            tenantId: finalTenantId, // Alias for compatibility
+            tenant_id: backendUser.tenant_id,
+            tenantId: backendUser.tenant_id, // Alias for compatibility
             
-            // Onboarding status: if user has tenant in backend, they've completed onboarding
-            needsOnboarding: finalTenantId && hasCompletedOnboarding ? false : 
-                           (user.needsOnboarding !== undefined ? user.needsOnboarding : 
-                            (backendUser.needs_onboarding !== false)),
-            onboardingCompleted: finalTenantId && hasCompletedOnboarding ? true :
-                               (user.onboardingCompleted !== undefined ? user.onboardingCompleted : 
-                                (backendUser.onboarding_completed === true)),
-            currentStep: finalTenantId && hasCompletedOnboarding ? 'completed' :
-                        (user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info'),
+            // Onboarding status: ALWAYS prioritize session data if it exists
+            // Session data is more current after form submissions
+            needsOnboarding: user.needsOnboarding !== undefined 
+              ? user.needsOnboarding 
+              : (backendUser.needs_onboarding !== false),
+            onboardingCompleted: user.onboardingCompleted !== undefined 
+              ? user.onboardingCompleted 
+              : (backendUser.onboarding_completed === true),
+            currentStep: user.currentStep || user.current_onboarding_step || backendUser.current_onboarding_step || 'business_info',
             businessInfoCompleted: user.businessInfoCompleted !== undefined 
               ? user.businessInfoCompleted 
               : false,

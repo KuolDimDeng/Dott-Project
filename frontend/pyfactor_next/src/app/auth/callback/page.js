@@ -71,24 +71,35 @@ export default function Auth0CallbackPage() {
             const createUserData = await createUserResponse.json();
             console.log('[Auth0Callback] User creation result:', {
               success: createUserData.success,
-              tenantId: createUserData.tenant_id,
+              tenantId: createUserData.tenant_id || createUserData.tenantId,
               currentStep: createUserData.current_step,
-              isExistingUser: createUserData.isExistingUser
+              isExistingUser: createUserData.isExistingUser,
+              needsOnboarding: createUserData.needsOnboarding,
+              onboardingCompleted: createUserData.onboardingCompleted
             });
+            
+            // Extract tenant ID and onboarding status from response
+            const tenantId = createUserData.tenant_id || createUserData.tenantId;
+            const needsOnboarding = createUserData.needsOnboarding || createUserData.needs_onboarding !== false;
+            const onboardingCompleted = createUserData.onboardingCompleted || createUserData.onboarding_completed === true;
             
             backendUser = {
               email: sessionData.user.email,
               sub: sessionData.user.sub,
               name: sessionData.user.name,
               picture: sessionData.user.picture,
-              tenantId: createUserData.tenant_id,
-              needsOnboarding: createUserData.needs_onboarding !== false,
-              onboardingCompleted: createUserData.onboardingCompleted || !createUserData.needs_onboarding,
-              currentStep: createUserData.current_step || 'business_info',
-              isNewUser: createUserData.success ? !createUserData.isExistingUser : false
+              tenantId: tenantId,
+              needsOnboarding: needsOnboarding && !onboardingCompleted,
+              onboardingCompleted: onboardingCompleted || (tenantId && !needsOnboarding),
+              currentStep: createUserData.current_step || createUserData.currentStep || 'business_info',
+              isNewUser: createUserData.success ? !createUserData.isExistingUser : false,
+              isExistingUser: createUserData.isExistingUser
             };
             
-            console.log('[Auth0Callback] Updated backend user with Django data:', backendUser);
+            console.log('[Auth0Callback] Updated backend user with Django data:', {
+              ...backendUser,
+              accessToken: backendUser.accessToken ? 'REDACTED' : undefined
+            });
           } else {
             console.warn('[Auth0Callback] User creation failed, checking if user exists');
             
@@ -226,6 +237,32 @@ export default function Auth0CallbackPage() {
           console.log('[Auth0Callback] Existing user with completed onboarding, redirecting to tenant dashboard');
           
           setTimeout(() => {
+            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
+          }, 1500);
+          return;
+        }
+        
+        // **CRITICAL FIX: Existing users with tenants should always go to dashboard**
+        if (backendUser.tenantId && backendUser.isExistingUser) {
+          setStatus('Welcome back! Loading your dashboard...');
+          console.log('[Auth0Callback] Existing user with tenant, assuming onboarding complete, redirecting to tenant dashboard');
+          
+          // Update session to mark onboarding as complete
+          setTimeout(async () => {
+            try {
+              await fetch('/api/auth/update-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tenantId: backendUser.tenantId,
+                  needsOnboarding: false,
+                  onboardingCompleted: true
+                })
+              });
+            } catch (error) {
+              console.error('[Auth0Callback] Failed to update session:', error);
+            }
+            
             router.push(`/tenant/${backendUser.tenantId}/dashboard`);
           }, 1500);
           return;
