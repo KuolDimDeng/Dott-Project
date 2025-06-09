@@ -137,6 +137,14 @@ export async function GET(request) {
       loginParams.append('screen_hint', screenHint);
     }
     
+    // Check if we should use embedded login
+    const useEmbedded = searchParams.get('embedded') === 'true';
+    if (useEmbedded) {
+      // Redirect to our custom email sign-in page instead
+      console.log('[Auth Login Route] Using embedded login, redirecting to email sign-in page');
+      return NextResponse.redirect(`${baseUrl}/auth/email-signin`);
+    }
+    
     // Normalize domain to ensure consistent format
     // Ensure domain is in the correct format
     const normalizeDomain = (domain) => {
