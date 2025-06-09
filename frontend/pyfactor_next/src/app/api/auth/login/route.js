@@ -50,7 +50,8 @@ export async function GET(request) {
     console.log('[Auth Login Route] Processing login request');
     
     // Get Auth0 configuration from environment variables with fallbacks
-    auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN || 'auth.dottapps.com';
+    // Use the actual Auth0 domain, not the custom domain for now
+    auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || process.env.AUTH0_DOMAIN || 'dev-cbyy63jovi6zrcos.us.auth0.com';
     clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
     baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.AUTH0_BASE_URL || 'https://dottapps.com';
     audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || process.env.AUTH0_AUDIENCE || 'https://api.dottapps.com';
@@ -86,11 +87,8 @@ export async function GET(request) {
       }, { status: 500 });
     }
     
-    // Force auth.dottapps.com as the domain if we're using the default Auth0 domain
-    if (auth0Domain.includes('.auth0.com')) {
-      console.warn('[Auth Login Route] Detected default Auth0 domain, forcing custom domain');
-      auth0Domain = 'auth.dottapps.com';
-    }
+    // Log which domain we're using
+    console.log('[Auth Login Route] Using Auth0 domain:', auth0Domain);
     
     // Verify domain format
     if (!auth0Domain.includes('.') || auth0Domain.startsWith('http')) {
