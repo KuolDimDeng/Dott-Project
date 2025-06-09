@@ -132,6 +132,13 @@ export default function EmailPasswordSignIn() {
       const authResult = await authResponse.json();
 
       if (!authResponse.ok) {
+        // Check if we need to fallback to Universal Login
+        if (authResult.requiresUniversalLogin) {
+          logger.info('[EmailPasswordSignIn] Password grant not enabled, redirecting to Universal Login');
+          // Redirect to standard Auth0 login
+          window.location.href = '/api/auth/login';
+          return;
+        }
         throw new Error(authResult.error || 'Authentication failed');
       }
 

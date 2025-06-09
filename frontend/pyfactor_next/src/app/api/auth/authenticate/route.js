@@ -153,6 +153,24 @@ export async function POST(request) {
         );
       }
       
+      // Handle unauthorized_client error
+      if (tokenData.error === 'unauthorized_client') {
+        addDebugEntry('Password grant not enabled', {
+          error: tokenData.error,
+          description: 'The Password grant type is not enabled for this application'
+        });
+        
+        return NextResponse.json(
+          { 
+            error: 'Configuration error',
+            message: 'Direct authentication is not enabled. Please enable the Password grant type in Auth0 Dashboard under Application Settings > Advanced Settings > Grant Types.',
+            requiresUniversalLogin: true,
+            debugLog
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         { 
           error: tokenData.error || 'Authentication failed',
