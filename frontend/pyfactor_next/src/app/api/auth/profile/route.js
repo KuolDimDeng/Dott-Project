@@ -247,6 +247,27 @@ export async function GET() {
       profileData.onboardingCompleted = true;
     }
     
+    // If session says onboarding is complete but backend doesn't know, update backend
+    if (user.onboardingCompleted === true && profileData.tenantId && 
+        (!backendUser || backendUser.needs_onboarding !== false)) {
+      console.log('[Profile API] Detected onboarding mismatch, updating backend');
+      try {
+        await fetch(new URL('/api/user/update-onboarding-status', request.url).href, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': request.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({
+            tenantId: profileData.tenantId,
+            onboardingCompleted: true
+          })
+        });
+      } catch (error) {
+        console.error('[Profile API] Failed to update backend onboarding status:', error);
+      }
+    }
+    
     // CRITICAL FIX: Handle edge cases where session data might be inconsistent
     // If business info is completed but currentStep is still business_info, advance to subscription
     if (profileData.businessInfoCompleted === true && profileData.currentStep === 'business_info') {

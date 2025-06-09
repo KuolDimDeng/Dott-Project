@@ -1047,9 +1047,8 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     'is_active': True,
                 }
                 
-                # Use email as username if no username field
-                if hasattr(User, 'username'):
-                    user_data['username'] = email
+                # Don't add username field since our User model doesn't use it
+                # The User model has username = None to indicate no username field
                 
                 user = User.objects.create(**user_data)
                 logger.info(f"✅ Created new user from Auth0: {email} ({auth0_id})")

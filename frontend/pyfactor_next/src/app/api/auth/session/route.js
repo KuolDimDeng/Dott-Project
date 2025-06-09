@@ -110,10 +110,12 @@ export async function POST(request) {
     
     // Check for onboarding completion
     const onboardingComplete = 
+      userMetadata.onboardingCompleted === 'true' ||  // Check the correct field name
       userMetadata.onboardingComplete === 'true' || 
       userMetadata.custom_onboardingComplete === 'true' ||
       userMetadata.custom_onboarding === 'complete' ||
-      appMetadata.onboardingComplete === 'true';
+      appMetadata.onboardingComplete === 'true' ||
+      appMetadata.onboardingCompleted === 'true';
     
     if (onboardingComplete) {
       needsOnboarding = false;

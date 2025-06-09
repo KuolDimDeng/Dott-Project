@@ -228,11 +228,14 @@ export async function POST(request) {
     let backendResult = { success: false };
     if (sessionData.accessToken) {
       backendResult = await createTenantInBackend(user, onboardingData, tenantId, sessionData.accessToken);
+      if (!backendResult.success) {
+        console.warn('[CompleteOnboarding] Backend tenant creation failed, but continuing with onboarding completion');
+      }
     } else {
       console.warn('[CompleteOnboarding] No access token available, skipping backend creation');
     }
     
-    // 6. Update Auth0 session with completed onboarding
+    // 6. Update Auth0 session with completed onboarding - ALWAYS do this even if backend fails
     const sessionUpdateResult = await updateAuth0Session(sessionData, onboardingData, tenantId);
     
     if (!sessionUpdateResult.success) {
@@ -311,6 +314,31 @@ export async function POST(request) {
       });
     } catch (error) {
       console.error('[CompleteOnboarding] Failed to call update-session:', error);
+    }
+    
+    // Update Auth0 user metadata to persist onboarding completion
+    try {
+      await fetch(new URL('/api/auth/update-metadata', request.url).href, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cookie': request.headers.get('cookie') || ''
+        },
+        body: JSON.stringify({
+          metadata: {
+            onboardingCompleted: 'true',
+            needsOnboarding: 'false',
+            tenantId: tenantId,
+            businessName: onboardingData.businessName,
+            subscriptionPlan: onboardingData.selectedPlan,
+            onboardingCompletedAt: new Date().toISOString()
+          }
+        })
+      });
+      console.log('[CompleteOnboarding] Successfully updated Auth0 user metadata');
+    } catch (error) {
+      console.error('[CompleteOnboarding] Failed to update Auth0 metadata:', error);
+      // Don't fail the whole process if metadata update fails
     }
     
     return response;
