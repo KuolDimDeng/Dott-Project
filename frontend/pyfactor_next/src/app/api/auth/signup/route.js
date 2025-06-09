@@ -46,8 +46,8 @@ export async function POST(request) {
         given_name: given_name,
         family_name: family_name,
         name: name || `${given_name} ${family_name}`,
-        needs_onboarding: true,
-        onboarding_completed: false
+        needs_onboarding: 'true',
+        onboarding_completed: 'false'
       }
     };
 
