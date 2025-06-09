@@ -81,9 +81,6 @@ export default function SimplifiedOnboardingForm() {
     businessType: '',
     country: 'United States',
     businessState: '',
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
     selectedPlan: 'free',
     billingCycle: 'monthly'
   });
@@ -107,8 +104,6 @@ export default function SimplifiedOnboardingForm() {
     if (step === 'business') {
       if (!formData.businessName.trim()) errors.push('Business name is required');
       if (!formData.businessType) errors.push('Business type is required');
-      if (!formData.firstName.trim()) errors.push('First name is required');
-      if (!formData.lastName.trim()) errors.push('Last name is required');
     }
     
     return errors;
@@ -236,33 +231,7 @@ export default function SimplifiedOnboardingForm() {
           </select>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            First Name *
-          </label>
-          <input
-            type="text"
-            value={formData.firstName}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Your first name"
-          />
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Last Name *
-          </label>
-          <input
-            type="text"
-            value={formData.lastName}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Your last name"
-          />
-        </div>
-        
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Country
           </label>
@@ -276,19 +245,6 @@ export default function SimplifiedOnboardingForm() {
             <option value="United Kingdom">United Kingdom</option>
             <option value="Other">Other</option>
           </select>
-        </div>
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Phone Number
-          </label>
-          <input
-            type="tel"
-            value={formData.phoneNumber}
-            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="(555) 123-4567"
-          />
         </div>
       </div>
     </div>
@@ -359,7 +315,6 @@ export default function SimplifiedOnboardingForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div><span className="font-medium">Business:</span> {formData.businessName}</div>
               <div><span className="font-medium">Type:</span> {formData.businessType}</div>
-              <div><span className="font-medium">Owner:</span> {formData.firstName} {formData.lastName}</div>
               <div><span className="font-medium">Country:</span> {formData.country}</div>
             </div>
           </div>
