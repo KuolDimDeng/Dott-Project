@@ -578,7 +578,7 @@ class Auth0OnboardingCompleteView(APIView):
             logger.info(f"🎯 [ONBOARDING_COMPLETE] User: {user.email} (ID: {user.id})")
             logger.info(f"🎯 [ONBOARDING_COMPLETE] Request data: {request.data}")
             
-            # Get onboarding progress
+            # Get or create onboarding progress
             try:
                 progress = OnboardingProgress.objects.get(user=user)
                 logger.info(f"🎯 [ONBOARDING_COMPLETE] Found existing progress:")
@@ -587,11 +587,26 @@ class Auth0OnboardingCompleteView(APIView):
                 logger.info(f"  - Current setup_completed: {progress.setup_completed}")
                 logger.info(f"  - Current completed_steps: {progress.completed_steps}")
             except OnboardingProgress.DoesNotExist:
-                logger.error(f"🚨 [ONBOARDING_COMPLETE] No onboarding progress found for user {user.email}")
-                return Response({
-                    'success': False,
-                    'error': 'No onboarding progress found'
-                }, status=status.HTTP_400_BAD_REQUEST)
+                logger.info(f"🎯 [ONBOARDING_COMPLETE] No existing progress found for user {user.email}, creating new one")
+                
+                # Create progress record from request data
+                request_data = request.data
+                progress = OnboardingProgress.objects.create(
+                    user=user,
+                    business_name=request_data.get('business_name', ''),
+                    business_type=request_data.get('business_type', ''),
+                    business_country=request_data.get('business_country', 'United States'),
+                    business_state=request_data.get('business_state', ''),
+                    legal_structure=request_data.get('legal_structure', ''),
+                    selected_plan=request_data.get('selected_plan', 'free'),
+                    billing_cycle=request_data.get('billing_cycle', 'monthly'),
+                    current_step='setup',
+                    onboarding_status='in_progress',
+                    completed_steps=['business_info', 'subscription'],
+                    setup_completed=False,
+                    started_at=timezone.now()
+                )
+                logger.info(f"🎯 [ONBOARDING_COMPLETE] Created new progress record for user")
             
             # Mark as complete
             logger.info(f"🎯 [ONBOARDING_COMPLETE] Updating progress to completed...")

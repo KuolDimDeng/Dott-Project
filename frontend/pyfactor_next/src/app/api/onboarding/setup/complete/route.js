@@ -1,4 +1,3 @@
-///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/onboarding/setup/complete/route.js
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
@@ -32,82 +31,61 @@ export async function POST(request) {
     
     const completedAt = new Date().toISOString();
     
-    // Update Django backend onboarding status
+    // Get business info from session storage or request body
+    const body = await request.json();
+    const businessInfo = body.businessInfo || {};
+    
+    // Call the consolidated onboarding completion endpoint instead
     let backendUpdateSuccessful = false;
+    let tenantId = null;
+    
     try {
-      const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+      console.log('[SetupComplete] Calling consolidated onboarding completion');
       
-      console.log('[SetupComplete] Calling Django onboarding completion endpoint:', `${apiBaseUrl}/api/onboarding/complete/`);
-      
-      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+      // Use internal API call to complete onboarding
+      const onboardingResponse = await fetch(new URL('/api/onboarding/complete-all', request.url).href, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'X-User-Email': userEmail,
-          'X-User-Sub': user.sub,
+          'Cookie': request.headers.get('cookie') || ''
         },
         body: JSON.stringify({
-          completed_at: completedAt
+          businessName: businessInfo.businessName || user.businessName || 'My Business',
+          businessType: businessInfo.businessType || 'General Business',
+          country: businessInfo.country || 'United States',
+          businessState: businessInfo.state || '',
+          legalStructure: businessInfo.legalStructure || 'Sole Proprietorship',
+          selectedPlan: 'free',
+          billingCycle: 'monthly',
+          role: 'owner',
+          onboarding_completed: true,
+          onboarding_completed_at: completedAt
         })
       });
       
-      console.log('[SetupComplete] Backend response status:', backendResponse.status);
+      console.log('[SetupComplete] Onboarding response status:', onboardingResponse.status);
       
-      if (backendResponse.ok) {
-        const result = await backendResponse.json();
-        console.log('[SetupComplete] ✅ Django onboarding completion successful:', result);
+      if (onboardingResponse.ok) {
+        const result = await onboardingResponse.json();
+        console.log('[SetupComplete] ✅ Onboarding completion successful:', result);
         backendUpdateSuccessful = true;
         
-        // Store tenant ID if returned by backend
-        if (result.data && result.data.tenantId) {
-          sessionData.tenantId = result.data.tenantId;
-          console.log('[SetupComplete] Got tenant ID from backend:', result.data.tenantId);
+        // Store tenant ID from the result
+        tenantId = result.tenant_id || result.tenantId;
+        if (tenantId) {
+          sessionData.tenantId = tenantId;
+          console.log('[SetupComplete] Got tenant ID from onboarding:', tenantId);
         }
       } else {
-        const errorText = await backendResponse.text();
-        console.error('[SetupComplete] ❌ Django onboarding completion failed:', {
-          status: backendResponse.status,
-          statusText: backendResponse.statusText,
-          error: errorText,
-          url: `${apiBaseUrl}/api/onboarding/complete/`
+        const errorText = await onboardingResponse.text();
+        console.error('[SetupComplete] ❌ Onboarding completion failed:', {
+          status: onboardingResponse.status,
+          statusText: onboardingResponse.statusText,
+          error: errorText
         });
-        
-        // Try alternative endpoint path in case of routing issues
-        try {
-          console.log('[SetupComplete] Trying alternative endpoint: /api/onboarding/complete');
-          const altResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-User-Email': userEmail,
-              'X-User-Sub': user.sub,
-            },
-            body: JSON.stringify({
-              completed_at: completedAt
-            })
-          });
-          
-          if (altResponse.ok) {
-            const altResult = await altResponse.json();
-            console.log('[SetupComplete] ✅ Alternative endpoint successful:', altResult);
-            backendUpdateSuccessful = true;
-            
-            // Store tenant ID if returned by backend
-            if (altResult.data && altResult.data.tenantId) {
-              sessionData.tenantId = altResult.data.tenantId;
-              console.log('[SetupComplete] Got tenant ID from alternative endpoint:', altResult.data.tenantId);
-            }
-          }
-        } catch (altError) {
-          console.error('[SetupComplete] Alternative endpoint also failed:', altError);
-        }
       }
     } catch (backendError) {
-      console.error('[SetupComplete] ❌ Error calling Django onboarding completion:', backendError.message);
+      console.error('[SetupComplete] ❌ Error calling onboarding completion:', backendError.message);
     }
     
     // Update Auth0 session cookie (critical for immediate session updates)
@@ -124,7 +102,7 @@ export async function POST(request) {
           current_onboarding_step: 'completed',
           setupCompletedAt: completedAt,
           lastUpdated: completedAt,
-          tenantId: sessionData.tenantId // Include tenant ID from backend response
+          tenantId: tenantId || sessionData.tenantId // Include tenant ID
         }
       };
       
@@ -138,7 +116,7 @@ export async function POST(request) {
         current_step: 'completed',
         setup_completed_at: completedAt,
         backend_updated: backendUpdateSuccessful,
-        tenantId: sessionData.tenantId // Include tenant ID in response
+        tenantId: tenantId || sessionData.tenantId // Include tenant ID in response
       });
       
       // Update session cookie with new onboarding status
@@ -147,6 +125,15 @@ export async function POST(request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/'
+      });
+      
+      // Also set onboarding completion cookie
+      response.cookies.set('onboardingCompleted', 'true', {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 30, // 30 days
         path: '/'
       });
       
@@ -167,7 +154,8 @@ export async function POST(request) {
         current_step: backendUpdateSuccessful ? 'completed' : 'business_info',
         setup_completed_at: completedAt,
         backend_updated: backendUpdateSuccessful,
-        session_error: sessionError.message
+        session_error: sessionError.message,
+        tenantId: tenantId
       });
     }
     
