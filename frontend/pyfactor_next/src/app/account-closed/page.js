@@ -1,27 +1,23 @@
 'use client';
 
-
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { signOut } from '@/config/amplifyUnified';
 
 export default function AccountClosed() {
   const router = useRouter();
   
   // Clear any remaining auth data on mount and set up redirect
   useEffect(() => {
-    // Clear any Cognito session
-    const clearCognitoSession = async () => {
-      try {
-        await signOut();
-        console.log('Successfully signed out of Cognito');
-      } catch (e) {
-        console.error('Failed to sign out of Cognito:', e);
-      }
-    };
+    // Clear any remaining local storage
+    localStorage.clear();
     
-    clearCognitoSession();
+    // Clear all cookies
+    document.cookie.split(';').forEach(c => {
+      document.cookie = c
+        .replace(/^ +/, '')
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
     
     // Redirect to landing page after 5 seconds
     const redirectTimer = setTimeout(() => {
@@ -56,10 +52,10 @@ export default function AccountClosed() {
         
         <div className="flex flex-col space-y-4">
           <Link 
-            href="/auth/signin"
+            href="/auth/email-signin"
             className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Return to Sign In
+            Create New Account
           </Link>
           
           <a 

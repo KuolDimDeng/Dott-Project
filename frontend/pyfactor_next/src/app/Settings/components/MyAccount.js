@@ -83,6 +83,7 @@ const MyAccount = ({ userData }) => {
   const handleSubmitFeedback = async () => {
     try {
       setIsProcessing(true);
+      setClosureStep('processing');
       
       // Get tenant ID from Cognito attributes first, then from multiple sources for reliability
       const tenantId = userDisplayData?.tenantId || 
@@ -179,10 +180,10 @@ const MyAccount = ({ userData }) => {
           // Show success message before redirecting
           notifySuccess('Account closure request submitted successfully');
           
-          // Redirect to account closed page
+          // Redirect to Auth0 logout to ensure complete logout
           setTimeout(() => {
-            router.push('/account-closed');
-          }, 2000);
+            window.location.href = '/api/auth/logout?returnTo=' + encodeURIComponent('/account-closed');
+          }, 1500);
           
         } catch (fetchError) {
           lastError = fetchError;
@@ -252,13 +253,12 @@ const MyAccount = ({ userData }) => {
     
     return (
       <div className="fixed inset-0 z-50 overflow-y-auto">
-        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-          <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
-          </div>
+        <div className="flex items-center justify-center min-h-screen px-4 py-12">
+          {/* Background overlay */}
+          <div className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" aria-hidden="true"></div>
           
-          {/* Modal panel */}
-          <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          {/* Modal panel - centered properly */}
+          <div className="relative bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all max-w-lg w-full">
             {closureStep === 'confirm' && (
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="sm:flex sm:items-start">
