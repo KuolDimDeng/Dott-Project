@@ -149,7 +149,6 @@ export async function POST(request) {
           needsOnboarding: needsOnboarding,
           onboardingCompleted: hasBackendCompletion ? true : (hasTenantId ? true : !needsOnboarding),
           onboardingComplete: hasBackendCompletion ? true : (hasTenantId ? true : !needsOnboarding),
-          backendCompleted: hasBackendCompletion,
           backendOnboardingStatus: existingUser.onboarding_status,
           setupDone: existingUser.setup_done,
           current_step: existingUser.current_onboarding_step || 'business_info',
@@ -188,11 +187,7 @@ export async function POST(request) {
           }
         }
         
-        console.log('[Create Auth0 User] Returning existing user:', {
-          tenantId: finalTenantId,
-          backendCompleted: hasBackendCompletion,
-          needsOnboarding: needsOnboarding
-        });
+        console.log('[Create Auth0 User] Returning existing user with tenant:', finalTenantId);
         return response;
       } else {
         console.log('[Create Auth0 User] User does not exist in backend (status:', existingUserResponse.status, ')');

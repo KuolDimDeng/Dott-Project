@@ -316,13 +316,6 @@ export async function GET(request) {
       businessInfoCompleted: profileData.businessInfoCompleted
     });
     
-    // Add backend completion status flag
-    profileData.backendCompleted = (backendUser && (
-      backendUser.onboarding_status === 'complete' ||
-      backendUser.setup_done === true ||
-      backendUser.onboarding_completed === true
-    )) || false;
-    
     console.log('🚨 [PROFILE API] ✅ FINAL PROFILE DATA BEING RETURNED:', {
       email: profileData.email,
       tenantId: profileData.tenantId,
@@ -331,7 +324,6 @@ export async function GET(request) {
       currentStep: profileData.currentStep,
       businessInfoCompleted: profileData.businessInfoCompleted,
       hasAllRequiredFields: !!(profileData.email && profileData.tenantId),
-      backendCompleted: profileData.backendCompleted,
       dataSource: accessToken ? 'session+backend' : 'session-only'
     });
     

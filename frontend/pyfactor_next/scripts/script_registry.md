@@ -391,3 +391,18 @@ ll scripts used for the pyfactor project, their execution status, and their purp
 - **Files Modified**:
   - src/app/api/auth/profile/route.js
   - src/app/api/user/create-auth0-user/route.js
+
+## Version0035_fix_onboarding_redirect_with_null_tenant
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix onboarding redirect when backend shows complete but tenant ID is null
+- **Changes**:
+  - authFlowHandler checks backend completion status fields
+  - Added backendCompleted flag to redirect decision logic
+  - Profile API returns backendCompleted flag
+  - create-auth0-user includes backend completion status
+  - Enhanced logging for redirect decisions
+- **Files Modified**:
+  - src/utils/authFlowHandler.js
+  - src/app/api/auth/profile/route.js
+  - src/app/api/user/create-auth0-user/route.js

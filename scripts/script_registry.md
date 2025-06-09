@@ -25,3 +25,17 @@
   - Documented the fix in WSGI_USER_FIX.md
 - **Version**: 1.0
 - **Result**: Deployment should now complete without wsgi user errors
+
+## Frontend Scripts
+
+### Version0035_fix_onboarding_redirect_with_null_tenant.mjs
+- **Purpose**: Fix onboarding redirect for users with null tenant ID but completed onboarding in backend
+- **Status**: Ready to execute
+- **Issue Fixed**: Users who completed onboarding but have null tenant IDs are redirected to onboarding instead of dashboard
+- **Changes Made**:
+  - Updated authFlowHandler.js to check backend completion status (onboardingComplete, setupDone, onboarding_status)
+  - Added backendCompleted flag to profile API response
+  - Enhanced create-auth0-user route to include backend completion status
+  - Added detailed logging for redirect decision making
+- **Version**: 1.0
+- **Result**: Users with backend completion but null tenant IDs will be redirected to dashboard
