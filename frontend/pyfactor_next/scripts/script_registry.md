@@ -337,3 +337,16 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - Updated all business name references to include Auth0 data
 - **Files Modified**:
   - src/app/dashboard/components/DashAppBar.js
+
+## Version0032_fix_onboarding_persistence_after_cache_clear
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix onboarding redirect after browser cache clear for users who completed onboarding
+- **Changes**:
+  - Modified create-auth0-user to treat tenant ID existence as indicator of completed onboarding
+  - Updated profile API to prioritize tenant ID over undefined backend status
+  - Added logic to set onboardingCompleted=true when tenant ID exists
+  - Fixed currentStep to show 'completed' for users with tenant ID
+- **Files Modified**:
+  - src/app/api/user/create-auth0-user/route.js
+  - src/app/api/auth/profile/route.js

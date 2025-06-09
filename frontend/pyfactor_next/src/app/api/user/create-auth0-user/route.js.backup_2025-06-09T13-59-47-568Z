@@ -103,11 +103,8 @@ export async function POST(request) {
         const backendTenantId = existingUser.tenant_id || existingUser.tenantId;
         const finalTenantId = backendTenantId || existingTenantId;
         
-        // If user has a tenant ID, they have completed onboarding
-        const hasTenantId = backendTenantId || finalTenantId;
-        const needsOnboarding = hasTenantId ? false : 
-          (existingUser.needs_onboarding === true || 
-           (existingUser.needs_onboarding === undefined && existingUser.onboarding_completed !== true));
+        const needsOnboarding = existingUser.needs_onboarding !== false && 
+                               !existingUser.onboarding_completed;
         
         // Update session cookie with backend tenant ID
         const updatedSession = {
@@ -131,8 +128,7 @@ export async function POST(request) {
           email: existingUser.email,
           needs_onboarding: needsOnboarding,
           needsOnboarding: needsOnboarding,
-          onboardingCompleted: hasTenantId ? true : !needsOnboarding,
-          onboardingComplete: hasTenantId ? true : !needsOnboarding,
+          onboardingCompleted: !needsOnboarding,
           current_step: existingUser.current_onboarding_step || 'business_info',
           backendUser: {
             ...existingUser,
