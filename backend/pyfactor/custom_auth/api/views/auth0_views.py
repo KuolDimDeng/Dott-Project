@@ -591,20 +591,29 @@ class Auth0OnboardingCompleteView(APIView):
                 
                 # Create progress record from request data
                 request_data = request.data
+                
+                # Get the user's tenant_id if they have one
+                tenant_id = None
+                try:
+                    tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    if tenant:
+                        tenant_id = tenant.id
+                    else:
+                        # If no tenant exists yet, we'll need to handle this
+                        logger.warning(f"🎯 [ONBOARDING_COMPLETE] No tenant found for user {user.email}")
+                except Exception as e:
+                    logger.error(f"🎯 [ONBOARDING_COMPLETE] Error getting tenant: {str(e)}")
+                
                 progress = OnboardingProgress.objects.create(
                     user=user,
-                    business_name=request_data.get('business_name', ''),
-                    business_type=request_data.get('business_type', ''),
-                    business_country=request_data.get('business_country', 'United States'),
-                    business_state=request_data.get('business_state', ''),
-                    legal_structure=request_data.get('legal_structure', ''),
+                    tenant_id=tenant_id or user.id,  # Use user.id as fallback if no tenant
                     selected_plan=request_data.get('selected_plan', 'free'),
                     billing_cycle=request_data.get('billing_cycle', 'monthly'),
                     current_step='setup',
                     onboarding_status='in_progress',
                     completed_steps=['business_info', 'subscription'],
                     setup_completed=False,
-                    started_at=timezone.now()
+                    created_at=timezone.now()
                 )
                 logger.info(f"🎯 [ONBOARDING_COMPLETE] Created new progress record for user")
             
