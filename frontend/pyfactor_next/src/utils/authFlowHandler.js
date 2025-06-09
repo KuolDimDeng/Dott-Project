@@ -71,24 +71,56 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       redirectUrl: null
     };
 
+    // Check backend completion status
+    const backendCompleted = profileData?.backendCompleted === true ||
+                           userData.backendCompleted === true ||
+                           userData.onboardingComplete === true ||
+                           userData.setupDone === true ||
+                           userData.onboarding_status === 'complete';
+    
     // Check onboarding status from multiple sources
     const isOnboardingComplete = 
       profileData?.onboardingCompleted === true ||
       userData.onboardingComplete === true ||
+      backendCompleted ||
       (userData.isExistingUser && userData.tenantId && !profileData?.needsOnboarding);
 
     // Use profile data as the source of truth when available
-    if (profileData && profileData.tenantId) {
-      finalUserData.tenantId = profileData.tenantId;
+    if (profileData) {
+      if (profileData.tenantId) {
+        finalUserData.tenantId = profileData.tenantId;
+      }
       finalUserData.needsOnboarding = profileData.needsOnboarding === true;
       finalUserData.onboardingCompleted = profileData.onboardingCompleted === true;
+      
+      // Override with backend completion status if available
+      if (backendCompleted) {
+        finalUserData.needsOnboarding = false;
+        finalUserData.onboardingCompleted = true;
+      }
     }
 
-    if (isOnboardingComplete && finalUserData.tenantId) {
+    console.log('[AuthFlowHandler] Redirect decision factors:', {
+      tenantId: finalUserData.tenantId,
+      needsOnboarding: finalUserData.needsOnboarding,
+      onboardingCompleted: finalUserData.onboardingCompleted,
+      backendCompleted: backendCompleted,
+      isOnboardingComplete: isOnboardingComplete,
+      authMethod
+    });
+
+    // Determine redirect URL
+    if (backendCompleted || (isOnboardingComplete && finalUserData.tenantId)) {
       // User has completed onboarding
       finalUserData.needsOnboarding = false;
       finalUserData.onboardingCompleted = true;
-      finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
+      if (finalUserData.tenantId) {
+        finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
+      } else {
+        // Backend shows complete but no tenant ID - still go to dashboard
+        console.log('[AuthFlowHandler] Backend complete but no tenant ID - redirecting to dashboard');
+        finalUserData.redirectUrl = '/dashboard';
+      }
     } else {
       // User needs onboarding
       finalUserData.needsOnboarding = true;
