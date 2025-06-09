@@ -163,11 +163,21 @@ export default function EmailPasswordSignIn() {
 
       const sessionResult = await sessionResponse.json();
 
-      // Redirect based on onboarding status
-      if (sessionResult.needsOnboarding) {
+      // Use unified auth flow handler
+      const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
+      const finalUserData = await handlePostAuthFlow({
+        user: authResult.user,
+        accessToken: authResult.access_token,
+        idToken: authResult.id_token
+      }, 'email-password');
+
+      // Redirect based on unified flow result
+      if (finalUserData.redirectUrl) {
+        router.push(finalUserData.redirectUrl);
+      } else if (finalUserData.needsOnboarding) {
         router.push('/onboarding');
-      } else if (sessionResult.tenantId) {
-        router.push(`/tenant/${sessionResult.tenantId}/dashboard`);
+      } else if (finalUserData.tenantId) {
+        router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
       } else {
         router.push('/dashboard');
       }

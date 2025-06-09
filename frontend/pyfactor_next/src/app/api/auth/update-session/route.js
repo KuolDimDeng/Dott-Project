@@ -1,88 +1,85 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { logger } from '@/utils/logger';
 
 /**
- * Update session endpoint to properly persist Auth0 session data
+ * Update the current session with new data
+ * Used to update tenant ID and onboarding status after authentication
  */
 export async function POST(request) {
   try {
-    console.log('[Update Session] Updating Auth0 session data');
+    const body = await request.json();
+    const { tenantId, needsOnboarding, onboardingCompleted } = body;
     
-    const updates = await request.json();
+    logger.info('[UpdateSession] Updating session data', {
+      tenantId,
+      needsOnboarding,
+      onboardingCompleted
+    });
+    
+    // Get current session
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
-      return NextResponse.json({ error: 'No session found' }, { status: 401 });
+      logger.error('[UpdateSession] No session cookie found');
+      return NextResponse.json(
+        { error: 'No active session' },
+        { status: 401 }
+      );
     }
     
-    // Parse current session
     let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    } catch (error) {
-      console.error('[Update Session] Error parsing session:', error);
-      return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
+    } catch (parseError) {
+      logger.error('[UpdateSession] Error parsing session cookie:', parseError);
+      return NextResponse.json(
+        { error: 'Invalid session data' },
+        { status: 400 }
+      );
     }
     
-    // Update session with new data
-    if (updates.tenantId) {
-      sessionData.user.tenantId = updates.tenantId;
-      sessionData.user.tenant_id = updates.tenantId;
+    // Update session data
+    if (tenantId !== undefined) {
+      sessionData.user.tenantId = tenantId;
     }
     
-    if (updates.needsOnboarding !== undefined) {
-      sessionData.user.needsOnboarding = updates.needsOnboarding;
-      sessionData.user.needs_onboarding = updates.needsOnboarding;
+    if (needsOnboarding !== undefined) {
+      sessionData.user.needsOnboarding = needsOnboarding;
     }
     
-    if (updates.onboardingCompleted !== undefined) {
-      sessionData.user.onboardingCompleted = updates.onboardingCompleted;
-      sessionData.user.onboarding_completed = updates.onboardingCompleted;
+    if (onboardingCompleted !== undefined) {
+      sessionData.user.onboardingCompleted = onboardingCompleted;
     }
     
-    if (updates.currentStep) {
-      sessionData.user.currentStep = updates.currentStep;
-      sessionData.user.current_onboarding_step = updates.currentStep;
-    }
-    
-    // Add timestamp
-    sessionData.user.lastUpdated = new Date().toISOString();
-    
-    console.log('[Update Session] Updated user data:', {
-      email: sessionData.user.email,
-      tenantId: sessionData.user.tenantId,
-      needsOnboarding: sessionData.user.needsOnboarding,
-      onboardingCompleted: sessionData.user.onboardingCompleted
-    });
-    
-    // Encode updated session
-    const updatedCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Re-encode session
+    const updatedSessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
     
     // Create response
-    const response = NextResponse.json({ 
+    const response = NextResponse.json({
       success: true,
-      message: 'Session updated successfully',
-      updates: {
-        tenantId: sessionData.user.tenantId,
-        needsOnboarding: sessionData.user.needsOnboarding,
-        onboardingCompleted: sessionData.user.onboardingCompleted
-      }
+      message: 'Session updated successfully'
     });
     
-    // Set the updated session cookie
-    response.cookies.set('appSession', updatedCookie, {
-      path: '/',
+    // Set updated session cookie
+    response.cookies.set('appSession', updatedSessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 // 7 days
+      maxAge: 3600, // 1 hour
+      path: '/'
     });
+    
+    logger.info('[UpdateSession] Session updated successfully');
     
     return response;
     
   } catch (error) {
-    console.error('[Update Session] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    logger.error('[UpdateSession] Error updating session:', error);
+    return NextResponse.json(
+      { error: 'Failed to update session' },
+      { status: 500 }
+    );
   }
 }

@@ -54,129 +54,21 @@ export default function Auth0CallbackPage() {
           accessToken = tokenData.access_token;
         }
         
-        // Get complete user profile from backend
-        let backendUser;
-        try {
-          setStatus('Setting up your account...');
-          console.log('[Auth0Callback] Creating user in Django backend');
-          
-          const createUserResponse = await fetch('/api/user/create-auth0-user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (createUserResponse.ok) {
-            const createUserData = await createUserResponse.json();
-            console.log('[Auth0Callback] User creation result:', {
-              success: createUserData.success,
-              tenantId: createUserData.tenant_id || createUserData.tenantId,
-              currentStep: createUserData.current_step,
-              isExistingUser: createUserData.isExistingUser,
-              needsOnboarding: createUserData.needsOnboarding,
-              onboardingCompleted: createUserData.onboardingCompleted
-            });
-            
-            // Extract tenant ID and onboarding status from response
-            const tenantId = createUserData.tenant_id || createUserData.tenantId;
-            const needsOnboarding = createUserData.needsOnboarding || createUserData.needs_onboarding !== false;
-            const onboardingCompleted = createUserData.onboardingCompleted || createUserData.onboarding_completed === true;
-            
-            backendUser = {
-              email: sessionData.user.email,
-              sub: sessionData.user.sub,
-              name: sessionData.user.name,
-              picture: sessionData.user.picture,
-              tenantId: tenantId,
-              needsOnboarding: needsOnboarding && !onboardingCompleted,
-              onboardingCompleted: onboardingCompleted || (tenantId && !needsOnboarding),
-              currentStep: createUserData.current_step || createUserData.currentStep || 'business_info',
-              isNewUser: createUserData.success ? !createUserData.isExistingUser : false,
-              isExistingUser: createUserData.isExistingUser
-            };
-            
-            console.log('[Auth0Callback] Updated backend user with Django data:', {
-              ...backendUser,
-              accessToken: backendUser.accessToken ? 'REDACTED' : undefined
-            });
-          } else {
-            console.warn('[Auth0Callback] User creation failed, checking if user exists');
-            
-            // Try to get existing user data from the response
-            try {
-              const errorData = await createUserResponse.json();
-              if (errorData.fallback && errorData.tenant_id) {
-                console.log('[Auth0Callback] Using fallback tenant ID:', errorData.tenant_id);
-                backendUser = {
-                  email: sessionData.user.email,
-                  sub: sessionData.user.sub,
-                  name: sessionData.user.name,
-                  picture: sessionData.user.picture,
-                  tenantId: errorData.tenant_id,
-                  needsOnboarding: true,
-                  onboardingCompleted: false,
-                  currentStep: 'business_info',
-                  isNewUser: !errorData.isExistingUser
-                };
-              }
-            } catch (parseError) {
-              console.error('[Auth0Callback] Error parsing create user response:', parseError);
-            }
-          }
-        } catch (createUserError) {
-          console.error('[Auth0Callback] Error creating user in backend:', createUserError);
-          // Continue with default values
-        }
+        // Use unified auth flow handler
+        setStatus('Setting up your account...');
+        const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
+        const backendUser = await handlePostAuthFlow({
+          user: sessionData.user,
+          accessToken: sessionData.accessToken || accessToken,
+          idToken: sessionData.idToken
+        }, 'oauth');
         
-        // If we still don't have backend user data, try the original endpoint
-        if (!backendUser || !backendUser.tenantId) {
-          try {
-            const userResponse = await fetch('/api/user/current', {
-              headers: {
-                'Authorization': `Bearer ${accessToken || 'session-token'}`,
-                'Content-Type': 'application/json',
-              },
-            });
-            
-            if (userResponse.ok) {
-              const existingUser = await userResponse.json();
-              console.log('[Auth0Callback] Found existing user data:', existingUser);
-              
-              backendUser = {
-                email: existingUser.email || sessionData.user.email,
-                sub: existingUser.sub || sessionData.user.sub,
-                name: existingUser.name || sessionData.user.name,
-                picture: existingUser.picture || sessionData.user.picture,
-                tenantId: existingUser.tenant_id || existingUser.tenantId,
-                needsOnboarding: existingUser.needs_onboarding !== false,
-                onboardingCompleted: existingUser.onboarding_completed || false,
-                currentStep: existingUser.current_step || 'business_info',
-                isNewUser: !existingUser.tenant_id
-              };
-            }
-          } catch (error) {
-            console.log('[Auth0Callback] Backend user fetch failed:', error);
-          }
-        }
-        
-        // Final fallback if we still don't have backend user data
-        if (!backendUser) {
-          console.log('[Auth0Callback] Using fallback user data');
-          backendUser = {
-            email: sessionData.user.email,
-            sub: sessionData.user.sub,
-            name: sessionData.user.name,
-            picture: sessionData.user.picture,
-            needsOnboarding: true,
-            tenantId: null,
-            onboardingCompleted: false,
-            currentStep: 'business_info',
-            isNewUser: true
-          };
-        }
-        
-        console.log('[Auth0Callback] Backend user data:', backendUser);
+        console.log('[Auth0Callback] Unified auth flow completed:', {
+          email: backendUser.email,
+          tenantId: backendUser.tenantId,
+          needsOnboarding: backendUser.needsOnboarding,
+          redirectUrl: backendUser.redirectUrl
+        });
         
         console.log('[Auth0Callback] User profile loaded:', {
           email: backendUser.email,
@@ -189,216 +81,88 @@ export default function Auth0CallbackPage() {
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
         
-        // 🎯 Smart Routing Logic Implementation
-        
-        // 1. Check latest onboarding status from profile API (most reliable source)
-        let latestOnboardingStatus = null;
-        try {
-          setStatus('Checking onboarding status...');
-          const profileResponse = await fetch('/api/auth/profile');
-          if (profileResponse.ok) {
-            const profileData = await profileResponse.json();
-            console.log('[Auth0Callback] Latest profile data:', {
-              needsOnboarding: profileData.needsOnboarding,
-              onboardingCompleted: profileData.onboardingCompleted,
-              currentStep: profileData.currentStep
-            });
-            
-            latestOnboardingStatus = {
-              needsOnboarding: profileData.needsOnboarding,
-              onboardingCompleted: profileData.onboardingCompleted,
-              currentStep: profileData.currentStep
-            };
-            
-            // Update backend user with latest status
-            if (latestOnboardingStatus.onboardingCompleted === true) {
-              backendUser.onboardingCompleted = true;
-              backendUser.needsOnboarding = false;
-            }
-          }
-        } catch (profileError) {
-          console.warn('[Auth0Callback] Could not fetch latest profile:', profileError);
-        }
-        
-        // 2. COMPLETED USER - Go directly to dashboard
-        if (backendUser.tenantId && (backendUser.onboardingCompleted || (latestOnboardingStatus && latestOnboardingStatus.onboardingCompleted))) {
-          setStatus('Loading your dashboard...');
-          console.log('[Auth0Callback] User has completed onboarding, redirecting to tenant dashboard');
+        // Use the redirect URL from the unified flow handler
+        if (backendUser.redirectUrl) {
+          const displayStatus = backendUser.needsOnboarding 
+            ? 'Setting up your account...' 
+            : 'Loading your dashboard...';
+          
+          setStatus(displayStatus);
           
           setTimeout(() => {
-            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
+            router.push(backendUser.redirectUrl);
           }, 1500);
           return;
         }
         
-        // **ENHANCED: Check if this is an existing user with completed onboarding**
-        if (backendUser.tenantId && !backendUser.isNewUser && (latestOnboardingStatus?.needsOnboarding === false || latestOnboardingStatus?.onboardingCompleted === true)) {
-          setStatus('Welcome back! Loading your dashboard...');
-          console.log('[Auth0Callback] Existing user with completed onboarding, redirecting to tenant dashboard');
-          
-          setTimeout(() => {
-            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-          }, 1500);
-          return;
-        }
-        
-        // **CRITICAL FIX: Existing users with tenants should always go to dashboard**
-        if (backendUser.tenantId && backendUser.isExistingUser) {
-          setStatus('Welcome back! Loading your dashboard...');
-          console.log('[Auth0Callback] Existing user with tenant, assuming onboarding complete, redirecting to tenant dashboard');
-          
-          // Update session to mark onboarding as complete
-          setTimeout(async () => {
-            try {
-              await fetch('/api/auth/update-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  tenantId: backendUser.tenantId,
-                  needsOnboarding: false,
-                  onboardingCompleted: true
-                })
-              });
-            } catch (error) {
-              console.error('[Auth0Callback] Failed to update session:', error);
-            }
-            
-            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-          }, 1500);
-          return;
-        }
-        
-        // 3. NEW USER - No tenant or needs onboarding  
-        if ((!backendUser.tenantId && (backendUser.isNewUser || backendUser.needsOnboarding))) {
-          setStatus('Setting up your account...');
-          console.log('[Auth0Callback] New user without tenant ID detected, redirecting to simplified onboarding');
-          
-          setTimeout(() => {
-            // Clear any stale session data before redirecting to onboarding
-            if (typeof window !== 'undefined') {
-              // Force session refresh on next page load
-              sessionStorage.setItem('session_needs_refresh', 'true');
-            }
-            router.push('/onboarding');
-          }, 1500);
-          return;
-        }
-        
-        // 3.5 EXISTING USER WITH TENANT - Has tenant ID but marked as needsOnboarding
+        // Fallback routing if no redirect URL was set
         if (backendUser.tenantId) {
-          console.log('[Auth0Callback] Existing user with tenant, updating session and redirecting to dashboard');
+          setStatus('Loading your dashboard...');
+          console.log('[Auth0Callback] Fallback: Redirecting to tenant dashboard');
           
-          setTimeout(async () => {
-            // Update the session with the tenant ID
-            try {
-              await fetch('/api/auth/update-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  tenantId: backendUser.tenantId,
-                  needsOnboarding: false,
-                  onboardingCompleted: true
-                })
-              });
-            } catch (error) {
-              console.error('[Auth0Callback] Failed to update session:', error);
-            }
-            
+          setTimeout(() => {
             router.push(`/tenant/${backendUser.tenantId}/dashboard`);
           }, 1500);
           return;
         }
         
-        // 4. RETURNING USER WITH INCOMPLETE ONBOARDING
-        if (backendUser.tenantId && !backendUser.onboardingCompleted) {
-          try {
-            setStatus('Checking your setup progress...');
-            
-            const onboardingResponse = await fetch(`/api/onboarding/status?tenantId=${backendUser.tenantId}`, {
-              headers: {
-                'Authorization': `Bearer ${accessToken || 'session-token'}`,
-                'Content-Type': 'application/json',
-              },
-            });
-            
-            if (onboardingResponse.ok) {
-              const onboardingStatus = await onboardingResponse.json();
-              
-              if (onboardingStatus && onboardingStatus.status !== 'completed') {
-                setStatus('Resuming your setup...');
-                console.log('[Auth0Callback] User needs to complete onboarding, redirecting to simplified form');
-                
-                setTimeout(() => {
-                  router.push('/onboarding');
-                }, 1500);
-                return;
-              }
-            }
-          } catch (error) {
-            console.warn('[Auth0Callback] Could not check onboarding status:', error);
-            // Fallback to simplified onboarding if status check fails
-            setTimeout(() => {
-              router.push('/onboarding');
-            }, 1500);
-            return;
-          }
-        }
-        
-        // 5. Fallback: Something went wrong, go to generic dashboard
-        setStatus('Loading dashboard...');
-        console.warn('[Auth0Callback] Fallback routing to generic dashboard');
+        // Final fallback - redirect to onboarding
+        setStatus('Setting up your account...');
+        console.log('[Auth0Callback] Fallback: Redirecting to onboarding');
         
         setTimeout(() => {
-          router.push('/dashboard');
+          router.push('/onboarding');
         }, 1500);
         
       } catch (error) {
-        console.error('[Auth0Callback] Error in callback handler:', error);
+        console.error('[Auth0Callback] Error during callback:', error);
         setError(error.message || 'Authentication failed');
         setIsLoading(false);
         
-        // Delay redirect to show error
+        // Redirect to login page after showing error
         setTimeout(() => {
-          router.push('/auth/signin?error=callback_failed');
+          router.push('/auth/email-signin?error=auth_failed');
         }, 3000);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     handleCallback();
   }, [router, redirectHandled]);
 
-  // Show loading while processing
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full space-y-8 text-center">
+          <div>
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Authentication Error
+            </h2>
+            <p className="mt-2 text-sm text-red-600">
+              {error}
+            </p>
+            <p className="mt-4 text-sm text-gray-600">
+              Redirecting to login page...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center space-y-4">
-        <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
-        <h2 className="text-xl font-semibold text-gray-900">Authenticating...</h2>
-        <p className="text-gray-600">{status}</p>
-        
-        {user && (
-          <div className="text-sm text-gray-600 mt-4">
-            <p>Welcome back, {user.name || user.email}!</p>
+      <div className="max-w-md w-full space-y-8 text-center">
+        <div>
+          <div className="flex justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
           </div>
-        )}
-        
-        {error ? (
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-800 text-sm">{error}</p>
-            <p className="text-red-600 text-xs mt-1">Redirecting to sign in...</p>
-          </div>
-        ) : (
-          <div className="text-sm text-gray-500 space-y-1 mt-6">
-            <p>🎯 Smart routing in progress...</p>
-            <div className="text-xs text-left bg-gray-100 p-2 rounded max-w-xs mx-auto">
-              <div>✓ New User → /onboarding</div>
-              <div>✓ Incomplete → /onboarding</div>
-              <div>✓ Complete → /tenant/[id]/dashboard</div>
-              <div>✓ Fallback → /dashboard</div>
-            </div>
-          </div>
-        )}
+          <h2 className="mt-6 text-2xl font-semibold text-gray-900">
+            {status}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Please wait while we complete your authentication...
+          </p>
+        </div>
       </div>
     </div>
   );
