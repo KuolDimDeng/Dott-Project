@@ -406,3 +406,17 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - src/utils/authFlowHandler.js
   - src/app/api/auth/profile/route.js
   - src/app/api/user/create-auth0-user/route.js
+
+## Version0036_fix_dashboard_errors
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix dashboard errors after login
+- **Changes**:
+  - Fixed "Tenant ID not found" warning to check onboarding status
+  - Fixed logout handler in Auth0 route to use custom domain
+  - Fixed menu privileges fetch to handle errors gracefully
+  - Updated DashAppBar to handle logout and menu privileges properly
+- **Files Modified**:
+  - src/app/dashboard/page.js
+  - src/app/api/auth/[...auth0]/route.js
+  - src/app/dashboard/components/DashAppBar.js
