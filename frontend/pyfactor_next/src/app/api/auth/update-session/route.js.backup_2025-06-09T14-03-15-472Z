@@ -40,37 +40,17 @@ export async function POST(request) {
       );
     }
     
-    // Update session data with all status variations
+    // Update session data
     if (tenantId !== undefined) {
       sessionData.user.tenantId = tenantId;
-      sessionData.user.tenant_id = tenantId;
     }
     
     if (needsOnboarding !== undefined) {
       sessionData.user.needsOnboarding = needsOnboarding;
-      sessionData.user.needs_onboarding = needsOnboarding;
     }
     
     if (onboardingCompleted !== undefined) {
       sessionData.user.onboardingCompleted = onboardingCompleted;
-      sessionData.user.onboarding_completed = onboardingCompleted;
-      sessionData.user.isOnboarded = onboardingCompleted;
-      sessionData.user.setupComplete = onboardingCompleted;
-      sessionData.user.setup_complete = onboardingCompleted;
-      
-      // If onboarding is completed, ensure all related fields are set
-      if (onboardingCompleted === true) {
-        sessionData.user.currentStep = 'completed';
-        sessionData.user.current_onboarding_step = 'completed';
-        sessionData.user.onboardingStatus = 'completed';
-      }
-    }
-    
-    // Extract currentStep from body if provided
-    const { currentStep } = body;
-    if (currentStep !== undefined) {
-      sessionData.user.currentStep = currentStep;
-      sessionData.user.current_onboarding_step = currentStep;
     }
     
     // Re-encode session
@@ -87,7 +67,7 @@ export async function POST(request) {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 3600, // 1 hour
       path: '/'
     });
     

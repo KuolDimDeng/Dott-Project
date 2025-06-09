@@ -58,17 +58,13 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       ...sessionData,
       user: {
         ...sessionData.user,
-        // Mark onboarding as complete with all possible variations
+        // Mark onboarding as complete
         needsOnboarding: false,
         onboardingCompleted: true,
         onboarding_completed: true,
         needs_onboarding: false,
         currentStep: 'completed',
         current_onboarding_step: 'completed',
-        onboardingStatus: 'completed',
-        isOnboarded: true,
-        setupComplete: true,
-        setup_complete: true,
         
         // Store tenant information
         tenant_id: tenantId,
@@ -137,9 +133,6 @@ async function createTenantInBackend(user, onboardingData, tenantId, accessToken
       address: onboardingData.address,
       role: 'owner', // Assign owner role
       onboarding_completed: true,
-      needs_onboarding: false,
-      current_onboarding_step: 'completed',
-      setup_complete: true,
       onboarding_completed_at: new Date().toISOString()
     };
     
@@ -306,32 +299,6 @@ export async function POST(request) {
       plan: onboardingData.selectedPlan,
       backendSuccess: backendResult.success
     });
-    
-    // Update backend user record with onboarding completion if we have access token
-    if (sessionData.accessToken) {
-      try {
-        const backendUpdateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/update-onboarding-status/`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.accessToken}`
-          },
-          body: JSON.stringify({
-            user_id: user.sub,
-            tenant_id: tenantId,
-            onboarding_completed: true,
-            needs_onboarding: false,
-            current_step: 'completed'
-          })
-        });
-        
-        if (backendUpdateResponse.ok) {
-          console.log('[CompleteOnboarding] Successfully updated backend user onboarding status');
-        }
-      } catch (error) {
-        console.error('[CompleteOnboarding] Failed to update backend user status:', error);
-      }
-    }
     
     // Also update the session via the update endpoint for redundancy
     try {
