@@ -206,7 +206,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
     return {
       text: t('get_started_for_free', 'GET STARTED FOR FREE'),
       action: () => {
-        router.push('/api/auth/login');
+        router.push('/auth/email-signin');
       }
     };
   };

@@ -57,7 +57,7 @@ export default function SmartRouteButton({ className = '', children = 'Smart Nav
   if (!user && !isLoading) {
     return (
       <a
-        href="/api/auth/login"
+        href="/auth/email-signin"
         className={`inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ${className}`}
       >
         🔑 Sign In
