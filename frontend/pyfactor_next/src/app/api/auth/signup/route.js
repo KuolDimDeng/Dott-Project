@@ -42,10 +42,10 @@ export async function POST(request) {
       email: email,
       password: password,
       connection: 'Username-Password-Authentication',
+      given_name: given_name,
+      family_name: family_name,
+      name: name || `${given_name} ${family_name}`.trim(),
       user_metadata: {
-        given_name: given_name,
-        family_name: family_name,
-        name: name || `${given_name} ${family_name}`,
         needs_onboarding: 'true',
         onboarding_completed: 'false'
       }

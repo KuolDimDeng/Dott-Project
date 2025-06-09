@@ -106,7 +106,8 @@ const DashAppBar = ({
     businessName: auth0BusinessName,
     getFullName: getAuth0FullName,
     getBusinessName: getAuth0BusinessName,
-    getBusinessNameSync: getAuth0BusinessNameSync
+    getBusinessNameSync: getAuth0BusinessNameSync,
+    getUserInitials: getAuth0UserInitials
   } = useAuth0Data();
   
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
@@ -848,16 +849,18 @@ const DashAppBar = ({
 
   // Update user initials when Auth0 user data is available
   useEffect(() => {
-    if (auth0User && !auth0Loading) {
-      const initials = generateInitialsFromNames(auth0User.given_name, auth0User.family_name, auth0User.email);
+    if (auth0User && !auth0Loading && getAuth0UserInitials) {
+      const initials = getAuth0UserInitials(auth0User);
       logger.debug('[DashAppBar] Setting user initials from Auth0:', { 
         initials, 
         given_name: auth0User.given_name, 
-        family_name: auth0User.family_name 
+        family_name: auth0User.family_name,
+        name: auth0User.name,
+        email: auth0User.email 
       });
       setUserInitials(initials);
     }
-  }, [auth0User, auth0Loading, generateInitialsFromNames]);
+  }, [auth0User, auth0Loading, getAuth0UserInitials]);
 
   // Fetch business name from session and profile
   useEffect(() => {
