@@ -1,21 +1,52 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
+
+/**
+ * Validate Auth0 session
+ */
+async function validateAuth0Session(request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
+    
+    if (!sessionCookie) {
+      return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
+    }
+    
+    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    
+    // Check if session is expired
+    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+      return { isAuthenticated: false, error: 'Session expired', user: null };
+    }
+    
+    if (!sessionData.user) {
+      return { isAuthenticated: false, error: 'Invalid session data', user: null };
+    }
+    
+    return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
+  } catch (error) {
+    logger.error('[Update Onboarding Status] Session validation error:', error);
+    return { isAuthenticated: false, error: 'Session validation failed', user: null };
+  }
+}
 
 /**
  * Update user onboarding status in backend
  */
 export async function POST(request) {
   try {
-    // Get current session
-    const session = await getSession(request);
-    if (!session || !session.user) {
+    // Validate Auth0 session
+    const authResult = await validateAuth0Session(request);
+    if (!authResult.isAuthenticated) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', message: authResult.error },
         { status: 401 }
       );
     }
 
+    const { user, sessionData } = authResult;
     const body = await request.json();
     const { tenantId, onboardingCompleted = true } = body;
 
@@ -27,7 +58,7 @@ export async function POST(request) {
     }
 
     logger.info('[Update Onboarding Status] Updating status for user:', {
-      email: session.user.email,
+      email: user.email,
       tenantId,
       onboardingCompleted
     });
@@ -47,10 +78,10 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`
+          'Authorization': `Bearer ${sessionData.accessToken || ''}`
         },
         body: JSON.stringify({
-          user_id: session.user.sub,
+          user_id: user.sub,
           tenant_id: tenantId,
           onboarding_completed: onboardingCompleted,
           needs_onboarding: !onboardingCompleted,

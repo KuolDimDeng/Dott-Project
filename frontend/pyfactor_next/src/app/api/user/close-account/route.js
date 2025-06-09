@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@auth0/nextjs-auth0';
+import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 
 const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
@@ -7,6 +7,36 @@ const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
 const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
 const AUTH0_MANAGEMENT_CLIENT_ID = process.env.AUTH0_MANAGEMENT_CLIENT_ID || AUTH0_CLIENT_ID;
 const AUTH0_MANAGEMENT_CLIENT_SECRET = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET || AUTH0_CLIENT_SECRET;
+
+/**
+ * Validate Auth0 session
+ */
+async function validateAuth0Session(request) {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
+    
+    if (!sessionCookie) {
+      return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
+    }
+    
+    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    
+    // Check if session is expired
+    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+      return { isAuthenticated: false, error: 'Session expired', user: null };
+    }
+    
+    if (!sessionData.user) {
+      return { isAuthenticated: false, error: 'Invalid session data', user: null };
+    }
+    
+    return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
+  } catch (error) {
+    logger.error('[Close Account] Session validation error:', error);
+    return { isAuthenticated: false, error: 'Session validation failed', user: null };
+  }
+}
 
 /**
  * Get Auth0 Management API access token
@@ -103,26 +133,27 @@ async function deleteBackendUserData(userId, tenantId) {
 
 export async function POST(request) {
   try {
-    // Get current session
-    const session = await getSession(request);
-    if (!session || !session.user) {
+    // Validate Auth0 session
+    const authResult = await validateAuth0Session(request);
+    if (!authResult.isAuthenticated) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized', message: authResult.error },
         { status: 401 }
       );
     }
 
+    const { user, sessionData } = authResult;
     const body = await request.json();
     const { reason, userId, tenantId } = body;
 
     // Use session user ID if not provided
-    const userIdToDelete = userId || session.user.sub;
+    const userIdToDelete = userId || user.sub;
     
     logger.info('[Close Account] Processing account closure request:', {
       userId: userIdToDelete,
       tenantId,
       reason,
-      sessionUser: session.user.email
+      sessionUser: user.email
     });
 
     // Step 1: Get Auth0 Management API token
