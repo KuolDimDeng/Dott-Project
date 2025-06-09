@@ -199,7 +199,7 @@ export async function GET(request) {
             backendUser.onboarding_completed === true || 
             backendUser.onboarding_status === 'complete' ||
             backendUser.setup_done === true
-          ));
+          )));
           
           // Merge backend data, prioritizing tenant info from backend
           profileData = {
