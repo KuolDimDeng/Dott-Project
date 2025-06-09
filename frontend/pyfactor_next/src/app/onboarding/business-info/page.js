@@ -9,27 +9,8 @@ import LoadingScreen from '@/components/LoadingScreen';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
-// Safe import with fallback for countries
-let countries = {};
-try {
-  const countriesModule = require('countries-list');
-  countries = countriesModule.countries || {};
-} catch (error) {
-  logger.error('[BusinessInfoPage] Failed to import countries-list', error);
-  // Fallback country list
-  countries = {
-    US: { name: 'United States' },
-    CA: { name: 'Canada' },
-    GB: { name: 'United Kingdom' },
-    AU: { name: 'Australia' },
-    DE: { name: 'Germany' },
-    FR: { name: 'France' },
-    JP: { name: 'Japan' },
-    IN: { name: 'India' },
-    BR: { name: 'Brazil' },
-    MX: { name: 'Mexico' }
-  };
-}
+// Import countries-list for comprehensive country dropdown
+import { countries } from 'countries-list';
 
 // Safe import for API function with SECURE authentication
 let submitBusinessInfo;
@@ -135,13 +116,8 @@ const BusinessInfoPageContent = () => {
     return requiredFields.every(field => businessInfo[field]?.trim());
   }, [businessInfo]);
 
-  // Convert countries object to array for dropdown with safety check
+  // Convert countries object to array for dropdown
   const countryOptions = useMemo(() => {
-    if (!countries || typeof countries !== 'object') {
-      logger.warn('[BusinessInfoPage] Countries data not available, using fallback');
-      return [{ value: 'United States', label: 'United States', code: 'US' }];
-    }
-    
     return Object.entries(countries).map(([code, country]) => ({
       value: country.name,
       label: country.name,

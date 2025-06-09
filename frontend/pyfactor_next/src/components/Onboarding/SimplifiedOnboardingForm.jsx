@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { countries } from 'countries-list';
+import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
 /**
  * Simplified Onboarding Form Component
@@ -60,17 +62,6 @@ const PLANS = [
   }
 ];
 
-// Business types for quick selection
-const BUSINESS_TYPES = [
-  'Technology',
-  'Retail', 
-  'Healthcare',
-  'Finance',
-  'Manufacturing',
-  'Consulting',
-  'Real Estate',
-  'Other'
-];
 
 export default function SimplifiedOnboardingForm() {
   const router = useRouter();
@@ -79,8 +70,9 @@ export default function SimplifiedOnboardingForm() {
   const [formData, setFormData] = useState({
     businessName: '',
     businessType: '',
+    legalStructure: '',
     country: 'United States',
-    businessState: '',
+    dateFounded: new Date().toISOString().split('T')[0], // Default to today
     selectedPlan: 'free',
     billingCycle: 'monthly'
   });
@@ -89,6 +81,31 @@ export default function SimplifiedOnboardingForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [currentStep, setCurrentStep] = useState('business'); // business, plan, review
+  
+  // Convert countries object to array for dropdown
+  const countryOptions = useMemo(() => {
+    return Object.entries(countries).map(([code, country]) => ({
+      value: country.name,
+      label: country.name,
+      code: code
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, []);
+  
+  // Format businessTypes for dropdown
+  const businessTypeOptions = useMemo(() => {
+    return businessTypes.map(type => ({
+      value: type,
+      label: type
+    }));
+  }, []);
+  
+  // Format legalStructures for dropdown
+  const legalStructureOptions = useMemo(() => {
+    return legalStructures.map(structure => ({
+      value: structure,
+      label: structure
+    }));
+  }, []);
   
   // Handle input changes
   const handleInputChange = (field, value) => {
@@ -104,6 +121,8 @@ export default function SimplifiedOnboardingForm() {
     if (step === 'business') {
       if (!formData.businessName.trim()) errors.push('Business name is required');
       if (!formData.businessType) errors.push('Business type is required');
+      if (!formData.legalStructure) errors.push('Legal structure is required');
+      if (!formData.country) errors.push('Country is required');
     }
     
     return errors;
@@ -225,26 +244,54 @@ export default function SimplifiedOnboardingForm() {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Select business type</option>
-            {BUSINESS_TYPES.map(type => (
-              <option key={type} value={type}>{type}</option>
+            {businessTypeOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
         </div>
         
-        <div className="md:col-span-2">
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Country
+            Legal Structure *
+          </label>
+          <select
+            value={formData.legalStructure}
+            onChange={(e) => handleInputChange('legalStructure', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Select legal structure</option>
+            {legalStructureOptions.map(option => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Country *
           </label>
           <select
             value={formData.country}
             onChange={(e) => handleInputChange('country', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option value="United States">United States</option>
-            <option value="Canada">Canada</option>
-            <option value="United Kingdom">United Kingdom</option>
-            <option value="Other">Other</option>
+            <option value="">Select country</option>
+            {countryOptions.map(option => (
+              <option key={option.code} value={option.value}>{option.label}</option>
+            ))}
           </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Date Founded
+          </label>
+          <input
+            type="date"
+            value={formData.dateFounded}
+            onChange={(e) => handleInputChange('dateFounded', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
       </div>
     </div>
@@ -315,7 +362,9 @@ export default function SimplifiedOnboardingForm() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div><span className="font-medium">Business:</span> {formData.businessName}</div>
               <div><span className="font-medium">Type:</span> {formData.businessType}</div>
+              <div><span className="font-medium">Legal Structure:</span> {formData.legalStructure}</div>
               <div><span className="font-medium">Country:</span> {formData.country}</div>
+              <div><span className="font-medium">Founded:</span> {formData.dateFounded}</div>
             </div>
           </div>
           
