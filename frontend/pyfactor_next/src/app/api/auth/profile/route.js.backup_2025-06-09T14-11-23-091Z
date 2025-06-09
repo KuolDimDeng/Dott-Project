@@ -140,28 +140,12 @@ export async function GET(request) {
         
         if (backendResponse.ok) {
           backendUser = await backendResponse.json();
-          
-          // Also check for onboarding progress in backend
-          let onboardingProgress = null;
-          if (backendUser.onboarding && backendUser.onboarding.progress_id) {
-            onboardingProgress = backendUser.onboarding;
-          } else if (backendUser.onboarding_status || backendUser.current_step) {
-            onboardingProgress = {
-              status: backendUser.onboarding_status,
-              currentStep: backendUser.current_step || backendUser.current_onboarding_step,
-              tenantId: backendUser.onboarding_tenant_id
-            };
-          }
-          
           console.log('🚨 [PROFILE API] ✅ BACKEND USER DATA:', {
             email: backendUser.email,
             tenant_id: backendUser.tenant_id,
             onboarding_completed: backendUser.onboarding_completed,
             needs_onboarding: backendUser.needs_onboarding,
-            current_onboarding_step: backendUser.current_onboarding_step,
-            onboarding_status: backendUser.onboarding_status,
-            setup_done: backendUser.setup_done,
-            onboardingProgress: onboardingProgress
+            current_onboarding_step: backendUser.current_onboarding_step
           });
           console.log('[Profile API] Backend user data:', {
             email: backendUser.email,
@@ -189,17 +173,12 @@ export async function GET(request) {
           const sessionTenantId = user.tenantId || user.tenant_id;
           const finalTenantId = sessionTenantId || backendTenantId;
           
-          // Determine onboarding status from backend data
-          const hasCompletedOnboarding = (
-            backendUser.onboarding_status === 'complete' ||
-            backendUser.current_step === 'complete' ||
-            backendUser.setup_done === true ||
-            backendUser.onboarding_completed === true ||
-            (backendTenantId && (
+          // Determine onboarding status - if user has tenant, they don't need onboarding
+          const hasCompletedOnboarding = backendTenantId && (
             backendUser.onboarding_completed === true || 
             backendUser.onboarding_status === 'complete' ||
             backendUser.setup_done === true
-          ));
+          );
           
           // Merge backend data, prioritizing tenant info from backend
           profileData = {
@@ -215,25 +194,15 @@ export async function GET(request) {
             subscriptionPlan: businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan,
             
             // Onboarding status: if user has tenant in backend, they've completed onboarding
-            // Check backend onboarding status first, then tenant ID
-            needsOnboarding: (backendUser && (
-              backendUser.onboarding_status === 'complete' ||
-              backendUser.setup_done === true ||
-              backendUser.onboarding_completed === true
-            )) ? false : (finalTenantId ? false : 
+            // Having a tenant ID is the primary indicator of completed onboarding
+            needsOnboarding: finalTenantId ? false : 
                            (user.onboardingCompleted === true ? false :
-                            (user.needsOnboarding === true || backendUser?.needs_onboarding === true))),
-            onboardingCompleted: (backendUser && (
-              backendUser.onboarding_status === 'complete' ||
-              backendUser.setup_done === true ||
-              backendUser.onboarding_completed === true
-            )) ? true : (finalTenantId ? true :
+                            (user.needsOnboarding === true || backendUser?.needs_onboarding === true)),
+            onboardingCompleted: finalTenantId ? true :
                                (user.onboardingCompleted === true || 
-                                backendUser?.onboarding_completed === true)),
-            currentStep: (backendUser && backendUser.onboarding_status === 'complete') ? 'completed' :
-                        (backendUser && backendUser.current_step === 'complete') ? 'completed' :
-                        (finalTenantId ? 'completed' :
-                        (user.currentStep || user.current_onboarding_step || backendUser?.current_onboarding_step || 'business_info')),
+                                backendUser?.onboarding_completed === true),
+            currentStep: finalTenantId ? 'completed' :
+                        (user.currentStep || user.current_onboarding_step || backendUser?.current_onboarding_step || 'business_info'),
             businessInfoCompleted: user.businessInfoCompleted !== undefined 
               ? user.businessInfoCompleted 
               : false,
@@ -277,11 +246,8 @@ export async function GET(request) {
     }
     
     // Ensure onboarding status consistency
-    // CRITICAL: Check backend status or tenant ID for completion
-    if ((profileData.tenantId || profileData.tenant_id) ||
-        (backendUser && (backendUser.onboarding_status === 'complete' || 
-         backendUser.setup_done === true ||
-         backendUser.onboarding_completed === true))) {
+    // CRITICAL: If user has a tenant ID, they have completed onboarding
+    if (profileData.tenantId || profileData.tenant_id) {
       profileData.needsOnboarding = false;
       profileData.onboardingCompleted = true;
       if (profileData.currentStep !== 'completed') {

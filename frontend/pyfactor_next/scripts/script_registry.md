@@ -365,3 +365,29 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - src/app/api/onboarding/complete-all/route.js
   - src/app/api/auth/update-session/route.js
   - src/app/api/auth/refresh-session/route.js
+
+## Version0034_fix_backend_onboarding_status_check
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix backend onboarding status check to prevent redirect loops
+- **Changes**:
+  - Profile API now checks backend onboarding_status and setup_done fields
+  - create-auth0-user checks backend completion status before tenant ID
+  - Added extraction of tenant ID from onboarding progress data
+  - Backend status (complete/setup_done) now takes precedence
+- **Files Modified**:
+  - src/app/api/auth/profile/route.js
+  - src/app/api/user/create-auth0-user/route.js
+
+## Version0034_fix_backend_onboarding_status_check
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix backend onboarding status check to prevent redirect loops
+- **Changes**:
+  - Profile API now checks backend onboarding_status and setup_done fields
+  - create-auth0-user checks backend completion status before tenant ID
+  - Added extraction of tenant ID from onboarding progress data
+  - Backend status (complete/setup_done) now takes precedence
+- **Files Modified**:
+  - src/app/api/auth/profile/route.js
+  - src/app/api/user/create-auth0-user/route.js
