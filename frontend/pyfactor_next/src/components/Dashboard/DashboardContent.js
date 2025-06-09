@@ -62,7 +62,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   const [navigationKey, setNavigationKey] = useState(`initial-${Date.now()}`);
 
   // Initialize user data with userAttributes from props if available
-  const [initialUserData] = useState(() => {
+  const [initialUserData, setInitialUserData] = useState(() => {
     if (userAttributes) {
       return {
         email: userAttributes.email,
@@ -76,6 +76,57 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     }
     return null;
   });
+
+  // Fetch Auth0 profile data on mount
+  useEffect(() => {
+    const fetchAuth0Profile = async () => {
+      try {
+        const response = await fetch('/api/auth/profile');
+        if (response.ok) {
+          const profileData = await response.json();
+          if (profileData) {
+            console.log('[DashboardContent] Auth0 profile data loaded:', profileData);
+            setInitialUserData({
+              ...profileData,
+              email: profileData.email,
+              name: profileData.name,
+              firstName: profileData.given_name || profileData.firstName,
+              lastName: profileData.family_name || profileData.lastName,
+              sub: profileData.sub,
+              id: profileData.id || profileData.sub,
+              businessName: profileData.businessName,
+              businessType: profileData.businessType,
+              tenantId: profileData.tenantId || profileData.tenant_id
+            });
+            
+            // Also update the uiState userData
+            setUiState(prev => ({
+              ...prev,
+              userData: {
+                ...profileData,
+                email: profileData.email,
+                name: profileData.name,
+                firstName: profileData.given_name || profileData.firstName,
+                lastName: profileData.family_name || profileData.lastName,
+                sub: profileData.sub,
+                id: profileData.id || profileData.sub,
+                businessName: profileData.businessName,
+                businessType: profileData.businessType,
+                tenantId: profileData.tenantId || profileData.tenant_id
+              }
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('[DashboardContent] Error fetching Auth0 profile:', error);
+      }
+    };
+
+    // Only fetch if we don't have user data from props
+    if (!userAttributes) {
+      fetchAuth0Profile();
+    }
+  }, [userAttributes]);
 
   // Watch for props changes
   useEffect(() => {

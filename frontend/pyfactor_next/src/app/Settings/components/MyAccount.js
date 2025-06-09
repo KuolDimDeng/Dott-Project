@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import { getSubscriptionPlanColor } from '@/utils/userAttributes';
 import SubscriptionPopup from '../../dashboard/components/SubscriptionPopup';
 import { useNotification } from '@/context/NotificationContext';
-import { fetchUserAttributes } from '@/config/amplifyUnified';
 
 const MyAccount = ({ userData }) => {
   console.log('MyAccount component rendered with userData:', userData);
@@ -18,32 +17,36 @@ const MyAccount = ({ userData }) => {
   const router = useRouter();
   const { notifySuccess, notifyError } = useNotification();
   
-  // Fetch user attributes directly from Cognito when component mounts
+  // Fetch user data from Auth0 profile API when component mounts
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Get user attributes directly from Cognito
-        const attributes = await fetchUserAttributes();
+        // Get user profile from Auth0 profile endpoint
+        const response = await fetch('/api/auth/profile');
         
-        if (attributes) {
-          console.log('Successfully fetched user attributes:', attributes);
+        if (response.ok) {
+          const profileData = await response.json();
+          console.log('Successfully fetched Auth0 profile data:', profileData);
           
-          // Enhance the userData with the fetched attributes
+          // Enhance the userData with the fetched profile data
           setEnhancedUserData({
             ...userData,
-            firstName: attributes.given_name || attributes['custom:firstname'] || userData?.firstName || '',
-            lastName: attributes.family_name || attributes['custom:lastname'] || userData?.lastName || '',
-            first_name: attributes.given_name || attributes['custom:firstname'] || userData?.first_name || '',
-            last_name: attributes.family_name || attributes['custom:lastname'] || userData?.last_name || '',
-            email: attributes.email || userData?.email,
-            name: attributes.name || `${attributes.given_name || ''} ${attributes.family_name || ''}`.trim() || userData?.name,
-            tenantId: attributes['custom:tenant_Id'] || attributes['custom:tenant_ID'] || attributes['custom:tenant_id'] || userData?.tenantId,
-            sub: attributes.sub || userData?.sub,
-            id: attributes.sub || userData?.id || userData?.sub
+            ...profileData,
+            firstName: profileData.given_name || profileData.firstName || userData?.firstName || '',
+            lastName: profileData.family_name || profileData.lastName || userData?.lastName || '',
+            first_name: profileData.given_name || profileData.first_name || userData?.first_name || '',
+            last_name: profileData.family_name || profileData.last_name || userData?.last_name || '',
+            email: profileData.email || userData?.email,
+            name: profileData.name || userData?.name,
+            tenantId: profileData.tenantId || profileData.tenant_id || userData?.tenantId,
+            sub: profileData.sub || userData?.sub,
+            id: profileData.id || profileData.sub || userData?.id || userData?.sub
           });
         }
       } catch (error) {
-        console.error('Error fetching user attributes:', error);
+        console.error('Error fetching Auth0 profile data:', error);
+        // If fetch fails, at least use the userData prop
+        setEnhancedUserData(userData || {});
       }
     };
     
@@ -51,7 +54,7 @@ const MyAccount = ({ userData }) => {
   }, [userData]);
   
   // Use enhancedUserData instead of userData throughout the component
-  const userDisplayData = enhancedUserData || userData;
+  const userDisplayData = enhancedUserData || userData || {};
   
   const handleTabChange = (newValue) => {
     setSelectedTab(newValue);
@@ -85,7 +88,7 @@ const MyAccount = ({ userData }) => {
       setIsProcessing(true);
       setClosureStep('processing');
       
-      // Get tenant ID from Cognito attributes first, then from multiple sources for reliability
+      // Get tenant ID from user data first, then from multiple sources for reliability
       const tenantId = userDisplayData?.tenantId || 
                         localStorage.getItem('tenantId') || 
                         document.cookie.split('; ').find(row => row.startsWith('tenantId='))?.split('=')[1];

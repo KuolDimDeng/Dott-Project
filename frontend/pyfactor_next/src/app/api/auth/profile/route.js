@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(request) {
   console.log('🚨 [PROFILE API] GET REQUEST STARTED - Version 2.1');
   console.log('🚨 [PROFILE API] Environment:', process.env.NODE_ENV);
   
@@ -116,6 +116,7 @@ export async function GET() {
     });
     
     // Try to fetch additional data from Django backend (if available)
+    let backendUser = null;
     if (accessToken) {
       console.log('🚨 [PROFILE API] ATTEMPTING BACKEND FETCH - Access token exists');
       try {
@@ -136,7 +137,7 @@ export async function GET() {
         console.log('🚨 [PROFILE API] Backend response status:', backendResponse.status, backendResponse.ok);
         
         if (backendResponse.ok) {
-          const backendUser = await backendResponse.json();
+          backendUser = await backendResponse.json();
           console.log('🚨 [PROFILE API] ✅ BACKEND USER DATA:', {
             email: backendUser.email,
             tenant_id: backendUser.tenant_id,
