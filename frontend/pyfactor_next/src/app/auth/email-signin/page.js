@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import EmailPasswordSignIn from '@/components/auth/EmailPasswordSignIn';
 
 export default function EmailSignInPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [showDebug, setShowDebug] = useState(false);
   
@@ -16,32 +15,13 @@ export default function EmailSignInPage() {
   }, [searchParams]);
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
-        </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          Or{' '}
-          <button
-            onClick={() => router.push('/api/auth/login?connection=google-oauth2')}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            sign in with Google
-          </button>
-        </p>
-      </div>
-
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <EmailPasswordSignIn />
-        </div>
-      </div>
+    <>
+      <EmailPasswordSignIn />
       
       {showDebug && (
-        <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-2xl">
-          <div className="bg-gray-100 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">
+        <div className="fixed bottom-4 right-4 max-w-md">
+          <div className="bg-gray-900 text-white rounded-lg p-4 shadow-lg">
+            <h3 className="text-sm font-semibold mb-2">
               Debug Information
             </h3>
             <div className="text-xs space-y-1 font-mono">
@@ -53,6 +33,6 @@ export default function EmailSignInPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
