@@ -35,8 +35,8 @@ const getAuth0Config = () => {
   const config = {
       useJwtAuth: true, // Force JWT auth
       disableJwe: true, // Explicitly disable JWE tokens
-      // Ensure domain doesn't have protocol prefix
-    domain: (process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com').replace(/^https?:\/\//, ''),
+      // Use custom domain if available, ensure domain doesn't have protocol prefix
+    domain: (process.env.AUTH0_CUSTOM_DOMAIN || process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com').replace(/^https?:\/\//, ''),
     audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
     clientId: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || '9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF'
   };

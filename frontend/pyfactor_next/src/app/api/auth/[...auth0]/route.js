@@ -17,8 +17,9 @@ export async function GET(request, { params }) {
       console.log('[Auth Route] Processing login request with enhanced error handling');
       
       // Get Auth0 configuration from environment variables
-      const auth0Domain = process.env.NEXT_PUBLIC_AUTH0_DOMAIN || 'auth.dottapps.com';
-      const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID;
+      // Always use custom domain for embedded login experience
+      const auth0Domain = 'auth.dottapps.com'; // Force custom domain
+      const clientId = process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID || process.env.AUTH0_CLIENT_ID;
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
       const audience = process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com';
       
