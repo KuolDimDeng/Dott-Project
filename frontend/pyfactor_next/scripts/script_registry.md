@@ -312,3 +312,16 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - src/utils/completeOnboarding.js - Invalid assignments to function calls
 - **Status**: Completed
 - **Date**: 2025-06-08T13:16:25.692Z
+
+## Version0030_fix_onboarding_redirect_loop
+- **Date**: 2025-06-09
+- **Status**: Completed
+- **Purpose**: Fix onboarding redirect loop and "Tenant ID required" errors
+- **Changes**:
+  - Fixed AuthFlowHandler to properly use profile data for onboarding status
+  - Removed automatic update-onboarding-status calls from profile API
+  - Improved error handling in update-onboarding-status route
+- **Files Modified**:
+  - src/utils/authFlowHandler.js
+  - src/app/api/auth/profile/route.js
+  - src/app/api/user/update-onboarding-status/route.js

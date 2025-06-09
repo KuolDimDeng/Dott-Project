@@ -65,7 +65,7 @@ export async function POST(request) {
 
     try {
       // Call backend API to update onboarding status
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL;
       if (!backendUrl) {
         logger.warn('[Update Onboarding Status] No backend URL configured');
         return NextResponse.json({ 
@@ -91,13 +91,8 @@ export async function POST(request) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error('[Update Onboarding Status] Backend update failed:', {
-          status: response.status,
-          error: errorText,
-          tenantId,
-          userId: user.sub
-        });
-        // Don't fail the whole process - backend might be down
+        logger.error('[Update Onboarding Status] Backend update failed:', errorText);
+        // Don't fail the whole process
       }
 
       return NextResponse.json({ 

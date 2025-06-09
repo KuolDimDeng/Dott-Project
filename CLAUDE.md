@@ -1,0 +1,33 @@
+- Frontend scripts location: /Users/kuoldeng/projectx/frontend/pyfactor_next/scripts
+- Backend scripts location: /Users/kuoldeng/projectx/backend/pyfactor/scripts
+- Script versioning: Use version control in naming (Version0001_<fix description>_<name of file fixed>)
+- File backup: Create backup of important or large files
+- Module system: Write scripts using ES modules (not CommonJS)
+- Script registry: Maintain script_registry.md in /Users/kuoldeng/projectx/frontend/pyfactor_next/scripts/script_registry.md
+- Authentication: Use Auth0 (remove cognito/amplify code)
+- Next.js version: 15
+- Home/Layout pages: 
+  - Home: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/page.js
+  - Layout: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
+- CSS Framework: Tailwind CSS only (no MUI)
+- Database: render database "dott-db" with Row-Level Security and tenant isolation
+- Language: JavaScript (not TypeScript)
+- Package Manager: PNPM
+- Environment: Production mode only
+- Data: No mock data
+- Frontend Deployment: Vercel, update via git in Dott_Main_Dev_Deploy branch
+- Backend Deployment: render (dott-api), custom domain api.dottapps.com
+- using Auth0 for authentication: custom domain auth.dottapps.com
+- Security: 
+  - No hardcoded environment keys
+  - No sensitive information in code
+- Development Approach:
+  - Read existing documentation
+  - Make targeted, purposeful changes
+  - Ensure clean, efficient code
+  - No UI/design changes without permission
+- Script Versioning: Tag all scripts (v1.0, v1.1, etc.)
+- Change Management:
+  - Provide summary before implementation
+  - Wait for explicit approval
+  - Implement only specified requests

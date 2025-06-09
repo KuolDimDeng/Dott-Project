@@ -73,16 +73,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
 
     // Check onboarding status from multiple sources
     const isOnboardingComplete = 
-      profileData?.onboardingCompleted === true ||
       userData.onboardingComplete === true ||
-      (userData.isExistingUser && userData.tenantId && !profileData?.needsOnboarding);
-
-    // Use profile data as the source of truth when available
-    if (profileData && profileData.tenantId) {
-      finalUserData.tenantId = profileData.tenantId;
-      finalUserData.needsOnboarding = profileData.needsOnboarding === true;
-      finalUserData.onboardingCompleted = profileData.onboardingCompleted === true;
-    }
+      profileData?.onboardingCompleted === true ||
+      (userData.isExistingUser && userData.tenantId);
 
     if (isOnboardingComplete && finalUserData.tenantId) {
       // User has completed onboarding

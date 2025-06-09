@@ -193,8 +193,8 @@ export async function GET(request) {
             
             // Onboarding status: if user has tenant in backend, they've completed onboarding
             needsOnboarding: finalTenantId && hasCompletedOnboarding ? false : 
-                           (user.onboardingCompleted === true ? false :
-                            (user.needsOnboarding === true || backendUser?.needs_onboarding === true)),
+                           (user.needsOnboarding !== undefined ? user.needsOnboarding : 
+                            (backendUser.needs_onboarding !== false)),
             onboardingCompleted: finalTenantId && hasCompletedOnboarding ? true :
                                (user.onboardingCompleted !== undefined ? user.onboardingCompleted : 
                                 (backendUser.onboarding_completed === true)),
@@ -248,7 +248,26 @@ export async function GET(request) {
       profileData.onboardingCompleted = true;
     }
     
-    // Backend update removed - will be handled by explicit user actions
+    // If session says onboarding is complete but backend doesn't know, update backend
+    if (user.onboardingCompleted === true && profileData.tenantId && 
+        (!backendUser || backendUser.needs_onboarding !== false)) {
+      console.log('[Profile API] Detected onboarding mismatch, updating backend');
+      try {
+        await fetch(new URL('/api/user/update-onboarding-status', request.url).href, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Cookie': request.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({
+            tenantId: profileData.tenantId,
+            onboardingCompleted: true
+          })
+        });
+      } catch (error) {
+        console.error('[Profile API] Failed to update backend onboarding status:', error);
+      }
+    }
     
     // CRITICAL FIX: Handle edge cases where session data might be inconsistent
     // If business info is completed but currentStep is still business_info, advance to subscription
