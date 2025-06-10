@@ -1017,7 +1017,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.debug(f"✅ Found existing user by Auth0 ID: {user.email}")
             
             # Check if account has been deleted/closed
-            if user.is_deleted:
+            if hasattr(user, 'is_deleted') and user.is_deleted:
                 logger.error(f"❌ User {user.email} has a deleted/closed account")
                 raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
             
@@ -1038,7 +1038,7 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 logger.info(f"✅ Found user by email, linking to Auth0 ID: {auth0_id}")
                 
                 # Check if account has been deleted/closed
-                if user.is_deleted:
+                if hasattr(user, 'is_deleted') and user.is_deleted:
                     logger.error(f"❌ User {user.email} has a deleted/closed account")
                     raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
                 
