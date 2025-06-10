@@ -8,4 +8,8 @@ export const auth0 = new Auth0Client({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com',
   secret: process.env.AUTH0_SECRET,
   issuerBaseURL: `https://${process.env.NEXT_PUBLIC_AUTH0_DOMAIN}`,
+  authorizationParams: {
+    audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
+    scope: 'openid profile email offline_access'
+  }
 });

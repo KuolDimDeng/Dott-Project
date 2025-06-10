@@ -158,40 +158,65 @@ export async function POST(request) {
       });
       
       // Try to get the access token from different possible locations
-      if (sessionData.accessToken) {
-        accessToken = sessionData.accessToken;
-        console.log('[CLOSE_ACCOUNT] Using sessionData.accessToken');
-      } else if (sessionData.access_token) {
-        accessToken = sessionData.access_token;
-        console.log('[CLOSE_ACCOUNT] Using sessionData.access_token');
-      } else if (sessionData.idToken) {
-        // Sometimes the access token might be stored as idToken
-        accessToken = sessionData.idToken;
-        console.log('[CLOSE_ACCOUNT] Using sessionData.idToken as fallback');
-      } else if (sessionData.id_token) {
-        accessToken = sessionData.id_token;
-        console.log('[CLOSE_ACCOUNT] Using sessionData.id_token as fallback');
-      } else {
-        // Try to get a fresh access token
-        try {
-          console.log('[CLOSE_ACCOUNT] No token in session, trying to get fresh token...');
-          const tokenResponse = await fetch('/api/auth/access-token');
-          if (tokenResponse.ok) {
-            const tokenData = await tokenResponse.json();
-            accessToken = tokenData.access_token || tokenData.accessToken || tokenData.token || '';
-            console.log('[CLOSE_ACCOUNT] Retrieved fresh access token');
-          } else {
-            console.error('[CLOSE_ACCOUNT] Failed to get fresh token, status:', tokenResponse.status);
+      // First, always try to get a fresh token from the Auth0 SDK
+      try {
+        console.log('[CLOSE_ACCOUNT] Getting fresh access token from Auth0 SDK...');
+        const { auth0 } = await import('@/lib/auth0');
+        
+        // Try to get access token using Auth0 SDK
+        const accessTokenResult = await auth0.getAccessToken(request);
+        
+        if (accessTokenResult && accessTokenResult.accessToken) {
+          accessToken = accessTokenResult.accessToken;
+          console.log('[CLOSE_ACCOUNT] Retrieved fresh access token from Auth0 SDK');
+        } else {
+          console.log('[CLOSE_ACCOUNT] No access token from Auth0 SDK, checking session...');
+          
+          // Fallback to session data
+          if (sessionData.accessToken) {
+            accessToken = sessionData.accessToken;
+            console.log('[CLOSE_ACCOUNT] Using sessionData.accessToken');
+          } else if (sessionData.access_token) {
+            accessToken = sessionData.access_token;
+            console.log('[CLOSE_ACCOUNT] Using sessionData.access_token');
+          } else if (sessionData.idToken) {
+            // Sometimes the access token might be stored as idToken
+            accessToken = sessionData.idToken;
+            console.log('[CLOSE_ACCOUNT] Using sessionData.idToken as fallback');
+          } else if (sessionData.id_token) {
+            accessToken = sessionData.id_token;
+            console.log('[CLOSE_ACCOUNT] Using sessionData.id_token as fallback');
           }
-        } catch (error) {
-          console.error('[CLOSE_ACCOUNT] Failed to get fresh access token:', error);
+        }
+      } catch (error) {
+        console.error('[CLOSE_ACCOUNT] Error getting access token from Auth0 SDK:', error);
+        
+        // Fallback to session data
+        if (sessionData.accessToken) {
+          accessToken = sessionData.accessToken;
+          console.log('[CLOSE_ACCOUNT] Using sessionData.accessToken (fallback)');
+        } else if (sessionData.access_token) {
+          accessToken = sessionData.access_token;
+          console.log('[CLOSE_ACCOUNT] Using sessionData.access_token (fallback)');
+        } else if (sessionData.idToken) {
+          accessToken = sessionData.idToken;
+          console.log('[CLOSE_ACCOUNT] Using sessionData.idToken (fallback)');
+        } else if (sessionData.id_token) {
+          accessToken = sessionData.id_token;
+          console.log('[CLOSE_ACCOUNT] Using sessionData.id_token (fallback)');
         }
       }
       
       console.log('[CLOSE_ACCOUNT] Final access token:', accessToken ? `Token present (${accessToken.length} chars)` : 'No token');
       console.log('[CLOSE_ACCOUNT] Token starts with:', accessToken ? accessToken.substring(0, 10) + '...' : 'N/A');
       
-      const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
+      // If no access token, try to continue without backend deletion
+      if (!accessToken) {
+        console.error('[CLOSE_ACCOUNT] WARNING: No access token available for backend request');
+        deletionResults.errors.push('Backend: No authentication token available');
+        // Continue with Auth0 deletion attempt instead of failing
+      } else {
+        const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -249,6 +274,7 @@ export async function POST(request) {
       console.error('[CLOSE_ACCOUNT] Backend deletion error:', error);
       deletionResults.errors.push(`Backend: ${error.message}`);
     }
+      } // End of else block for accessToken check
     
     // 4. Delete from Auth0 (skip if already deleted by backend)
     if (!deletionResults.auth0) {
