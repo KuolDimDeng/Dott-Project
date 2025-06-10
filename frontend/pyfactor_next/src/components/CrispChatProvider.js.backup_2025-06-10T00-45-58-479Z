@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 
 // Dynamically import CrispChat to avoid SSR issues
 const CrispChat = dynamic(() => import('@/components/CrispChat/CrispChat'), {
@@ -13,6 +14,7 @@ export default function CrispChatProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
   
   useEffect(() => {
     // Check authentication status
@@ -35,13 +37,15 @@ export default function CrispChatProvider({ children }) {
     };
     
     checkAuth();
-  }, []); // Only check once on mount
+  }, [pathname]); // Re-check when route changes
+  
+  // Don't render CrispChat on auth pages
+  const isAuthPage = pathname?.startsWith('/auth/') || pathname === '/signin';
   
   return (
     <>
       {children}
-      {/* Always show CrispChat once loading is complete */}
-      {!isLoading && (
+      {!isAuthPage && !isLoading && (
         <CrispChat 
           isAuthenticated={isAuthenticated} 
           user={user}
