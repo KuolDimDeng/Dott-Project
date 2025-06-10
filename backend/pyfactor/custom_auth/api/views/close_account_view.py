@@ -152,9 +152,24 @@ class CloseAccountView(APIView):
                     logger.error(f"[CLOSE_ACCOUNT] Error deleting related data: {e}")
                 
                 # Finally, delete the user
-                user.delete()
-                logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database")
-                deletion_successful = True
+                # Use raw SQL to avoid Django's cascade checks on non-existent tables
+                try:
+                    from django.db import connection
+                    with connection.cursor() as cursor:
+                        # Delete from auth_user table directly
+                        cursor.execute("DELETE FROM auth_user WHERE id = %s", [user_id])
+                        logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database via raw SQL")
+                        deletion_successful = True
+                except Exception as e:
+                    logger.warning(f"[CLOSE_ACCOUNT] Raw SQL deletion failed, trying Django delete: {e}")
+                    # Fallback to Django's delete method
+                    try:
+                        user.delete()
+                        logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database via Django")
+                        deletion_successful = True
+                    except Exception as e2:
+                        logger.error(f"[CLOSE_ACCOUNT] Both deletion methods failed: {e2}")
+                        deletion_successful = False
                 
             except Exception as deletion_error:
                 logger.error(f"[CLOSE_ACCOUNT] Failed to delete user: {deletion_error}")
