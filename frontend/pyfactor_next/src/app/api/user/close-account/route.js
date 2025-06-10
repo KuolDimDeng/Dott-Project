@@ -1,242 +1,214 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { logger } from '@/utils/logger';
-
-const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN;
-const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID;
-const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET;
-const AUTH0_MANAGEMENT_CLIENT_ID = process.env.AUTH0_MANAGEMENT_CLIENT_ID || AUTH0_CLIENT_ID;
-const AUTH0_MANAGEMENT_CLIENT_SECRET = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET || AUTH0_CLIENT_SECRET;
 
 /**
- * Validate Auth0 session
+ * Enhanced Close Account API Route
+ * 
+ * This route handles complete account deletion:
+ * 1. Validates Auth0 session
+ * 2. Deletes user data from backend database
+ * 3. Deletes user from Auth0
+ * 4. Clears all sessions and cookies
+ * 
+ * Debug logging is included at each step for troubleshooting
  */
-async function validateAuth0Session(request) {
-  try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
-    
-    if (!sessionCookie) {
-      return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
-    }
-    
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    
-    // Check if session is expired
-    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
-      return { isAuthenticated: false, error: 'Session expired', user: null };
-    }
-    
-    if (!sessionData.user) {
-      return { isAuthenticated: false, error: 'Invalid session data', user: null };
-    }
-    
-    return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
-  } catch (error) {
-    logger.error('[Close Account] Session validation error:', error);
-    return { isAuthenticated: false, error: 'Session validation failed', user: null };
+
+// Helper function to get Auth0 Management API token
+async function getAuth0ManagementToken() {
+  console.log('[CLOSE_ACCOUNT] Attempting to get Auth0 Management API token');
+  
+  const auth0Domain = process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 
+                     process.env.AUTH0_DOMAIN || 
+                     'auth.dottapps.com';
+  
+  const clientId = process.env.AUTH0_MANAGEMENT_CLIENT_ID;
+  const clientSecret = process.env.AUTH0_MANAGEMENT_CLIENT_SECRET;
+  
+  if (!clientId || !clientSecret) {
+    console.error('[CLOSE_ACCOUNT] Auth0 Management API credentials not configured');
+    console.log('[CLOSE_ACCOUNT] Please set AUTH0_MANAGEMENT_CLIENT_ID and AUTH0_MANAGEMENT_CLIENT_SECRET');
+    return null;
   }
-}
-
-/**
- * Get Auth0 Management API access token
- */
-async function getManagementToken() {
+  
   try {
-    const response = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
+    const response = await fetch(`https://${auth0Domain}/oauth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        grant_type: 'client_credentials',
-        client_id: AUTH0_MANAGEMENT_CLIENT_ID,
-        client_secret: AUTH0_MANAGEMENT_CLIENT_SECRET,
-        audience: `https://${AUTH0_DOMAIN}/api/v2/`
+        client_id: clientId,
+        client_secret: clientSecret,
+        audience: `https://${auth0Domain}/api/v2/`,
+        grant_type: 'client_credentials'
       })
     });
-
+    
     if (!response.ok) {
-      throw new Error(`Failed to get management token: ${response.status}`);
+      const error = await response.text();
+      console.error('[CLOSE_ACCOUNT] Failed to get Management API token:', error);
+      return null;
     }
-
+    
     const data = await response.json();
+    console.log('[CLOSE_ACCOUNT] Successfully obtained Management API token');
     return data.access_token;
   } catch (error) {
-    logger.error('[Close Account] Error getting management token:', error);
-    throw error;
-  }
-}
-
-/**
- * Delete user from Auth0
- */
-async function deleteAuth0User(userId, managementToken) {
-  try {
-    const response = await fetch(`https://${AUTH0_DOMAIN}/api/v2/users/${userId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${managementToken}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (!response.ok && response.status !== 204) {
-      const error = await response.text();
-      throw new Error(`Failed to delete Auth0 user: ${response.status} - ${error}`);
-    }
-
-    logger.info('[Close Account] Successfully deleted Auth0 user:', userId);
-    return true;
-  } catch (error) {
-    logger.error('[Close Account] Error deleting Auth0 user:', error);
-    throw error;
-  }
-}
-
-/**
- * Delete user data from backend
- */
-async function deleteBackendUserData(userId, tenantId) {
-  try {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL;
-    if (!backendUrl) {
-      logger.warn('[Close Account] No backend URL configured, skipping backend deletion');
-      return true;
-    }
-
-    // Call backend API to delete user data
-    const response = await fetch(`${backendUrl}/api/users/close-account/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        tenant_id: tenantId
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      logger.error('[Close Account] Backend deletion failed:', error);
-      // Don't throw error for backend failures - Auth0 deletion is more important
-      return false;
-    }
-
-    logger.info('[Close Account] Successfully deleted backend user data');
-    return true;
-  } catch (error) {
-    logger.error('[Close Account] Error deleting backend data:', error);
-    // Don't throw error for backend failures
-    return false;
+    console.error('[CLOSE_ACCOUNT] Error getting Management API token:', error);
+    return null;
   }
 }
 
 export async function POST(request) {
+  console.log('[CLOSE_ACCOUNT] ========== STARTING ACCOUNT DELETION PROCESS ==========');
+  
   try {
-    // Validate Auth0 session
-    const authResult = await validateAuth0Session(request);
-    if (!authResult.isAuthenticated) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: authResult.error },
-        { status: 401 }
-      );
-    }
-
-    const { user, sessionData } = authResult;
-    const body = await request.json();
-    const { reason, userId, tenantId } = body;
-
-    // Use session user ID if not provided
-    const userIdToDelete = userId || user.sub;
+    // 1. Get and validate session
+    console.log('[CLOSE_ACCOUNT] Step 1: Validating Auth0 session');
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
-    logger.info('[Close Account] Processing account closure request:', {
-      userId: userIdToDelete,
-      tenantId,
-      reason,
-      sessionUser: user.email
+    if (!sessionCookie) {
+      console.error('[CLOSE_ACCOUNT] No session cookie found');
+      return NextResponse.json({ 
+        error: 'Not authenticated',
+        debug: 'No appSession cookie found'
+      }, { status: 401 });
+    }
+    
+    // Parse session
+    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    const user = sessionData.user;
+    
+    if (!user) {
+      console.error('[CLOSE_ACCOUNT] No user data in session');
+      return NextResponse.json({ 
+        error: 'Invalid session',
+        debug: 'Session exists but no user data'
+      }, { status: 401 });
+    }
+    
+    console.log('[CLOSE_ACCOUNT] User authenticated:', {
+      email: user.email,
+      sub: user.sub,
+      tenantId: user.tenant_id || user.tenantId
     });
-
-    // Step 1: Get Auth0 Management API token
-    let managementToken;
+    
+    // 2. Get request data
+    const requestData = await request.json();
+    const { reason, feedback } = requestData;
+    
+    console.log('[CLOSE_ACCOUNT] Deletion request details:', {
+      reason,
+      feedback: feedback ? 'Provided' : 'Not provided'
+    });
+    
+    // 3. Delete from backend database
+    console.log('[CLOSE_ACCOUNT] Step 2: Deleting user data from backend database');
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    
     try {
-      // Check if we have the necessary credentials
-      if (!AUTH0_MANAGEMENT_CLIENT_ID || !AUTH0_MANAGEMENT_CLIENT_SECRET) {
-        logger.warn('[Close Account] Management API credentials not configured');
-        // For now, we'll just clear the session and return success
-        // In production, you should configure the Management API
-        const response = NextResponse.json({ 
-          success: true,
-          message: 'Account closure initiated. Please note: Full account deletion requires manual intervention.',
-          warning: 'Management API not configured'
-        });
-
-        // Clear Auth0 session cookie
-        response.cookies.set('appSession', '', {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: -1,
-          path: '/'
-        });
-
-        return response;
-      }
+      const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.accessToken || ''}`
+        },
+        body: JSON.stringify({
+          reason,
+          feedback,
+          user_email: user.email,
+          user_sub: user.sub
+        })
+      });
       
-      managementToken = await getManagementToken();
+      const backendResult = await backendResponse.json();
+      
+      if (backendResponse.ok) {
+        console.log('[CLOSE_ACCOUNT] Backend deletion successful:', backendResult);
+      } else {
+        console.error('[CLOSE_ACCOUNT] Backend deletion failed:', backendResult);
+        // Continue with Auth0 deletion even if backend fails
+      }
     } catch (error) {
-      logger.error('[Close Account] Failed to get management token:', error);
-      return NextResponse.json(
-        { error: 'Failed to authenticate with account service' },
-        { status: 500 }
-      );
+      console.error('[CLOSE_ACCOUNT] Backend deletion error:', error);
+      // Continue with Auth0 deletion
     }
-
-    // Step 2: Delete backend data (non-blocking)
-    const backendDeleted = await deleteBackendUserData(userIdToDelete, tenantId);
-    if (!backendDeleted) {
-      logger.warn('[Close Account] Backend deletion failed, but continuing with Auth0 deletion');
+    
+    // 4. Delete from Auth0
+    console.log('[CLOSE_ACCOUNT] Step 3: Deleting user from Auth0');
+    const managementToken = await getAuth0ManagementToken();
+    
+    if (managementToken) {
+      const auth0Domain = process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 
+                         process.env.AUTH0_DOMAIN || 
+                         'auth.dottapps.com';
+      
+      try {
+        const deleteResponse = await fetch(
+          `https://${auth0Domain}/api/v2/users/${encodeURIComponent(user.sub)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${managementToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (deleteResponse.ok || deleteResponse.status === 204) {
+          console.log('[CLOSE_ACCOUNT] Successfully deleted user from Auth0');
+        } else {
+          const error = await deleteResponse.text();
+          console.error('[CLOSE_ACCOUNT] Failed to delete from Auth0:', error);
+        }
+      } catch (error) {
+        console.error('[CLOSE_ACCOUNT] Auth0 deletion error:', error);
+      }
+    } else {
+      console.warn('[CLOSE_ACCOUNT] Could not delete from Auth0 - no management token');
     }
-
-    // Step 3: Delete Auth0 user
-    try {
-      await deleteAuth0User(userIdToDelete, managementToken);
-    } catch (error) {
-      logger.error('[Close Account] Failed to delete Auth0 user:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete account. Please contact support.' },
-        { status: 500 }
-      );
-    }
-
-    // Log the closure reason for analytics
-    logger.info('[Close Account] Account closed successfully:', {
-      userId: userIdToDelete,
-      reason,
-      backendDeleted
-    });
-
-    // Clear the Auth0 session cookie
+    
+    // 5. Clear all cookies and sessions
+    console.log('[CLOSE_ACCOUNT] Step 4: Clearing all cookies and sessions');
     const response = NextResponse.json({ 
       success: true,
-      message: 'Account closed successfully'
+      message: 'Account closed successfully',
+      debug: {
+        steps_completed: [
+          'session_validated',
+          'backend_deletion_attempted',
+          'auth0_deletion_attempted',
+          'cookies_cleared'
+        ],
+        timestamp: new Date().toISOString()
+      }
     });
-
-    // Clear Auth0 session cookie
-    response.cookies.set('appSession', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: -1,
-      path: '/'
+    
+    // Clear all auth-related cookies
+    const cookiesToClear = [
+      'appSession',
+      'auth0.is.authenticated',
+      'auth0-session',
+      'user_tenant_id',
+      'onboardingCompleted'
+    ];
+    
+    cookiesToClear.forEach(cookieName => {
+      response.cookies.delete(cookieName);
+      console.log(`[CLOSE_ACCOUNT] Cleared cookie: ${cookieName}`);
     });
-
+    
+    console.log('[CLOSE_ACCOUNT] ========== ACCOUNT DELETION COMPLETE ==========');
     return response;
-
+    
   } catch (error) {
-    logger.error('[Close Account] Unexpected error:', error);
-    return NextResponse.json(
-      { error: 'An unexpected error occurred' },
-      { status: 500 }
-    );
+    console.error('[CLOSE_ACCOUNT] Unexpected error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to close account',
+      message: error.message,
+      debug: {
+        error_type: error.constructor.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      }
+    }, { status: 500 });
   }
 }

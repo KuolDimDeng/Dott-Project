@@ -24,11 +24,7 @@ const MyAccount = ({ userData }) => {
         // Get user profile from Auth0 profile endpoint
         const response = await fetch('/api/auth/profile');
         
-        const responseData = await response.json();
-      console.log('[CLOSE_ACCOUNT_UI] API Response:', responseData);
-      
-      if (response.ok) {
-        console.log('[CLOSE_ACCOUNT_UI] Account closure successful');
+        if (response.ok) {
           const profileData = await response.json();
           console.log('Successfully fetched Auth0 profile data:', profileData);
           
@@ -136,8 +132,7 @@ const MyAccount = ({ userData }) => {
             await new Promise(resolve => setTimeout(resolve, 1000 * retries));
           }
           
-          console.log('[CLOSE_ACCOUNT_UI] Calling close-account API');
-      const response = await fetch('/api/user/close-account', {
+          const response = await fetch('/api/user/close-account', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

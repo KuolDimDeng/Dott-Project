@@ -7,28 +7,8 @@ import { useRouter } from 'next/navigation';
 export default function AccountClosed() {
   const router = useRouter();
   
-  // Clear any remaining auth data
-    console.log('[ACCOUNT_CLOSED] Performing final cleanup');
-    
-    // Clear all storage
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-      console.log('[ACCOUNT_CLOSED] Cleared all storage');
-    } catch (e) {
-      console.error('[ACCOUNT_CLOSED] Error clearing storage:', e);
-    }
-    
-    // Clear all accessible cookies
-    document.cookie.split(";").forEach(function(c) { 
-      const eqPos = c.indexOf("=");
-      const name = eqPos > -1 ? c.substr(0, eqPos).trim() : c.trim();
-      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.dottapps.com";
-      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-    });
-    console.log('[ACCOUNT_CLOSED] Cleared all cookies'); on mount and set up redirect
+  // Clear any remaining auth data on mount and set up redirect
   useEffect(() => {
-    console.log('[ACCOUNT_CLOSED] User reached account-closed page');
     // Clear any remaining local storage
     localStorage.clear();
     

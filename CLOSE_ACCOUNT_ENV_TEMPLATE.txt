@@ -1,0 +1,15 @@
+# Auth0 Management API Configuration
+# These are required for complete account deletion from Auth0
+
+# Create a Machine-to-Machine application in Auth0 Dashboard:
+# 1. Go to Applications > Create Application
+# 2. Choose "Machine to Machine Applications"
+# 3. Select the Auth0 Management API
+# 4. Grant scopes: delete:users, delete:users_by_email
+# 5. Copy the Client ID and Client Secret below
+
+AUTH0_MANAGEMENT_CLIENT_ID=your_management_client_id_here
+AUTH0_MANAGEMENT_CLIENT_SECRET=your_management_client_secret_here
+
+# Your Auth0 domain (without https://)
+AUTH0_DOMAIN=auth.dottapps.com

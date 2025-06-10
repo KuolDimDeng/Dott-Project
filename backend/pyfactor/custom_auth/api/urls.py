@@ -11,6 +11,7 @@ from .views.auth0_views import (
     Auth0OnboardingStatusView
 )
 from .views.user_check_views import CheckUserView
+from .views.close_account_view import CloseAccountView
 
 router = DefaultRouter()
 
@@ -25,6 +26,9 @@ urlpatterns = [
     
     # User check endpoint (for debugging)
     path('check-user/', CheckUserView.as_view(), name='check-user'),
+    
+    # Account management
+    path('users/close-account/', CloseAccountView.as_view(), name='close-account'),
     
     # Auth0 endpoints
     path('auth0/create-user/', Auth0UserCreateView.as_view(), name='auth0-create-user'),
