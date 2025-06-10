@@ -185,6 +185,13 @@ export async function GET(request) {
             console.log('[Profile API] Business info from session:', businessInfo);
           }
           
+          // Also get businessName from backend response
+          if (backendUser.businessName || (backendUser.tenant && backendUser.tenant.name)) {
+            businessInfo = businessInfo || {};
+            businessInfo.businessName = backendUser.businessName || backendUser.tenant?.name || businessInfo.businessName;
+            console.log('[Profile API] Business name from backend:', businessInfo.businessName);
+          }
+          
           // Use the tenant ID we already fetched
           const sessionTenantId = user.tenantId || user.tenant_id;
           const finalTenantId = sessionTenantId || backendTenantId;

@@ -790,9 +790,56 @@ const DashAppBar = ({
 
   // Get the effective business name from multiple sources
   const effectiveBusinessName = useMemo(() => {
-    // ALWAYS use Cognito as the primary source of truth in dashboard
+    // For Auth0, prioritize backend/profile data over attributes
+    
+    // First check state variables that are actively updated
+    if (businessName && businessName !== 'undefined' && businessName !== 'null' && businessName !== '') {
+      return businessName;
+    }
+    
+    if (fetchedBusinessName && fetchedBusinessName !== 'undefined' && fetchedBusinessName !== 'null' && fetchedBusinessName !== '') {
+      return fetchedBusinessName;
+    }
+    
+    if (auth0BusinessName && auth0BusinessName !== 'undefined' && auth0BusinessName !== 'null' && auth0BusinessName !== '') {
+      return auth0BusinessName;
+    }
+    
+    // Check profile data from backend
+    if (profileData) {
+      if (profileData.businessName && profileData.businessName !== 'undefined' && profileData.businessName !== 'null') {
+        return profileData.businessName;
+      }
+      if (profileData.business_name && profileData.business_name !== 'undefined' && profileData.business_name !== 'null') {
+        return profileData.business_name;
+      }
+      // Check if tenant info has the business name
+      if (profileData.tenant && profileData.tenant.name) {
+        return profileData.tenant.name;
+      }
+    }
+    
+    // Check user data
+    if (userData) {
+      if (userData.businessName && userData.businessName !== 'undefined' && userData.businessName !== 'null') {
+        return userData.businessName;
+      }
+      // Check if tenant info has the business name
+      if (userData.tenant && userData.tenant.name) {
+        return userData.tenant.name;
+      }
+    }
+    
+    // Check app cache
+    if (typeof window !== 'undefined' && appCache.getAll()) {
+      const cachedName = appCache.get('tenant.businessName');
+      if (cachedName && cachedName !== 'undefined' && cachedName !== 'null') {
+        return cachedName;
+      }
+    }
+    
+    // Only check Cognito/Auth0 attributes as a last resort
     if (userAttributes) {
-      // Check for businessname in Cognito attributes
       if (userAttributes['custom:businessname'] && 
           userAttributes['custom:businessname'] !== 'undefined' && 
           userAttributes['custom:businessname'] !== 'null' &&
@@ -800,37 +847,16 @@ const DashAppBar = ({
         return userAttributes['custom:businessname'];
       }
       
-      // Try alternate Cognito attribute names
       if (userAttributes['custom:tenant_name'] && 
           userAttributes['custom:tenant_name'] !== 'undefined' && 
           userAttributes['custom:tenant_name'] !== 'null') {
         return userAttributes['custom:tenant_name'];
       }
-      
-      // No longer generate business names with suffixes - only use actual Cognito data
     }
     
-    // Check app cache
-    if (typeof window !== 'undefined' && appCache.getAll()) {
-      return appCache.get('tenant.businessName');
-    }
-    
-    // Only use these fallbacks if Cognito data is unavailable
-    if (userData) {
-      if (userData.businessName && userData.businessName !== 'undefined') {
-        return userData.businessName;
-      }
-      
-      if (userData['custom:businessname'] && userData['custom:businessname'] !== 'undefined') {
-        return userData['custom:businessname'];
-      }
-    }
-    
-    // Return strictly data from sources, not generated values
-    return businessName || 
-           (profileData?.business_name && profileData.business_name !== 'undefined' ? profileData.business_name : '') || 
-           '';
-  }, [userAttributes, userData, businessName, profileData]);
+    // Return empty string if no business name found
+    return '';
+  }, [businessName, fetchedBusinessName, auth0BusinessName, profileData, userData, userAttributes]);
 
   // Function to get the user's email from Auth0 session and app cache
   const getUserEmail = () => {
@@ -1231,7 +1257,7 @@ const DashAppBar = ({
                 </div>
                 <div className="text-xs text-gray-600 mt-1">
                   <span className="font-semibold">Business: </span>
-                  <span>{businessName || fetchedBusinessName || auth0BusinessName || profileData?.businessName || profileData?.business_name || 'Loading...'}</span>
+                  <span>{effectiveBusinessName || 'Loading...'}</span>
                 </div>
               </div>
 

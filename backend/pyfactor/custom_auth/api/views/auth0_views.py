@@ -323,6 +323,7 @@ class Auth0UserProfileView(APIView):
                     'name': tenant.name if tenant else None,
                 } if tenant else None,
                 'tenantId': str(tenant.id) if tenant else None,  # Top-level tenant ID for easy access
+                'businessName': tenant.name if tenant else None,  # Add businessName for frontend compatibility
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
                 # Include subscription information
