@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { addSecurityHeaders } from './utils/securityHeaders';
 
 // Added comprehensive debug logging
 const AUTH_DEBUG = process.env.AUTH_DEBUG === 'true' || true;;
@@ -33,9 +32,8 @@ export function middleware(request) {
     return response;
   }
   
-  // For all other routes, apply security headers and continue normally
-  const response = NextResponse.next();
-  return addSecurityHeaders(response);
+  // For all other routes, continue normally
+  return NextResponse.next();
 }
 
 // Define the middleware config to match the paths we want to handle

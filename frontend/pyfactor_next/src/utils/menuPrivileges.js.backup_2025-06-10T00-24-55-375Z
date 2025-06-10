@@ -28,7 +28,7 @@ export async function fetchCurrentUserMenuPrivileges() {
         }
         
         // Fetch current user's menu privileges from API
-        const response = await api.get('/api/user/menu-privileges');
+        const response = await api.get('/users/api/menu-privileges/current_user/');
         
         // Check if we got a valid response with menu items
         if (response && response.menu_items && Array.isArray(response.menu_items)) {

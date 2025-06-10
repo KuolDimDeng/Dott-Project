@@ -71,8 +71,6 @@ export async function GET(request, { params }) {
       const sessionCookie = request.cookies.get('appSession');
       let onboardingComplete = false;
       let tenantId = '';
-      let crispEmail = '';
-      let crispNickname = '';
       
       // Try to extract onboarding status and tenant ID from session before deleting
       if (sessionCookie) {
@@ -96,10 +94,6 @@ export async function GET(request, { params }) {
                       sessionData.user.custom_tenantId ||
                       sessionData.user.tenantId || 
                       '';
-            
-            // Extract Crisp data for session preservation
-            crispEmail = sessionData.user.email || '';
-            crispNickname = sessionData.user.name || sessionData.user.nickname || '';
                       
             console.log('[Auth Route] Extracted from session - onboardingComplete:', onboardingComplete, 'tenantId:', tenantId);
             
@@ -122,14 +116,6 @@ export async function GET(request, { params }) {
       returnToUrl += '?logout=true';
       
       // Preserve onboarding status if completed
-      // Preserve Crisp session data
-      if (crispEmail) {
-        returnToUrl += `&crispEmail=${encodeURIComponent(crispEmail)}`;
-      }
-      if (crispNickname) {
-        returnToUrl += `&crispNickname=${encodeURIComponent(crispNickname)}`;
-      }
-      
       if (onboardingComplete && tenantId) {
         returnToUrl += `&preserveOnboarding=true&tenantId=${tenantId}`;
       } else if (tenantId) {

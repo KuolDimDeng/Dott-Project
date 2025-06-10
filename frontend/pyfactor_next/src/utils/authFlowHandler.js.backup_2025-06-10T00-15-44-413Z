@@ -117,28 +117,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       if (finalUserData.tenantId) {
         finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
       } else {
-        // Backend shows complete but no tenant ID - create a default tenant
-        console.log('[AuthFlowHandler] Backend complete but no tenant ID - creating default tenant');
-        
-        // Generate a default tenant ID for this user
-        const defaultTenantId = 'default-' + Date.now();
-        finalUserData.tenantId = defaultTenantId;
-        finalUserData.redirectUrl = `/tenant/${defaultTenantId}/dashboard`;
-        
-        // Update session with the new tenant ID
-        try {
-          await fetch('/api/auth/update-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tenantId: defaultTenantId,
-              needsOnboarding: false,
-              onboardingCompleted: true
-            })
-          });
-        } catch (error) {
-          console.error('[AuthFlowHandler] Failed to update session with tenant ID:', error);
-        }
+        // Backend shows complete but no tenant ID - still go to dashboard
+        console.log('[AuthFlowHandler] Backend complete but no tenant ID - redirecting to dashboard');
+        finalUserData.redirectUrl = '/dashboard';
       }
     } else {
       // User needs onboarding

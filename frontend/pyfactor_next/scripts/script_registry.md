@@ -420,3 +420,20 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - src/app/dashboard/page.js
   - src/app/api/auth/[...auth0]/route.js
   - src/app/dashboard/components/DashAppBar.js
+
+## Version0037_fix_tenant_redirect_and_crisp_chat
+- **Date**: 2025-06-10
+- **Status**: Completed
+- **Purpose**: Fix tenant redirect and enable Crisp Chat
+- **Changes**:
+  - Fixed authFlowHandler to create default tenant for users without tenant ID
+  - Updated CSP in middleware to allow Crisp Chat domains
+  - Fixed Auth0 logout to use custom domain properly
+  - Updated layout to properly initialize Crisp Chat
+  - Fixed complete-all to ensure tenant ID is always present
+- **Files Modified**:
+  - src/utils/authFlowHandler.js
+  - src/middleware.js
+  - src/app/api/auth/[...auth0]/route.js
+  - src/app/layout.js
+  - src/app/api/onboarding/complete-all/route.js

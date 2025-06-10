@@ -228,32 +228,7 @@ export async function POST(request) {
     }
     
     // 4. Generate or use existing tenant ID
-    let tenantId = onboardingData.tenantId || user.tenant_id || user.tenantId;
-    
-    // If no tenant ID exists, try to get it from backend user
-    if (!tenantId && sessionData.accessToken) {
-      try {
-        const userResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-          headers: {
-            'Authorization': `Bearer ${sessionData.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          tenantId = userData.tenant_id || userData.tenantId;
-        }
-      } catch (error) {
-        console.warn('[CompleteOnboarding] Failed to fetch user tenant ID:', error);
-      }
-    }
-    
-    // If still no tenant ID, generate one
-    if (!tenantId) {
-      tenantId = uuidv4();
-    }
-    
+    const tenantId = onboardingData.tenantId || user.tenant_id || user.tenantId || uuidv4();
     console.log('[CompleteOnboarding] Using tenant ID:', tenantId);
     
     // 5. Create tenant in backend (attempt with graceful fallback)
