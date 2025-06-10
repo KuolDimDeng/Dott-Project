@@ -178,10 +178,19 @@ class OnboardingStatusAPI(APIView):
             # Get or create progress in database
             progress = getattr(request, 'onboarding_progress', None)
             if not progress:
+                # Get the user's tenant for progress creation
+                from custom_auth.models import Tenant
+                user_tenant = None
+                if hasattr(request.user, 'tenant') and request.user.tenant:
+                    user_tenant = request.user.tenant
+                else:
+                    # Try to find tenant where user is owner
+                    user_tenant = Tenant.objects.filter(owner_id=request.user.id).first()
+                
                 progress, _ = OnboardingProgress.objects.get_or_create(
                     user=request.user,
                     defaults={
-                        'tenant_id': request.user.id,
+                        'tenant_id': user_tenant.id if user_tenant else None,
                         'session_id': session_id,
                         'current_step': step,
                         'onboarding_status': step,
@@ -198,8 +207,17 @@ class OnboardingStatusAPI(APIView):
                     # Get or create business
                     business = progress.business
                     if not business:
+                        # Get the user's tenant for business creation
+                        from custom_auth.models import Tenant
+                        user_tenant = None
+                        if hasattr(request.user, 'tenant') and request.user.tenant:
+                            user_tenant = request.user.tenant
+                        else:
+                            # Try to find tenant where user is owner
+                            user_tenant = Tenant.objects.filter(owner_id=request.user.id).first()
+                        
                         business, _ = Business.objects.get_or_create(
-                            tenant_id=request.user.id,
+                            tenant_id=user_tenant.id if user_tenant else progress.tenant_id,
                             created_by=request.user,
                             defaults={
                                 'name': business_info.get('name', ''),
