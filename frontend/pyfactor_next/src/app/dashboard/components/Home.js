@@ -94,9 +94,24 @@ function Home({ userData }) {
     },
   ];
 
+  // Helper function to get the effective subscription type
+  const getEffectiveSubscriptionType = () => {
+    // Check selected_plan first (this is what's set during onboarding)
+    const plan = userData?.selected_plan || 
+                 userData?.selectedPlan ||
+                 userData?.subscription_plan ||
+                 userData?.subscriptionPlan ||
+                 userData?.subscriptionType || 
+                 userData?.subscription_type ||
+                 'free';
+    
+    // Normalize the plan name to lowercase for consistent comparison
+    return plan.toLowerCase();
+  };
+
   // Find current user's plan
   const currentPlan = PLANS.find(plan => 
-    plan.id === (userData?.subscription_type?.toLowerCase() || 'free')
+    plan.id === getEffectiveSubscriptionType()
   ) || PLANS[0];
 
   // Helper function to get an icon for a feature

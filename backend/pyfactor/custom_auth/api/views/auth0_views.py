@@ -126,6 +126,12 @@ class Auth0UserCreateView(APIView):
                     subscription_tier='trial'
                 )
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
+            
+            # Ensure user.tenant relationship is set
+            if not user.tenant or user.tenant.id != tenant.id:
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Updating user.tenant relationship to {tenant.id}")
+                user.tenant = tenant
+                user.save(update_fields=['tenant'])
 
             # Check for existing onboarding progress
             logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for onboarding progress for user: {user.id}")
@@ -219,9 +225,21 @@ class Auth0UserProfileView(APIView):
             user_role = 'owner'  # Default role
             
             try:
-                # Check if user is owner of a tenant
-                tenant = Tenant.objects.filter(owner_id=user.id).first()
-                logger.info(f"🔥 [USER_PROFILE] Tenant lookup result: {tenant.id if tenant else 'None'}")
+                # First check if user has a direct tenant relationship
+                if hasattr(user, 'tenant') and user.tenant:
+                    tenant = user.tenant
+                    logger.info(f"🔥 [USER_PROFILE] Found tenant via user.tenant relationship: {tenant.id}")
+                else:
+                    # Fallback: Check if user is owner of a tenant
+                    tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    logger.info(f"🔥 [USER_PROFILE] Tenant lookup by owner_id result: {tenant.id if tenant else 'None'}")
+                    
+                    # If we found a tenant by owner_id, update the user's tenant field
+                    if tenant and not user.tenant:
+                        logger.info(f"🔥 [USER_PROFILE] Updating user.tenant relationship for consistency")
+                        user.tenant = tenant
+                        user.save(update_fields=['tenant'])
+                
                 if tenant:
                     user_role = 'owner'
                 else:

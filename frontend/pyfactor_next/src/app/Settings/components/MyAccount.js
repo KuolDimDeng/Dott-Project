@@ -29,6 +29,16 @@ const MyAccount = ({ userData }) => {
         console.log('[CLOSE_ACCOUNT_UI] API Response:', profileData);
           console.log('Successfully fetched Auth0 profile data:', profileData);
           
+          // Debug subscription data
+          console.log('[MyAccount] Profile subscription data:', {
+            selected_plan: profileData.selected_plan,
+            selectedPlan: profileData.selectedPlan,
+            subscription_plan: profileData.subscription_plan,
+            subscriptionPlan: profileData.subscriptionPlan,
+            subscriptionType: profileData.subscriptionType,
+            subscription_type: profileData.subscription_type
+          });
+          
           // Enhance the userData with the fetched profile data
           setEnhancedUserData({
             ...userData,
@@ -41,7 +51,14 @@ const MyAccount = ({ userData }) => {
             name: profileData.name || userData?.name,
             tenantId: profileData.tenantId || profileData.tenant_id || userData?.tenantId,
             sub: profileData.sub || userData?.sub,
-            id: profileData.id || profileData.sub || userData?.id || userData?.sub
+            id: profileData.id || profileData.sub || userData?.id || userData?.sub,
+            // Include all possible subscription fields
+            selected_plan: profileData.selected_plan,
+            selectedPlan: profileData.selectedPlan,
+            subscription_plan: profileData.subscription_plan,
+            subscriptionPlan: profileData.subscriptionPlan,
+            subscriptionType: profileData.subscriptionType,
+            subscription_type: profileData.subscription_type
           });
         }
       } catch (error) {
@@ -67,6 +84,34 @@ const MyAccount = ({ userData }) => {
 
   const getPlanColor = (planId) => {
     return getSubscriptionPlanColor(planId);
+  };
+
+  // Helper function to get the effective subscription type from multiple possible fields
+  const getEffectiveSubscriptionType = () => {
+    // Debug log all subscription fields
+    console.log('[MyAccount] Subscription field debug:', {
+      selected_plan: userDisplayData?.selected_plan,
+      selectedPlan: userDisplayData?.selectedPlan,
+      subscription_plan: userDisplayData?.subscription_plan,
+      subscriptionPlan: userDisplayData?.subscriptionPlan,
+      subscriptionType: userDisplayData?.subscriptionType,
+      subscription_type: userDisplayData?.subscription_type,
+      userDisplayData_keys: Object.keys(userDisplayData || {})
+    });
+    
+    // Check selected_plan first (this is what's set during onboarding)
+    const plan = userDisplayData?.selected_plan || 
+                 userDisplayData?.selectedPlan ||
+                 userDisplayData?.subscription_plan ||
+                 userDisplayData?.subscriptionPlan ||
+                 userDisplayData?.subscriptionType || 
+                 userDisplayData?.subscription_type ||
+                 'free';
+    
+    console.log('[MyAccount] Effective subscription plan:', plan);
+    
+    // Normalize the plan name to lowercase for consistent comparison
+    return plan.toLowerCase();
   };
 
   const handleOpenCloseAccountModal = () => {
@@ -429,17 +474,17 @@ const MyAccount = ({ userData }) => {
               </p>
               <div className="flex items-center">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  userDisplayData?.subscriptionType === 'free' || userDisplayData?.subscription_type === 'free'
+                  getEffectiveSubscriptionType() === 'free'
                     ? 'bg-gray-100 text-gray-800' 
                     : 'bg-blue-100 text-blue-800'
                 } mr-2`}>
-                  {(userDisplayData?.subscriptionType === 'enterprise' || userDisplayData?.subscription_type === 'enterprise')
+                  {getEffectiveSubscriptionType() === 'enterprise'
                     ? 'Enterprise Plan' 
-                    : (userDisplayData?.subscriptionType === 'professional' || userDisplayData?.subscription_type === 'professional')
+                    : getEffectiveSubscriptionType() === 'professional'
                       ? 'Professional Plan' 
                       : 'Free Plan'}
                 </span>
-                {(userDisplayData?.subscriptionType === 'free' || userDisplayData?.subscription_type === 'free') && (
+                {getEffectiveSubscriptionType() === 'free' && (
                   <button 
                     onClick={handleUpgradeClick}
                     className="text-xs px-2 py-1 rounded border border-blue-600 text-blue-600 hover:bg-blue-50"

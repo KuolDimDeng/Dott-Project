@@ -9,7 +9,7 @@ import { logger } from '@/utils/logger';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { tenantId, needsOnboarding, onboardingCompleted } = body;
+    const { tenantId, needsOnboarding, onboardingCompleted, subscriptionPlan } = body;
     
     logger.info('[UpdateSession] Updating session data', {
       tenantId,
@@ -71,6 +71,17 @@ export async function POST(request) {
     if (currentStep !== undefined) {
       sessionData.user.currentStep = currentStep;
       sessionData.user.current_onboarding_step = currentStep;
+    }
+    
+    // Update subscription plan if provided
+    if (subscriptionPlan !== undefined) {
+      // Store in all possible field names for compatibility
+      sessionData.user.subscriptionPlan = subscriptionPlan;
+      sessionData.user.subscription_plan = subscriptionPlan;
+      sessionData.user.subscriptionType = subscriptionPlan;
+      sessionData.user.subscription_type = subscriptionPlan;
+      sessionData.user.selected_plan = subscriptionPlan;
+      sessionData.user.selectedPlan = subscriptionPlan;
     }
     
     // Re-encode session

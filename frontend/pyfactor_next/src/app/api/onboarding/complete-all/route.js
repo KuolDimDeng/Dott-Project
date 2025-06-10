@@ -77,7 +77,13 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
         // Store business information in user metadata
         businessName: onboardingData.businessName,
         businessType: onboardingData.businessType,
+        // Store subscription plan in all possible field names for compatibility
         subscriptionPlan: onboardingData.selectedPlan,
+        subscription_plan: onboardingData.selectedPlan,
+        subscriptionType: onboardingData.selectedPlan,
+        subscription_type: onboardingData.selectedPlan,
+        selected_plan: onboardingData.selectedPlan,
+        selectedPlan: onboardingData.selectedPlan,
         
         // Assign owner role to the person completing onboarding
         role: 'owner',
@@ -130,6 +136,7 @@ async function createTenantInBackend(user, onboardingData, tenantId, accessToken
       business_state: onboardingData.businessState,
       legal_structure: onboardingData.legalStructure,
       selected_plan: onboardingData.selectedPlan,
+      subscription_plan: onboardingData.selectedPlan,
       billing_cycle: onboardingData.billingCycle,
       owner_first_name: onboardingData.firstName,
       owner_last_name: onboardingData.lastName,
@@ -389,6 +396,11 @@ export async function POST(request) {
             tenantId: tenantId,
             businessName: onboardingData.businessName,
             subscriptionPlan: onboardingData.selectedPlan,
+            subscription_plan: onboardingData.selectedPlan,
+            selected_plan: onboardingData.selectedPlan,
+            selectedPlan: onboardingData.selectedPlan,
+            subscriptionType: onboardingData.selectedPlan,
+            subscription_type: onboardingData.selectedPlan,
             onboardingCompletedAt: new Date().toISOString()
           }
         })

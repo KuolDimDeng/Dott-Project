@@ -117,35 +117,32 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     });
 
     // Determine redirect URL
-    if (backendCompleted || (isOnboardingComplete && finalUserData.tenantId)) {
-      // User has completed onboarding
+    if ((backendCompleted || isOnboardingComplete) && finalUserData.tenantId) {
+      // User has completed onboarding AND has a valid tenant ID
       finalUserData.needsOnboarding = false;
       finalUserData.onboardingCompleted = true;
-      if (finalUserData.tenantId) {
-        finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
-      } else {
-        // Backend shows complete but no tenant ID - create a default tenant
-        console.log('[AuthFlowHandler] Backend complete but no tenant ID - creating default tenant');
-        
-        // Generate a default tenant ID for this user
-        const defaultTenantId = 'default-' + Date.now();
-        finalUserData.tenantId = defaultTenantId;
-        finalUserData.redirectUrl = `/tenant/${defaultTenantId}/dashboard`;
-        
-        // Update session with the new tenant ID
-        try {
-          await fetch('/api/auth/update-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tenantId: defaultTenantId,
-              needsOnboarding: false,
-              onboardingCompleted: true
-            })
-          });
-        } catch (error) {
-          console.error('[AuthFlowHandler] Failed to update session with tenant ID:', error);
-        }
+      finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
+    } else if (backendCompleted && !finalUserData.tenantId) {
+      // Backend shows complete but no tenant ID - this is a data inconsistency
+      // Instead of generating a fake tenant ID, force re-onboarding to fix the data
+      logger.warn('[AuthFlowHandler] Backend shows onboarding complete but no tenant ID found - forcing re-onboarding');
+      
+      finalUserData.needsOnboarding = true;
+      finalUserData.onboardingCompleted = false;
+      finalUserData.redirectUrl = '/onboarding';
+      
+      // Update session to reflect that onboarding is needed
+      try {
+        await fetch('/api/auth/update-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            needsOnboarding: true,
+            onboardingCompleted: false
+          })
+        });
+      } catch (error) {
+        logger.error('[AuthFlowHandler] Failed to update session:', error);
       }
     } else {
       // User needs onboarding
