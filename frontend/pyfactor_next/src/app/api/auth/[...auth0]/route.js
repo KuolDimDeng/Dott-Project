@@ -138,7 +138,7 @@ export async function GET(request, { params }) {
         returnToUrl += `&checkLocalStorage=true&tenantId=${tenantId}`;
       }
       
-      const logoutUrl = 'https://auth.dottapps.com/v2/logout?` +
+      const logoutUrl = 'https://auth.dottapps.com/v2/logout?' +
         new URLSearchParams({
           client_id: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
           returnTo: returnToUrl,

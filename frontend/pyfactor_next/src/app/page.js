@@ -115,7 +115,8 @@ export default function Home() {
       <div className="bg-white">
         <Footer />
       </div>
-          </main>
+    </main>
     </I18nextProvider>
+    </>
   );
 }
