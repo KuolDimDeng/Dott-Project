@@ -156,8 +156,8 @@ class CloseAccountView(APIView):
                 try:
                     from django.db import connection
                     with connection.cursor() as cursor:
-                        # Delete from auth_user table directly
-                        cursor.execute("DELETE FROM auth_user WHERE id = %s", [user_id])
+                        # Delete from custom_auth_user table directly
+                        cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
                         logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database via raw SQL")
                         deletion_successful = True
                 except Exception as e:
