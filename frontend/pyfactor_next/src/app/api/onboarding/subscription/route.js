@@ -303,6 +303,8 @@ export async function POST(request) {
             sessionData.user.subscription_plan = subscriptionData.selected_plan;
             sessionData.user.subscriptionType = subscriptionData.selected_plan;
             sessionData.user.subscription_type = subscriptionData.selected_plan;
+            sessionData.user.selected_plan = subscriptionData.selected_plan;
+            sessionData.user.selectedPlan = subscriptionData.selected_plan;
             
             if (subscriptionData.selected_plan === 'free') {
               sessionData.user.onboardingCompleted = true;
@@ -388,6 +390,8 @@ export async function POST(request) {
             sessionData.user.subscription_plan = subscriptionData.selected_plan;
             sessionData.user.subscriptionType = subscriptionData.selected_plan;
             sessionData.user.subscription_type = subscriptionData.selected_plan;
+            sessionData.user.selected_plan = subscriptionData.selected_plan;
+            sessionData.user.selectedPlan = subscriptionData.selected_plan;
             
             if (subscriptionData.selected_plan === 'free') {
               sessionData.user.onboardingCompleted = true;

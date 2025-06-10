@@ -86,7 +86,7 @@ export async function GET(request) {
                 selected_plan: profileData.selected_plan,
                 subscription_type: profileData.subscription_type
               });
-              subscriptionPlan = profileData.subscription_plan || profileData.selected_plan || profileData.subscription_type || subscriptionPlan || 'free';
+              subscriptionPlan = profileData.selected_plan || profileData.subscription_plan || profileData.subscription_type || subscriptionPlan || 'free';
             }
           } catch (profileError) {
             console.error('[Business Info API] Error fetching profile for subscription:', profileError);

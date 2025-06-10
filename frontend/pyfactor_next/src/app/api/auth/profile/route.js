@@ -212,6 +212,8 @@ export async function GET(request) {
             // Subscription data from backend (prioritize backend over session)
             subscriptionPlan: backendUser.subscription_plan || backendUser.selected_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
             subscriptionType: backendUser.subscription_plan || backendUser.selected_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
+            selected_plan: backendUser.selected_plan || backendUser.subscription_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
+            selectedPlan: backendUser.selected_plan || backendUser.subscription_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
             
             // Business info from backend or session
             businessName: businessInfo?.businessName || user.businessName || profileData.businessName,

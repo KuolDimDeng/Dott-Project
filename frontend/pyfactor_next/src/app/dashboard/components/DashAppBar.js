@@ -638,13 +638,21 @@ const DashAppBar = ({
     }
     
     // Then check user data
-    if (userData && userData.subscription_type) {
-      return userData.subscription_type;
+    if (userData) {
+      const planFromUser = userData.selected_plan || 
+                          userData.selectedPlan ||
+                          userData.subscription_type ||
+                          userData.subscriptionType;
+      if (planFromUser) {
+        return planFromUser;
+      }
     }
     
     // Check profile data - multiple possible field names
     if (profileData) {
-      const planFromProfile = profileData.subscriptionType || 
+      const planFromProfile = profileData.selected_plan ||  // Check selected_plan first!
+                             profileData.selectedPlan ||
+                             profileData.subscriptionType || 
                              profileData.subscriptionPlan || 
                              profileData.subscription_plan ||
                              profileData.subscription_type;
@@ -695,8 +703,18 @@ const DashAppBar = ({
   console.log('[DashAppBar] Subscription Debug:', {
     effectiveType: effectiveSubscriptionType,
     userAttributes: userAttributes?.['custom:subplan'],
-    userData: userData?.subscription_type,
-    profileData: profileData?.subscriptionType || profileData?.subscriptionPlan || profileData?.subscription_plan,
+    userData: {
+      selected_plan: userData?.selected_plan,
+      selectedPlan: userData?.selectedPlan,
+      subscription_type: userData?.subscription_type
+    },
+    profileData: {
+      selected_plan: profileData?.selected_plan,
+      selectedPlan: profileData?.selectedPlan,
+      subscriptionType: profileData?.subscriptionType,
+      subscriptionPlan: profileData?.subscriptionPlan,
+      subscription_plan: profileData?.subscription_plan
+    },
     cachedType: getTenantCacheData('user', 'subscriptionType'),
     allProfileData: profileData
   });
