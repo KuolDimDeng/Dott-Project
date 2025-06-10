@@ -79,7 +79,11 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm build:*)",
       "Bash(npm view:*)",
-      "Bash(vercel:*)"
+      "Bash(vercel:*)",
+      "Bash(./trigger-render-deployment.sh:*)",
+      "Bash(./monitor-render-deployment.sh:*)",
+      "Bash(./test-deployment-success.sh:*)",
+      "Bash(./force-backend-deployment.sh:*)"
     ],
     "deny": []
   }
