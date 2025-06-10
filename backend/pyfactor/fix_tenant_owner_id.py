@@ -100,8 +100,7 @@ def fix_tenant_owner_ids():
                 print("🚨 NO TENANT EXISTS - Creating one now...")
                 tenant = Tenant.objects.create(
                     name=f"{user.email.split('@')[0]}'s Business",
-                    owner_id=user_id_str,
-                    subscription_tier='trial'
+                    owner_id=user_id_str
                 )
                 user.tenant = tenant
                 user.save(update_fields=['tenant'])
