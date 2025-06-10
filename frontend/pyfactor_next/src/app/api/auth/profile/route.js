@@ -209,10 +209,13 @@ export async function GET(request) {
             tenant_id: finalTenantId,
             tenantId: finalTenantId, // Alias for compatibility
             
+            // Subscription data from backend (prioritize backend over session)
+            subscriptionPlan: backendUser.subscription_plan || backendUser.selected_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
+            subscriptionType: backendUser.subscription_plan || backendUser.selected_plan || backendUser.subscription_type || businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan || 'free',
+            
             // Business info from backend or session
             businessName: businessInfo?.businessName || user.businessName || profileData.businessName,
             businessType: businessInfo?.businessType || user.businessType || profileData.businessType,
-            subscriptionPlan: businessInfo?.subscriptionPlan || user.subscriptionPlan || profileData.subscriptionPlan,
             
             // Onboarding status: if user has tenant in backend, they've completed onboarding
             // Check backend onboarding status first, then tenant ID

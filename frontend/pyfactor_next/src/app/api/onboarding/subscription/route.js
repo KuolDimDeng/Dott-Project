@@ -293,6 +293,38 @@ export async function POST(request) {
         await cookieStore.set('lastOnboardingUpdate', new Date().toISOString(), COOKIE_OPTIONS);
         
         console.log('[api/onboarding/subscription] Cookies set successfully');
+        
+        // Update session with subscription plan
+        try {
+          // Update the session cookie to include subscription plan
+          if (sessionCookie) {
+            const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            sessionData.user.subscriptionPlan = subscriptionData.selected_plan;
+            sessionData.user.subscription_plan = subscriptionData.selected_plan;
+            sessionData.user.subscriptionType = subscriptionData.selected_plan;
+            sessionData.user.subscription_type = subscriptionData.selected_plan;
+            
+            if (subscriptionData.selected_plan === 'free') {
+              sessionData.user.onboardingCompleted = true;
+              sessionData.user.needsOnboarding = false;
+              sessionData.user.currentStep = 'completed';
+            }
+            
+            const updatedSessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+            await cookieStore.set('appSession', updatedSessionCookie, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+              maxAge: 7 * 24 * 60 * 60, // 7 days
+              path: '/'
+            });
+            
+            console.log('[api/onboarding/subscription] Session updated with subscription plan:', subscriptionData.selected_plan);
+          }
+        } catch (sessionError) {
+          console.error('[api/onboarding/subscription] Error updating session:', sessionError);
+          // Continue - don't fail for session update issues
+        }
       } catch (cookieError) {
         console.error('[api/onboarding/subscription] Error setting cookies:', cookieError);
         // Continue - don't fail the entire request for cookie issues
@@ -346,6 +378,37 @@ export async function POST(request) {
         // Cache subscription data
         await cookieStore.set('subscriptionPlan', subscriptionData.selected_plan, COOKIE_OPTIONS);
         await cookieStore.set('subscriptionInterval', subscriptionData.billing_cycle, COOKIE_OPTIONS);
+        
+        // Update session with subscription plan even in fallback
+        try {
+          const sessionCookie = cookieStore.get('appSession');
+          if (sessionCookie) {
+            const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            sessionData.user.subscriptionPlan = subscriptionData.selected_plan;
+            sessionData.user.subscription_plan = subscriptionData.selected_plan;
+            sessionData.user.subscriptionType = subscriptionData.selected_plan;
+            sessionData.user.subscription_type = subscriptionData.selected_plan;
+            
+            if (subscriptionData.selected_plan === 'free') {
+              sessionData.user.onboardingCompleted = true;
+              sessionData.user.needsOnboarding = false;
+              sessionData.user.currentStep = 'completed';
+            }
+            
+            const updatedSessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+            await cookieStore.set('appSession', updatedSessionCookie, {
+              httpOnly: true,
+              secure: true,
+              sameSite: 'lax',
+              maxAge: 7 * 24 * 60 * 60, // 7 days
+              path: '/'
+            });
+            
+            console.log('[api/onboarding/subscription] Session updated in fallback with subscription plan:', subscriptionData.selected_plan);
+          }
+        } catch (sessionError) {
+          console.error('[api/onboarding/subscription] Error updating session in fallback:', sessionError);
+        }
         
         return createSafeResponse({
           success: true, // Still successful from user perspective

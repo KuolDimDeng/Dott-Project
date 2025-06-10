@@ -296,18 +296,24 @@ class Auth0UserProfileView(APIView):
                 'tenantId': str(tenant.id) if tenant else None,  # Top-level tenant ID for easy access
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
+                # Include subscription information
+                'subscription_plan': onboarding_progress.subscription_plan if onboarding_progress else 'free',
+                'selected_plan': onboarding_progress.selected_plan if onboarding_progress else 'free',
+                'subscription_type': onboarding_progress.subscription_plan if onboarding_progress else 'free',
                 'onboarding': {
                     'needsOnboarding': needs_onboarding,
                     'onboardingCompleted': onboarding_completed,
                     'currentStep': current_step,
                     'tenantId': str(tenant.id) if tenant else None,
                     'progress_id': str(onboarding_progress.id) if onboarding_progress else None,
+                    'subscription_plan': onboarding_progress.subscription_plan if onboarding_progress else 'free',
                 } if onboarding_progress else {
                     'needsOnboarding': True,
                     'onboardingCompleted': False,
                     'currentStep': 'business_info',
                     'tenantId': str(tenant.id) if tenant else None,
                     'progress_id': None,
+                    'subscription_plan': 'free',
                 }
             }
             
