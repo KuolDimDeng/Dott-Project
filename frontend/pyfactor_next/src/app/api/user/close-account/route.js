@@ -134,11 +134,36 @@ export async function POST(request) {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
     try {
+      // Get access token from various possible locations in the session
+      let accessToken = '';
+      
+      // Try to get the access token from different possible locations
+      if (sessionData.accessToken) {
+        accessToken = sessionData.accessToken;
+      } else if (sessionData.idToken) {
+        // Sometimes the access token might be stored as idToken
+        accessToken = sessionData.idToken;
+      } else {
+        // Try to get a fresh access token
+        try {
+          const tokenResponse = await fetch('/api/auth/access-token');
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            accessToken = tokenData.accessToken || tokenData.token || '';
+            console.log('[CLOSE_ACCOUNT] Retrieved fresh access token');
+          }
+        } catch (error) {
+          console.error('[CLOSE_ACCOUNT] Failed to get fresh access token:', error);
+        }
+      }
+      
+      console.log('[CLOSE_ACCOUNT] Using access token:', accessToken ? 'Token present' : 'No token');
+      
       const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.accessToken || ''}`
+          'Authorization': `Bearer ${accessToken}`
         },
         body: JSON.stringify({
           reason,
