@@ -1042,6 +1042,10 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     logger.error(f"❌ User {user.email} has a deleted/closed account")
                     raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
                 
+                # Ensure user is marked as authenticated for Django
+                if hasattr(user, '_cached_is_authenticated'):
+                    user._cached_is_authenticated = True
+                
                 # Link this user to Auth0
                 setattr(user, 'auth0_sub', auth0_id)
                 user.save(update_fields=['auth0_sub'])

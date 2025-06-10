@@ -208,7 +208,8 @@ export async function POST(request) {
       }
       
       console.log('[CLOSE_ACCOUNT] Final access token:', accessToken ? `Token present (${accessToken.length} chars)` : 'No token');
-      console.log('[CLOSE_ACCOUNT] Token starts with:', accessToken ? accessToken.substring(0, 10) + '...' : 'N/A');
+      console.log('[CLOSE_ACCOUNT] Token starts with:', accessToken ? accessToken.substring(0, 50) + '...' : 'N/A');
+      console.log('[CLOSE_ACCOUNT] Backend URL:', `${backendUrl}/api/users/close-account/`);
       
       // If no access token, try to continue without backend deletion
       if (!accessToken) {
@@ -217,21 +218,21 @@ export async function POST(request) {
         // Continue with Auth0 deletion attempt instead of failing
       } else {
         const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-          'X-User-Email': user.email,
-          'X-User-Sub': user.sub,
-          'X-Tenant-ID': user.tenant_id || user.tenantId || ''
-        },
-        body: JSON.stringify({
-          reason,
-          feedback,
-          user_email: user.email,
-          user_sub: user.sub
-        })
-      });
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'X-User-Email': user.email,
+            'X-User-Sub': user.sub,
+            'X-Tenant-ID': user.tenant_id || user.tenantId || ''
+          },
+          body: JSON.stringify({
+            reason,
+            feedback,
+            user_email: user.email,
+            user_sub: user.sub
+          })
+        });
       
       const backendText = await backendResponse.text();
       let backendResult;
@@ -242,6 +243,10 @@ export async function POST(request) {
         console.error('[CLOSE_ACCOUNT] Failed to parse backend response:', backendText);
         backendResult = { error: 'Invalid response from backend' };
       }
+      
+      console.log('[CLOSE_ACCOUNT] Backend response status:', backendResponse.status);
+      console.log('[CLOSE_ACCOUNT] Backend response ok:', backendResponse.ok);
+      console.log('[CLOSE_ACCOUNT] Backend result:', backendResult);
       
       if (backendResponse.ok && backendResult.success) {
         console.log('[CLOSE_ACCOUNT] Backend deletion successful:', backendResult);
@@ -322,9 +327,18 @@ export async function POST(request) {
     
     // 5. Clear all cookies and sessions
     console.log('[CLOSE_ACCOUNT] Step 4: Clearing all cookies and sessions');
+    console.log('[CLOSE_ACCOUNT] Deletion results summary:', {
+      backend: deletionResults.backend,
+      auth0: deletionResults.auth0,
+      errors: deletionResults.errors
+    });
+    
+    // IMPORTANT: Only return success if backend deletion actually succeeded
+    const isSuccess = deletionResults.backend === true;
+    
     const response = NextResponse.json({ 
-      success: deletionResults.backend,
-      message: deletionResults.backend 
+      success: isSuccess,
+      message: isSuccess 
         ? 'Your account has been closed successfully. You will not be able to sign in again with these credentials.' 
         : 'Account closure failed. Please contact support.',
       details: {
