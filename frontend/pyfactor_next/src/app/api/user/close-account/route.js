@@ -149,7 +149,7 @@ export async function POST(request) {
           const tokenResponse = await fetch('/api/auth/access-token');
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
-            accessToken = tokenData.accessToken || tokenData.token || '';
+            accessToken = tokenData.access_token || tokenData.accessToken || tokenData.token || '';
             console.log('[CLOSE_ACCOUNT] Retrieved fresh access token');
           }
         } catch (error) {

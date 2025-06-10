@@ -80,6 +80,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/subscription/',
             '/api/onboarding/complete',
             '/api/onboarding/',  # Catch-all for onboarding endpoints
+            '/api/users/close-account/',  # Account deletion endpoint
         ]
         
         # Add custom public paths from settings if available
