@@ -7,7 +7,10 @@ import { useRouter } from 'next/navigation';
 export default function AccountClosed() {
   const router = useRouter();
   
-  // Clear any remaining auth data
+  useEffect(() => {
+    console.log('[ACCOUNT_CLOSED] User reached account-closed page');
+    
+    // Clear any remaining auth data
     console.log('[ACCOUNT_CLOSED] Performing final cleanup');
     
     // Clear all storage
@@ -26,66 +29,48 @@ export default function AccountClosed() {
       document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.dottapps.com";
       document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
     });
-    console.log('[ACCOUNT_CLOSED] Cleared all cookies'); on mount and set up redirect
-  useEffect(() => {
-    console.log('[ACCOUNT_CLOSED] User reached account-closed page');
-    // Clear any remaining local storage
-    localStorage.clear();
+    console.log('[ACCOUNT_CLOSED] Cleared all cookies');
     
-    // Clear all cookies
-    document.cookie.split(';').forEach(c => {
-      document.cookie = c
-        .replace(/^ +/, '')
-        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-    });
-    
-    // Redirect to landing page after 5 seconds
-    const redirectTimer = setTimeout(() => {
-      window.location.href = '/';
+    // Set up redirect timer
+    const timer = setTimeout(() => {
+      console.log('[ACCOUNT_CLOSED] Redirecting to home page');
+      router.push('/');
     }, 5000);
     
-    return () => clearTimeout(redirectTimer);
-  }, []);
+    return () => clearTimeout(timer);
+  }, [router]);
   
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-green-100">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Account Closed Successfully
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Your account has been permanently closed and all data has been removed.
+          </p>
+          <p className="mt-4 text-sm text-gray-500">
+            You will be redirected to the homepage in 5 seconds...
+          </p>
         </div>
         
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Account Closed</h1>
-        
-        <p className="text-gray-600 mb-6">
-          Your account has been closed successfully. We're sorry to see you go.
-        </p>
-        
-        <p className="text-gray-600 mb-6">
-          Thank you for being a part of our community. If you change your mind, you can always create a new account.
-        </p>
-        
-        <p className="text-sm text-blue-600 mb-6">
-          You will be redirected to the landing page in a few seconds...
-        </p>
-        
-        <div className="flex flex-col space-y-4">
-          <Link 
-            href="/auth/email-signin"
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        <div className="mt-8 space-y-4">
+          <Link
+            href="/auth/signup"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Create New Account
+            Create a New Account
           </Link>
           
-          <a 
+          <Link
             href="/"
-            className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Go to Homepage
-          </a>
+          </Link>
         </div>
       </div>
     </div>
   );
-} 
+}
