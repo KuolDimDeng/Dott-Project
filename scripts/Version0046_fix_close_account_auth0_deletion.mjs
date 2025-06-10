@@ -1,4 +1,31 @@
-import { NextResponse } from 'next/server';
+#!/usr/bin/env node
+
+/**
+ * Version 0.046 - Fix Close Account Auth0 Deletion
+ * 
+ * This script fixes the Auth0 Management API integration in the close account feature.
+ * It addresses URL parsing errors and improves error handling.
+ * 
+ * @fixes close-account-auth0-deletion
+ * @affects frontend/pyfactor_next/src/app/api/user/close-account/route.js
+ */
+
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const projectRoot = path.resolve(__dirname, '..');
+const frontendDir = path.join(projectRoot, 'frontend', 'pyfactor_next');
+
+async function fixCloseAccountRoute() {
+  console.log('🔧 Fixing close account Auth0 deletion...');
+  
+  const routePath = path.join(frontendDir, 'src', 'app', 'api', 'user', 'close-account', 'route.js');
+  
+  // Create improved route with better error handling and domain trimming
+  const improvedRoute = `import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 /**
@@ -23,7 +50,7 @@ async function getAuth0ManagementToken() {
                          'auth.dottapps.com';
   
   // Trim whitespace and remove any trailing slashes
-  const auth0Domain = auth0DomainRaw.trim().replace(/\/$/, '');
+  const auth0Domain = auth0DomainRaw.trim().replace(/\\/$/, '');
   
   console.log('[CLOSE_ACCOUNT] Using Auth0 domain:', auth0Domain);
   
@@ -38,7 +65,7 @@ async function getAuth0ManagementToken() {
   }
   
   try {
-    const tokenUrl = `https://${auth0Domain}/oauth/token`;
+    const tokenUrl = \`https://\${auth0Domain}/oauth/token\`;
     console.log('[CLOSE_ACCOUNT] Requesting token from:', tokenUrl);
     
     const response = await fetch(tokenUrl, {
@@ -47,7 +74,7 @@ async function getAuth0ManagementToken() {
       body: JSON.stringify({
         client_id: clientId,
         client_secret: clientSecret,
-        audience: `https://${auth0Domain}/api/v2/`,
+        audience: \`https://\${auth0Domain}/api/v2/\`,
         grant_type: 'client_credentials'
       })
     });
@@ -134,11 +161,11 @@ export async function POST(request) {
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
     try {
-      const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
+      const backendResponse = await fetch(\`\${backendUrl}/api/users/close-account/\`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.accessToken || ''}`
+          'Authorization': \`Bearer \${sessionData.accessToken || ''}\`
         },
         body: JSON.stringify({
           reason,
@@ -163,11 +190,11 @@ export async function POST(request) {
         deletionResults.backend = true;
       } else {
         console.error('[CLOSE_ACCOUNT] Backend deletion failed:', backendResult);
-        deletionResults.errors.push(`Backend: ${backendResult.error || 'Unknown error'}`);
+        deletionResults.errors.push(\`Backend: \${backendResult.error || 'Unknown error'}\`);
       }
     } catch (error) {
       console.error('[CLOSE_ACCOUNT] Backend deletion error:', error);
-      deletionResults.errors.push(`Backend: ${error.message}`);
+      deletionResults.errors.push(\`Backend: \${error.message}\`);
     }
     
     // 4. Delete from Auth0
@@ -177,16 +204,16 @@ export async function POST(request) {
     if (managementToken) {
       const auth0Domain = (process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 
                           process.env.AUTH0_DOMAIN || 
-                          'auth.dottapps.com').trim().replace(/\/$/, '');
+                          'auth.dottapps.com').trim().replace(/\\/$/, '');
       
       try {
-        const deleteUrl = `https://${auth0Domain}/api/v2/users/${encodeURIComponent(user.sub)}`;
+        const deleteUrl = \`https://\${auth0Domain}/api/v2/users/\${encodeURIComponent(user.sub)}\`;
         console.log('[CLOSE_ACCOUNT] Deleting user from Auth0:', deleteUrl);
         
         const deleteResponse = await fetch(deleteUrl, {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${managementToken}`,
+            'Authorization': \`Bearer \${managementToken}\`,
             'Content-Type': 'application/json'
           }
         });
@@ -198,11 +225,11 @@ export async function POST(request) {
           const error = await deleteResponse.text();
           console.error('[CLOSE_ACCOUNT] Failed to delete from Auth0:', error);
           console.error('[CLOSE_ACCOUNT] Response status:', deleteResponse.status);
-          deletionResults.errors.push(`Auth0: ${error || 'Unknown error'}`);
+          deletionResults.errors.push(\`Auth0: \${error || 'Unknown error'}\`);
         }
       } catch (error) {
         console.error('[CLOSE_ACCOUNT] Auth0 deletion error:', error);
-        deletionResults.errors.push(`Auth0: ${error.message}`);
+        deletionResults.errors.push(\`Auth0: \${error.message}\`);
       }
     } else {
       console.warn('[CLOSE_ACCOUNT] Skipping Auth0 deletion - no management token available');
@@ -243,7 +270,7 @@ export async function POST(request) {
     
     cookiesToClear.forEach(cookieName => {
       response.cookies.delete(cookieName);
-      console.log(`[CLOSE_ACCOUNT] Cleared cookie: ${cookieName}`);
+      console.log(\`[CLOSE_ACCOUNT] Cleared cookie: \${cookieName}\`);
     });
     
     console.log('[CLOSE_ACCOUNT] ========== ACCOUNT DELETION COMPLETE ==========');
@@ -262,3 +289,70 @@ export async function POST(request) {
     }, { status: 500 });
   }
 }
+`;
+  
+  await fs.writeFile(routePath, improvedRoute);
+  console.log('✅ Fixed close account route with improved Auth0 deletion');
+}
+
+async function addEnvTemplate() {
+  console.log('\n📝 Creating environment variable template...');
+  
+  const envTemplate = `# Auth0 Management API Configuration for Account Deletion
+# 
+# To enable complete account deletion (including Auth0), you need to:
+# 1. Create a Machine-to-Machine application in Auth0
+# 2. Grant it the 'delete:users' scope
+# 3. Add these credentials to Vercel
+
+# Required for account deletion from Auth0
+AUTH0_MANAGEMENT_CLIENT_ID=your_management_client_id_here
+AUTH0_MANAGEMENT_CLIENT_SECRET=your_management_client_secret_here
+
+# Example (DO NOT use these actual values):
+# AUTH0_MANAGEMENT_CLIENT_ID=abc123XYZ789
+# AUTH0_MANAGEMENT_CLIENT_SECRET=def456ABC123_very_long_secret_key
+`;
+  
+  const envPath = path.join(frontendDir, '.env.example.auth0-management');
+  await fs.writeFile(envPath, envTemplate);
+  console.log('✅ Created environment variable template at:', envPath);
+}
+
+async function main() {
+  console.log('🚀 Starting Close Account Auth0 Fix - Version 0.046');
+  console.log('=' .repeat(50));
+  
+  try {
+    // Fix the route
+    await fixCloseAccountRoute();
+    
+    // Add environment template
+    await addEnvTemplate();
+    
+    console.log('\n✅ Close account Auth0 deletion has been fixed!');
+    console.log('=' .repeat(50));
+    
+    console.log('\n📋 What was fixed:');
+    console.log('1. Added domain trimming to handle whitespace in environment variables');
+    console.log('2. Improved error handling and logging');
+    console.log('3. Better feedback when Management API credentials are missing');
+    console.log('4. Added partial success handling');
+    
+    console.log('\n🎯 Next steps:');
+    console.log('1. Create a Machine-to-Machine app in Auth0 Dashboard');
+    console.log('2. Grant it "delete:users" scope');
+    console.log('3. Add AUTH0_MANAGEMENT_CLIENT_ID and AUTH0_MANAGEMENT_CLIENT_SECRET to Vercel');
+    console.log('4. Redeploy your application');
+    
+    console.log('\n💡 Note: The account deletion will still work for backend data');
+    console.log('   even without Auth0 credentials configured.');
+    
+  } catch (error) {
+    console.error('\n❌ Error during fix:', error);
+    process.exit(1);
+  }
+}
+
+// Run the script
+main().catch(console.error);
