@@ -262,6 +262,17 @@ class Auth0UserProfileView(APIView):
                     logger.info(f"  - setup_completed: {onboarding_progress.setup_completed}")
                     logger.info(f"  - tenant_id: {onboarding_progress.tenant_id}")
                     logger.info(f"  - completed_steps: {onboarding_progress.completed_steps}")
+                    
+                    # If OnboardingProgress has a tenant_id but user.tenant is not set, fix it
+                    if onboarding_progress.tenant_id and not tenant:
+                        logger.info(f"🔥 [USER_PROFILE] Found tenant_id in OnboardingProgress, looking up tenant")
+                        tenant = Tenant.objects.filter(id=onboarding_progress.tenant_id).first()
+                        if tenant:
+                            logger.info(f"🔥 [USER_PROFILE] Found tenant {tenant.id} from OnboardingProgress, updating user.tenant")
+                            user.tenant = tenant
+                            user.save(update_fields=['tenant'])
+                        else:
+                            logger.warning(f"🔥 [USER_PROFILE] OnboardingProgress has tenant_id {onboarding_progress.tenant_id} but tenant not found!")
             except Exception as e:
                 logger.warning(f"🔥 [USER_PROFILE] Error getting onboarding progress: {str(e)}")
 
@@ -390,6 +401,12 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     tenant.name = business_name
                     tenant.updated_at = timezone.now()
                     tenant.save(update_fields=['name', 'updated_at'])
+                
+                # Ensure user.tenant is set
+                if not user.tenant or user.tenant.id != tenant.id:
+                    logger.info(f"Setting user.tenant to {tenant.id} for user {user.email}")
+                    user.tenant = tenant
+                    user.save(update_fields=['tenant'])
                 
                 # Create or update onboarding progress
                 progress, created = OnboardingProgress.objects.get_or_create(
@@ -610,27 +627,43 @@ class Auth0OnboardingCompleteView(APIView):
                 logger.info(f"  - Current current_step: '{progress.current_step}'")
                 logger.info(f"  - Current setup_completed: {progress.setup_completed}")
                 logger.info(f"  - Current completed_steps: {progress.completed_steps}")
+                logger.info(f"  - Current tenant_id: {progress.tenant_id}")
             except OnboardingProgress.DoesNotExist:
                 logger.info(f"🎯 [ONBOARDING_COMPLETE] No existing progress found for user {user.email}, creating new one")
                 
                 # Create progress record from request data
                 request_data = request.data
                 
-                # Get the user's tenant_id if they have one
+                # Get the user's tenant_id - CRITICAL: Must have a valid tenant
                 tenant_id = None
-                try:
+                tenant = None
+                
+                # Check if user has tenant relationship
+                if hasattr(user, 'tenant') and user.tenant:
+                    tenant = user.tenant
+                    tenant_id = tenant.id
+                    logger.info(f"🎯 [ONBOARDING_COMPLETE] Found tenant via user.tenant: {tenant_id}")
+                else:
+                    # Look for tenant where user is owner
                     tenant = Tenant.objects.filter(owner_id=user.id).first()
                     if tenant:
                         tenant_id = tenant.id
+                        # Update user.tenant relationship
+                        user.tenant = tenant
+                        user.save(update_fields=['tenant'])
+                        logger.info(f"🎯 [ONBOARDING_COMPLETE] Found tenant via owner_id: {tenant_id}")
                     else:
-                        # If no tenant exists yet, we'll need to handle this
-                        logger.warning(f"🎯 [ONBOARDING_COMPLETE] No tenant found for user {user.email}")
-                except Exception as e:
-                    logger.error(f"🎯 [ONBOARDING_COMPLETE] Error getting tenant: {str(e)}")
+                        # Critical error - user completing onboarding without tenant
+                        logger.error(f"🎯 [ONBOARDING_COMPLETE] CRITICAL: No tenant found for user {user.email}")
+                        return Response({
+                            'success': False,
+                            'error': 'No tenant found for user. Please contact support.',
+                            'detail': 'User has no associated tenant'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 progress = OnboardingProgress.objects.create(
                     user=user,
-                    tenant_id=tenant_id or user.id,  # Use user.id as fallback if no tenant
+                    tenant_id=tenant_id,  # Must have valid tenant_id
                     selected_plan=request_data.get('selected_plan', 'free'),
                     billing_cycle=request_data.get('billing_cycle', 'monthly'),
                     current_step='setup',
@@ -639,10 +672,33 @@ class Auth0OnboardingCompleteView(APIView):
                     setup_completed=False,
                     created_at=timezone.now()
                 )
-                logger.info(f"🎯 [ONBOARDING_COMPLETE] Created new progress record for user")
+                logger.info(f"🎯 [ONBOARDING_COMPLETE] Created new progress record with tenant_id: {tenant_id}")
+            
+            # Ensure progress has correct tenant_id before marking complete
+            if not progress.tenant_id:
+                # Try to get tenant from user or create one
+                if hasattr(user, 'tenant') and user.tenant:
+                    progress.tenant_id = user.tenant.id
+                    logger.info(f"🎯 [ONBOARDING_COMPLETE] Set progress tenant_id from user.tenant: {progress.tenant_id}")
+                else:
+                    # Look for tenant where user is owner
+                    tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    if tenant:
+                        progress.tenant_id = tenant.id
+                        # Also update user.tenant
+                        user.tenant = tenant
+                        user.save(update_fields=['tenant'])
+                        logger.info(f"🎯 [ONBOARDING_COMPLETE] Set progress tenant_id from owner lookup: {progress.tenant_id}")
+                    else:
+                        logger.error(f"🎯 [ONBOARDING_COMPLETE] Cannot complete onboarding without tenant!")
+                        return Response({
+                            'success': False,
+                            'error': 'No tenant found. Cannot complete onboarding.',
+                            'detail': 'Missing tenant association'
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Mark as complete
-            logger.info(f"🎯 [ONBOARDING_COMPLETE] Updating progress to completed...")
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] Updating progress to completed with tenant_id: {progress.tenant_id}")
             
             progress.setup_completed = True
             progress.setup_timestamp = timezone.now()
