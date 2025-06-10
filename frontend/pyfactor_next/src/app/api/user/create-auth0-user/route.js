@@ -37,17 +37,26 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
     
-    const { user, accessToken } = sessionData;
+    const { user } = sessionData;
+    // Check both possible field names for access token
+    const accessToken = sessionData.accessToken || sessionData.access_token;
     
     if (!user || !user.email) {
       console.error('[Create Auth0 User] No user data in session');
       return NextResponse.json({ error: 'No user data in session' }, { status: 401 });
     }
     
+    if (!accessToken) {
+      console.error('[Create Auth0 User] No access token in session');
+      console.error('[Create Auth0 User] Session data keys:', Object.keys(sessionData));
+      return NextResponse.json({ error: 'No access token in session' }, { status: 401 });
+    }
+    
     console.log('[Create Auth0 User] Processing user:', {
       email: user.email,
       sub: user.sub,
-      hasAccessToken: !!accessToken
+      hasAccessToken: !!accessToken,
+      tokenLength: accessToken ? accessToken.length : 0
     });
     
     // Check for existing tenant ID in session/cookies
