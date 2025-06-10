@@ -37,8 +37,9 @@ class CloseAccountView(APIView):
             feedback = request.data.get('feedback', '')
             logger.info(f"[CLOSE_ACCOUNT] Deletion reason: {reason}, Feedback: {feedback}")
             
-            # Start transaction for data deletion
-            with transaction.atomic():
+            # Process deletion without transaction to avoid rollback issues
+            deletion_successful = False
+            try:
                 # 1. Delete tenant data if user is owner
                 if tenant_id and hasattr(user, 'user_role') and user.user_role == 'owner':
                     logger.info(f"[CLOSE_ACCOUNT] User is owner, deleting tenant data for tenant_id: {tenant_id}")
@@ -76,35 +77,44 @@ class CloseAccountView(APIView):
                 # 2. Delete user profile data
                 logger.info(f"[CLOSE_ACCOUNT] Deleting user profile data")
                 
-                # Delete tokens
+                # Delete tokens if the model exists
                 try:
                     from rest_framework.authtoken.models import Token
-                    Token.objects.filter(user=user).delete()
-                    logger.info(f"[CLOSE_ACCOUNT] Deleted auth tokens")
-                except Exception as e:
-                    logger.error(f"[CLOSE_ACCOUNT] Error deleting tokens: {e}")
+                    try:
+                        Token.objects.filter(user=user).delete()
+                        logger.info(f"[CLOSE_ACCOUNT] Deleted auth tokens")
+                    except Exception as e:
+                        logger.warning(f"[CLOSE_ACCOUNT] Skipping token deletion - table may not exist: {e}")
+                except ImportError:
+                    logger.info(f"[CLOSE_ACCOUNT] Token model not available - skipping")
                 
                 # Delete social accounts if any
                 try:
                     from allauth.socialaccount.models import SocialAccount
-                    SocialAccount.objects.filter(user=user).delete()
-                    logger.info(f"[CLOSE_ACCOUNT] Deleted social accounts")
-                except Exception as e:
-                    logger.error(f"[CLOSE_ACCOUNT] Error deleting social accounts: {e}")
+                    try:
+                        SocialAccount.objects.filter(user=user).delete()
+                        logger.info(f"[CLOSE_ACCOUNT] Deleted social accounts")
+                    except Exception as e:
+                        logger.warning(f"[CLOSE_ACCOUNT] Skipping social account deletion - table may not exist: {e}")
+                except ImportError:
+                    logger.info(f"[CLOSE_ACCOUNT] SocialAccount model not available - skipping")
                 
                 # Delete user sessions
                 try:
                     from django.contrib.sessions.models import Session
                     from django.contrib.auth.models import AnonymousUser
                     
-                    # Delete all sessions for this user
-                    for session in Session.objects.all():
-                        session_data = session.get_decoded()
-                        if session_data.get('_auth_user_id') == str(user_id):
-                            session.delete()
-                            logger.info(f"[CLOSE_ACCOUNT] Deleted session: {session.session_key}")
-                except Exception as e:
-                    logger.error(f"[CLOSE_ACCOUNT] Error deleting sessions: {e}")
+                    try:
+                        # Delete all sessions for this user
+                        for session in Session.objects.all():
+                            session_data = session.get_decoded()
+                            if session_data.get('_auth_user_id') == str(user_id):
+                                session.delete()
+                                logger.info(f"[CLOSE_ACCOUNT] Deleted session: {session.session_key}")
+                    except Exception as e:
+                        logger.warning(f"[CLOSE_ACCOUNT] Skipping session deletion - table may not exist: {e}")
+                except ImportError:
+                    logger.info(f"[CLOSE_ACCOUNT] Session model not available - skipping")
                 
                 # Store deletion record for compliance (you might want to keep this in a separate model)
                 deletion_record = {
@@ -130,26 +140,47 @@ class CloseAccountView(APIView):
                         logger.info("[CLOSE_ACCOUNT] Deleted business info")
                     
                     # Delete any onboarding data
-                    from onboarding.models import OnboardingProgress
-                    OnboardingProgress.objects.filter(user=user).delete()
-                    logger.info("[CLOSE_ACCOUNT] Deleted onboarding progress")
+                    try:
+                        from onboarding.models import OnboardingProgress
+                        OnboardingProgress.objects.filter(user=user).delete()
+                        logger.info("[CLOSE_ACCOUNT] Deleted onboarding progress")
+                    except ImportError:
+                        logger.info("[CLOSE_ACCOUNT] OnboardingProgress model not available - skipping")
+                    except Exception as e:
+                        logger.warning(f"[CLOSE_ACCOUNT] Skipping onboarding deletion: {e}")
                 except Exception as e:
                     logger.error(f"[CLOSE_ACCOUNT] Error deleting related data: {e}")
                 
                 # Finally, delete the user
                 user.delete()
                 logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database")
+                deletion_successful = True
+                
+            except Exception as deletion_error:
+                logger.error(f"[CLOSE_ACCOUNT] Failed to delete user: {deletion_error}")
+                deletion_successful = False
             
-            # Return success
-            return Response({
-                'success': True,
-                'message': 'Account deleted successfully',
-                'debug_info': {
-                    'user_deleted': user_email,
-                    'tenant_deleted': tenant_id if tenant_id else None,
-                    'timestamp': timezone.now().isoformat()
-                }
-            }, status=status.HTTP_200_OK)
+            # Return success if deletion was at least partially successful
+            if deletion_successful:
+                return Response({
+                    'success': True,
+                    'message': 'Account deleted successfully',
+                    'debug_info': {
+                        'user_deleted': user_email,
+                        'tenant_deleted': tenant_id if tenant_id else None,
+                        'timestamp': timezone.now().isoformat()
+                    }
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    'success': False,
+                    'error': 'Account deletion failed',
+                    'message': 'Unable to complete account deletion',
+                    'debug_info': {
+                        'user': user_email,
+                        'timestamp': timezone.now().isoformat()
+                    }
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
         except Exception as e:
             logger.error(f"[CLOSE_ACCOUNT] Error during account deletion: {str(e)}", exc_info=True)
