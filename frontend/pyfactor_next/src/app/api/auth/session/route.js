@@ -178,7 +178,7 @@ export async function POST(request) {
     // Set session cookie
     response.cookies.set('appSession', sessionCookie, {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 3600, // 1 hour
       path: '/'

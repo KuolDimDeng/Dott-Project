@@ -163,6 +163,9 @@ export default function EmailPasswordSignIn() {
 
       const sessionResult = await sessionResponse.json();
 
+      // Add a small delay to ensure cookie is set
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Use unified auth flow handler
       const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
       const finalUserData = await handlePostAuthFlow({

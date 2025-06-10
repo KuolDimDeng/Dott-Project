@@ -23,8 +23,13 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
+    // Debug: Log all cookies
+    const allCookies = cookieStore.getAll();
+    console.log('[Create Auth0 User] All cookies:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })));
+    
     if (!sessionCookie) {
       console.error('[Create Auth0 User] No Auth0 session cookie found');
+      console.error('[Create Auth0 User] Available cookies:', allCookies.map(c => c.name));
       return NextResponse.json({ error: 'No active session' }, { status: 401 });
     }
     
