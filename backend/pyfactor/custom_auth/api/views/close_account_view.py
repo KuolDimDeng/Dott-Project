@@ -8,7 +8,6 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from custom_auth.auth0_authentication import Auth0Authentication
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ class CloseAccountView(APIView):
     Handle complete account deletion including all user data.
     This is a permanent action that cannot be undone.
     """
-    authentication_classes = [Auth0Authentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
