@@ -45,20 +45,6 @@ export const useAuth0Data = () => {
           // Set role from session
           setRole(userData.role);
           
-          // Extract business name from various possible locations
-          const extractedBusinessName = 
-            userData.businessName || 
-            userData.business_name ||
-            userData['custom:businessname'] ||
-            sessionData.businessName ||
-            sessionData.business_name ||
-            null;
-          
-          if (extractedBusinessName) {
-            setBusinessName(extractedBusinessName);
-            logger.debug('[useAuth0Data] Extracted business name:', extractedBusinessName);
-          }
-          
           // Cache the session data
           setCache('auth0_session', { user: userData }, { ttl: 300000 }); // 5 minutes
           
@@ -201,47 +187,7 @@ export const useAuth0Data = () => {
     }
   }, [user, isLoading, getBusinessName]);
 
-  
-  // Fetch business name from backend if not in session
-  const fetchBusinessName = useCallback(async () => {
-    try {
-      // First try profile endpoint
-      const profileResponse = await fetch('/api/auth/profile');
-      if (profileResponse.ok) {
-        const profileData = await profileResponse.json();
-        if (profileData.businessName || profileData.business_name) {
-          const name = profileData.businessName || profileData.business_name;
-          setBusinessName(name);
-          logger.debug('[useAuth0Data] Got business name from profile:', name);
-          return name;
-        }
-      }
-      
-      // Then try user endpoint
-      const userResponse = await fetch('/api/user/current');
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        if (userData.business_name || userData.businessName) {
-          const name = userData.business_name || userData.businessName;
-          setBusinessName(name);
-          logger.debug('[useAuth0Data] Got business name from user endpoint:', name);
-          return name;
-        }
-      }
-    } catch (error) {
-      logger.error('[useAuth0Data] Error fetching business name:', error);
-    }
-    return null;
-  }, []);
-
-  // Fetch business name when user is loaded
-  useEffect(() => {
-    if (user && !businessName) {
-      fetchBusinessName();
-    }
-  }, [user, businessName, fetchBusinessName]);
-
-return {
+  return {
     user,
     isLoading,
     error,
