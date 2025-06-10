@@ -106,6 +106,13 @@ class User(AbstractUser):
     # Add role field with default value
     role = models.CharField(max_length=50, default='owner')
     
+    # Account closure fields
+    is_deleted = models.BooleanField(default=False, help_text='Soft delete flag - user account is closed')
+    deleted_at = models.DateTimeField(null=True, blank=True, help_text='When the account was closed')
+    deletion_reason = models.CharField(max_length=255, null=True, blank=True, help_text='Reason for account closure')
+    deletion_feedback = models.TextField(null=True, blank=True, help_text='Additional feedback provided during account closure')
+    deletion_initiated_by = models.CharField(max_length=255, null=True, blank=True, help_text='Who initiated the deletion (user/admin/system)')
+    
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
     
@@ -116,3 +123,44 @@ class User(AbstractUser):
     
     def __str__(self):
         return self.email
+
+
+class AccountDeletionLog(models.Model):
+    """
+    Audit log for account deletions.
+    Keeps a permanent record of account closures for compliance and analytics.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user_email = models.EmailField(help_text='Email of the deleted account')
+    user_id = models.IntegerField(help_text='ID of the deleted user')
+    tenant_id = models.UUIDField(null=True, blank=True, help_text='ID of the associated tenant')
+    auth0_sub = models.CharField(max_length=255, null=True, blank=True, help_text='Auth0 subject identifier')
+    
+    # Deletion details
+    deletion_date = models.DateTimeField(default=timezone.now)
+    deletion_reason = models.CharField(max_length=255, null=True, blank=True)
+    deletion_feedback = models.TextField(null=True, blank=True)
+    deletion_initiated_by = models.CharField(max_length=255, default='user')
+    
+    # Status tracking
+    auth0_deleted = models.BooleanField(default=False, help_text='Whether user was deleted from Auth0')
+    database_deleted = models.BooleanField(default=False, help_text='Whether user was deleted from database')
+    tenant_deleted = models.BooleanField(default=False, help_text='Whether tenant data was deleted')
+    
+    # Error tracking
+    deletion_errors = models.JSONField(null=True, blank=True, help_text='Any errors encountered during deletion')
+    
+    # Metadata
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'custom_auth_account_deletion_log'
+        ordering = ['-deletion_date']
+        indexes = [
+            models.Index(fields=['user_email']),
+            models.Index(fields=['deletion_date']),
+        ]
+    
+    def __str__(self):
+        return f"Deletion log for {self.user_email} on {self.deletion_date}"

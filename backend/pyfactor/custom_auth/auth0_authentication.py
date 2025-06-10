@@ -1016,6 +1016,11 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             user = User.objects.get(auth0_sub=auth0_id)
             logger.debug(f"✅ Found existing user by Auth0 ID: {user.email}")
             
+            # Check if account has been deleted/closed
+            if user.is_deleted:
+                logger.error(f"❌ User {user.email} has a deleted/closed account")
+                raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
+            
             # Update email if it changed
             current_email = getattr(user, 'email', None)
             if current_email != email:
@@ -1031,6 +1036,12 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             try:
                 user = User.objects.get(email=email)
                 logger.info(f"✅ Found user by email, linking to Auth0 ID: {auth0_id}")
+                
+                # Check if account has been deleted/closed
+                if user.is_deleted:
+                    logger.error(f"❌ User {user.email} has a deleted/closed account")
+                    raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
+                
                 # Link this user to Auth0
                 setattr(user, 'auth0_sub', auth0_id)
                 user.save(update_fields=['auth0_sub'])

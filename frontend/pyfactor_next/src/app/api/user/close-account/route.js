@@ -218,9 +218,16 @@ export async function POST(request) {
         backendResult = { error: 'Invalid response from backend' };
       }
       
-      if (backendResponse.ok) {
+      if (backendResponse.ok && backendResult.success) {
         console.log('[CLOSE_ACCOUNT] Backend deletion successful:', backendResult);
         deletionResults.backend = true;
+        
+        // Extract deletion details if available
+        if (backendResult.details) {
+          deletionResults.auth0 = backendResult.details.auth0_deleted || false;
+          deletionResults.auditLogId = backendResult.details.deletion_log_id;
+          deletionResults.timestamp = backendResult.details.timestamp;
+        }
       } else {
         console.error('[CLOSE_ACCOUNT] Backend deletion failed:', {
           status: backendResponse.status,
@@ -243,14 +250,15 @@ export async function POST(request) {
       deletionResults.errors.push(`Backend: ${error.message}`);
     }
     
-    // 4. Delete from Auth0
-    console.log('[CLOSE_ACCOUNT] Step 3: Attempting to delete user from Auth0');
-    const managementToken = await getAuth0ManagementToken();
-    
-    if (managementToken) {
-      const auth0Domain = (process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 
-                          process.env.AUTH0_DOMAIN || 
-                          'auth.dottapps.com').trim().replace(/\/$/, '');
+    // 4. Delete from Auth0 (skip if already deleted by backend)
+    if (!deletionResults.auth0) {
+      console.log('[CLOSE_ACCOUNT] Step 3: Attempting to delete user from Auth0');
+      const managementToken = await getAuth0ManagementToken();
+      
+      if (managementToken) {
+        const auth0Domain = (process.env.AUTH0_ISSUER_BASE_URL?.replace('https://', '') || 
+                            process.env.AUTH0_DOMAIN || 
+                            'auth.dottapps.com').trim().replace(/\/$/, '');
       
       try {
         const deleteUrl = `https://${auth0Domain}/api/v2/users/${encodeURIComponent(user.sub)}`;
@@ -277,30 +285,37 @@ export async function POST(request) {
         console.error('[CLOSE_ACCOUNT] Auth0 deletion error:', error);
         deletionResults.errors.push(`Auth0: ${error.message}`);
       }
+      } else {
+        console.warn('[CLOSE_ACCOUNT] Skipping Auth0 deletion - no management token available');
+        console.log('[CLOSE_ACCOUNT] This usually means Management API credentials are not configured');
+        deletionResults.errors.push('Auth0: Management API credentials not configured');
+      }
     } else {
-      console.warn('[CLOSE_ACCOUNT] Skipping Auth0 deletion - no management token available');
-      console.log('[CLOSE_ACCOUNT] This usually means Management API credentials are not configured');
-      deletionResults.errors.push('Auth0: Management API credentials not configured');
+      console.log('[CLOSE_ACCOUNT] Auth0 deletion already handled by backend');
     }
     
     // 5. Clear all cookies and sessions
     console.log('[CLOSE_ACCOUNT] Step 4: Clearing all cookies and sessions');
     const response = NextResponse.json({ 
-      success: deletionResults.backend || deletionResults.auth0,
-      message: deletionResults.backend && deletionResults.auth0 
-        ? 'Account closed successfully' 
-        : deletionResults.backend 
-          ? 'Account data deleted from our servers. Auth0 deletion requires additional configuration.'
-          : 'Account closure partially completed',
+      success: deletionResults.backend,
+      message: deletionResults.backend 
+        ? 'Your account has been closed successfully. You will not be able to sign in again with these credentials.' 
+        : 'Account closure failed. Please contact support.',
+      details: {
+        account_closed: deletionResults.backend,
+        auth0_deleted: deletionResults.auth0,
+        audit_log_id: deletionResults.auditLogId,
+        timestamp: deletionResults.timestamp || new Date().toISOString()
+      },
       debug: {
         steps_completed: [
           'session_validated',
-          deletionResults.backend && 'backend_deletion_successful',
+          deletionResults.backend && 'backend_soft_delete_successful',
           deletionResults.auth0 && 'auth0_deletion_successful',
           'cookies_cleared'
         ].filter(Boolean),
         deletion_results: deletionResults,
-        timestamp: new Date().toISOString()
+        errors: deletionResults.errors.length > 0 ? deletionResults.errors : undefined
       }
     });
     

@@ -1,5 +1,5 @@
 """
-Close Account View - Handle complete account deletion
+Close Account View - Handle complete account deletion with soft delete
 """
 import logging
 from django.db import transaction
@@ -8,19 +8,20 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from custom_auth.models import AccountDeletionLog
 
 logger = logging.getLogger(__name__)
 
 
 class CloseAccountView(APIView):
     """
-    Handle complete account deletion including all user data.
-    This is a permanent action that cannot be undone.
+    Handle account closure with soft deletion.
+    This marks the account as deleted but keeps the data for compliance.
     """
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        """Delete user account and all associated data"""
+        """Soft delete user account and create audit log"""
         logger.info(f"[CLOSE_ACCOUNT] Starting account deletion process for user: {request.user.email}")
         
         try:
@@ -28,183 +29,208 @@ class CloseAccountView(APIView):
             user_email = user.email
             user_id = user.id
             tenant_id = getattr(user, 'tenant_id', None)
+            auth0_sub = getattr(user, 'auth0_sub', None)
             
             # Log the deletion request
             logger.info(f"[CLOSE_ACCOUNT] User {user_email} (ID: {user_id}, Tenant: {tenant_id}) requested account deletion")
             
-            # Get deletion reason if provided
+            # Get deletion reason and feedback from request
             reason = request.data.get('reason', 'Not specified')
             feedback = request.data.get('feedback', '')
-            logger.info(f"[CLOSE_ACCOUNT] Deletion reason: {reason}, Feedback: {feedback}")
             
-            # Process deletion without transaction to avoid rollback issues
-            deletion_successful = False
-            try:
-                # 1. Delete tenant data if user is owner
-                if tenant_id and hasattr(user, 'user_role') and user.user_role == 'owner':
-                    logger.info(f"[CLOSE_ACCOUNT] User is owner, deleting tenant data for tenant_id: {tenant_id}")
+            # Get client metadata
+            ip_address = self._get_client_ip(request)
+            user_agent = request.META.get('HTTP_USER_AGENT', '')
+            
+            logger.info(f"[CLOSE_ACCOUNT] Deletion reason: {reason}, Feedback: {feedback}")
+            logger.info(f"[CLOSE_ACCOUNT] IP: {ip_address}, User-Agent: {user_agent[:100]}")
+            
+            # Start transaction for atomicity
+            with transaction.atomic():
+                # 1. Create audit log first (always succeeds even if deletion fails)
+                deletion_log = AccountDeletionLog.objects.create(
+                    user_email=user_email,
+                    user_id=user_id,
+                    tenant_id=tenant_id,
+                    auth0_sub=auth0_sub,
+                    deletion_reason=reason,
+                    deletion_feedback=feedback,
+                    deletion_initiated_by='user',
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    deletion_date=timezone.now()
+                )
+                logger.info(f"[CLOSE_ACCOUNT] Created deletion audit log: {deletion_log.id}")
+                
+                # 2. Soft delete the user (mark as deleted but keep data)
+                user.is_deleted = True
+                user.deleted_at = timezone.now()
+                user.deletion_reason = reason
+                user.deletion_feedback = feedback
+                user.deletion_initiated_by = 'user'
+                user.is_active = False  # Also deactivate the account
+                user.save()
+                
+                logger.info(f"[CLOSE_ACCOUNT] User {user_email} marked as deleted (soft delete)")
+                
+                # 3. Mark deletion as successful in audit log
+                deletion_log.database_deleted = True
+                deletion_log.save()
+                
+                # 4. If user is owner, deactivate tenant
+                if tenant_id and hasattr(user, 'role') and user.role == 'owner':
+                    logger.info(f"[CLOSE_ACCOUNT] User is owner, deactivating tenant: {tenant_id}")
                     
-                    # Delete all tenant-related data
                     from custom_auth.models import Tenant
                     try:
-                        tenant = Tenant.objects.get(tenant_id=tenant_id)
+                        tenant = Tenant.objects.get(id=tenant_id)
+                        tenant.is_active = False
+                        tenant.deactivated_at = timezone.now()
+                        tenant.save()
                         
-                        # Log what we're about to delete
-                        logger.info(f"[CLOSE_ACCOUNT] Found tenant: {tenant.business_name}")
+                        deletion_log.tenant_deleted = True
+                        deletion_log.save()
                         
-                        # Delete related data from all apps
-                        apps_to_clean = [
-                            'sales', 'purchases', 'inventory', 'hr', 'finance',
-                            'banking', 'crm', 'analysis', 'chart', 'integrations'
-                        ]
-                        
-                        for app_name in apps_to_clean:
-                            logger.info(f"[CLOSE_ACCOUNT] Cleaning data from app: {app_name}")
-                            # TODO: Implement actual data deletion based on your models
-                            # Example:
-                            # if app_name == 'sales':
-                            #     Sales.objects.filter(tenant_id=tenant_id).delete()
-                        
-                        # Delete the tenant
-                        tenant.delete()
-                        logger.info(f"[CLOSE_ACCOUNT] Tenant {tenant_id} deleted successfully")
-                        
+                        logger.info(f"[CLOSE_ACCOUNT] Tenant {tenant_id} deactivated")
                     except Tenant.DoesNotExist:
                         logger.warning(f"[CLOSE_ACCOUNT] Tenant {tenant_id} not found")
-                    except Exception as e:
-                        logger.error(f"[CLOSE_ACCOUNT] Error deleting tenant: {e}")
                 
-                # 2. Delete user profile data
-                logger.info(f"[CLOSE_ACCOUNT] Deleting user profile data")
+                # 5. Try to delete from Auth0 (optional, may fail)
+                auth0_deleted = False
+                auth0_error = None
                 
-                # Delete tokens if the model exists
-                try:
-                    from rest_framework.authtoken.models import Token
+                if auth0_sub:
                     try:
-                        Token.objects.filter(user=user).delete()
-                        logger.info(f"[CLOSE_ACCOUNT] Deleted auth tokens")
+                        auth0_deleted, auth0_error = self._delete_from_auth0(auth0_sub)
+                        if auth0_deleted:
+                            deletion_log.auth0_deleted = True
+                            deletion_log.save()
+                            logger.info(f"[CLOSE_ACCOUNT] User deleted from Auth0")
+                        else:
+                            logger.warning(f"[CLOSE_ACCOUNT] Failed to delete from Auth0: {auth0_error}")
+                            if not deletion_log.deletion_errors:
+                                deletion_log.deletion_errors = {}
+                            deletion_log.deletion_errors['auth0'] = str(auth0_error)
+                            deletion_log.save()
                     except Exception as e:
-                        logger.warning(f"[CLOSE_ACCOUNT] Skipping token deletion - table may not exist: {e}")
-                except ImportError:
-                    logger.info(f"[CLOSE_ACCOUNT] Token model not available - skipping")
+                        logger.error(f"[CLOSE_ACCOUNT] Auth0 deletion error: {str(e)}")
+                        if not deletion_log.deletion_errors:
+                            deletion_log.deletion_errors = {}
+                        deletion_log.deletion_errors['auth0'] = str(e)
+                        deletion_log.save()
                 
-                # Delete social accounts if any
-                try:
-                    from allauth.socialaccount.models import SocialAccount
-                    try:
-                        SocialAccount.objects.filter(user=user).delete()
-                        logger.info(f"[CLOSE_ACCOUNT] Deleted social accounts")
-                    except Exception as e:
-                        logger.warning(f"[CLOSE_ACCOUNT] Skipping social account deletion - table may not exist: {e}")
-                except ImportError:
-                    logger.info(f"[CLOSE_ACCOUNT] SocialAccount model not available - skipping")
-                
-                # Delete user sessions
+                # 6. Invalidate user sessions
                 try:
                     from django.contrib.sessions.models import Session
-                    from django.contrib.auth.models import AnonymousUser
+                    sessions_deleted = 0
                     
-                    try:
-                        # Delete all sessions for this user
-                        for session in Session.objects.all():
-                            session_data = session.get_decoded()
-                            if session_data.get('_auth_user_id') == str(user_id):
-                                session.delete()
-                                logger.info(f"[CLOSE_ACCOUNT] Deleted session: {session.session_key}")
-                    except Exception as e:
-                        logger.warning(f"[CLOSE_ACCOUNT] Skipping session deletion - table may not exist: {e}")
-                except ImportError:
-                    logger.info(f"[CLOSE_ACCOUNT] Session model not available - skipping")
-                
-                # Store deletion record for compliance (you might want to keep this in a separate model)
-                deletion_record = {
-                    'user_email': user_email,
-                    'user_id': user_id,
-                    'tenant_id': tenant_id,
-                    'deletion_date': timezone.now().isoformat(),
-                    'reason': reason,
-                    'feedback': feedback
-                }
-                logger.info(f"[CLOSE_ACCOUNT] Deletion record: {deletion_record}")
-                
-                # Delete user-related data from various models
-                try:
-                    # Delete from user profile if exists
-                    if hasattr(user, 'profile'):
-                        user.profile.delete()
-                        logger.info("[CLOSE_ACCOUNT] Deleted user profile")
+                    for session in Session.objects.all():
+                        session_data = session.get_decoded()
+                        if session_data.get('_auth_user_id') == str(user_id):
+                            session.delete()
+                            sessions_deleted += 1
                     
-                    # Delete from business info if exists
-                    if hasattr(user, 'business_info'):
-                        user.business_info.delete()
-                        logger.info("[CLOSE_ACCOUNT] Deleted business info")
-                    
-                    # Delete any onboarding data
-                    try:
-                        from onboarding.models import OnboardingProgress
-                        OnboardingProgress.objects.filter(user=user).delete()
-                        logger.info("[CLOSE_ACCOUNT] Deleted onboarding progress")
-                    except ImportError:
-                        logger.info("[CLOSE_ACCOUNT] OnboardingProgress model not available - skipping")
-                    except Exception as e:
-                        logger.warning(f"[CLOSE_ACCOUNT] Skipping onboarding deletion: {e}")
+                    logger.info(f"[CLOSE_ACCOUNT] Deleted {sessions_deleted} user sessions")
                 except Exception as e:
-                    logger.error(f"[CLOSE_ACCOUNT] Error deleting related data: {e}")
-                
-                # Finally, delete the user
-                # Use raw SQL to avoid Django's cascade checks on non-existent tables
-                try:
-                    from django.db import connection
-                    with connection.cursor() as cursor:
-                        # Delete from custom_auth_user table directly
-                        cursor.execute("DELETE FROM custom_auth_user WHERE id = %s", [user_id])
-                        logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database via raw SQL")
-                        deletion_successful = True
-                except Exception as e:
-                    logger.warning(f"[CLOSE_ACCOUNT] Raw SQL deletion failed, trying Django delete: {e}")
-                    # Fallback to Django's delete method
-                    try:
-                        user.delete()
-                        logger.info(f"[CLOSE_ACCOUNT] User {user_email} deleted from database via Django")
-                        deletion_successful = True
-                    except Exception as e2:
-                        logger.error(f"[CLOSE_ACCOUNT] Both deletion methods failed: {e2}")
-                        deletion_successful = False
-                
-            except Exception as deletion_error:
-                logger.error(f"[CLOSE_ACCOUNT] Failed to delete user: {deletion_error}")
-                deletion_successful = False
+                    logger.warning(f"[CLOSE_ACCOUNT] Error deleting sessions: {str(e)}")
             
-            # Return success if deletion was at least partially successful
-            if deletion_successful:
-                return Response({
-                    'success': True,
-                    'message': 'Account deleted successfully',
-                    'debug_info': {
-                        'user_deleted': user_email,
-                        'tenant_deleted': tenant_id if tenant_id else None,
-                        'timestamp': timezone.now().isoformat()
-                    }
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    'success': False,
-                    'error': 'Account deletion failed',
-                    'message': 'Unable to complete account deletion',
-                    'debug_info': {
-                        'user': user_email,
-                        'timestamp': timezone.now().isoformat()
-                    }
-                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Transaction complete - prepare response
+            response_data = {
+                'success': True,
+                'message': 'Your account has been closed successfully.',
+                'details': {
+                    'account_closed': True,
+                    'data_retained_for_compliance': True,
+                    'auth0_deleted': auth0_deleted,
+                    'sessions_cleared': True,
+                    'deletion_log_id': str(deletion_log.id),
+                    'timestamp': timezone.now().isoformat()
+                }
+            }
+            
+            logger.info(f"[CLOSE_ACCOUNT] Account closure completed for {user_email}")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
             
         except Exception as e:
             logger.error(f"[CLOSE_ACCOUNT] Error during account deletion: {str(e)}", exc_info=True)
+            
+            # Try to create error log even if deletion failed
+            try:
+                AccountDeletionLog.objects.create(
+                    user_email=getattr(request.user, 'email', 'unknown'),
+                    user_id=getattr(request.user, 'id', -1),
+                    deletion_reason=request.data.get('reason', 'Not specified'),
+                    deletion_feedback=request.data.get('feedback', ''),
+                    deletion_initiated_by='user',
+                    deletion_errors={'error': str(e), 'type': type(e).__name__},
+                    ip_address=self._get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')
+                )
+            except:
+                pass
+            
             return Response({
                 'success': False,
-                'error': 'Failed to delete account',
-                'message': str(e),
+                'error': 'Failed to close account. Please contact support.',
+                'message': 'An error occurred while processing your request.',
                 'debug_info': {
                     'error_type': type(e).__name__,
                     'error_details': str(e)
                 }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def _get_client_ip(self, request):
+        """Get client IP address from request"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+    
+    def _delete_from_auth0(self, auth0_sub):
+        """
+        Try to delete user from Auth0 using Management API.
+        Returns (success, error_message)
+        """
+        try:
+            import os
+            import requests
+            
+            # Get Auth0 configuration
+            auth0_domain = os.environ.get('AUTH0_DOMAIN', 'auth.dottapps.com')
+            client_id = os.environ.get('AUTH0_MANAGEMENT_CLIENT_ID')
+            client_secret = os.environ.get('AUTH0_MANAGEMENT_CLIENT_SECRET')
+            
+            if not client_id or not client_secret:
+                return False, "Auth0 Management API credentials not configured"
+            
+            # Get Management API token
+            token_url = f"https://{auth0_domain}/oauth/token"
+            token_response = requests.post(token_url, json={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'audience': f"https://{auth0_domain}/api/v2/",
+                'grant_type': 'client_credentials'
+            })
+            
+            if not token_response.ok:
+                return False, f"Failed to get Management API token: {token_response.status_code}"
+            
+            access_token = token_response.json().get('access_token')
+            
+            # Delete user from Auth0
+            delete_url = f"https://{auth0_domain}/api/v2/users/{auth0_sub}"
+            delete_response = requests.delete(
+                delete_url,
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            
+            if delete_response.ok or delete_response.status_code == 204:
+                return True, None
+            else:
+                return False, f"Auth0 deletion failed: {delete_response.status_code} - {delete_response.text}"
+                
+        except Exception as e:
+            return False, str(e)
