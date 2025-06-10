@@ -113,6 +113,15 @@ export async function POST(request) {
       tenantId: user.tenant_id || user.tenantId
     });
     
+    // Debug log session structure
+    console.log('[CLOSE_ACCOUNT] Session structure:', {
+      hasAccessToken: !!sessionData.accessToken,
+      hasAccess_token: !!sessionData.access_token,
+      hasIdToken: !!sessionData.idToken,
+      hasId_token: !!sessionData.id_token,
+      sessionKeys: Object.keys(sessionData)
+    });
+    
     // 2. Get request data
     const requestData = await request.json();
     const { reason, feedback } = requestData;
@@ -137,33 +146,59 @@ export async function POST(request) {
       // Get access token from various possible locations in the session
       let accessToken = '';
       
+      // Debug log all available fields in sessionData
+      console.log('[CLOSE_ACCOUNT] Available session fields:', Object.keys(sessionData));
+      console.log('[CLOSE_ACCOUNT] Session data sample:', {
+        hasAccessToken: !!sessionData.accessToken,
+        hasAccess_token: !!sessionData.access_token,
+        hasIdToken: !!sessionData.idToken,
+        hasId_token: !!sessionData.id_token,
+        tokenPreview: sessionData.access_token ? sessionData.access_token.substring(0, 20) + '...' : 'No access_token',
+        accessTokenPreview: sessionData.accessToken ? sessionData.accessToken.substring(0, 20) + '...' : 'No accessToken'
+      });
+      
       // Try to get the access token from different possible locations
       if (sessionData.accessToken) {
         accessToken = sessionData.accessToken;
+        console.log('[CLOSE_ACCOUNT] Using sessionData.accessToken');
+      } else if (sessionData.access_token) {
+        accessToken = sessionData.access_token;
+        console.log('[CLOSE_ACCOUNT] Using sessionData.access_token');
       } else if (sessionData.idToken) {
         // Sometimes the access token might be stored as idToken
         accessToken = sessionData.idToken;
+        console.log('[CLOSE_ACCOUNT] Using sessionData.idToken as fallback');
+      } else if (sessionData.id_token) {
+        accessToken = sessionData.id_token;
+        console.log('[CLOSE_ACCOUNT] Using sessionData.id_token as fallback');
       } else {
         // Try to get a fresh access token
         try {
+          console.log('[CLOSE_ACCOUNT] No token in session, trying to get fresh token...');
           const tokenResponse = await fetch('/api/auth/access-token');
           if (tokenResponse.ok) {
             const tokenData = await tokenResponse.json();
             accessToken = tokenData.access_token || tokenData.accessToken || tokenData.token || '';
             console.log('[CLOSE_ACCOUNT] Retrieved fresh access token');
+          } else {
+            console.error('[CLOSE_ACCOUNT] Failed to get fresh token, status:', tokenResponse.status);
           }
         } catch (error) {
           console.error('[CLOSE_ACCOUNT] Failed to get fresh access token:', error);
         }
       }
       
-      console.log('[CLOSE_ACCOUNT] Using access token:', accessToken ? 'Token present' : 'No token');
+      console.log('[CLOSE_ACCOUNT] Final access token:', accessToken ? `Token present (${accessToken.length} chars)` : 'No token');
+      console.log('[CLOSE_ACCOUNT] Token starts with:', accessToken ? accessToken.substring(0, 10) + '...' : 'N/A');
       
       const backendResponse = await fetch(`${backendUrl}/api/users/close-account/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'X-User-Email': user.email,
+          'X-User-Sub': user.sub,
+          'X-Tenant-ID': user.tenant_id || user.tenantId || ''
         },
         body: JSON.stringify({
           reason,
@@ -187,8 +222,21 @@ export async function POST(request) {
         console.log('[CLOSE_ACCOUNT] Backend deletion successful:', backendResult);
         deletionResults.backend = true;
       } else {
-        console.error('[CLOSE_ACCOUNT] Backend deletion failed:', backendResult);
-        deletionResults.errors.push(`Backend: ${backendResult.error || 'Unknown error'}`);
+        console.error('[CLOSE_ACCOUNT] Backend deletion failed:', {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          result: backendResult,
+          headers: Object.fromEntries(backendResponse.headers.entries())
+        });
+        
+        // Log specific details for 403 errors
+        if (backendResponse.status === 403) {
+          console.error('[CLOSE_ACCOUNT] 403 Forbidden - Authentication/Authorization issue');
+          console.error('[CLOSE_ACCOUNT] Token used:', accessToken ? `${accessToken.substring(0, 20)}...` : 'No token');
+          console.error('[CLOSE_ACCOUNT] Backend error detail:', backendResult.detail || backendResult.error || 'No detail provided');
+        }
+        
+        deletionResults.errors.push(`Backend: ${backendResult.detail || backendResult.error || `HTTP ${backendResponse.status}`}`);
       }
     } catch (error) {
       console.error('[CLOSE_ACCOUNT] Backend deletion error:', error);

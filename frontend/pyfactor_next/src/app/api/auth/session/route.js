@@ -141,7 +141,7 @@ export async function POST(request) {
       businessName
     });
     
-    // Create session data
+    // Create session data - ensure consistent token field names
     const sessionData = {
       user: {
         ...user,
@@ -150,8 +150,10 @@ export async function POST(request) {
         tenantId,
         businessName
       },
-      accessToken,
-      idToken,
+      accessToken: accessToken,
+      access_token: accessToken,  // Store both formats for compatibility
+      idToken: idToken,
+      id_token: idToken,  // Store both formats for compatibility
       accessTokenExpiresAt: Date.now() + (3600 * 1000) // Default 1 hour
     };
     

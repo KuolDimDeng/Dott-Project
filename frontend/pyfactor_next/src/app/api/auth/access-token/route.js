@@ -19,10 +19,15 @@ export async function GET(request) {
           return NextResponse.json({ error: 'Session expired' }, { status: 401 });
         }
         
-        if (sessionData.accessToken) {
+        // Check both possible field names for access token
+        const accessToken = sessionData.accessToken || sessionData.access_token;
+        
+        if (accessToken) {
           console.log('[Auth Access Token] Access token retrieved from session');
           return NextResponse.json({ 
-            access_token: sessionData.accessToken,
+            access_token: accessToken,
+            accessToken: accessToken,  // Include both formats for compatibility
+            token: accessToken,        // Also include as 'token' for maximum compatibility
             expires_in: Math.floor((sessionData.accessTokenExpiresAt - Date.now()) / 1000)
           });
         }
