@@ -111,8 +111,10 @@ class Auth0UserCreateView(APIView):
                 logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated successfully")
             
             # Check for existing tenant
-            logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for existing tenant with owner_id: {user.id}")
-            existing_tenant = Tenant.objects.filter(owner_id=user.id).first()
+            # Convert user.id to string for proper CharField comparison
+            user_id_str = str(user.id)
+            logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for existing tenant with owner_id: {user_id_str}")
+            existing_tenant = Tenant.objects.filter(owner_id=user_id_str).first()
             
             if existing_tenant:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing tenant: {existing_tenant.id} (name: {existing_tenant.name})")
@@ -120,9 +122,11 @@ class Auth0UserCreateView(APIView):
             else:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] No existing tenant found, creating new one")
                 # Create new tenant
+                # Convert user.id to string for proper CharField storage
+                user_id_str = str(user.id)
                 tenant = Tenant.objects.create(
                     name=f"{user.name or user.email.split('@')[0]}'s Business",
-                    owner_id=user.id,
+                    owner_id=user_id_str,
                     subscription_tier='trial'
                 )
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
@@ -231,8 +235,10 @@ class Auth0UserProfileView(APIView):
                     logger.info(f"🔥 [USER_PROFILE] Found tenant via user.tenant relationship: {tenant.id}")
                 else:
                     # Fallback: Check if user is owner of a tenant
-                    tenant = Tenant.objects.filter(owner_id=user.id).first()
-                    logger.info(f"🔥 [USER_PROFILE] Tenant lookup by owner_id result: {tenant.id if tenant else 'None'}")
+                    # Convert user.id to string for proper CharField comparison
+                    user_id_str = str(user.id)
+                    tenant = Tenant.objects.filter(owner_id=user_id_str).first()
+                    logger.info(f"🔥 [USER_PROFILE] Tenant lookup by owner_id ('{user_id_str}') result: {tenant.id if tenant else 'None'}")
                     
                     # If we found a tenant by owner_id, update the user's tenant field
                     if tenant and not user.tenant:
@@ -387,8 +393,10 @@ class Auth0OnboardingBusinessInfoView(APIView):
             
             with transaction.atomic():
                 # Create or get tenant
+                # Convert user.id to string for proper CharField storage
+                user_id_str = str(user.id)
                 tenant, created = Tenant.objects.get_or_create(
-                    owner_id=user.id,
+                    owner_id=user_id_str,
                     defaults={
                         'name': business_name,
                         'created_at': timezone.now(),
@@ -646,7 +654,9 @@ class Auth0OnboardingCompleteView(APIView):
                     logger.info(f"🎯 [ONBOARDING_COMPLETE] Found tenant via user.tenant: {tenant_id}")
                 else:
                     # Look for tenant where user is owner
-                    tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    # Convert user.id to string for proper CharField comparison
+                    user_id_str = str(user.id)
+                    tenant = Tenant.objects.filter(owner_id=user_id_str).first()
                     if tenant:
                         tenant_id = tenant.id
                         # Update user.tenant relationship
@@ -683,7 +693,9 @@ class Auth0OnboardingCompleteView(APIView):
                     logger.info(f"🎯 [ONBOARDING_COMPLETE] Set progress tenant_id from user.tenant: {progress.tenant_id}")
                 else:
                     # Look for tenant where user is owner
-                    tenant = Tenant.objects.filter(owner_id=user.id).first()
+                    # Convert user.id to string for proper CharField comparison
+                    user_id_str = str(user.id)
+                    tenant = Tenant.objects.filter(owner_id=user_id_str).first()
                     if tenant:
                         progress.tenant_id = tenant.id
                         # Also update user.tenant
@@ -727,7 +739,9 @@ class Auth0OnboardingCompleteView(APIView):
             # Get the user's tenant for the response
             tenant = None
             try:
-                tenant = Tenant.objects.filter(owner_id=user.id).first()
+                # Convert user.id to string for proper CharField comparison
+                user_id_str = str(user.id)
+                tenant = Tenant.objects.filter(owner_id=user_id_str).first()
                 if not tenant and progress.tenant_id:
                     # Try to get tenant from progress if not found by owner
                     tenant = Tenant.objects.filter(id=progress.tenant_id).first()
