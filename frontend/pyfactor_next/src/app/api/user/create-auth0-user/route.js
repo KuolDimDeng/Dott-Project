@@ -17,9 +17,12 @@ export async function POST(request) {
       console.log('[Create Auth0 User] No request body or invalid JSON, continuing with empty body');
     }
     
-    const { checkOnly = false } = requestBody;
-    console.log('[Create Auth0 User] Request options:', { checkOnly });
+    const { checkOnly = false, sessionData: bodySessionData } = requestBody;
+    console.log('[Create Auth0 User] Request options:', { checkOnly, hasBodySessionData: !!bodySessionData });
     
+    let sessionData;
+    
+    // First try to get session from cookie
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
@@ -27,19 +30,25 @@ export async function POST(request) {
     const allCookies = cookieStore.getAll();
     console.log('[Create Auth0 User] All cookies:', allCookies.map(c => ({ name: c.name, hasValue: !!c.value })));
     
-    if (!sessionCookie) {
-      console.error('[Create Auth0 User] No Auth0 session cookie found');
-      console.error('[Create Auth0 User] Available cookies:', allCookies.map(c => c.name));
-      return NextResponse.json({ error: 'No active session' }, { status: 401 });
+    if (sessionCookie) {
+      try {
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        console.log('[AUTH DEBUG] 📄 Session data parsed from cookie successfully');
+      } catch (parseError) {
+        console.error('[Create Auth0 User] Error parsing session cookie:', parseError);
+      }
     }
     
-    let sessionData;
-    try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      console.log('[AUTH DEBUG] 📄 Session data parsed successfully');
-    } catch (parseError) {
-      console.error('[Create Auth0 User] Error parsing session cookie:', parseError);
-      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    // If no session from cookie, try from request body (fallback for timing issues)
+    if (!sessionData && bodySessionData) {
+      console.log('[Create Auth0 User] Using session data from request body (fallback)');
+      sessionData = bodySessionData;
+    }
+    
+    if (!sessionData) {
+      console.error('[Create Auth0 User] No session data found in cookie or request body');
+      console.error('[Create Auth0 User] Available cookies:', allCookies.map(c => c.name));
+      return NextResponse.json({ error: 'No active session' }, { status: 401 });
     }
     
     const { user } = sessionData;

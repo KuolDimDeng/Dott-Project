@@ -19,6 +19,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
 
   try {
     // Step 1: Create or get user in Django backend
+    // Pass the session data directly to avoid cookie timing issues
     const createUserResponse = await fetch('/api/user/create-auth0-user', {
       method: 'POST',
       headers: {
@@ -29,7 +30,13 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         sub: authData.user.sub,
         name: authData.user.name,
         picture: authData.user.picture,
-        auth_method: authMethod
+        auth_method: authMethod,
+        // Pass session data directly
+        sessionData: {
+          user: authData.user,
+          accessToken: authData.accessToken || authData.access_token,
+          idToken: authData.idToken || authData.id_token
+        }
       })
     });
 
