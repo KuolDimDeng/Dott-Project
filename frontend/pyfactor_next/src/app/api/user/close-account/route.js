@@ -341,11 +341,24 @@ export async function POST(request) {
     });
     
     // IMPORTANT: Only return success if backend deletion actually succeeded
+    // Backend deletion is REQUIRED - Auth0 deletion alone is not sufficient
     const isSuccess = deletionResults.backend === true;
     
+    // Additional safety check: ensure we don't claim success if there are backend errors
+    const hasBackendErrors = deletionResults.errors.some(error => error.includes('Backend:'));
+    const actualSuccess = isSuccess && !hasBackendErrors;
+    
+    console.log('[CLOSE_ACCOUNT] Final success determination:', {
+      deletionResultsBackend: deletionResults.backend,
+      isSuccess,
+      hasBackendErrors,
+      actualSuccess,
+      errors: deletionResults.errors
+    });
+    
     const response = NextResponse.json({ 
-      success: isSuccess,
-      message: isSuccess 
+      success: actualSuccess,
+      message: actualSuccess 
         ? 'Your account has been closed successfully. You will not be able to sign in again with these credentials.' 
         : 'Account closure failed. Please contact support.',
       details: {
