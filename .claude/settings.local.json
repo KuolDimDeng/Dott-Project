@@ -78,7 +78,8 @@
       "Bash(pnpm list:*)",
       "Bash(pnpm install:*)",
       "Bash(pnpm build:*)",
-      "Bash(npm view:*)"
+      "Bash(npm view:*)",
+      "Bash(vercel:*)"
     ],
     "deny": []
   }

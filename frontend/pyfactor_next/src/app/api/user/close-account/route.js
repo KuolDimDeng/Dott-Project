@@ -270,11 +270,11 @@ export async function POST(request) {
         
         deletionResults.errors.push(`Backend: ${backendResult.detail || backendResult.error || `HTTP ${backendResponse.status}`}`);
       }
+      } // End of else block for accessToken check
     } catch (error) {
       console.error('[CLOSE_ACCOUNT] Backend deletion error:', error);
       deletionResults.errors.push(`Backend: ${error.message}`);
     }
-      } // End of else block for accessToken check
     
     // 4. Delete from Auth0 (skip if already deleted by backend)
     if (!deletionResults.auth0) {
