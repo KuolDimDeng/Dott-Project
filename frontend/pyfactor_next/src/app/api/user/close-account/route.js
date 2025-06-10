@@ -161,14 +161,21 @@ export async function POST(request) {
       // First, always try to get a fresh token from the Auth0 SDK
       try {
         console.log('[CLOSE_ACCOUNT] Getting fresh access token from Auth0 SDK...');
-        const { auth0 } = await import('@/lib/auth0');
+        const { getAccessToken } = await import('@auth0/nextjs-auth0/server');
         
-        // Try to get access token using Auth0 SDK
-        const accessTokenResult = await auth0.getAccessToken(request);
+        // Try to get access token using Auth0 SDK with the correct audience
+        const accessTokenResponse = await getAccessToken(request, {
+          authorizationParams: {
+            audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
+            scope: 'openid profile email'
+          }
+        });
         
-        if (accessTokenResult && accessTokenResult.accessToken) {
-          accessToken = accessTokenResult.accessToken;
+        if (accessTokenResponse && accessTokenResponse.accessToken) {
+          accessToken = accessTokenResponse.accessToken;
           console.log('[CLOSE_ACCOUNT] Retrieved fresh access token from Auth0 SDK');
+          console.log('[CLOSE_ACCOUNT] Access token length:', accessToken.length);
+          console.log('[CLOSE_ACCOUNT] Access token preview:', accessToken.substring(0, 50) + '...');
         } else {
           console.log('[CLOSE_ACCOUNT] No access token from Auth0 SDK, checking session...');
           
