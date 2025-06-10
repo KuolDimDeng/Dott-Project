@@ -642,15 +642,33 @@ const DashAppBar = ({
       return userData.subscription_type;
     }
     
-    // Check profile data
-    if (profileData && profileData.subscriptionType) {
-      return profileData.subscriptionType;
+    // Check profile data - multiple possible field names
+    if (profileData) {
+      const planFromProfile = profileData.subscriptionType || 
+                             profileData.subscriptionPlan || 
+                             profileData.subscription_plan ||
+                             profileData.subscription_type;
+      if (planFromProfile) {
+        return planFromProfile;
+      }
     }
     
     // Check tenant-specific cache
     const cachedType = getTenantCacheData('user', 'subscriptionType');
     if (cachedType) {
       return cachedType;
+    }
+    
+    // Check cookies as fallback
+    if (typeof document !== 'undefined') {
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === 'subscriptionPlan' && value) {
+          console.log('[DashAppBar] Found subscription in cookie:', value);
+          return decodeURIComponent(value);
+        }
+      }
     }
     
     // Default to free
@@ -672,6 +690,50 @@ const DashAppBar = ({
 
   // Updated subscription display
   const effectiveSubscriptionType = getSubscriptionType();
+  
+  // Debug subscription data
+  console.log('[DashAppBar] Subscription Debug:', {
+    effectiveType: effectiveSubscriptionType,
+    userAttributes: userAttributes?.['custom:subplan'],
+    userData: userData?.subscription_type,
+    profileData: profileData?.subscriptionType || profileData?.subscriptionPlan || profileData?.subscription_plan,
+    cachedType: getTenantCacheData('user', 'subscriptionType'),
+    allProfileData: profileData
+  });
+  
+  // Fetch business info if subscription is still showing as free
+  useEffect(() => {
+    const fetchBusinessInfoForSubscription = async () => {
+      // Only fetch if we have a tenant ID and subscription is showing as free
+      const currentTenantId = profileData?.tenantId || profileData?.tenant_id || userData?.tenantId || userData?.tenant_id;
+      if (currentTenantId && effectiveSubscriptionType === 'free' && !hasAttemptedFetch) {
+        try {
+          console.log('[DashAppBar] Fetching business info to check subscription...');
+          const response = await fetch(`/api/tenant/business-info?tenantId=${currentTenantId}`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[DashAppBar] Business info fetched:', {
+              subscriptionPlan: data.subscriptionPlan,
+              businessName: data.businessName
+            });
+            
+            if (data.subscriptionPlan && data.subscriptionPlan !== 'free') {
+              // Update profile data with the subscription plan
+              setProfileData(prev => ({
+                ...prev,
+                subscriptionPlan: data.subscriptionPlan,
+                subscriptionType: data.subscriptionPlan
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('[DashAppBar] Error fetching business info:', error);
+        }
+      }
+    };
+    
+    fetchBusinessInfoForSubscription();
+  }, [effectiveSubscriptionType, profileData?.tenantId, profileData?.tenant_id, userData?.tenantId, userData?.tenant_id, hasAttemptedFetch]);
   
   // Using the existing getSubscriptionLabel function declared earlier
   const displayLabel = getSubscriptionLabel(effectiveSubscriptionType || 'free');

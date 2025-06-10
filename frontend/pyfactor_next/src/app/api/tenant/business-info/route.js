@@ -61,8 +61,37 @@ export async function GET(request) {
         const onboardingData = await onboardingResponse.json();
         console.log('[Business Info API] Found onboarding data:', {
           hasBusinessName: !!onboardingData.business_name,
-          hasTenantId: !!onboardingData.tenant_id
+          hasTenantId: !!onboardingData.tenant_id,
+          subscriptionPlan: onboardingData.selected_plan || onboardingData.subscription_plan || onboardingData.subscription_type
         });
+        
+        let subscriptionPlan = onboardingData.selected_plan || onboardingData.subscription_plan || onboardingData.subscription_type;
+        
+        // If no subscription plan in onboarding data, try to get from user profile
+        if (!subscriptionPlan || subscriptionPlan === 'free') {
+          try {
+            const profileResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              }
+            });
+            
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              console.log('[Business Info API] Profile data subscription fields:', {
+                subscription_plan: profileData.subscription_plan,
+                selected_plan: profileData.selected_plan,
+                subscription_type: profileData.subscription_type
+              });
+              subscriptionPlan = profileData.subscription_plan || profileData.selected_plan || profileData.subscription_type || subscriptionPlan || 'free';
+            }
+          } catch (profileError) {
+            console.error('[Business Info API] Error fetching profile for subscription:', profileError);
+          }
+        }
         
         const businessInfo = {
           businessName: onboardingData.business_name || onboardingData.legal_name || '',
@@ -70,7 +99,7 @@ export async function GET(request) {
           legalStructure: onboardingData.legal_structure || '',
           country: onboardingData.country || '',
           state: onboardingData.state || '',
-          subscriptionPlan: onboardingData.selected_plan || 'free',
+          subscriptionPlan: subscriptionPlan || 'free',
           tenantId: tenantId,
           ownerFirstName: onboardingData.owner_first_name || '',
           ownerLastName: onboardingData.owner_last_name || '',
@@ -79,6 +108,11 @@ export async function GET(request) {
           onboardingCompleted: onboardingData.onboarding_completed || false,
           source: 'backend_onboarding'
         };
+        
+        console.log('[Business Info API] Final business info with subscription:', {
+          businessName: businessInfo.businessName,
+          subscriptionPlan: businessInfo.subscriptionPlan
+        });
         
         // Update session with business info
         if (businessInfo.businessName) {

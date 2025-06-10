@@ -333,6 +333,8 @@ export async function GET(request) {
       onboardingCompleted: profileData.onboardingCompleted,
       currentStep: profileData.currentStep,
       businessInfoCompleted: profileData.businessInfoCompleted,
+      subscriptionPlan: profileData.subscriptionPlan,
+      subscriptionType: profileData.subscriptionType,
       hasAllRequiredFields: !!(profileData.email && profileData.tenantId),
       backendCompleted: profileData.backendCompleted,
       dataSource: accessToken ? 'session+backend' : 'session-only'
