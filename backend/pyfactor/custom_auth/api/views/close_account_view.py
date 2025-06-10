@@ -24,6 +24,25 @@ class CloseAccountView(APIView):
     
     def post(self, request):
         """Soft delete user account and create audit log"""
+        logger.info(f"[CLOSE_ACCOUNT] === ACCOUNT DELETION REQUEST RECEIVED ===")
+        logger.info(f"[CLOSE_ACCOUNT] Request headers: {dict(request.headers)}")
+        logger.info(f"[CLOSE_ACCOUNT] Request method: {request.method}")
+        logger.info(f"[CLOSE_ACCOUNT] Request path: {request.path}")
+        logger.info(f"[CLOSE_ACCOUNT] User authenticated: {request.user.is_authenticated}")
+        logger.info(f"[CLOSE_ACCOUNT] User: {request.user}")
+        
+        if hasattr(request, 'user') and request.user.is_authenticated:
+            logger.info(f"[CLOSE_ACCOUNT] Authenticated user email: {request.user.email}")
+            logger.info(f"[CLOSE_ACCOUNT] User ID: {request.user.id}")
+        else:
+            logger.error(f"[CLOSE_ACCOUNT] ❌ USER NOT AUTHENTICATED!")
+            logger.error(f"[CLOSE_ACCOUNT] Request.user type: {type(request.user)}")
+            return Response({
+                'success': False,
+                'error': 'Authentication required',
+                'detail': 'User is not authenticated'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         logger.info(f"[CLOSE_ACCOUNT] Starting account deletion process for user: {request.user.email}")
         
         try:

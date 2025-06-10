@@ -80,7 +80,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/subscription/',
             '/api/onboarding/complete',
             '/api/onboarding/',  # Catch-all for onboarding endpoints
-            '/api/users/close-account/',  # Account deletion endpoint
+            # Removed '/api/users/close-account/' - it should use regular auth flow
         ]
         
         # Add custom public paths from settings if available
@@ -320,12 +320,22 @@ class EnhancedRowLevelSecurityMiddleware:
         
         try:
             logger.debug(f"🔍 Attempting Auth0 authentication for: {request.path}")
-            auth_result = auth.authenticate(request)
+            
+            # Check if request already has an authenticated user (from DRF authentication)
+            if hasattr(request, 'user') and request.user and request.user.is_authenticated:
+                logger.info(f"✅ Request already has authenticated user: {request.user}")
+                # Skip re-authentication if user is already authenticated
+                user = request.user
+                token = getattr(request, 'auth', None)
+                auth_result = (user, token)
+            else:
+                # Try to authenticate with Auth0
+                auth_result = auth.authenticate(request)
             
             logger.debug(f"🔍 Auth0 authentication result type: {type(auth_result)}")
             logger.debug(f"🔍 Auth0 authentication result: {auth_result is not None}")
             
-            if not auth_result or len(auth_result) != 2:
+            if not auth_result or (isinstance(auth_result, tuple) and len(auth_result) != 2):
                 logger.warning(f"❌ Auth0 authentication failed for tenant endpoint: {request.path}")
                 logger.warning(f"❌ Auth result: {auth_result}")
                 return HttpResponseForbidden("Auth0 authentication required")
