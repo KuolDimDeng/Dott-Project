@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from custom_auth.models import AccountDeletionLog
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class CloseAccountView(APIView):
     Handle account closure with soft deletion.
     This marks the account as deleted but keeps the data for compliance.
     """
+    authentication_classes = [Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):

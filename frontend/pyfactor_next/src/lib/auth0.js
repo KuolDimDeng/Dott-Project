@@ -11,5 +11,12 @@ export const auth0 = new Auth0Client({
   authorizationParams: {
     audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
     scope: 'openid profile email offline_access'
+  },
+  // Ensure we always get an access token for API calls
+  getAccessTokenSilently: {
+    authorizationParams: {
+      audience: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE || 'https://api.dottapps.com',
+      scope: 'openid profile email offline_access'
+    }
   }
 });
