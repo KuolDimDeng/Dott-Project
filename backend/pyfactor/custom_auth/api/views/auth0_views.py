@@ -114,7 +114,30 @@ class Auth0UserCreateView(APIView):
             # Convert user.id to string for proper CharField comparison
             user_id_str = str(user.id)
             logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for existing tenant with owner_id: {user_id_str}")
+            
+            # Debug: Check all possible tenant lookups
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - User ID type: {type(user.id).__name__}, value: {user.id}")
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - String ID: '{user_id_str}'")
+            
+            # Try multiple lookup methods
             existing_tenant = Tenant.objects.filter(owner_id=user_id_str).first()
+            tenant_by_int = Tenant.objects.filter(owner_id=user.id).first()
+            tenant_by_user = user.tenant if hasattr(user, 'tenant') else None
+            
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - Tenant by string '{user_id_str}': {existing_tenant}")
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - Tenant by int {user.id}: {tenant_by_int}")
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - Tenant by user.tenant: {tenant_by_user}")
+            
+            # Count all tenants for this user
+            all_user_tenants = Tenant.objects.filter(owner_id__in=[str(user.id), user.id])
+            logger.info(f"🔥 [AUTH0_CREATE_USER] DEBUG - Total tenants for user: {all_user_tenants.count()}")
+            
+            # If no tenant found by string but found by int, we have a type mismatch in DB
+            if not existing_tenant and tenant_by_int:
+                logger.warning(f"🔥 [AUTH0_CREATE_USER] CRITICAL: Tenant exists with integer owner_id, updating to string")
+                tenant_by_int.owner_id = user_id_str
+                tenant_by_int.save()
+                existing_tenant = tenant_by_int
             
             if existing_tenant:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing tenant: {existing_tenant.id} (name: {existing_tenant.name})")
@@ -239,6 +262,23 @@ class Auth0UserProfileView(APIView):
                     user_id_str = str(user.id)
                     tenant = Tenant.objects.filter(owner_id=user_id_str).first()
                     logger.info(f"🔥 [USER_PROFILE] Tenant lookup by owner_id ('{user_id_str}') result: {tenant.id if tenant else 'None'}")
+                    
+                    # DEBUG: Additional tenant lookups
+                    if not tenant:
+                        logger.warning(f"🔥 [USER_PROFILE] DEBUG - No tenant found by string, checking integer")
+                        tenant_by_int = Tenant.objects.filter(owner_id=user.id).first()
+                        if tenant_by_int:
+                            logger.warning(f"🔥 [USER_PROFILE] FOUND TENANT WITH INTEGER OWNER_ID: {tenant_by_int.id}")
+                            logger.warning(f"🔥 [USER_PROFILE] Updating owner_id from {user.id} to '{user_id_str}'")
+                            tenant_by_int.owner_id = user_id_str
+                            tenant_by_int.save()
+                            tenant = tenant_by_int
+                        else:
+                            # Check all tenants to debug
+                            all_tenants = Tenant.objects.all()[:5]
+                            logger.error(f"🔥 [USER_PROFILE] NO TENANT FOUND AT ALL! First 5 tenants in DB:")
+                            for t in all_tenants:
+                                logger.error(f"   - Tenant {t.id}: owner_id='{t.owner_id}' (type: {type(t.owner_id).__name__})")
                     
                     # If we found a tenant by owner_id, update the user's tenant field
                     if tenant and not user.tenant:
