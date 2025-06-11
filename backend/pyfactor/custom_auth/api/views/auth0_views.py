@@ -222,11 +222,11 @@ class Auth0UserCreateView(APIView):
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Setting current_step to 'complete'")
                         
             response_data = {
-                            'success': True,
+                'success': True,
                 'tenantId': str(tenant.id),
                 'currentStep': current_step,
                 'isExistingUser': not created,
-                'onboardingComplete': onboarding_complete,
+                'onboardingComplete': bool(onboarding_complete),  # Ensure it's a boolean
                 'debug': {
                     'user_id': user.id,
                     'tenant_id': str(tenant.id),
