@@ -9,7 +9,7 @@ import { logger } from '@/utils/logger';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { tenantId, needsOnboarding, onboardingCompleted, subscriptionPlan } = body;
+    const { tenantId, needsOnboarding, onboardingCompleted, subscriptionPlan, businessName, businessType } = body;
     
     logger.info('[UpdateSession] Updating session data', {
       tenantId,
@@ -82,6 +82,17 @@ export async function POST(request) {
       sessionData.user.subscription_type = subscriptionPlan;
       sessionData.user.selected_plan = subscriptionPlan;
       sessionData.user.selectedPlan = subscriptionPlan;
+    }
+    
+    // Update business info if provided
+    if (businessName !== undefined) {
+      sessionData.user.businessName = businessName;
+      sessionData.user.business_name = businessName;
+    }
+    
+    if (businessType !== undefined) {
+      sessionData.user.businessType = businessType;
+      sessionData.user.business_type = businessType;
     }
     
     // Re-encode session

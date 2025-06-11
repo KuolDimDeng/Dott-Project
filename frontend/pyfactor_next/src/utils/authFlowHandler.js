@@ -176,7 +176,10 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         body: JSON.stringify({
           tenantId: finalUserData.tenantId,
           needsOnboarding: finalUserData.needsOnboarding,
-          onboardingCompleted: finalUserData.onboardingCompleted
+          onboardingCompleted: finalUserData.onboardingCompleted,
+          businessName: profileData?.businessName || userData.businessName,
+          businessType: profileData?.businessType || userData.businessType,
+          subscriptionPlan: profileData?.subscriptionPlan || profileData?.subscriptionType || userData.subscriptionPlan
         })
       });
     } catch (error) {
