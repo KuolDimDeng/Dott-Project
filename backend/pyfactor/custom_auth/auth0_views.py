@@ -132,6 +132,32 @@ def create_auth0_user(request):
         email = data['email']
         
         with transaction.atomic():
+            # CRITICAL: Check for deleted accounts first
+            deleted_user = User.objects.filter(email=email, is_deleted=True).first()
+            if deleted_user:
+                days_since_deletion = 0
+                if hasattr(deleted_user, 'deleted_at') and deleted_user.deleted_at:
+                    from django.utils import timezone
+                    days_since_deletion = (timezone.now() - deleted_user.deleted_at).days
+                
+                if days_since_deletion <= 30:
+                    logger.error(f"[Auth0Views] Blocked attempt to recreate deleted account: {email}")
+                    return JsonResponse({
+                        'error': 'This account has been closed',
+                        'message': f'This account was closed {days_since_deletion} days ago. Contact support to reactivate.',
+                        'account_closed': True,
+                        'in_grace_period': True,
+                        'days_remaining': 30 - days_since_deletion
+                    }, status=403)
+                else:
+                    logger.error(f"[Auth0Views] Blocked permanently deleted account: {email}")
+                    return JsonResponse({
+                        'error': 'This email was previously used',
+                        'message': 'This email is associated with a permanently deleted account.',
+                        'account_closed': True,
+                        'permanently_deleted': True
+                    }, status=403)
+            
             # Check if user already exists
             user = None
             created = False
@@ -447,6 +473,25 @@ def close_user_account(request):
             user.deletion_feedback = feedback
             user.deletion_initiated_by = 'user'
             user.save()
+            
+            # Update Auth0 to block user
+            try:
+                from .auth0_service import update_auth0_user_metadata
+                metadata_updated = update_auth0_user_metadata(
+                    user.auth0_sub,
+                    {
+                        'account_deleted': True,
+                        'deleted_at': deletion_log.deleted_at.isoformat(),
+                        'deletion_reason': reason
+                    }
+                )
+                if metadata_updated:
+                    logger.info(f"[Auth0Views] Updated Auth0 metadata for deleted user: {user.email}")
+                else:
+                    logger.error(f"[Auth0Views] Failed to update Auth0 metadata for: {user.email}")
+            except Exception as e:
+                logger.error(f"[Auth0Views] Error updating Auth0: {str(e)}")
+                # Continue with deletion even if Auth0 update fails
             
             # Deactivate tenant if user is owner
             if user.tenant and user.tenant.owner_id == user.auth0_sub:

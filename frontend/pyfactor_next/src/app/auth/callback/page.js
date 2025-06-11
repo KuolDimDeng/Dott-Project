@@ -54,14 +54,20 @@ export default function Auth0CallbackPage() {
           accessToken = tokenData.access_token;
         }
         
-        // Use unified auth flow handler
+        // Use unified auth flow handler V3 with deletion check
         setStatus('Setting up your account...');
-        const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
+        const { handlePostAuthFlow } = await import('@/utils/authFlowHandler.v3');
         const backendUser = await handlePostAuthFlow({
           user: sessionData.user,
           accessToken: sessionData.accessToken || accessToken,
           idToken: sessionData.idToken
         }, 'oauth');
+        
+        // Check if auth flow returned null (deleted account)
+        if (!backendUser) {
+          console.log('[Auth0Callback] Account is deleted, auth flow returned null');
+          return; // The auth flow handler already redirected
+        }
         
         console.log('[Auth0Callback] Unified auth flow completed:', {
           email: backendUser.email,

@@ -1,74 +1,63 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
-export default function AccountClosed() {
-  const router = useRouter();
-  
-  useEffect(() => {
-    console.log('[ACCOUNT_CLOSED] User reached account-closed page');
-    
-    // Clear any remaining auth data
-    console.log('[ACCOUNT_CLOSED] Performing final cleanup');
-    
-    // Clear all storage
-    try {
-      localStorage.clear();
-      sessionStorage.clear();
-      console.log('[ACCOUNT_CLOSED] Cleared all storage');
-    } catch (e) {
-      console.error('[ACCOUNT_CLOSED] Error clearing storage:', e);
-    }
-    
-    // Clear all accessible cookies
-    document.cookie.split(";").forEach(function(c) { 
-      const eqPos = c.indexOf("=");
-      const name = eqPos > -1 ? c.substr(0, eqPos).trim() : c.trim();
-      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.dottapps.com";
-      document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-    });
-    console.log('[ACCOUNT_CLOSED] Cleared all cookies');
-    
-    // Set up redirect timer
-    const timer = setTimeout(() => {
-      console.log('[ACCOUNT_CLOSED] Redirecting to home page');
-      router.push('/');
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [router]);
-  
+export default function AccountClosedPage() {
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email');
+  const daysRemaining = searchParams.get('days') || '30';
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
-            Account Closed Successfully
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Your account has been permanently closed and all data has been removed.
-          </p>
-          <p className="mt-4 text-sm text-gray-500">
-            You will be redirected to the homepage in 5 seconds...
-          </p>
-        </div>
-        
-        <div className="mt-8 space-y-4">
-          <Link
-            href="/auth/signup"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Create a New Account
-          </Link>
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
           
-          <Link
-            href="/"
-            className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Go to Homepage
-          </Link>
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Account Closed
+          </h2>
+          
+          <div className="mt-4 text-sm text-gray-600">
+            {email && (
+              <p className="mb-2">
+                The account for <span className="font-medium">{email}</span> has been closed.
+              </p>
+            )}
+            
+            <p className="mb-4">
+              This account is currently in a grace period and can be reactivated within the next{' '}
+              <span className="font-semibold">{daysRemaining} days</span>.
+            </p>
+            
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h3 className="text-sm font-medium text-blue-900 mb-2">
+                Want to reactivate your account?
+              </h3>
+              <p className="text-sm text-blue-700 mb-3">
+                If you closed your account by mistake or have changed your mind, we can help you reactivate it.
+              </p>
+              <a 
+                href="mailto:support@dottapps.com?subject=Account Reactivation Request"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Contact Support
+              </a>
+            </div>
+          </div>
+          
+          <div className="mt-8">
+            <Link
+              href="/"
+              className="text-sm text-gray-600 hover:text-gray-900"
+            >
+              Return to homepage
+            </Link>
+          </div>
         </div>
       </div>
     </div>

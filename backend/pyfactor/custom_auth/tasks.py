@@ -764,3 +764,148 @@ def monitor_tenant_schemas():
     except Exception as e:
         logger.error(f"Error in tenant schema monitoring task: {str(e)}")
         return False
+
+@shared_task
+def cleanup_deleted_accounts():
+    """
+    Permanently delete accounts after 30-day grace period
+    Runs daily at 2 AM UTC
+    """
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    from django.contrib.auth import get_user_model
+    from django.db import transaction
+    import hashlib
+    from .models import AccountDeletionLog
+    from .auth0_service import delete_auth0_user
+    
+    User = get_user_model()
+    
+    try:
+        cutoff_date = timezone.now() - timedelta(days=30)
+        
+        # Find accounts ready for permanent deletion
+        users_to_purge = User.objects.filter(
+            is_deleted=True,
+            deleted_at__lte=cutoff_date,
+            permanently_deleted=False
+        )
+        
+        logger.info(f"[CleanupTask] Found {users_to_purge.count()} accounts ready for permanent deletion")
+        
+        for user in users_to_purge:
+            try:
+                with transaction.atomic():
+                    # Store email hash to prevent recreation
+                    email_hash = hashlib.sha256(user.email.encode()).hexdigest()
+                    
+                    # Create tracking record
+                    from django.db import connection
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            INSERT INTO user_deletion_tracking 
+                            (email_hash, original_user_id, original_tenant_id, 
+                             deletion_requested_at, grace_period_ends_at, permanently_deleted_at)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (email_hash) DO UPDATE
+                            SET permanently_deleted_at = %s
+                        """, [
+                            email_hash,
+                            user.id,
+                            user.tenant_id if hasattr(user, 'tenant') else None,
+                            user.deleted_at,
+                            user.deleted_at + timedelta(days=30),
+                            timezone.now(),
+                            timezone.now()
+                        ])
+                    
+                    # Delete from Auth0
+                    if user.auth0_sub:
+                        auth0_deleted = delete_auth0_user(user.auth0_sub)
+                        if auth0_deleted:
+                            logger.info(f"[CleanupTask] Deleted user from Auth0: {user.auth0_sub}")
+                        else:
+                            logger.error(f"[CleanupTask] Failed to delete from Auth0: {user.auth0_sub}")
+                    
+                    # Anonymize user data
+                    user.email = f"deleted_{user.id}@anonymous.local"
+                    user.first_name = "Deleted"
+                    user.last_name = "User"
+                    user.phone = None
+                    user.picture = None
+                    user.auth0_sub = f"deleted_{user.id}"
+                    
+                    # Mark as permanently deleted
+                    user.permanently_deleted = True
+                    user.save()
+                    
+                    # Log the permanent deletion
+                    AccountDeletionLog.objects.create(
+                        user_email=f"deleted_{user.id}@anonymous.local",
+                        user_id=user.id,
+                        tenant_id=user.tenant_id if hasattr(user, 'tenant') else None,
+                        deletion_reason="Automatic cleanup after grace period",
+                        deletion_initiated_by="system",
+                        deleted_at=timezone.now()
+                    )
+                    
+                    logger.info(f"[CleanupTask] Permanently deleted user {user.id}")
+                    
+            except Exception as e:
+                logger.error(f"[CleanupTask] Failed to permanently delete user {user.id}: {str(e)}")
+                continue
+        
+        return f"Permanently deleted {users_to_purge.count()} accounts"
+        
+    except Exception as e:
+        logger.error(f"[CleanupTask] Error in cleanup task: {str(e)}")
+        raise
+
+@shared_task
+def check_deleted_account_recreation_attempts():
+    """
+    Monitor for attempts to recreate deleted accounts
+    Runs every hour
+    """
+    from django.contrib.auth import get_user_model
+    import hashlib
+    
+    User = get_user_model()
+    
+    try:
+        # Get all permanently deleted email hashes
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT email_hash, original_user_id, permanently_deleted_at
+                FROM user_deletion_tracking
+                WHERE permanently_deleted_at IS NOT NULL
+            """)
+            deleted_accounts = cursor.fetchall()
+        
+        suspicious_attempts = []
+        
+        for email_hash, original_id, deleted_at in deleted_accounts:
+            # Check if any current user has this email hash
+            current_users = User.objects.exclude(id=original_id)
+            for user in current_users:
+                user_email_hash = hashlib.sha256(user.email.encode()).hexdigest()
+                if user_email_hash == email_hash:
+                    suspicious_attempts.append({
+                        'user_id': user.id,
+                        'email': user.email,
+                        'original_deleted_id': original_id,
+                        'deleted_at': deleted_at
+                    })
+                    logger.warning(f"[SecurityAlert] Possible recreation attempt: {user.email}")
+        
+        if suspicious_attempts:
+            # Send alert to admins
+            logger.critical(f"[SecurityAlert] Found {len(suspicious_attempts)} possible account recreation attempts")
+            # TODO: Send email alert to admins
+        
+        return f"Checked {len(deleted_accounts)} deleted accounts, found {len(suspicious_attempts)} suspicious attempts"
+        
+    except Exception as e:
+        logger.error(f"[SecurityCheck] Error checking recreations: {str(e)}")
+        raise
