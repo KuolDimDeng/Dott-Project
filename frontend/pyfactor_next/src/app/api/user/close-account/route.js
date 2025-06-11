@@ -313,6 +313,8 @@ export async function POST(request) {
         if (deleteResponse.ok || deleteResponse.status === 204) {
           console.log('[CLOSE_ACCOUNT] Successfully deleted user from Auth0');
           deletionResults.auth0 = true;
+          console.log('[CLOSE_ACCOUNT] IMPORTANT: Auth0 deletion succeeded but backend deletion failed');
+          console.log('[CLOSE_ACCOUNT] This means account is NOT fully closed - user data still exists in backend');
         } else {
           const error = await deleteResponse.text();
           console.error('[CLOSE_ACCOUNT] Failed to delete from Auth0:', error);
@@ -340,21 +342,35 @@ export async function POST(request) {
       errors: deletionResults.errors
     });
     
-    // IMPORTANT: Only return success if backend deletion actually succeeded
-    // Backend deletion is REQUIRED - Auth0 deletion alone is not sufficient
-    const isSuccess = deletionResults.backend === true;
+    // CRITICAL: Account closure only succeeds if BACKEND deletion succeeds
+    // Auth0 deletion alone is NOT sufficient - user data must be marked as deleted in backend
+    console.log('[CLOSE_ACCOUNT] === DETERMINING SUCCESS ===');
+    console.log('[CLOSE_ACCOUNT] Backend deletion result:', deletionResults.backend);
+    console.log('[CLOSE_ACCOUNT] Auth0 deletion result:', deletionResults.auth0);
+    console.log('[CLOSE_ACCOUNT] Errors:', deletionResults.errors);
     
-    // Additional safety check: ensure we don't claim success if there are backend errors
-    const hasBackendErrors = deletionResults.errors.some(error => error.includes('Backend:'));
-    const actualSuccess = isSuccess && !hasBackendErrors;
+    // Check for backend errors
+    const hasBackendErrors = deletionResults.errors.some(error => 
+      error.includes('Backend:') || error.includes('HTTP 403')
+    );
     
-    console.log('[CLOSE_ACCOUNT] Final success determination:', {
-      deletionResultsBackend: deletionResults.backend,
-      isSuccess,
-      hasBackendErrors,
-      actualSuccess,
-      errors: deletionResults.errors
-    });
+    // STRICT SUCCESS CRITERIA: Backend deletion must succeed AND no backend errors
+    const backendDeletionSucceeded = deletionResults.backend === true;
+    const actualSuccess = backendDeletionSucceeded && !hasBackendErrors;
+    
+    console.log('[CLOSE_ACCOUNT] SUCCESS DETERMINATION:');
+    console.log('[CLOSE_ACCOUNT] - Backend deletion succeeded:', backendDeletionSucceeded);
+    console.log('[CLOSE_ACCOUNT] - Has backend errors:', hasBackendErrors);
+    console.log('[CLOSE_ACCOUNT] - FINAL SUCCESS:', actualSuccess);
+    
+    if (!actualSuccess) {
+      console.error('[CLOSE_ACCOUNT] ❌ ACCOUNT CLOSURE FAILED');
+      console.error('[CLOSE_ACCOUNT] Backend deletion is required but failed');
+      console.error('[CLOSE_ACCOUNT] User account remains active and functional');
+    } else {
+      console.log('[CLOSE_ACCOUNT] ✅ ACCOUNT CLOSURE SUCCEEDED');
+      console.log('[CLOSE_ACCOUNT] User account has been properly closed');
+    }
     
     const response = NextResponse.json({ 
       success: actualSuccess,

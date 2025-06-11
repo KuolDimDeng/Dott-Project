@@ -1,16 +1,28 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken, getSession } from '@auth0/nextjs-auth0/server';
+import { getAccessToken } from '@auth0/nextjs-auth0/server';
+import { cookies } from 'next/headers';
 
 export async function GET(request) {
   try {
     console.log('[TOKEN_DEBUG] Testing Auth0 token generation...');
     
-    // Get session
-    const session = await getSession(request);
+    // Get session from cookies
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('appSession');
     
-    if (!session) {
+    if (!sessionCookie) {
       return NextResponse.json({ 
         error: 'No session found',
+        authenticated: false 
+      }, { status: 401 });
+    }
+    
+    let session;
+    try {
+      session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    } catch (error) {
+      return NextResponse.json({ 
+        error: 'Invalid session',
         authenticated: false 
       }, { status: 401 });
     }
