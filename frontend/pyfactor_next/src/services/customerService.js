@@ -1,248 +1,207 @@
-import axios from 'axios';
-import { appCache } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
 
-const API_BASE_URL = '/api/customers';
-const CACHE_PREFIX = 'customer';
-const LIST_CACHE_KEY = `${CACHE_PREFIX}_list`;
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
-/**
- * Helper function to check if a key exists in the cache
- * @param {string} key - Cache key to check
- * @returns {Promise<boolean>} - Whether the key exists in cache
- */
-const hasCacheKey = async (key) => {
-  try {
-    const value = await appCache.getCacheValue(key);
-    return value !== null && value !== undefined;
-  } catch (error) {
-    logger.warn(`[CustomerService] Error checking cache for key ${key}:`, error);
-    return false;
-  }
-};
-
-/**
- * Safely parse JSON from API response
- * @param {any} data - Response data to parse
- * @returns {Object|Array} Parsed data or empty array/object
- */
-const safeParseJSON = (data) => {
-  if (!data) return [];
-  
-  try {
-    if (typeof data === 'string') {
-      return JSON.parse(data);
-    }
-    return data;
-  } catch (error) {
-    logger.error('[CustomerService] Error parsing JSON response:', error);
-    return Array.isArray(data) ? [] : {};
-  }
-};
-
-/**
- * Customer service with in-memory caching powered by AWS AppSync
- */
-export const CustomerService = {
-  /**
-   * Fetch a list of customers with caching
-   * @param {Object} options - Options for fetching customers
-   * @param {boolean} options.forceRefresh - Force a refresh from API
-   * @param {Object} options.headers - Request headers
-   * @returns {Promise<Array>} List of customers
-   */
-  async getCustomers({ forceRefresh = false, headers = {} } = {}) {
+class CustomerService {
+  async getCustomers(params = {}) {
     try {
-      // Check cache first if not forcing refresh
-      if (!forceRefresh) {
-        const hasCache = await hasCacheKey(LIST_CACHE_KEY);
-        if (hasCache) {
-          logger.info('[CustomerService] Returning customers from cache');
-          return await appCache.getCacheValue(LIST_CACHE_KEY);
-        }
-      }
+      const queryParams = new URLSearchParams();
+      
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      if (params.search) queryParams.append('search', params.search);
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+      if (params.customer_type) queryParams.append('customer_type', params.customer_type);
+      if (params.city) queryParams.append('city', params.city);
+      if (params.state) queryParams.append('state', params.state);
+      if (params.country) queryParams.append('country', params.country);
+      if (params.has_purchases) queryParams.append('has_purchases', params.has_purchases);
 
-      // Fetch from API
-      logger.info('[CustomerService] Fetching customers from API');
-      const response = await axios.get(API_BASE_URL, { 
-        headers,
-        timeout: 8000, // 8 second timeout
-        validateStatus: status => status < 500 // Don't throw for 4xx errors
+      const response = await fetch(`${API_BASE_URL}/api/customers?${queryParams}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
       });
-      
-      // Safely parse response data
-      const responseData = safeParseJSON(response.data);
-      
-      // Determine data structure and extract customers array
-      let customers = [];
-      if (Array.isArray(responseData)) {
-        customers = responseData;
-      } else if (responseData && typeof responseData === 'object' && Array.isArray(responseData.customers)) {
-        customers = responseData.customers;
-      } else {
-        logger.warn('[CustomerService] Unexpected data format:', responseData);
-        customers = [];
-      }
-      
-      // Cache results
-      await appCache.setCacheValue(LIST_CACHE_KEY, customers, CACHE_TTL / 1000); // Convert ms to seconds
-      
-      return customers;
-    } catch (error) {
-      logger.error('[CustomerService] Error fetching customers:', error);
-      if (error.response) {
-        logger.error('[CustomerService] Error response:', {
-          status: error.response.status,
-          headers: error.response.headers,
-          data: error.response.data
-        });
-      }
-      // Return an empty array instead of throwing to prevent UI crashes
-      return [];
-    }
-  },
 
-  /**
-   * Get a customer by ID with caching
-   * @param {string} id - Customer ID
-   * @param {Object} options - Options for fetching the customer
-   * @param {boolean} options.forceRefresh - Force a refresh from API
-   * @param {Object} options.headers - Request headers
-   * @returns {Promise<Object>} Customer object
-   */
-  async getCustomer(id, { forceRefresh = false, headers = {} } = {}) {
-    try {
-      if (!id) {
-        logger.error('[CustomerService] Invalid customer ID provided');
-        return null;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch customers');
       }
-      
-      const cacheKey = `${CACHE_PREFIX}_${id}`;
-      
-      // Check cache first if not forcing refresh
-      if (!forceRefresh) {
-        const hasCache = await hasCacheKey(cacheKey);
-        if (hasCache) {
-          logger.info(`[CustomerService] Returning customer ${id} from cache`);
-          return await appCache.getCacheValue(cacheKey);
-        }
-      }
-      
-      // Fetch from API
-      logger.info(`[CustomerService] Fetching customer ${id} from API`);
-      const response = await axios.get(`${API_BASE_URL}/${id}`, { 
-        headers,
-        timeout: 8000,
-        validateStatus: status => status < 500
-      });
-      
-      // Safely parse response data
-      const customerData = safeParseJSON(response.data);
-      
-      // Cache result
-      await appCache.setCacheValue(cacheKey, customerData, CACHE_TTL / 1000); // Convert ms to seconds
-      
-      return customerData;
+
+      return { success: true, data };
     } catch (error) {
-      logger.error(`[CustomerService] Error fetching customer ${id}:`, error);
-      if (error.response) {
-        logger.error('[CustomerService] Error response:', {
-          status: error.response.status,
-          headers: error.response.headers,
-          data: error.response.data
-        });
-      }
-      
-      // Return null instead of throwing to prevent UI crashes
-      return null;
+      logger.error('Error fetching customers:', error);
+      return { success: false, error: error.message };
     }
-  },
-  
-  /**
-   * Create a new customer
-   * @param {Object} customerData - Customer data to create
-   * @param {Object} options - Request options
-   * @param {Object} options.headers - Request headers
-   * @returns {Promise<Object>} Created customer
-   */
-  async createCustomer(customerData, { headers = {} } = {}) {
-    try {
-      logger.info('[CustomerService] Creating new customer');
-      const response = await axios.post(API_BASE_URL, customerData, { headers });
-      
-      // Clear list cache to ensure fresh data on next fetch
-      await appCache.removeCacheValue(LIST_CACHE_KEY);
-      
-      return response.data;
-    } catch (error) {
-      logger.error('[CustomerService] Error creating customer:', error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Update an existing customer
-   * @param {string} id - Customer ID
-   * @param {Object} customerData - Updated customer data
-   * @param {Object} options - Request options
-   * @param {Object} options.headers - Request headers
-   * @returns {Promise<Object>} Updated customer
-   */
-  async updateCustomer(id, customerData, { headers = {} } = {}) {
-    try {
-      logger.info(`[CustomerService] Updating customer ${id}`);
-      const response = await axios.put(`${API_BASE_URL}/${id}`, customerData, { headers });
-      
-      // Update customer in cache
-      const cacheKey = `${CACHE_PREFIX}_${id}`;
-      await appCache.setCacheValue(cacheKey, response.data, CACHE_TTL / 1000); // Convert ms to seconds
-      
-      // Clear list cache to ensure fresh data on next fetch
-      await appCache.removeCacheValue(LIST_CACHE_KEY);
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`[CustomerService] Error updating customer ${id}:`, error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Delete a customer
-   * @param {string} id - Customer ID
-   * @param {Object} options - Request options
-   * @param {Object} options.headers - Request headers
-   * @returns {Promise<Object>} Deletion response
-   */
-  async deleteCustomer(id, { headers = {} } = {}) {
-    try {
-      logger.info(`[CustomerService] Deleting customer ${id}`);
-      const response = await axios.delete(`${API_BASE_URL}/${id}`, { headers });
-      
-      // Remove from cache
-      const cacheKey = `${CACHE_PREFIX}_${id}`;
-      await appCache.removeCacheValue(cacheKey);
-      
-      // Clear list cache to ensure fresh data on next fetch
-      await appCache.removeCacheValue(LIST_CACHE_KEY);
-      
-      return response.data;
-    } catch (error) {
-      logger.error(`[CustomerService] Error deleting customer ${id}:`, error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Clear all customer cache entries
-   */
-  async clearCache() {
-    logger.info('[CustomerService] Clearing customer cache');
-    
-    // Just clear all cache for simplicity
-    await appCache.clearCache();
   }
-};
 
-export default CustomerService; 
+  async getCustomer(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch customer');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error fetching customer:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async createCustomer(customerData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(customerData),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create customer');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error creating customer:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async updateCustomer(id, customerData) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(customerData),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update customer');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error updating customer:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteCustomer(id) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete customer');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error deleting customer:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async bulkDeleteCustomers(ids) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/bulk-delete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ ids }),
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete customers');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error bulk deleting customers:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async getCustomerStats() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch customer stats');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error fetching customer stats:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async searchCustomers(query) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/customers/search?q=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to search customers');
+      }
+
+      return { success: true, data };
+    } catch (error) {
+      logger.error('Error searching customers:', error);
+      return { success: false, error: error.message };
+    }
+  }
+}
+
+export default new CustomerService();

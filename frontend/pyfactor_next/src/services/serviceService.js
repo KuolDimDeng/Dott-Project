@@ -1,12 +1,8 @@
-import { appCache } from '../utils/appCache';
-import { apiService } from './apiService';
 import { logger } from '@/utils/logger';
-import { inventoryCache } from '@/utils/enhancedCache';
 
 /**
- * ServiceService - Consolidated service for service-related operations
- * This service provides a consistent interface for all service operations
- * using the new optimized endpoints.
+ * ServiceService - Service management API client
+ * Handles all service-related operations with the backend
  */
 
 // Cache TTL configuration

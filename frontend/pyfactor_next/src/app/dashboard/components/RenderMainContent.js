@@ -73,6 +73,11 @@ const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.j
 const CreateProductManagement = enhancedLazy(() => import('./forms/CreateProductManagement.js'), 'Create Product Management');
 const SalesProductManagement = enhancedLazy(() => import('./forms/SalesProductManagement.js'), 'Sales Product Management');
 const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
+const ServicesList = enhancedLazy(() => import('../../../services/components/ServicesList.js'), 'Services List');
+const VendorsList = enhancedLazy(() => import('../../../vendors/components/VendorsList.js'), 'Vendors List');
+const BillsList = enhancedLazy(() => import('../../../bills/components/BillsList.js'), 'Bills List');
+const EstimatesList = enhancedLazy(() => import('../../../estimates/components/EstimatesList.js'), 'Estimates List');
+const CustomersList = enhancedLazy(() => import('../../../customers/components/CustomersList.js'), 'Customers List');
 const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
 const SalesOrderManagement = enhancedLazy(() => import('./forms/SalesOrderManagement.js'), 'Sales Order Management');
 const InvoiceManagement = enhancedLazy(() => import('./forms/InvoiceManagement.js'), 'Invoice Management');
@@ -1045,7 +1050,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <SuspenseWithCleanup componentKey={salesComponentKey}>
               {view === 'sales-dashboard' && <SalesAnalysis />}
               {view === 'sales-products' && <SalesProductManagement />}
-              {view === 'sales-services' && <ServiceManagement salesContext={true} />}
+              {view === 'sales-services' && <ServicesList />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
@@ -1195,8 +1200,14 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = InvoiceTemplateBuilder;
         componentProps = { onClose: handleCloseInvoiceBuilder };
       } else if (showCustomerList) {
-        ActiveComponent = CustomerList;
-        componentProps = { onCreateCustomer: handleCreateCustomer, onSelectCustomer: handleCustomerSelect };
+        // Use CustomersList component instead of CustomerList
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`customer-list-${sectionComponentKey}`}>
+              <CustomersList />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showCustomerDetails && selectedCustomer) {
         ActiveComponent = CustomerDetails;
         componentProps = { customer: selectedCustomer, onBack: handleBackToCustomerDetails };
@@ -1219,20 +1230,41 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`service-management-${sectionComponentKey}`}>
-              <ServiceManagement />
+              <ServicesList />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
       } else if (showEstimateManagement) {
-        ActiveComponent = EstimateManagement;
+        // Use EstimatesList component instead of EstimateManagement
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`estimate-management-${sectionComponentKey}`}>
+              <EstimatesList />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showSalesOrderManagement) {
         ActiveComponent = SalesOrderManagement;
       } else if (showInvoiceManagement) {
         ActiveComponent = InvoiceManagement;
       } else if (showVendorManagement) {
-        ActiveComponent = VendorManagement;
+        // Use VendorsList component instead of VendorManagement
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`vendor-management-${sectionComponentKey}`}>
+              <VendorsList />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showBillManagement) {
-        ActiveComponent = BillManagement;
+        // Use BillsList component instead of BillManagement
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`bill-management-${sectionComponentKey}`}>
+              <BillsList />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
       } else if (showPurchaseOrderManagement) {
         ActiveComponent = PurchaseOrderManagement;
       } else if (showExpensesManagement) {
