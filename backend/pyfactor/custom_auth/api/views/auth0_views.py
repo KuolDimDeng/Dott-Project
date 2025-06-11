@@ -166,8 +166,7 @@ class Auth0UserCreateView(APIView):
                 user_id_str = str(user.id)
                 tenant = Tenant.objects.create(
                     name=f"{user.name or user.email.split('@')[0]}'s Business",
-                    owner_id=user_id_str,
-                    subscription_tier='trial'
+                    owner_id=user_id_str
                 )
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
             

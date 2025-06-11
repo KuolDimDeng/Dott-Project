@@ -5,23 +5,46 @@
 - Module system: Write scripts using ES modules (not CommonJS)
 - Script registry: Maintain script_registry.md in /Users/kuoldeng/projectx/frontend/pyfactor_next/scripts/script_registry.md
 - Authentication: Use Auth0 (remove cognito/amplify code)
+  - Auth0 Domain: dev-cbyy63jovi6zrcos.us.auth0.com
+  - Custom Domain: auth.dottapps.com
+  - Client ID: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+  - Audience: https://api.dottapps.com
+  - Custom authentication flow (not standard Auth0 SDK)
 - Next.js version: 15
 - Home/Layout pages: 
   - Home: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/page.js
   - Layout: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/layout.js
 - CSS Framework: Tailwind CSS only (no MUI)
 - Database: render database "dott-db" with Row-Level Security and tenant isolation
-- Language: JavaScript (not TypeScript)
-- app is using a custom authentication flow, not the standard Auth0 SDK.
-- Package Manager: PNPM
+  - PostgreSQL with psycopg2-binary
+  - Tenant isolation via tenant_id (not schema-based)
+- Language: JavaScript/TypeScript hybrid (Next.js 15 with TypeScript support)
+- Package Manager: PNPM (v8.10.0 for frontend, v8.15.3 for root)
 - Environment: Production mode only
 - Data: No mock data
 - Frontend Deployment: Vercel, update via git in Dott_Main_Dev_Deploy branch
+  - Build command: pnpm run build:production
+  - Environment variables must use NEXT_PUBLIC_ prefix for client-side
 - Backend Deployment: render (dott-api), custom domain api.dottapps.com
-- using Auth0 for authentication: custom domain auth.dottapps.com
+  - Service name: dott-api
+  - Region: oregon
+  - Plan: starter
+  - Requirements: requirements-render.txt
+- Testing Framework: Jest with jsdom environment
+  - Test commands: test, test:watch
+  - Setup file: jest.setup.js
+- Linting: ESLint (relaxed rules, errors ignored during builds)
+  - Command: pnpm run lint
+  - TypeScript build errors ignored: ignoreBuildErrors: true
+- Integrations:
+  - Crisp Chat for customer support (NEXT_PUBLIC_CRISP_WEBSITE_ID)
+  - Stripe for payments
+  - Google OAuth for authentication
+  - CORS configured for specific origins
 - Security: 
   - No hardcoded environment keys
   - No sensitive information in code
+  - Complex security headers in Next.js config
 - Development Approach:
   - Read existing documentation
   - Make targeted, purposeful changes
@@ -32,3 +55,7 @@
   - Provide summary before implementation
   - Wait for explicit approval
   - Implement only specified requests
+- Important Notes:
+  - Remove remaining Cognito/Amplify references from backend code
+  - Docker support available but not primary deployment method
+  - Webpack optimizations configured for memory management
