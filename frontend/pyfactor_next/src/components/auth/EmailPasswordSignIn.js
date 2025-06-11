@@ -10,6 +10,8 @@ export default function EmailPasswordSignIn() {
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorType, setErrorType] = useState('error'); // 'error' or 'success'
+  const [showResendVerification, setShowResendVerification] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,14 +26,17 @@ export default function EmailPasswordSignIn() {
   const toggleMode = () => {
     setIsSignup(!isSignup);
     setError('');
+    setErrorType('error');
+    setShowResendVerification(false);
     // Reset confirm password and visibility states when switching modes
     setFormData(prev => ({ ...prev, confirmPassword: '' }));
     setShowPassword(false);
     setShowConfirmPassword(false);
   };
 
-  const showError = (message) => {
+  const showError = (message, type = 'error') => {
     setError(message);
+    setErrorType(type);
   };
 
   const handleChange = (e) => {
@@ -69,6 +74,33 @@ export default function EmailPasswordSignIn() {
       }
     } catch (error) {
       showError('Error sending password reset email');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!formData.email) {
+      showError('Please enter your email address');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email })
+      });
+
+      if (response.ok) {
+        showError('Verification email sent! Please check your inbox.', 'success');
+        setShowResendVerification(false);
+      } else {
+        showError('Error sending verification email. Please try again.');
+      }
+    } catch (error) {
+      showError('Error sending verification email. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -110,8 +142,14 @@ export default function EmailPasswordSignIn() {
         throw new Error(signupData.error || 'Error creating account');
       }
 
-      // Auto-login after successful signup
-      await handleLogin();
+      // Show success message about email verification
+      setIsLoading(false);
+      setError('');
+      showError('Account created successfully! Please check your email to verify your account before signing in.', 'success');
+      // Switch to login mode after a delay
+      setTimeout(() => {
+        setIsSignup(false);
+      }, 3000);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Signup error:', error);
       showError(error.message || 'Error creating account');
@@ -143,7 +181,22 @@ export default function EmailPasswordSignIn() {
           window.location.href = '/api/auth/login';
           return;
         }
-        throw new Error(authResult.error || 'Authentication failed');
+        
+        // Check for email verification error
+        if ((authResult.error === 'invalid_grant' || authResult.error === 'email_not_verified') && 
+            (authResult.message?.includes('email') || authResult.message?.includes('verify'))) {
+          setShowResendVerification(true);
+          throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
+        }
+        
+        // Check if error description mentions email verification
+        if (authResult.message?.toLowerCase().includes('verify') || 
+            authResult.message?.toLowerCase().includes('verification')) {
+          setShowResendVerification(true);
+          throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
+        }
+        
+        throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
       // Create session
@@ -257,10 +310,24 @@ export default function EmailPasswordSignIn() {
             </p>
           </div>
 
-          {/* Error Message */}
+          {/* Error/Success Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-              {error}
+            <div className={`px-4 py-3 rounded-md text-sm ${
+              errorType === 'success' 
+                ? 'bg-green-50 border border-green-200 text-green-700' 
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
+              <div>{error}</div>
+              {showResendVerification && errorType === 'error' && (
+                <button
+                  onClick={handleResendVerification}
+                  className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-500 underline"
+                  type="button"
+                  disabled={isLoading}
+                >
+                  Resend verification email
+                </button>
+              )}
             </div>
           )}
 

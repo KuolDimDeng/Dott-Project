@@ -132,6 +132,21 @@ export async function POST(request) {
     if (!tokenResponse.ok) {
       // Handle specific Auth0 errors
       if (tokenData.error === 'invalid_grant') {
+        // Check if the error is due to email verification
+        if (tokenData.error_description && 
+            (tokenData.error_description.toLowerCase().includes('verify') || 
+             tokenData.error_description.toLowerCase().includes('verification') ||
+             tokenData.error_description.toLowerCase().includes('email'))) {
+          return NextResponse.json(
+            { 
+              error: 'email_not_verified',
+              message: 'Please verify your email address before signing in. Check your inbox for the verification email.',
+              debugLog
+            },
+            { status: 401 }
+          );
+        }
+        
         return NextResponse.json(
           { 
             error: 'Invalid credentials',
