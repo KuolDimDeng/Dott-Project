@@ -669,6 +669,9 @@ MIDDLEWARE = [
     'custom_auth.middleware.RequestIDMiddleware',
     'custom_auth.middleware.TenantMiddleware',
     'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
+    # Add tenant isolation middleware for proper RLS
+    'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
+    'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',
     # Temporarily disable until we fix the async compatibility issue
     # 'onboarding.middleware.OnboardingSessionMiddleware',
 ]

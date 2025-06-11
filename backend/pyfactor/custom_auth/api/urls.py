@@ -14,6 +14,13 @@ from .views.user_check_views import CheckUserView
 from .views.close_account_view import CloseAccountView
 from .views.onboarding_status_view import UpdateOnboardingStatusView
 
+# Import new Auth0 views
+try:
+    from custom_auth import auth0_views
+    has_new_auth0_views = True
+except ImportError:
+    has_new_auth0_views = False
+
 router = DefaultRouter()
 
 urlpatterns = [
@@ -52,3 +59,14 @@ urlpatterns = [
     # Include router URLs
     path('', include(router.urls)),
 ]
+
+# Add new Auth0 endpoints if available
+if has_new_auth0_views:
+    urlpatterns += [
+        # New secure Auth0 endpoints
+        path('users/by-auth0-sub/<str:auth0_sub>/', auth0_views.get_user_by_auth0_sub, name='get_user_by_auth0_sub'),
+        path('tenants/<uuid:tenant_id>/verify-owner/', auth0_views.verify_tenant_owner, name='verify_tenant_owner'),
+        path('auth0/onboarding-status/', auth0_views.get_onboarding_status, name='get_onboarding_status'),
+        path('auth0/complete-onboarding/', auth0_views.complete_onboarding, name='complete_onboarding'),
+        path('auth0/close-account/', auth0_views.close_user_account, name='close_user_account'),
+    ]

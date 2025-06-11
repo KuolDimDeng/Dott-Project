@@ -75,44 +75,45 @@ export default function Auth0CallbackPage() {
           needsOnboarding: backendUser.needsOnboarding,
           onboardingCompleted: backendUser.onboardingCompleted,
           tenantId: backendUser.tenantId,
-          isNewUser: backendUser.isNewUser
+          isNewUser: backendUser.isNewUser,
+          redirectUrl: backendUser.redirectUrl
         });
         
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
         
-        // Use the redirect URL from the unified flow handler
+        // CRITICAL: Always use the redirect URL from the flow handler
         if (backendUser.redirectUrl) {
-          const displayStatus = backendUser.needsOnboarding 
+          const displayStatus = backendUser.redirectUrl.includes('/onboarding')
             ? 'Setting up your account...' 
             : 'Loading your dashboard...';
           
           setStatus(displayStatus);
           
-          setTimeout(() => {
-            router.push(backendUser.redirectUrl);
-          }, 1500);
-          return;
-        }
-        
-        // Fallback routing if no redirect URL was set
-        if (backendUser.tenantId) {
-          setStatus('Loading your dashboard...');
-          console.log('[Auth0Callback] Fallback: Redirecting to tenant dashboard');
+          console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
           
+          // Use replace instead of push to prevent back button issues
           setTimeout(() => {
-            router.push(`/tenant/${backendUser.tenantId}/dashboard`);
-          }, 1500);
+            router.replace(backendUser.redirectUrl);
+          }, 1000);
           return;
         }
         
-        // Final fallback - redirect to onboarding
-        setStatus('Setting up your account...');
-        console.log('[Auth0Callback] Fallback: Redirecting to onboarding');
+        // This should never happen with the new flow handler
+        console.error('[Auth0Callback] No redirect URL provided by flow handler!');
         
-        setTimeout(() => {
-          router.push('/onboarding');
-        }, 1500);
+        // Emergency fallback based on state
+        if (backendUser.onboardingCompleted && backendUser.tenantId) {
+          setStatus('Loading your dashboard...');
+          setTimeout(() => {
+            router.replace(`/tenant/${backendUser.tenantId}/dashboard`);
+          }, 1000);
+        } else {
+          setStatus('Setting up your account...');
+          setTimeout(() => {
+            router.replace('/onboarding');
+          }, 1000);
+        }
         
       } catch (error) {
         console.error('[Auth0Callback] Error during callback:', error);
