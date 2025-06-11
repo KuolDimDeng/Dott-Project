@@ -225,16 +225,19 @@ export default function EmailPasswordSignIn() {
         idToken: authResult.id_token
       }, 'email-password');
 
-      // Redirect based on unified flow result
-      if (finalUserData.redirectUrl) {
-        router.push(finalUserData.redirectUrl);
-      } else if (finalUserData.needsOnboarding) {
-        router.push('/onboarding');
-      } else if (finalUserData.tenantId) {
-        router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
-      } else {
-        router.push('/dashboard');
-      }
+      // Small delay to ensure cookie is set before redirect
+      setTimeout(() => {
+        // Redirect based on unified flow result
+        if (finalUserData.redirectUrl) {
+          router.push(finalUserData.redirectUrl);
+        } else if (finalUserData.needsOnboarding) {
+          router.push('/onboarding');
+        } else if (finalUserData.tenantId) {
+          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+        } else {
+          router.push('/dashboard');
+        }
+      }, 100); // 100ms delay
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
       showError(error.message || 'Invalid email or password');

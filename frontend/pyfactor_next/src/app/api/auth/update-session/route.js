@@ -94,13 +94,20 @@ export async function POST(request) {
     });
     
     // Set updated session cookie
-    response.cookies.set('appSession', updatedSessionCookie, {
+    const cookieOptions = {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
       path: '/'
-    });
+    };
+    
+    // Add domain in production to ensure cookie works across subdomains
+    if (process.env.NODE_ENV === 'production') {
+      cookieOptions.domain = '.dottapps.com'; // Leading dot allows subdomains
+    }
+    
+    response.cookies.set('appSession', updatedSessionCookie, cookieOptions);
     
     logger.info('[UpdateSession] Session updated successfully');
     

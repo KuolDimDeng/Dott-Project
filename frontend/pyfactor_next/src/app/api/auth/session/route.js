@@ -176,22 +176,25 @@ export async function POST(request) {
     });
     
     // Set session cookie
-    response.cookies.set('appSession', sessionCookie, {
+    const cookieOptions = {
       httpOnly: true,
       secure: true, // Always use secure in production
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days (match update-session)
       path: '/'
-    });
+    };
+    
+    // Add domain in production to ensure cookie works across subdomains
+    if (process.env.NODE_ENV === 'production') {
+      cookieOptions.domain = '.dottapps.com'; // Leading dot allows subdomains
+    }
+    
+    response.cookies.set('appSession', sessionCookie, cookieOptions);
     
     addDebugEntry('Session cookie set', {
-      cookieOptions: {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 7 * 24 * 60 * 60,
-        path: '/'
-      }
+      cookieOptions: cookieOptions,
+      sessionDataSize: sessionCookie.length,
+      nodeEnv: process.env.NODE_ENV
     });
     
     return response;
