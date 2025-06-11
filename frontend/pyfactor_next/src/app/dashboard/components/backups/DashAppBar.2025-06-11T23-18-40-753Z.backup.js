@@ -14,14 +14,6 @@ import { appCache } from '../../../utils/appCache';
 /**
  * @component DashAppBar
  * @description 
- * PERFORMANCE OPTIMIZED VERSION - 2025-06-11T23:18:40.753Z
- * 
- * Optimizations applied:
- * 1. Component wrapped with React.memo to prevent unnecessary re-renders
- * 2. Debug console.log statements removed
- * 3. Subscription type calculation memoized
- * 4. Business name dependencies optimized
- * 
  * IMPORTANT: THIS IS THE FINAL DESIGN AND LAYOUT FOR THE APP BAR.
  * DO NOT MAKE ANY CHANGES TO THIS COMPONENT WITHOUT EXPRESS PERMISSION FROM THE OWNER.
  * This design was finalized on 2025-04-06 with the following specifications:
@@ -102,9 +94,7 @@ const DashAppBar = ({
   // Reduced logging for production - only log once per mount
   const hasLoggedInit = useRef(false);
   if (!hasLoggedInit.current) {
-    if (process.env.NODE_ENV !== 'production') {
-      logger.debug('[DashAppBar] Component initialized - Using Auth0 session data for user info');
-    }
+    logger.debug('[DashAppBar] Component initialized - Using Auth0 session data for user info');
     hasLoggedInit.current = true;
   }
   
@@ -707,12 +697,27 @@ const DashAppBar = ({
   }, []);
 
   // Updated subscription display
-  // Memoize subscription type to prevent recalculation on every render
-  const effectiveSubscriptionType = useMemo(() => {
-    return getSubscriptionType();
-  }, [getSubscriptionType]);
+  const effectiveSubscriptionType = getSubscriptionType();
   
-  // Subscription debug removed for performance
+  // Debug subscription data
+  console.log('[DashAppBar] Subscription Debug:', {
+    effectiveType: effectiveSubscriptionType,
+    userAttributes: userAttributes?.['custom:subplan'],
+    userData: {
+      selected_plan: userData?.selected_plan,
+      selectedPlan: userData?.selectedPlan,
+      subscription_type: userData?.subscription_type
+    },
+    profileData: {
+      selected_plan: profileData?.selected_plan,
+      selectedPlan: profileData?.selectedPlan,
+      subscriptionType: profileData?.subscriptionType,
+      subscriptionPlan: profileData?.subscriptionPlan,
+      subscription_plan: profileData?.subscription_plan
+    },
+    cachedType: getTenantCacheData('user', 'subscriptionType'),
+    allProfileData: profileData
+  });
   
   // Fetch business info if subscription is still showing as free
   useEffect(() => {
@@ -851,18 +856,7 @@ const DashAppBar = ({
     
     // Return empty string if no business name found
     return '';
-  }, [
-    businessName, 
-    fetchedBusinessName, 
-    auth0BusinessName, 
-    profileData?.businessName,
-    profileData?.business_name,
-    profileData?.tenant?.name,
-    userData?.businessName,
-    userData?.tenant?.name,
-    userAttributes?.['custom:businessname'],
-    userAttributes?.['custom:tenant_name']
-  ]);
+  }, [businessName, fetchedBusinessName, auth0BusinessName, profileData, userData, userAttributes]);
 
   // Function to get the user's email from Auth0 session and app cache
   const getUserEmail = () => {
@@ -1467,22 +1461,4 @@ const DashAppBar = ({
   )
 }
 
-// Memoize component to prevent unnecessary re-renders
-const MemoizedDashAppBar = memo(DashAppBar, (prevProps, nextProps) => {
-  // Custom comparison function - only re-render if these props change
-  return (
-    prevProps.drawerOpen === nextProps.drawerOpen &&
-    prevProps.view === nextProps.view &&
-    prevProps.tenantId === nextProps.tenantId &&
-    prevProps.isAuthenticated === nextProps.isAuthenticated &&
-    prevProps.showCreateMenu === nextProps.showCreateMenu &&
-    prevProps.openMenu === nextProps.openMenu &&
-    // Deep compare user data only if references change
-    prevProps.userData === nextProps.userData &&
-    prevProps.profileData === nextProps.profileData &&
-    prevProps.userAttributes === nextProps.userAttributes &&
-    prevProps.user === nextProps.user
-  );
-});
-
-export default MemoizedDashAppBar;
+export default DashAppBar;

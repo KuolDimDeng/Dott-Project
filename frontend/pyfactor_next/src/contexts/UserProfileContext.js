@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { logger } from '@/utils/logger';
 import { fetchAuth0SessionData } from '@/config/auth0';
+import { profileCache } from '@/utils/profileCache';
 
 // Initial time to live for cache in milliseconds (15 minutes for faster sign-in)
 const CACHE_TTL = 15 * 60 * 1000; 
@@ -162,13 +163,17 @@ const transformCognitoAttributes = (attributes) => {
 export function UserProfileProvider({ children }) {
   // Ref to track if we've already initiated a fetch
   const hasFetchedRef = useRef(false);
-  // State for cached profile data
-  const [profileCache, setProfileCache] = useState({
-    data: null,
-    timestamp: null,
-    tenantId: null,
-    loading: false,
-    error: null
+  
+  // Initialize state with data from cache
+  const [profileState, setProfileState] = useState(() => {
+    const cached = profileCache.get();
+    return {
+      data: cached,
+      timestamp: cached ? Date.now() : null,
+      tenantId: cached?.profile?.tenantId || null,
+      loading: false,
+      error: null
+    };
   });
   
   // Track pending requests to deduplicate
@@ -176,13 +181,14 @@ export function UserProfileProvider({ children }) {
   
   // Clear cache function
   const clearCache = useCallback(() => {
-    setProfileCache({
+    setProfileState({
       data: null,
       timestamp: null,
       tenantId: null,
       loading: false,
       error: null
     });
+    profileCache.clear();
   }, []);
 
   // Function to fetch directly from Auth0 session (replaces Cognito attributes)
@@ -206,13 +212,14 @@ export function UserProfileProvider({ children }) {
         const tenantId = profileData.profile.tenantId || null;
         
         // Update cache with profile data from Auth0
-        setProfileCache({
+        setProfileState({
           data: profileData,
           timestamp: Date.now(),
           tenantId,
           loading: false,
           error: null
         });
+        profileCache.set(profileData);
         
         return profileData;
       }
@@ -259,13 +266,14 @@ export function UserProfileProvider({ children }) {
           }
         };
         
-        setProfileCache({
+        setProfileState({
           data: minimalProfile,
           timestamp: Date.now(),
           tenantId: localStorage.getItem('tenantId') || null,
           loading: false,
           error: null
         });
+        profileCache.set(minimalProfile);
         
         return minimalProfile;
       }
@@ -291,7 +299,7 @@ export function UserProfileProvider({ children }) {
     // If we're on a public page, don't make API calls
     if (isPublicPage()) {
       logger.debug('[UserProfileContext] Skipping profile fetch on public page');
-      setProfileCache(prev => ({
+      setProfileState(prev => ({
         ...prev,
         loading: false,
         error: null
@@ -323,25 +331,26 @@ export function UserProfileProvider({ children }) {
         }
       };
       
-      setProfileCache({
+      setProfileState({
         data: signUpProfile,
         timestamp: Date.now(),
         tenantId: tenantId || localStorage.getItem('tenantId') || null,
         loading: false,
         error: null
       });
+      profileCache.set(signUpProfile);
       
       return signUpProfile;
     }
     
     // Don't fetch if we already have a recent cache for this tenant (unless forced)
     if (!forceRefresh && 
-        profileCache.data && 
-        profileCache.tenantId === tenantId && 
-        profileCache.timestamp && 
-        Date.now() - profileCache.timestamp < CACHE_TTL) {
+        profileState.data && 
+        profileState.tenantId === tenantId && 
+        profileState.timestamp && 
+        Date.now() - profileState.timestamp < CACHE_TTL) {
       logger.debug('[UserProfileContext] Using cached profile data for tenant:', tenantId);
-      return profileCache.data;
+      return profileState.data;
     }
     
     // Don't fetch if we have a pending request for this tenant
@@ -357,7 +366,7 @@ export function UserProfileProvider({ children }) {
     }));
     
     // Update loading state
-    setProfileCache(prev => ({
+    setProfileState(prev => ({
       ...prev,
       loading: true,
       error: null
@@ -404,13 +413,14 @@ export function UserProfileProvider({ children }) {
             });
             
             // Update cache with Auth0 data
-            setProfileCache({
+            setProfileState({
               data: auth0Data,
               timestamp: Date.now(),
               tenantId: tenantId,
               loading: false,
               error: null
             });
+            profileCache.set(auth0Data);
             
             return auth0Data;
           }
@@ -426,13 +436,14 @@ export function UserProfileProvider({ children }) {
       logger.info('[UserProfileContext] Profile data fetched successfully');
       
       // Update cache with new data
-      setProfileCache({
+      setProfileState({
         data,
         timestamp: Date.now(),
         tenantId,
         loading: false,
         error: null
       });
+      profileCache.set(data);
       
       // Clean up pending request
       setPendingRequests(prev => {
@@ -461,7 +472,7 @@ export function UserProfileProvider({ children }) {
         return auth0Data;
       }
       
-      setProfileCache(prev => ({
+      setProfileState(prev => ({
         ...prev,
         loading: false,
         error: error.message
@@ -477,7 +488,7 @@ export function UserProfileProvider({ children }) {
       // Return null instead of throwing to prevent unhandled promise rejections
       return null;
     }
-  }, [profileCache, pendingRequests, fetchAuth0Attributes]);
+  }, [profileState, pendingRequests, fetchAuth0Attributes]);
   
   // Debounced version of fetchProfileData to prevent rapid consecutive calls
   const debouncedFetchProfile = useMemo(() => 
@@ -498,7 +509,7 @@ export function UserProfileProvider({ children }) {
     const inSignUpFlow = isInSignUpFlow();
     
     // Skip if we're on a public page, in sign-up flow, already have data, or already fetched
-    if (isPublicPage() || inSignUpFlow || profileCache.data || profileCache.loading || hasFetchedRef.current) {
+    if (isPublicPage() || inSignUpFlow || profileState.data || profileState.loading || hasFetchedRef.current) {
       if (isPublicPage()) {
         logger.debug('[UserProfileContext] On public page, skipping initial profile fetch');
       } else if (inSignUpFlow) {
@@ -541,18 +552,18 @@ export function UserProfileProvider({ children }) {
   
   // Exposed context value
   const contextValue = useMemo(() => ({
-    profileData: profileCache.data?.profile || null,
-    loading: profileCache.loading,
-    error: profileCache.error,
-    timestamp: profileCache.timestamp,
+    profileData: profileState.data?.profile || null,
+    loading: profileState.loading,
+    error: profileState.error,
+    timestamp: profileState.timestamp,
     fetchProfile: (tenantId, forceRefresh) => debouncedFetchProfile(tenantId, forceRefresh),
     clearProfileCache: clearCache,
     isCacheValid: (tenantId) => 
-      profileCache.data && 
-      profileCache.tenantId === tenantId && 
-      profileCache.timestamp && 
-      Date.now() - profileCache.timestamp < CACHE_TTL
-  }), [profileCache, debouncedFetchProfile, clearCache]);
+      profileState.data && 
+      profileState.tenantId === tenantId && 
+      profileState.timestamp && 
+      Date.now() - profileState.timestamp < CACHE_TTL
+  }), [profileState, debouncedFetchProfile, clearCache]);
   
   return (
     <UserProfileContext.Provider value={contextValue}>
