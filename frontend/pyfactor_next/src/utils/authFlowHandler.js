@@ -83,14 +83,26 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
                            userData.backendCompleted === true ||
                            userData.onboardingComplete === true ||
                            userData.setupDone === true ||
-                           userData.onboarding_status === 'complete';
+                           userData.onboarding_status === 'complete' ||
+                           userData.onboarding_completed === true ||
+                           (userData.backendOnboardingStatus === 'complete');
     
     // Check onboarding status from multiple sources
     const isOnboardingComplete = 
       profileData?.onboardingCompleted === true ||
       userData.onboardingComplete === true ||
+      userData.onboarding_completed === true ||
       backendCompleted ||
       (userData.isExistingUser && userData.tenantId && !profileData?.needsOnboarding);
+    
+    logger.info('[AuthFlowHandler] Backend completion check:', {
+      backendCompleted,
+      userData_backendCompleted: userData.backendCompleted,
+      userData_setupDone: userData.setupDone,
+      userData_onboarding_completed: userData.onboarding_completed,
+      userData_backendOnboardingStatus: userData.backendOnboardingStatus,
+      profileData_backendCompleted: profileData?.backendCompleted
+    });
 
     // Use profile data as the source of truth when available
     if (profileData) {

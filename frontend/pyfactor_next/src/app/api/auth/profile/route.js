@@ -196,17 +196,24 @@ export async function GET(request) {
           const sessionTenantId = user.tenantId || user.tenant_id;
           const finalTenantId = sessionTenantId || backendTenantId;
           
-          // Determine onboarding status from backend data
+          // CRITICAL FIX: More comprehensive backend completion check
           const hasCompletedOnboarding = (
             backendUser.onboarding_status === 'complete' ||
             backendUser.current_step === 'complete' ||
             backendUser.setup_done === true ||
             backendUser.onboarding_completed === true ||
+            backendUser.setup_completed === true ||
+            (backendUser.onboarding && (
+              backendUser.onboarding.onboardingCompleted === true ||
+              backendUser.onboarding.needsOnboarding === false ||
+              backendUser.onboarding.currentStep === 'complete'
+            )) ||
             (backendTenantId && (
-            backendUser.onboarding_completed === true || 
-            backendUser.onboarding_status === 'complete' ||
-            backendUser.setup_done === true
-          )));
+              backendUser.onboarding_completed === true || 
+              backendUser.onboarding_status === 'complete' ||
+              backendUser.setup_done === true
+            ))
+          );
           
           // Merge backend data, prioritizing tenant info from backend
           profileData = {

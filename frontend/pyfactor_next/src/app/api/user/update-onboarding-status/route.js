@@ -1,127 +1,134 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { logger } from '@/utils/logger';
 
 /**
- * Validate Auth0 session
+ * Update Onboarding Status API
+ * Ensures onboarding completion is persisted in the backend
  */
-async function validateAuth0Session(request) {
+export async function POST(request) {
+  console.log('[UPDATE_ONBOARDING_STATUS] Starting status update');
+  
   try {
+    // 1. Get session
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
     if (!sessionCookie) {
-      return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
+      console.error('[UPDATE_ONBOARDING_STATUS] No session cookie found');
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
     
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    
-    // Check if session is expired
-    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
-      return { isAuthenticated: false, error: 'Session expired', user: null };
-    }
-    
-    if (!sessionData.user) {
-      return { isAuthenticated: false, error: 'Invalid session data', user: null };
-    }
-    
-    return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
-  } catch (error) {
-    logger.error('[Update Onboarding Status] Session validation error:', error);
-    return { isAuthenticated: false, error: 'Session validation failed', user: null };
-  }
-}
-
-/**
- * Update user onboarding status in backend
- */
-export async function POST(request) {
-  try {
-    // Validate Auth0 session
-    const authResult = await validateAuth0Session(request);
-    if (!authResult.isAuthenticated) {
-      return NextResponse.json(
-        { error: 'Unauthorized', message: authResult.error },
-        { status: 401 }
-      );
-    }
-
-    const { user, sessionData } = authResult;
-    const body = await request.json();
-    const { tenantId, onboardingCompleted = true } = body;
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID required' },
-        { status: 400 }
-      );
-    }
-
-    logger.info('[Update Onboarding Status] Updating status for user:', {
-      email: user.email,
-      tenantId,
-      onboardingCompleted
-    });
-
+    // 2. Parse session
+    let sessionData;
     try {
-      // Call backend API to update onboarding status
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
-      if (!backendUrl) {
-        logger.warn('[Update Onboarding Status] No backend URL configured');
-        return NextResponse.json({ 
-          success: true,
-          message: 'Backend not configured, status updated locally'
-        });
-      }
-
-      const response = await fetch(`${backendUrl}/api/users/update-onboarding-status/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.accessToken || ''}`
-        },
-        body: JSON.stringify({
-          user_id: user.sub,
-          tenant_id: tenantId,
-          onboarding_completed: onboardingCompleted,
-          needs_onboarding: !onboardingCompleted,
-          current_step: onboardingCompleted ? 'completed' : 'business_info'
-        })
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('[Update Onboarding Status] Backend update failed:', {
-          status: response.status,
-          error: errorText,
-          tenantId,
-          userId: user.sub
-        });
-        // Don't fail the whole process - backend might be down
-      }
-
-      return NextResponse.json({ 
-        success: true,
-        message: 'Onboarding status updated successfully',
-        tenantId,
-        onboardingCompleted
-      });
-      
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
     } catch (error) {
-      logger.error('[Update Onboarding Status] Error updating backend:', error);
-      // Return success anyway - we don't want to block the user
-      return NextResponse.json({ 
-        success: true,
-        message: 'Status updated with warning',
-        warning: 'Backend update failed but proceeding'
-      });
+      console.error('[UPDATE_ONBOARDING_STATUS] Failed to parse session:', error);
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
-
+    
+    const user = sessionData.user;
+    const accessToken = sessionData.accessToken || sessionData.access_token;
+    
+    if (!user || !accessToken) {
+      console.error('[UPDATE_ONBOARDING_STATUS] Missing user or token in session');
+      return NextResponse.json({ error: 'Invalid session data' }, { status: 401 });
+    }
+    
+    console.log('[UPDATE_ONBOARDING_STATUS] User authenticated:', user.email);
+    
+    // 3. Get request data
+    const requestData = await request.json();
+    const { 
+      tenant_id, 
+      onboarding_completed = true,
+      current_step = 'complete'
+    } = requestData;
+    
+    if (!tenant_id) {
+      console.error('[UPDATE_ONBOARDING_STATUS] No tenant_id provided');
+      return NextResponse.json({ error: 'tenant_id is required' }, { status: 400 });
+    }
+    
+    // 4. Call backend to update status
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    console.log('[UPDATE_ONBOARDING_STATUS] Calling backend:', `${backendUrl}/api/users/update-onboarding-status/`);
+    
+    const backendResponse = await fetch(`${backendUrl}/api/users/update-onboarding-status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        user_id: user.sub,
+        tenant_id: tenant_id,
+        onboarding_completed: onboarding_completed,
+        needs_onboarding: !onboarding_completed,
+        current_step: current_step
+      })
+    });
+    
+    const responseText = await backendResponse.text();
+    let backendResult;
+    
+    try {
+      backendResult = responseText ? JSON.parse(responseText) : {};
+    } catch (e) {
+      console.error('[UPDATE_ONBOARDING_STATUS] Failed to parse backend response:', responseText);
+      backendResult = { error: 'Invalid response from backend' };
+    }
+    
+    console.log('[UPDATE_ONBOARDING_STATUS] Backend response:', {
+      status: backendResponse.status,
+      ok: backendResponse.ok,
+      result: backendResult
+    });
+    
+    if (!backendResponse.ok) {
+      return NextResponse.json({ 
+        error: backendResult.error || 'Failed to update status',
+        message: backendResult.message || backendResult.detail || 'Please try again.'
+      }, { status: backendResponse.status });
+    }
+    
+    // 5. Update session to reflect the change
+    const updatedSession = {
+      ...sessionData,
+      user: {
+        ...sessionData.user,
+        tenant_id: tenant_id,
+        tenantId: tenant_id,
+        needsOnboarding: false,
+        onboardingCompleted: true,
+        needs_onboarding: false,
+        onboarding_completed: true,
+        currentStep: 'complete',
+        current_step: 'complete'
+      }
+    };
+    
+    const response = NextResponse.json({
+      success: true,
+      message: 'Onboarding status updated successfully',
+      data: backendResult.data
+    });
+    
+    // Update session cookie
+    response.cookies.set('appSession', Buffer.from(JSON.stringify(updatedSession)).toString('base64'), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7 // 7 days
+    });
+    
+    return response;
+    
   } catch (error) {
-    logger.error('[Update Onboarding Status] Unexpected error:', error);
-    return NextResponse.json(
-      { error: 'An unexpected error occurred' },
-      { status: 500 }
-    );
+    console.error('[UPDATE_ONBOARDING_STATUS] Unexpected error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to update onboarding status',
+      message: error.message
+    }, { status: 500 });
   }
 }

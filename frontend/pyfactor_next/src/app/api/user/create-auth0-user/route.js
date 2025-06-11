@@ -138,13 +138,22 @@ export async function POST(request) {
         }
         const finalTenantId = backendTenantId || existingTenantId;
         
-        // Check backend onboarding status first
-        const hasBackendCompletion = existingUser.onboarding_status === 'complete' ||
-                                   existingUser.setup_done === true ||
-                                   existingUser.onboarding_completed === true ||
-                                   existingUser.current_step === 'complete';
+        // CRITICAL FIX: More comprehensive backend completion check
+        // Check all possible indicators of completion from backend
+        const hasBackendCompletion = 
+          existingUser.onboarding_status === 'complete' ||
+          existingUser.setup_done === true ||
+          existingUser.onboarding_completed === true ||
+          existingUser.current_step === 'complete' ||
+          existingUser.onboarding?.onboardingCompleted === true ||
+          existingUser.onboarding?.needsOnboarding === false ||
+          existingUser.setup_completed === true;
+        
         const hasTenantId = backendTenantId || finalTenantId;
-        const needsOnboarding = hasBackendCompletion ? false : (hasTenantId ? false : 
+        
+        // If backend says onboarding is complete, trust that over everything else
+        const needsOnboarding = hasBackendCompletion ? false : 
+          (hasTenantId && !existingUser.needs_onboarding ? false : 
           (existingUser.needs_onboarding === true || 
            (existingUser.needs_onboarding === undefined && existingUser.onboarding_completed !== true)));
         
