@@ -6,10 +6,11 @@ WORKDIR /app
 # Install pnpm globally
 RUN npm install -g pnpm@8.10.0
 
-# Copy package files and pnpm workspace config
+# Copy package files
 COPY frontend/pyfactor_next/package.json ./
 COPY frontend/pyfactor_next/pnpm-lock.yaml ./
-COPY frontend/pyfactor_next/.npmrc ./ 2>/dev/null || true
+# Copy .npmrc if it exists
+COPY frontend/pyfactor_next/.npmrc ./
 
 # Install dependencies using pnpm
 RUN pnpm install --frozen-lockfile
