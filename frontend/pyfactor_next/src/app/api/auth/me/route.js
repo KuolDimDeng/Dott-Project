@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request) {
   try {
-    // Get session cookie to get user info
-    const sessionCookie = request.cookies.get('appSession');
+    // Get session cookie to get user info - try new name first, then old
+    const sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
     
     if (!sessionCookie) {
       return NextResponse.json({ error: 'No session found', authenticated: false }, { status: 401 });

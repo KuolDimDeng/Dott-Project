@@ -28,6 +28,8 @@ const axiosInstance = axios.create({
     'X-Data-Source': 'AWS_RDS',
     'X-Database-Only': 'true'
   },
+  // Enable credentials to send cookies
+  withCredentials: true,
   // Never follow redirects - fail fast instead to avoid losing auth headers
   maxRedirects: 0
 });
@@ -43,6 +45,8 @@ const serverAxiosInstance = axios.create({
     'X-Data-Source': 'AWS_RDS',
     'X-Database-Only': 'true'
   },
+  // Enable credentials to send cookies
+  withCredentials: true,
   httpsAgent: process.env.NODE_ENV !== 'production' ? new https.Agent({
     rejectUnauthorized: false // Disable SSL certificate verification for local development only
   }) : undefined
