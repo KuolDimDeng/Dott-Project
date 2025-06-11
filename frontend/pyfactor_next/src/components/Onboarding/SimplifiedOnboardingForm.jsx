@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { countries } from 'countries-list';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
+import { getAuthHeaders } from '@/utils/getAuthHeaders';
 
 /**
  * Simplified Onboarding Form Component
@@ -173,9 +174,7 @@ export default function SimplifiedOnboardingForm() {
       
       const response = await fetch('/api/onboarding/complete-all', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify(formData)
       });
       

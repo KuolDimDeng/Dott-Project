@@ -24,25 +24,65 @@ import { v4 as uuidv4 } from 'uuid';
  */
 async function validateAuth0Session(request) {
   try {
+    // First try to get session from cookie
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
-    if (!sessionCookie) {
-      return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
+    if (sessionCookie) {
+      try {
+        const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        
+        // Check if session is expired
+        if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+          return { isAuthenticated: false, error: 'Session expired', user: null };
+        }
+        
+        if (sessionData.user) {
+          return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
+        }
+      } catch (error) {
+        console.error('[CompleteOnboarding] Error parsing session cookie:', error);
+      }
     }
     
-    const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    
-    // Check if session is expired
-    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
-      return { isAuthenticated: false, error: 'Session expired', user: null };
+    // If no cookie, check Authorization header (from localStorage)
+    const authHeader = request.headers.get('authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      console.log('[CompleteOnboarding] Using authorization header for authentication');
+      
+      try {
+        // Decode JWT to get user info
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+          
+          // Check if token is expired
+          if (payload.exp && Date.now() / 1000 > payload.exp) {
+            return { isAuthenticated: false, error: 'Token expired', user: null };
+          }
+          
+          const user = {
+            email: payload.email,
+            sub: payload.sub,
+            name: payload.name || payload.email,
+            ...payload // Include all payload data
+          };
+          
+          const sessionData = {
+            user,
+            accessToken: token,
+            accessTokenExpiresAt: payload.exp ? payload.exp * 1000 : Date.now() + 86400000 // 24 hours
+          };
+          
+          return { isAuthenticated: true, user, sessionData, error: null };
+        }
+      } catch (error) {
+        console.error('[CompleteOnboarding] Error decoding token:', error);
+      }
     }
     
-    if (!sessionData.user) {
-      return { isAuthenticated: false, error: 'Invalid session data', user: null };
-    }
-    
-    return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
+    return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
   } catch (error) {
     console.error('[CompleteOnboarding] Session validation error:', error);
     return { isAuthenticated: false, error: 'Session validation failed', user: null };
@@ -121,10 +161,8 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
  */
 async function createTenantInBackend(user, onboardingData, tenantId, accessToken) {
   try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiBaseUrl) {
-      throw new Error('Backend API URL not configured');
-    }
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    console.log('[CompleteOnboarding] Using backend URL:', apiBaseUrl);
     
     const tenantData = {
       tenant_id: tenantId,
