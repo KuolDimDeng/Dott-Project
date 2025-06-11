@@ -24,9 +24,6 @@ RUN npm install -g pnpm@8.10.0
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/pyfactor_next/ .
 
-# Copy production env file for build
-COPY frontend/pyfactor_next/.env.production ./.env.production
-
 # Build the application with standalone output
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
