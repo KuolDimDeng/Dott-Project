@@ -11,7 +11,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status, permissions, exceptions
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -397,6 +397,12 @@ class SocialLoginView(APIView):
             return None
         logger.debug(f"User not found, creating new user with email: {email}")
         user, created = User.objects.get_or_create(email=email)
+        
+        # Check if account has been deleted/closed
+        if hasattr(user, 'is_deleted') and user.is_deleted:
+            logger.error(f"User {user.email} has a deleted/closed account")
+            raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
+        
         if created:
             user.first_name = user_info.get('given_name', '')
             user.last_name = user_info.get('family_name', '')

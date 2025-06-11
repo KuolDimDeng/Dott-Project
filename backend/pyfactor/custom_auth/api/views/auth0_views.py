@@ -98,6 +98,13 @@ class Auth0UserCreateView(APIView):
                 }
             )
             
+            # Check if account has been deleted/closed
+            if hasattr(user, 'is_deleted') and user.is_deleted:
+                logger.error(f"🔥 [AUTH0_CREATE_USER] User {user.email} has a deleted/closed account")
+                return Response({
+                    'error': 'This account has been closed. Please contact support if you need assistance.'
+                }, status=status.HTTP_403_FORBIDDEN)
+            
             logger.info(f"🔥 [AUTH0_CREATE_USER] User lookup result - created: {created}, user_id: {user.id}")
             
             if not created:

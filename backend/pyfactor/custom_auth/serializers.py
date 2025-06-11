@@ -171,6 +171,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
         data = super().validate(attrs)
+        
+        # Check if account has been deleted/closed
+        if hasattr(self.user, 'is_deleted') and self.user.is_deleted:
+            raise serializers.ValidationError('This account has been closed. Please contact support if you need assistance.')
+        
         refresh = self.get_token(self.user)
         data['refresh'] = str(refresh)
         data['access'] = str(refresh.access_token)
@@ -213,8 +218,13 @@ class CustomAuthTokenSerializer(serializers.Serializer):
             if not user:
                 msg = 'Unable to log in with provided credentials.'
                 raise serializers.ValidationError(msg, code='authorization')
+            
+            # Check if account has been deleted/closed
+            if hasattr(user, 'is_deleted') and user.is_deleted:
+                msg = 'This account has been closed. Please contact support if you need assistance.'
+                raise serializers.ValidationError(msg, code='authorization')
         else:
-            msg = 'Must include "email" and /* RLS: Use tenant_id filtering */ '
+            msg = 'Must include "email" and "password".'
             raise serializers.ValidationError(msg, code='authorization')
 
         attrs['user'] = user
