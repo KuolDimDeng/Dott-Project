@@ -79,24 +79,32 @@ class Auth0UserCreateView(APIView):
             logger.info(f"🔥 [AUTH0_CREATE_USER] Raw request data: {data}")
             
             email = data.get('email')
-            auth0_sub = data.get('sub')
+            # Support both 'sub' and 'auth0_sub' for compatibility
+            auth0_sub = data.get('sub') or data.get('auth0_sub')
             logger.info(f"🔥 [AUTH0_CREATE_USER] Extracted - email: {email}, sub: {auth0_sub}")
             
             if not email or not auth0_sub:
                 logger.error(f"🔥 [AUTH0_CREATE_USER] Missing required fields - email: {email}, sub: {auth0_sub}")
                 return Response({'error': 'Email and sub are required'}, status=400)
 
-            # Check if user exists
-            logger.info(f"🔥 [AUTH0_CREATE_USER] Checking if user exists with email: {email}")
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={
-                    'auth0_sub': auth0_sub,
-                    'name': data.get('name', ''),
-                    'picture': data.get('picture', ''),
-                    'email_verified': data.get('email_verified', False)
-                }
-            )
+            # Check if user exists by Auth0 sub first (most reliable)
+            logger.info(f"🔥 [AUTH0_CREATE_USER] Checking if user exists with auth0_sub: {auth0_sub}")
+            try:
+                user = User.objects.get(auth0_sub=auth0_sub)
+                created = False
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing user by auth0_sub: {user.id}")
+            except User.DoesNotExist:
+                # Fallback to email lookup
+                logger.info(f"🔥 [AUTH0_CREATE_USER] No user found by auth0_sub, checking by email: {email}")
+                user, created = User.objects.get_or_create(
+                    email=email,
+                    defaults={
+                        'auth0_sub': auth0_sub,
+                        'name': data.get('name', ''),
+                        'picture': data.get('picture', ''),
+                        'email_verified': data.get('email_verified', False)
+                    }
+                )
             
             # Check if account has been deleted/closed
             if hasattr(user, 'is_deleted') and user.is_deleted:
@@ -110,7 +118,9 @@ class Auth0UserCreateView(APIView):
             if not created:
                 # Update existing user
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Updating existing user {user.id}")
-                user.auth0_sub = auth0_sub
+                # Only update auth0_sub if it's not already set
+                if not user.auth0_sub:
+                    user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
                 user.picture = data.get('picture', user.picture)
                 user.email_verified = data.get('email_verified', user.email_verified)
