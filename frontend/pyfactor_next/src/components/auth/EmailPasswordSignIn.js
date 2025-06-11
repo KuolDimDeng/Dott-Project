@@ -150,6 +150,7 @@ export default function EmailPasswordSignIn() {
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin', // Include cookies
         body: JSON.stringify({
           accessToken: authResult.access_token,
           idToken: authResult.id_token,

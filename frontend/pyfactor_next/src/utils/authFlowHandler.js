@@ -148,6 +148,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         await fetch('/api/auth/update-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin', // Include cookies
           body: JSON.stringify({
             needsOnboarding: true,
             onboardingCompleted: false
@@ -168,6 +169,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       await fetch('/api/auth/update-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin', // Include cookies
         body: JSON.stringify({
           tenantId: finalUserData.tenantId,
           needsOnboarding: finalUserData.needsOnboarding,

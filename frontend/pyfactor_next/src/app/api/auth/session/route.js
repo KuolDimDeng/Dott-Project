@@ -178,13 +178,21 @@ export async function POST(request) {
     // Set session cookie
     response.cookies.set('appSession', sessionCookie, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true, // Always use secure in production
       sameSite: 'lax',
-      maxAge: 3600, // 1 hour
+      maxAge: 7 * 24 * 60 * 60, // 7 days (match update-session)
       path: '/'
     });
     
-    addDebugEntry('Session cookie set');
+    addDebugEntry('Session cookie set', {
+      cookieOptions: {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60,
+        path: '/'
+      }
+    });
     
     return response;
     
