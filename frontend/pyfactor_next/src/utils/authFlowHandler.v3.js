@@ -4,7 +4,7 @@
  * Prevents deleted users from creating new accounts
  */
 
-import { auth0Service } from '@/services/auth0Service';
+// Remove auth0Service import as it's causing the error
 
 async function clearAuthData() {
   // Clear all auth-related data
@@ -103,8 +103,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       authMethod: authMethod
     };
     
-    // Update Auth0 service with user data
-    auth0Service.setCurrentUser(userData);
+    // Store user data in session storage for other components to use
+    sessionStorage.setItem('currentUser', JSON.stringify(userData));
     
     // Step 3: Get profile to check onboarding status
     console.log('[AuthFlowHandler.v3] Fetching user profile...');
