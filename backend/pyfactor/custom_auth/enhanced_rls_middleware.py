@@ -80,7 +80,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/subscription/',
             '/api/onboarding/complete',
             '/api/onboarding/',  # Catch-all for onboarding endpoints
-            # Removed '/api/users/close-account/' - it should use regular auth flow
+            '/api/users/close-account/',  # Close account needs Auth0 authentication
         ]
         
         # Add custom public paths from settings if available
