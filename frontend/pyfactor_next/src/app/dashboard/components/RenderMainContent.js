@@ -76,8 +76,8 @@ const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.j
 const ServicesList = enhancedLazy(() => import('../../../services/components/ServicesList.js'), 'Services List');
 const VendorsList = enhancedLazy(() => import('../../../vendors/components/VendorsList.js'), 'Vendors List');
 const BillsList = enhancedLazy(() => import('../../../bills/components/BillsList.js'), 'Bills List');
-const EstimatesList = enhancedLazy(() => import('../../../estimates/components/EstimatesList.js'), 'Estimates List');
-const CustomersList = enhancedLazy(() => import('../../../customers/components/CustomersList.js'), 'Customers List');
+const EstimatesList = enhancedLazy(() => import('../../estimates/components/EstimatesList.js'), 'Estimates List');
+const CustomersList = enhancedLazy(() => import('../../customers/components/CustomersList.js'), 'Customers List');
 const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
 const SalesOrderManagement = enhancedLazy(() => import('./forms/SalesOrderManagement.js'), 'Sales Order Management');
 const InvoiceManagement = enhancedLazy(() => import('./forms/InvoiceManagement.js'), 'Invoice Management');
@@ -1200,7 +1200,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = InvoiceTemplateBuilder;
         componentProps = { onClose: handleCloseInvoiceBuilder };
       } else if (showCustomerList) {
-        // Use CustomersList component instead of CustomerList
+        // Use CustomersList component 
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`customer-list-${sectionComponentKey}`}>
@@ -1235,7 +1235,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showEstimateManagement) {
-        // Use EstimatesList component instead of EstimateManagement
+        // Use EstimatesList component 
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`estimate-management-${sectionComponentKey}`}>
