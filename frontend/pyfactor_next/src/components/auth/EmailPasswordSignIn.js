@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
+import { sessionManager } from '@/utils/sessionManager';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
@@ -216,6 +217,15 @@ export default function EmailPasswordSignIn() {
       }
 
       const sessionResult = await sessionResponse.json();
+      
+      // Save session to localStorage as backup
+      sessionManager.saveSession({
+        accessToken: authResult.access_token,
+        access_token: authResult.access_token,
+        idToken: authResult.id_token,
+        id_token: authResult.id_token,
+        user: authResult.user
+      }, authResult.expires_in || 86400);
 
       // Use unified auth flow handler
       const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');

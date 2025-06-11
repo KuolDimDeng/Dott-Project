@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SimplifiedOnboardingForm from '@/components/Onboarding/SimplifiedOnboardingForm';
 import { logger } from '@/utils/logger';
+import { sessionManager } from '@/utils/sessionManager';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -12,14 +13,28 @@ export default function OnboardingPage() {
     // Check if user is authenticated
     const checkAuth = async () => {
       try {
-        const sessionResponse = await fetch('/api/auth/session');
+        // First check local session
+        const localSession = sessionManager.getSession();
+        const accessToken = sessionManager.getAccessToken();
+        
+        if (!localSession && !accessToken) {
+          logger.warn('[OnboardingPage] No local session found, checking server');
+        }
+        
+        const sessionResponse = await fetch('/api/auth/session', {
+          headers: accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}
+        });
+        
         if (!sessionResponse.ok || sessionResponse.status === 204) {
-          logger.warn('[OnboardingPage] No active session, redirecting to login');
-          router.push('/auth/email-signin');
-          return;
+          // If no server session and no local session, redirect to login
+          if (!localSession) {
+            logger.warn('[OnboardingPage] No active session, redirecting to login');
+            router.push('/auth/email-signin');
+            return;
+          }
         }
 
-        const session = await sessionResponse.json();
+        const session = localSession || await sessionResponse.json();
         if (!session || !session.user) {
           logger.warn('[OnboardingPage] Invalid session data, redirecting to login');
           router.push('/auth/email-signin');

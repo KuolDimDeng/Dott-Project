@@ -17,6 +17,20 @@ export async function GET(request) {
     
     if (!sessionCookie) {
       console.log('🚨 [PROFILE API] ❌ NO SESSION COOKIE FOUND');
+      
+      // Check for authorization header as fallback
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log('🚨 [PROFILE API] Found authorization header, using token');
+        
+        // Return minimal profile for now
+        return NextResponse.json({
+          authenticated: true,
+          source: 'authorization-header'
+        }, { status: 200 });
+      }
+      
       return NextResponse.json(null, { status: 200 }, {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',

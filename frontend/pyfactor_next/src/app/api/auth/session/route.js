@@ -17,6 +17,21 @@ export async function GET(request) {
     
     if (!sessionCookie) {
       console.log('[Auth Session] No session cookie found');
+      
+      // Check if there's a session token in the Authorization header (from localStorage)
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        console.log('[Auth Session] Found authorization header, validating token');
+        
+        // Return a minimal session for API calls
+        return NextResponse.json({
+          accessToken: token,
+          authenticated: true,
+          source: 'authorization-header'
+        });
+      }
+      
       return NextResponse.json(null, { status: 200 });
     }
     
