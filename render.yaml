@@ -1,14 +1,16 @@
 services:
   - type: web
     name: dott-frontend
-    runtime: node
+    env: node
+    region: oregon
+    rootDir: frontend/pyfactor_next
     buildCommand: pnpm install && pnpm run build:render
     startCommand: pnpm run start:render
     envVars:
+      - key: NODE_VERSION
+        value: "18"
       - key: NODE_ENV
         value: production
-      - key: NODE_VERSION
-        value: 18
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: NEXT_PUBLIC_BASE_URL
@@ -35,4 +37,5 @@ services:
         sync: false
       - key: NEXT_PUBLIC_CRISP_WEBSITE_ID
         sync: false
-    healthCheckPath: /api/auth/session
+    healthCheckPath: /
+    autoDeploy: true

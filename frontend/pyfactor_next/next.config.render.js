@@ -9,6 +9,9 @@ const nextConfig = {
   reactStrictMode: true,
   trailingSlash: false,
   
+  // Enable standalone output for Docker
+  output: 'standalone',
+  
   // Disable SWC minification for Render (use Terser instead)
   swcMinify: false,
   

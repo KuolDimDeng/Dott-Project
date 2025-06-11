@@ -21,6 +21,9 @@ const nextConfig = {
   reactStrictMode: true,
   trailingSlash: false,
   
+  // Enable standalone output when using Render config
+  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+  
   // Environment variables (workaround for dotenv package interference)
   env: {
     NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,

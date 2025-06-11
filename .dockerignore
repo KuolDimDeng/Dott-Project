@@ -1,0 +1,55 @@
+# Git files
+.git
+.gitignore
+
+# Dependencies
+node_modules
+frontend/pyfactor_next/node_modules
+
+# Next.js build output
+frontend/pyfactor_next/.next
+frontend/pyfactor_next/out
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+frontend/pyfactor_next/coverage
+frontend/pyfactor_next/.nyc_output
+
+# Temporary files
+tmp
+temp
+
+# Backend files (not needed for frontend build)
+backend/
+scripts/
+docs/
+*.md
+
+# Other unnecessary files
+.dockerignore
+Dockerfile
+docker-compose.yml
