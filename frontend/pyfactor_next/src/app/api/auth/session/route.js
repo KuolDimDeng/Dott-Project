@@ -15,6 +15,13 @@ export async function GET(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     
+    console.log('[Auth Session] Cookie check:', {
+      hasCookie: !!sessionCookie,
+      cookieName: sessionCookie?.name,
+      cookieSize: sessionCookie?.value?.length || 0,
+      allCookies: cookieStore.getAll().map(c => ({ name: c.name, size: c.value.length }))
+    });
+    
     if (!sessionCookie) {
       console.log('[Auth Session] No session cookie found');
       

@@ -20,17 +20,44 @@ export async function GET(request) {
       
       // Check for authorization header as fallback
       const authHeader = request.headers.get('authorization');
+      console.log('🚨 [PROFILE API] Authorization header check:', {
+        hasAuthHeader: !!authHeader,
+        startsWithBearer: authHeader?.startsWith('Bearer '),
+        headerLength: authHeader?.length || 0
+      });
+      
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         console.log('🚨 [PROFILE API] Found authorization header, using token');
+        console.log('🚨 [PROFILE API] Token preview:', token.substring(0, 20) + '...');
         
-        // Return minimal profile for now
-        return NextResponse.json({
-          authenticated: true,
-          source: 'authorization-header'
-        }, { status: 200 });
+        // Try to decode the token to get user info
+        try {
+          const base64Payload = token.split('.')[1];
+          const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString());
+          console.log('🚨 [PROFILE API] Decoded token payload:', {
+            sub: payload.sub,
+            email: payload.email,
+            exp: payload.exp,
+            iat: payload.iat
+          });
+          
+          // Return profile data based on token
+          return NextResponse.json({
+            authenticated: true,
+            source: 'authorization-header',
+            email: payload.email,
+            sub: payload.sub,
+            needsOnboarding: true, // Default to true since we can't check backend
+            onboardingCompleted: false,
+            currentStep: 'business_info'
+          }, { status: 200 });
+        } catch (decodeError) {
+          console.error('🚨 [PROFILE API] Error decoding token:', decodeError);
+        }
       }
       
+      console.log('🚨 [PROFILE API] Returning null response (no session/auth)');
       return NextResponse.json(null, { status: 200 }, {
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',
