@@ -37,7 +37,7 @@ export async function POST(request) {
     // Call backend to close account
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
     
-    const response = await fetch(`${apiBaseUrl}/api/auth0/close-account/`, {
+    const backendResponse = await fetch(`${apiBaseUrl}/api/auth0/close-account/`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -50,16 +50,16 @@ export async function POST(request) {
       })
     });
     
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (!backendResponse.ok) {
+      const errorText = await backendResponse.text();
       console.error('[CloseAccount] Backend error:', errorText);
       return NextResponse.json({ 
         error: 'Failed to close account',
         details: errorText 
-      }, { status: response.status });
+      }, { status: backendResponse.status });
     }
     
-    const result = await response.json();
+    const result = await backendResponse.json();
     
     console.log('[CloseAccount] Account closed successfully:', result);
     
