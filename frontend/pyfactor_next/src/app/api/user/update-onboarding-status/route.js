@@ -9,9 +9,9 @@ export async function POST(request) {
   console.log('[UPDATE_ONBOARDING_STATUS] Starting status update');
   
   try {
-    // 1. Get session
+    // 1. Get session - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       console.error('[UPDATE_ONBOARDING_STATUS] No session cookie found');

@@ -9,7 +9,7 @@ export async function POST(request) {
     console.log('[Session Refresh] Forcing session refresh after onboarding');
     
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
@@ -62,7 +62,7 @@ export async function POST(request) {
         needsOnboarding: false 
       });
       
-      response.cookies.set('appSession', updatedCookie, {
+      response.cookies.set('dott_auth_session', updatedCookie, {
         path: '/',
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

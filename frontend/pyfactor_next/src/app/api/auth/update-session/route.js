@@ -17,9 +17,9 @@ export async function POST(request) {
       onboardingCompleted
     });
     
-    // Get current session
+    // Get current session - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       logger.error('[UpdateSession] No session cookie found');
@@ -107,7 +107,7 @@ export async function POST(request) {
       cookieOptions.domain = '.dottapps.com'; // Leading dot allows subdomains
     }
     
-    response.cookies.set('appSession', updatedSessionCookie, cookieOptions);
+    response.cookies.set('dott_auth_session', updatedSessionCookie, cookieOptions);
     
     logger.info('[UpdateSession] Session updated successfully');
     

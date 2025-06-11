@@ -5,9 +5,9 @@ export async function GET(request) {
   try {
     console.log('[Auth Access Token] Getting access token');
     
-    // Try to get session from custom cookie first
+    // Try to get session from custom cookie first - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (sessionCookie) {
       try {

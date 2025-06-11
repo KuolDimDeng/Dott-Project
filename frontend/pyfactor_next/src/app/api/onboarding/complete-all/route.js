@@ -24,9 +24,9 @@ import { v4 as uuidv4 } from 'uuid';
  */
 async function validateAuth0Session(request) {
   try {
-    // First try to get session from cookie
+    // First try to get session from cookie - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (sessionCookie) {
       try {
@@ -352,7 +352,7 @@ export async function POST(request) {
     
     console.log('[CompleteOnboarding] Setting updated session cookie with onboarding complete status');
     console.log('[CompleteOnboarding] Cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
-    response.cookies.set('appSession', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
+    response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
     
     // Set additional cookies for compatibility
     response.cookies.set('onboardingCompleted', 'true', {

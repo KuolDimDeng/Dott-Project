@@ -8,9 +8,9 @@ export async function GET(request) {
   try {
     console.log('[Profile API] Getting user profile data');
     
-    // Get Auth0 session cookie
+    // Get Auth0 session cookie - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     console.log('🚨 [PROFILE API] Session cookie exists:', !!sessionCookie);
     console.log('🚨 [PROFILE API] Session cookie size:', sessionCookie?.value?.length || 0, 'bytes');

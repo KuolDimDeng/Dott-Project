@@ -21,9 +21,9 @@ export async function POST(request) {
       }
     }
     
-    // Get session from cookie
+    // Get session from cookie - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     let sessionData;
     if (sessionCookie) {

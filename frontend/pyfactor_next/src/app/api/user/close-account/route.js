@@ -75,13 +75,13 @@ export async function POST(request) {
     // 1. Get and validate session
     console.log('[CLOSE_ACCOUNT] Step 1: Validating Auth0 session');
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       console.error('[CLOSE_ACCOUNT] No session cookie found');
       return NextResponse.json({ 
         error: 'Not authenticated',
-        debug: 'No appSession cookie found'
+        debug: 'No dott_auth_session or appSession cookie found'
       }, { status: 401 });
     }
     
@@ -397,7 +397,8 @@ export async function POST(request) {
     
     // Clear all auth-related cookies
     const cookiesToClear = [
-      'appSession',
+      'dott_auth_session',  // New secure cookie
+      'appSession',         // Old cookie for compatibility
       'auth0.is.authenticated',
       'auth0-session',
       'user_tenant_id',

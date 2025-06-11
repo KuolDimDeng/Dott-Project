@@ -24,7 +24,7 @@ export async function GET(request) {
     console.log('[Auth Session] Getting session data');
     
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('dott_auth_session');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       // For backward compatibility, check Authorization header
