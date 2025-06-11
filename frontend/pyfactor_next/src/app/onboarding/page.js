@@ -30,8 +30,15 @@ export default function OnboardingPage() {
         }
         
         console.log('[OnboardingPage] Fetching server session...');
+        const headers = {};
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const sessionResponse = await fetch('/api/auth/session', {
-          headers: accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}
+          method: 'GET',
+          headers: headers,
+          credentials: 'include' // Ensure cookies are sent
         });
         
         console.log('[OnboardingPage] Session response:', {
@@ -74,8 +81,15 @@ export default function OnboardingPage() {
 
         // Check if user has already completed onboarding
         console.log('[OnboardingPage] Checking profile for onboarding status...');
+        const profileHeaders = {};
+        if (accessToken) {
+          profileHeaders['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
         const profileResponse = await fetch('/api/auth/profile', {
-          headers: accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {}
+          method: 'GET',
+          headers: profileHeaders,
+          credentials: 'include' // Ensure cookies are sent
         });
         
         console.log('[OnboardingPage] Profile response:', {

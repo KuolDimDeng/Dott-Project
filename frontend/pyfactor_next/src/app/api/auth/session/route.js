@@ -31,6 +31,34 @@ export async function GET(request) {
         const token = authHeader.substring(7);
         console.log('[Auth Session] Found authorization header, validating token');
         
+        try {
+          // Try to decode the token to get user info
+          const parts = token.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+            console.log('[Auth Session] Decoded token payload:', {
+              email: payload.email,
+              sub: payload.sub,
+              exp: payload.exp
+            });
+            
+            // Return full session data from token
+            return NextResponse.json({
+              user: {
+                email: payload.email,
+                sub: payload.sub,
+                needsOnboarding: true, // Default, will be overridden by profile check
+                onboardingCompleted: false
+              },
+              accessToken: token,
+              authenticated: true,
+              source: 'authorization-header'
+            });
+          }
+        } catch (error) {
+          console.error('[Auth Session] Error decoding token:', error);
+        }
+        
         // Return a minimal session for API calls
         return NextResponse.json({
           accessToken: token,
@@ -208,10 +236,21 @@ export async function POST(request) {
     
     // Add domain in production to ensure cookie works across subdomains
     if (process.env.NODE_ENV === 'production') {
-      cookieOptions.domain = '.dottapps.com'; // Leading dot allows subdomains
+      // Don't set domain - let the browser handle it based on the current domain
+      // This ensures the cookie works whether accessed via dottapps.com or any subdomain
+      // cookieOptions.domain = '.dottapps.com'; // Commenting out - may cause issues
     }
     
     response.cookies.set('appSession', sessionCookie, cookieOptions);
+    
+    // Also try setting a test cookie to debug
+    response.cookies.set('test-cookie', 'test-value', {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 3600,
+      path: '/'
+    });
     
     addDebugEntry('Session cookie set', {
       cookieOptions: cookieOptions,
