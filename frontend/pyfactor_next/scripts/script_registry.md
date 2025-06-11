@@ -437,3 +437,17 @@ ll scripts used for the pyfactor project, their execution status, and their purp
   - src/app/api/auth/[...auth0]/route.js
   - src/app/layout.js
   - src/app/api/onboarding/complete-all/route.js
+
+## Version0029_fix_user_profile_repeated_calls.mjs
+- **Date**: 2025-01-06
+- **Status**: ✅ Completed
+- **Purpose**: Fix repeated API calls to /api/user/profile by properly memoizing the fetch function
+- **Target**: UserProfileContext.js
+- **Changes**:
+  1. Fixed useEffect dependency array to prevent re-runs
+  2. Added hasFetchedRef to track if profile has been fetched
+  3. Updated initial fetch logic to run only once on mount
+  4. Ensured proper imports are in place
+- **Result**: Prevents repeated calls to /api/user/profile API endpoint
+- **Files Modified**:
+  - src/contexts/UserProfileContext.js

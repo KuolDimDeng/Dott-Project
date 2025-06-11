@@ -160,8 +160,6 @@ const transformCognitoAttributes = (attributes) => {
 };
 
 export function UserProfileProvider({ children }) {
-  // Ref to track if we've already initiated a fetch
-  const hasFetchedRef = useRef(false);
   // State for cached profile data
   const [profileCache, setProfileCache] = useState({
     data: null,
@@ -484,7 +482,7 @@ export function UserProfileProvider({ children }) {
     debounce((tenantId, forceRefresh) => fetchProfileData(tenantId, forceRefresh), 300),
   [fetchProfileData]);
   
-    // Fetch profile data on mount to ensure it's always available (optimized with deduplication)
+  // Fetch profile data on mount to ensure it's always available (optimized with deduplication)
   useEffect(() => {
     // Check if we're on a public page that doesn't need authentication
     const isPublicPage = () => {
@@ -497,14 +495,12 @@ export function UserProfileProvider({ children }) {
     // Check if we're in a sign-up flow where profile fetching should be minimal
     const inSignUpFlow = isInSignUpFlow();
     
-    // Skip if we're on a public page, in sign-up flow, already have data, or already fetched
-    if (isPublicPage() || inSignUpFlow || profileCache.data || profileCache.loading || hasFetchedRef.current) {
+    // Skip if we're on a public page, in sign-up flow, or already have data
+    if (isPublicPage() || inSignUpFlow || profileCache.data || profileCache.loading) {
       if (isPublicPage()) {
         logger.debug('[UserProfileContext] On public page, skipping initial profile fetch');
       } else if (inSignUpFlow) {
         logger.debug('[UserProfileContext] In sign-up flow, skipping initial profile fetch');
-      } else if (hasFetchedRef.current) {
-        logger.debug('[UserProfileContext] Already fetched profile, skipping');
       }
       return;
     }
@@ -514,9 +510,6 @@ export function UserProfileProvider({ children }) {
       logger.debug('[UserProfileContext] Profile fetch already in progress, skipping');
       return;
     }
-    
-    // Mark that we've initiated a fetch
-    hasFetchedRef.current = true;
     
     // Try to determine tenant ID from localStorage
     const localTenantId = typeof window !== 'undefined' 
@@ -530,14 +523,23 @@ export function UserProfileProvider({ children }) {
       window.__profileFetchInProgress = true;
     }
     
-    // Directly call fetchProfileData instead of debouncedFetchProfile for initial load
-    fetchProfileData(localTenantId)
-      .finally(() => {
+    // Safely call debouncedFetchProfile with error handling
+    const fetchPromise = debouncedFetchProfile(localTenantId);
+    if (fetchPromise && typeof fetchPromise.finally === 'function') {
+      fetchPromise.finally(() => {
         if (typeof window !== 'undefined') {
           window.__profileFetchInProgress = false;
         }
       });
-  }, []); // Empty dependency array - only run once on mount
+    } else {
+      // Fallback if promise is not returned
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.__profileFetchInProgress = false;
+        }, 1000);
+      }
+    }
+  }, [debouncedFetchProfile, profileCache.data, profileCache.loading]);
   
   // Exposed context value
   const contextValue = useMemo(() => ({
