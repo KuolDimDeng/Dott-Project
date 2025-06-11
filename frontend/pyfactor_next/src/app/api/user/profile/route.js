@@ -13,9 +13,9 @@ export async function GET(request) {
   try {
     logger.debug(`[UserProfile API] Fetching profile with Auth0 session, request ${requestId}`);
     
-    // Get Auth0 session from cookies
+    // Get Auth0 session from cookies - try new name first, then old
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       logger.warn(`[UserProfile API] No Auth0 session found, request ${requestId}`);
