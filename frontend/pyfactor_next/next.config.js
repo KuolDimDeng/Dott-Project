@@ -173,20 +173,19 @@ const nextConfig = {
     ];
   },
 
-  // UPDATED: API rewrites for global CloudFront distribution
-  async rewrites() {
-    return [
-      // ENABLED: Global API with CloudFront (no rewrites needed - direct API calls)
-      {
-        source: '/api/backend-health',
-        destination: `${BACKEND_API_URL}/health/`
-      },
-      {
-        source: '/api/backend/:path*',
-        destination: `${BACKEND_API_URL}/:path*`
-      }
-    ];
-  },
+  // API rewrites - commented out as we're using API route proxy
+  // async rewrites() {
+  //   return [
+  //     {
+  //       source: '/api/backend-health',
+  //       destination: `${BACKEND_API_URL}/health/`
+  //     },
+  //     {
+  //       source: '/api/backend/:path*',
+  //       destination: `${BACKEND_API_URL}/:path*`
+  //     }
+  //   ];
+  // },
 
   // Redirects for common routes
   async redirects() {

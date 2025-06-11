@@ -234,22 +234,26 @@ export async function POST(request) {
       path: '/'
     };
     
-    // Add domain in production to ensure cookie works across subdomains
+    // Cookie configuration for production
     if (process.env.NODE_ENV === 'production') {
-      // Don't set domain - let the browser handle it based on the current domain
-      // This ensures the cookie works whether accessed via dottapps.com or any subdomain
-      // cookieOptions.domain = '.dottapps.com'; // Commenting out - may cause issues
+      // For Render deployment, ensure cookies work properly
+      // Try without domain first to see if it resolves the issue
+      delete cookieOptions.domain;
+      
+      // If frontend and backend are on same domain, use 'strict'
+      // If on different domains, use 'none' with secure
+      if (process.env.NEXT_PUBLIC_API_URL?.includes('dottapps.com')) {
+        cookieOptions.sameSite = 'lax';
+      }
     }
     
     response.cookies.set('appSession', sessionCookie, cookieOptions);
     
-    // Also try setting a test cookie to debug
-    response.cookies.set('test-cookie', 'test-value', {
-      httpOnly: false,
-      secure: true,
-      sameSite: 'lax',
-      maxAge: 3600,
-      path: '/'
+    // Log cookie details for debugging
+    console.log('[Auth Session POST] Cookie set with options:', {
+      ...cookieOptions,
+      valueLength: sessionCookie.length,
+      domain: cookieOptions.domain || 'auto'
     });
     
     addDebugEntry('Session cookie set', {
