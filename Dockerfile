@@ -24,6 +24,9 @@ RUN npm install -g pnpm@8.10.0
 COPY --from=deps /app/node_modules ./node_modules
 COPY frontend/pyfactor_next/ .
 
+# Copy production env file for build
+COPY frontend/pyfactor_next/.env.production ./.env.production
+
 # Build the application with standalone output
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
@@ -33,16 +36,16 @@ ENV BUILD_STANDALONE true
 # These are required for the build to succeed
 ARG NEXT_PUBLIC_API_URL=https://api.dottapps.com
 ARG NEXT_PUBLIC_BASE_URL=https://dottapps.com
-ARG NEXT_PUBLIC_AUTH0_DOMAIN=auth.dottapps.com
-ARG NEXT_PUBLIC_AUTH0_CLIENT_ID
-ARG NEXT_PUBLIC_AUTH0_AUDIENCE
+ARG NEXT_PUBLIC_AUTH0_DOMAIN=dev-cbyy63jovi6zrcos.us.auth0.com
+ARG NEXT_PUBLIC_AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
+ARG NEXT_PUBLIC_AUTH0_AUDIENCE=https://api.dottapps.com
 ARG AUTH0_SECRET
 ARG AUTH0_BASE_URL=https://dottapps.com
-ARG AUTH0_ISSUER_BASE_URL
-ARG AUTH0_CLIENT_ID
+ARG AUTH0_ISSUER_BASE_URL=https://dev-cbyy63jovi6zrcos.us.auth0.com
+ARG AUTH0_CLIENT_ID=9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
 ARG AUTH0_CLIENT_SECRET
-ARG AUTH0_AUDIENCE
-ARG AUTH0_SCOPE
+ARG AUTH0_AUDIENCE=https://api.dottapps.com
+ARG AUTH0_SCOPE="openid profile email"
 ARG NEXT_PUBLIC_CRISP_WEBSITE_ID
 
 # Convert ARGs to ENVs for the build
