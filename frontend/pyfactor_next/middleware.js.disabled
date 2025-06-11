@@ -1,0 +1,12 @@
+// Simplified middleware for Render deployment
+// Render's runtime doesn't allow code generation from strings
+export function middleware(request) {
+  // Minimal middleware - just pass through all requests
+  // Auth handling is done at the API route level
+  return null; // This tells Next.js to continue normally
+}
+
+// Only match specific paths that absolutely need middleware
+export const config = {
+  matcher: []
+};

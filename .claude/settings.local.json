@@ -83,7 +83,8 @@
       "Bash(./trigger-render-deployment.sh:*)",
       "Bash(./monitor-render-deployment.sh:*)",
       "Bash(./test-deployment-success.sh:*)",
-      "Bash(./force-backend-deployment.sh:*)"
+      "Bash(./force-backend-deployment.sh:*)",
+      "Bash(./deploy-frontend-render.sh:*)"
     ],
     "deny": []
   }
