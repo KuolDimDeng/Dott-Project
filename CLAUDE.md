@@ -12,6 +12,7 @@
 - CSS Framework: Tailwind CSS only (no MUI)
 - Database: render database "dott-db" with Row-Level Security and tenant isolation
 - Language: JavaScript (not TypeScript)
+- app is using a custom authentication flow, not the standard Auth0 SDK.
 - Package Manager: PNPM
 - Environment: Production mode only
 - Data: No mock data

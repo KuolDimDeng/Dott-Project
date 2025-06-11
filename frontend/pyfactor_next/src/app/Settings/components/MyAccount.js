@@ -178,8 +178,8 @@ const MyAccount = ({ userData }) => {
             await new Promise(resolve => setTimeout(resolve, 1000 * retries));
           }
           
-          console.log('[CLOSE_ACCOUNT_UI] Calling close-account-fixed API');
-      const response = await fetch('/api/user/close-account-fixed', {
+          console.log('[CLOSE_ACCOUNT_UI] Calling close-account-simple API');
+      const response = await fetch('/api/user/close-account-simple', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
