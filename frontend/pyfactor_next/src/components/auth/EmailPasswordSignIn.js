@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { sessionManager } from '@/utils/sessionManager';
+import { secureLogin } from '@/utils/secureAuth';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
@@ -200,11 +201,11 @@ export default function EmailPasswordSignIn() {
         throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
-      // Create session
+      // Create secure session (cookie-based)
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', // Include cookies
+        credentials: 'include', // Important: include cookies for cross-subdomain
         body: JSON.stringify({
           accessToken: authResult.access_token,
           idToken: authResult.id_token,
@@ -218,14 +219,11 @@ export default function EmailPasswordSignIn() {
 
       const sessionResult = await sessionResponse.json();
       
-      // Save session to localStorage as backup
-      sessionManager.saveSession({
-        accessToken: authResult.access_token,
-        access_token: authResult.access_token,
-        idToken: authResult.id_token,
-        id_token: authResult.id_token,
-        user: authResult.user
-      }, authResult.expires_in || 86400);
+      // DEPRECATED: Remove localStorage usage after testing
+      // Only keeping temporarily for backward compatibility
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[SecurityWarning] localStorage usage is deprecated. Use secure cookies instead.');
+      }
 
       // Use unified auth flow handler
       const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');

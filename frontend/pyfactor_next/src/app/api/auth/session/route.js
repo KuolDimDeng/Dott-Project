@@ -2,283 +2,221 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
 
+// Cookie configuration for production
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  path: '/',
+  maxAge: 7 * 24 * 60 * 60, // 7 days
+  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+};
+
 /**
- * Custom session endpoint to ensure properly formatted JSON responses
- * This endpoint is called by the Next Auth client library
- * Falls back to Cognito when NextAuth fails
+ * Session endpoint - Handles secure session management
+ * GET: Retrieve current session
+ * POST: Create new session (login)
+ * DELETE: Clear session (logout)
  */
+
 export async function GET(request) {
   try {
-    console.log('[Auth Session] Getting Auth0 session data');
+    console.log('[Auth Session] Getting session data');
     
-    // Try to get session from custom cookie first
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
-    
-    console.log('[Auth Session] Cookie check:', {
-      hasCookie: !!sessionCookie,
-      cookieName: sessionCookie?.name,
-      cookieSize: sessionCookie?.value?.length || 0,
-      allCookies: cookieStore.getAll().map(c => ({ name: c.name, size: c.value.length }))
-    });
+    const sessionCookie = cookieStore.get('dott_auth_session');
     
     if (!sessionCookie) {
-      console.log('[Auth Session] No session cookie found');
-      
-      // Check if there's a session token in the Authorization header (from localStorage)
+      // For backward compatibility, check Authorization header
+      // This should be removed once all clients use cookies
       const authHeader = request.headers.get('authorization');
       if (authHeader && authHeader.startsWith('Bearer ')) {
+        console.warn('[Auth Session] Using deprecated Authorization header method');
         const token = authHeader.substring(7);
-        console.log('[Auth Session] Found authorization header, validating token');
         
         try {
-          // Try to decode the token to get user info
+          // Decode token for user info
           const parts = token.split('.');
           if (parts.length === 3) {
             const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-            console.log('[Auth Session] Decoded token payload:', {
-              email: payload.email,
-              sub: payload.sub,
-              exp: payload.exp
-            });
             
-            // Return full session data from token
+            // Check expiration
+            if (payload.exp && Date.now() / 1000 > payload.exp) {
+              return NextResponse.json(null, { status: 200 });
+            }
+            
             return NextResponse.json({
               user: {
                 email: payload.email,
                 sub: payload.sub,
-                needsOnboarding: true, // Default, will be overridden by profile check
-                onboardingCompleted: false
+                name: payload.name || payload.email
               },
               accessToken: token,
               authenticated: true,
-              source: 'authorization-header'
+              warning: 'Please update to cookie-based authentication'
             });
           }
         } catch (error) {
-          console.error('[Auth Session] Error decoding token:', error);
+          console.error('[Auth Session] Token decode error:', error);
         }
-        
-        // Return a minimal session for API calls
-        return NextResponse.json({
-          accessToken: token,
-          authenticated: true,
-          source: 'authorization-header'
-        });
       }
       
       return NextResponse.json(null, { status: 200 });
     }
     
+    // Parse secure session cookie
     let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-    } catch (parseError) {
-      console.error('[Auth Session] Error parsing session cookie:', parseError);
+    } catch (error) {
+      console.error('[Auth Session] Cookie parse error:', error);
       return NextResponse.json(null, { status: 200 });
     }
     
-    // Check if session is expired
-    if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
+    // Validate session
+    if (!sessionData.user || !sessionData.accessToken) {
+      return NextResponse.json(null, { status: 200 });
+    }
+    
+    // Check expiration
+    if (sessionData.expiresAt && Date.now() > sessionData.expiresAt) {
       console.log('[Auth Session] Session expired');
       return NextResponse.json(null, { status: 200 });
     }
     
-    const { user, accessToken, idToken } = sessionData;
+    console.log('[Auth Session] Valid session found for:', sessionData.user.email);
     
-    if (!user) {
-      console.log('[Auth Session] No user in session data');
-      return NextResponse.json(null, { status: 200 });
-    }
-    
-    console.log('[Auth Session] Session found for user:', user.email);
-    
-    // Return session data in the format expected by the callback
+    // Return session data (never include sensitive tokens in response)
     return NextResponse.json({
-      user: user,
-      accessToken: accessToken,
-      idToken: idToken,
+      user: sessionData.user,
       authenticated: true,
-      source: 'session-cookie'
+      expiresAt: sessionData.expiresAt
     });
     
   } catch (error) {
-    console.error('[Auth Session] Error getting session:', error);
-    return NextResponse.json({ error: 'Failed to get session' }, { status: 500 });
+    console.error('[Auth Session] GET error:', error);
+    return NextResponse.json({ 
+      error: 'Session error' 
+    }, { status: 500 });
   }
 }
 
-/**
- * Create a new session from Auth0 tokens
- * Used by the EmailPasswordSignIn component after successful authentication
- */
 export async function POST(request) {
-  const debugLog = [];
-  
-  const addDebugEntry = (message, data = {}) => {
-    const entry = {
-      timestamp: new Date().toISOString(),
-      message,
-      ...data
-    };
-    debugLog.push(entry);
-    logger.info(`[Auth Session POST] ${message}`, data);
-  };
-  
   try {
-    addDebugEntry('Creating new session from tokens');
+    console.log('[Auth Session POST] Creating new session');
     
     const body = await request.json();
     const { accessToken, idToken, user } = body;
     
-    addDebugEntry('Request body received', {
-      hasAccessToken: !!accessToken,
-      hasIdToken: !!idToken,
-      hasUser: !!user,
-      userEmail: user?.email
-    });
-    
     if (!accessToken || !user) {
-      addDebugEntry('Missing required session data');
-      return NextResponse.json(
-        { 
-          error: 'Missing required session data',
-          debugLog 
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({ 
+        error: 'Missing required session data' 
+      }, { status: 400 });
     }
+    
+    console.log('[Auth Session POST] Creating session for:', user.email);
     
     // Check onboarding status
     let needsOnboarding = true;
     let tenantId = null;
-    let businessName = null;
     
-    // Check various metadata locations for onboarding status
-    const userMetadata = user['https://dottapps.com/user_metadata'] || {};
-    const appMetadata = user['https://dottapps.com/app_metadata'] || {};
-    
-    // Check for onboarding completion
-    const onboardingComplete = 
-      userMetadata.onboardingCompleted === 'true' ||  // Check the correct field name
-      userMetadata.onboardingComplete === 'true' || 
-      userMetadata.custom_onboardingComplete === 'true' ||
-      userMetadata.custom_onboarding === 'complete' ||
-      appMetadata.onboardingComplete === 'true' ||
-      appMetadata.onboardingCompleted === 'true';
-    
-    if (onboardingComplete) {
-      needsOnboarding = false;
+    try {
+      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+        needsOnboarding = profileData.needs_onboarding !== false;
+        tenantId = profileData.tenant_id;
+      }
+    } catch (error) {
+      console.error('[Auth Session POST] Profile check error:', error);
     }
     
-    // Extract tenant ID
-    tenantId = userMetadata.tenantId || 
-               userMetadata.custom_tenantId || 
-               user.custom_tenantId ||
-               user.tenantId || 
-               null;
-    
-    // Extract business name
-    businessName = userMetadata.businessName ||
-                   userMetadata.custom_businessName ||
-                   user.businessName ||
-                   null;
-    
-    addDebugEntry('Onboarding status checked', {
-      needsOnboarding,
-      onboardingComplete,
-      tenantId,
-      businessName
-    });
-    
-    // Create session data - ensure consistent token field names
+    // Create secure session data
     const sessionData = {
       user: {
         ...user,
         needsOnboarding,
-        onboardingCompleted: !needsOnboarding,
-        tenantId,
-        businessName
+        tenantId
       },
-      accessToken: accessToken,
-      access_token: accessToken,  // Store both formats for compatibility
-      idToken: idToken,
-      id_token: idToken,  // Store both formats for compatibility
-      accessTokenExpiresAt: Date.now() + (3600 * 1000) // Default 1 hour
+      accessToken,
+      idToken,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
     };
     
-    // Encode session as base64
-    const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Encode session data
+    const encodedSession = Buffer.from(JSON.stringify(sessionData)).toString('base64');
     
-    addDebugEntry('Session created', {
-      userEmail: sessionData.user.email,
-      needsOnboarding: sessionData.user.needsOnboarding,
-      tenantId: sessionData.user.tenantId
-    });
-    
-    // Create response with session cookie
+    // Create response
     const response = NextResponse.json({
       success: true,
-      user: sessionData.user,
-      needsOnboarding,
-      tenantId,
-      debugLog
-    });
-    
-    // Set session cookie
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true, // Always use secure in production
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60, // 7 days (match update-session)
-      path: '/'
-    };
-    
-    // Cookie configuration for production
-    if (process.env.NODE_ENV === 'production') {
-      // For Render deployment, ensure cookies work properly
-      // Try without domain first to see if it resolves the issue
-      delete cookieOptions.domain;
-      
-      // If frontend and backend are on same domain, use 'strict'
-      // If on different domains, use 'none' with secure
-      if (process.env.NEXT_PUBLIC_API_URL?.includes('dottapps.com')) {
-        cookieOptions.sameSite = 'lax';
+      user: {
+        ...user,
+        needsOnboarding,
+        tenantId
       }
-    }
-    
-    response.cookies.set('appSession', sessionCookie, cookieOptions);
-    
-    // Log cookie details for debugging
-    console.log('[Auth Session POST] Cookie set with options:', {
-      ...cookieOptions,
-      valueLength: sessionCookie.length,
-      domain: cookieOptions.domain || 'auto'
     });
     
-    addDebugEntry('Session cookie set', {
-      cookieOptions: cookieOptions,
-      sessionDataSize: sessionCookie.length,
-      nodeEnv: process.env.NODE_ENV
+    // Set secure HttpOnly cookie
+    response.cookies.set('dott_auth_session', encodedSession, COOKIE_OPTIONS);
+    
+    console.log('[Auth Session POST] Session created successfully');
+    
+    return response;
+    
+  } catch (error) {
+    console.error('[Auth Session POST] Error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to create session' 
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    console.log('[Auth Session DELETE] Clearing session');
+    
+    const response = NextResponse.json({ 
+      success: true,
+      message: 'Session cleared' 
+    });
+    
+    // Clear the session cookie
+    response.cookies.set('dott_auth_session', '', {
+      ...COOKIE_OPTIONS,
+      maxAge: 0
+    });
+    
+    // Also clear any legacy cookies
+    response.cookies.set('appSession', '', {
+      ...COOKIE_OPTIONS,
+      maxAge: 0
     });
     
     return response;
     
   } catch (error) {
-    addDebugEntry('Error creating session', {
-      error: error.message,
-      stack: error.stack
-    });
-    
-    logger.error('[Auth Session POST] Error:', error);
-    
-    return NextResponse.json(
-      { 
-        error: 'Failed to create session',
-        message: error.message,
-        debugLog
-      },
-      { status: 500 }
-    );
+    console.error('[Auth Session DELETE] Error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to clear session' 
+    }, { status: 500 });
   }
-} 
+}
+
+// Handle preflight requests
+export async function OPTIONS(request) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Credentials': 'true'
+    }
+  });
+}

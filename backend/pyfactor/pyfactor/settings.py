@@ -174,10 +174,17 @@ CORS_ALLOWED_ORIGINS = [
     # Backend URLs
     'https://localhost:8000',
     'https://127.0.0.1:8000',
-    # Production
+    # Production - Dott domains
+    'https://dottapps.com',
+    'https://www.dottapps.com',
+    'https://api.dottapps.com',
+    # Legacy domains (can be removed later)
     'https://pyfactor.ai',
     'https://*.pyfactor.ai',
 ]
+
+# Enable credentials for secure cookie authentication
+CORS_ALLOW_CREDENTIALS = True
 
 # Set to False to use the allowed origins list instead
 CORS_ORIGIN_ALLOW_ALL = False
@@ -257,10 +264,15 @@ CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = True
 CSRF_TRUSTED_ORIGINS = [
+    # Local development
     "https://localhost:3000",
     "https://127.0.0.1:3000",
-    "https://localhost:8000",  # Add HTTPS backend
-    "https://127.0.0.1:8000"   # Add HTTPS backend
+    "https://localhost:8000",
+    "https://127.0.0.1:8000",
+    # Production - Dott domains
+    "https://dottapps.com",
+    "https://www.dottapps.com",
+    "https://api.dottapps.com"
 ]
 
 # Authentication settings for dj-rest-auth and allauth
@@ -503,8 +515,8 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = 'sessionid'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SAMESITE = 'None'  # Even in development for cross-origin
-CSRF_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SAMESITE = 'Lax'  # More secure for same parent domain
+CSRF_COOKIE_SAMESITE = 'Lax'  # More secure for same parent domain
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'  # Use this instead of 'db'
 

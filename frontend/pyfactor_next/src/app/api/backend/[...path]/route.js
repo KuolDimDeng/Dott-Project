@@ -37,7 +37,8 @@ async function proxyRequest(request, { params }, method) {
     
     // Get cookies from the request
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    // Try new secure cookie first, fallback to old one
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     // Build headers
     const headers = new Headers();

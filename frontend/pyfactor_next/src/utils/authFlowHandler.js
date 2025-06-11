@@ -25,6 +25,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       headers: {
         'Content-Type': 'application/json'
       },
+      credentials: 'include', // Include cookies
       body: JSON.stringify({
         email: authData.user.email,
         sub: authData.user.sub,
@@ -57,7 +58,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Step 2: Check latest onboarding status from profile API
     let profileData = null;
     try {
-      const profileResponse = await fetch('/api/auth/profile');
+      const profileResponse = await fetch('/api/auth/profile', {
+        credentials: 'include' // Include cookies
+      });
       if (profileResponse.ok) {
         profileData = await profileResponse.json();
         logger.info('[AuthFlowHandler] Profile data retrieved', {
@@ -148,7 +151,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         await fetch('/api/auth/update-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin', // Include cookies
+          credentials: 'include', // Use 'include' for cross-subdomain
           body: JSON.stringify({
             needsOnboarding: true,
             onboardingCompleted: false
@@ -169,7 +172,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       await fetch('/api/auth/update-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin', // Include cookies
+        credentials: 'include', // Use 'include' for cross-subdomain
         body: JSON.stringify({
           tenantId: finalUserData.tenantId,
           needsOnboarding: finalUserData.needsOnboarding,

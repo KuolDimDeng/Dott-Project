@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast';
 // DO NOT directly import scripts here as they will run in server context
 import TailwindCDNBlocker from '@/components/TailwindCDNBlocker';
 import CrispChatProvider from '@/components/CrispChatProvider';
+import AuthMigrationProvider from '@/components/AuthMigrationProvider';
 // Scripts will be loaded via next/script in the component
 
 const inter = Inter({ subsets: ['latin'] });
@@ -26,9 +27,11 @@ export default function RootLayout({ children }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </head>
       <body className={inter.className}>
-        <CrispChatProvider>
-          {children}
-        </CrispChatProvider>
+        <AuthMigrationProvider>
+          <CrispChatProvider>
+            {children}
+          </CrispChatProvider>
+        </AuthMigrationProvider>
         <TailwindCDNBlocker />
         <Toaster 
           position="top-right"
