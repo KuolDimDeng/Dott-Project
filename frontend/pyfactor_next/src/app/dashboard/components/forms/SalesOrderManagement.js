@@ -35,7 +35,7 @@ const SalesOrderManagement = () => {
   const fetchSalesOrders = async () => {
     try {
       console.log('[DEBUG] Fetching sales orders from API');
-      const response = await axiosInstance.get('/api/salesorders/');
+      const response = await axiosInstance.get('/salesorders/');
       
       console.log('[DEBUG] Sales orders response:', response.data);
       console.log('[DEBUG] Number of sales orders fetched:', response.data?.length || 0);
@@ -61,7 +61,7 @@ const SalesOrderManagement = () => {
   const fetchCustomers = async () => {
     try {
       console.log('[DEBUG] Fetching customers from API');
-      const response = await axiosInstance.get('/api/customers/');
+      const response = await axiosInstance.get('/customers/');
       
       console.log('[DEBUG] Customers response:', response.data);
       console.log('[DEBUG] Customers response type:', typeof response.data);
@@ -96,7 +96,7 @@ const SalesOrderManagement = () => {
   const fetchProducts = async () => {
     try {
       console.log('[DEBUG] Fetching products from API');
-      const response = await axiosInstance.get('/api/products/');
+      const response = await axiosInstance.get('/products/');
       
       console.log('[DEBUG] Products response:', response.data);
       console.log('[DEBUG] Products response type:', typeof response.data);
@@ -131,7 +131,7 @@ const SalesOrderManagement = () => {
   const fetchServices = async () => {
     try {
       console.log('[DEBUG] Fetching services from API');
-      const response = await axiosInstance.get('/api/services/');
+      const response = await axiosInstance.get('/services/');
       
       console.log('[DEBUG] Services response:', response.data);
       console.log('[DEBUG] Services response type:', typeof response.data);
@@ -272,7 +272,7 @@ const SalesOrderManagement = () => {
 
       console.log('[DEBUG] Sending sales order data to backend:', salesOrderData);
 
-      const response = await axiosInstance.post('/api/salesorders/create/', salesOrderData);
+      const response = await axiosInstance.post('/salesorders/create/', salesOrderData);
       
       console.log('[DEBUG] Sales order creation response:', response.data);
       toast.success('Sales order created successfully');
@@ -336,7 +336,7 @@ const SalesOrderManagement = () => {
       console.log('[DEBUG] Updated data:', editedSalesOrder);
       
       const response = await axiosInstance.put(
-        `/api/salesorders/${selectedSalesOrder.id}/`,
+        `/salesorders/${selectedSalesOrder.id}/`,
         editedSalesOrder
       );
       
@@ -371,7 +371,7 @@ const SalesOrderManagement = () => {
     try {
       console.log('[DEBUG] Deleting sales order with ID:', selectedSalesOrder.id);
       
-      await axiosInstance.delete(`/api/salesorders/${selectedSalesOrder.id}/`);
+      await axiosInstance.delete(`/salesorders/${selectedSalesOrder.id}/`);
       
       console.log('[DEBUG] Sales order deleted successfully');
       

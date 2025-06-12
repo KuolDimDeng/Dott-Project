@@ -59,7 +59,7 @@ const SalesReportsManagement = () => {
       setIsLoading(true);
       setReportData(null);
 
-      const response = await axiosInstance.get('/api/reports/sales/', {
+      const response = await axiosInstance.get('/reports/sales/', {
         params: {
           report_type: selectedReportType,
           start_date: dateRange.startDate,

@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { invoiceApi, customerApi, productApi, serviceApi } from '@/utils/apiClient';
 import { useMemoryOptimizer } from '@/utils/memoryManager';
 import { logger } from '@/utils/logger';
+import { axiosInstance } from '@/lib/axiosConfig';
 import { useNotification } from '@/context/NotificationContext';
 import PropTypes from 'prop-types';
 import { toast } from 'react-hot-toast';
@@ -123,31 +124,27 @@ const [state, dispatch] = useReducer(reducer, initialState);
       console.log('[InvoiceManagement] Fetching invoices...');
       
       try {
-        const response = await fetch('/api/invoices', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            operation: 'getAll',
-            tenantId: getCacheValue('tenantId'),
-            schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
-          })
+        const response = await axiosInstance.post('/invoices', { 
+          operation: 'getAll',
+          tenantId: getCacheValue('tenantId'),
+          schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
         });
         
         // Check if data is HTML instead of JSON
-        if (typeof response === 'string' && response.trim().startsWith('<!DOCTYPE html>')) {
+        if (typeof response.data === 'string' && response.data.trim().startsWith('<!DOCTYPE html>')) {
           console.error('[InvoiceManagement] Received HTML response instead of JSON for invoices');
           setInvoices([]);
           notifyError('Server returned an invalid response. Please try again later.');
           return;
         }
         
-        console.log('[InvoiceManagement] Invoices data:', response);
+        console.log('[InvoiceManagement] Invoices data:', response.data);
         
         // Set the invoices state only if we have valid data
-        if (Array.isArray(response)) {
-          setInvoices(response);
+        if (Array.isArray(response.data)) {
+          setInvoices(response.data);
         } else {
-          console.warn('[InvoiceManagement] Invalid invoice data format:', typeof response);
+          console.warn('[InvoiceManagement] Invalid invoice data format:', typeof response.data);
           setInvoices([]);
           notifyError('Invalid invoice data format received');
         }
@@ -174,18 +171,14 @@ const [state, dispatch] = useReducer(reducer, initialState);
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch('/api/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          operation: 'getAll',
-          tenantId: getCacheValue('tenantId'),
-          schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
-        })
+      const response = await axiosInstance.post('/customers', { 
+        operation: 'getAll',
+        tenantId: getCacheValue('tenantId'),
+        schema: `tenant_${getCacheValue('tenantId')?.replace(/-/g, '_')}`
       });
       
       // Ensure data is an array
-      const data = await response.json();
+      const data = response.data;
       setCustomers(Array.isArray(data) ? data : []);
       console.log('[InvoiceManagement] Customers data:', Array.isArray(data) ? `${data.length} customers loaded` : 'No customers found or invalid format');
     } catch (error) {

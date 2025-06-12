@@ -57,7 +57,19 @@ class Invoice(TenantAwareModel):
     objects = TenantManager()
     all_objects = models.Manager()
     
+    # Additional fields to match SQL schema
+    invoice_date = models.DateTimeField(default=timezone.now)
+    subtotal = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    tax_total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    amount_paid = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    balance_due = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    notes = models.TextField(blank=True, null=True)
+    terms = models.TextField(blank=True, null=True)
+    sales_order = models.ForeignKey('SalesOrder', on_delete=models.SET_NULL, null=True, blank=True)
+    
     class Meta:
+        db_table = 'sales_invoice'
         indexes = [
             models.Index(fields=['tenant_id', 'invoice_num']),
             models.Index(fields=['tenant_id', 'customer']),
@@ -105,13 +117,74 @@ class Invoice(TenantAwareModel):
             return 0
         return max(0, (as_of_date - self.due_date.date()).days)
     
-class InvoiceItem(models.Model):
+class SalesTax(TenantAwareModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    rate = models.DecimalField(max_digits=5, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_tax'
+        indexes = [
+            models.Index(fields=['tenant_id', 'name']),
+        ]
+    
+    def __str__(self):
+        return f"{self.name} ({self.rate}%)"
+
+
+class SalesProduct(TenantAwareModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+    unit_price = models.DecimalField(max_digits=19, decimal_places=4)
+    cost_price = models.DecimalField(max_digits=19, decimal_places=4, blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    tax = models.ForeignKey('SalesTax', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_product'
+        indexes = [
+            models.Index(fields=['tenant_id', 'sku']),
+        ]
+    
+    def __str__(self):
+        return self.name
+
+
+class InvoiceItem(TenantAwareModel):
     invoice = models.ForeignKey(Invoice, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
     description = models.CharField(max_length=200, null=True, blank=True)
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    tax_amount = models.DecimalField(max_digits=19, decimal_places=4, blank=True, null=True)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_invoiceitem'
+        indexes = [
+            models.Index(fields=['tenant_id', 'invoice']),
+        ]
 
     def subtotal(self):
         return self.quantity * self.unit_price
@@ -121,7 +194,7 @@ class InvoiceItem(models.Model):
 
 
 
-class Estimate(models.Model):
+class Estimate(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     estimate_num = models.CharField(max_length=20, unique=True, editable=False, null=True, blank=True)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name='estimates')
@@ -137,9 +210,27 @@ class Estimate(models.Model):
     discount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     currency = models.CharField(max_length=3, default='USD')
     footer = models.TextField(blank=True)
+    # Additional fields to match SQL schema
+    estimate_date = models.DateTimeField(default=timezone.now)
+    expiry_date = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=50, default='draft')
+    subtotal = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    tax_total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    notes = models.TextField(blank=True, null=True)
+    terms = models.TextField(blank=True, null=True)
+    created_by = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
 
     class Meta:
         app_label = 'sales'
+        db_table = 'sales_estimate'
+        indexes = [
+            models.Index(fields=['tenant_id', 'estimate_num']),
+        ]
         
     def __str__(self):
         return self.estimate_num
@@ -169,13 +260,26 @@ class Estimate(models.Model):
         return self.total_with_discount() * (1 + tax_rate / 100)
 
 
-class EstimateItem(models.Model):
+class EstimateItem(TenantAwareModel):
     estimate = models.ForeignKey(Estimate, related_name='items', on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
     description = models.CharField(max_length=200, null=True, blank=True)
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    tax_amount = models.DecimalField(max_digits=19, decimal_places=4, blank=True, null=True)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'sales_estimateitem'
+        indexes = [
+            models.Index(fields=['tenant_id', 'estimate']),
+        ]
 
     def subtotal(self):
         return self.quantity * self.unit_price
@@ -192,22 +296,21 @@ def update_estimate_total(sender, instance, **kwargs):
     estimate.totalAmount = total - estimate.discount
     estimate.save()
 
-class EstimateAttachment(models.Model):
+class EstimateAttachment(TenantAwareModel):
     estimate = models.ForeignKey(Estimate, related_name='attachments', on_delete=models.CASCADE)
     file = models.FileField(upload_to='estimate_attachments/')
-
-
-    def save(self, *args, **kwargs):
-        if not self.estimate_num:
-            self.estimate_num = str(self.id)[-5:]  # type: ignore
-        super().save(*args, **kwargs)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'estimate']),
+        ]
 
     def __str__(self):
-        return self.estimate_num
-
-    def clean(self):
-        # No need to check amount since EstimateAttachment doesn't have an amount field
-        pass
+        return f"Attachment for {self.estimate}"
 
 
 class SalesOrder(TenantAwareModel):
@@ -221,12 +324,21 @@ class SalesOrder(TenantAwareModel):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     totalAmount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Additional fields to match SQL schema
+    order_date = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=50, default='pending')
+    subtotal = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    tax_total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    notes = models.TextField(blank=True, null=True)
+    estimate = models.ForeignKey(Estimate, on_delete=models.SET_NULL, null=True, blank=True)
 
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()
     
     class Meta:
+        db_table = 'sales_salesorder'
         ordering = ['-date']
         indexes = [
             models.Index(fields=['tenant_id', 'order_number']),
@@ -270,12 +382,16 @@ class SalesOrderItem(TenantAwareModel):
     description = models.CharField(max_length=200, null=True)
     quantity = models.IntegerField(default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    tax_amount = models.DecimalField(max_digits=19, decimal_places=4, blank=True, null=True)
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
     
     # Add tenant-aware manager
     objects = TenantManager()
     all_objects = models.Manager()
     
     class Meta:
+        db_table = 'sales_salesorderitem'
         ordering = ['id']
         indexes = [
             models.Index(fields=['tenant_id', 'sales_order']),
@@ -334,20 +450,38 @@ class SaleItem(TenantAwareModel):
         super().save(*args, **kwargs)
         
 
-class Refund(models.Model):
+class Refund(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     sale = models.ForeignKey(Sale, on_delete=models.CASCADE, related_name='refunds')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'sale']),
+        ]
 
     def __str__(self):
         return f"Refund for Sale {self.sale.id}"
     
-class RefundItem(models.Model):
+class RefundItem(TenantAwareModel):
     refund = models.ForeignKey(Refund, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=['tenant_id', 'refund']),
+        ]
 

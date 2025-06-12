@@ -12,12 +12,13 @@ from django.contrib.auth import get_user_model
 from pyfactor.logging_config import get_logger
 from django.db.models import Sum
 from django.apps import apps
+from custom_auth.models import TenantAwareModel, TenantManager
 
 
 
 logger = get_logger()
 
-class Customer(models.Model):
+class Customer(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_name = models.CharField(max_length=255, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
@@ -41,10 +42,30 @@ class Customer(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Add tenant-aware manager
+    objects = TenantManager()
+    all_objects = models.Manager()
+    
+    class Meta:
+        db_table = 'crm_customer'
+        indexes = [
+            models.Index(fields=['tenant_id', 'account_number']),
+        ]
+        constraints = [
+            models.UniqueConstraint(fields=['tenant_id', 'account_number'], name='unique_crm_customer_account_number_per_tenant'),
+        ]
+    
     def save(self, *args, **kwargs):
         if not self.account_number:
-            uuid_numbers = re.sub('[^0-9]', '', str(self.id))
-            self.account_number = (uuid_numbers[:5] + '00000')[:5]
+            # Generate unique account number within tenant
+            prefix = "C"
+            random_suffix = ''.join(random.choices('0123456789', k=5))
+            self.account_number = f"{prefix}{random_suffix}"
+            
+            # Ensure uniqueness within tenant
+            while Customer.objects.filter(tenant_id=self.tenant_id, account_number=self.account_number).exists():
+                random_suffix = ''.join(random.choices('0123456789', k=5))
+                self.account_number = f"{prefix}{random_suffix}"
         super().save(*args, **kwargs)
 
     def __str__(self):

@@ -484,7 +484,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       }
       
       // Make API call to get suppliers
-      const response = await fetch('/api/inventory/suppliers/', {
+      const response = await fetch('/inventory/suppliers/', {
         headers: {
           'x-tenant-id': tenantIdValue
         }
@@ -654,7 +654,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       const tenantIdValue = await getSecureTenantId();
       
       // Make API call to get supplier details
-      const response = await fetch(`/api/inventory/suppliers/${supplierId}/`, {
+      const response = await fetch(`/inventory/suppliers/${supplierId}/`, {
         headers: {
           'x-tenant-id': tenantIdValue
         }
@@ -963,7 +963,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       console.log('Creating product with data:', apiData);
       
       // Send the API request
-      const response = await fetch('/api/inventory/products/', {
+      const response = await fetch('/inventory/products/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2228,7 +2228,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
       console.log('Saving edited product:', apiData);
 
-      const response = await fetch(`/api/inventory/products/${editedProduct.id}`, {
+      const response = await fetch(`/inventory/products/${editedProduct.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
