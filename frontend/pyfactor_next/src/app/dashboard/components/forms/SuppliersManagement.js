@@ -3,23 +3,22 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
-import { serviceApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
-const ServiceManagement = () => {
+const SuppliersManagement = () => {
   // State management
-  const [services, setServices] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedService, setSelectedService] = useState(null);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [showServiceDetails, setShowServiceDetails] = useState(false);
+  const [showSupplierDetails, setShowSupplierDetails] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [supplierToDelete, setSupplierToDelete] = useState(null);
   
   // Refs
   const isMounted = useRef(true);
@@ -27,67 +26,63 @@ const ServiceManagement = () => {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
-    sku: '',
-    price: '',
-    cost: '',
-    duration: '',
-    duration_unit: 'hours',
+    contact_person: '',
+    email: '',
+    phone: '',
+    website: '',
+    address: '',
+    city: '',
+    state: '',
+    zip_code: '',
+    country: 'USA',
+    tax_id: '',
+    payment_terms: '30',
+    account_number: '',
     is_active: true,
-    category: '',
     notes: ''
   });
 
   useEffect(() => {
     isMounted.current = true;
-    fetchServices();
+    fetchSuppliers();
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  const fetchServices = useCallback(async () => {
+  const fetchSuppliers = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('[ServiceManagement] Fetching services...');
+      console.log('[SuppliersManagement] Fetching suppliers...');
       
-      // Get secure tenant ID
       const tenantId = await getSecureTenantId();
       if (!tenantId) {
-        console.error('[ServiceManagement] No tenant ID found');
+        console.error('[SuppliersManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
         return;
       }
       
-      try {
-        const response = await fetch('/api/inventory/services', {
-          headers: {
-            'x-tenant-id': tenantId
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch services: ${response.status}`);
+      const response = await fetch('/api/inventory/suppliers', {
+        headers: {
+          'x-tenant-id': tenantId
         }
-        
-        const data = await response.json();
-        console.log('[ServiceManagement] Fetched services:', data?.length || 0);
-        
-        if (isMounted.current) {
-          setServices(Array.isArray(data) ? data : []);
-        }
-      } catch (apiError) {
-        console.error('[ServiceManagement] API error:', apiError);
-        if (isMounted.current) {
-          setServices([]);
-          toast.error('Failed to load services.');
-        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch suppliers: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('[SuppliersManagement] Fetched suppliers:', data?.length || 0);
+      
+      if (isMounted.current) {
+        setSuppliers(Array.isArray(data) ? data : []);
       }
     } catch (error) {
-      console.error('[ServiceManagement] Error:', error);
+      console.error('[SuppliersManagement] Error:', error);
       if (isMounted.current) {
-        setServices([]);
-        toast.error('Failed to load services.');
+        setSuppliers([]);
+        toast.error('Failed to load suppliers.');
       }
     } finally {
       if (isMounted.current) {
@@ -105,10 +100,10 @@ const ServiceManagement = () => {
     }));
   }, []);
 
-  // Handle create service
-  const handleCreateService = async (e) => {
+  // Handle create supplier
+  const handleCreateSupplier = async (e) => {
     e.preventDefault();
-    console.log('[ServiceManagement] Creating service with data:', formData);
+    console.log('[SuppliersManagement] Creating supplier with data:', formData);
     
     try {
       setIsSubmitting(true);
@@ -119,104 +114,99 @@ const ServiceManagement = () => {
         return;
       }
       
-      const response = await fetch('/api/inventory/services', {
+      const response = await fetch('/api/inventory/suppliers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': tenantId
         },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price) || 0,
-          cost: parseFloat(formData.cost) || 0,
-          duration: parseInt(formData.duration) || 0
-        })
+        body: JSON.stringify(formData)
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to create service: ${response.status}`);
+        throw new Error(`Failed to create supplier: ${response.status}`);
       }
       
-      const newService = await response.json();
-      console.log('[ServiceManagement] Service created:', newService);
+      const newSupplier = await response.json();
+      console.log('[SuppliersManagement] Supplier created:', newSupplier);
       
-      toast.success(`Service "${formData.name}" created successfully!`);
+      toast.success(`Supplier "${formData.name}" created successfully!`);
       
       // Reset form and refresh list
       setFormData({
         name: '',
-        description: '',
-        sku: '',
-        price: '',
-        cost: '',
-        duration: '',
-        duration_unit: 'hours',
+        contact_person: '',
+        email: '',
+        phone: '',
+        website: '',
+        address: '',
+        city: '',
+        state: '',
+        zip_code: '',
+        country: 'USA',
+        tax_id: '',
+        payment_terms: '30',
+        account_number: '',
         is_active: true,
-        category: '',
         notes: ''
       });
       setIsCreating(false);
-      fetchServices();
+      fetchSuppliers();
     } catch (error) {
-      console.error('[ServiceManagement] Error creating service:', error);
-      toast.error('Failed to create service.');
+      console.error('[SuppliersManagement] Error creating supplier:', error);
+      toast.error('Failed to create supplier.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle update service
-  const handleUpdateService = async (e) => {
+  // Handle update supplier
+  const handleUpdateSupplier = async (e) => {
     e.preventDefault();
-    console.log('[ServiceManagement] Updating service:', selectedService?.id);
+    console.log('[SuppliersManagement] Updating supplier:', selectedSupplier?.id);
     
     try {
       setIsSubmitting(true);
       
       const tenantId = await getSecureTenantId();
-      const response = await fetch(`/api/inventory/services/${selectedService.id}`, {
+      const response = await fetch(`/api/inventory/suppliers/${selectedSupplier.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'x-tenant-id': tenantId
         },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price) || 0,
-          cost: parseFloat(formData.cost) || 0,
-          duration: parseInt(formData.duration) || 0
-        })
+        body: JSON.stringify(formData)
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to update service: ${response.status}`);
+        throw new Error(`Failed to update supplier: ${response.status}`);
       }
       
-      const updatedService = await response.json();
-      console.log('[ServiceManagement] Service updated:', updatedService);
+      const updatedSupplier = await response.json();
+      console.log('[SuppliersManagement] Supplier updated:', updatedSupplier);
       
-      toast.success('Service updated successfully!');
+      toast.success('Supplier updated successfully!');
       
-      setServices(services.map(s => s.id === selectedService.id ? updatedService : s));
+      setSuppliers(suppliers.map(s => s.id === selectedSupplier.id ? updatedSupplier : s));
       setIsEditing(false);
-      setSelectedService(updatedService);
+      setSelectedSupplier(updatedSupplier);
     } catch (error) {
-      console.error('[ServiceManagement] Error updating service:', error);
-      toast.error('Failed to update service.');
+      console.error('[SuppliersManagement] Error updating supplier:', error);
+      toast.error('Failed to update supplier.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Handle delete service
-  const handleDeleteService = async () => {
-    if (!serviceToDelete) return;
+  // Handle delete supplier
+  const handleDeleteSupplier = async () => {
+    if (!supplierToDelete) return;
     
-    console.log('[ServiceManagement] Deleting service:', serviceToDelete.id);
+    console.log('[SuppliersManagement] Deleting supplier:', supplierToDelete.id);
     
     try {
       const tenantId = await getSecureTenantId();
-      const response = await fetch(`/api/inventory/services/${serviceToDelete.id}`, {
+      const response = await fetch(`/api/inventory/suppliers/${supplierToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'x-tenant-id': tenantId
@@ -224,72 +214,78 @@ const ServiceManagement = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to delete service: ${response.status}`);
+        throw new Error(`Failed to delete supplier: ${response.status}`);
       }
       
-      console.log('[ServiceManagement] Service deleted successfully');
+      console.log('[SuppliersManagement] Supplier deleted successfully');
       
-      toast.success('Service deleted successfully!');
-      setServices(services.filter(s => s.id !== serviceToDelete.id));
+      toast.success('Supplier deleted successfully!');
+      setSuppliers(suppliers.filter(s => s.id !== supplierToDelete.id));
       setDeleteDialogOpen(false);
-      setServiceToDelete(null);
+      setSupplierToDelete(null);
       
-      if (selectedService?.id === serviceToDelete.id) {
-        setShowServiceDetails(false);
-        setSelectedService(null);
+      if (selectedSupplier?.id === supplierToDelete.id) {
+        setShowSupplierDetails(false);
+        setSelectedSupplier(null);
       }
     } catch (error) {
-      console.error('[ServiceManagement] Error deleting service:', error);
-      toast.error('Failed to delete service.');
+      console.error('[SuppliersManagement] Error deleting supplier:', error);
+      toast.error('Failed to delete supplier.');
     }
   };
 
-  // Handle view service details
-  const handleViewService = useCallback((service) => {
-    console.log('[ServiceManagement] Viewing service:', service);
-    setSelectedService(service);
-    setShowServiceDetails(true);
+  // Handle view supplier details
+  const handleViewSupplier = useCallback((supplier) => {
+    console.log('[SuppliersManagement] Viewing supplier:', supplier);
+    setSelectedSupplier(supplier);
+    setShowSupplierDetails(true);
     setIsCreating(false);
     setIsEditing(false);
   }, []);
 
-  // Handle edit service
-  const handleEditService = useCallback((service) => {
-    console.log('[ServiceManagement] Editing service:', service);
-    setSelectedService(service);
+  // Handle edit supplier
+  const handleEditSupplier = useCallback((supplier) => {
+    console.log('[SuppliersManagement] Editing supplier:', supplier);
+    setSelectedSupplier(supplier);
     setFormData({
-      name: service.name || '',
-      description: service.description || '',
-      sku: service.sku || '',
-      price: service.price || '',
-      cost: service.cost || '',
-      duration: service.duration || '',
-      duration_unit: service.duration_unit || 'hours',
-      is_active: service.is_active !== false,
-      category: service.category || '',
-      notes: service.notes || ''
+      name: supplier.name || '',
+      contact_person: supplier.contact_person || '',
+      email: supplier.email || '',
+      phone: supplier.phone || '',
+      website: supplier.website || '',
+      address: supplier.address || '',
+      city: supplier.city || '',
+      state: supplier.state || '',
+      zip_code: supplier.zip_code || '',
+      country: supplier.country || 'USA',
+      tax_id: supplier.tax_id || '',
+      payment_terms: supplier.payment_terms || '30',
+      account_number: supplier.account_number || '',
+      is_active: supplier.is_active !== false,
+      notes: supplier.notes || ''
     });
     setIsEditing(true);
-    setShowServiceDetails(true);
+    setShowSupplierDetails(true);
   }, []);
 
-  // Filter services based on search
-  const filteredServices = services.filter(service => 
-    service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.sku?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.category?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter suppliers based on search
+  const filteredSuppliers = suppliers.filter(supplier => 
+    supplier.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    supplier.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Render service form
-  const renderServiceForm = () => {
-    const isEditMode = isEditing && selectedService;
+  // Render supplier form
+  const renderSupplierForm = () => {
+    const isEditMode = isEditing && selectedSupplier;
     
     return (
-      <form onSubmit={isEditMode ? handleUpdateService : handleCreateService} className="space-y-6">
+      <form onSubmit={isEditMode ? handleUpdateSupplier : handleCreateSupplier} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Service Name <span className="text-red-500">*</span>
+              Supplier Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -298,111 +294,182 @@ const ServiceManagement = () => {
               onChange={handleFormChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter service name"
+              placeholder="Enter supplier name"
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              SKU
+              Contact Person
             </label>
             <input
               type="text"
-              name="sku"
-              value={formData.sku}
+              name="contact_person"
+              value={formData.contact_person}
               onChange={handleFormChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Service SKU"
+              placeholder="Contact person name"
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price <span className="text-red-500">*</span>
+              Email
             </label>
             <input
-              type="number"
-              name="price"
-              value={formData.price}
+              type="email"
+              name="email"
+              value={formData.email}
               onChange={handleFormChange}
-              required
-              min="0"
-              step="0.01"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
+              placeholder="supplier@example.com"
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cost
+              Phone
             </label>
             <input
-              type="number"
-              name="cost"
-              value={formData.cost}
+              type="tel"
+              name="phone"
+              value={formData.phone}
               onChange={handleFormChange}
-              min="0"
-              step="0.01"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
+              placeholder="+1 (555) 123-4567"
             />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration
+              Website
             </label>
-            <div className="flex space-x-2">
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleFormChange}
-                min="0"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0"
-              />
-              <select
-                name="duration_unit"
-                value={formData.duration_unit}
-                onChange={handleFormChange}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="minutes">Minutes</option>
-                <option value="hours">Hours</option>
-                <option value="days">Days</option>
-              </select>
-            </div>
+            <input
+              type="url"
+              name="website"
+              value={formData.website}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://supplier.com"
+            />
           </div>
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Category
+              Tax ID
             </label>
             <input
               type="text"
-              name="category"
-              value={formData.category}
+              name="tax_id"
+              value={formData.tax_id}
               onChange={handleFormChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Service category"
+              placeholder="Tax identification number"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Payment Terms (days)
+            </label>
+            <input
+              type="number"
+              name="payment_terms"
+              value={formData.payment_terms}
+              onChange={handleFormChange}
+              min="0"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="30"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Account Number
+            </label>
+            <input
+              type="text"
+              name="account_number"
+              value={formData.account_number}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Supplier account number"
             />
           </div>
         </div>
         
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            name="description"
-            value={formData.description}
-            onChange={handleFormChange}
-            rows={3}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Service description..."
-          />
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Address
+            </label>
+            <input
+              type="text"
+              name="address"
+              value={formData.address}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Street address"
+            />
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                City
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="City"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                State
+              </label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="State"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Zip Code
+              </label>
+              <input
+                type="text"
+                name="zip_code"
+                value={formData.zip_code}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="12345"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Country
+              </label>
+              <input
+                type="text"
+                name="country"
+                value={formData.country}
+                onChange={handleFormChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Country"
+              />
+            </div>
+          </div>
         </div>
         
         <div>
@@ -413,9 +480,9 @@ const ServiceManagement = () => {
             name="notes"
             value={formData.notes}
             onChange={handleFormChange}
-            rows={2}
+            rows={3}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Internal notes..."
+            placeholder="Additional notes about the supplier..."
           />
         </div>
         
@@ -429,7 +496,7 @@ const ServiceManagement = () => {
             className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
           />
           <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
-            Active Service
+            Active Supplier
           </label>
         </div>
         
@@ -439,17 +506,22 @@ const ServiceManagement = () => {
             onClick={() => {
               setIsCreating(false);
               setIsEditing(false);
-              setShowServiceDetails(false);
+              setShowSupplierDetails(false);
               setFormData({
                 name: '',
-                description: '',
-                sku: '',
-                price: '',
-                cost: '',
-                duration: '',
-                duration_unit: 'hours',
+                contact_person: '',
+                email: '',
+                phone: '',
+                website: '',
+                address: '',
+                city: '',
+                state: '',
+                zip_code: '',
+                country: 'USA',
+                tax_id: '',
+                payment_terms: '30',
+                account_number: '',
                 is_active: true,
-                category: '',
                 notes: ''
               });
             }}
@@ -471,7 +543,7 @@ const ServiceManagement = () => {
                 Processing...
               </span>
             ) : (
-              <span>{isEditMode ? 'Update Service' : 'Create Service'}</span>
+              <span>{isEditMode ? 'Update Supplier' : 'Create Supplier'}</span>
             )}
           </button>
         </div>
@@ -479,92 +551,106 @@ const ServiceManagement = () => {
     );
   };
 
-  // Render service details
-  const renderServiceDetails = () => {
-    if (!selectedService) return null;
+  // Render supplier details
+  const renderSupplierDetails = () => {
+    if (!selectedSupplier) return null;
     
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Service Name</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedService.name}</p>
+            <h3 className="text-sm font-medium text-gray-500">Supplier Name</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.name}</p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-gray-500">SKU</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedService.sku || 'Not specified'}</p>
+            <h3 className="text-sm font-medium text-gray-500">Contact Person</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.contact_person || 'Not specified'}</p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Price</h3>
-            <p className="mt-1 text-sm text-gray-900">${parseFloat(selectedService.price || 0).toFixed(2)}</p>
+            <h3 className="text-sm font-medium text-gray-500">Email</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.email || 'Not provided'}</p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Cost</h3>
-            <p className="mt-1 text-sm text-gray-900">${parseFloat(selectedService.cost || 0).toFixed(2)}</p>
+            <h3 className="text-sm font-medium text-gray-500">Phone</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.phone || 'Not provided'}</p>
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Duration</h3>
-            <p className="mt-1 text-sm text-gray-900">
-              {selectedService.duration ? `${selectedService.duration} ${selectedService.duration_unit || 'hours'}` : 'Not specified'}
-            </p>
+            <h3 className="text-sm font-medium text-gray-500">Website</h3>
+            {selectedSupplier.website ? (
+              <a href={selectedSupplier.website} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-blue-600 hover:underline">
+                {selectedSupplier.website}
+              </a>
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">Not provided</p>
+            )}
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Category</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedService.category || 'Uncategorized'}</p>
+            <h3 className="text-sm font-medium text-gray-500">Tax ID</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.tax_id || 'Not provided'}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Payment Terms</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.payment_terms ? `${selectedSupplier.payment_terms} days` : 'Not specified'}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Account Number</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedSupplier.account_number || 'Not provided'}</p>
           </div>
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Status</h3>
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              selectedService.is_active !== false
+              selectedSupplier.is_active !== false
                 ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
             }`}>
-              {selectedService.is_active !== false ? 'Active' : 'Inactive'}
+              {selectedSupplier.is_active !== false ? 'Active' : 'Inactive'}
             </span>
           </div>
         </div>
         
-        {selectedService.description && (
+        {(selectedSupplier.address || selectedSupplier.city || selectedSupplier.state || selectedSupplier.zip_code || selectedSupplier.country) && (
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Description</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedService.description}</p>
+            <h3 className="text-sm font-medium text-gray-500">Address</h3>
+            <p className="mt-1 text-sm text-gray-900">
+              {[selectedSupplier.address, selectedSupplier.city, selectedSupplier.state, selectedSupplier.zip_code, selectedSupplier.country]
+                .filter(Boolean)
+                .join(', ')}
+            </p>
           </div>
         )}
         
-        {selectedService.notes && (
+        {selectedSupplier.notes && (
           <div>
             <h3 className="text-sm font-medium text-gray-500">Notes</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedService.notes}</p>
+            <p className="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{selectedSupplier.notes}</p>
           </div>
         )}
         
         <div className="pt-6 border-t">
-          <h3 className="text-sm font-medium text-gray-500 mb-2">Service Statistics</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-2">Supplier Statistics</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-gray-50 p-3 rounded">
-              <p className="text-xs text-gray-500">Times Sold</p>
+              <p className="text-xs text-gray-500">Total Orders</p>
               <p className="text-lg font-semibold">0</p>
             </div>
             <div className="bg-gray-50 p-3 rounded">
-              <p className="text-xs text-gray-500">Total Revenue</p>
+              <p className="text-xs text-gray-500">Total Spent</p>
               <p className="text-lg font-semibold">$0.00</p>
             </div>
             <div className="bg-gray-50 p-3 rounded">
-              <p className="text-xs text-gray-500">Profit Margin</p>
-              <p className="text-lg font-semibold">
-                {selectedService.price && selectedService.cost
-                  ? `${(((selectedService.price - selectedService.cost) / selectedService.price) * 100).toFixed(1)}%`
-                  : 'N/A'}
-              </p>
+              <p className="text-xs text-gray-500">Avg Order Value</p>
+              <p className="text-lg font-semibold">$0.00</p>
             </div>
             <div className="bg-gray-50 p-3 rounded">
-              <p className="text-xs text-gray-500">Last Sold</p>
+              <p className="text-xs text-gray-500">Last Order</p>
               <p className="text-lg font-semibold">Never</p>
             </div>
           </div>
@@ -573,42 +659,42 @@ const ServiceManagement = () => {
     );
   };
 
-  // Render services table
-  const renderServicesTable = () => {
+  // Render suppliers table
+  const renderSuppliersTable = () => {
     if (isLoading) {
       return (
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p className="text-gray-600">Loading services...</p>
+            <p className="text-gray-600">Loading suppliers...</p>
           </div>
         </div>
       );
     }
     
-    if (!filteredServices || filteredServices.length === 0) {
+    if (!filteredSuppliers || filteredSuppliers.length === 0) {
       return (
         <div className="text-center py-12">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No services found</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No suppliers found</h3>
           <p className="mt-1 text-sm text-gray-500">
-            {searchTerm ? 'Try adjusting your search.' : 'Get started by creating a new service.'}
+            {searchTerm ? 'Try adjusting your search.' : 'Get started by creating a new supplier.'}
           </p>
           {!searchTerm && (
             <div className="mt-6">
               <button
                 onClick={() => {
                   setIsCreating(true);
-                  setShowServiceDetails(false);
+                  setShowSupplierDetails(false);
                 }}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
               >
                 <svg className="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                New Service
+                New Supplier
               </button>
             </div>
           )}
@@ -621,51 +707,44 @@ const ServiceManagement = () => {
         <thead className="bg-gray-100">
           <tr>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">SKU</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Duration</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Contact</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Email</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Phone</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">City</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {filteredServices.map((service) => (
-            <tr key={service.id} className="hover:bg-gray-50">
+          {filteredSuppliers.map((supplier) => (
+            <tr key={supplier.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-black">{service.name}</div>
-                {service.description && (
-                  <div className="text-xs text-gray-500 truncate max-w-xs">
-                    {service.description}
-                  </div>
-                )}
+                <div className="text-sm font-medium text-black">{supplier.name}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{service.sku || 'N/A'}</div>
+                <div className="text-sm text-black">{supplier.contact_person || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">${parseFloat(service.price || 0).toFixed(2)}</div>
+                <div className="text-sm text-black">{supplier.email || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">
-                  {service.duration ? `${service.duration} ${service.duration_unit || 'hours'}` : '-'}
-                </div>
+                <div className="text-sm text-black">{supplier.phone || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{service.category || '-'}</div>
+                <div className="text-sm text-black">{supplier.city || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  service.is_active !== false
+                  supplier.is_active !== false
                     ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {service.is_active !== false ? 'Active' : 'Inactive'}
+                  {supplier.is_active !== false ? 'Active' : 'Inactive'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => handleViewService(service)}
+                  onClick={() => handleViewSupplier(supplier)}
                   className="text-blue-600 hover:text-blue-900 mr-3"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -674,7 +753,7 @@ const ServiceManagement = () => {
                   </svg>
                 </button>
                 <button
-                  onClick={() => handleEditService(service)}
+                  onClick={() => handleEditSupplier(supplier)}
                   className="text-green-600 hover:text-green-900 mr-3"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -683,7 +762,7 @@ const ServiceManagement = () => {
                 </button>
                 <button
                   onClick={() => {
-                    setServiceToDelete(service);
+                    setSupplierToDelete(supplier);
                     setDeleteDialogOpen(true);
                   }}
                   className="text-red-600 hover:text-red-900"
@@ -737,11 +816,11 @@ const ServiceManagement = () => {
                     </div>
                     <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
                       <Dialog.Title as="h3" className="text-base font-semibold leading-6 text-gray-900">
-                        Delete Service
+                        Delete Supplier
                       </Dialog.Title>
                       <div className="mt-2">
                         <p className="text-sm text-gray-500">
-                          Are you sure you want to delete <span className="font-medium">{serviceToDelete?.name}</span>? This action cannot be undone.
+                          Are you sure you want to delete <span className="font-medium">{supplierToDelete?.name}</span>? This action cannot be undone.
                         </p>
                       </div>
                     </div>
@@ -751,7 +830,7 @@ const ServiceManagement = () => {
                   <button
                     type="button"
                     className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
-                    onClick={handleDeleteService}
+                    onClick={handleDeleteSupplier}
                   >
                     Delete
                   </button>
@@ -773,34 +852,30 @@ const ServiceManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4">Service Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-4">Suppliers Management</h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Services</h2>
-          <p className="text-3xl font-bold text-blue-600 mt-2">{services.length}</p>
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Suppliers</h2>
+          <p className="text-3xl font-bold text-blue-600 mt-2">{suppliers.length}</p>
         </div>
         
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Services</h2>
+          <h2 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Active Suppliers</h2>
           <p className="text-3xl font-bold text-green-600 mt-2">
-            {services.filter(s => s.is_active !== false).length}
+            {suppliers.filter(s => s.is_active !== false).length}
           </p>
         </div>
         
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-black">Inactive Services</h2>
-          <p className="text-3xl font-bold text-red-600 mt-2">
-            {services.filter(s => s.is_active === false).length}
-          </p>
+          <h2 className="text-sm font-medium text-black">Total Orders</h2>
+          <p className="text-3xl font-bold text-purple-600 mt-2">0</p>
         </div>
         
         <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-sm font-medium text-black">Categories</h2>
-          <p className="text-3xl font-bold text-purple-600 mt-2">
-            {new Set(services.map(s => s.category).filter(Boolean)).size}
-          </p>
+          <h2 className="text-sm font-medium text-black">Total Spent</h2>
+          <p className="text-3xl font-bold text-orange-600 mt-2">$0.00</p>
         </div>
       </div>
       
@@ -814,7 +889,7 @@ const ServiceManagement = () => {
           </div>
           <input
             type="text"
-            placeholder="Search Services"
+            placeholder="Search Suppliers"
             className="pl-10 pr-4 py-2 border border-gray-300 rounded-md bg-white text-black focus:ring-blue-500 focus:border-blue-500 min-w-[300px]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -825,7 +900,7 @@ const ServiceManagement = () => {
           <button
             className="flex items-center px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
             onClick={() => {
-              console.log('[ServiceManagement] Filter clicked');
+              console.log('[SuppliersManagement] Filter clicked');
             }}
           >
             <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -836,26 +911,26 @@ const ServiceManagement = () => {
           <button
             className="flex items-center px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             onClick={() => {
-              console.log('[ServiceManagement] Add Service clicked');
+              console.log('[SuppliersManagement] Add Supplier clicked');
               setIsCreating(true);
-              setShowServiceDetails(false);
-              setSelectedService(null);
+              setShowSupplierDetails(false);
+              setSelectedSupplier(null);
               setIsEditing(false);
             }}
           >
             <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Add Service
+            Add Supplier
           </button>
         </div>
       </div>
       
       {/* Main Content */}
-      {showServiceDetails && selectedService ? (
+      {showSupplierDetails && selectedSupplier ? (
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-black">{selectedService.name}</h2>
+            <h2 className="text-xl font-bold text-black">{selectedSupplier.name}</h2>
             <div className="flex space-x-2">
               {isEditing ? (
                 <>
@@ -864,14 +939,19 @@ const ServiceManagement = () => {
                       setIsEditing(false);
                       setFormData({
                         name: '',
-                        description: '',
-                        sku: '',
-                        price: '',
-                        cost: '',
-                        duration: '',
-                        duration_unit: 'hours',
+                        contact_person: '',
+                        email: '',
+                        phone: '',
+                        website: '',
+                        address: '',
+                        city: '',
+                        state: '',
+                        zip_code: '',
+                        country: 'USA',
+                        tax_id: '',
+                        payment_terms: '30',
+                        account_number: '',
                         is_active: true,
-                        category: '',
                         notes: ''
                       });
                     }}
@@ -883,14 +963,14 @@ const ServiceManagement = () => {
               ) : (
                 <>
                   <button
-                    onClick={() => handleEditService(selectedService)}
+                    onClick={() => handleEditSupplier(selectedSupplier)}
                     className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => {
-                      setServiceToDelete(selectedService);
+                      setSupplierToDelete(selectedSupplier);
                       setDeleteDialogOpen(true);
                     }}
                     className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
@@ -898,7 +978,7 @@ const ServiceManagement = () => {
                     Delete
                   </button>
                   <button
-                    onClick={() => setShowServiceDetails(false)}
+                    onClick={() => setShowSupplierDetails(false)}
                     className="px-4 py-2 border border-gray-300 rounded-md bg-white text-black hover:bg-gray-50 transition-colors"
                   >
                     Back to List
@@ -908,17 +988,17 @@ const ServiceManagement = () => {
             </div>
           </div>
           
-          {isEditing ? renderServiceForm() : renderServiceDetails()}
+          {isEditing ? renderSupplierForm() : renderSupplierDetails()}
         </div>
       ) : isCreating ? (
         <div className="bg-white shadow rounded-lg mt-6 p-6">
-          <h2 className="text-xl font-bold text-black mb-6">Create New Service</h2>
-          {renderServiceForm()}
+          <h2 className="text-xl font-bold text-black mb-6">Create New Supplier</h2>
+          {renderSupplierForm()}
         </div>
       ) : (
         <div className="bg-white shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            {renderServicesTable()}
+            {renderSuppliersTable()}
           </div>
         </div>
       )}
@@ -929,4 +1009,4 @@ const ServiceManagement = () => {
   );
 };
 
-export default ServiceManagement;
+export default SuppliersManagement;

@@ -542,23 +542,6 @@ const MainListItems = ({
           value: 'suppliers' 
         },
         { 
-          label: 'Transactions', 
-          onClick: (value) => {
-            // Create navigation event for transactions
-            const navigationKey = `nav-${Date.now()}`;
-            const payload = { 
-              item: 'inventory-transactions-management', 
-              navigationKey,
-              originalItem: 'Transactions'
-            };
-            
-            // Dispatch navigation events
-            window.dispatchEvent(new CustomEvent('menuNavigationIntent', { detail: payload }));
-            window.dispatchEvent(new CustomEvent('navigationRequest', { detail: payload }));
-          }, 
-          value: 'transactions' 
-        },
-        { 
           label: 'Reports', 
           onClick: (value) => {
             // Create navigation event for reports

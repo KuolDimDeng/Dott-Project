@@ -218,6 +218,10 @@ const SupplierManagement = enhancedLazy(() => {
     });
 }, 'Supplier Management');
 const InventoryManagement = enhancedLazy(() => import('@/app/inventory/components/InventoryManagement.js'), 'Inventory Management');
+const InventoryReports = enhancedLazy(() => import('@/app/inventory/components/InventoryReports.js'), 'Inventory Reports');
+const LocationsManagement = enhancedLazy(() => import('./forms/LocationsManagement.js'), 'Locations Management');
+const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjustmentsManagement.js'), 'Stock Adjustments Management');
+const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManagement.js'), 'Suppliers Management');
 const MainDashboard = enhancedLazy(() => import('./dashboards/MainDashboard'), 'Main Dashboard');
 const BankTransactions = enhancedLazy(() => import('./forms/BankTransactionPage'), 'Bank Transactions');
 const HRDashboard = enhancedLazy(() => import('./forms/HRDashboard.js'), 'HR Dashboard');
@@ -779,13 +783,57 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
       
-      // Special handling for inventory-suppliers view since it seems to be having issues
+      // Special handling for inventory views
       if (view === 'inventory-suppliers') {
         console.log('[RenderMainContent] Rendering inventory-suppliers view');
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`${componentKey}-suppliers`}>
-              <SupplierManagement />
+              <SuppliersManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-locations') {
+        console.log('[RenderMainContent] Rendering inventory-locations view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-locations`}>
+              <LocationsManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-stock-adjustments') {
+        console.log('[RenderMainContent] Rendering inventory-stock-adjustments view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-stock-adjustments`}>
+              <StockAdjustmentsManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-dashboard') {
+        console.log('[RenderMainContent] Rendering inventory-dashboard view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-dashboard`}>
+              <InventoryManagement />
+            </SuspenseWithCleanup>
+          </ContentWrapperWithKey>
+        );
+      }
+      
+      if (view === 'inventory-reports') {
+        console.log('[RenderMainContent] Rendering inventory-reports view');
+        return (
+          <ContentWrapperWithKey>
+            <SuspenseWithCleanup componentKey={`${componentKey}-inventory-reports`}>
+              <InventoryReports />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
