@@ -26,7 +26,9 @@ const CustomerManagement = () => {
   
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
+    business_name: '',
     email: '',
     phone: '',
     company: '',
@@ -112,11 +114,14 @@ const CustomerManagement = () => {
       const response = await customerApi.create(formData);
       console.log('[CustomerManagement] Customer created:', response);
       
-      toast.success(`Customer "${formData.name}" created successfully!`);
+      const displayName = formData.business_name || `${formData.first_name} ${formData.last_name}`.trim() || formData.email;
+      toast.success(`Customer "${displayName}" created successfully!`);
       
       // Reset form and refresh list
       setFormData({
-        name: '',
+        first_name: '',
+        last_name: '',
+        business_name: '',
         email: '',
         phone: '',
         company: '',
@@ -200,7 +205,9 @@ const CustomerManagement = () => {
     console.log('[CustomerManagement] Editing customer:', customer);
     setSelectedCustomer(customer);
     setFormData({
-      name: customer.name || '',
+      first_name: customer.first_name || '',
+      last_name: customer.last_name || '',
+      business_name: customer.business_name || '',
       email: customer.email || '',
       phone: customer.phone || '',
       company: customer.company || '',
@@ -216,11 +223,17 @@ const CustomerManagement = () => {
   }, []);
 
   // Filter customers based on search
-  const filteredCustomers = customers.filter(customer => 
-    customer.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.company?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredCustomers = customers.filter(customer => {
+    const searchLower = searchTerm.toLowerCase();
+    const fullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim().toLowerCase();
+    
+    return customer.first_name?.toLowerCase().includes(searchLower) ||
+           customer.last_name?.toLowerCase().includes(searchLower) ||
+           customer.business_name?.toLowerCase().includes(searchLower) ||
+           fullName.includes(searchLower) ||
+           customer.email?.toLowerCase().includes(searchLower) ||
+           customer.company?.toLowerCase().includes(searchLower);
+  });
 
   // Render customer form
   const renderCustomerForm = () => {
@@ -231,16 +244,43 @@ const CustomerManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name <span className="text-red-500">*</span>
+              First Name
             </label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
+              name="first_name"
+              value={formData.first_name}
               onChange={handleFormChange}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter customer name"
+              placeholder="John"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Last Name
+            </label>
+            <input
+              type="text"
+              name="last_name"
+              value={formData.last_name}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Doe"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Business Name
+            </label>
+            <input
+              type="text"
+              name="business_name"
+              value={formData.business_name}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Company Inc."
             />
           </div>
           
@@ -384,7 +424,9 @@ const CustomerManagement = () => {
               setIsEditing(false);
               setShowCustomerDetails(false);
               setFormData({
-                name: '',
+                first_name: '',
+                last_name: '',
+                business_name: '',
                 email: '',
                 phone: '',
                 company: '',
@@ -430,8 +472,18 @@ const CustomerManagement = () => {
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-gray-500">Name</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedCustomer.name}</p>
+            <h3 className="text-sm font-medium text-gray-500">First Name</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedCustomer.first_name || 'Not provided'}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Last Name</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedCustomer.last_name || 'Not provided'}</p>
+          </div>
+          
+          <div>
+            <h3 className="text-sm font-medium text-gray-500">Business Name</h3>
+            <p className="mt-1 text-sm text-gray-900">{selectedCustomer.business_name || 'Not provided'}</p>
           </div>
           
           <div>
@@ -534,7 +586,9 @@ const CustomerManagement = () => {
           {filteredCustomers.map((customer) => (
             <tr key={customer.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-black">{customer.name}</div>
+                <div className="text-sm font-medium text-black">
+                  {customer.business_name || `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || customer.email}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">{customer.email}</div>
@@ -731,7 +785,9 @@ const CustomerManagement = () => {
       {showCustomerDetails && selectedCustomer ? (
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-black">{selectedCustomer.name}</h2>
+            <h2 className="text-xl font-bold text-black">
+              {selectedCustomer.business_name || `${selectedCustomer.first_name || ''} ${selectedCustomer.last_name || ''}`.trim() || selectedCustomer.email}
+            </h2>
             <div className="flex space-x-2">
               {isEditing ? (
                 <>
@@ -739,7 +795,9 @@ const CustomerManagement = () => {
                     onClick={() => {
                       setIsEditing(false);
                       setFormData({
-                        name: '',
+                        first_name: '',
+                        last_name: '',
+                        business_name: '',
                         email: '',
                         phone: '',
                         company: '',
