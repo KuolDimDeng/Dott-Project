@@ -110,3 +110,15 @@ weasyprint==63.0
 
 # Country codes - CRITICAL for payroll international support
 iso3166==2.1.1
+
+# HTML parsing - CRITICAL for tax modules
+beautifulsoup4==4.12.3
+lxml==5.3.0
+
+# Google OAuth2 - Used in onboarding views  
+google-auth==2.38.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.1
+
+# ASGI server - Used in run scripts (not needed for Render deployment)
+# uvicorn==0.34.0  # Commented out as Render uses gunicorn
