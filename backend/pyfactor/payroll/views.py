@@ -27,8 +27,8 @@ import iso3166
 logger = logging.getLogger(__name__)
 countries = iso3166
 
-# Note: taxes.services is a file, not the services subdirectory
-from taxes.services import TaxCalculationService, TaxFilingService
+# Import taxes.services to avoid circular import at module level
+import taxes.services
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -365,8 +365,7 @@ class RunPayrollView(APIView):
 
             # For US full-service, create tax filings
             if country_code == 'US' and service_type == 'full':
-                from taxes.services import TaxFilingService
-                TaxFilingService.create_tax_filings_for_payroll(
+                taxes.services.TaxFilingService.create_tax_filings_for_payroll(
                     payroll_run, 
                     str(request.user.company.id)
                 )
