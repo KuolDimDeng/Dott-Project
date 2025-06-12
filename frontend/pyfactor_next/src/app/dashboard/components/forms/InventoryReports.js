@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import toast from 'react-hot-toast';
-import { getSecureTenantId } from '@/utils/secureStorage';
+import { getSecureTenantId } from '@/utils/tenantUtils';
 
 export default function InventoryReports() {
   const [reportType, setReportType] = useState('');
