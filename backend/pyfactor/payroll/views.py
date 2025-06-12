@@ -3,11 +3,24 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 from hr.models import Timesheet, TimesheetEntry  # Import from HR instead of payroll
-from .models import PayrollRun, PayrollTransaction, BankAccount
+from .models import PayrollRun, PayrollTransaction
+from banking.models import BankAccount
 from .serializers import PayrollRunSerializer, PayrollTransactionSerializer, PayrollTimesheetSerializer
-from datetime import date
+from datetime import date, datetime
 from django.db.models import Sum, F
+from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+import tempfile
+from weasyprint import HTML
+import logging
+import iso3166
+
+logger = logging.getLogger(__name__)
+countries = iso3166
+
 from taxes.services import TaxCalculationService, TaxFilingService
 
 @api_view(['GET'])
@@ -63,7 +76,7 @@ def payroll_report(request, pk):
         
         tax_summary = []
         
-        if country_code == 'US':
+        if payroll_run.country_code == 'US':
             tax_summary = [
                 {'name': 'Federal Income Tax', 'amount': federal_tax, 'instructions': 'Pay to the IRS via EFTPS'},
                 {'name': 'Social Security', 'amount': social_security, 'instructions': 'Pay to the IRS via EFTPS'},
@@ -75,7 +88,7 @@ def payroll_report(request, pk):
         else:
             # For international, get tax information from Claude service
             from taxes.services.claude_service import ClaudeComplianceService
-            compliance_data = ClaudeComplianceService.get_country_compliance_requirements(country_code)
+            compliance_data = ClaudeComplianceService.get_country_compliance_requirements(payroll_run.country_code)
             
             if compliance_data and compliance_data.get('tax_deductions'):
                 for tax in compliance_data['tax_deductions']:
@@ -184,7 +197,7 @@ class RunPayrollView(APIView):
                     service_type = 'self'
 
             try:
-                account = BankAccount.objects.get(id=account_id, plaid_item__user=request.user)
+                account = BankAccount.objects.get(id=account_id, user=request.user)
             except BankAccount.DoesNotExist:
                 return Response({'error': 'Invalid account'}, status=status.HTTP_400_BAD_REQUEST)
 

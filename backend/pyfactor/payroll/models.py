@@ -22,6 +22,9 @@ class PayrollRun(TenantAwareModel):
     start_date = models.DateField()
     end_date = models.DateField()
     pay_date = models.DateField()
+    run_date = models.DateField(default=timezone.now)
+    accounting_period = models.CharField(max_length=7, blank=True, null=True)  # YYYY-MM format
+    bank_account = models.ForeignKey('banking.BankAccount', on_delete=models.SET_NULL, null=True, blank=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=[
         ('draft', 'Draft'),
@@ -41,6 +44,7 @@ class PayrollRun(TenantAwareModel):
     # For international self-service
     filing_instructions = models.TextField(blank=True, null=True)
     tax_authority_links = models.JSONField(default=dict, blank=True, null=True)
+    filing_frequency = models.CharField(max_length=20, blank=True, null=True)
     
     created_at = models.DateTimeField(default=default_due_datetime)
     updated_at = models.DateTimeField(default=default_due_datetime)
