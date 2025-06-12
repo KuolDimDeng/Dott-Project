@@ -526,8 +526,12 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [resetAllStates, updateState, setUiState]);
 
   const handleInventoryClick = useCallback((value) => {
-    resetAllStates();
     console.log('[DashboardContent] Inventory option selected:', value);
+    resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const inventoryNavKey = `inventory-${value}-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for inventory:', inventoryNavKey);
     
     // For the products view, redirect to our new unified inventory page
     if (value === 'items') {
@@ -535,41 +539,44 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       return;
     }
     
+    let newView = '';
     switch(value) {
       case 'inventorydashboard':
-        updateState({ view: 'inventory-dashboard' });
+        newView = 'inventory-dashboard';
         break;
       case 'stock-adjustments':
-        updateState({ view: 'inventory-stock-adjustments' });
+        newView = 'inventory-stock-adjustments';
         break;
       case 'locations':
-        updateState({ view: 'inventory-locations' });
+        newView = 'inventory-locations';
         break;
       case 'suppliers':
         console.log('[DashboardContent] Setting view to inventory-suppliers');
-        updateState({ view: 'inventory-suppliers' });
-        // Force a rerender by adding a timestamp to the view
-        setTimeout(() => {
-          if (view === 'inventory-suppliers') {
-            console.log('[DashboardContent] Refreshing inventory-suppliers view');
-            updateState({ view: '' });
-            setTimeout(() => {
-              updateState({ view: 'inventory-suppliers' });
-            }, 50);
-          }
-        }, 100);
+        newView = 'inventory-suppliers';
         break;
       case 'transactions':
-        updateState({ view: 'inventory-transactions' });
+        newView = 'inventory-transactions';
         break;
       case 'reports':
-        updateState({ view: 'inventory-reports' });
+        newView = 'inventory-reports';
         break;
       default:
         // If no specific option is selected, show the inventory management page
         updateState({ showInventoryManagement: true });
+        return;
     }
-  }, [resetAllStates, updateState, view]);
+    
+    // Update state with both the view and navigation key
+    updateState({ 
+      view: newView,
+      navigationKey: inventoryNavKey
+    });
+    
+    // Also update the navigation key separately to ensure component remounting
+    setNavigationKey(inventoryNavKey);
+    
+    console.log(`[DashboardContent] Inventory navigation complete: view=${newView}, key=${inventoryNavKey}`);
+  }, [resetAllStates, updateState, setNavigationKey]);
 
   const handleBankingClick = useCallback((value) => {
     console.log('[DashboardContent] Banking option selected:', value);
