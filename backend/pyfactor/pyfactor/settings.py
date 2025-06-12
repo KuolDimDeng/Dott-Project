@@ -44,11 +44,11 @@ PLAID_CLIENT_ID = os.getenv('PLAID_CLIENT_ID')
 PLAID_SECRET = os.getenv('PLAID_SECRET')
 PLAID_ENV = os.getenv('PLAID_ENV', 'sandbox')
 
-# Check for Plaid credentials and allow placeholders in development
+# Check for Plaid credentials and use sandbox credentials if not set
 if not PLAID_CLIENT_ID or not PLAID_SECRET:
-    print("Warning: Real Plaid credentials not set. Using placeholders for development.")
-    PLAID_CLIENT_ID = PLAID_CLIENT_ID or "placeholder_client_id"
-    PLAID_SECRET = PLAID_SECRET or "placeholder_secret"
+    print("Warning: Real Plaid credentials not set. Using sandbox credentials for development.")
+    PLAID_CLIENT_ID = PLAID_CLIENT_ID or "66d4706be66ef5001a59bbd2"
+    PLAID_SECRET = PLAID_SECRET or "22874241662b48071ffccf02a5db05"
     
 # Verify Plaid credentials aren't empty (which would cause runtime errors)
 if not PLAID_CLIENT_ID or not PLAID_SECRET:

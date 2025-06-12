@@ -40,6 +40,30 @@ urlpatterns = [
     # API routes - ALWAYS include these (don't wrap in try-catch)
     path('api/', include('custom_auth.api.urls')),
     
+    # Payment API routes
+    path('api/payments/', include('payments.urls')),
+    
+    # Finance/Accounting API routes
+    path('api/finance/', include('finance.urls')),
+    
+    # Banking API routes
+    path('api/banking/', include('banking.urls')),
+    
+    # HR API routes
+    path('api/hr/', include('hr.urls')),
+    
+    # Payroll API routes
+    path('api/payroll/', include('payroll.urls')),
+    
+    # Taxes API routes
+    path('api/taxes/', include('taxes.urls')),
+    
+    # Reports API routes
+    path('api/reports/', include('reports.urls')),
+    
+    # Analytics API routes
+    path('api/analytics/', include('analysis.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

@@ -3,12 +3,13 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator, FileExtensionValidator
 from django_countries.fields import CountryField
 from django.conf import settings
+from custom_auth.tenant_base_model import TenantAwareModel
 
 import uuid
 
 
 
-class TaxJurisdiction(models.Model):
+class TaxJurisdiction(TenantAwareModel):
     """Base class for tax jurisdictions"""
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=10, unique=True)
@@ -46,7 +47,7 @@ class State(TaxJurisdiction):
     class Meta:
         app_label = 'taxes'
 
-class IncomeTaxRate(models.Model):
+class IncomeTaxRate(TenantAwareModel):
     """Income tax rates for specific states"""
     state = models.ForeignKey(State, on_delete=models.CASCADE, related_name='tax_rates')
     tax_year = models.IntegerField()
@@ -80,7 +81,7 @@ class IncomeTaxRate(models.Model):
             return f"{self.state.code} ({self.tax_year}): {self.rate_value*100}% Flat Rate"
         return f"{self.state.code} ({self.tax_year}): {self.rate_value*100}% for {self.filing_status} ({self.income_min}-{self.income_max})"
 
-class PayrollTaxFiling(models.Model):
+class PayrollTaxFiling(TenantAwareModel):
     """Records of payroll tax filings"""
     state = models.ForeignKey(State, on_delete=models.CASCADE, related_name='tax_filings')
     business_id = models.CharField(max_length=50, db_index=True)
@@ -116,7 +117,7 @@ class PayrollTaxFiling(models.Model):
         return f"Filing {self.id} - {self.state.code} - {self.filing_period_start} to {self.filing_period_end}"
 
 # For tracking API calls and maintaining compliance logs
-class TaxApiTransaction(models.Model):
+class TaxApiTransaction(TenantAwareModel):
     """Records of interactions with tax APIs or state portals"""
     state = models.ForeignKey(State, on_delete=models.PROTECT, related_name='api_transactions')
     transaction_date = models.DateTimeField(auto_now_add=True)
@@ -132,7 +133,7 @@ class TaxApiTransaction(models.Model):
         app_label = 'taxes'
 
 # For self-service states
-class TaxFilingInstruction(models.Model):
+class TaxFilingInstruction(TenantAwareModel):
     """Instructions for self-service tax filing"""
     state = models.OneToOneField(State, on_delete=models.CASCADE, related_name='filing_instructions')
     instructions = models.TextField()
@@ -149,7 +150,7 @@ class TaxFilingInstruction(models.Model):
         app_label = 'taxes'
 
 
-class TaxForm(models.Model):
+class TaxForm(TenantAwareModel):
     FORM_TYPE_CHOICES = [
         ('W2', 'W-2 Wage and Tax Statement'),
         ('W4', 'W-4 Employee Withholding Certificate'),

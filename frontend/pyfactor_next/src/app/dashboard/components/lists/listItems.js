@@ -148,6 +148,7 @@ const MainListItems = ({
   handleCRMClick,
   handleTransportClick,
   handleHRClick,
+  handlePaymentsClick,
   handleEmployeeManagementClick,
   handleShowCreateOptions,
   handleShowCreateMenu,

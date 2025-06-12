@@ -99,6 +99,43 @@ class PerformanceReviewDetailSerializer(serializers.ModelSerializer):
         return PerformanceGoalSerializer(goals, many=True).data
 
 
+class TimesheetEntrySerializer(serializers.ModelSerializer):
+    """Serializer for TimeSheet entries"""
+    
+    class Meta:
+        model = TimesheetEntry
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at')
+
+
+class TimesheetSerializer(serializers.ModelSerializer):
+    """Serializer for Timesheet model"""
+    entries = TimesheetEntrySerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = Timesheet
+        fields = '__all__'
+        read_only_fields = ('id', 'timesheet_number', 'created_at', 'updated_at', 'business_id')
+
+
+class TimeOffRequestSerializer(serializers.ModelSerializer):
+    """Serializer for Time Off Requests"""
+    
+    class Meta:
+        model = TimeOffRequest
+        fields = '__all__'
+        read_only_fields = ('id', 'submitted_at', 'created_at', 'updated_at', 'business_id')
+
+
+class TimeOffBalanceSerializer(serializers.ModelSerializer):
+    """Serializer for Time Off Balance"""
+    
+    class Meta:
+        model = TimeOffBalance
+        fields = '__all__'
+        read_only_fields = ('id', 'created_at', 'updated_at', 'business_id')
+
+
 class BenefitsSerializer(serializers.ModelSerializer):
     """Serializer for the Benefits model"""
     

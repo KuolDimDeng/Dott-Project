@@ -1,6 +1,8 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import Link from 'next/link';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { chartOfAccountsApi } from '@/services/api/finance';
+import { getSecureTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
 
 const ChartOfAccountsManagement = () => {
   const [accounts, setAccounts] = useState([]);
@@ -29,11 +31,12 @@ const ChartOfAccountsManagement = () => {
 
   const fetchAccounts = async () => {
     try {
-      const response = await axiosInstance.get('/api/chart-of-accounts/');
-      console.log('Accounts API Response:', response.data);
+      logger.debug('[ChartOfAccountsManagement] Fetching accounts for tenant:', getSecureTenantId());
+      const response = await chartOfAccountsApi.getAll();
+      logger.info('[ChartOfAccountsManagement] Accounts loaded successfully:', response.data);
       setAccounts(response.data);
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      logger.error('[ChartOfAccountsManagement] Error fetching accounts:', error);
     }
   };
 
@@ -45,7 +48,9 @@ const ChartOfAccountsManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axiosInstance.post('/api/chart-of-accounts/', newAccount);
+      logger.debug('[ChartOfAccountsManagement] Creating new account:', newAccount);
+      await chartOfAccountsApi.create(newAccount);
+      logger.info('[ChartOfAccountsManagement] Account created successfully');
       fetchAccounts();
       setNewAccount({
         account_number: '',
@@ -57,7 +62,7 @@ const ChartOfAccountsManagement = () => {
         parent: null,
       });
     } catch (error) {
-      console.error('Error creating account:', error);
+      logger.error('[ChartOfAccountsManagement] Error creating account:', error);
     }
   };
 

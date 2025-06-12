@@ -185,6 +185,7 @@ const TermsAndConditions = enhancedLazy(() => import('@/app/Terms&Privacy/compon
 const PrivacyPolicy = enhancedLazy(() => import('@/app/Terms&Privacy/components/PrivacyPolicy'), 'Privacy Policy');
 const DownloadTransactions = enhancedLazy(() => import('./forms/DownloadTransactions'), 'Download Transactions');
 const ConnectBank = enhancedLazy(() => import('./forms/ConnectBank'), 'Connect Bank');
+const PayrollDashboard = enhancedLazy(() => import('./forms/PayrollDashboard'), 'Payroll Dashboard');
 const PayrollTransactions = enhancedLazy(() => import('./forms/PayrollTransactions'), 'Payroll Transactions');
 const BankReconciliation = enhancedLazy(() => import('./forms/BankReconciliation'), 'Bank Reconciliation');
 const PayrollReport = enhancedLazy(() => import('./forms/PayrollReport'), 'Payroll Report');
@@ -784,6 +785,786 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
       
+      // Handle Payments views
+      if (view && view.startsWith('payments-') || view && view.startsWith('payment-') || view === 'receive-payments' || view === 'make-payments' || view === 'refunds') {
+        console.log('[RenderMainContent] Rendering payments view:', view);
+        
+        let PaymentComponent = null;
+        let componentName = '';
+        
+        switch(view) {
+          case 'payments-dashboard':
+            componentName = 'PaymentsDashboard';
+            PaymentComponent = lazy(() => import('./forms/PaymentsDashboard.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentsDashboard:', err);
+              return { default: () => <div className="p-4">Error loading Payments Dashboard</div> };
+            }));
+            break;
+          case 'receive-payments':
+            componentName = 'ReceivePayments';
+            PaymentComponent = lazy(() => import('./forms/ReceivePayments.js').catch(err => {
+              console.error('[RenderMainContent] Error loading ReceivePayments:', err);
+              return { default: () => <div className="p-4">Error loading Receive Payments</div> };
+            }));
+            break;
+          case 'make-payments':
+            componentName = 'MakePayments';
+            PaymentComponent = lazy(() => import('./forms/MakePayments.js').catch(err => {
+              console.error('[RenderMainContent] Error loading MakePayments:', err);
+              return { default: () => <div className="p-4">Error loading Make Payments</div> };
+            }));
+            break;
+          case 'payment-methods':
+            componentName = 'PaymentMethods';
+            PaymentComponent = lazy(() => import('./forms/PaymentMethods.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentMethods:', err);
+              return { default: () => <div className="p-4">Error loading Payment Methods</div> };
+            }));
+            break;
+          case 'recurring-payments':
+            componentName = 'RecurringPayments';
+            PaymentComponent = lazy(() => import('./forms/RecurringPayments.js').catch(err => {
+              console.error('[RenderMainContent] Error loading RecurringPayments:', err);
+              return { default: () => <div className="p-4">Error loading Recurring Payments</div> };
+            }));
+            break;
+          case 'refunds':
+            componentName = 'RefundsManagement';
+            PaymentComponent = lazy(() => import('./forms/RefundsManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading RefundsManagement:', err);
+              return { default: () => <div className="p-4">Error loading Refunds Management</div> };
+            }));
+            break;
+          case 'payment-reconciliation':
+            componentName = 'PaymentReconciliation';
+            PaymentComponent = lazy(() => import('./forms/PaymentReconciliation.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentReconciliation:', err);
+              return { default: () => <div className="p-4">Error loading Payment Reconciliation</div> };
+            }));
+            break;
+          case 'payment-gateways':
+            componentName = 'PaymentGateways';
+            PaymentComponent = lazy(() => import('./forms/PaymentGateways.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentGateways:', err);
+              return { default: () => <div className="p-4">Error loading Payment Gateways</div> };
+            }));
+            break;
+          case 'payment-plans':
+            componentName = 'PaymentPlans';
+            PaymentComponent = lazy(() => import('./forms/PaymentPlans.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentPlans:', err);
+              return { default: () => <div className="p-4">Error loading Payment Plans</div> };
+            }));
+            break;
+          case 'payment-reports':
+            componentName = 'PaymentReports';
+            PaymentComponent = lazy(() => import('./forms/PaymentReports.js').catch(err => {
+              console.error('[RenderMainContent] Error loading PaymentReports:', err);
+              return { default: () => <div className="p-4">Error loading Payment Reports</div> };
+            }));
+            break;
+          default:
+            console.warn('[RenderMainContent] Unknown payment view:', view);
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Payment Feature</h1>
+                  <p>This payment feature is not yet implemented: {view}</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
+        }
+        
+        if (PaymentComponent) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup 
+                componentKey={`${componentKey}-${view}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
+              >
+                <PaymentComponent />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
+      // Handle HR views
+      if (view && view.startsWith('hr-') || view === 'employees' || view === 'timesheets' || view === 'pay' || view === 'benefits' || view === 'hr-reports' || view === 'performance' || showEmployeeManagement || showTimesheetManagement || showPayManagement || showBenefitsManagement || showReportsManagement || showPerformanceManagement || showHRDashboard) {
+        console.log('[RenderMainContent] Rendering HR view or state:', { view, showEmployeeManagement, showTimesheetManagement, showPayManagement, showBenefitsManagement, showReportsManagement, showPerformanceManagement, showHRDashboard });
+        
+        let HRComponent = null;
+        let componentName = '';
+        
+        // Handle view-based routing first
+        if (view) {
+          switch(view) {
+            case 'hr':
+            case 'hr-dashboard':
+              componentName = 'HRDashboard';
+              HRComponent = lazy(() => import('./forms/HRDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading HRDashboard:', err);
+                return { default: () => <div className="p-4">Error loading HR Dashboard</div> };
+              }));
+              break;
+            case 'employees':
+            case 'hr-employees':
+              componentName = 'EmployeeManagement';
+              HRComponent = lazy(() => import('./forms/EmployeeManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading EmployeeManagement:', err);
+                return { default: () => <div className="p-4">Error loading Employee Management</div> };
+              }));
+              break;
+            case 'timesheets':
+            case 'hr-timesheets':
+              componentName = 'TimesheetManagement';
+              HRComponent = lazy(() => import('./forms/TimesheetManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TimesheetManagement:', err);
+                return { default: () => <div className="p-4">Error loading Timesheet Management</div> };
+              }));
+              break;
+            case 'pay':
+            case 'hr-pay':
+              componentName = 'PayManagement';
+              HRComponent = lazy(() => import('./forms/PayManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayManagement:', err);
+                return { default: () => <div className="p-4">Error loading Pay Management</div> };
+              }));
+              break;
+            case 'benefits':
+            case 'hr-benefits':
+              componentName = 'BenefitsManagement';
+              HRComponent = lazy(() => import('./forms/BenefitsManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading BenefitsManagement:', err);
+                return { default: () => <div className="p-4">Error loading Benefits Management</div> };
+              }));
+              break;
+            case 'hr-reports':
+              componentName = 'HRReportsManagement';
+              HRComponent = lazy(() => import('./forms/ReportsManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading ReportsManagement:', err);
+                return { default: () => <div className="p-4">Error loading HR Reports</div> };
+              }));
+              break;
+            case 'performance':
+            case 'hr-performance':
+              componentName = 'PerformanceManagement';
+              HRComponent = lazy(() => import('./forms/PerformanceManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PerformanceManagement:', err);
+                return { default: () => <div className="p-4">Error loading Performance Management</div> };
+              }));
+              break;
+          }
+          
+          if (HRComponent) {
+            return (
+              <ContentWrapperWithKey>
+                <SuspenseWithCleanup 
+                  componentKey={`${componentKey}-${view}`}
+                  fallback={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <HRComponent />
+                </SuspenseWithCleanup>
+              </ContentWrapperWithKey>
+            );
+          }
+        }
+        
+        // Direct render for specific HR states (backwards compatibility)
+        if (showEmployeeManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`employee-management-${navigationKey || 'default'}`}>
+                <EmployeeManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showTimesheetManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`timesheet-management-${navigationKey || 'default'}`}>
+                <TimesheetManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPayManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`pay-management-${navigationKey || 'default'}`}>
+                <PayManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showBenefitsManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`benefits-management-${navigationKey || 'default'}`}>
+                <BenefitsManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showReportsManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`hr-reports-${navigationKey || 'default'}`}>
+                <HRReportsManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPerformanceManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`performance-management-${navigationKey || 'default'}`}>
+                <PerformanceManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showHRDashboard) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`hr-dashboard-${navigationKey || 'default'}`}>
+                <HRDashboard section={hrSection} />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
+      // Handle Payroll views
+      if (view && view.startsWith('payroll-') || view === 'run-payroll' || view === 'payroll-transactions' || view === 'payroll-reports' || showPayrollManagement || showPayrollDashboard || showPayrollTransactions || showPayrollReport) {
+        console.log('[RenderMainContent] Rendering payroll view:', view);
+        
+        let PayrollComponent = null;
+        let componentName = '';
+        
+        // Handle view-based routing first
+        if (view) {
+          switch(view) {
+            case 'payroll':
+            case 'payroll-dashboard':
+              componentName = 'PayrollDashboard';
+              PayrollComponent = lazy(() => import('./forms/PayrollDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollDashboard:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Dashboard</div> };
+              }));
+              break;
+            case 'run-payroll':
+            case 'payroll-run':
+              componentName = 'PayrollManagement';
+              PayrollComponent = lazy(() => import('./forms/PayrollManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollManagement:', err);
+                return { default: () => <div className="p-4">Error loading Run Payroll</div> };
+              }));
+              break;
+            case 'payroll-transactions':
+              componentName = 'PayrollTransactions';
+              PayrollComponent = lazy(() => import('./forms/PayrollTransactions.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollTransactions:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Transactions</div> };
+              }));
+              break;
+            case 'payroll-reports':
+              componentName = 'PayrollReport';
+              PayrollComponent = lazy(() => import('./forms/PayrollReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollReport:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Reports</div> };
+              }));
+              break;
+          }
+          
+          if (PayrollComponent) {
+            return (
+              <ContentWrapperWithKey>
+                <SuspenseWithCleanup 
+                  componentKey={`${componentKey}-${view}`}
+                  fallback={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <PayrollComponent />
+                </SuspenseWithCleanup>
+              </ContentWrapperWithKey>
+            );
+          }
+        }
+        
+        // Direct render for specific payroll states (backwards compatibility)
+        if (showPayrollManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`payroll-management-${navigationKey || 'default'}`}>
+                <PayrollManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPayrollDashboard) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`payroll-dashboard-${navigationKey || 'default'}`}>
+                <PayrollDashboard />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPayrollTransactions) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`payroll-transactions-${navigationKey || 'default'}`}>
+                <PayrollTransactions />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+        
+        if (showPayrollReport) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`payroll-report-${navigationKey || 'default'}`}>
+                <PayrollReport />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
+      // Handle Taxes views
+      if (view && view.startsWith('taxes-') || view === 'sales-tax' || view === 'income-tax' || view === 'payroll-tax' || view === 'tax-payments' || view === 'tax-forms' || view === 'tax-reports' || showTaxManagement) {
+        console.log('[RenderMainContent] Rendering taxes view:', view);
+        
+        let TaxesComponent = null;
+        let componentName = '';
+        
+        // Handle view-based routing first
+        if (view) {
+          switch(view) {
+            case 'taxes':
+            case 'taxes-dashboard':
+              componentName = 'TaxesDashboard';
+              TaxesComponent = lazy(() => import('./forms/TaxesDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxesDashboard:', err);
+                return { default: () => <div className="p-4">Error loading Taxes Dashboard</div> };
+              }));
+              break;
+            case 'sales-tax':
+            case 'taxes-sales-tax':
+              componentName = 'SalesTaxManagement';
+              TaxesComponent = lazy(() => import('./forms/SalesTaxManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading SalesTaxManagement:', err);
+                return { default: () => <div className="p-4">Error loading Sales Tax Management</div> };
+              }));
+              break;
+            case 'income-tax':
+            case 'taxes-income-tax':
+              componentName = 'IncomeTaxManagement';
+              TaxesComponent = lazy(() => import('./forms/IncomeTaxManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading IncomeTaxManagement:', err);
+                return { default: () => <div className="p-4">Error loading Income Tax Management</div> };
+              }));
+              break;
+            case 'payroll-tax':
+            case 'taxes-payroll-tax':
+              componentName = 'PayrollTaxManagement';
+              TaxesComponent = lazy(() => import('./forms/PayrollTaxManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollTaxManagement:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Tax Management</div> };
+              }));
+              break;
+            case 'tax-payments':
+            case 'taxes-payments':
+              componentName = 'TaxPaymentsManagement';
+              TaxesComponent = lazy(() => import('./forms/TaxPaymentsManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxPaymentsManagement:', err);
+                return { default: () => <div className="p-4">Error loading Tax Payments</div> };
+              }));
+              break;
+            case 'tax-forms':
+            case 'taxes-forms':
+              componentName = 'TaxFormsManagement';
+              TaxesComponent = lazy(() => import('./forms/TaxFormsManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxFormsManagement:', err);
+                return { default: () => <div className="p-4">Error loading Tax Forms</div> };
+              }));
+              break;
+            case 'tax-reports':
+            case 'taxes-reports':
+              componentName = 'TaxReportsManagement';
+              TaxesComponent = lazy(() => import('./forms/TaxReportsManagement.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TaxReportsManagement:', err);
+                return { default: () => <div className="p-4">Error loading Tax Reports</div> };
+              }));
+              break;
+          }
+          
+          if (TaxesComponent) {
+            return (
+              <ContentWrapperWithKey>
+                <SuspenseWithCleanup 
+                  componentKey={`${componentKey}-${view}`}
+                  fallback={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <TaxesComponent />
+                </SuspenseWithCleanup>
+              </ContentWrapperWithKey>
+            );
+          }
+        }
+        
+        // Direct render for TaxManagement (backwards compatibility)
+        if (showTaxManagement) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`tax-management-${navigationKey || 'default'}`}>
+                <TaxManagement />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
+      // Handle Reports views
+      if (view && (view.startsWith('report-') || view === 'income_statement' || view === 'balance_sheet' || view === 'cash_flow' || 
+          view === 'sales_tax_report' || view === 'payroll_wage_tax_report' || view === 'income_by_customer' || 
+          view === 'aged_receivables' || view === 'purchases_by_vendor' || view === 'aged_payables' || 
+          view === 'account_balances' || view === 'trial_balance' || view === 'general_ledger') || 
+          (showReports && selectedReport)) {
+        console.log('[RenderMainContent] Rendering report view:', view || selectedReport);
+        
+        let ReportComponent = null;
+        let componentName = '';
+        let reportType = view || selectedReport;
+        
+        // Handle view-based routing first
+        if (reportType) {
+          switch(reportType) {
+            case 'reports':
+            case 'reports-dashboard':
+              componentName = 'ReportsDashboard';
+              ReportComponent = lazy(() => import('./forms/ReportsDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading ReportsDashboard:', err);
+                return { default: () => <div className="p-4">Error loading Reports Dashboard</div> };
+              }));
+              break;
+            case 'income_statement':
+            case 'report-income-statement':
+              componentName = 'IncomeStatementReport';
+              ReportComponent = lazy(() => import('./forms/reports/IncomeStatementReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading IncomeStatementReport:', err);
+                return { default: () => <div className="p-4">Error loading Income Statement Report</div> };
+              }));
+              break;
+            case 'balance_sheet':
+            case 'report-balance-sheet':
+              componentName = 'BalanceSheetReport';
+              ReportComponent = lazy(() => import('./forms/reports/BalanceSheetReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading BalanceSheetReport:', err);
+                return { default: () => <div className="p-4">Error loading Balance Sheet Report</div> };
+              }));
+              break;
+            case 'cash_flow':
+            case 'report-cash-flow':
+              componentName = 'CashFlowReport';
+              ReportComponent = lazy(() => import('./forms/reports/CashFlowReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading CashFlowReport:', err);
+                return { default: () => <div className="p-4">Error loading Cash Flow Report</div> };
+              }));
+              break;
+            case 'sales_tax_report':
+            case 'report-sales-tax':
+              componentName = 'SalesTaxReport';
+              ReportComponent = lazy(() => import('./forms/reports/SalesTaxReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading SalesTaxReport:', err);
+                return { default: () => <div className="p-4">Error loading Sales Tax Report</div> };
+              }));
+              break;
+            case 'payroll_wage_tax_report':
+            case 'report-payroll-tax':
+              componentName = 'PayrollTaxReport';
+              ReportComponent = lazy(() => import('./forms/reports/PayrollTaxReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PayrollTaxReport:', err);
+                return { default: () => <div className="p-4">Error loading Payroll Tax Report</div> };
+              }));
+              break;
+            case 'income_by_customer':
+            case 'report-income-by-customer':
+              componentName = 'IncomeByCustomerReport';
+              ReportComponent = lazy(() => import('./forms/reports/IncomeByCustomerReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading IncomeByCustomerReport:', err);
+                return { default: () => <div className="p-4">Error loading Income by Customer Report</div> };
+              }));
+              break;
+            case 'aged_receivables':
+            case 'report-aged-receivables':
+              componentName = 'AgedReceivablesReport';
+              ReportComponent = lazy(() => import('./forms/reports/AgedReceivablesReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading AgedReceivablesReport:', err);
+                return { default: () => <div className="p-4">Error loading Aged Receivables Report</div> };
+              }));
+              break;
+            case 'purchases_by_vendor':
+            case 'report-purchases-by-vendor':
+              componentName = 'PurchasesByVendorReport';
+              ReportComponent = lazy(() => import('./forms/reports/PurchasesByVendorReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading PurchasesByVendorReport:', err);
+                return { default: () => <div className="p-4">Error loading Purchases by Vendor Report</div> };
+              }));
+              break;
+            case 'aged_payables':
+            case 'report-aged-payables':
+              componentName = 'AgedPayablesReport';
+              ReportComponent = lazy(() => import('./forms/reports/AgedPayablesReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading AgedPayablesReport:', err);
+                return { default: () => <div className="p-4">Error loading Aged Payables Report</div> };
+              }));
+              break;
+            case 'account_balances':
+            case 'report-account-balances':
+              componentName = 'AccountBalancesReport';
+              ReportComponent = lazy(() => import('./forms/reports/AccountBalancesReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading AccountBalancesReport:', err);
+                return { default: () => <div className="p-4">Error loading Account Balances Report</div> };
+              }));
+              break;
+            case 'trial_balance':
+            case 'report-trial-balance':
+              componentName = 'TrialBalanceReport';
+              ReportComponent = lazy(() => import('./forms/reports/TrialBalanceReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading TrialBalanceReport:', err);
+                return { default: () => <div className="p-4">Error loading Trial Balance Report</div> };
+              }));
+              break;
+            case 'general_ledger':
+            case 'report-general-ledger':
+              componentName = 'GeneralLedgerReport';
+              ReportComponent = lazy(() => import('./forms/reports/GeneralLedgerReport.js').catch(err => {
+                console.error('[RenderMainContent] Error loading GeneralLedgerReport:', err);
+                return { default: () => <div className="p-4">Error loading General Ledger Report</div> };
+              }));
+              break;
+            default:
+              // Fallback to generic ReportDisplay
+              componentName = 'ReportDisplay';
+              ReportComponent = lazy(() => import('./forms/ReportDisplay.js').catch(err => {
+                console.error('[RenderMainContent] Error loading ReportDisplay:', err);
+                return { default: () => <div className="p-4">Error loading Report</div> };
+              }));
+              break;
+          }
+          
+          if (ReportComponent) {
+            return (
+              <ContentWrapperWithKey>
+                <SuspenseWithCleanup 
+                  componentKey={`${componentKey}-${reportType}`}
+                  fallback={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <ReportComponent reportType={reportType} />
+                </SuspenseWithCleanup>
+              </ContentWrapperWithKey>
+            );
+          }
+        }
+      }
+      
+      // Handle Banking views
+      if (view && view.startsWith('banking') || view === 'connect-bank' || view === 'bank-transactions' || view === 'bank-reconciliation' || view === 'bank-reports') {
+        console.log('[RenderMainContent] Rendering banking view:', view);
+        
+        let BankingComponent = null;
+        let componentName = '';
+        
+        switch(view) {
+          case 'banking':
+            componentName = 'BankingDashboard';
+            BankingComponent = lazy(() => import('./forms/BankingDashboard.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BankingDashboard:', err);
+              return { default: () => <div className="p-4">Error loading Banking Dashboard</div> };
+            }));
+            break;
+          case 'connect-bank':
+            componentName = 'ConnectBankManagement';
+            BankingComponent = lazy(() => import('./forms/ConnectBankManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading ConnectBankManagement:', err);
+              return { default: () => <div className="p-4">Error loading Connect to Bank</div> };
+            }));
+            break;
+          case 'bank-transactions':
+            componentName = 'BankTransactionPage';
+            BankingComponent = lazy(() => import('./forms/BankTransactionPage.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BankTransactionPage:', err);
+              return { default: () => <div className="p-4">Error loading Bank Transactions</div> };
+            }));
+            break;
+          case 'bank-reconciliation':
+            componentName = 'BankReconciliation';
+            BankingComponent = lazy(() => import('./forms/BankReconciliation.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BankReconciliation:', err);
+              return { default: () => <div className="p-4">Error loading Bank Reconciliation</div> };
+            }));
+            break;
+          case 'bank-reports':
+            componentName = 'BankReport';
+            BankingComponent = lazy(() => import('./forms/BankReport.js').catch(err => {
+              console.error('[RenderMainContent] Error loading BankReport:', err);
+              return { default: () => <div className="p-4">Error loading Banking Reports</div> };
+            }));
+            break;
+          default:
+            console.warn('[RenderMainContent] Unknown banking view:', view);
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Banking Feature</h1>
+                  <p>This banking feature is not yet implemented: {view}</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
+        }
+        
+        if (BankingComponent) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup 
+                componentKey={`${componentKey}-${view}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
+              >
+                <BankingComponent />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
+      // Handle Accounting views
+      if (view && view.startsWith('accounting-') || view === 'chart-of-accounts' || view === 'journal-entries' || view === 'general-ledger' || view === 'reconciliation' || view === 'financial-statements' || view === 'fixed-assets') {
+        console.log('[RenderMainContent] Rendering accounting view:', view);
+        
+        let AccountingComponent = null;
+        let componentName = '';
+        
+        switch(view) {
+          case 'accounting-dashboard':
+            componentName = 'AccountingDashboard';
+            AccountingComponent = lazy(() => import('./forms/AccountingDashboard.js').catch(err => {
+              console.error('[RenderMainContent] Error loading AccountingDashboard:', err);
+              return { default: () => <div className="p-4">Error loading Accounting Dashboard</div> };
+            }));
+            break;
+          case 'chart-of-accounts':
+            componentName = 'ChartOfAccountsManagement';
+            AccountingComponent = lazy(() => import('./forms/ChartOfAccountsManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading ChartOfAccountsManagement:', err);
+              return { default: () => <div className="p-4">Error loading Chart of Accounts</div> };
+            }));
+            break;
+          case 'journal-entries':
+            componentName = 'JournalEntryManagement';
+            AccountingComponent = lazy(() => import('./forms/JournalEntryManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading JournalEntryManagement:', err);
+              return { default: () => <div className="p-4">Error loading Journal Entries</div> };
+            }));
+            break;
+          case 'general-ledger':
+            componentName = 'GeneralLedgerManagement';
+            AccountingComponent = lazy(() => import('./forms/GeneralLedgerManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading GeneralLedgerManagement:', err);
+              return { default: () => <div className="p-4">Error loading General Ledger</div> };
+            }));
+            break;
+          case 'reconciliation':
+            componentName = 'AccountReconManagement';
+            AccountingComponent = lazy(() => import('./forms/AccountReconManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading AccountReconManagement:', err);
+              return { default: () => <div className="p-4">Error loading Reconciliation</div> };
+            }));
+            break;
+          case 'financial-statements':
+            componentName = 'FinancialStatementsManagement';
+            AccountingComponent = lazy(() => import('./forms/FinancialStatementsManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading FinancialStatementsManagement:', err);
+              return { default: () => <div className="p-4">Error loading Financial Statements</div> };
+            }));
+            break;
+          case 'fixed-assets':
+            componentName = 'FixedAssetManagement';
+            AccountingComponent = lazy(() => import('./forms/FixedAssetManagement.js').catch(err => {
+              console.error('[RenderMainContent] Error loading FixedAssetManagement:', err);
+              return { default: () => <div className="p-4">Error loading Fixed Assets</div> };
+            }));
+            break;
+          case 'accounting-reports':
+            componentName = 'AccountingReports';
+            AccountingComponent = lazy(() => import('./forms/AccountingReports.js').catch(err => {
+              console.error('[RenderMainContent] Error loading AccountingReports:', err);
+              return { default: () => <div className="p-4">Error loading Accounting Reports</div> };
+            }));
+            break;
+          default:
+            console.warn('[RenderMainContent] Unknown accounting view:', view);
+            return (
+              <ContentWrapperWithKey>
+                <div className="p-4">
+                  <h1 className="text-xl font-semibold mb-2">Accounting Feature</h1>
+                  <p>This accounting feature is not yet implemented: {view}</p>
+                </div>
+              </ContentWrapperWithKey>
+            );
+        }
+        
+        if (AccountingComponent) {
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup 
+                componentKey={`${componentKey}-${view}`}
+                fallback={
+                  <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                }
+              >
+                <AccountingComponent />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
+      }
+      
       // Special handling for inventory views
       if (view === 'inventory-suppliers') {
         console.log('[RenderMainContent] Rendering inventory-suppliers view');
@@ -1021,17 +1802,74 @@ const RenderMainContent = React.memo(function RenderMainContent({
         );
       }
 
-      // Analytics view handling
-      if ((view && view.startsWith('analytics-')) || view === 'ai-query') {
-        const analyticsComponentKey = `analytics-${navigationKey || 'default'}`;
-        return (
-          <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={analyticsComponentKey}>
-              {view === 'analytics-dashboard' && <KPIDashboard userData={userData} />}
-              {view === 'ai-query' && <AIQueryPage userData={userData} />}
-            </SuspenseWithCleanup>
-          </ContentWrapperWithKey>
-        );
+      // Handle Analytics views
+      if (view && (view.startsWith('analytics-') || view === 'kpi-data' || view === 'ai-query') || showAnalysisPage || showKPIDashboard) {
+        console.log('[RenderMainContent] Rendering analytics view:', view);
+        
+        let AnalyticsComponent = null;
+        let componentName = '';
+        
+        // Handle view-based routing first
+        if (view) {
+          switch(view) {
+            case 'analytics':
+            case 'analytics-dashboard':
+            case 'kpi-data':
+              componentName = 'AnalyticsDashboard';
+              AnalyticsComponent = lazy(() => import('./forms/AnalyticsDashboard.js').catch(err => {
+                console.error('[RenderMainContent] Error loading AnalyticsDashboard:', err);
+                return { default: () => <div className="p-4">Error loading Analytics Dashboard</div> };
+              }));
+              break;
+            case 'ai-query':
+            case 'analytics-ai-query':
+              componentName = 'AIQueryPage';
+              AnalyticsComponent = lazy(() => import('./forms/AIQueryPage.js').catch(err => {
+                console.error('[RenderMainContent] Error loading AIQueryPage:', err);
+                return { default: () => <div className="p-4">Error loading AI Query Page</div> };
+              }));
+              break;
+            default:
+              console.warn('[RenderMainContent] Unknown analytics view:', view);
+              return (
+                <ContentWrapperWithKey>
+                  <div className="p-4">Unknown analytics view: {view}</div>
+                </ContentWrapperWithKey>
+              );
+          }
+          
+          if (AnalyticsComponent) {
+            return (
+              <ContentWrapperWithKey>
+                <SuspenseWithCleanup 
+                  componentKey={`${componentKey}-${view}`}
+                  fallback={
+                    <div className="flex justify-center items-center h-64">
+                      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                    </div>
+                  }
+                >
+                  <AnalyticsComponent userData={userData} />
+                </SuspenseWithCleanup>
+              </ContentWrapperWithKey>
+            );
+          }
+        }
+        
+        // Handle legacy showAnalysisPage and showKPIDashboard
+        if (showAnalysisPage || showKPIDashboard) {
+          const LegacyAnalyticsComponent = showKPIDashboard ? 
+            lazy(() => import('./forms/AnalyticsDashboard.js')) : 
+            lazy(() => import('./forms/AIQueryPage.js'));
+          
+          return (
+            <ContentWrapperWithKey>
+              <SuspenseWithCleanup componentKey={`analytics-legacy-${navigationKey || 'default'}`}>
+                <LegacyAnalyticsComponent userData={userData} />
+              </SuspenseWithCleanup>
+            </ContentWrapperWithKey>
+          );
+        }
       }
 
       // Additional case for createOptions

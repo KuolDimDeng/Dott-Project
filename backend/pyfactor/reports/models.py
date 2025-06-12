@@ -2,8 +2,9 @@
 # Create your models here.
 from django.db import models
 from users.models import UserProfile
+from custom_auth.tenant_base_model import TenantAwareModel
 
-class Report(models.Model):
+class Report(TenantAwareModel):
     REPORT_TYPES = (
         ('BS', 'Balance Sheet'),
         ('CF', 'Cash Flow'),

@@ -20,6 +20,7 @@ const Drawer = ({
   handleBankingClick,
   handleHRClick,
   handlePayrollClick,
+  handlePaymentsClick,
   handleAnalysisClick,
   showCustomerList,
   setShowCustomerList,
@@ -229,6 +230,7 @@ const Drawer = ({
             handleBankingClick={handleBankingClick}
             handleHRClick={handleHRClick}
             handlePayrollClick={handlePayrollClick}
+            handlePaymentsClick={handlePaymentsClick}
             handleAnalysisClick={handleAnalysisClick}
             showCustomerList={showCustomerList}
             setShowCustomerList={setShowCustomerList}

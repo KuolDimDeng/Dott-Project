@@ -844,6 +844,158 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     }
   }, [resetAllStates, updateState]);
 
+  // Add the handlePaymentsClick function
+  const handlePaymentsClick = useCallback((option) => {
+    console.log('[DashboardContent] handlePaymentsClick called with option:', option);
+    resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const paymentsNavKey = `payments-${option}-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for payments:', paymentsNavKey);
+    
+    // Set view based on the payment option selected
+    switch(option) {
+      case 'dashboard':
+        updateState({ 
+          view: 'payments-dashboard',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'receive-payments':
+        updateState({ 
+          view: 'receive-payments',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'make-payments':
+        updateState({ 
+          view: 'make-payments',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'payment-methods':
+        updateState({ 
+          view: 'payment-methods',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'recurring-payments':
+        updateState({ 
+          view: 'recurring-payments',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'refunds':
+        updateState({ 
+          view: 'refunds',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'reconciliation':
+        updateState({ 
+          view: 'payment-reconciliation',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'payment-gateways':
+        updateState({ 
+          view: 'payment-gateways',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'payment-plans':
+        updateState({ 
+          view: 'payment-plans',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      case 'reports':
+        updateState({ 
+          view: 'payment-reports',
+          navigationKey: paymentsNavKey
+        });
+        break;
+      default:
+        // Default to payments dashboard
+        updateState({ 
+          view: 'payments-dashboard',
+          navigationKey: paymentsNavKey
+        });
+    }
+    
+    console.log(`[DashboardContent] Navigating to Payments ${option} with key ${paymentsNavKey}`);
+  }, [resetAllStates, updateState]);
+
+  // Add the handleAccountingClick function
+  const handleAccountingClick = useCallback((option) => {
+    console.log('[DashboardContent] handleAccountingClick called with option:', option);
+    resetAllStates();
+    
+    // Generate a unique navigation key for component remounting
+    const accountingNavKey = `accounting-${option}-${Date.now()}`;
+    console.log('[DashboardContent] Setting navigationKey for accounting:', accountingNavKey);
+    
+    // Set view based on the accounting option selected
+    switch(option) {
+      case 'dashboard':
+        updateState({ 
+          view: 'accounting-dashboard',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'chart-of-accounts':
+        updateState({ 
+          view: 'chart-of-accounts',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'journal-entries':
+        updateState({ 
+          view: 'journal-entries',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'general-ledger':
+        updateState({ 
+          view: 'general-ledger',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'reconciliation':
+        updateState({ 
+          view: 'reconciliation',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'financial-statements':
+        updateState({ 
+          view: 'financial-statements',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'fixed-assets':
+        updateState({ 
+          view: 'fixed-assets',
+          navigationKey: accountingNavKey
+        });
+        break;
+      case 'reports':
+        updateState({ 
+          view: 'accounting-reports',
+          navigationKey: accountingNavKey
+        });
+        break;
+      default:
+        // Default to accounting dashboard
+        updateState({ 
+          view: 'accounting-dashboard',
+          navigationKey: accountingNavKey
+        });
+    }
+    
+    console.log(`[DashboardContent] Navigating to Accounting ${option} with key ${accountingNavKey}`);
+  }, [resetAllStates, updateState]);
+
   // Memoize userData to prevent unnecessary re-renders
   const memoizedUserData = useMemo(() => {
     return userData || initialUserData;
@@ -927,6 +1079,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleHomeClick,
     handleHRClick,
     handlePayrollClick,
+    handlePaymentsClick,
+    handleAccountingClick,
     handleBankingClick,
     handleInventoryClick,
     handleShowCreateOptions,
@@ -938,7 +1092,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     handleTaxesClick
   }), [
     drawerOpen, handleDrawerToggleWithLogging, drawerWidth, handleDrawerItemClick, memoizedUserData,
-    resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handleBankingClick, handleInventoryClick,
+    resetAllStates, handleHomeClick, handleHRClick, handlePayrollClick, handlePaymentsClick, handleAccountingClick, handleBankingClick, handleInventoryClick,
     handleShowCreateOptions, handleShowCreateMenu, handleEmployeeManagementClick, handleCRMClick,
     handleBillingClick, handleSalesClick, handleTaxesClick
   ]);

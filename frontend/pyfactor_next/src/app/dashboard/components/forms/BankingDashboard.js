@@ -1,7 +1,8 @@
 // /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/dashboard/components/forms/BankingDashboard.js
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { bankAccountsApi, bankTransactionsApi } from '@/services/api/banking';
+import { logger } from '@/utils/logger';
 import Link from 'next/link';
 
 const BankingDashboard = () => {
@@ -17,7 +18,7 @@ const BankingDashboard = () => {
   const fetchBankingAccounts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/banking/accounts/');
+      const response = await bankAccountsApi.getAll();
       if (response.data.accounts && Array.isArray(response.data.accounts)) {
         setAccounts(response.data.accounts);
         if (response.data.accounts.length > 0) {
@@ -30,7 +31,7 @@ const BankingDashboard = () => {
         setConnectedBank(null);
       }
     } catch (error) {
-      console.error('Error fetching banking accounts:', error);
+      logger.error('Error fetching banking accounts:', error);
       setError('Failed to fetch banking accounts. Please try again later.');
       setConnectedBank(null);
     } finally {
@@ -44,16 +45,14 @@ const BankingDashboard = () => {
       return;
     }
     try {
-      const response = await axiosInstance.get('/api/banking/recent-transactions/', {
-        params: { limit: 10 },
-      });
+      const response = await bankTransactionsApi.getRecent({ limit: 10 });
       if (response.data.transactions && Array.isArray(response.data.transactions)) {
         setTransactions(response.data.transactions);
       } else {
         setTransactions([]);
       }
     } catch (error) {
-      console.error('Error fetching recent transactions:', error);
+      logger.error('Error fetching recent transactions:', error);
       setError('Failed to fetch recent transactions. Please try again later.');
     }
   }, [connectedBank]);

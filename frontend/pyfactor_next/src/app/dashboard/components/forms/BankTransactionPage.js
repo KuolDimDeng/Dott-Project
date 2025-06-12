@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { bankAccountsApi, bankTransactionsApi } from '@/services/api/banking';
+import { logger } from '@/utils/logger';
 
 const BankTransactionPage = () => {
   const [accounts, setAccounts] = useState([]);
@@ -13,14 +14,14 @@ const BankTransactionPage = () => {
   const fetchBankAccounts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/banking/accounts/');
+      const response = await bankAccountsApi.getAll();
       if (response.data.accounts && Array.isArray(response.data.accounts)) {
         setAccounts(response.data.accounts);
       } else {
         setAccounts([]);
       }
     } catch (error) {
-      console.error('Error fetching bank accounts:', error);
+      logger.error('Error fetching bank accounts:', error);
       setError('Failed to fetch bank accounts. Please try again later.');
     } finally {
       setLoading(false);
@@ -51,12 +52,10 @@ const BankTransactionPage = () => {
 
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/api/banking/transactions/', {
-        params: {
-          account_id: selectedAccount,
-          start_date: startDate,
-          end_date: endDate,
-        },
+      const response = await bankTransactionsApi.getAll({
+        account_id: selectedAccount,
+        start_date: startDate,
+        end_date: endDate,
       });
       if (response.data.transactions && Array.isArray(response.data.transactions)) {
         setTransactions(response.data.transactions);
@@ -65,7 +64,7 @@ const BankTransactionPage = () => {
       }
       setError(null);
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      logger.error('Error fetching transactions:', error);
       setError('Failed to fetch transactions. Please try again later.');
     } finally {
       setLoading(false);

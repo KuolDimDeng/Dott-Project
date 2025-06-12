@@ -9,10 +9,11 @@ from django.db.models import Sum, Q
 from django.utils import timezone
 from datetime import timedelta
 from difflib import SequenceMatcher
+from custom_auth.tenant_base_model import TenantAwareModel
 
 # Finance models are imported dynamically in methods to avoid circular dependencies
 
-class BankIntegration(models.Model):
+class BankIntegration(TenantAwareModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,7 +29,7 @@ class TinkItem(BankIntegration):
     access_token = models.CharField(max_length=100)
     item_id = models.CharField(max_length=100)
 
-class Country(models.Model):
+class Country(TenantAwareModel):
     """
     Model to store country information.
     """
@@ -43,7 +44,7 @@ class Country(models.Model):
     def __str__(self):
         return f"{self.name} ({self.code})"
 
-class PaymentGateway(models.Model):
+class PaymentGateway(TenantAwareModel):
     """
     Model to store payment gateway information.
     """
@@ -68,7 +69,7 @@ class PaymentGateway(models.Model):
     def __str__(self):
         return self.get_name_display()
 
-class CountryPaymentGateway(models.Model):
+class CountryPaymentGateway(TenantAwareModel):
     """
     Model to map countries to their appropriate payment gateways with priority levels.
     This mapping is used to determine which payment integration to use based on a user's country.
@@ -93,7 +94,7 @@ class CountryPaymentGateway(models.Model):
     def __str__(self):
         return f"{self.country.name} - {self.gateway.get_name_display()} (Priority: {self.get_priority_display()})"
 
-class BankAccount(models.Model):
+class BankAccount(TenantAwareModel):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
     # Replace ForeignKey with UUID field to break circular dependency
     # employee = models.ForeignKey('hr.Employee', on_delete=models.CASCADE, related_name='bank_accounts', null=True, blank=True)
@@ -126,7 +127,7 @@ class BankAccount(models.Model):
         debits = transactions.filter(transaction_type='DEBIT').aggregate(Sum('amount'))['amount__sum'] or 0
         return self.balance - credits + debits
 
-class BankTransaction(models.Model):
+class BankTransaction(TenantAwareModel):
     TRANSACTION_TYPES = [
         ('DEBIT', 'Debit'),
         ('CREDIT', 'Credit'),

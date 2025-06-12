@@ -3,8 +3,8 @@
 
 import React, { useState, useEffect } from 'react';
 import ConnectBank from './ConnectBank';
-import { axiosInstance } from '@/lib/axiosConfig';
-// Removed AWS Cognito utils import - now using Auth0
+import { bankAccountsApi } from '@/services/api/banking';
+import { logger } from '@/utils/logger';
 
 /**
  * ConnectBankManagement component
@@ -19,31 +19,31 @@ const ConnectBankManagement = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch the business country from Cognito attributes
+    // Set default business country to US (Auth0 integration can be added later)
     const fetchBusinessCountry = async () => {
       try {
-        const country = await getAttributeValue('custom:businesscountry');
-        setBusinessCountry(country || 'US'); // Default to US if not set
-        return country || 'US';
+        // Default to US for now - can be enhanced with Auth0 profile data later
+        setBusinessCountry('US');
+        return 'US';
       } catch (err) {
-        console.error('Error fetching business country:', err);
-        setBusinessCountry('US'); // Default to US on error
+        logger.error('Error setting business country:', err);
+        setBusinessCountry('US');
         return 'US';
       }
     };
 
-    // Fetch connected accounts
+    // Fetch connected accounts using banking API service
     const fetchConnectedAccounts = async () => {
       try {
         setLoading(true);
-        const response = await axiosInstance.get('/api/banking/connected-accounts/');
+        const response = await bankAccountsApi.getConnectedAccounts();
         if (response.data && Array.isArray(response.data.accounts)) {
           setConnectedAccounts(response.data.accounts);
         } else {
           setConnectedAccounts([]);
         }
       } catch (err) {
-        console.error('Error fetching connected accounts:', err);
+        logger.error('Error fetching connected accounts:', err);
         setError('Failed to fetch connected accounts. Please try again later.');
       } finally {
         setLoading(false);

@@ -9,6 +9,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth import get_user_model
+from custom_auth.tenant_base_model import TenantAwareModel
 
 User = get_user_model()
 
@@ -313,21 +314,21 @@ class Employee(AbstractUser):
             from payments.providers import PaymentProviderRegistry
             return PaymentProviderRegistry.get_provider_for_country(country_code)
 
-class Role(models.Model):
+class Role(TenantAwareModel):
     name = models.CharField(max_length=100)
     description = models.TextField()
     
     def __str__(self):
         return self.name
 
-class EmployeeRole(models.Model):
+class EmployeeRole(TenantAwareModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     
     def __str__(self):
         return f"{self.employee} - {self.role}"
 
-class AccessPermission(models.Model):
+class AccessPermission(TenantAwareModel):
     role = models.ForeignKey(Role, on_delete=models.CASCADE)
     module = models.CharField(max_length=100)
     can_view = models.BooleanField(default=False)
@@ -338,7 +339,7 @@ class AccessPermission(models.Model):
         return f"{self.role} - {self.module} permissions"
 
 
-class PreboardingForm(models.Model):
+class PreboardingForm(TenantAwareModel):
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
@@ -353,7 +354,7 @@ class PreboardingForm(models.Model):
 
 # Timesheet Management Models
 
-class TimesheetSetting(models.Model):
+class TimesheetSetting(TenantAwareModel):
     """Timesheet settings for a business"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_id = models.UUIDField(null=True, blank=True)
@@ -408,7 +409,7 @@ class TimesheetSetting(models.Model):
         verbose_name_plural = "Timesheet Settings"
 
 
-class CompanyHoliday(models.Model):
+class CompanyHoliday(TenantAwareModel):
     """Company observed holidays"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_id = models.UUIDField(null=True, blank=True)
@@ -430,7 +431,7 @@ class CompanyHoliday(models.Model):
         unique_together = ('business_id', 'date', 'name')
 
 
-class Timesheet(models.Model):
+class Timesheet(TenantAwareModel):
     """Employee timesheet record"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     timesheet_number = models.CharField(max_length=20, unique=True, editable=False, null=True)
@@ -497,7 +498,7 @@ class Timesheet(models.Model):
         unique_together = ('employee', 'period_start', 'period_end')
 
 
-class TimesheetEntry(models.Model):
+class TimesheetEntry(TenantAwareModel):
     """Individual timesheet entry for a day"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     timesheet = models.ForeignKey(Timesheet, on_delete=models.CASCADE, related_name='entries')
@@ -529,7 +530,7 @@ class TimesheetEntry(models.Model):
         unique_together = ('timesheet', 'date')
 
 
-class TimeOffRequest(models.Model):
+class TimeOffRequest(TenantAwareModel):
     """Base model for PTO and sick leave requests"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='time_off_requests')
@@ -580,7 +581,7 @@ def get_current_year():
     """Return the current year for TimeOffBalance default"""
     return datetime.datetime.now().year
 
-class TimeOffBalance(models.Model):
+class TimeOffBalance(TenantAwareModel):
     """Employee PTO and sick leave balance"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='time_off_balance')
@@ -624,7 +625,7 @@ class TimeOffBalance(models.Model):
         unique_together = ('employee', 'year')
 
 
-class Benefits(models.Model):
+class Benefits(TenantAwareModel):
     """Employee benefits model"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.OneToOneField('Employee', on_delete=models.CASCADE, related_name='benefits')
@@ -740,7 +741,7 @@ class Benefits(models.Model):
         verbose_name_plural = "Benefits"
 
 
-class PerformanceReview(models.Model):
+class PerformanceReview(TenantAwareModel):
     """Employee performance review model"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     review_number = models.CharField(max_length=20, unique=True, editable=False, null=True)
@@ -829,7 +830,7 @@ class PerformanceReview(models.Model):
         verbose_name_plural = "Performance Reviews"
 
 
-class PerformanceMetric(models.Model):
+class PerformanceMetric(TenantAwareModel):
     """Performance metrics categories for reviews"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
@@ -864,7 +865,7 @@ class PerformanceMetric(models.Model):
         unique_together = ('business_id', 'name')
 
 
-class PerformanceRating(models.Model):
+class PerformanceRating(TenantAwareModel):
     """Individual metric ratings within a performance review"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     review = models.ForeignKey(PerformanceReview, on_delete=models.CASCADE, related_name='ratings')
@@ -890,7 +891,7 @@ class PerformanceRating(models.Model):
         unique_together = ('review', 'metric')
 
 
-class PerformanceGoal(models.Model):
+class PerformanceGoal(TenantAwareModel):
     """Employee performance goals"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='performance_goals')
@@ -968,7 +969,7 @@ class PerformanceGoal(models.Model):
         verbose_name_plural = "Performance Goals"
 
 
-class FeedbackRecord(models.Model):
+class FeedbackRecord(TenantAwareModel):
     """Record of feedback given to or about an employee"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey('Employee', on_delete=models.CASCADE, related_name='feedback_received')
@@ -1014,7 +1015,7 @@ class FeedbackRecord(models.Model):
         verbose_name_plural = "Feedback Records"
 
 
-class PerformanceSetting(models.Model):
+class PerformanceSetting(TenantAwareModel):
     """Performance management settings for a business"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation

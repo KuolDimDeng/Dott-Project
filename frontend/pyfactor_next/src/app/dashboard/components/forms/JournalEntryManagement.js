@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { journalEntriesApi, chartOfAccountsApi } from '@/services/api/finance';
+import { getSecureTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
 
 const JournalEntryManagement = () => {
   const [journalEntries, setJournalEntries] = useState([]);
@@ -14,19 +16,23 @@ const JournalEntryManagement = () => {
 
   const fetchJournalEntries = async () => {
     try {
-      const response = await axiosInstance.get('/api/journal-entries/');
+      logger.debug('[JournalEntryManagement] Fetching journal entries for tenant:', getSecureTenantId());
+      const response = await journalEntriesApi.getAll();
       setJournalEntries(response.data);
+      logger.info('[JournalEntryManagement] Journal entries loaded successfully');
     } catch (error) {
-      console.error('Error fetching journal entries:', error);
+      logger.error('[JournalEntryManagement] Error fetching journal entries:', error);
     }
   };
 
   const fetchAccounts = async () => {
     try {
-      const response = await axiosInstance.get('/api/chart-of-accounts/');
+      logger.debug('[JournalEntryManagement] Fetching chart of accounts for tenant:', getSecureTenantId());
+      const response = await chartOfAccountsApi.getAll();
       setAccounts(response.data);
+      logger.info('[JournalEntryManagement] Accounts loaded successfully');
     } catch (error) {
-      console.error('Error fetching accounts:', error);
+      logger.error('[JournalEntryManagement] Error fetching accounts:', error);
     }
   };
 

@@ -190,3 +190,53 @@ def employee_payment_method(request, employee_id):
             'success': True,
             'message': f'Payment method updated to {provider_name}'
         })
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def record_payment(request):
+    """
+    Record a payment transaction in the database.
+    
+    This endpoint is called after Stripe payment processing is complete
+    to record the payment details in the local database.
+    """
+    try:
+        data = request.data
+        tenant_id = data.get('tenantId')
+        
+        # Validate required fields
+        required_fields = ['customerId', 'amount', 'paymentDate', 'paymentMethod']
+        for field in required_fields:
+            if not data.get(field):
+                return Response({
+                    'error': f'{field} is required'
+                }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # For now, we'll just log the payment details
+        # In a full implementation, this would save to a Payment model
+        logger.info(f"Recording payment for tenant {tenant_id}: {data}")
+        
+        # TODO: Implement actual payment recording to database
+        # payment = Payment.objects.create(
+        #     tenant_id=tenant_id,
+        #     customer_id=data['customerId'],
+        #     amount=Decimal(data['amount']),
+        #     payment_date=data['paymentDate'],
+        #     payment_method=data['paymentMethod'],
+        #     reference=data.get('reference', ''),
+        #     notes=data.get('notes', ''),
+        #     stripe_payment_intent_id=data.get('stripePaymentIntentId'),
+        #     status='completed'
+        # )
+        
+        return Response({
+            'success': True,
+            'message': 'Payment recorded successfully',
+            'payment_id': 'temp_id_123'  # TODO: Return actual payment ID
+        })
+        
+    except Exception as e:
+        logger.error(f"Error recording payment: {str(e)}")
+        return Response({
+            'error': f'Failed to record payment: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

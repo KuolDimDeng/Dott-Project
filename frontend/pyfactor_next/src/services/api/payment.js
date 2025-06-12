@@ -40,7 +40,7 @@ export async function createPaymentIntent(data = {}) {
     logger.debug('[PaymentAPI] Creating payment intent');
 
     const response = await makePaymentRequest(
-      `${API_BASE_URL}/api/payments/create-intent/`,
+      `${API_BASE_URL}/api/payments/create-payment-intent/`,
       {
         method: 'POST',
         body: JSON.stringify(data)
@@ -65,7 +65,7 @@ export async function confirmPayment(paymentIntentId) {
     logger.debug('[PaymentAPI] Confirming payment:', paymentIntentId);
 
     const response = await makePaymentRequest(
-      `${API_BASE_URL}/api/payments/confirm/`,
+      `${API_BASE_URL}/api/payments/confirm-payment/`,
       {
         method: 'POST',
         body: JSON.stringify({

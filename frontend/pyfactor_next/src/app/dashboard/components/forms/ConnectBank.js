@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
-import { axiosInstance } from '@/lib/axiosConfig';
+import { plaidApi, bankAccountsApi } from '@/services/api/banking';
+import { logger } from '@/utils/logger';
 
 const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoConnect = false }) => {
   const [region, setRegion] = useState('');
@@ -106,7 +107,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
-      const response = await axiosInstance.post('/api/banking/create_link_token/', payload);
+      const response = await plaidApi.createLinkToken(payload);
 
       if (response.data.link_token) {
         setLinkToken(response.data.link_token);
@@ -117,7 +118,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         throw new Error('Invalid response from server');
       }
     } catch (err) {
-      console.error('Error auto-connecting to bank:', err);
+      logger.error('Error auto-connecting to bank:', err);
       setError('Failed to initialize bank connection. Please try again.');
       setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
     } finally {
@@ -143,7 +144,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         payload.country_code = businessCountry;
       }
 
-      const response = await axiosInstance.post('/api/banking/create_link_token/', payload);
+      const response = await plaidApi.createLinkToken(payload);
 
       if (response.data.link_token) {
         setLinkToken(response.data.link_token);
@@ -154,7 +155,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         throw new Error('Invalid response from server');
       }
     } catch (err) {
-      console.error('Error creating link token:', err);
+      logger.error('Error creating link token:', err);
       setError('Failed to initialize bank connection. Please try again.');
       setSnackbar({ open: true, message: 'Failed to connect bank', severity: 'error' });
     } finally {
@@ -187,7 +188,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
 
   const exchangePublicToken = async (public_token) => {
     try {
-      const response = await axiosInstance.post('/api/banking/exchange_token/', { public_token });
+      const response = await plaidApi.exchangeToken(public_token);
       if (response.data.success) {
         setConnectedBankInfo(response.data.bank_info);
         setSnackbar({
@@ -199,7 +200,7 @@ const ConnectBank = ({ preferredProvider = null, businessCountry = null, autoCon
         throw new Error('Failed to exchange token');
       }
     } catch (error) {
-      console.error('Error exchanging token:', error);
+      logger.error('Error exchanging token:', error);
       setSnackbar({
         open: true,
         message: 'Failed to connect bank. Please try again.',

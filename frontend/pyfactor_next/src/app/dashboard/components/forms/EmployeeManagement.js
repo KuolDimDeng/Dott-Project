@@ -8,7 +8,7 @@ import { appCache } from '../../../../utils/appCache';
 import React, { useState, useEffect, useCallback, memo, Fragment, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { axiosInstance, backendHrApiInstance, resetCircuitBreakers } from '@/lib/axiosConfig';
+import { employeesApi, rolesApi } from '@/services/api/hr';
 import { countries } from 'countries-list';
 import { format, parseISO } from 'date-fns';
 import EmployeePermissions from './EmployeePermissions';
@@ -20,9 +20,7 @@ import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 // Import the API utilities
 import api from '@/utils/api';
 import { logger } from '@/utils/logger';
-import { employeeApi } from '@/utils/apiClient';
 import { invalidateCache } from '@/utils/apiHelpers';
-import { verifyBackendConnection } from '@/lib/axiosConfig';
 import BackendConnectionCheck from '../BackendConnectionCheck';
 
 // UI Components - similar to ProductManagement.js

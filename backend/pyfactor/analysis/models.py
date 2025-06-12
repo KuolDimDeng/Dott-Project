@@ -2,10 +2,11 @@
 
 import uuid
 from django.db import models
+from custom_auth.tenant_base_model import TenantAwareModel
 
 
 
-class FinancialData(models.Model):
+class FinancialData(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     date = models.DateField()
     sales = models.DecimalField(max_digits=10, decimal_places=2)
@@ -13,7 +14,7 @@ class FinancialData(models.Model):
     profit = models.DecimalField(max_digits=10, decimal_places=2)
     # Add more fields as needed
 
-class ChartConfiguration(models.Model):
+class ChartConfiguration(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     x_axis = models.CharField(max_length=50)

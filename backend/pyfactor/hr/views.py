@@ -5,7 +5,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting
+from .models import Employee, Role, EmployeeRole, AccessPermission, PreboardingForm, PerformanceReview, PerformanceMetric, PerformanceRating, PerformanceGoal, FeedbackRecord, PerformanceSetting, Timesheet, TimesheetEntry, TimeOffRequest, TimeOffBalance, Benefits
 from .serializers import (
     EmployeeSerializer, 
     RoleSerializer, 
@@ -18,7 +18,12 @@ from .serializers import (
     PerformanceRatingSerializer,
     PerformanceGoalSerializer,
     FeedbackRecordSerializer,
-    PerformanceSettingSerializer
+    PerformanceSettingSerializer,
+    TimesheetSerializer,
+    TimesheetEntrySerializer,
+    TimeOffRequestSerializer,
+    TimeOffBalanceSerializer,
+    BenefitsSerializer
 )
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
@@ -670,5 +675,117 @@ class PerformanceSettingViewSet(viewsets.ModelViewSet):
         business_id = self.request.query_params.get('business_id', None)
         if business_id:
             queryset = queryset.filter(business_id=business_id)
+        
+        return queryset
+
+
+class TimesheetViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing timesheets"""
+    queryset = Timesheet.objects.all()
+    serializer_class = TimesheetSerializer
+    
+    def get_queryset(self):
+        queryset = Timesheet.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by status
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by date range
+        start_date = self.request.query_params.get('start_date', None)
+        end_date = self.request.query_params.get('end_date', None)
+        if start_date and end_date:
+            queryset = queryset.filter(period_start__gte=start_date, period_end__lte=end_date)
+        
+        return queryset.order_by('-period_start')
+
+
+class TimesheetEntryViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing timesheet entries"""
+    queryset = TimesheetEntry.objects.all()
+    serializer_class = TimesheetEntrySerializer
+    
+    def get_queryset(self):
+        queryset = TimesheetEntry.objects.all()
+        
+        # Filter by timesheet
+        timesheet_id = self.request.query_params.get('timesheet_id', None)
+        if timesheet_id:
+            queryset = queryset.filter(timesheet_id=timesheet_id)
+        
+        return queryset.order_by('date')
+
+
+class TimeOffRequestViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing time off requests"""
+    queryset = TimeOffRequest.objects.all()
+    serializer_class = TimeOffRequestSerializer
+    
+    def get_queryset(self):
+        queryset = TimeOffRequest.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by status
+        status = self.request.query_params.get('status', None)
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Filter by request type
+        request_type = self.request.query_params.get('request_type', None)
+        if request_type:
+            queryset = queryset.filter(request_type=request_type)
+        
+        return queryset.order_by('-created_at')
+
+
+class TimeOffBalanceViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing time off balances"""
+    queryset = TimeOffBalance.objects.all()
+    serializer_class = TimeOffBalanceSerializer
+    
+    def get_queryset(self):
+        queryset = TimeOffBalance.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by year
+        year = self.request.query_params.get('year', None)
+        if year:
+            queryset = queryset.filter(year=year)
+        
+        return queryset
+
+
+class BenefitsViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing employee benefits"""
+    queryset = Benefits.objects.all()
+    serializer_class = BenefitsSerializer
+    
+    def get_queryset(self):
+        queryset = Benefits.objects.all()
+        
+        # Filter by employee
+        employee_id = self.request.query_params.get('employee_id', None)
+        if employee_id:
+            queryset = queryset.filter(employee_id=employee_id)
+        
+        # Filter by enrollment status
+        is_enrolled = self.request.query_params.get('is_enrolled', None)
+        if is_enrolled is not None:
+            is_enrolled_bool = is_enrolled.lower() == 'true'
+            queryset = queryset.filter(is_enrolled=is_enrolled_bool)
         
         return queryset

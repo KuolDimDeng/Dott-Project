@@ -6,6 +6,7 @@ from hr.models import Employee, Timesheet
 import uuid
 from decimal import Decimal
 from django.core.validators import MinValueValidator, MaxValueValidator
+from custom_auth.tenant_base_model import TenantAwareModel
 
 
 def get_current_datetime():
@@ -15,7 +16,7 @@ def default_due_datetime():
     return get_current_datetime() + timedelta(days=30)
 
 
-class PayrollRun(models.Model):
+class PayrollRun(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     payroll_number = models.CharField(max_length=20, unique=True, editable=False)
     start_date = models.DateField()
@@ -77,7 +78,7 @@ class PayrollRun(models.Model):
     def __str__(self):
         return f"Payroll {self.payroll_number}"
 
-class PayrollTransaction(models.Model):
+class PayrollTransaction(TenantAwareModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     payroll_run = models.ForeignKey(PayrollRun, on_delete=models.CASCADE)
     timesheet = models.ForeignKey(
@@ -101,7 +102,7 @@ class PayrollTransaction(models.Model):
         timesheet_info = f" - Timesheet: {self.timesheet.timesheet_number}" if self.timesheet else ""
         return f"Payment for {self.employee}{timesheet_info} - {self.gross_pay}"
 
-class TaxForm(models.Model):
+class TaxForm(TenantAwareModel):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     form_type = models.CharField(max_length=20)
     tax_year = models.IntegerField()
@@ -110,7 +111,7 @@ class TaxForm(models.Model):
 
 # Pay Management Models
 
-class PaymentDepositMethod(models.Model):
+class PaymentDepositMethod(TenantAwareModel):
     """Employee payment deposit method"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deposit_methods')
@@ -164,7 +165,7 @@ class PaymentDepositMethod(models.Model):
         verbose_name_plural = "Payment Deposit Methods"
 
 
-class IncomeWithholding(models.Model):
+class IncomeWithholding(TenantAwareModel):
     """Employee income tax withholding preferences"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.OneToOneField(Employee, on_delete=models.CASCADE, related_name='income_withholding')
@@ -237,7 +238,7 @@ class IncomeWithholding(models.Model):
         verbose_name_plural = "Income Withholdings"
 
 
-class PaySetting(models.Model):
+class PaySetting(TenantAwareModel):
     """Company-wide Pay Settings"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     business_id = models.UUIDField(null=True, blank=True)  # For RLS tenant isolation
@@ -300,7 +301,7 @@ class PaySetting(models.Model):
         verbose_name_plural = "Pay Settings"
 
 
-class BonusPayment(models.Model):
+class BonusPayment(TenantAwareModel):
     """Tracks bonus payments to employees"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='bonuses')
@@ -348,7 +349,7 @@ class BonusPayment(models.Model):
         verbose_name_plural = "Bonus Payments"
 
 
-class PayStatement(models.Model):
+class PayStatement(TenantAwareModel):
     """Employee pay statements/stubs"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='pay_statements')
