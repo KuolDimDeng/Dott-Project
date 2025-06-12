@@ -237,3 +237,4 @@ export const manualConfirmUser = async (userEmail) => {
     return { success: false, error: error.message || 'Unknown error' };
   }
 };
+

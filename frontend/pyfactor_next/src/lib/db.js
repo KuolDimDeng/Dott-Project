@@ -15,4 +15,7 @@ export const db = {
   })
 };
 
+// Export getDb function that returns the db instance
+export const getDb = () => db;
+
 export default db; 

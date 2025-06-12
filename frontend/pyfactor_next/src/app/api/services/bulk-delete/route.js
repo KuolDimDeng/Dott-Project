@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { logger } from '@/utils/logger';
-import { validateTenantAccess } from '@/utils/auth';
+import { validateTenantAccess } from '@/utils/auth.server';
 
 export async function POST(request) {
   try {

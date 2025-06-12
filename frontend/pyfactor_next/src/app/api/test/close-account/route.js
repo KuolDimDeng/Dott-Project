@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@auth0/nextjs-auth0/server';
+import { getAccessToken } from '@auth0/nextjs-auth0';
 import { cookies } from 'next/headers';
 
 export async function POST(request) {
