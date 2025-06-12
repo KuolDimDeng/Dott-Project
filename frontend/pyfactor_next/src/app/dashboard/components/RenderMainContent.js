@@ -60,6 +60,7 @@ const ContentWrapper = ({ children, className = '' }) => (
 
 // Lazy load all components with enhanced error handling
 const CustomerList = enhancedLazy(() => import('./lists/CustomerList.js'), 'Customer List');
+const CustomerManagement = enhancedLazy(() => import('./forms/CustomerManagement.js'), 'Customer Management');
 const InvoiceTemplateBuilder = enhancedLazy(() => import('./forms/InvoiceTemplateBuilder.js'), 'Invoice Template Builder');
 const TransactionForm = enhancedLazy(() => import('../../createNew/forms/TransactionForm.js'), 'Transaction Form');
 const TransactionList = enhancedLazy(() => import('./lists/TransactionList.js'), 'Transaction List');
@@ -1248,11 +1249,11 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = InvoiceTemplateBuilder;
         componentProps = { onClose: handleCloseInvoiceBuilder };
       } else if (showCustomerList) {
-        // Use CustomerList component for customer management
+        // Use CustomerManagement component for customer management
         return (
           <ContentWrapperWithKey>
-            <SuspenseWithCleanup componentKey={`customer-list-${sectionComponentKey}`}>
-              <CustomerList mode="list" onCreateCustomer={handleCreateCustomer} />
+            <SuspenseWithCleanup componentKey={`customer-management-${sectionComponentKey}`}>
+              <CustomerManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );

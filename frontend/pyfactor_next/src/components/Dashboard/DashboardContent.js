@@ -321,8 +321,32 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
       showHRDashboard: false,
       showTaxManagement: false,
       showTimesheetManagement: false,
+      showBenefitsManagement: false,
+      showReportsManagement: false,
+      showPerformanceManagement: false,
+      showPayManagement: false,
+      hrSection: 'dashboard',
       
-      // Reset other view states as needed
+      // Reset Sales states
+      showCustomerList: false,
+      showProductManagement: false,
+      showServiceManagement: false,
+      showEstimateManagement: false,
+      showSalesOrderManagement: false,
+      showInvoiceManagement: false,
+      
+      // Reset other states
+      showCreateOptions: false,
+      showInventoryItems: false,
+      showInventoryManagement: false,
+      selectedReport: null,
+      selectedOption: null,
+      selectedCustomer: null,
+      selectedInvoice: null,
+      showCustomerDetails: false,
+      showCreateMenu: false,
+      isCreating: false,
+      isEditing: false
     });
     
     console.log('[DashboardContent] All view states have been reset');
