@@ -73,9 +73,9 @@ const ProductManagement = enhancedLazy(() => import('./forms/ProductManagement.j
 const CreateProductManagement = enhancedLazy(() => import('./forms/CreateProductManagement.js'), 'Create Product Management');
 const SalesProductManagement = enhancedLazy(() => import('./forms/SalesProductManagement.js'), 'Sales Product Management');
 const ServiceManagement = enhancedLazy(() => import('./forms/ServiceManagement.js'), 'Service Management');
-const ServicesList = enhancedLazy(() => import('../../../services/components/ServicesList.js'), 'Services List');
-const VendorsList = enhancedLazy(() => import('../../../vendors/components/VendorsList.js'), 'Vendors List');
-const BillsList = enhancedLazy(() => import('../../../bills/components/BillsList.js'), 'Bills List');
+const ServicesList = enhancedLazy(() => import('../../services/components/ServicesList.js'), 'Services List');
+const VendorsList = enhancedLazy(() => import('../../vendors/components/VendorsList.js'), 'Vendors List');
+const BillsList = enhancedLazy(() => import('../../bills/components/BillsList.js'), 'Bills List');
 const EstimatesList = enhancedLazy(() => import('../../estimates/components/EstimatesList.js'), 'Estimates List');
 const CustomersList = enhancedLazy(() => import('../../customers/components/CustomersList.js'), 'Customers List');
 const EstimateManagement = enhancedLazy(() => import('./forms/EstimateManagement.js'), 'Estimate Management');
