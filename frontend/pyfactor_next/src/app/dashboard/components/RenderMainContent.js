@@ -1200,11 +1200,11 @@ const RenderMainContent = React.memo(function RenderMainContent({
         ActiveComponent = InvoiceTemplateBuilder;
         componentProps = { onClose: handleCloseInvoiceBuilder };
       } else if (showCustomerList) {
-        // Use CustomersList component 
+        // Use CustomerList component for customer management
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`customer-list-${sectionComponentKey}`}>
-              <CustomersList />
+              <CustomerList mode="list" onCreateCustomer={handleCreateCustomer} />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1225,21 +1225,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
           </ContentWrapperWithKey>
         );
       } else if (showServiceManagement) {
-        // Instead of just setting ActiveComponent, return the component directly
-        // This ensures we don't have any issues with hooks ordering
+        // Use ServiceManagement component for service management
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`service-management-${sectionComponentKey}`}>
-              <ServicesList />
+              <ServiceManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
       } else if (showEstimateManagement) {
-        // Use EstimatesList component 
+        // Use EstimateManagement component for estimate management
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`estimate-management-${sectionComponentKey}`}>
-              <EstimatesList />
+              <EstimateManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
@@ -1248,20 +1247,20 @@ const RenderMainContent = React.memo(function RenderMainContent({
       } else if (showInvoiceManagement) {
         ActiveComponent = InvoiceManagement;
       } else if (showVendorManagement) {
-        // Use VendorsList component instead of VendorManagement
+        // Use VendorManagement component for vendor management
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`vendor-management-${sectionComponentKey}`}>
-              <VendorsList />
+              <VendorManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
       } else if (showBillManagement) {
-        // Use BillsList component instead of BillManagement
+        // Use BillManagement component for bill management
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={`bill-management-${sectionComponentKey}`}>
-              <BillsList />
+              <BillManagement />
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
