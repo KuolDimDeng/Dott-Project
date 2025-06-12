@@ -2,11 +2,11 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+// Removed next-auth import - using Auth0 instead
 import { fetchEmployeeBenefits, updateEmployeeBenefits } from '@/utils/api/benefits';
 
 const BenefitsForm = ({ employeeId, onBenefitsUpdated }) => {
-  const { data: session } = useSession();
+  // Using employeeId prop instead of session
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);

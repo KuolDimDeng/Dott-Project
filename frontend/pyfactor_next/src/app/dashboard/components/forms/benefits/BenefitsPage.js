@@ -2,13 +2,13 @@
 
 
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
+// Removed next-auth import - using Auth0 instead
 import BenefitsSummary from './tabs/BenefitsSummary';
 import BenefitsForm from './tabs/BenefitsForm';
 
 const BenefitsPage = () => {
   const [activeTab, setActiveTab] = useState('summary');
-  const { data: session } = useSession();
+  // Session not needed for benefits page
   const [benefitsUpdated, setBenefitsUpdated] = useState(false);
 
   const handleTabChange = (tabName) => {

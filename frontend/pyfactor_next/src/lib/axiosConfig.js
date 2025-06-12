@@ -4,6 +4,7 @@
 import axios from 'axios';
 import { appCache } from '../utils/appCache';
 import { logger } from '@/utils/logger';
+import { createAxiosRetryInterceptor, withRetry } from '@/utils/retryUtils';
 import https from 'https';
 
 // Always use HTTPS for backend connections to avoid redirect issues
@@ -32,6 +33,22 @@ const axiosInstance = axios.create({
   withCredentials: true,
   // Never follow redirects - fail fast instead to avoid losing auth headers
   maxRedirects: 0
+});
+
+// Add retry functionality to main axios instance
+createAxiosRetryInterceptor(axiosInstance, {
+  maxRetries: 3,
+  initialDelay: 1000,
+  backoffMultiplier: 2,
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
+  onRetry: (error, attempt, delay) => {
+    logger.info(`[Axios Retry] Retrying API request (attempt ${attempt})`, {
+      url: error.config?.url,
+      method: error.config?.method,
+      delay,
+      error: error.message
+    });
+  }
 });
 
 // Create server-side axios instance with SSL verification disabled for local development
@@ -82,14 +99,27 @@ const backendHrApiInstance = axios.create({
     // Let 401 and 403 errors be handled by the interceptor
     return (status >= 200 && status < 300) || status === 401 || status === 403;
   },
-  // Add automatic retry configuration
-  retry: 3,
-  retryDelay: 1000,
   // Prevent request abortion on navigation
   cancelToken: undefined,
   signal: undefined,
   // Cookie handling for sessions
   withCredentials: true
+});
+
+// Add retry functionality to backend HR API instance
+createAxiosRetryInterceptor(backendHrApiInstance, {
+  maxRetries: 3,
+  initialDelay: 2000, // Longer delay for backend requests
+  backoffMultiplier: 2,
+  retryableStatuses: [408, 429, 500, 502, 503, 504],
+  onRetry: (error, attempt, delay) => {
+    logger.info(`[Backend HR API Retry] Retrying request (attempt ${attempt})`, {
+      url: error.config?.url,
+      method: error.config?.method,
+      delay,
+      error: error.message
+    });
+  }
 });
 
 // AWS RDS-specific configuration for payroll operations
@@ -1107,7 +1137,7 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
   };
 }
 
-// Export the circuit breaker utilities and axios instances
+// Export the circuit breaker utilities, retry utilities, and axios instances
 export {
   axiosInstance,
   useApi,
@@ -1121,7 +1151,8 @@ export {
   diagnoseConnection,
   diagnoseAndFixBackendConnection,
   resetConnectionSystem,
-  retryRequest
+  retryRequest,
+  withRetry
 };
 
 // Default export for backwards compatibility

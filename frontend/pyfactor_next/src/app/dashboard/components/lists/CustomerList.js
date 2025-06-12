@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { logger } from '@/utils/logger';
 import CustomerService from '@/services/customerService';
-import { useSession } from 'next-auth/react';
+// Removed next-auth import - using Auth0 instead
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 
@@ -14,7 +14,7 @@ const CustomerList = ({ onCustomerSelect, onCreateCustomer }) => {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { notifySuccess, notifyError, notifyInfo } = useToast();
-  const { data: session } = useSession();
+  // Using tenantId from params instead of session
   const params = useParams();
   const tenantId = params?.tenantId;
   const router = useRouter();

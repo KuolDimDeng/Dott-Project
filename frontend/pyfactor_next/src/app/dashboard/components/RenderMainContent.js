@@ -994,11 +994,11 @@ const RenderMainContent = React.memo(function RenderMainContent({
               {selectedOption === 'Transaction' && <TransactionForm />}
               {selectedOption === 'Product' && <CreateProductManagement />}
               {selectedOption === 'Service' && <ServiceManagement mode="create" />}
-              {selectedOption === 'Invoice' && <InvoiceManagement mode="create" />}
-              {selectedOption === 'Bill' && <BillManagement mode="create" />}
-              {selectedOption === 'Estimate' && <EstimateManagement mode="create" />}
+              {selectedOption === 'Invoice' && <InvoiceManagement newInvoice={true} mode="create" />}
+              {selectedOption === 'Bill' && <BillManagement newBill={true} />}
+              {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
               {selectedOption === 'Customer' && <CustomerList mode="create" onCreateCustomer={handleCreateCustomer} />}
-              {selectedOption === 'Vendor' && <VendorManagement mode="create" />}
+              {selectedOption === 'Vendor' && <VendorManagement newVendor={true} />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>
         );
