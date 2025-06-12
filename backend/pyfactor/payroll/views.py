@@ -27,6 +27,7 @@ import iso3166
 logger = logging.getLogger(__name__)
 countries = iso3166
 
+# Note: taxes.services is a file, not the services subdirectory
 from taxes.services import TaxCalculationService, TaxFilingService
 
 @api_view(['GET'])
