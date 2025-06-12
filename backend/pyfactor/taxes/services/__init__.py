@@ -1,4 +1,2 @@
-# Import from the parent module to avoid confusion
-from ..services import TaxCalculationService, TaxFilingService
-
-__all__ = ['TaxCalculationService', 'TaxFilingService']
+# This is the services subdirectory, not the services.py file
+# Leave empty to avoid circular imports

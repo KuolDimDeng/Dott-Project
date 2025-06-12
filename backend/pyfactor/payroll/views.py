@@ -27,8 +27,8 @@ import iso3166
 logger = logging.getLogger(__name__)
 countries = iso3166
 
-# Import taxes.services to avoid circular import at module level
-import taxes.services
+# Import at function level to avoid circular import
+# taxes.services refers to the services.py file, not the services/ directory
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -365,7 +365,9 @@ class RunPayrollView(APIView):
 
             # For US full-service, create tax filings
             if country_code == 'US' and service_type == 'full':
-                taxes.services.TaxFilingService.create_tax_filings_for_payroll(
+                # Import here to avoid circular dependency
+                from taxes import services as tax_services
+                tax_services.TaxFilingService.create_tax_filings_for_payroll(
                     payroll_run, 
                     str(request.user.company.id)
                 )
