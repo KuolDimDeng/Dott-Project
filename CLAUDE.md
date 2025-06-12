@@ -22,7 +22,7 @@
 - Package Manager: PNPM (v8.10.0 for frontend, v8.15.3 for root)
 - Environment: Production mode only
 - Data: No mock data
-- Frontend Deployment: Vercel, update via git in Dott_Main_Dev_Deploy branch
+- Frontend Deployment: Render, update via git in Dott_Main_Dev_Deploy branch
   - Build command: pnpm run build:production
   - Environment variables must use NEXT_PUBLIC_ prefix for client-side
 - Backend Deployment: render (dott-api), custom domain api.dottapps.com

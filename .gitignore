@@ -96,3 +96,11 @@ frontend_file_backups/
 # Temporary files
 tmp/
 temp/
+
+# Python virtual environments
+venv/
+backend/venv/
+.venv/
+env/
+ENV/
+virtualenv/
