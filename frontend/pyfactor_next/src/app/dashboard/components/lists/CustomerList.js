@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { logger } from '@/utils/logger';
+import crudLogger from '@/utils/crudLogger';
 import CustomerService from '@/services/customerService';
 // Removed next-auth import - using Auth0 instead
 import { useParams } from 'next/navigation';
@@ -21,24 +22,78 @@ const CustomerList = ({ onCustomerSelect, onCreateCustomer }) => {
 
   // Fetch customers using CustomerService with in-memory caching
   const fetchCustomers = useCallback(async (forceRefresh = false) => {
+    const operationId = crudLogger.logUserAction(
+      'FETCH_CUSTOMERS', 
+      'CustomerList', 
+      {
+        tenantId,
+        formData: { forceRefresh },
+        userEmail: 'current_user@dottapps.com' // Will be updated with real user email
+      }
+    );
+
     try {
       setLoading(true);
       logger.info(`[CustomerList] Fetching customers${forceRefresh ? ' (force refresh)' : ''}`);
       
-      const headers = {};
-      if (session?.accessToken) {
-        headers['Authorization'] = `Bearer ${session.accessToken}`;
-      }
+      // Log API request
+      crudLogger.logApiRequest(
+        operationId,
+        'GET',
+        '/api/customers',
+        { tenantId, forceRefresh },
+        { 'X-Tenant-ID': tenantId }
+      );
       
       const fetchedCustomers = await CustomerService.getCustomers({ 
         forceRefresh,
-        headers
+        tenantId
       });
+      
+      // Log API success
+      crudLogger.logApiResponse(
+        operationId,
+        'GET',
+        '/api/customers',
+        { data: fetchedCustomers, status: 200 }
+      );
+
+      // Log database operation (simulated)
+      crudLogger.logDatabaseOperation(
+        operationId,
+        'READ',
+        'customers',
+        tenantId,
+        { where: { tenant_id: tenantId } },
+        fetchedCustomers
+      );
       
       logger.info(`[CustomerList] Successfully fetched ${fetchedCustomers.length} customers`);
       setCustomers(fetchedCustomers);
       setError(null);
+
+      crudLogger.logOperationComplete(operationId, 'FETCH_CUSTOMERS', true, { count: fetchedCustomers.length });
     } catch (error) {
+      // Log API error
+      crudLogger.logApiResponse(
+        operationId,
+        'GET',
+        '/api/customers',
+        { status: error.response?.status || 500 },
+        error
+      );
+
+      // Log database error (simulated)
+      crudLogger.logDatabaseOperation(
+        operationId,
+        'READ',
+        'customers',
+        tenantId,
+        { where: { tenant_id: tenantId } },
+        null,
+        error
+      );
+
       logger.error('[CustomerList] Error fetching customers:', error);
       logger.error('[CustomerList] Error details:', {
         message: error.message,
@@ -47,10 +102,12 @@ const CustomerList = ({ onCustomerSelect, onCreateCustomer }) => {
       });
       setError('Error fetching customers');
       notifyError('Failed to fetch customers');
+
+      crudLogger.logOperationComplete(operationId, 'FETCH_CUSTOMERS', false);
     } finally {
       setLoading(false);
     }
-  }, [session, notifyError]);
+  }, [tenantId, notifyError]);
 
   // Load customers on component mount
   useEffect(() => {

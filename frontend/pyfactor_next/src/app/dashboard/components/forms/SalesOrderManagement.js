@@ -34,27 +34,59 @@ const SalesOrderManagement = () => {
 
   const fetchSalesOrders = async () => {
     try {
+      console.log('[DEBUG] Fetching sales orders from API');
       const response = await axiosInstance.get('/api/salesorders/');
-      setSalesOrders(response.data);
+      
+      console.log('[DEBUG] Sales orders response:', response.data);
+      console.log('[DEBUG] Number of sales orders fetched:', response.data?.length || 0);
+      
+      setSalesOrders(response.data || []);
     } catch (error) {
-      console.error('Error fetching sales orders:', error);
+      console.error('[DEBUG] Error fetching sales orders:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Response status:', error.response.status);
+        console.error('[DEBUG] Response data:', error.response.data);
+      } else if (error.request) {
+        console.error('[DEBUG] Request made but no response received:', error.request);
+      } else {
+        console.error('[DEBUG] Error setting up request:', error.message);
+      }
+      
       toast.error('Failed to fetch sales orders');
+      setSalesOrders([]); // Set empty array to prevent rendering errors
     }
   };
 
   const fetchCustomers = async () => {
     try {
+      console.log('[DEBUG] Fetching customers from API');
       const response = await axiosInstance.get('/api/customers/');
+      
+      console.log('[DEBUG] Customers response:', response.data);
+      console.log('[DEBUG] Customers response type:', typeof response.data);
+      
       // Ensure customers is always an array
       if (Array.isArray(response.data)) {
+        console.log('[DEBUG] Setting customers array with', response.data.length, 'items');
         setCustomers(response.data);
       } else {
-        console.error('Customers data is not an array:', response.data);
+        console.error('[DEBUG] Customers data is not an array:', response.data);
         setCustomers([]);
         toast.error('Invalid customers data format');
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      console.error('[DEBUG] Error fetching customers:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Customers fetch - Response status:', error.response.status);
+        console.error('[DEBUG] Customers fetch - Response data:', error.response.data);
+      } else if (error.request) {
+        console.error('[DEBUG] Customers fetch - Request made but no response:', error.request);
+      } else {
+        console.error('[DEBUG] Customers fetch - Error setting up request:', error.message);
+      }
+      
       toast.error('Failed to fetch customers');
       // Initialize with empty array on error
       setCustomers([]);
@@ -63,17 +95,33 @@ const SalesOrderManagement = () => {
 
   const fetchProducts = async () => {
     try {
+      console.log('[DEBUG] Fetching products from API');
       const response = await axiosInstance.get('/api/products/');
+      
+      console.log('[DEBUG] Products response:', response.data);
+      console.log('[DEBUG] Products response type:', typeof response.data);
+      
       // Ensure products is always an array
       if (Array.isArray(response.data)) {
+        console.log('[DEBUG] Setting products array with', response.data.length, 'items');
         setProducts(response.data);
       } else {
-        console.error('Products data is not an array:', response.data);
+        console.error('[DEBUG] Products data is not an array:', response.data);
         setProducts([]);
         toast.error('Invalid products data format');
       }
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('[DEBUG] Error fetching products:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Products fetch - Response status:', error.response.status);
+        console.error('[DEBUG] Products fetch - Response data:', error.response.data);
+      } else if (error.request) {
+        console.error('[DEBUG] Products fetch - Request made but no response:', error.request);
+      } else {
+        console.error('[DEBUG] Products fetch - Error setting up request:', error.message);
+      }
+      
       toast.error('Failed to fetch products');
       // Initialize with empty array on error
       setProducts([]);
@@ -82,17 +130,33 @@ const SalesOrderManagement = () => {
 
   const fetchServices = async () => {
     try {
+      console.log('[DEBUG] Fetching services from API');
       const response = await axiosInstance.get('/api/services/');
+      
+      console.log('[DEBUG] Services response:', response.data);
+      console.log('[DEBUG] Services response type:', typeof response.data);
+      
       // Ensure services is always an array
       if (Array.isArray(response.data)) {
+        console.log('[DEBUG] Setting services array with', response.data.length, 'items');
         setServices(response.data);
       } else {
-        console.error('Services data is not an array:', response.data);
+        console.error('[DEBUG] Services data is not an array:', response.data);
         setServices([]);
         toast.error('Invalid services data format');
       }
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.error('[DEBUG] Error fetching services:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Services fetch - Response status:', error.response.status);
+        console.error('[DEBUG] Services fetch - Response data:', error.response.data);
+      } else if (error.request) {
+        console.error('[DEBUG] Services fetch - Request made but no response:', error.request);
+      } else {
+        console.error('[DEBUG] Services fetch - Error setting up request:', error.message);
+      }
+      
       toast.error('Failed to fetch services');
       // Initialize with empty array on error
       setServices([]);
@@ -172,33 +236,49 @@ const SalesOrderManagement = () => {
     }));
   };
 
-  const handleCreateInvoice = async (e) => {
+  const handleCreateSalesOrder = async (e) => {
     e.preventDefault();
+    
+    console.log('[DEBUG] Sales Order Creation Started');
+    console.log('[DEBUG] Form data:', newSalesOrder);
 
-    if (!newInvoice.customer) {
+    if (!newSalesOrder.customer) {
+      console.log('[DEBUG] Validation failed: No customer selected');
       toast.error('Please select a customer');
       return;
     }
 
+    if (!newSalesOrder.items || newSalesOrder.items.length === 0) {
+      console.log('[DEBUG] Validation failed: No items added');
+      toast.error('Please add at least one item to the sales order');
+      return;
+    }
+
     try {
-      const invoiceData = {
-        customer: newInvoice.customer,
-        date: newInvoice.date.toISOString().split('T')[0], // Send only the date part
-        items: newInvoice.items.map((item) => ({
+      console.log('[DEBUG] Preparing sales order data for API call');
+      
+      const salesOrderData = {
+        customer: newSalesOrder.customer,
+        date: newSalesOrder.date.toISOString().split('T')[0],
+        items: newSalesOrder.items.map((item) => ({
           product: item.product,
           quantity: item.quantity,
-          unit_price: item.unitPrice, // Make sure this field is named 'unit_price'
+          unit_price: item.unitPrice,
         })),
-        discount: newInvoice.discount,
-        currency: newInvoice.currency,
-        amount: newInvoice.totalAmount,
+        discount: newSalesOrder.discount,
+        currency: newSalesOrder.currency,
+        total_amount: newSalesOrder.totalAmount,
       };
 
-      console.log('Sending invoice data:', invoiceData); // For debugging
+      console.log('[DEBUG] Sending sales order data to backend:', salesOrderData);
 
-      const response = await axiosInstance.post('/api/invoices/create/', invoiceData);
-      toast.success('Invoice created successfully');
-      setNewInvoice({
+      const response = await axiosInstance.post('/api/salesorders/create/', salesOrderData);
+      
+      console.log('[DEBUG] Sales order creation response:', response.data);
+      toast.success('Sales order created successfully');
+      
+      console.log('[DEBUG] Resetting form after successful creation');
+      setNewSalesOrder({
         customer: '',
         date: new Date(),
         items: [],
@@ -206,24 +286,34 @@ const SalesOrderManagement = () => {
         currency: 'USD',
         totalAmount: 0,
       });
-      fetchInvoices();
+      
+      console.log('[DEBUG] Refreshing sales orders list');
+      fetchSalesOrders();
     } catch (error) {
-      console.error('Error creating invoice:', error);
-      if (error.response && error.response.data) {
-        console.error('Error details:', error.response.data);
+      console.error('[DEBUG] Error creating sales order:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Response status:', error.response.status);
+        console.error('[DEBUG] Response data:', error.response.data);
+        console.error('[DEBUG] Response headers:', error.response.headers);
+        
+        if (error.response.data && error.response.data.detail) {
+          toast.error(`Failed to create sales order: ${error.response.data.detail}`);
+        } else if (error.response.data && error.response.data.message) {
+          toast.error(`Failed to create sales order: ${error.response.data.message}`);
+        } else {
+          toast.error(`Failed to create sales order. Status: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        console.error('[DEBUG] Request made but no response received:', error.request);
+        toast.error('Failed to create sales order: No response from server');
+      } else {
+        console.error('[DEBUG] Error setting up request:', error.message);
+        toast.error(`Failed to create sales order: ${error.message}`);
       }
-      toast.error('Failed to create invoice');
     }
   };
-  const handleCreateSalesOrder = (event) => {
-    event.preventDefault();
-    // Here you would typically send this data to your backend
-    console.log('Creating sales order with:', { customer, product, quantity });
-    // Reset form fields after submission
-    setCustomer('');
-    setProduct('');
-    setQuantity('');
-  };
+  // Removed duplicate function - using the corrected handleCreateSalesOrder above
 
   const handleSalesOrderSelect = (salesOrder) => {
     setSelectedSalesOrder(salesOrder);
@@ -242,17 +332,34 @@ const SalesOrderManagement = () => {
 
   const handleSaveEdit = async () => {
     try {
+      console.log('[DEBUG] Updating sales order with ID:', selectedSalesOrder.id);
+      console.log('[DEBUG] Updated data:', editedSalesOrder);
+      
       const response = await axiosInstance.put(
         `/api/salesorders/${selectedSalesOrder.id}/`,
         editedSalesOrder
       );
+      
+      console.log('[DEBUG] Sales order update response:', response.data);
+      
       setSelectedSalesOrder(response.data);
       setIsEditing(false);
       fetchSalesOrders();
       toast.success('Sales order updated successfully');
     } catch (error) {
-      console.error('Error updating sales order:', error);
-      toast.error('Failed to update sales order');
+      console.error('[DEBUG] Error updating sales order:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Update error - Response status:', error.response.status);
+        console.error('[DEBUG] Update error - Response data:', error.response.data);
+        toast.error(`Failed to update sales order: ${error.response.data?.detail || error.response.data?.message || 'Unknown error'}`);
+      } else if (error.request) {
+        console.error('[DEBUG] Update error - No response received:', error.request);
+        toast.error('Failed to update sales order: No response from server');
+      } else {
+        console.error('[DEBUG] Update error - Request setup:', error.message);
+        toast.error(`Failed to update sales order: ${error.message}`);
+      }
     }
   };
 
@@ -262,15 +369,31 @@ const SalesOrderManagement = () => {
 
   const handleConfirmDelete = async () => {
     try {
+      console.log('[DEBUG] Deleting sales order with ID:', selectedSalesOrder.id);
+      
       await axiosInstance.delete(`/api/salesorders/${selectedSalesOrder.id}/`);
+      
+      console.log('[DEBUG] Sales order deleted successfully');
+      
       toast.success('Sales order deleted successfully');
       setDeleteDialogOpen(false);
       setSelectedSalesOrder(null);
       fetchSalesOrders();
       setActiveTab(2);
     } catch (error) {
-      console.error('Error deleting sales order:', error);
-      toast.error('Failed to delete sales order');
+      console.error('[DEBUG] Error deleting sales order:', error);
+      
+      if (error.response) {
+        console.error('[DEBUG] Delete error - Response status:', error.response.status);
+        console.error('[DEBUG] Delete error - Response data:', error.response.data);
+        toast.error(`Failed to delete sales order: ${error.response.data?.detail || error.response.data?.message || 'Unknown error'}`);
+      } else if (error.request) {
+        console.error('[DEBUG] Delete error - No response received:', error.request);
+        toast.error('Failed to delete sales order: No response from server');
+      } else {
+        console.error('[DEBUG] Delete error - Request setup:', error.message);
+        toast.error(`Failed to delete sales order: ${error.message}`);
+      }
     }
   };
 
@@ -505,6 +628,7 @@ const SalesOrderManagement = () => {
             <div className="pt-4">
               <button
                 type="submit"
+                onClick={handleCreateSalesOrder}
                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Create Sales Order
