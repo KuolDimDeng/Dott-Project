@@ -14,7 +14,13 @@ from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 import tempfile
-from weasyprint import HTML
+# from weasyprint import HTML  # Replaced with reportlab due to system dependency issues
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from io import BytesIO
 import logging
 import iso3166
 
@@ -132,18 +138,88 @@ def payroll_report(request, pk):
             'generated_date': datetime.now().strftime('%B %d, %Y'),
             'filing_frequency': payroll_run.filing_frequency if hasattr(payroll_run, 'filing_frequency') else None,
         }
-        # Render HTML template
-        html_string = render_to_string('taxes/self_service_payroll_report.html', context)
+        # Generate PDF using ReportLab instead of WeasyPrint
+        # Create PDF buffer
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        story = []
+        styles = getSampleStyleSheet()
         
-        # Generate PDF
-        with tempfile.NamedTemporaryFile(suffix='.pdf') as output:
-            HTML(string=html_string).write_pdf(output.name)
+        # Title
+        title = Paragraph(f"Payroll Report - {payroll_run.payroll_number}", styles['Title'])
+        story.append(title)
+        story.append(Spacer(1, 20))
+        
+        # Company info
+        company_info = Paragraph(f"<b>{context['company_name']}</b><br/>"
+                               f"Business Number: {context['business_number']}<br/>"
+                               f"Pay Period: {payroll_run.start_date} to {payroll_run.end_date}<br/>"
+                               f"Generated: {context['generated_date']}", styles['Normal'])
+        story.append(company_info)
+        story.append(Spacer(1, 20))
+        
+        # Employee payments table
+        data = [['Employee', 'Gross Pay', 'Deductions', 'Net Pay']]
+        for transaction in transactions:
+            data.append([
+                transaction.employee.full_name,
+                f"{context['currency_symbol']}{transaction.gross_pay:,.2f}",
+                f"{context['currency_symbol']}{transaction.taxes:,.2f}",
+                f"{context['currency_symbol']}{transaction.net_pay:,.2f}"
+            ])
+        
+        # Totals row
+        data.append([
+            'TOTAL',
+            f"{context['currency_symbol']}{context['total_gross']:,.2f}",
+            f"{context['currency_symbol']}{context['total_deductions']:,.2f}",
+            f"{context['currency_symbol']}{context['total_net']:,.2f}"
+        ])
+        
+        # Create table
+        t = Table(data)
+        t.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, -1), (-1, -1), colors.lightgrey),
+            ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        story.append(t)
+        story.append(Spacer(1, 20))
+        
+        # Tax summary
+        if tax_summary:
+            story.append(Paragraph("<b>Tax Summary</b>", styles['Heading2']))
+            tax_data = [['Tax Type', 'Amount', 'Instructions']]
+            for tax in tax_summary:
+                amount_str = f"{context['currency_symbol']}{tax['amount']:,.2f}"
+                if context.get('show_usd_comparison') and 'amount_usd' in tax:
+                    amount_str += f" (USD ${tax['amount_usd']:,.2f})"
+                tax_data.append([tax['name'], amount_str, tax['instructions']])
             
-            # Read the generated PDF
-            with open(output.name, 'rb') as pdf_file:
-                response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                response['Content-Disposition'] = f'attachment; filename="payroll-report-{pk}.pdf"'
-                return response
+            tax_table = Table(tax_data)
+            tax_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            story.append(tax_table)
+        
+        # Build PDF
+        doc.build(story)
+        
+        # Return PDF response
+        buffer.seek(0)
+        response = HttpResponse(buffer.read(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="payroll-report-{pk}.pdf"'
+        return response
         
     except Exception as e:
         logger.error(f"Error generating payroll report: {str(e)}")

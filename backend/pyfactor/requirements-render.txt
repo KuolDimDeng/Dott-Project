@@ -105,8 +105,8 @@ plaid-python==27.0.0
 # JWE encryption support for Auth0 - CRITICAL for custom_auth
 jwcrypto==1.5.6
 
-# PDF generation - CRITICAL for payroll reports
-weasyprint==63.0
+# PDF generation - Using reportlab instead of weasyprint (no system dependencies)
+# weasyprint==63.0  # Removed due to system library dependencies on Render
 
 # Country codes - CRITICAL for payroll international support
 iso3166==2.1.1
