@@ -219,7 +219,7 @@ const SupplierManagement = enhancedLazy(() => {
     });
 }, 'Supplier Management');
 const InventoryManagement = enhancedLazy(() => import('@/app/inventory/components/InventoryManagement.js'), 'Inventory Management');
-const InventoryReports = enhancedLazy(() => import('@/app/inventory/components/InventoryReports.js'), 'Inventory Reports');
+const InventoryReports = enhancedLazy(() => import('./forms/InventoryReports.js'), 'Inventory Reports');
 const LocationsManagement = enhancedLazy(() => import('./forms/LocationsManagement.js'), 'Locations Management');
 const StockAdjustmentsManagement = enhancedLazy(() => import('./forms/StockAdjustmentsManagement.js'), 'Stock Adjustments Management');
 const SuppliersManagement = enhancedLazy(() => import('./forms/SuppliersManagement.js'), 'Suppliers Management');
