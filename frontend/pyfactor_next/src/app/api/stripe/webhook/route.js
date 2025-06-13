@@ -1,17 +1,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { headers } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
 import { logger } from '@/utils/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16',
 });
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // Use service role key for webhook
-);
 
 export async function POST(request) {
   const body = await request.text();
@@ -78,15 +72,28 @@ async function handleSubscriptionUpdate(subscription) {
     return;
   }
 
-  // Update user's subscription status
-  await supabase
-    .from('onboarding_data')
-    .update({
-      subscription_status: status,
-      subscription_end_date: new Date(current_period_end * 1000).toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
+  // Update subscription status via backend API
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/update-subscription-status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': process.env.WEBHOOK_INTERNAL_SECRET || 'webhook-secret',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        subscription_status: status,
+        subscription_end_date: new Date(current_period_end * 1000).toISOString(),
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      logger.error('Failed to update subscription status in backend');
+    }
+  } catch (error) {
+    logger.error('Error updating subscription:', error);
+  }
 
   logger.info('Subscription updated:', { userId, status });
 }
@@ -97,13 +104,26 @@ async function handleSubscriptionCancellation(subscription) {
   
   if (!userId) return;
 
-  await supabase
-    .from('onboarding_data')
-    .update({
-      subscription_status: 'cancelled',
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/update-subscription-status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Webhook-Secret': process.env.WEBHOOK_INTERNAL_SECRET || 'webhook-secret',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        subscription_status: 'cancelled',
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) {
+      logger.error('Failed to cancel subscription in backend');
+    }
+  } catch (error) {
+    logger.error('Error cancelling subscription:', error);
+  }
 
   logger.info('Subscription cancelled:', { userId });
 }

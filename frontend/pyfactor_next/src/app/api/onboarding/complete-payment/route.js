@@ -1,40 +1,44 @@
 import { NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
+import jwt from 'jsonwebtoken';
+import { cookies } from 'next/headers';
 
 export async function POST(request) {
   try {
     const { subscriptionId, plan, billingCycle, paymentIntentId } = await request.json();
 
-    // Create Supabase client
+    // Get the auth token from cookies
     const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        cookies: {
-          get(name) {
-            return cookieStore.get(name)?.value;
-          },
-        },
-      }
-    );
-
-    // Get the current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const token = cookieStore.get('auth_token')?.value;
     
-    if (userError || !user) {
+    if (!token) {
       return NextResponse.json(
         { error: 'User not authenticated' },
         { status: 401 }
       );
     }
 
-    // Update the onboarding data with subscription details
-    const { error: updateError } = await supabase
-      .from('onboarding_data')
-      .update({
+    // Decode the token to get user info
+    let user;
+    try {
+      const decoded = jwt.decode(token);
+      user = decoded;
+    } catch (error) {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    // Update the backend with subscription details
+    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/update-subscription/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        user_id: user.sub,
         subscription_plan: plan,
         billing_cycle: billingCycle,
         stripe_subscription_id: subscriptionId,
@@ -42,26 +46,12 @@ export async function POST(request) {
         payment_completed: true,
         subscription_status: 'active',
         subscription_start_date: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id);
-
-    if (updateError) {
-      logger.error('Error updating onboarding data:', updateError);
-      throw updateError;
-    }
-
-    // Update the user's metadata to mark onboarding as complete
-    const { error: metadataError } = await supabase.auth.updateUser({
-      data: {
-        onboarding_completed: true,
-        subscription_plan: plan,
-        subscription_status: 'active',
-      },
+      }),
     });
 
-    if (metadataError) {
-      logger.error('Error updating user metadata:', metadataError);
+    if (!backendResponse.ok) {
+      logger.error('Error updating subscription data in backend');
+      throw new Error('Failed to update subscription data');
     }
 
     logger.info('Payment completed and onboarding updated:', {
