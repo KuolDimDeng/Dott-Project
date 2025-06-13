@@ -120,6 +120,11 @@ def create_auth0_user(request):
         data = request.data
         logger.info(f"[Auth0Views] Creating/updating user: {data.get('email')}")
         
+        # Check for idempotency key
+        idempotency_key = request.headers.get('X-Idempotency-Key')
+        if idempotency_key:
+            logger.info(f"[Auth0Views] Request has idempotency key: {idempotency_key}")
+        
         # Validate required fields
         required_fields = ['auth0_sub', 'email']
         for field in required_fields:
@@ -166,6 +171,10 @@ def create_auth0_user(request):
                 # Try to find by auth0_sub first
                 user = User.objects.get(auth0_sub=auth0_sub)
                 logger.info(f"[Auth0Views] Found existing user by auth0_sub: {email}")
+                
+                # If user exists and we have an idempotency key, return success
+                if idempotency_key:
+                    logger.info(f"[Auth0Views] Idempotent request - returning existing user")
             except User.DoesNotExist:
                 # Try to find by email
                 try:
@@ -514,4 +523,77 @@ def close_user_account(request):
         return JsonResponse({
             'error': 'Internal server error',
             'message': str(e)
+        }, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def check_onboarding_status(request):
+    """
+    Lightweight endpoint to check if user has completed onboarding.
+    Used by frontend middleware to enforce onboarding.
+    """
+    logger.info("[Auth0Views] Check onboarding status called")
+    
+    try:
+        # Extract token from Authorization header
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header or not auth_header.startswith("Bearer "):
+            return JsonResponse({
+                "error": "Missing or invalid authorization header"
+            }, status=401)
+        
+        token = auth_header.split(" ")[1]
+        
+        # Verify token and get user info
+        payload = verify_auth0_token(token)
+        if not payload:
+            return JsonResponse({
+                "error": "Invalid or expired token"
+            }, status=401)
+        
+        auth0_sub = payload.get("sub")
+        if not auth0_sub:
+            return JsonResponse({
+                "error": "Invalid token: missing sub"
+            }, status=401)
+        
+        # Get user
+        try:
+            user = User.objects.get(auth0_sub=auth0_sub, is_active=True, is_deleted=False)
+        except User.DoesNotExist:
+            # User doesn't exist yet, definitely needs onboarding
+            return JsonResponse({
+                "onboarding_completed": False,
+                "tenant_id": None,
+                "user_id": None,
+                "auth0_sub": auth0_sub,
+            })
+        
+        # Check OnboardingProgress
+        onboarding_completed = False
+        try:
+            onboarding = OnboardingProgress.objects.get(user=user)
+            onboarding_completed = onboarding.is_complete
+        except OnboardingProgress.DoesNotExist:
+            # No onboarding record = not completed
+            onboarding_completed = False
+        
+        # Get tenant ID
+        tenant_id = None
+        if user.tenant:
+            tenant_id = str(user.tenant.id)
+        
+        return JsonResponse({
+            "onboarding_completed": onboarding_completed,
+            "tenant_id": tenant_id,
+            "user_id": str(user.id),
+            "auth0_sub": auth0_sub,
+        })
+        
+    except Exception as e:
+        logger.error(f"[Auth0Views] Error checking onboarding status: {str(e)}", exc_info=True)
+        return JsonResponse({
+            "error": "Failed to check onboarding status",
+            "message": str(e)
         }, status=500)

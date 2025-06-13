@@ -95,12 +95,16 @@ export async function POST(request) {
       // CRITICAL: Generate a new unique tenant ID for this user
       const newTenantId = uuidv4();
       
+      // Add idempotency key to prevent duplicate user creation
+      const idempotencyKey = `user-create-${auth0_sub}`;
+      
       const createUserResponse = await fetch(`${apiBaseUrl}/api/auth0/create-user/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
-          'X-Session-Id': sessionId || 'no-session-id'
+          'X-Session-Id': sessionId || 'no-session-id',
+          'X-Idempotency-Key': idempotencyKey
         },
         body: JSON.stringify({
           auth0_sub,
@@ -118,6 +122,29 @@ export async function POST(request) {
       if (!createUserResponse.ok) {
         const errorText = await createUserResponse.text();
         console.error('[UserSync] Failed to create user:', errorText);
+        
+        // If it's a conflict (409), user was created by another request
+        if (createUserResponse.status === 409) {
+          console.log('[UserSync] User creation conflict, retrying fetch...');
+          // Retry fetching the user
+          const retryResponse = await fetch(`${apiBaseUrl}/api/users/by-auth0-sub/${auth0_sub}/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (retryResponse.ok) {
+            const existingUser = await retryResponse.json();
+            return NextResponse.json({
+              success: true,
+              is_existing_user: true,
+              ...existingUser
+            });
+          }
+        }
+        
         throw new Error(`Failed to create user: ${createUserResponse.status}`);
       }
       

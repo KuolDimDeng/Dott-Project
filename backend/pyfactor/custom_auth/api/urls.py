@@ -69,4 +69,5 @@ if has_new_auth0_views:
         path('auth0/onboarding-status/', auth0_views.get_onboarding_status, name='get_onboarding_status'),
         path('auth0/complete-onboarding/', auth0_views.complete_onboarding, name='complete_onboarding'),
         path('auth0/close-account/', auth0_views.close_user_account, name='close_user_account'),
+        path('auth0/check-onboarding-status/', auth0_views.check_onboarding_status, name='check_onboarding_status'),
     ]
