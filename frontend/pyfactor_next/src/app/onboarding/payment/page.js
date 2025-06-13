@@ -12,8 +12,9 @@ import {
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
+// Initialize Stripe with error handling
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
 
 function PaymentForm({ plan, billingCycle }) {
   const stripe = useStripe();
@@ -215,6 +216,33 @@ export default function PaymentPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Check if Stripe is configured
+  if (!stripePromise) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-12 px-4">
+        <div className="max-w-md mx-auto">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-yellow-800 mb-2">
+              Payment System Not Configured
+            </h2>
+            <p className="text-yellow-700 mb-4">
+              The payment system is currently being set up. Please contact support or try again later.
+            </p>
+            <p className="text-sm text-yellow-600 mb-4">
+              For now, you can continue with the Free plan and upgrade later from your dashboard.
+            </p>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors"
+            >
+              Continue with Free Plan
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
