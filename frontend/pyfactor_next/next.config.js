@@ -29,6 +29,13 @@ const nextConfig = {
   // Enable standalone output when using Render config
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   
+  // Ensure Auth0 module is included in standalone build
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/auth/[auth0]': ['./node_modules/@auth0/**/*'],
+    },
+  },
+  
   // Environment variables (workaround for dotenv package interference)
   env: {
     NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
