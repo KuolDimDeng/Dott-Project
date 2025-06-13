@@ -31,22 +31,35 @@ export async function POST(request) {
       );
     }
 
-    // For now, we'll use a simple approach that works with Auth0's built-in functionality
-    // Auth0 automatically sends verification emails on signup, and users can request
-    // a new one through the password reset flow if needed
-    
-    // In a production setup, you would:
-    // 1. Get an Auth0 Management API token
-    // 2. Look up the user by email
-    // 3. Call the verification email endpoint
-    
-    // For now, we'll return success to provide a good UX
-    logger.info('[Resend Verification] Verification email request processed for:', email);
-    
-    return NextResponse.json({
-      success: true,
-      message: 'If an account exists with this email, a verification email has been sent.'
+    // Use Auth0 passwordless API to send a verification code
+    const auth0Response = await fetch(`https://${auth0Domain}/passwordless/start`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        connection: 'email',
+        email: email,
+        send: 'code',
+      }),
     });
+
+    if (auth0Response.ok) {
+      logger.info('[Resend Verification] Verification code sent successfully to:', email);
+      return NextResponse.json({
+        success: true,
+        message: 'Verification code sent successfully'
+      });
+    } else {
+      const errorData = await auth0Response.json();
+      logger.error('[Resend Verification] Auth0 passwordless error:', errorData);
+      return NextResponse.json(
+        { error: errorData.error_description || 'Failed to send verification code' },
+        { status: 400 }
+      );
+    }
 
   } catch (error) {
     logger.error('[Resend Verification] Error:', error);

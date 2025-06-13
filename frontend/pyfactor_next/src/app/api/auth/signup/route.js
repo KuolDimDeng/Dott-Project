@@ -92,12 +92,37 @@ export async function POST(request) {
       email: signupResult.email
     });
 
-    // Return success - the client will handle auto-login
+    // Send verification code using passwordless API
+    try {
+      const codeResponse = await fetch(`https://${AUTH0_DOMAIN}/passwordless/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: AUTH0_CLIENT_ID,
+          client_secret: AUTH0_CLIENT_SECRET,
+          connection: 'email',
+          email: email,
+          send: 'code',
+        }),
+      });
+
+      if (!codeResponse.ok) {
+        const codeError = await codeResponse.json();
+        logger.error('[Signup] Failed to send verification code:', codeError);
+      }
+    } catch (codeError) {
+      logger.error('[Signup] Error sending verification code:', codeError);
+    }
+
+    // Return success - verification code has been sent
     return NextResponse.json({
       success: true,
       message: 'Account created successfully',
       userId: signupResult._id,
-      email: signupResult.email
+      email: signupResult.email,
+      requiresVerification: true
     });
 
   } catch (error) {
