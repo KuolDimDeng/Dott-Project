@@ -1,4 +1,27 @@
-'use client';
+#!/usr/bin/env node
+
+/**
+ * Script: Version0001_stripe_payment_debug_fix_payment_page.js
+ * Purpose: Debug and fix Stripe payment initialization issues
+ * Author: Claude
+ * Date: 2025-01-13
+ * 
+ * This script:
+ * 1. Adds comprehensive debug logging to the payment page
+ * 2. Ensures Stripe environment variables are properly loaded
+ * 3. Adds fallback handling for missing Stripe configuration
+ * 4. Improves error messaging for users
+ */
+
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Updated payment page with enhanced debugging and error handling
+const updatedPaymentPage = `'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -18,7 +41,7 @@ const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
 // Enhanced debug logging
 if (typeof window !== 'undefined') {
   console.log('[Stripe Debug] Client-side environment check:', {
-    key: stripePublishableKey ? `${stripePublishableKey.substring(0, 10)}...` : 'NOT FOUND',
+    key: stripePublishableKey ? \`\${stripePublishableKey.substring(0, 10)}...\` : 'NOT FOUND',
     keyLength: stripePublishableKey?.length || 0,
     env: process.env.NODE_ENV,
     hasKey: !!stripePublishableKey,
@@ -242,7 +265,7 @@ function PaymentForm({ plan, billingCycle }) {
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Complete Your Subscription</h2>
         <p className="text-gray-600">
-          {plan} Plan - ${getPrice()}/{billingCycle === 'monthly' ? 'month' : 'year'}
+          {plan} Plan - \${getPrice()}/{billingCycle === 'monthly' ? 'month' : 'year'}
         </p>
       </div>
 
@@ -286,13 +309,13 @@ function PaymentForm({ plan, billingCycle }) {
       <button
         type="submit"
         disabled={!stripe || processing || succeeded}
-        className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+        className={\`w-full py-3 px-4 rounded-md font-medium transition-colors \${
           processing || succeeded
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'bg-blue-600 text-white hover:bg-blue-700'
-        }`}
+        }\`}
       >
-        {processing ? 'Processing...' : succeeded ? 'Payment Complete' : `Subscribe - $${getPrice()}`}
+        {processing ? 'Processing...' : succeeded ? 'Payment Complete' : \`Subscribe - $\${getPrice()}\`}
       </button>
 
       <p className="mt-4 text-xs text-gray-500 text-center">
@@ -330,7 +353,7 @@ export default function PaymentPage() {
     const debug = {
       plan: planParam,
       billing: billingParam,
-      stripeKey: stripePublishableKey ? `${stripePublishableKey.substring(0, 20)}...` : 'Not configured',
+      stripeKey: stripePublishableKey ? \`\${stripePublishableKey.substring(0, 20)}...\` : 'Not configured',
       stripeKeyFull: process.env.NODE_ENV === 'development' ? stripePublishableKey : '[HIDDEN]',
       stripePromiseStatus: stripePromise ? 'Initialized' : 'Failed to initialize',
       environment: {
@@ -441,4 +464,63 @@ export default function PaymentPage() {
       </div>
     </div>
   );
+}`;
+
+async function updatePaymentPage() {
+  try {
+    console.log('🔧 Updating payment page with enhanced debugging...');
+    
+    const paymentPagePath = path.join(
+      path.dirname(__dirname),
+      'src/app/onboarding/payment/page.js'
+    );
+    
+    // Create backup
+    const backupPath = paymentPagePath + '.backup_' + Date.now();
+    const originalContent = await fs.readFile(paymentPagePath, 'utf8');
+    await fs.writeFile(backupPath, originalContent);
+    console.log('✅ Created backup at:', backupPath);
+    
+    // Write updated content
+    await fs.writeFile(paymentPagePath, updatedPaymentPage);
+    console.log('✅ Updated payment page with enhanced debugging');
+    
+    // Update script registry
+    const registryPath = path.join(__dirname, 'script_registry.md');
+    const registryEntry = `
+## Version0001_stripe_payment_debug_fix_payment_page.js
+- **Date**: ${new Date().toISOString()}
+- **Purpose**: Debug and fix Stripe payment initialization issues
+- **Changes**:
+  - Added comprehensive debug logging for Stripe initialization
+  - Enhanced error handling for missing Stripe keys
+  - Added fallback UI when Stripe is not configured
+  - Improved client-side environment variable debugging
+  - Added detailed debug information display in development mode
+- **Files Modified**:
+  - /src/app/onboarding/payment/page.js
+`;
+    
+    try {
+      const existingRegistry = await fs.readFile(registryPath, 'utf8');
+      await fs.writeFile(registryPath, existingRegistry + registryEntry);
+    } catch (error) {
+      // Create new registry if it doesn't exist
+      await fs.writeFile(registryPath, '# Script Registry\n' + registryEntry);
+    }
+    
+    console.log('✅ Updated script registry');
+    console.log('\n📝 Summary:');
+    console.log('- Enhanced payment page with comprehensive debugging');
+    console.log('- Added fallback handling for missing Stripe configuration');
+    console.log('- Improved error messaging and user experience');
+    console.log('\n⚠️  Important: Make sure to set NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY in your environment variables!');
+    
+  } catch (error) {
+    console.error('❌ Error updating payment page:', error);
+    process.exit(1);
+  }
 }
+
+// Run the update
+updatePaymentPage();

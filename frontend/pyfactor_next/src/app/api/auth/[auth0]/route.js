@@ -1,32 +1,23 @@
-import { NextResponse } from 'next/server';
+import { handleAuth } from '@auth0/nextjs-auth0';
 
-// Dynamic import to avoid build-time issues
-let auth0Handler;
-
-async function getAuth0Handler() {
-  if (!auth0Handler) {
-    try {
-      const { handleAuth } = await import('@auth0/nextjs-auth0');
-      // handleAuth returns the handlers directly
-      auth0Handler = handleAuth();
-    } catch (error) {
-      console.error('Failed to initialize Auth0:', error);
-      // Return a fallback handler
-      return async () => NextResponse.json({ error: 'Auth0 not configured' }, { status: 503 });
+// For Next.js 13+ App Router, handleAuth() returns the route handlers
+export const GET = handleAuth({
+  login: {
+    returnTo: '/dashboard'
+  },
+  logout: {
+    returnTo: '/'
+  },
+  callback: {
+    afterCallback: async (req, session, state) => {
+      // You can add custom logic here after successful authentication
+      console.log('Auth0 callback successful:', {
+        user: session.user?.email,
+        returnTo: state?.returnTo || '/dashboard'
+      });
+      return session;
     }
   }
-  return auth0Handler;
-}
+});
 
-// Export handlers directly - handleAuth returns a function that handles all auth routes
-export const GET = async (request, context) => {
-  const handler = await getAuth0Handler();
-  // If handler is a function, call it directly
-  if (typeof handler === 'function') {
-    return handler(request, context);
-  }
-  // Otherwise it's our fallback
-  return handler();
-};
-
-export const POST = GET; // Use same handler for POST
+export const POST = GET;

@@ -16,6 +16,11 @@ console.log(`   AUTH0_SCOPE: ${process.env.AUTH0_SCOPE || 'NOT_SET'}`);
 console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT_SET'}`);
 console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || 'NOT_SET'}`);
 
+// Debug: Print Stripe environment variables during Next.js build
+console.log("💳 [DEBUG] Next.js Build - Stripe Environment Variables:");
+console.log(`   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 20) + '...' : 'NOT_SET'}`);
+console.log(`   STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 15) + '...' : 'NOT_SET'}`);
+
 const nextConfig = {
   // Basic Next.js settings optimized for development speed
   reactStrictMode: true,
@@ -37,6 +42,8 @@ const nextConfig = {
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN,
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
+    // Stripe environment variables
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   },
   
   // Page extensions

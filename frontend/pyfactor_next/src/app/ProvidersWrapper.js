@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { CookiesProvider } from 'react-cookie';
-import { Auth0Provider } from '@auth0/nextjs-auth0';
+import { UserProvider as Auth0UserProvider } from '@auth0/nextjs-auth0/client';
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from '@/contexts/UserContext';
 import LanguageProvider from '@/components/LanguageProvider/LanguageProvider';
@@ -31,7 +31,7 @@ export default function ProvidersWrapper({ children }) {
 
   return (
     <CookiesProvider>
-      <Auth0Provider>
+      <Auth0UserProvider>
         <UserProvider>
           <UserProfileProvider>
             <LanguageProvider>
@@ -49,7 +49,7 @@ export default function ProvidersWrapper({ children }) {
             </LanguageProvider>
           </UserProfileProvider>
         </UserProvider>
-      </Auth0Provider>
+      </Auth0UserProvider>
     </CookiesProvider>
   );
 } 
