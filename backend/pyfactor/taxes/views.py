@@ -13,7 +13,7 @@ from django.db import transaction
 import logging
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from weasyprint import HTML
+# from weasyprint import HTML  # Removed - not available on Render
 import tempfile
 from datetime import date
 from .services.claude_service import ClaudeComplianceService
@@ -183,18 +183,60 @@ class PayrollTaxFilingViewSet(viewsets.ModelViewSet):
                 'state_name': filing.state.name,
             }
             
-            # Render HTML template
-            html_string = render_to_string('taxes/tax_filing_pdf.html', context)
+            # Generate PDF using ReportLab
+            from reportlab.lib.pagesizes import letter
+            from reportlab.pdfgen import canvas
+            from reportlab.lib.styles import getSampleStyleSheet
+            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+            from reportlab.lib import colors
+            from io import BytesIO
             
-            # Generate PDF
-            with tempfile.NamedTemporaryFile(suffix='.pdf') as output:
-                HTML(string=html_string).write_pdf(output.name)
-                
-                # Read the generated PDF
-                with open(output.name, 'rb') as pdf_file:
-                    response = HttpResponse(pdf_file.read(), content_type='application/pdf')
-                    response['Content-Disposition'] = f'attachment; filename="tax_filing_{filing.id}.pdf"'
-                    return response
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            story = []
+            styles = getSampleStyleSheet()
+            
+            # Title
+            title = Paragraph(f"Tax Filing Report - {filing.state.name}", styles['Title'])
+            story.append(title)
+            story.append(Spacer(1, 20))
+            
+            # Company info
+            company_info = Paragraph(f"<b>{context['company_name']}</b><br/>"
+                                   f"EIN: {context['company_ein']}<br/>"
+                                   f"Filing Period: {context['filing_period']}<br/>"
+                                   f"Generated: {context['generated_date']}", styles['Normal'])
+            story.append(company_info)
+            story.append(Spacer(1, 20))
+            
+            # Filing details
+            filing_data = [
+                ['State', filing.state.name],
+                ['Filing Type', filing.get_filing_type_display()],
+                ['Status', filing.get_status_display()],
+                ['Total Wages', f"${filing.total_wages:,.2f}"],
+                ['Total Withholding', f"${filing.total_withholding:,.2f}"],
+                ['Due Date', filing.due_date.strftime('%B %d, %Y')],
+            ]
+            
+            filing_table = Table(filing_data)
+            filing_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('PADDING', (0, 0), (-1, -1), 10),
+            ]))
+            story.append(filing_table)
+            
+            # Build PDF
+            doc.build(story)
+            
+            # Return PDF response
+            buffer.seek(0)
+            response = HttpResponse(buffer.read(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="tax_filing_{filing.id}.pdf"'
+            return response
                     
         except Exception as e:
             logger.error(f"Error generating PDF: {str(e)}")
