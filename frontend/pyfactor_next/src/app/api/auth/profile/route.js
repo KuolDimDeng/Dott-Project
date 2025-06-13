@@ -318,21 +318,8 @@ export async function GET(request) {
       }
     }
     
-    // Ensure onboarding status consistency
-    // CRITICAL: Check backend status or tenant ID for completion
-    if ((profileData.tenantId || profileData.tenant_id) ||
-        (backendUser && (backendUser.onboarding_status === 'complete' || 
-         backendUser.setup_done === true ||
-         backendUser.onboarding_completed === true))) {
-      profileData.needsOnboarding = false;
-      profileData.onboardingCompleted = true;
-      if (profileData.currentStep !== 'completed') {
-        profileData.currentStep = 'completed';
-      }
-    } else if (profileData.onboardingCompleted === true || profileData.currentStep === 'completed') {
-      profileData.needsOnboarding = false;
-      profileData.onboardingCompleted = true;
-    }
+    // Ensure we're not overriding backend status
+    // Backend is the source of truth for onboarding status
     
     // Backend update removed - will be handled by explicit user actions
     
