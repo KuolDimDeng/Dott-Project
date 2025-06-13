@@ -1,21 +1,10 @@
-import { 
-  getSession as auth0GetSession,
-  getAccessToken as auth0GetAccessToken,
-  withApiAuthRequired as auth0WithApiAuthRequired,
-  withPageAuthRequired as auth0WithPageAuthRequired,
-  handleAuth,
-  handleLogin,
-  handleLogout,
-  handleCallback,
-  handleProfile
+// Re-export commonly used Auth0 functions
+export { 
+  getSession,
+  getAccessToken,
+  withApiAuthRequired,
+  withPageAuthRequired
 } from '@auth0/nextjs-auth0';
-
-// Export Auth0 functions directly
-export const getSession = auth0GetSession;
-export const getAccessToken = auth0GetAccessToken;
-export const withApiAuthRequired = auth0WithApiAuthRequired;
-export const withPageAuthRequired = auth0WithPageAuthRequired;
-export { handleAuth, handleLogin, handleLogout, handleCallback, handleProfile };
 
 // Custom function to check onboarding status
 export async function checkOnboardingStatus(req, res) {

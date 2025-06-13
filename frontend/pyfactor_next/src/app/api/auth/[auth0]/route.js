@@ -1,58 +1,31 @@
-import { handleAuth, handleLogin, handleCallback } from '@auth0/nextjs-auth0';
 import { NextResponse } from 'next/server';
 
-// Custom login handler to ensure proper redirect
-const customLogin = handleLogin({
-  authorizationParams: {
-    audience: process.env.AUTH0_AUDIENCE || 'https://api.dottapps.com',
-    scope: 'openid profile email offline_access',
-  },
-  returnTo: '/dashboard'
-});
+// Dynamic import to avoid build-time issues
+let auth0Handler;
 
-// Custom callback handler to check onboarding status
-const customCallback = handleCallback({
-  afterCallback: async (req, session) => {
+async function getAuth0Handler() {
+  if (!auth0Handler) {
     try {
-      // Check if user needs onboarding
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'https://api.dottapps.com';
-      const checkResponse = await fetch(`${backendUrl}/api/auth0/check-onboarding-status/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (checkResponse.ok) {
-        const data = await checkResponse.json();
-        
-        // Add onboarding status to session
-        session.user.onboarding_completed = data.onboarding_completed;
-        session.user.tenant_id = data.tenant_id;
-        
-        // Set redirect URL based on onboarding status
-        if (!data.onboarding_completed) {
-          session.returnTo = '/onboarding';
-        } else if (data.tenant_id) {
-          session.returnTo = `/tenant/${data.tenant_id}/dashboard`;
-        }
-      }
+      const { handleAuth } = await import('@auth0/nextjs-auth0');
+      auth0Handler = handleAuth();
     } catch (error) {
-      console.error('[Auth0 Callback] Error checking onboarding status:', error);
+      console.error('Failed to initialize Auth0:', error);
+      // Return a fallback handler
+      return {
+        GET: () => NextResponse.json({ error: 'Auth0 not configured' }, { status: 503 }),
+        POST: () => NextResponse.json({ error: 'Auth0 not configured' }, { status: 503 })
+      };
     }
-    
-    return session;
   }
-});
+  return auth0Handler;
+}
 
-// Export the Auth0 handler with custom handlers
-export const GET = handleAuth({
-  login: customLogin,
-  callback: customCallback
-});
+export async function GET(request, context) {
+  const handler = await getAuth0Handler();
+  return handler.GET(request, context);
+}
 
-export const POST = handleAuth({
-  login: customLogin,
-  callback: customCallback
-});
+export async function POST(request, context) {
+  const handler = await getAuth0Handler();
+  return handler.POST(request, context);
+}
