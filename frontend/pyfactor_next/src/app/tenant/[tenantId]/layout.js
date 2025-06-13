@@ -1,9 +1,26 @@
 import { redirect } from 'next/navigation';
+import { getSession } from '@auth0/nextjs-auth0';
 import TenantInitializer from './TenantInitializer';
 
 // This layout is a server component that wraps all tenant-specific pages
 export default async function TenantLayout({ children, params }) {
   try {
+    // Check Auth0 session first
+    const session = await getSession();
+    
+    if (!session) {
+      // No session, redirect to login
+      redirect('/api/auth/login?returnTo=/dashboard');
+    }
+    
+    // Check onboarding status
+    const onboardingCompleted = session.user?.onboarding_completed;
+    
+    if (onboardingCompleted === false) {
+      // User needs to complete onboarding
+      redirect('/onboarding');
+    }
+    
     // Get the tenant ID from params (properly awaited for Next.js 15+)
     const { tenantId } = await params;
     
@@ -12,7 +29,12 @@ export default async function TenantLayout({ children, params }) {
       redirect('/');
     }
     
-    // No longer need to set cookies since we're using Cognito for tenant ID
+    // Verify user has access to this tenant
+    const userTenantId = session.user?.tenant_id;
+    if (userTenantId && userTenantId !== tenantId) {
+      // User is trying to access a different tenant
+      redirect(`/tenant/${userTenantId}/dashboard`);
+    }
     
     return (
       <>

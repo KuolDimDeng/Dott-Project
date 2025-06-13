@@ -3,6 +3,7 @@ import React from 'react';
 import DashboardClientLayout from './DashboardClientLayout';
 import MiddlewareHeaderHandler from '@/components/MiddlewareHeaderHandler';
 import SessionProviderWrapper from './SessionProviderWrapper';
+import AuthProtectedLayout from './AuthProtectedLayout';
 
 // Export metadata from this server component
 export const metadata = {
@@ -13,13 +14,13 @@ export const metadata = {
 // The layout is now a server component that wraps the client component
 export default function DashboardLayout({ children }) {
   return (
-    <>
+    <AuthProtectedLayout>
       <MiddlewareHeaderHandler />
       <SessionProviderWrapper>
         <DashboardClientLayout>
           {children}
         </DashboardClientLayout>
       </SessionProviderWrapper>
-    </>
+    </AuthProtectedLayout>
   );
 }
