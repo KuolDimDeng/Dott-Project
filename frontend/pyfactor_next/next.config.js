@@ -32,7 +32,12 @@ const nextConfig = {
   // Ensure Auth0 module is included in standalone build
   experimental: {
     outputFileTracingIncludes: {
-      '/api/auth/[auth0]': ['./node_modules/@auth0/**/*'],
+      '/api/auth/[auth0]': [
+        './node_modules/@auth0/**/*',
+        './node_modules/openid-client/**/*',
+        './node_modules/jose/**/*',
+        './node_modules/oauth4webapi/**/*',
+      ],
     },
   },
   
