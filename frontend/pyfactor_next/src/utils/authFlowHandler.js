@@ -112,14 +112,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       if (profileData.tenantId) {
         finalUserData.tenantId = profileData.tenantId;
       }
+      // Trust the backend's onboarding status
       finalUserData.needsOnboarding = profileData.needsOnboarding === true;
       finalUserData.onboardingCompleted = profileData.onboardingCompleted === true;
-      
-      // Override with backend completion status if available
-      if (backendCompleted) {
-        finalUserData.needsOnboarding = false;
-        finalUserData.onboardingCompleted = true;
-      }
     }
 
     console.log('[AuthFlowHandler] Redirect decision factors:', {
@@ -131,15 +126,16 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       authMethod
     });
 
-    // Determine redirect URL
-    if ((backendCompleted || isOnboardingComplete) && finalUserData.tenantId) {
+    // Determine redirect URL based on backend status
+    if (finalUserData.needsOnboarding || !finalUserData.onboardingCompleted) {
+      // User needs to complete onboarding
+      finalUserData.redirectUrl = '/onboarding';
+    } else if (finalUserData.onboardingCompleted && finalUserData.tenantId) {
       // User has completed onboarding AND has a valid tenant ID
-      finalUserData.needsOnboarding = false;
-      finalUserData.onboardingCompleted = true;
       finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
-    } else if (backendCompleted && !finalUserData.tenantId) {
+    } else if (finalUserData.onboardingCompleted && !finalUserData.tenantId) {
       // Backend shows complete but no tenant ID - this is a data inconsistency
-      // Instead of generating a fake tenant ID, force re-onboarding to fix the data
+      // Force re-onboarding to fix the data
       logger.warn('[AuthFlowHandler] Backend shows onboarding complete but no tenant ID found - forcing re-onboarding');
       
       finalUserData.needsOnboarding = true;

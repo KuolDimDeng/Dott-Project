@@ -134,10 +134,8 @@ export async function GET(request) {
     // Start with session data as base profile
     let profileData = {
       ...user,
-      // Ensure consistent field names for onboarding status
-      // If session has tenantId, user has completed onboarding
-      needsOnboarding: (user.tenantId || user.tenant_id) ? false : 
-        (user.needsOnboarding === true || (user.needsOnboarding === undefined && user.onboardingCompleted !== true)),
+      // Don't make assumptions - use the actual session values
+      needsOnboarding: user.needsOnboarding !== false, // Default to true unless explicitly false
       onboardingCompleted: user.onboardingCompleted === true,
       currentStep: user.currentStep || user.current_onboarding_step || 'business_info',
       tenantId: user.tenantId || user.tenant_id,
@@ -274,26 +272,10 @@ export async function GET(request) {
             businessName: businessInfo?.businessName || user.businessName || profileData.businessName,
             businessType: businessInfo?.businessType || user.businessType || profileData.businessType,
             
-            // Onboarding status: if user has tenant in backend, they've completed onboarding
-            // Check backend onboarding status first, then tenant ID
-            needsOnboarding: (backendUser && (
-              backendUser.onboarding_status === 'complete' ||
-              backendUser.setup_done === true ||
-              backendUser.onboarding_completed === true
-            )) ? false : (finalTenantId ? false : 
-                           (user.onboardingCompleted === true ? false :
-                            (user.needsOnboarding === true || backendUser?.needs_onboarding === true))),
-            onboardingCompleted: (backendUser && (
-              backendUser.onboarding_status === 'complete' ||
-              backendUser.setup_done === true ||
-              backendUser.onboarding_completed === true
-            )) ? true : (finalTenantId ? true :
-                               (user.onboardingCompleted === true || 
-                                backendUser?.onboarding_completed === true)),
-            currentStep: (backendUser && backendUser.onboarding_status === 'complete') ? 'completed' :
-                        (backendUser && backendUser.current_step === 'complete') ? 'completed' :
-                        (finalTenantId ? 'completed' :
-                        (user.currentStep || user.current_onboarding_step || backendUser?.current_onboarding_step || 'business_info')),
+            // Onboarding status: Trust backend data as source of truth
+            needsOnboarding: backendUser ? backendUser.needs_onboarding : profileData.needsOnboarding,
+            onboardingCompleted: backendUser ? backendUser.onboarding_completed : profileData.onboardingCompleted,
+            currentStep: backendUser ? (backendUser.current_onboarding_step || backendUser.current_step || 'business_info') : profileData.currentStep,
             businessInfoCompleted: user.businessInfoCompleted !== undefined 
               ? user.businessInfoCompleted 
               : false,
