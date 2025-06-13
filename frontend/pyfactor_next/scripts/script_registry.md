@@ -1,12 +1,6 @@
 Script Registry
 
-This document tracks a
-| Version0199_fix_remaining_syntax_errors.mjs | Fixes additional syntax errors in multiple files causing build failures | ✅ Executed | 2025-06-08 |
-| Version0200_deploy_remaining_syntax_fixes.mjs | Commits and deploys additional syntax error fixes | ✅ Executed | 2025-06-08 |
-
-| Version0197_fix_syntax_errors_blocking_build.mjs | Fixes syntax errors in multiple files causing build failures | ✅ Executed | 2025-06-08 |
-| Version0198_deploy_syntax_error_fixes.mjs | Commits and deploys syntax error fixes | ✅ Executed | 2025-06-08 |
-ll scripts used for the pyfactor project, their execution status, and their purpose.
+This document tracks all scripts used for the pyfactor project, their execution status, and their purpose.
 
 
 ## Usage Guidelines
@@ -451,3 +445,10 @@ ll scripts used for the pyfactor project, their execution status, and their purp
 - **Result**: Prevents repeated calls to /api/user/profile API endpoint
 - **Files Modified**:
   - src/contexts/UserProfileContext.js
+
+## setup-stripe-products.js
+- **Purpose**: Sets up Stripe products and prices for subscription plans
+- **Created**: 2025-01-07
+- **Usage**: `STRIPE_SECRET_KEY=sk_test_xxx node scripts/setup-stripe-products.js`
+- **Description**: Creates Professional and Enterprise products with monthly/yearly pricing in Stripe
+- **Status**: 🔄 PENDING EXECUTION

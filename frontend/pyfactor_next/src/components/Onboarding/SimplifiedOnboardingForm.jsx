@@ -7,6 +7,9 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { countries } from 'countries-list';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 import { getAuthHeaders } from '@/utils/getAuthHeaders';
+import PricingDisplay from './PricingDisplay';
+import CurrencySelector from './CurrencySelector';
+import { useCurrencyDetection } from '@/hooks/useCurrencyDetection';
 
 /**
  * Simplified Onboarding Form Component
@@ -28,6 +31,8 @@ const PLANS = [
     name: 'Basic',
     description: 'Get started with essential features',
     price: 'Free',
+    monthlyPrice: 0,
+    yearlyPrice: 0,
     features: [
       'Up to 3 projects',
       'Core analytics', 
@@ -40,6 +45,8 @@ const PLANS = [
     name: 'Professional',
     description: 'Advanced features for growing businesses',
     price: '$15/month',
+    monthlyPrice: 15,
+    yearlyPrice: 290,
     features: [
       'Unlimited projects',
       'Advanced analytics',
@@ -53,6 +60,8 @@ const PLANS = [
     name: 'Enterprise',
     description: 'Complete solution for large organizations',
     price: '$35/month',
+    monthlyPrice: 35,
+    yearlyPrice: 990,
     features: [
       'Everything in Professional',
       'SSO integration',
@@ -183,23 +192,34 @@ export default function SimplifiedOnboardingForm() {
       if (result.success) {
         logger.info('[SimplifiedOnboarding] Onboarding completed successfully', {
           tenantId: result.tenant_id,
-          redirectUrl: result.redirect_url
+          redirectUrl: result.redirect_url,
+          selectedPlan: formData.selectedPlan
         });
         
-        // Force a full page reload to refresh the session
-        // Using window.location.href instead of router.push to ensure session is refreshed
-        // Refresh the session to ensure onboarding status is updated
-        setTimeout(async () => {
-          try {
-            console.log('[SimplifiedOnboarding] Refreshing session before redirect...');
-            await fetch('/api/auth/refresh-session', { method: 'POST' });
-          } catch (error) {
-            console.error('[SimplifiedOnboarding] Session refresh failed:', error);
-          }
-          
-          console.log('[SimplifiedOnboarding] Redirecting to dashboard...');
-          window.location.href = result.redirect_url;
-        }, 500); // 500ms delay to ensure cookie is set // 500ms delay to ensure cookie is set
+        // Check if paid plan requires payment
+        if (formData.selectedPlan.toLowerCase() !== 'free' && 
+            formData.selectedPlan.toLowerCase() !== 'basic') {
+          // Redirect to payment page for Professional and Enterprise plans
+          const paymentUrl = `/onboarding/payment?plan=${formData.selectedPlan}&billing=${formData.billingCycle}`;
+          logger.info('[SimplifiedOnboarding] Redirecting to payment page', { paymentUrl });
+          window.location.href = paymentUrl;
+        } else {
+          // Free plan - go directly to dashboard
+          // Force a full page reload to refresh the session
+          // Using window.location.href instead of router.push to ensure session is refreshed
+          // Refresh the session to ensure onboarding status is updated
+          setTimeout(async () => {
+            try {
+              console.log('[SimplifiedOnboarding] Refreshing session before redirect...');
+              await fetch('/api/auth/refresh-session', { method: 'POST' });
+            } catch (error) {
+              console.error('[SimplifiedOnboarding] Session refresh failed:', error);
+            }
+            
+            console.log('[SimplifiedOnboarding] Redirecting to dashboard...');
+            window.location.href = result.redirect_url;
+          }, 500); // 500ms delay to ensure cookie is set
+        }
       } else {
         throw new Error(result.message || 'Failed to complete onboarding');
       }
@@ -299,45 +319,90 @@ export default function SimplifiedOnboardingForm() {
   // Render plan selection step
   const renderPlanStep = () => (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
-        <p className="text-gray-600">Select the plan that best fits your needs</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
+          <p className="text-gray-600">Select the plan that best fits your needs</p>
+        </div>
+        <CurrencySelector />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {PLANS.map(plan => (
-          <div
-            key={plan.id}
-            onClick={() => handleInputChange('selectedPlan', plan.id)}
-            className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
-              formData.selectedPlan === plan.id
-                ? 'border-blue-500 bg-blue-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
+      {/* Billing cycle toggle */}
+      {formData.selectedPlan !== 'free' && (
+        <div className="flex items-center justify-center mb-6">
+          <span className={`mr-3 ${formData.billingCycle === 'monthly' ? 'font-semibold' : ''}`}>
+            Monthly
+          </span>
+          <button
+            type="button"
+            onClick={() => handleInputChange('billingCycle', formData.billingCycle === 'monthly' ? 'yearly' : 'monthly')}
+            className="relative inline-flex h-6 w-11 items-center rounded-full bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            <div className="text-center">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
-              <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
-              <div className="text-2xl font-bold text-blue-600 mb-4">{plan.price}</div>
-              <ul className="text-sm text-gray-600 space-y-2">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center">
-                    <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+            <span
+              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                formData.billingCycle === 'yearly' ? 'translate-x-6' : 'translate-x-1'
+              }`}
+            />
+          </button>
+          <span className={`ml-3 ${formData.billingCycle === 'yearly' ? 'font-semibold' : ''}`}>
+            Yearly <span className="text-green-600 text-sm">(Save up to 20%)</span>
+          </span>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {PLANS.map(plan => {
+          const price = formData.billingCycle === 'yearly' ? plan.yearlyPrice : plan.monthlyPrice;
+          
+          return (
+            <div
+              key={plan.id}
+              onClick={() => handleInputChange('selectedPlan', plan.id)}
+              className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                formData.selectedPlan === plan.id
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="text-center">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
+                <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                
+                {/* Pricing display with currency conversion */}
+                <div className="mb-4">
+                  {plan.id === 'free' ? (
+                    <div className="text-2xl font-bold text-blue-600">Free</div>
+                  ) : (
+                    <PricingDisplay
+                      plan={plan.id}
+                      usdPrice={price}
+                      billingCycle={formData.billingCycle}
+                      isSelected={formData.selectedPlan === plan.id}
+                      showOriginal={true}
+                    />
+                  )}
+                </div>
+                
+                <ul className="text-sm text-gray-600 space-y-2">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       
       {formData.selectedPlan !== 'free' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-800">
-            Note: You can start with the free plan and upgrade anytime from your dashboard.
+            Note: Prices will be charged in USD. Your bank may apply currency conversion fees if paying in a different currency.
           </p>
         </div>
       )}
