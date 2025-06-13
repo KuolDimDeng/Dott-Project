@@ -59,10 +59,18 @@ if not PLAID_CLIENT_ID or not PLAID_SECRET:
 
 
 # Stripe integration settings
-STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'placeholder_pub_key')
+# Try multiple environment variable names for compatibility
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY') or os.getenv('STRIPE_PUB_KEY') or os.getenv('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY', 'placeholder_pub_key')
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', 'placeholder_secret_key')
-STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY', 'placeholder_price_id_monthly')
-STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL', 'placeholder_price_id_annual')
+# Use specific price IDs from Render environment
+STRIPE_PRICE_ID_MONTHLY = os.getenv('STRIPE_PRICE_ID_MONTHLY') or os.getenv('STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'placeholder_price_id_monthly')
+STRIPE_PRICE_ID_ANNUAL = os.getenv('STRIPE_PRICE_ID_ANNUAL') or os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY', 'placeholder_price_id_annual')
+# Additional Stripe price configurations
+STRIPE_PRICE_PROFESSIONAL_MONTHLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_MONTHLY', STRIPE_PRICE_ID_MONTHLY)
+STRIPE_PRICE_PROFESSIONAL_YEARLY = os.getenv('STRIPE_PRICE_PROFESSIONAL_YEARLY', STRIPE_PRICE_ID_ANNUAL)
+STRIPE_PRICE_ENTERPRISE_MONTHLY = os.getenv('STRIPE_PRICE_ENTERPRISE_MONTHLY', 'placeholder_enterprise_monthly')
+STRIPE_PRICE_ENTERPRISE_YEARLY = os.getenv('STRIPE_PRICE_ENTERPRISE_YEARLY', 'placeholder_enterprise_yearly')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET', 'placeholder_webhook_secret')
 
 # Print warning for development mode
 if STRIPE_PUBLISHABLE_KEY.startswith('placeholder_') or STRIPE_SECRET_KEY.startswith('placeholder_'):
