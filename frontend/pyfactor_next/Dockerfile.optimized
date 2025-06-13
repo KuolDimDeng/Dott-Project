@@ -1,5 +1,8 @@
 # Multi-stage build for optimized production builds
-FROM node:18-alpine AS deps
+FROM node:18-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -9,15 +12,17 @@ RUN npm install -g pnpm@8.10.0
 # Copy package files
 COPY package.json pnpm-lock.yaml* ./
 
-# Install production dependencies only
-RUN pnpm install --prod --frozen-lockfile
+# Install dependencies with frozen lockfile
+RUN pnpm install --frozen-lockfile
 
-# Builder stage
-FROM node:18-alpine AS builder
+# Rebuild the source code only when needed
+FROM base AS builder
 WORKDIR /app
+
+# Install pnpm
 RUN npm install -g pnpm@8.10.0
 
-# Copy dependencies
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
@@ -25,11 +30,11 @@ COPY . .
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build with standalone output
+# Build the application
 RUN pnpm run build:production
 
-# Runner stage
-FROM node:18-alpine AS runner
+# Production image, copy all the files and run next
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -43,6 +48,9 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
+
+# Set permissions
+RUN chown -R nextjs:nodejs /app
 
 USER nextjs
 

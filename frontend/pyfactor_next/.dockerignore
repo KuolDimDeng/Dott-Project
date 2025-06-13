@@ -1,5 +1,78 @@
+# Dependencies
 node_modules
+.pnpm-store
+
+# Next.js build output
 .next
+out
+build
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env*.local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# Typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Git
 .git
 .gitignore
-.pnpm-store
+.github
+
+# IDE
+.idea
+.vscode
+
+# Documentation
+README.md
+docs
+
+# Test files
+**/*.test.js
+**/*.test.jsx
+**/*.test.ts
+**/*.test.tsx
+**/__tests__
+**/__mocks__
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Logs
+logs
+*.log
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Development scripts
+scripts/dev-*.js
+scripts/test-*.js
+
+# Storybook
+.storybook
+storybook-static
