@@ -1138,7 +1138,7 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     navigationKey,
     showProductManagement: view === 'inventory-products',
     showServiceManagement: view === 'services',
-    showInvoiceManagement: view === 'invoices',
+    showInvoiceManagement: view === 'invoices' || view === 'invoice-management' || uiState.showInvoiceManagement,
     showBillManagement: view === 'bills',
     showEstimateManagement: view === 'estimates' || view === 'estimate-management',
     showSalesOrderManagement: view === 'order-management',

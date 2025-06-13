@@ -552,16 +552,16 @@ const MainListItems = ({
       icon: <NavIcons.Payments className="w-5 h-5" />,
       label: 'Payments',
       subItems: [
-        { label: 'Dashboard', onClick: handlePaymentsClick, value: 'dashboard' },
+        { label: 'Dashboard', onClick: handlePaymentsClick, value: 'payments-dashboard' },
         { label: 'Receive Payments', onClick: handlePaymentsClick, value: 'receive-payments' },
         { label: 'Make Payments', onClick: handlePaymentsClick, value: 'make-payments' },
         { label: 'Payment Methods', onClick: handlePaymentsClick, value: 'payment-methods' },
         { label: 'Recurring Payments', onClick: handlePaymentsClick, value: 'recurring-payments' },
         { label: 'Refunds', onClick: handlePaymentsClick, value: 'refunds' },
-        { label: 'Payment Reconciliation', onClick: handlePaymentsClick, value: 'reconciliation' },
+        { label: 'Payment Reconciliation', onClick: handlePaymentsClick, value: 'payment-reconciliation' },
         { label: 'Payment Gateways', onClick: handlePaymentsClick, value: 'payment-gateways' },
         { label: 'Payment Plans', onClick: handlePaymentsClick, value: 'payment-plans' },
-        { label: 'Reports', onClick: handlePaymentsClick, value: 'reports' },
+        { label: 'Reports', onClick: handlePaymentsClick, value: 'payment-reports' },
       ],
     },
     {
@@ -726,19 +726,20 @@ const MainListItems = ({
       icon: <NavIcons.Receipt className="w-5 h-5" />,
       label: 'Taxes',
       subItems: [
-        { label: 'Dashboard', onClick: handleTaxesClick, value: 'dashboard' },
+        { label: 'Dashboard', onClick: handleTaxesClick, value: 'taxes-dashboard' },
         { label: 'Sales Tax', onClick: handleTaxesClick, value: 'sales-tax' },
         { label: 'Income Tax', onClick: handleTaxesClick, value: 'income-tax' },
         { label: 'Payroll Tax', onClick: handleTaxesClick, value: 'payroll-tax' },
         { label: 'Tax Payments', onClick: handleTaxesClick, value: 'tax-payments' },
         { label: 'Tax Forms', onClick: handleTaxesClick, value: 'tax-forms' },
-        { label: 'Reports', onClick: handleTaxesClick, value: 'reports' },
+        { label: 'Reports', onClick: handleTaxesClick, value: 'tax-reports' },
       ],
     },
     {
       icon: <NavIcons.Reports className="w-5 h-5" />,
       label: 'Reports',
       subItems: [
+        { label: 'Dashboard', onClick: handleReportClick, value: 'reports-dashboard' },
         { label: 'Profit & Loss Statement', onClick: handleReportClick, value: 'income_statement' },
         { label: 'Balance Sheet', onClick: handleReportClick, value: 'balance_sheet' },
         { label: 'Cash Flow', onClick: handleReportClick, value: 'cash_flow' },
@@ -757,7 +758,7 @@ const MainListItems = ({
       icon: <NavIcons.Analytics className="w-5 h-5" />,
       label: 'Analytics',
       subItems: [
-        { label: 'Dashboard', onClick: handleAnalysisClick, value: 'kpi-data' },
+        { label: 'Dashboard', onClick: handleAnalysisClick, value: 'analytics-dashboard' },
         { label: 'A.I Query', onClick: handleAnalysisClick, value: 'ai-query' },
       ],
     },
@@ -886,8 +887,8 @@ const MainListItems = ({
           <li key={index}>
             <button
               className={`flex items-center w-full text-left px-4 py-2 text-sm rounded-md
-                ${hoveredItem === `${parentMenu}-${item.value}` ? 'bg-gray-100' : ''}
-                hover:bg-gray-100 text-primary-main
+                ${hoveredItem === `${parentMenu}-${item.value}` ? 'bg-gray-100 text-gray-900' : 'text-gray-700'}
+                hover:bg-gray-100 hover:text-gray-900 transition-colors duration-150
               `}
               onClick={(event) => {
                 if (item.subItems) {
