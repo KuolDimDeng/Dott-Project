@@ -158,12 +158,15 @@ export async function POST(request) {
     
     console.log('[Auth Session POST] Creating session for:', user.email);
     
-    // Check onboarding status
+    // Check onboarding status from backend
     let needsOnboarding = true;
     let tenantId = null;
+    let onboardingCompleted = false;
+    let subscriptionPlan = 'free';
     
     try {
-      const profileResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/profile`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+      const profileResponse = await fetch(`${apiUrl}/api/users/me/`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'application/json'
@@ -172,8 +175,20 @@ export async function POST(request) {
       
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
+        console.log('[Auth Session POST] Backend profile data:', {
+          needs_onboarding: profileData.needs_onboarding,
+          onboarding_completed: profileData.onboarding_completed,
+          tenant_id: profileData.tenant_id
+        });
+        
         needsOnboarding = profileData.needs_onboarding !== false;
+        onboardingCompleted = profileData.onboarding_completed === true;
         tenantId = profileData.tenant_id;
+        
+        // Get subscription plan from onboarding progress
+        if (profileData.onboarding && profileData.onboarding.subscription_plan) {
+          subscriptionPlan = profileData.onboarding.subscription_plan;
+        }
       }
     } catch (error) {
       console.error('[Auth Session POST] Profile check error:', error);
@@ -184,7 +199,17 @@ export async function POST(request) {
       user: {
         ...user,
         needsOnboarding,
-        tenantId
+        needs_onboarding: needsOnboarding,
+        onboardingCompleted,
+        onboarding_completed: onboardingCompleted,
+        tenantId,
+        tenant_id: tenantId,
+        subscriptionPlan,
+        subscription_plan: subscriptionPlan,
+        selectedPlan: subscriptionPlan,
+        selected_plan: subscriptionPlan,
+        subscriptionType: subscriptionPlan,
+        subscription_type: subscriptionPlan
       },
       accessToken,
       idToken,
@@ -201,7 +226,11 @@ export async function POST(request) {
       user: {
         ...user,
         needsOnboarding,
-        tenantId
+        needs_onboarding: needsOnboarding,
+        onboardingCompleted,
+        onboarding_completed: onboardingCompleted,
+        tenantId,
+        tenant_id: tenantId
       }
     });
     
