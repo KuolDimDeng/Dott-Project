@@ -40,6 +40,9 @@ urlpatterns = [
     # API routes - ALWAYS include these (don't wrap in try-catch)
     path('api/', include('custom_auth.api.urls')),
     
+    # Session management API routes
+    path('api/sessions/', include('session_manager.urls')),
+    
     # Payment API routes
     path('api/payments/', include('payments.urls')),
     

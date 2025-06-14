@@ -1,170 +1,195 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
-import { verifyToken, decodeToken } from '@/utils/serverAuth';
 import { cookies } from 'next/headers';
+import { logger } from '@/utils/logger';
 
-// Using our server-side auth utilities that don't rely on Amplify
-
-/**
- * Handle session token storage
- * @param {Request} request - The request object
- * @returns {Response} The response object
- */
-export async function POST(request) {
-  try {
-    // Verify token from request
-    const { token, refreshToken } = await request.json();
-    if (!token) {
-      return new Response('No token provided', { status: 400 });
-    }
-
-    // Verify token using our server-side utility
-    const payload = await verifyToken(token);
-    if (!payload) {
-      logger.error('[Session] Token verification failed');
-      return new Response('Invalid token', { status: 401 });
-    }
-    
-    // Set session cookies with secure options
-    const response = NextResponse.json({ success: true });
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 24 * 60 * 60, // 24 hours
-    };
-
-    response.cookies.set('idToken', token, cookieOptions);
-    if (refreshToken) {
-      response.cookies.set('refreshToken', refreshToken, {
-        ...cookieOptions,
-        maxAge: 30 * 24 * 60 * 60, // 30 days for refresh token
-      });
-    }
-
-    logger.debug('[Session] Session tokens set successfully');
-    return response;
-  } catch (error) {
-    logger.error('[Session] Failed to set session token:', error);
-    return new Response('Internal server error', { status: 500 });
-  }
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
 
 /**
- * Handle session refresh
- * @returns {Response} The response object
+ * Session API Route
+ * Manages session lifecycle through backend API
  */
+
 export async function GET(request) {
   try {
-    const cookieStore = cookies();
+    console.log('[Session API] Getting session');
     
-    // Try to get tokens from cookies first
-    let idToken = cookieStore.get('idToken')?.value;
-    let refreshToken = cookieStore.get('refreshToken')?.value;
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session_token');
     
-    // Fall back to headers if not in cookies
-    if (!idToken) {
-      idToken = request.headers.get('X-Id-Token');
+    if (!sessionToken) {
+      console.log('[Session API] No session token found');
+      return NextResponse.json(null, { status: 401 });
     }
     
-    if (!idToken) {
-      logger.error('[Session] No ID token found');
-      return new Response('No valid session', { status: 401 });
-    }
-
-    // Verify token with our server-side utility
-    let payload = await verifyToken(idToken);
-    
-    // If token is invalid but we have a refresh token, try to refresh
-    if (!payload && refreshToken) {
-      try {
-        // TODO: Implement token refresh logic here
-        // This would involve calling Cognito's token refresh endpoint
-        logger.debug('[Session] Attempting token refresh');
-        // For now, we'll just return 401 to trigger a re-login
-        return new Response('Session expired', { status: 401 });
-      } catch (refreshError) {
-        logger.error('[Session] Token refresh failed:', refreshError);
-        return new Response('Session expired', { status: 401 });
+    // Get session from backend
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sessionToken.value}`,
+        'Content-Type': 'application/json'
       }
+    });
+    
+    if (!response.ok) {
+      console.error('[Session API] Backend error:', response.status);
+      
+      if (response.status === 401) {
+        // Clear invalid session token
+        const res = NextResponse.json(null, { status: 401 });
+        res.cookies.set('session_token', '', {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'lax',
+          maxAge: 0,
+          path: '/'
+        });
+        return res;
+      }
+      
+      return NextResponse.json(null, { status: response.status });
     }
     
-    // In development, be more lenient with token validation
-    let decodedToken;
-    if (!payload && process.env.NODE_ENV !== 'production') {
-      logger.warn('[Session] Token verification failed in development mode, falling back to decoding');
-      decodedToken = decodeToken(idToken);
-      if (!decodedToken) {
-        logger.error('[Session] Failed to decode token even in lenient mode');
-        return new Response('Invalid token format', { status: 401 });
-      }
-    } else if (!payload) {
-      logger.error('[Session] Token verification failed in production mode');
-      return new Response('Invalid or expired token', { status: 401 });
-    } else {
-      decodedToken = payload;
-    }
+    const sessionData = await response.json();
+    console.log('[Session API] Session retrieved successfully');
     
-    // Construct user object from token data
-    const user = {
-      username: decodedToken['cognito:username'] || decodedToken.sub,
-      userId: decodedToken.sub,
-      email: decodedToken.email,
-      attributes: {
-        email: decodedToken.email,
-        email_verified: decodedToken.email_verified === 'true' || decodedToken.email_verified === true,
-        // Extract any custom attributes
-        ...Object.keys(decodedToken)
-          .filter(key => key.startsWith('custom:'))
-          .reduce((obj, key) => {
-            obj[key] = decodedToken[key];
-            return obj;
-          }, {})
-      }
-    };
-
-    // Set refreshed session cookies
-    const response = NextResponse.json({ user });
-    const cookieOptions = {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 24 * 60 * 60, // 24 hours
-    };
-
-    response.cookies.set('idToken', idToken, cookieOptions);
-    if (refreshToken) {
-      response.cookies.set('refreshToken', refreshToken, {
-        ...cookieOptions,
-        maxAge: 30 * 24 * 60 * 60, // 30 days for refresh token
-      });
-    }
-
-    return response;
+    // Add cache control headers
+    const res = NextResponse.json(sessionData);
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.headers.set('Pragma', 'no-cache');
+    
+    return res;
+    
   } catch (error) {
-    logger.error('[Session] Session refresh failed:', error);
-    return new Response('Internal server error', { status: 500 });
+    console.error('[Session API] GET error:', error);
+    return NextResponse.json({ error: 'Session error' }, { status: 500 });
   }
 }
 
-/**
- * Handle session deletion
- * @returns {Response} The response object
- */
-export async function DELETE() {
+export async function POST(request) {
   try {
-    const response = NextResponse.json({ success: true });
+    console.log('[Session API] Creating new session');
     
-    // Clear all auth cookies
-    response.cookies.delete('idToken');
-    response.cookies.delete('refreshToken');
-    response.cookies.delete('accessToken');
+    const body = await request.json();
+    const { accessToken, user } = body;
+    
+    if (!accessToken || !user) {
+      return NextResponse.json({ error: 'Missing required data' }, { status: 400 });
+    }
+    
+    // Create session in backend
+    const response = await fetch(`${API_URL}/api/sessions/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        needs_onboarding: body.needs_onboarding,
+        onboarding_completed: body.onboarding_completed,
+        subscription_plan: body.subscription_plan || 'free'
+      })
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Session API] Backend error:', errorText);
+      throw new Error('Failed to create session');
+    }
+    
+    const sessionData = await response.json();
+    console.log('[Session API] Session created:', sessionData.session_token);
+    
+    // Set session cookie
+    const res = NextResponse.json(sessionData);
+    res.cookies.set('session_token', sessionData.session_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 86400, // 24 hours
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+    });
+    
+    return res;
+    
+  } catch (error) {
+    console.error('[Session API] POST error:', error);
+    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+  }
+}
+
+export async function PATCH(request) {
+  try {
+    console.log('[Session API] Updating session');
+    
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session_token');
+    
+    if (!sessionToken) {
+      return NextResponse.json({ error: 'No session' }, { status: 401 });
+    }
+    
+    const updates = await request.json();
+    
+    // Update session in backend
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Session ${sessionToken.value}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to update session');
+    }
+    
+    const sessionData = await response.json();
+    console.log('[Session API] Session updated successfully');
+    
+    return NextResponse.json(sessionData);
+    
+  } catch (error) {
+    console.error('[Session API] PATCH error:', error);
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    console.log('[Session API] Deleting session');
+    
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session_token');
+    
+    if (sessionToken) {
+      // Delete session in backend
+      await fetch(`${API_URL}/api/sessions/current/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Session ${sessionToken.value}`
+        }
+      });
+    }
+    
+    // Clear session cookie
+    const response = NextResponse.json({ success: true });
+    response.cookies.set('session_token', '', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+    });
+    
+    console.log('[Session API] Session deleted');
     
     return response;
+    
   } catch (error) {
-    logger.error('[Session] Failed to delete session:', error);
-    return new Response('Internal server error', { status: 500 });
+    console.error('[Session API] DELETE error:', error);
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
   }
 }

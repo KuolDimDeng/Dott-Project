@@ -1,0 +1,5 @@
+channels_redis==4.2.1
+iso3166==2.1.1
+plaid-python==34.0.0
+redis==6.2.0
+reportlab==4.4.1

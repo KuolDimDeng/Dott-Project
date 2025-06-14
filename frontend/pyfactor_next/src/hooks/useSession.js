@@ -1,383 +1,278 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { fetchAuthSession, fetchUserAttributes  } from '@/config/amplifyUnified';
-import { logger } from '@/utils/logger';
-import { setCacheValue, getCacheValue } from '@/utils/appCache';
-import { getTokens, storeTokens, areTokensExpired } from '@/utils/tokenManager';
-
-// Increase token refresh interval from default
-const TOKEN_REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
-// Reduce loading timeout for faster dashboard loading
-const LOADING_TIMEOUT = 5000; // Reduced from 20s to 5s for faster sign-in
-// Maximum number of consecutive refresh failures before entering cooldown
-const MAX_REFRESH_FAILURES = 5;
-// Cooldown period after exceeding max failures (milliseconds)
-const REFRESH_COOLDOWN = 60000; // 1 minute
-// Log throttling for session messages
-const LOG_THROTTLE_INTERVAL = 10000; // 10 seconds
-// Minimum time between refresh attempts (milliseconds)
-const MIN_REFRESH_INTERVAL = 20000; // Reduced from 30s to 20s for more responsive refreshes // 30 seconds
-// Global session log cache to prevent duplicate logs
-const sessionLogCache = new Map();
-// Track last successful refresh globally (unix timestamp)
-let lastSuccessfulRefresh = 0;
-
 /**
- * Throttle session-related logs
- * @param {string} message - Log message
- * @param {number} interval - Throttle interval in ms
- * @returns {boolean} - Whether to log this message
+ * useSession Hook
+ * Provides session management functionality throughout the app
  */
-const shouldLogSessionMessage = (message, interval = LOG_THROTTLE_INTERVAL) => {
-  const now = Date.now();
-  const lastLog = sessionLogCache.get(message);
-  
-  if (!lastLog || (now - lastLog) > interval) {
-    sessionLogCache.set(message, now);
-    
-    // Clean up old messages occasionally
-    if (sessionLogCache.size > 50) {
-      const expiryTime = now - interval;
-      for (const [key, time] of sessionLogCache.entries()) {
-        if (time < expiryTime) {
-          sessionLogCache.delete(key);
-        }
-      }
-    }
-    
-    return true;
-  }
-  
-  return false;
-};
 
-// Function to get user attributes from Cognito
-export const getUserAttributesFromCognito = async () => {
-  try {
-    // First check the AppCache for better performance
-    const cachedAttributes = getCacheValue('user_attributes');
-    if (cachedAttributes) {
-      if (shouldLogSessionMessage('[useSession] Using cached user attributes')) {
-        logger.debug('[useSession] Using cached user attributes');
-      }
-      return cachedAttributes;
-    }
-    
-    // If not in cache, fetch from Cognito
-    const attributes = await fetchUserAttributes();
-    
-    // Store in AppCache for future use
-    if (attributes) {
-      setCacheValue('user_attributes', attributes, { ttl: 3600000 }); // 1 hour
-    }
-    
-    logger.debug('[useSession] Successfully retrieved user attributes from Cognito');
-    return attributes;
-  } catch (error) {
-    logger.warn('[useSession] Error retrieving user attributes from Cognito:', error);
-    return null;
-  }
-};
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { logger } from '@/utils/logger';
+
+const SESSION_REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const SESSION_CHECK_INTERVAL = 30 * 1000; // 30 seconds
 
 export function useSession() {
   const [session, setSession] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const refreshInProgressRef = useRef(false);
-  const loadingTimeoutRef = useRef(null);
-  const refreshFailuresRef = useRef(0);
-  const lastRefreshAttemptRef = useRef(0);
-  const refreshDebugCountRef = useRef(0);
-  const isMounted = useRef(true);
-  // Track component's refresh timestamp
-  const lastRefreshTimestampRef = useRef(Date.now());
-  
-  // Add cleanup effect
-  useEffect(() => {
-    return () => {
-      isMounted.current = false;
-    };
+  const router = useRouter();
+  const refreshIntervalRef = useRef(null);
+  const checkIntervalRef = useRef(null);
+
+  /**
+   * Fetch current session from API
+   */
+  const fetchSession = useCallback(async () => {
+    try {
+      const response = await fetch('/api/session', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSession(data);
+        setError(null);
+        logger.debug('[useSession] Session fetched:', {
+          userId: data?.user?.id,
+          tenantId: data?.tenant?.id,
+          needsOnboarding: data?.needs_onboarding
+        });
+      } else if (response.status === 401) {
+        // Not authenticated
+        setSession(null);
+        setError(null);
+      } else {
+        throw new Error(`Session fetch failed: ${response.status}`);
+      }
+    } catch (err) {
+      logger.error('[useSession] Fetch error:', err);
+      setError(err.message);
+      setSession(null);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Function to refresh the session
+  /**
+   * Update session data
+   */
+  const updateSession = useCallback(async (updates) => {
+    try {
+      logger.info('[useSession] Updating session:', updates);
+      
+      const response = await fetch('/api/session', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Session update failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSession(data);
+      logger.info('[useSession] Session updated successfully');
+      
+      return data;
+    } catch (err) {
+      logger.error('[useSession] Update error:', err);
+      setError(err.message);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Create new session after authentication
+   */
+  const createSession = useCallback(async (authData) => {
+    try {
+      logger.info('[useSession] Creating new session');
+      
+      const response = await fetch('/api/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(authData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Session creation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setSession(data);
+      logger.info('[useSession] Session created successfully');
+      
+      return data;
+    } catch (err) {
+      logger.error('[useSession] Create error:', err);
+      setError(err.message);
+      throw err;
+    }
+  }, []);
+
+  /**
+   * Destroy session (logout)
+   */
+  const destroySession = useCallback(async () => {
+    try {
+      logger.info('[useSession] Destroying session');
+      
+      await fetch('/api/session', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      setSession(null);
+      setError(null);
+      
+      // Clear intervals
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+      if (checkIntervalRef.current) {
+        clearInterval(checkIntervalRef.current);
+      }
+      
+      // Redirect to signin
+      router.push('/auth/signin');
+    } catch (err) {
+      logger.error('[useSession] Destroy error:', err);
+      setError(err.message);
+    }
+  }, [router]);
+
+  /**
+   * Refresh session to extend expiration
+   */
   const refreshSession = useCallback(async () => {
-    // Check if we should throttle the refresh based on time since last attempt
-    const now = Date.now();
-    const timeSinceLastRefresh = now - lastRefreshTimestampRef.current;
-    
-    // Enforce minimum time between refreshes across the app
-    if (timeSinceLastRefresh < MIN_REFRESH_INTERVAL) {
-      if (shouldLogSessionMessage(`[useSession] Throttling refresh - only ${timeSinceLastRefresh}ms since last refresh`)) {
-        logger.debug(`[useSession] Throttling refresh - only ${Math.round(timeSinceLastRefresh/1000)}s since last refresh, minimum is ${MIN_REFRESH_INTERVAL/1000}s`);
-      }
-      return session;
-    }
-    
-    // Also check global refresh timestamp
-    if (lastSuccessfulRefresh > 0) {
-      const timeSinceGlobalRefresh = now - lastSuccessfulRefresh;
-      if (timeSinceGlobalRefresh < MIN_REFRESH_INTERVAL) {
-        if (shouldLogSessionMessage('[useSession] Recent global refresh detected')) {
-          logger.debug(`[useSession] Recent global refresh detected ${Math.round(timeSinceGlobalRefresh/1000)}s ago, skipping`);
-        }
-        return session;
-      }
-    }
-    
-    // Update timestamp even if we don't complete the refresh
-    lastRefreshTimestampRef.current = now;
-    
-    // Clear any existing loading timeout
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    
-    // Set a timeout to clear loading state after LOADING_TIMEOUT regardless of session result
-      loadingTimeoutRef.current = setTimeout(() => {
-        if (!isMounted.current) return;
-        
-        setIsLoading(false);
-        
-        if (shouldLogSessionMessage('[useSession] Loading timeout reached')) {
-          logger.warn('[useSession] Global loading timeout reached, forcing loading state to false');
-        }
-        
-        // Try to get attributes from Cognito as fallback
-        getUserAttributesFromCognito().then(attributes => {
-          if (!isMounted.current) return;
-          
-          if (attributes) {
-            if (shouldLogSessionMessage('[useSession] Using Cognito attributes fallback after timeout')) {
-              logger.info('[useSession] Loading timed out with no session. Using Cognito attributes fallback.');
-            }
-            // Use cached tokens if available, otherwise create minimal session
-            const cachedTokens = getTokens();
-            setSession({ 
-              tokens: cachedTokens || {},
-              userAttributes: attributes,
-              isPartial: true // Flag to indicate this is a partial session
-            });
-            
-            // Set a flag to indicate we had to use a fallback
-            if (typeof window !== 'undefined') {
-              window.__sessionUsedFallback = true;
-            }
-          }
-        }).catch(err => {
-          logger.warn('[useSession] Failed to get fallback attributes after timeout:', err);
-        });
-      }, LOADING_TIMEOUT);
-    
-    // Check if we're in cooldown period due to too many failures
-    if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES) {
-      const timeSinceLastAttempt = now - lastRefreshAttemptRef.current;
-      if (timeSinceLastAttempt < REFRESH_COOLDOWN) {
-        if (shouldLogSessionMessage('[useSession] In cooldown period')) {
-          logger.warn(`[useSession] In cooldown period (${Math.round((REFRESH_COOLDOWN - timeSinceLastAttempt)/1000)}s remaining). Using cached data.`);
-        }
-        setIsLoading(false);
-        return session;
-      } else {
-        // Reset failure count after cooldown period
-        refreshFailuresRef.current = 0;
-      }
-    }
-    
-    // Update last attempt timestamp
-    lastRefreshAttemptRef.current = now;
-    
-    // Prevent duplicate refresh attempts - both local and global
-    if (refreshInProgressRef.current || (typeof window !== 'undefined' && window.__tokenRefreshInProgress)) {
-      // Only log this message occasionally to avoid console spam
-      refreshDebugCountRef.current++;
-      
-      if (refreshDebugCountRef.current % 5 === 0 || shouldLogSessionMessage('[useSession] Refresh already in progress')) {
-        logger.debug('[useSession] Refresh already in progress, skipping');
-      }
-      
-      return session;
-    }
-    
-    // Check global cooldown
-    if (typeof window !== 'undefined' && window.__tokenRefreshCooldown) {
-      const now = Date.now();
-      if (now < window.__tokenRefreshCooldown) {
-        if (shouldLogSessionMessage('[useSession] In global cooldown period')) {
-          logger.warn('[useSession] In global cooldown period, skipping refresh');
-        }
-        setIsLoading(false);
-        
-        // Even in cooldown, check if we have Cognito attributes we can use
-        const userAttributes = await getUserAttributesFromCognito();
-        if (userAttributes && !session) {
-          setSession({ userAttributes });
-        }
-        
-        return session;
-      }
-    }
+    if (!session) return;
     
     try {
-      refreshInProgressRef.current = true;
-      // Set global lock
-      if (typeof window !== 'undefined') {
-        window.__tokenRefreshInProgress = true;
-      }
-      
-      // Only log occasionally to avoid console spam
-      if (shouldLogSessionMessage('[useSession] Refreshing session')) {
-        logger.debug('[useSession] Refreshing session');
-      }
-      
-      setIsLoading(true);
-      
-      // Check if we have a session in the AppCache first
-      const cachedTokens = getTokens();
-      
-      // If tokens aren't expired, use them
-      if (cachedTokens && !areTokensExpired()) {
-        if (shouldLogSessionMessage('[useSession] Using cached tokens')) {
-          logger.debug('[useSession] Using cached tokens');
-        }
-        
-        // Get user attributes to complete the session
-        const userAttributes = await getUserAttributesFromCognito();
-        
-        // If we have attributes, we can use the cached tokens
-        if (userAttributes) {
-          setSession({
-            tokens: cachedTokens,
-            userAttributes
-          });
-          setIsLoading(false);
-          refreshInProgressRef.current = false;
-          if (typeof window !== 'undefined') {
-            window.__tokenRefreshInProgress = false;
-          }
-          
-          return { tokens: cachedTokens, userAttributes };
-        }
-      }
-      
-      // If we need to fetch a new session, continue with the standard fetch
-      const sessionData = await fetchAuthSession();
-      
-      if (sessionData?.tokens?.idToken) {
-        // Store tokens in AppCache
-        const tokens = {
-          idToken: sessionData.tokens.idToken.toString(),
-          accessToken: sessionData.tokens.accessToken.toString(),
-          refreshToken: sessionData.tokens.refreshToken?.toString()
-        };
-        
-        // Store tokens in AppCache
-        storeTokens(tokens);
-        
-        // Get user attributes
-        const userAttributes = await getUserAttributesFromCognito();
-        
-        if (userAttributes) {
-          // Store in app cache for better performance
-          setSession({
-            tokens,
-            userAttributes
-          });
-          
-          // Update global timestamp
-          lastSuccessfulRefresh = Date.now();
-          refreshFailuresRef.current = 0;
-          
-          // Store important user info in AppCache
-          setCacheValue('user_info', {
-            email: userAttributes.email,
-            firstName: userAttributes.given_name,
-            lastName: userAttributes.family_name,
-            tenantId: userAttributes['custom:tenant_ID'] || userAttributes['custom:businessid']
-          }, { ttl: 86400000 }); // 24 hours
-          
-          if (shouldLogSessionMessage('[useSession] Session refreshed successfully')) {
-            logger.debug('[useSession] Session refreshed successfully');
-          }
-        }
-      } else {
-        throw new Error('No ID token found in session');
-      }
-      
-      setIsLoading(false);
-      return session;
-    } catch (error) {
-      refreshFailuresRef.current++;
-      
-      logger.error('[useSession] Failed to refresh session:', {
-        message: error.message,
-        code: error.code,
-        failureCount: refreshFailuresRef.current
+      const response = await fetch('/api/session/refresh', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ hours: 24 })
       });
-      
-      setError(error);
-      
-      // If we've reached max failures, set global cooldown
-      if (refreshFailuresRef.current >= MAX_REFRESH_FAILURES && typeof window !== 'undefined') {
-        window.__tokenRefreshCooldown = Date.now() + REFRESH_COOLDOWN;
-        
-        logger.warn(`[useSession] Maximum refresh failures (${MAX_REFRESH_FAILURES}) reached. Entering cooldown for ${REFRESH_COOLDOWN/1000}s`);
+
+      if (response.ok) {
+        logger.debug('[useSession] Session refreshed');
+        // Fetch updated session data
+        await fetchSession();
       }
-      
-      setIsLoading(false);
-      return null;
-    } finally {
-      refreshInProgressRef.current = false;
-      if (typeof window !== 'undefined') {
-        window.__tokenRefreshInProgress = false;
-      }
-      
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
-      }
+    } catch (err) {
+      logger.error('[useSession] Refresh error:', err);
     }
+  }, [session, fetchSession]);
+
+  /**
+   * Check if session is still valid
+   */
+  const checkSession = useCallback(async () => {
+    if (!session) return;
+    
+    const expiresAt = new Date(session.expires_at);
+    const now = new Date();
+    const timeUntilExpiry = expiresAt - now;
+    
+    // If session expires in less than 10 minutes, refresh it
+    if (timeUntilExpiry < 10 * 60 * 1000) {
+      logger.info('[useSession] Session expiring soon, refreshing');
+      await refreshSession();
+    }
+    
+    // If session has expired, clear it
+    if (timeUntilExpiry <= 0) {
+      logger.warn('[useSession] Session expired');
+      setSession(null);
+      router.push('/auth/signin');
+    }
+  }, [session, refreshSession, router]);
+
+  /**
+   * Initialize session on mount
+   */
+  useEffect(() => {
+    fetchSession();
+  }, [fetchSession]);
+
+  /**
+   * Set up automatic session refresh
+   */
+  useEffect(() => {
+    if (session && session.is_active) {
+      // Set up refresh interval
+      refreshIntervalRef.current = setInterval(refreshSession, SESSION_REFRESH_INTERVAL);
+      
+      // Set up expiry check interval
+      checkIntervalRef.current = setInterval(checkSession, SESSION_CHECK_INTERVAL);
+      
+      return () => {
+        if (refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+        }
+        if (checkIntervalRef.current) {
+          clearInterval(checkIntervalRef.current);
+        }
+      };
+    }
+  }, [session, refreshSession, checkSession]);
+
+  /**
+   * Helper methods
+   */
+  const isAuthenticated = useCallback(() => {
+    return session && session.is_active && !session.is_expired;
   }, [session]);
 
-  useEffect(() => {
-    refreshSession();
-    
-    // Set up a refresh interval - use longer interval to reduce CPU and network usage
-    const refreshInterval = setInterval(() => {
-      refreshSession();
-    }, TOKEN_REFRESH_INTERVAL);
-    
-    // Cleanup when component unmounts
-    return () => {
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
-      clearInterval(refreshInterval);
-    };
-  }, [refreshSession]);
+  const needsOnboarding = useCallback(() => {
+    return session && session.needs_onboarding && !session.onboarding_completed;
+  }, [session]);
 
-  // Extra useEffect to prevent loading state from being stuck
-  useEffect(() => {
-    // Set a hard timeout to ensure loading state doesn't get stuck
-    const timeout = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        logger.warn('[useSession] Global loading timeout reached, forcing loading state to false');
-        
-        // Check if we can use Cognito fallback if no session
-        if (!session) {
-          getUserAttributesFromCognito().then(userAttributes => {
-            if (userAttributes) {
-              logger.info('[useSession] Loading timed out with no session. Using Cognito attributes fallback.');
-              setSession({ userAttributes });
-            }
-          }).catch(err => {
-            logger.error('[useSession] Failed to get Cognito attributes after timeout:', err);
-          });
-        }
-      }
-    }, LOADING_TIMEOUT + 2000); // A bit longer than the refreshSession timeout
-    
-    return () => clearTimeout(timeout);
-  }, [isLoading, session]);
+  const getTenantId = useCallback(() => {
+    return session?.tenant?.id || null;
+  }, [session]);
 
-  return { user: session, loading: isLoading, error };
+  const getUser = useCallback(() => {
+    return session?.user || null;
+  }, [session]);
+
+  return {
+    // State
+    session,
+    loading,
+    error,
+    
+    // Actions
+    fetchSession,
+    updateSession,
+    createSession,
+    destroySession,
+    refreshSession,
+    
+    // Helpers
+    isAuthenticated,
+    needsOnboarding,
+    getTenantId,
+    getUser,
+    
+    // Convenience accessors
+    user: session?.user || null,
+    tenant: session?.tenant || null,
+    tenantId: session?.tenant?.id || null,
+    subscriptionPlan: session?.subscription_plan || 'free'
+  };
 }

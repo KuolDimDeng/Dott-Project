@@ -563,6 +563,7 @@ os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 # Configure Django REST Framework for Auth0 Authentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'session_manager.authentication.SessionAuthentication',  # New session-based auth
         'custom_auth.auth0_authentication.Auth0JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',  # Fallback for admin
     ],
@@ -680,6 +681,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
+    'session_manager.middleware.SessionMiddleware',  # New session management middleware
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
@@ -716,6 +718,15 @@ TENANT_METRICS_CONFIG = {
 
 # Redis configuration for tenant metadata
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
+
+# Session management configuration
+SESSION_TTL = int(os.getenv('SESSION_TTL', 86400))  # 24 hours default
+REDIS_SESSION_DB = 1  # Separate Redis DB for sessions
+SESSION_COOKIE_NAME = 'session_token'
+SESSION_COOKIE_AGE = SESSION_TTL
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_DOMAIN = '.dottapps.com' if not DEBUG else None
 
 # Check if we're running in ASGI mode
 IS_ASGI = any(arg in sys.argv for arg in ['daphne', '--async', 'runserver --async'])
@@ -779,6 +790,7 @@ SHARED_APPS = (
     'django_extensions',
     'custom_auth',
     'onboarding.apps.OnboardingConfig',
+    'session_manager',  # New session management app
 )
 
 TENANT_APPS = (
