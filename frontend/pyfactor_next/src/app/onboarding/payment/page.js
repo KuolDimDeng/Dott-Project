@@ -215,6 +215,33 @@ function PaymentForm({ plan, billingCycle }) {
 
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
+      
+      // Update session to mark onboarding as complete
+      try {
+        logger.info('[PaymentForm] Updating session with onboarding completion');
+        const updateResponse = await fetch('/api/auth/update-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            tenantId: tenantId,
+            needsOnboarding: false,
+            onboardingCompleted: true,
+            subscriptionPlan: plan.toLowerCase()
+          }),
+        });
+        
+        if (!updateResponse.ok) {
+          logger.error('[PaymentForm] Failed to update session:', updateResponse.status);
+        } else {
+          logger.info('[PaymentForm] Session updated successfully');
+        }
+      } catch (updateError) {
+        logger.error('[PaymentForm] Error updating session:', updateError);
+      }
+      
       setSuccess(true);
       
       // Redirect to tenant dashboard after short delay

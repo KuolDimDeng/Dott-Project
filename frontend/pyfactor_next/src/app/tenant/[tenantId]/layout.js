@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import TenantInitializer from './TenantInitializer';
+import { decrypt } from '@/utils/sessionEncryption';
 
 // This layout is a server component that wraps all tenant-specific pages
 export default async function TenantLayout({ children, params }) {
@@ -12,16 +14,30 @@ export default async function TenantLayout({ children, params }) {
       redirect('/');
     }
     
-    // Try to check Auth0 session with error handling
+    // Check for custom Auth0 session
     let session = null;
     
     try {
-      // Dynamic import to avoid build-time issues
-      const { getSession } = await import('@auth0/nextjs-auth0');
-      session = await getSession();
+      const cookieStore = await cookies();
+      const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+      
+      if (sessionCookie) {
+        // Try to decrypt the session
+        try {
+          const decrypted = decrypt(sessionCookie.value);
+          session = JSON.parse(decrypted);
+        } catch (decryptError) {
+          // Fallback to old base64 format
+          try {
+            session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          } catch (base64Error) {
+            console.error('[TenantLayout] Failed to parse session:', base64Error);
+          }
+        }
+      }
     } catch (error) {
       console.error('[TenantLayout] Failed to get session:', error);
-      // During build or if Auth0 is not configured, just continue
+      // During build, just continue
       if (process.env.NODE_ENV === 'development' || process.env.NEXT_PHASE === 'phase-production-build') {
         return (
           <>
@@ -32,21 +48,22 @@ export default async function TenantLayout({ children, params }) {
       }
     }
     
-    if (!session) {
-      // No session, redirect to login
-      redirect('/api/auth/login?returnTo=/dashboard');
+    if (!session || !session.user) {
+      // No session, redirect to login with tenant dashboard as return URL
+      redirect(`/api/auth/login?returnTo=/tenant/${tenantId}/dashboard`);
     }
     
-    // Check onboarding status
-    const onboardingCompleted = session.user?.onboarding_completed;
+    // Check onboarding status from profile data if available
+    const needsOnboarding = session.needsOnboarding || session.user?.needsOnboarding;
+    const onboardingCompleted = session.onboardingCompleted || session.user?.onboardingCompleted || session.user?.onboarding_completed;
     
-    if (onboardingCompleted === false) {
+    if (needsOnboarding && !onboardingCompleted) {
       // User needs to complete onboarding
       redirect('/onboarding');
     }
     
     // Verify user has access to this tenant
-    const userTenantId = session.user?.tenant_id;
+    const userTenantId = session.tenantId || session.user?.tenantId || session.user?.tenant_id;
     if (userTenantId && userTenantId !== tenantId) {
       // User is trying to access a different tenant
       redirect(`/tenant/${userTenantId}/dashboard`);
@@ -59,8 +76,8 @@ export default async function TenantLayout({ children, params }) {
       </>
     );
   } catch (error) {
-    // If any error occurs during rendering, redirect to the dashboard
+    // If any error occurs during rendering, redirect to home
     console.error('TenantLayout error:', error);
-    redirect('/dashboard');
+    redirect('/');
   }
 } 
