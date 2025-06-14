@@ -26,7 +26,7 @@ with connection.cursor() as cursor:
     cursor.execute("""
         SELECT EXISTS (
             SELECT FROM information_schema.tables 
-            WHERE table_name = 'session_manager_usersession'
+            WHERE table_name = 'user_sessions'
         );
     """)
     user_session_exists = cursor.fetchone()[0]
@@ -34,7 +34,7 @@ with connection.cursor() as cursor:
     cursor.execute("""
         SELECT EXISTS (
             SELECT FROM information_schema.tables 
-            WHERE table_name = 'session_manager_sessionevent'
+            WHERE table_name = 'session_events'
         );
     """)
     session_event_exists = cursor.fetchone()[0]
