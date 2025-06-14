@@ -160,3 +160,221 @@ def stripe_webhook(request):
         logger.info(f"Subscription updated: {subscription['id']}")
     
     return Response(status=status.HTTP_200_OK)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_subscription(request):
+    """Create a Stripe subscription for the user"""
+    try:
+        # Get user from request
+        user = request.user
+        
+        # Get subscription details from request
+        payment_method_id = request.data.get('payment_method_id')
+        plan = request.data.get('plan', 'professional').lower()
+        billing_cycle = request.data.get('billing_cycle', 'monthly').lower()
+        
+        if not payment_method_id:
+            return Response(
+                {'error': 'Payment method ID is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Skip payment for free plan
+        if plan == 'free':
+            # Update user's subscription status in OnboardingProgress
+            from onboarding.models import OnboardingProgress
+            from users.models import Business, Subscription
+            
+            try:
+                # Update onboarding progress
+                progress, _ = OnboardingProgress.objects.get_or_create(
+                    user=user,
+                    defaults={'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else None}
+                )
+                progress.subscription_plan = 'free'
+                progress.subscription_status = 'active'
+                progress.save()
+                
+                # Create or update subscription record
+                if hasattr(user, 'userprofile') and user.userprofile.business:
+                    business = user.userprofile.business
+                    subscription, _ = Subscription.objects.get_or_create(
+                        business=business,
+                        defaults={
+                            'selected_plan': 'free',
+                            'is_active': True,
+                            'billing_cycle': 'monthly'
+                        }
+                    )
+                    subscription.selected_plan = 'free'
+                    subscription.is_active = True
+                    subscription.save()
+                
+            except Exception as e:
+                logger.error(f"Error updating free plan status: {str(e)}")
+            
+            return Response({
+                'success': True,
+                'subscription': {
+                    'id': 'free_plan',
+                    'status': 'active',
+                    'plan': 'free',
+                    'billing_cycle': 'none'
+                }
+            })
+        
+        # Map plan names to Stripe price IDs
+        # These should be configured in your Stripe dashboard and stored in settings
+        price_map = {
+            'professional': {
+                'monthly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_MONTHLY', 'price_1RZMDhFls6i75mQBM7o13PWb'),
+                'yearly': getattr(settings, 'STRIPE_PRICE_PROFESSIONAL_YEARLY', 'price_1RZMDhFls6i75mQB2M0DOulV')
+            },
+            'enterprise': {
+                'monthly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_MONTHLY', 'price_1RZMDhFls6i75mQB9kMjeKtx'),
+                'yearly': getattr(settings, 'STRIPE_PRICE_ENTERPRISE_YEARLY', 'price_1RZMDiFls6i75mQBqQwHnERW')
+            }
+        }
+        
+        # Get the appropriate price ID
+        price_id = price_map.get(plan, {}).get(billing_cycle)
+        if not price_id:
+            return Response(
+                {'error': 'Invalid plan or billing cycle'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create or retrieve Stripe customer
+        stripe_customer_id = None
+        
+        # Check if user already has a Stripe customer ID (would need to be added to User model)
+        if hasattr(user, 'stripe_customer_id') and user.stripe_customer_id:
+            stripe_customer_id = user.stripe_customer_id
+        else:
+            # Create new Stripe customer
+            try:
+                customer = stripe.Customer.create(
+                    email=user.email,
+                    name=getattr(user, 'name', user.email),
+                    metadata={
+                        'user_id': str(user.id),
+                        'tenant_id': str(user.tenant_id) if hasattr(user, 'tenant_id') else None
+                    }
+                )
+                stripe_customer_id = customer.id
+                
+                # TODO: Save customer ID to user model once stripe_customer_id field is added
+                # user.stripe_customer_id = stripe_customer_id
+                # user.save()
+                    
+            except stripe.error.StripeError as e:
+                logger.error(f"Error creating Stripe customer: {str(e)}")
+                return Response(
+                    {'error': 'Failed to create customer account'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+        
+        # Attach payment method to customer
+        try:
+            stripe.PaymentMethod.attach(
+                payment_method_id,
+                customer=stripe_customer_id
+            )
+            
+            # Set as default payment method
+            stripe.Customer.modify(
+                stripe_customer_id,
+                invoice_settings={
+                    'default_payment_method': payment_method_id
+                }
+            )
+        except stripe.error.StripeError as e:
+            logger.error(f"Error attaching payment method: {str(e)}")
+            return Response(
+                {'error': 'Failed to attach payment method'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        # Create subscription
+        try:
+            subscription = stripe.Subscription.create(
+                customer=stripe_customer_id,
+                items=[{'price': price_id}],
+                payment_behavior='default_incomplete',
+                expand=['latest_invoice.payment_intent'],
+                metadata={
+                    'user_id': str(user.id),
+                    'plan': plan,
+                    'billing_cycle': billing_cycle
+                }
+            )
+            
+            # Update user's subscription status
+            from onboarding.models import OnboardingProgress
+            from users.models import Business, Subscription as SubscriptionModel
+            
+            try:
+                # Update onboarding progress
+                progress, _ = OnboardingProgress.objects.get_or_create(
+                    user=user,
+                    defaults={'tenant_id': user.tenant_id if hasattr(user, 'tenant_id') else None}
+                )
+                progress.subscription_plan = plan
+                progress.subscription_status = subscription.status
+                progress.payment_completed = True
+                progress.payment_id = subscription.id
+                progress.save()
+                
+                # Create or update subscription record
+                if hasattr(user, 'userprofile') and user.userprofile.business:
+                    business = user.userprofile.business
+                    sub_model, _ = SubscriptionModel.objects.get_or_create(
+                        business=business,
+                        defaults={
+                            'selected_plan': plan,
+                            'is_active': True,
+                            'billing_cycle': billing_cycle
+                        }
+                    )
+                    sub_model.selected_plan = plan
+                    sub_model.is_active = subscription.status == 'active'
+                    sub_model.billing_cycle = billing_cycle
+                    # TODO: Add stripe_subscription_id field to Subscription model
+                    # sub_model.stripe_subscription_id = subscription.id
+                    sub_model.save()
+                
+            except Exception as e:
+                logger.error(f"Error updating subscription status: {str(e)}")
+            
+            # Check if payment needs further action (3D Secure)
+            response_data = {
+                'success': True,
+                'subscription': {
+                    'id': subscription.id,
+                    'status': subscription.status,
+                    'plan': plan,
+                    'billing_cycle': billing_cycle
+                }
+            }
+            
+            # Check if 3D Secure authentication is required
+            if subscription.latest_invoice.payment_intent.status == 'requires_action':
+                response_data['requiresAction'] = True
+                response_data['clientSecret'] = subscription.latest_invoice.payment_intent.client_secret
+            
+            return Response(response_data)
+            
+        except stripe.error.StripeError as e:
+            logger.error(f"Error creating subscription: {str(e)}")
+            return Response(
+                {'error': f'Failed to create subscription: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+    except Exception as e:
+        logger.error(f"Unexpected error in create_subscription: {str(e)}")
+        return Response(
+            {'error': 'An unexpected error occurred'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

@@ -100,17 +100,17 @@ function PaymentForm({ plan, billingCycle }) {
 
       logger.info('Payment method created:', paymentMethod.id);
 
-      // Create subscription - use local endpoint for now
-      const response = await fetch('/api/payments/create-subscription', {
+      // Create subscription on backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/payments/create-subscription/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
-        credentials: 'include', // Include cookies
         body: JSON.stringify({
-          paymentMethodId: paymentMethod.id,
+          payment_method_id: paymentMethod.id,
           plan: plan.toLowerCase(),
-          billingCycle,
+          billing_cycle: billingCycle,
         }),
       });
 
