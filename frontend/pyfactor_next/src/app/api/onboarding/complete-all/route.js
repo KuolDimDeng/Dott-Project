@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
+import { decrypt } from '@/utils/sessionEncryption';
 
 /**
  * Consolidated Onboarding API - Simplified Auth0-only approach
@@ -29,8 +30,17 @@ async function validateAuth0Session(request) {
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (sessionCookie) {
+      let sessionData;
       try {
-        const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        // Try to decrypt first (new format)
+        try {
+          const decrypted = decrypt(sessionCookie.value);
+          sessionData = JSON.parse(decrypted);
+        } catch (decryptError) {
+          // Fallback to old base64 format for backward compatibility
+          console.warn('[CompleteOnboarding] Using legacy base64 format');
+          sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        }
         
         // Check if session is expired
         if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {

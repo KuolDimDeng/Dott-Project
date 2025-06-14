@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { decrypt } from '@/utils/sessionEncryption';
 
 export async function GET(request) {
   console.log('🚨 [PROFILE API] GET REQUEST STARTED - Version 2.1');
@@ -69,8 +70,17 @@ export async function GET(request) {
     
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      console.log('🚨 [PROFILE API] ✅ Session cookie parsed successfully');
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+        console.log('🚨 [PROFILE API] ✅ Session cookie decrypted successfully');
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        console.warn('🚨 [PROFILE API] Using legacy base64 format');
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        console.log('🚨 [PROFILE API] ✅ Session cookie parsed successfully (legacy format)');
+      }
     } catch (parseError) {
       console.error('🚨 [PROFILE API] ❌ Error parsing session cookie:', parseError);
       return NextResponse.json(null, { status: 200 }, {

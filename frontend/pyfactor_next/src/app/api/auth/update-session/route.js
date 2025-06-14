@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
+import { decrypt, encrypt } from '@/utils/sessionEncryption';
 
 /**
  * Update the current session with new data
@@ -31,7 +32,15 @@ export async function POST(request) {
     
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        logger.warn('[UpdateSession] Using legacy base64 format');
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      }
     } catch (parseError) {
       logger.error('[UpdateSession] Error parsing session cookie:', parseError);
       return NextResponse.json(
@@ -95,8 +104,8 @@ export async function POST(request) {
       sessionData.user.business_type = businessType;
     }
     
-    // Re-encode session
-    const updatedSessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Re-encrypt session
+    const updatedSessionCookie = encrypt(JSON.stringify(sessionData));
     
     // Create response
     const response = NextResponse.json({
