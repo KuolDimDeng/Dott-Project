@@ -207,13 +207,27 @@ export default function SimplifiedOnboardingForm() {
           // Free plan - go directly to dashboard
           // Force a full page reload to refresh the session
           // Using window.location.href instead of router.push to ensure session is refreshed
-          // Refresh the session to ensure onboarding status is updated
+          // Sync session to ensure onboarding status is updated
           setTimeout(async () => {
             try {
-              console.log('[SimplifiedOnboarding] Refreshing session before redirect...');
-              await fetch('/api/auth/refresh-session', { method: 'POST' });
+              console.log('[SimplifiedOnboarding] Syncing session before redirect...');
+              const syncResponse = await fetch('/api/auth/sync-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  tenantId: result.tenant_id || result.tenantId,
+                  needsOnboarding: false,
+                  onboardingCompleted: true,
+                  subscriptionPlan: formData.selectedPlan
+                })
+              });
+              
+              if (syncResponse.ok) {
+                const syncResult = await syncResponse.json();
+                console.log('[SimplifiedOnboarding] Session synced:', syncResult);
+              }
             } catch (error) {
-              console.error('[SimplifiedOnboarding] Session refresh failed:', error);
+              console.error('[SimplifiedOnboarding] Session sync failed:', error);
             }
             
             console.log('[SimplifiedOnboarding] Redirecting to dashboard...');

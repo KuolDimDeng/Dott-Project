@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import { decrypt } from '@/utils/sessionEncryption';
+import { decrypt, encrypt } from '@/utils/sessionEncryption';
 
 /**
  * Consolidated Onboarding API - Simplified Auth0-only approach
@@ -146,7 +146,8 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
     };
     
     const cookieStore = await cookies();
-    const updatedCookie = Buffer.from(JSON.stringify(updatedSession)).toString('base64');
+    // Use encryption instead of base64
+    const updatedCookie = encrypt(JSON.stringify(updatedSession));
     
     // Set the session cookie with updated data
     const cookieOptions = {
@@ -155,8 +156,8 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60, // 7 days
-      // Remove domain to let browser handle it automatically
-      // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+      // Add domain for production to ensure cookie works across subdomains
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
     };
     
     return { updatedCookie, cookieOptions, success: true };
@@ -413,51 +414,9 @@ export async function POST(request) {
       }
     }
     
-    // Also update the session via the update endpoint for redundancy
-    try {
-      await fetch(new URL('/api/auth/update-session', request.url).href, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantId: tenantId,
-          needsOnboarding: false,
-          onboardingCompleted: true,
-          currentStep: 'completed'
-        })
-      });
-    } catch (error) {
-      console.error('[CompleteOnboarding] Failed to call update-session:', error);
-    }
-    
-    // Update Auth0 user metadata to persist onboarding completion
-    try {
-      await fetch(new URL('/api/auth/update-metadata', request.url).href, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cookie': request.headers.get('cookie') || ''
-        },
-        body: JSON.stringify({
-          metadata: {
-            onboardingCompleted: 'true',
-            needsOnboarding: 'false',
-            tenantId: tenantId,
-            businessName: onboardingData.businessName,
-            subscriptionPlan: onboardingData.selectedPlan,
-            subscription_plan: onboardingData.selectedPlan,
-            selected_plan: onboardingData.selectedPlan,
-            selectedPlan: onboardingData.selectedPlan,
-            subscriptionType: onboardingData.selectedPlan,
-            subscription_type: onboardingData.selectedPlan,
-            onboardingCompletedAt: new Date().toISOString()
-          }
-        })
-      });
-      console.log('[CompleteOnboarding] Successfully updated Auth0 user metadata');
-    } catch (error) {
-      console.error('[CompleteOnboarding] Failed to update Auth0 metadata:', error);
-      // Don't fail the whole process if metadata update fails
-    }
+    // Remove internal API calls that cause SSL errors
+    // The session is already updated above with updateAuth0Session
+    console.log('[CompleteOnboarding] Session updated via cookie, skipping internal API calls to avoid SSL errors');
     
     return response;
     

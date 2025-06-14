@@ -216,10 +216,10 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       
-      // Update session to mark onboarding as complete
+      // Synchronize session to mark onboarding as complete
       try {
-        logger.info('[PaymentForm] Updating session with onboarding completion');
-        const updateResponse = await fetch('/api/auth/update-session', {
+        logger.info('[PaymentForm] Synchronizing session with onboarding completion');
+        const syncResponse = await fetch('/api/auth/sync-session', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -233,28 +233,14 @@ function PaymentForm({ plan, billingCycle }) {
           }),
         });
         
-        if (!updateResponse.ok) {
-          logger.error('[PaymentForm] Failed to update session:', updateResponse.status);
+        if (!syncResponse.ok) {
+          logger.error('[PaymentForm] Failed to sync session:', syncResponse.status);
         } else {
-          logger.info('[PaymentForm] Session updated successfully');
-          
-          // Also refresh the session to ensure all cookies are updated
-          try {
-            logger.info('[PaymentForm] Refreshing session...');
-            const refreshResponse = await fetch('/api/auth/refresh-session', {
-              method: 'POST',
-              credentials: 'include'
-            });
-            
-            if (refreshResponse.ok) {
-              logger.info('[PaymentForm] Session refreshed successfully');
-            }
-          } catch (refreshError) {
-            logger.error('[PaymentForm] Error refreshing session:', refreshError);
-          }
+          const syncResult = await syncResponse.json();
+          logger.info('[PaymentForm] Session synchronized successfully:', syncResult);
         }
-      } catch (updateError) {
-        logger.error('[PaymentForm] Error updating session:', updateError);
+      } catch (syncError) {
+        logger.error('[PaymentForm] Error synchronizing session:', syncError);
       }
       
       setSuccess(true);
