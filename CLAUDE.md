@@ -47,6 +47,13 @@
   - No hardcoded environment keys
   - No sensitive information in code
   - Complex security headers in Next.js config
+  - Session encryption with AES-256-CBC
+  - Rate limiting on auth (5/15min) and payment (10/hr) endpoints
+  - CSRF protection with HMAC-signed tokens
+  - Strict CSP without unsafe-inline/unsafe-eval
+  - Backend proxy pattern for API calls (no token exposure)
+  - 24-hour session duration
+  - See SECURITY.md for detailed implementation
 - Development Approach:
   - Read existing documentation
   - Make targeted, purposeful changes
@@ -61,3 +68,8 @@
   - Remove remaining Cognito/Amplify references from backend code
   - Docker support available but not primary deployment method
   - Webpack optimizations configured for memory management
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
