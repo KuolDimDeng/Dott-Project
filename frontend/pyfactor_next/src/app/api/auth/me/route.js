@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { decrypt } from '@/utils/sessionEncryption';
 
 /**
  * GET /api/auth/me
@@ -15,7 +16,14 @@ export async function GET(request) {
     
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      }
     } catch (error) {
       return NextResponse.json({ error: 'Invalid session', authenticated: false }, { status: 401 });
     }

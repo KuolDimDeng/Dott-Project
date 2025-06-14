@@ -30,13 +30,25 @@ function PaymentForm({ plan, billingCycle }) {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        logger.info('[PaymentForm] Fetching profile to get tenant ID...');
         const response = await fetch('/api/auth/profile');
+        
         if (response.ok) {
           const profileData = await response.json();
+          logger.info('[PaymentForm] Profile data received:', {
+            tenantId: profileData.tenantId,
+            email: profileData.email,
+            onboardingCompleted: profileData.onboardingCompleted
+          });
+          
           if (profileData.tenantId) {
             setTenantId(profileData.tenantId);
-            logger.info('[PaymentForm] Got tenant ID from profile:', profileData.tenantId);
+            logger.info('[PaymentForm] Set tenant ID:', profileData.tenantId);
+          } else {
+            logger.warn('[PaymentForm] No tenant ID in profile data');
           }
+        } else {
+          logger.error('[PaymentForm] Profile fetch failed with status:', response.status);
         }
       } catch (error) {
         logger.error('[PaymentForm] Error fetching profile:', error);
@@ -202,14 +214,18 @@ function PaymentForm({ plan, billingCycle }) {
       }
 
       logger.info('Subscription created successfully');
+      logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       setSuccess(true);
       
       // Redirect to tenant dashboard after short delay
       setTimeout(() => {
         if (tenantId) {
-          router.push(`/tenant/${tenantId}/dashboard?welcome=true`);
+          const redirectUrl = `/tenant/${tenantId}/dashboard?welcome=true`;
+          logger.info('[PaymentForm] Redirecting to tenant dashboard:', redirectUrl);
+          router.push(redirectUrl);
         } else {
           // Fallback to regular dashboard if no tenant ID
+          logger.warn('[PaymentForm] No tenant ID available, redirecting to regular dashboard');
           router.push('/dashboard?welcome=true');
         }
       }, 2000);
