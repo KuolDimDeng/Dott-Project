@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  CardElement,
+  CardNumberElement,
+  CardExpiryElement,
+  CardCvcElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
@@ -20,24 +22,26 @@ function PaymentForm({ plan, billingCycle }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [cardholderName, setCardholderName] = useState('');
+  const [postalCode, setPostalCode] = useState('');
 
-  // Card element styling
-  const cardStyle = {
+  // Card element styling - modern design
+  const cardElementOptions = {
     style: {
       base: {
-        color: '#32325d',
-        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-        fontSmoothing: 'antialiased',
         fontSize: '16px',
+        color: '#424770',
+        letterSpacing: '0.025em',
+        fontFamily: 'Source Code Pro, monospace',
         '::placeholder': {
-          color: '#aab7c4'
-        }
+          color: '#aab7c4',
+        },
+        padding: '10px',
       },
       invalid: {
-        color: '#fa755a',
-        iconColor: '#fa755a'
-      }
-    }
+        color: '#9e2146',
+      },
+    },
   };
 
   const getPrice = () => {
@@ -60,20 +64,33 @@ function PaymentForm({ plan, billingCycle }) {
     setError(null);
 
     try {
-      // Get card element
-      const cardElement = elements.getElement(CardElement);
+      // Validate required fields
+      if (!cardholderName.trim()) {
+        throw new Error('Please enter the cardholder name');
+      }
+      if (!postalCode.trim()) {
+        throw new Error('Please enter your postal code');
+      }
+
+      // Get card elements
+      const cardNumber = elements.getElement(CardNumberElement);
+      const cardExpiry = elements.getElement(CardExpiryElement);
+      const cardCvc = elements.getElement(CardCvcElement);
       
-      if (!cardElement) {
-        throw new Error('Card element not found');
+      if (!cardNumber || !cardExpiry || !cardCvc) {
+        throw new Error('Card elements not found');
       }
 
       // Create payment method
       const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
         type: 'card',
-        card: cardElement,
+        card: cardNumber,
         billing_details: {
           email: user?.email,
-          name: user?.name,
+          name: cardholderName,
+          address: {
+            postal_code: postalCode,
+          },
         },
       });
 
@@ -84,10 +101,11 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Payment method created:', paymentMethod.id);
 
       // Create subscription on backend
-      const response = await fetch('/api/payments/create-subscription', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/payments/create-subscription`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
         body: JSON.stringify({
           paymentMethodId: paymentMethod.id,
@@ -96,7 +114,16 @@ function PaymentForm({ plan, billingCycle }) {
         }),
       });
 
-      const result = await response.json();
+      // Check if response is JSON
+      const contentType = response.headers.get('content-type');
+      let result;
+      if (contentType && contentType.includes('application/json')) {
+        result = await response.json();
+      } else {
+        const text = await response.text();
+        logger.error('Non-JSON response from subscription endpoint:', text);
+        throw new Error('Invalid response from payment server');
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Subscription creation failed');
@@ -144,66 +171,161 @@ function PaymentForm({ plan, billingCycle }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md mx-auto">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">Complete Your Subscription</h2>
-        <p className="text-gray-600">
-          {plan} Plan - ${getPrice()}/{billingCycle === 'monthly' ? 'month' : 'year'}
-        </p>
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+      {/* Header Section */}
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Subscription</h2>
+        <div className="flex items-center justify-center gap-2 text-lg">
+          <span className="text-gray-600">{plan} Plan</span>
+          <span className="text-gray-400">•</span>
+          <span className="font-semibold text-gray-900">
+            ${getPrice()}/{billingCycle === 'monthly' ? 'month' : 'year'}
+          </span>
+        </div>
       </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Card Information
-        </label>
-        <div className="border border-gray-300 rounded-md p-3 min-h-[50px]">
-          <CardElement 
-            options={cardStyle}
-            onReady={() => {
-              logger.info('CardElement ready');
-              console.log('[Stripe] Card element is ready');
-            }}
-            onChange={(e) => {
-              if (e.error) {
-                logger.error('CardElement error:', e.error);
-                setError(e.error.message);
-              } else {
-                setError(null);
-              }
-            }}
+      {/* Payment Form Card */}
+      <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
+        {/* Cardholder Name */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Cardholder Name
+          </label>
+          <input
+            type="text"
+            value={cardholderName}
+            onChange={(e) => setCardholderName(e.target.value)}
+            placeholder="John Doe"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            required
           />
         </div>
+
+        {/* Card Number */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Card Number
+          </label>
+          <div className="relative">
+            <CardNumberElement
+              options={cardElementOptions}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all"
+              onReady={() => {
+                logger.info('CardNumberElement ready');
+              }}
+              onChange={(e) => {
+                if (e.error) {
+                  setError(e.error.message);
+                } else if (error && error.includes('card number')) {
+                  setError(null);
+                }
+              }}
+            />
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Expiry and CVC Row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Expiration Date
+            </label>
+            <CardExpiryElement
+              options={cardElementOptions}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all"
+              onChange={(e) => {
+                if (e.error) {
+                  setError(e.error.message);
+                } else if (error && error.includes('expir')) {
+                  setError(null);
+                }
+              }}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              CVC
+            </label>
+            <CardCvcElement
+              options={cardElementOptions}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all"
+              onChange={(e) => {
+                if (e.error) {
+                  setError(e.error.message);
+                } else if (error && error.includes('security code')) {
+                  setError(null);
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Postal Code */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Postal Code
+          </label>
+          <input
+            type="text"
+            value={postalCode}
+            onChange={(e) => setPostalCode(e.target.value)}
+            placeholder="12345"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+            required
+          />
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={!stripe || isProcessing}
+          className={`w-full py-4 px-6 rounded-lg font-semibold text-white transition-all transform ${
+            !stripe || isProcessing
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:scale-[0.98] shadow-lg hover:shadow-xl'
+          }`}
+        >
+          {isProcessing ? (
+            <span className="flex items-center justify-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing Payment...
+            </span>
+          ) : (
+            `Subscribe for $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : 'yr'}`
+          )}
+        </button>
+
+        {/* Security Badge */}
+        <div className="flex items-center justify-center text-sm text-gray-500">
+          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Secured by Stripe
+        </div>
       </div>
 
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-
-      <button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-          !stripe || isProcessing
-            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-600 text-white hover:bg-blue-700'
-        }`}
-      >
-        {isProcessing ? (
-          <span className="flex items-center justify-center">
-            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            Processing...
-          </span>
-        ) : (
-          `Subscribe - $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : 'yr'}`
-        )}
-      </button>
-
-      <p className="mt-4 text-sm text-center text-gray-500">
+      {/* Footer Text */}
+      <p className="mt-6 text-sm text-center text-gray-500">
         You can cancel or change your plan anytime from your dashboard.
       </p>
     </form>
