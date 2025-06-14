@@ -92,37 +92,61 @@ export async function POST(request) {
       email: signupResult.email
     });
 
-    // Send verification code using passwordless API
+    // Trigger Auth0 verification email
     try {
-      const codeResponse = await fetch(`https://${AUTH0_DOMAIN}/passwordless/start`, {
+      // Get Management API token
+      const tokenResponse = await fetch(`https://${AUTH0_DOMAIN}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          grant_type: 'client_credentials',
           client_id: AUTH0_CLIENT_ID,
           client_secret: AUTH0_CLIENT_SECRET,
-          connection: 'email',
-          email: email,
-          send: 'code',
-        }),
+          audience: `https://${AUTH0_DOMAIN}/api/v2/`
+        })
       });
 
-      if (!codeResponse.ok) {
-        const codeError = await codeResponse.json();
-        logger.error('[Signup] Failed to send verification code:', codeError);
+      if (tokenResponse.ok) {
+        const { access_token } = await tokenResponse.json();
+        
+        // Send verification email
+        const verificationResponse = await fetch(
+          `https://${AUTH0_DOMAIN}/api/v2/jobs/verification-email`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: signupResult._id,
+              client_id: AUTH0_CLIENT_ID
+            })
+          }
+        );
+
+        if (!verificationResponse.ok) {
+          const error = await verificationResponse.json();
+          logger.error('[Signup] Failed to send verification email:', error);
+        } else {
+          logger.info('[Signup] Verification email sent successfully');
+        }
       }
-    } catch (codeError) {
-      logger.error('[Signup] Error sending verification code:', codeError);
+    } catch (error) {
+      logger.error('[Signup] Error triggering verification email:', error);
+      // Don't fail the signup if email sending fails
     }
 
-    // Return success - verification code has been sent
+    // Return success - Auth0 will send verification email
     return NextResponse.json({
       success: true,
-      message: 'Account created successfully',
+      message: 'Account created successfully. Please check your email to verify your account.',
       userId: signupResult._id,
       email: signupResult.email,
-      requiresVerification: true
+      requiresVerification: true,
+      verificationType: 'email-link' // Changed from 'code' to 'email-link'
     });
 
   } catch (error) {

@@ -144,13 +144,16 @@ export default function EmailPasswordSignIn() {
         throw new Error(signupData.error || 'Error creating account');
       }
 
-      // Redirect to verification page with email
+      // Show success message and redirect to login
       setIsLoading(false);
-      setError('');
-      // Store email for verification page
-      sessionStorage.setItem('verification_email', email);
-      // Redirect to verification page
-      window.location.href = `/auth/verify-code?email=${encodeURIComponent(email)}`;
+      showError('Account created successfully! Please check your email to verify your account before signing in.', 'success');
+      
+      // Switch to login mode after a delay
+      setTimeout(() => {
+        setIsSignup(false);
+        setError('');
+        setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
+      }, 3000);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Signup error:', error);
       showError(error.message || 'Error creating account');
