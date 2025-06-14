@@ -24,6 +24,26 @@ function PaymentForm({ plan, billingCycle }) {
   const [success, setSuccess] = useState(false);
   const [cardholderName, setCardholderName] = useState('');
   const [postalCode, setPostalCode] = useState('');
+  const [tenantId, setTenantId] = useState(null);
+
+  // Fetch profile data to get tenant ID on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch('/api/auth/profile');
+        if (response.ok) {
+          const profileData = await response.json();
+          if (profileData.tenantId) {
+            setTenantId(profileData.tenantId);
+            logger.info('[PaymentForm] Got tenant ID from profile:', profileData.tenantId);
+          }
+        }
+      } catch (error) {
+        logger.error('[PaymentForm] Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   // Card element styling - modern design
   const cardElementOptions = {
@@ -184,9 +204,14 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       setSuccess(true);
       
-      // Redirect to dashboard after short delay
+      // Redirect to tenant dashboard after short delay
       setTimeout(() => {
-        router.push('/dashboard?welcome=true');
+        if (tenantId) {
+          router.push(`/tenant/${tenantId}/dashboard?welcome=true`);
+        } else {
+          // Fallback to regular dashboard if no tenant ID
+          router.push('/dashboard?welcome=true');
+        }
       }, 2000);
 
     } catch (err) {
