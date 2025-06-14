@@ -130,11 +130,10 @@ export async function POST(request) {
     
     // CRITICAL: Set the cookie directly on the response
     // Use the cookies() API properly - it returns a ResponseCookies instance
-    const cookieStore = response.cookies;
-    cookieStore.set('dott_auth_session', encryptedSession, cookieOptions);
+    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
     
     // Also update the old cookie name for backward compatibility
-    cookieStore.set('appSession', encryptedSession, cookieOptions);
+    response.cookies.set('appSession', encryptedSession, cookieOptions);
     
     // Set a non-httpOnly cookie for client-side checking
     const statusCookie = JSON.stringify({
@@ -143,7 +142,7 @@ export async function POST(request) {
       needsOnboarding: updatedSession.user?.needsOnboarding,
       timestamp: new Date().toISOString()
     });
-    cookieStore.set('onboarding_status', statusCookie, {
+    response.cookies.set('onboarding_status', statusCookie, {
       ...cookieOptions,
       httpOnly: false // Allow client-side access
     });
