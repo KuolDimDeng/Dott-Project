@@ -2,113 +2,48 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { loadStripe } from '@stripe/stripe-js';
 import {
-  Elements,
   CardElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
+import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
 
-// Initialize Stripe with comprehensive error handling and debugging
-const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-
-// Enhanced debug logging
-if (typeof window !== 'undefined') {
-  console.log('[Stripe Debug] Client-side environment check:', {
-    key: stripePublishableKey ? `${stripePublishableKey.substring(0, 10)}...` : 'NOT FOUND',
-    keyLength: stripePublishableKey?.length || 0,
-    env: process.env.NODE_ENV,
-    hasKey: !!stripePublishableKey,
-    keyType: typeof stripePublishableKey,
-    allEnvKeys: Object.keys(process.env).filter(key => key.includes('STRIPE')),
-    allPublicEnvKeys: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')),
-    rawProcessEnv: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    windowEnv: window.__ENV__,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Additional debugging
-  console.log('[Stripe Debug] All NEXT_PUBLIC env vars:', 
-    Object.entries(process.env)
-      .filter(([key]) => key.startsWith('NEXT_PUBLIC_'))
-      .reduce((acc, [key, value]) => ({
-        ...acc,
-        [key]: value ? `${value.substring(0, 10)}...` : 'undefined'
-      }), {})
-  );
-}
-
-logger.info('Stripe Initialization', {
-  publishableKey: stripePublishableKey ? 'Configured' : 'Not configured',
-  environment: process.env.NODE_ENV,
-  timestamp: new Date().toISOString()
-});
-
-// Initialize Stripe with null check
-let stripePromise = null;
-if (stripePublishableKey && stripePublishableKey !== 'undefined' && stripePublishableKey !== 'null') {
-  try {
-    stripePromise = loadStripe(stripePublishableKey);
-    logger.info('Stripe Promise created successfully');
-  } catch (error) {
-    logger.error('Failed to create Stripe Promise:', error);
-    console.error('[Stripe Error] Failed to initialize:', error);
-  }
-} else {
-  logger.error('Stripe publishable key is missing or invalid', {
-    key: stripePublishableKey,
-    type: typeof stripePublishableKey
-  });
-}
-
+// PaymentForm component that uses Stripe hooks
 function PaymentForm({ plan, billingCycle }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
   const { user } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [succeeded, setSucceeded] = useState(false);
-  const [debugInfo, setDebugInfo] = useState({});
+  const [success, setSuccess] = useState(false);
 
-  useEffect(() => {
-    const debug = {
-      stripeLoaded: !!stripe,
-      elementsLoaded: !!elements,
-      plan,
-      billingCycle,
-      userEmail: user?.email,
-      price: getPrice(),
-      stripeVersion: stripe?._apiVersion || 'N/A',
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('[PaymentForm] Component state:', debug);
-    setDebugInfo(debug);
-    
-    logger.info('PaymentForm mounted', {
-      stripe: stripe ? 'Loaded' : 'Not loaded',
-      elements: elements ? 'Loaded' : 'Not loaded',
-      plan,
-      billingCycle,
-      user: user ? 'Authenticated' : 'Not authenticated'
-    });
-  }, [stripe, elements, plan, billingCycle, user]);
+  // Card element styling
+  const cardStyle = {
+    style: {
+      base: {
+        color: '#32325d',
+        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+          color: '#aab7c4'
+        }
+      },
+      invalid: {
+        color: '#fa755a',
+        iconColor: '#fa755a'
+      }
+    }
+  };
 
-  // Calculate the price based on plan and billing cycle
   const getPrice = () => {
     const prices = {
-      professional: {
-        monthly: 15,
-        yearly: 290
-      },
-      enterprise: {
-        monthly: 35,
-        yearly: 990
-      }
+      professional: { monthly: 15, yearly: 144 },
+      enterprise: { monthly: 35, yearly: 336 }
     };
     return prices[plan.toLowerCase()]?.[billingCycle] || 0;
   };
@@ -117,135 +52,93 @@ function PaymentForm({ plan, billingCycle }) {
     event.preventDefault();
 
     if (!stripe || !elements) {
-      setError('Payment system is not ready. Please refresh the page and try again.');
+      logger.error('Stripe not loaded');
       return;
     }
 
-    setProcessing(true);
+    setIsProcessing(true);
     setError(null);
 
     try {
-      // Log the request details
-      logger.info('Creating subscription', {
-        plan: plan.toLowerCase(),
-        billingCycle,
-        email: user?.email,
-        userId: user?.sub
+      // Get card element
+      const cardElement = elements.getElement(CardElement);
+      
+      if (!cardElement) {
+        throw new Error('Card element not found');
+      }
+
+      // Create payment method
+      const { error: pmError, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: cardElement,
+        billing_details: {
+          email: user?.email,
+          name: user?.name,
+        },
       });
 
-      // Create subscription on the backend
-      const response = await fetch('/api/stripe/create-subscription', {
+      if (pmError) {
+        throw pmError;
+      }
+
+      logger.info('Payment method created:', paymentMethod.id);
+
+      // Create subscription on backend
+      const response = await fetch('/api/payments/create-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          paymentMethodId: paymentMethod.id,
           plan: plan.toLowerCase(),
           billingCycle,
-          email: user?.email,
-          userId: user?.sub
         }),
       });
 
-      const data = await response.json();
-      
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create subscription');
+        throw new Error(result.error || 'Subscription creation failed');
       }
 
-      const { clientSecret, subscriptionId } = data;
+      // Handle 3D Secure if required
+      if (result.requiresAction) {
+        const { error: confirmError } = await stripe.confirmCardPayment(
+          result.clientSecret
+        );
 
-      if (!clientSecret) {
-        throw new Error('No payment intent received from server');
-      }
-
-      // Confirm the payment with automatic currency conversion
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            email: user?.email,
-          },
-        },
-        payment_method_options: {
-          card: {
-            // This enables automatic currency conversion
-            currency: 'auto',
-          },
-        },
-      });
-
-      if (result.error) {
-        setError(result.error.message);
-        logger.error('Payment confirmation error:', result.error);
-        setProcessing(false);
-      } else {
-        if (result.paymentIntent.status === 'succeeded') {
-          setSucceeded(true);
-          
-          // Complete the onboarding
-          await fetch('/api/onboarding/complete-payment', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              subscriptionId,
-              plan,
-              billingCycle,
-              paymentIntentId: result.paymentIntent.id
-            }),
-          });
-
-          // Redirect to dashboard
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 2000);
+        if (confirmError) {
+          throw confirmError;
         }
       }
+
+      logger.info('Subscription created successfully');
+      setSuccess(true);
+      
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        router.push('/dashboard?welcome=true');
+      }, 2000);
+
     } catch (err) {
       logger.error('Payment error:', err);
-      setError(err.message || 'An unexpected error occurred.');
-      setProcessing(false);
+      setError(err.message || 'An error occurred during payment');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const cardStyle = {
-    style: {
-      base: {
-        color: '#32325d',
-        fontFamily: 'Arial, sans-serif',
-        fontSmoothing: 'antialiased',
-        fontSize: '16px',
-        '::placeholder': {
-          color: '#aab7c4',
-        },
-      },
-      invalid: {
-        color: '#fa755a',
-        iconColor: '#fa755a',
-      },
-    },
-  };
-
-  // Show loading state while Stripe loads
-  if (!stripe || !elements) {
+  if (success) {
     return (
-      <div className="max-w-md mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">Loading Payment Form...</h2>
-          <p className="text-gray-600">Please wait while we set up your payment details.</p>
+      <div className="max-w-md mx-auto text-center">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+          <svg className="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-lg font-semibold text-green-800 mb-2">Payment Successful!</h3>
+          <p className="text-green-700">Redirecting to your dashboard...</p>
         </div>
-        <div className="animate-pulse">
-          <div className="h-12 bg-gray-200 rounded mb-4"></div>
-          <div className="h-10 bg-gray-200 rounded w-32"></div>
-        </div>
-        {/* Debug info for development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-            <pre>{JSON.stringify(debugInfo, null, 2)}</pre>
-          </div>
-        )}
       </div>
     );
   }
@@ -284,84 +177,54 @@ function PaymentForm({ plan, billingCycle }) {
 
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-600 text-sm">{error}</p>
-        </div>
-      )}
-
-      {succeeded && (
-        <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-green-600 text-sm">
-            Payment successful! Redirecting to your dashboard...
-          </p>
+          <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
 
       <button
         type="submit"
-        disabled={!stripe || processing || succeeded}
+        disabled={!stripe || isProcessing}
         className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
-          processing || succeeded
+          !stripe || isProcessing
             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
             : 'bg-blue-600 text-white hover:bg-blue-700'
         }`}
       >
-        {processing ? 'Processing...' : succeeded ? 'Payment Complete' : `Subscribe - $${getPrice()}`}
+        {isProcessing ? (
+          <span className="flex items-center justify-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Processing...
+          </span>
+        ) : (
+          `Subscribe - $${getPrice()}/${billingCycle === 'monthly' ? 'mo' : 'yr'}`
+        )}
       </button>
 
-      <p className="mt-4 text-xs text-gray-500 text-center">
-        Your subscription will automatically renew {billingCycle === 'monthly' ? 'each month' : 'annually'}.
-        You can cancel anytime from your dashboard.
+      <p className="mt-4 text-sm text-center text-gray-500">
+        You can cancel or change your plan anytime from your dashboard.
       </p>
-
-      {/* Debug info for development */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-4 p-2 bg-gray-100 rounded text-xs">
-          <details>
-            <summary className="cursor-pointer">Debug Information</summary>
-            <pre className="mt-2">{JSON.stringify(debugInfo, null, 2)}</pre>
-          </details>
-        </div>
-      )}
     </form>
   );
 }
 
+// Main PaymentPage component
 export default function PaymentPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const [plan, setPlan] = useState('');
+  const searchParams = useSearchParams();
+  const [plan, setPlan] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState({});
 
   useEffect(() => {
-    // Get plan details from URL params
     const planParam = searchParams.get('plan');
     const billingParam = searchParams.get('billing') || 'monthly';
-
-    // Enhanced debug information
-    const debug = {
-      plan: planParam,
-      billing: billingParam,
-      stripeKey: stripePublishableKey ? `${stripePublishableKey.substring(0, 20)}...` : 'Not configured',
-      stripeKeyFull: process.env.NODE_ENV === 'development' ? stripePublishableKey : '[HIDDEN]',
-      stripePromiseStatus: stripePromise ? 'Initialized' : 'Failed to initialize',
-      environment: {
-        NODE_ENV: process.env.NODE_ENV,
-        hasStripeKey: !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-        allPublicKeys: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_'))
-      },
-      timestamp: new Date().toISOString()
-    };
-
-    console.log('[PaymentPage] Debug info:', debug);
-    setDebugInfo(debug);
 
     logger.info('PaymentPage initialized', {
       planParam,
       billingParam,
-      stripePublishableKey: stripePublishableKey ? 'Present' : 'Missing',
-      stripePromise: stripePromise ? 'Created' : 'Null'
     });
 
     if (!planParam || planParam.toLowerCase() === 'free') {
@@ -376,7 +239,7 @@ export default function PaymentPage() {
     setLoading(false);
   }, [searchParams, router]);
 
-  if (!plan) {
+  if (loading || !plan) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -384,74 +247,11 @@ export default function PaymentPage() {
     );
   }
 
-  // Check if Stripe is configured
-  if (!stripePromise) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
-        <div className="max-w-md mx-auto">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-yellow-800 mb-2">
-              Payment System Configuration Issue
-            </h2>
-            <p className="text-yellow-700 mb-4">
-              The payment system is not properly configured. This is likely due to missing Stripe environment variables.
-            </p>
-            {process.env.NODE_ENV === 'development' && (
-              <div className="mb-4 p-3 bg-yellow-100 rounded">
-                <p className="text-sm font-medium text-yellow-800 mb-2">Debug Information:</p>
-                <ul className="text-xs text-yellow-700 space-y-1">
-                  <li>Stripe Key: {stripePublishableKey || 'NOT SET'}</li>
-                  <li>Environment: {process.env.NODE_ENV}</li>
-                  <li>Key Type: {typeof stripePublishableKey}</li>
-                </ul>
-              </div>
-            )}
-            <p className="text-sm text-yellow-600 mb-4">
-              For now, you can continue with the Free plan and upgrade later from your dashboard.
-            </p>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full bg-yellow-600 text-white py-2 px-4 rounded-md hover:bg-yellow-700 transition-colors"
-            >
-              Continue with Free Plan
-            </button>
-          </div>
-        </div>
-        
-        {/* Detailed debug information for development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="max-w-4xl mx-auto mt-8">
-            <details className="bg-gray-100 rounded-lg p-4">
-              <summary className="cursor-pointer font-medium">Full Debug Information</summary>
-              <pre className="mt-4 text-xs overflow-auto">
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </details>
-          </div>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Debug Information - Only in development */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-            <details>
-              <summary className="cursor-pointer font-bold">Debug Information</summary>
-              <pre className="mt-2 text-xs overflow-auto">
-                {JSON.stringify(debugInfo, null, 2)}
-              </pre>
-            </details>
-          </div>
-        )}
-        
-        <Elements stripe={stripePromise}>
-          <PaymentForm plan={plan} billingCycle={billingCycle} />
-        </Elements>
-      </div>
+      <DynamicStripeProvider>
+        <PaymentForm plan={plan} billingCycle={billingCycle} />
+      </DynamicStripeProvider>
     </div>
   );
 }
