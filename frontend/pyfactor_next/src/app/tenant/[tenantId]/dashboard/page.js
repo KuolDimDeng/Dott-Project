@@ -164,7 +164,7 @@ export default function TenantDashboard() {
             if (paymentCompleted) {
               logger.info('[TenantDashboard] Payment completed, forcing session sync');
               try {
-                const syncResponse = await fetch('/api/auth/sync-session', {
+                const forceSyncResponse = await fetch('/api/auth/force-sync', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   credentials: 'include',
@@ -175,8 +175,30 @@ export default function TenantDashboard() {
                   })
                 });
                 
-                if (syncResponse.ok) {
-                  logger.info('[TenantDashboard] Session synced after payment');
+                if (forceSyncResponse.ok) {
+                  logger.info('[TenantDashboard] Session force synced after payment');
+                  
+                  // Reload the page to ensure fresh session data
+                  window.location.reload();
+                  return;
+                } else {
+                  // Fallback to regular sync
+                  const syncResponse = await fetch('/api/auth/sync-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                      tenantId: tenantId,
+                      needsOnboarding: false,
+                      onboardingCompleted: true
+                    })
+                  });
+                  
+                  if (syncResponse.ok) {
+                    logger.info('[TenantDashboard] Session synced after payment');
+                    window.location.reload();
+                    return;
+                  }
                 }
               } catch (syncError) {
                 logger.error('[TenantDashboard] Error syncing session:', syncError);

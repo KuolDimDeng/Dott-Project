@@ -25,8 +25,29 @@ export async function GET(request) {
   try {
     console.log('[Auth Session] Getting session data');
     
+    // CRITICAL: Force fresh cookie read by awaiting cookies()
     const cookieStore = await cookies();
+    
+    // Check for onboarding status cookie first (non-httpOnly)
+    const statusCookie = cookieStore.get('onboarding_status');
+    if (statusCookie) {
+      try {
+        const status = JSON.parse(statusCookie.value);
+        console.log('[Auth Session] Onboarding status cookie:', status);
+      } catch (e) {
+        console.error('[Auth Session] Failed to parse status cookie:', e);
+      }
+    }
+    
+    // Get session cookie - check both names
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    console.log('[Auth Session] Cookie check:', {
+      hasDottAuthSession: !!cookieStore.get('dott_auth_session'),
+      hasAppSession: !!cookieStore.get('appSession'),
+      cookieName: sessionCookie?.name,
+      cookieSize: sessionCookie?.value?.length
+    });
     
     if (!sessionCookie) {
       // For backward compatibility, check Authorization header
@@ -100,12 +121,19 @@ export async function GET(request) {
     const csrfToken = generateCSRFToken();
     
     // Return session data (never include sensitive tokens in response)
-    return NextResponse.json({
+    const response = NextResponse.json({
       user: sessionData.user,
       authenticated: true,
       expiresAt: sessionData.expiresAt,
       csrfToken: csrfToken
     });
+    
+    // Add cache control headers to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
     
   } catch (error) {
     console.error('[Auth Session] GET error:', error);

@@ -127,18 +127,32 @@ export async function POST(request) {
     };
     
     logger.info('[SyncSession] Setting cookie with options:', cookieOptions);
-    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
     
-    // Also set a non-httpOnly cookie for client-side checking
+    // CRITICAL: Set the cookie directly on the response
+    // Use the cookies() API properly - it returns a ResponseCookies instance
+    const cookieStore = response.cookies;
+    cookieStore.set('dott_auth_session', encryptedSession, cookieOptions);
+    
+    // Also update the old cookie name for backward compatibility
+    cookieStore.set('appSession', encryptedSession, cookieOptions);
+    
+    // Set a non-httpOnly cookie for client-side checking
     const statusCookie = JSON.stringify({
       completed: onboardingCompleted,
       tenantId: tenantId || updatedSession.user?.tenantId,
-      needsOnboarding: updatedSession.user?.needsOnboarding
+      needsOnboarding: updatedSession.user?.needsOnboarding,
+      timestamp: new Date().toISOString()
     });
-    response.cookies.set('onboarding_status', statusCookie, {
+    cookieStore.set('onboarding_status', statusCookie, {
       ...cookieOptions,
       httpOnly: false // Allow client-side access
     });
+    
+    // Add cache control headers to prevent caching
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    response.headers.set('Surrogate-Control', 'no-store');
     
     logger.info('[SyncSession] === SESSION SYNC COMPLETED ===');
     logger.info('[SyncSession] Final state:', {

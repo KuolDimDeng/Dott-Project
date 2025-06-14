@@ -12,6 +12,7 @@ import {
 import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
+import { logSessionStatus } from '@/utils/sessionStatus';
 
 // PaymentForm component that uses Stripe hooks
 function PaymentForm({ plan, billingCycle }) {
@@ -243,7 +244,8 @@ function PaymentForm({ plan, billingCycle }) {
           subscriptionPlan: plan.toLowerCase()
         });
         
-        const syncResponse = await fetch('/api/auth/sync-session', {
+        // Try force-sync first
+        const forceSyncResponse = await fetch('/api/auth/force-sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -257,31 +259,59 @@ function PaymentForm({ plan, billingCycle }) {
           }),
         });
         
-        const syncResponseText = await syncResponse.text();
-        logger.info('[PaymentForm] Sync response status:', syncResponse.status);
-        logger.info('[PaymentForm] Sync response headers:', Object.fromEntries(syncResponse.headers.entries()));
-        
-        if (!syncResponse.ok) {
-          logger.error('[PaymentForm] Failed to sync session:', {
-            status: syncResponse.status,
-            text: syncResponseText
-          });
+        if (forceSyncResponse.ok) {
+          const forceSyncResult = await forceSyncResponse.json();
+          logger.info('[PaymentForm] Force sync successful:', forceSyncResult);
         } else {
-          const syncResult = JSON.parse(syncResponseText);
-          logger.info('[PaymentForm] Session synchronized successfully:', syncResult);
+          logger.error('[PaymentForm] Force sync failed, trying regular sync');
           
-          // Verify the session was actually updated
-          const verifySessionResponse = await fetch('/api/auth/session', {
-            credentials: 'include'
+          // Fallback to regular sync
+          const syncResponse = await fetch('/api/auth/sync-session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              tenantId: tenantId,
+              needsOnboarding: false,
+              onboardingCompleted: true,
+              subscriptionPlan: plan.toLowerCase()
+            }),
           });
-          if (verifySessionResponse.ok) {
-            const updatedSession = await verifySessionResponse.json();
-            logger.info('[PaymentForm] Session AFTER sync:', {
-              needsOnboarding: updatedSession.user?.needsOnboarding,
-              onboardingCompleted: updatedSession.user?.onboardingCompleted,
-              tenantId: updatedSession.user?.tenantId
+          
+          const syncResponseText = await syncResponse.text();
+          logger.info('[PaymentForm] Sync response status:', syncResponse.status);
+          
+          if (!syncResponse.ok) {
+            logger.error('[PaymentForm] Failed to sync session:', {
+              status: syncResponse.status,
+              text: syncResponseText
             });
+          } else {
+            const syncResult = JSON.parse(syncResponseText);
+            logger.info('[PaymentForm] Session synchronized successfully:', syncResult);
           }
+        }
+        
+        // Wait a moment for cookies to propagate
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify the session was actually updated
+        const verifySessionResponse = await fetch('/api/auth/session', {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        if (verifySessionResponse.ok) {
+          const updatedSession = await verifySessionResponse.json();
+          logger.info('[PaymentForm] Session AFTER sync:', {
+            needsOnboarding: updatedSession.user?.needsOnboarding,
+            onboardingCompleted: updatedSession.user?.onboardingCompleted,
+            tenantId: updatedSession.user?.tenantId
+          });
         }
       } catch (syncError) {
         logger.error('[PaymentForm] Error synchronizing session:', syncError);
@@ -320,6 +350,10 @@ function PaymentForm({ plan, billingCycle }) {
             const syncStatus = await syncStatusResponse.json();
             logger.info('[PaymentForm] Sync status check:', syncStatus);
           }
+          
+          // Log client-side cookie status
+          const clientStatus = logSessionStatus();
+          logger.info('[PaymentForm] Client-side status:', clientStatus);
         } catch (e) {
           logger.error('[PaymentForm] Error in final checks:', e);
         }
