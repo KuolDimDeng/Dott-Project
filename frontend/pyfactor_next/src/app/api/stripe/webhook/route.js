@@ -11,6 +11,17 @@ export async function POST(request) {
   const body = await request.text();
   const signature = headers().get('stripe-signature');
 
+  // Check if webhook secret is configured
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    logger.warn('STRIPE_WEBHOOK_SECRET not configured, skipping verification');
+    // In development/testing, you might want to process webhooks without verification
+    // In production, this should return an error
+    return NextResponse.json(
+      { error: 'Webhook endpoint not configured' },
+      { status: 500 }
+    );
+  }
+
   let event;
 
   try {

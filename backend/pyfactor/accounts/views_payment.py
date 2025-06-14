@@ -13,6 +13,12 @@ logger = logging.getLogger(__name__)
 # Configure Stripe
 stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
 
+# Log Stripe configuration at module load
+if not stripe.api_key:
+    logger.error("STRIPE_SECRET_KEY is not configured!")
+else:
+    logger.info(f"Stripe configured with key: {stripe.api_key[:7]}...")
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_payment_intent(request):
@@ -248,25 +254,35 @@ def create_subscription(request):
         # Create or retrieve Stripe customer
         stripe_customer_id = None
         
-        # Check if user already has a Stripe customer ID (would need to be added to User model)
-        if hasattr(user, 'stripe_customer_id') and user.stripe_customer_id:
-            stripe_customer_id = user.stripe_customer_id
-        else:
-            # Create new Stripe customer
+        # Try to get existing customer ID from user profile or custom fields
+        try:
+            # Check various possible locations for stripe_customer_id
+            if hasattr(user, 'stripe_customer_id') and user.stripe_customer_id:
+                stripe_customer_id = user.stripe_customer_id
+            elif hasattr(user, 'userprofile') and hasattr(user.userprofile, 'stripe_customer_id'):
+                stripe_customer_id = user.userprofile.stripe_customer_id
+            else:
+                # Search for existing customer by email
+                customers = stripe.Customer.list(email=user.email, limit=1)
+                if customers.data:
+                    stripe_customer_id = customers.data[0].id
+                    logger.info(f"Found existing Stripe customer for {user.email}: {stripe_customer_id}")
+        except Exception as e:
+            logger.warning(f"Error checking for existing customer: {str(e)}")
+        
+        # Create new customer if none exists
+        if not stripe_customer_id:
             try:
                 customer = stripe.Customer.create(
                     email=user.email,
                     name=getattr(user, 'name', user.email),
                     metadata={
                         'user_id': str(user.id),
-                        'tenant_id': str(user.tenant_id) if hasattr(user, 'tenant_id') else None
+                        'tenant_id': str(getattr(user, 'tenant_id', '')) if hasattr(user, 'tenant_id') else ''
                     }
                 )
                 stripe_customer_id = customer.id
-                
-                # TODO: Save customer ID to user model once stripe_customer_id field is added
-                # user.stripe_customer_id = stripe_customer_id
-                # user.save()
+                logger.info(f"Created new Stripe customer for {user.email}: {stripe_customer_id}")
                     
             except stripe.error.StripeError as e:
                 logger.error(f"Error creating Stripe customer: {str(e)}")
@@ -326,23 +342,26 @@ def create_subscription(request):
                 progress.payment_id = subscription.id
                 progress.save()
                 
-                # Create or update subscription record
-                if hasattr(user, 'userprofile') and user.userprofile.business:
-                    business = user.userprofile.business
-                    sub_model, _ = SubscriptionModel.objects.get_or_create(
-                        business=business,
-                        defaults={
-                            'selected_plan': plan,
-                            'is_active': True,
-                            'billing_cycle': billing_cycle
-                        }
-                    )
-                    sub_model.selected_plan = plan
-                    sub_model.is_active = subscription.status == 'active'
-                    sub_model.billing_cycle = billing_cycle
-                    # TODO: Add stripe_subscription_id field to Subscription model
-                    # sub_model.stripe_subscription_id = subscription.id
-                    sub_model.save()
+                # Try to create or update subscription record
+                try:
+                    if hasattr(user, 'userprofile') and hasattr(user.userprofile, 'business') and user.userprofile.business:
+                        business = user.userprofile.business
+                        sub_model, _ = SubscriptionModel.objects.get_or_create(
+                            business=business,
+                            defaults={
+                                'selected_plan': plan,
+                                'is_active': True,
+                                'billing_cycle': billing_cycle
+                            }
+                        )
+                        sub_model.selected_plan = plan
+                        sub_model.is_active = subscription.status == 'active'
+                        sub_model.billing_cycle = billing_cycle
+                        # TODO: Add stripe_subscription_id field to Subscription model
+                        # sub_model.stripe_subscription_id = subscription.id
+                        sub_model.save()
+                except Exception as e:
+                    logger.warning(f"Could not update subscription model: {str(e)}")
                 
             except Exception as e:
                 logger.error(f"Error updating subscription status: {str(e)}")
@@ -373,7 +392,11 @@ def create_subscription(request):
             )
         
     except Exception as e:
+        import traceback
         logger.error(f"Unexpected error in create_subscription: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        logger.error(f"Request data: {request.data}")
+        logger.error(f"User: {request.user.email if hasattr(request, 'user') else 'No user'}")
         return Response(
             {'error': 'An unexpected error occurred'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
