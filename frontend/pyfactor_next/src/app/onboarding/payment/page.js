@@ -237,6 +237,21 @@ function PaymentForm({ plan, billingCycle }) {
           logger.error('[PaymentForm] Failed to update session:', updateResponse.status);
         } else {
           logger.info('[PaymentForm] Session updated successfully');
+          
+          // Also refresh the session to ensure all cookies are updated
+          try {
+            logger.info('[PaymentForm] Refreshing session...');
+            const refreshResponse = await fetch('/api/auth/refresh-session', {
+              method: 'POST',
+              credentials: 'include'
+            });
+            
+            if (refreshResponse.ok) {
+              logger.info('[PaymentForm] Session refreshed successfully');
+            }
+          } catch (refreshError) {
+            logger.error('[PaymentForm] Error refreshing session:', refreshError);
+          }
         }
       } catch (updateError) {
         logger.error('[PaymentForm] Error updating session:', updateError);
@@ -249,11 +264,12 @@ function PaymentForm({ plan, billingCycle }) {
         if (tenantId) {
           const redirectUrl = `/tenant/${tenantId}/dashboard?welcome=true`;
           logger.info('[PaymentForm] Redirecting to tenant dashboard:', redirectUrl);
-          router.push(redirectUrl);
+          // Use window.location.href for a full page reload to ensure session is properly refreshed
+          window.location.href = redirectUrl;
         } else {
           // Fallback to regular dashboard if no tenant ID
           logger.warn('[PaymentForm] No tenant ID available, redirecting to regular dashboard');
-          router.push('/dashboard?welcome=true');
+          window.location.href = '/dashboard?welcome=true';
         }
       }, 2000);
 
