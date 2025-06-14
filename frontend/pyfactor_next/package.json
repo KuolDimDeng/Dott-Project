@@ -26,7 +26,7 @@
     "build:production": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=3072\" next build",
     "build:production-clean": "echo '🚨 FORCING PNPM BUILD - Enhanced OAuth v2.2 - CACHE CLEAR' && rm -rf .next && rm -rf node_modules/.cache && node scripts/check-env.js && node scripts/debug-stripe-env.js && NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "build:production-fast": "NODE_ENV=production NEXT_PUBLIC_API_URL=https://api.dottapps.com BACKEND_API_URL=https://api.dottapps.com USE_DATABASE=true MOCK_DATA_DISABLED=true PROD_MODE=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build --no-lint",
-    "build:render": "NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3072\" next build -c next.config.render-optimized.js",
+    "build:render": "NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=3072\" next build",
     "build:render-clean": "rm -rf .next && NODE_ENV=production NODE_OPTIONS=\"--max-old-space-size=4096\" next build -c next.config.render.js",
     "build:ignore-errors": "DISABLE_ESLINT_PLUGIN=true NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "export": "next export",

@@ -1,56 +1,65 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
 
-// Optimized Next.js configuration for Render deployments
+// Get environment variables with fallbacks
 const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
 
-// Suppress build-time logging for faster builds
-if (process.env.NODE_ENV === 'production') {
-  console.log = () => {};
-  console.debug = () => {};
-}
+// Debug: Print all Auth0 environment variables during Next.js build - Fixed AWS JWT dependency
+console.log("🔍 [DEBUG] Next.js Build - Auth0 Environment Variables:");
+console.log(`   AUTH0_SECRET: ${process.env.AUTH0_SECRET ? process.env.AUTH0_SECRET.substring(0, 8) + '...' : 'NOT_SET'}`);
+console.log(`   AUTH0_BASE_URL: ${process.env.AUTH0_BASE_URL || 'NOT_SET'}`);
+console.log(`   AUTH0_ISSUER_BASE_URL: ${process.env.AUTH0_ISSUER_BASE_URL || 'NOT_SET'}`);
+console.log(`   AUTH0_CLIENT_ID: ${process.env.AUTH0_CLIENT_ID || 'NOT_SET'}`);
+console.log(`   AUTH0_CLIENT_SECRET: ${process.env.AUTH0_CLIENT_SECRET ? process.env.AUTH0_CLIENT_SECRET.substring(0, 8) + '...' : 'NOT_SET'}`);
+console.log(`   AUTH0_AUDIENCE: ${process.env.AUTH0_AUDIENCE || 'NOT_SET'}`);
+console.log(`   AUTH0_SCOPE: ${process.env.AUTH0_SCOPE || 'NOT_SET'}`);
+console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT_SET'}`);
+console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || 'NOT_SET'}`);
+
+// Debug: Print Stripe environment variables during Next.js build
+console.log("\n🚨🚨🚨 STRIPE ENVIRONMENT CHECK AT BUILD TIME 🚨🚨🚨");
+console.log("💳 [DEBUG] Next.js Build - Stripe Environment Variables:");
+console.log(`   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 20) + '...' : '❌ NOT_SET - THIS IS THE PROBLEM!'}`);
+console.log(`   STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 15) + '...' : '❌ NOT_SET'}`);
+console.log(`   Build Time: ${new Date().toISOString()}`);
+console.log("🚨🚨🚨 END STRIPE CHECK 🚨🚨🚨\n");
 
 const nextConfig = {
-  // Basic settings
+  // Basic Next.js settings optimized for development speed
   reactStrictMode: true,
   trailingSlash: false,
   
-  // Enable standalone output for Docker
-  output: 'standalone',
+  // Enable standalone output when using Render config
+  output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   
-  // Enable SWC minification for faster builds
-  swcMinify: true,
-  
-  // Optimize for Render's infrastructure
+  // Ensure Auth0 module is included in standalone build
   experimental: {
-    // Enable build cache
-    isrMemoryCacheSize: 0, // Disable in-memory cache, use filesystem
-    
-    // Optimize for serverless
-    runtime: undefined,
-    serverActions: false,
-    
-    // Enable module/chunk optimizations
-    optimizeCss: true,
-    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react'],
-    
-    // Reduce memory usage during build
-    workerThreads: false,
-    cpus: 2, // Limit CPU usage for Render
+    outputFileTracingIncludes: {
+      '/api/auth/[auth0]': [
+        './node_modules/@auth0/**/*',
+        './node_modules/openid-client/**/*',
+        './node_modules/jose/**/*',
+        './node_modules/oauth4webapi/**/*',
+      ],
+    },
   },
   
-  // Environment variables (minimal set)
+  // Environment variables (workaround for dotenv package interference)
   env: {
     NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
+    // Auth0 environment variables for authentication
     NEXT_PUBLIC_AUTH0_DOMAIN: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
     NEXT_PUBLIC_AUTH0_AUDIENCE: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
     NEXT_PUBLIC_AUTH0_CLIENT_ID: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    // OAuth environment variables for Google Sign-In
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN,
     NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
     NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
+    // Stripe environment variables
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    // Auth0 SDK required variables
     APP_BASE_URL: process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL,
     AUTH0_BASE_URL: process.env.AUTH0_BASE_URL,
     AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL,
@@ -61,9 +70,9 @@ const nextConfig = {
   },
   
   // Page extensions
-  pageExtensions: ['js', 'jsx'],
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'],
   
-  // Ignore errors during build
+  // ESLint and TypeScript configuration
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -71,59 +80,33 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // Optimized webpack config for Render
+  // Webpack configuration for optimized builds
   webpack: (config, { isServer, dev }) => {
-    // Production optimizations
-    if (!dev) {
-      // Enable module concatenation
-      config.optimization.concatenateModules = true;
-      
-      // Optimize chunk splitting
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: false,
-          vendors: false,
-          framework: {
-            name: 'framework',
-            chunks: 'all',
-            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
-            priority: 40,
-            enforce: true,
-          },
-          lib: {
-            test(module) {
-              return module.size() > 160000 &&
-                /node_modules[/\\]/.test(module.identifier());
-            },
-            name(module) {
-              const hash = require('crypto')
-                .createHash('sha1')
-                .update(module.identifier())
-                .digest('hex')
-                .substring(0, 8);
-              return `lib-${hash}`;
-            },
-            priority: 30,
-            minChunks: 1,
-            reuseExistingChunk: true,
-          },
-          commons: {
-            name: 'commons',
-            minChunks: 2,
-            priority: 20,
-          },
-        },
+    // Development-specific optimizations
+    if (dev) {
+      // Reduce watch options to prevent excessive file watching
+      config.watchOptions = {
+        poll: false,
+        aggregateTimeout: 300,
+        ignored: [
+          '**/node_modules/**',
+          '**/.git/**',
+          '**/.next/**',
+          '**/dist/**',
+          '**/build/**',
+        ],
       };
       
-      // Minimize main bundle
-      config.optimization.minimize = true;
-      
-      // Disable source maps for faster builds
-      config.devtool = false;
+      // Optimize CSS processing in development
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: false,
+        removeEmptyChunks: false,
+        splitChunks: false,
+      };
     }
-    
-    // Handle stubs
+
+    // Handle problematic modules with stubs
     config.resolve.alias = {
       ...config.resolve.alias,
       'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),
@@ -142,14 +125,8 @@ const nextConfig = {
       tls: false,
     };
 
-    // Exclude canvas and other heavy dependencies
-    config.externals = [
-      ...(config.externals || []),
-      { canvas: 'commonjs canvas' },
-      'puppeteer',
-      'puppeteer-core',
-      'chrome-aws-lambda',
-    ];
+    // Exclude canvas from being processed by webpack
+    config.externals = [...(config.externals || []), { canvas: 'commonjs canvas' }];
 
     // SVG support
     config.module.rules.push({
@@ -160,7 +137,7 @@ const nextConfig = {
     return config;
   },
   
-  // Disable image optimization for Render
+  // Image optimization for Vercel
   images: {
     unoptimized: true,
     dangerouslyAllowSVG: true,
@@ -171,26 +148,25 @@ const nextConfig = {
       'via.placeholder.com',
       'images.unsplash.com',
     ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'api.dottapps.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'dottapps.com',
+      },
+    ],
   },
   
   // Production optimizations
   productionBrowserSourceMaps: false,
   compress: true,
   
-  // Security headers and caching
+  // Security headers
   async headers() {
     return [
-      // Cache static assets
-      {
-        source: '/:all*(js|css|jpg|jpeg|png|gif|ico|woff|woff2)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
-      // Security headers for all routes
       {
         source: '/:path*',
         headers: [
@@ -241,21 +217,21 @@ const nextConfig = {
     ];
   },
 
-  // API rewrites
-  async rewrites() {
-    return [
-      {
-        source: '/api/backend-health',
-        destination: `${BACKEND_API_URL}/health/`
-      },
-      {
-        source: '/api/backend/:path*',
-        destination: `${BACKEND_API_URL}/:path*`
-      }
-    ];
-  },
+  // API rewrites - commented out as we're using API route proxy
+  // async rewrites() {
+  //   return [
+  //     {
+  //       source: '/api/backend-health',
+  //       destination: `${BACKEND_API_URL}/health/`
+  //     },
+  //     {
+  //       source: '/api/backend/:path*',
+  //       destination: `${BACKEND_API_URL}/:path*`
+  //     }
+  //   ];
+  // },
 
-  // Redirects
+  // Redirects for common routes
   async redirects() {
     return [
       {
