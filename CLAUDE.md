@@ -10,6 +10,7 @@
   - Client ID: 9i7GSU4bgh6hFtMXnQACwiRxTudpuOSF
   - Audience: https://api.dottapps.com
   - Custom authentication flow (not standard Auth0 SDK)
+  - IMPORTANT: Do NOT use @auth0/nextjs-auth0 SDK - use custom OAuth implementation instead (SDK doesn't work with Next.js standalone mode)
 - Next.js version: 15
 - Home/Layout pages: 
   - Home: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/page.js
