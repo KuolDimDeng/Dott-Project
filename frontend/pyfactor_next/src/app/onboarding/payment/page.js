@@ -100,12 +100,62 @@ function PaymentForm({ plan, billingCycle }) {
 
       logger.info('Payment method created:', paymentMethod.id);
 
+      // Get access token from session
+      let accessToken = null;
+      
+      // Get token from secure session
+      try {
+        const tokenResponse = await fetch('/api/auth/get-token', {
+          credentials: 'include'
+        });
+        
+        if (tokenResponse.ok) {
+          const tokenData = await tokenResponse.json();
+          accessToken = tokenData.access_token;
+          logger.info('Got access token from session:', {
+            hasToken: !!accessToken,
+            tokenLength: accessToken?.length || 0,
+            expiresAt: tokenData.expires_at
+          });
+        } else {
+          const errorData = await tokenResponse.json();
+          logger.error('Failed to get token:', errorData);
+        }
+      } catch (error) {
+        logger.error('Failed to get access token:', error);
+      }
+      
+      // Fallback to localStorage (deprecated)
+      if (!accessToken) {
+        accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+          logger.warn('Using deprecated localStorage access token');
+        }
+      }
+      
+      logger.info('Access token check:', {
+        hasAccessToken: !!accessToken,
+        tokenLength: accessToken?.length || 0,
+        tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
+      });
+
+      if (!accessToken) {
+        throw new Error('No access token found. Please log in again.');
+      }
+
       // Create subscription on backend
+      logger.info('Calling create-subscription API with:', {
+        url: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/payments/create-subscription/`,
+        hasToken: !!accessToken,
+        plan: plan.toLowerCase(),
+        billingCycle: billingCycle,
+      });
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/payments/create-subscription/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           payment_method_id: paymentMethod.id,
@@ -114,19 +164,37 @@ function PaymentForm({ plan, billingCycle }) {
         }),
       });
 
+      // Log response details
+      logger.info('API Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
+
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
       let result;
       if (contentType && contentType.includes('application/json')) {
         result = await response.json();
+        logger.info('Response JSON:', result);
       } else {
         const text = await response.text();
-        logger.error('Non-JSON response from subscription endpoint:', text);
-        throw new Error('Invalid response from payment server');
+        logger.error('Non-JSON response from subscription endpoint:', {
+          status: response.status,
+          contentType: contentType,
+          text: text,
+        });
+        throw new Error(`Invalid response from payment server (${response.status}): ${text}`);
       }
 
       if (!response.ok) {
-        throw new Error(result.error || 'Subscription creation failed');
+        logger.error('Subscription creation failed:', {
+          status: response.status,
+          error: result.error || result.detail || 'Unknown error',
+          fullResponse: result,
+        });
+        throw new Error(result.error || result.detail || 'Subscription creation failed');
       }
 
       // Handle 3D Secure if required

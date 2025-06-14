@@ -1,0 +1,243 @@
+/** @type {import('next').NextConfig} */
+const path = require('path');
+
+// Optimized Next.js configuration for Render deployments
+const BACKEND_API_URL = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+
+// Suppress build-time logging for faster builds
+if (process.env.NODE_ENV === 'production') {
+  console.log = () => {};
+  console.debug = () => {};
+}
+
+const nextConfig = {
+  // Basic settings
+  reactStrictMode: true,
+  trailingSlash: false,
+  
+  // Enable standalone output for Docker
+  output: 'standalone',
+  
+  // Enable SWC minification for faster builds
+  swcMinify: true,
+  
+  // Optimize for Render's infrastructure
+  experimental: {
+    // Enable build cache
+    isrMemoryCacheSize: 0, // Disable in-memory cache, use filesystem
+    
+    // Optimize for serverless
+    runtime: undefined,
+    serverActions: false,
+    
+    // Enable module/chunk optimizations
+    optimizeCss: true,
+    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react'],
+    
+    // Reduce memory usage during build
+    workerThreads: false,
+    cpus: 2, // Limit CPU usage for Render
+  },
+  
+  // Environment variables (minimal set)
+  env: {
+    NEXT_PUBLIC_CRISP_WEBSITE_ID: process.env.NEXT_PUBLIC_CRISP_WEBSITE_ID,
+    NEXT_PUBLIC_AUTH0_DOMAIN: process.env.NEXT_PUBLIC_AUTH0_DOMAIN,
+    NEXT_PUBLIC_AUTH0_AUDIENCE: process.env.NEXT_PUBLIC_AUTH0_AUDIENCE,
+    NEXT_PUBLIC_AUTH0_CLIENT_ID: process.env.NEXT_PUBLIC_AUTH0_CLIENT_ID,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
+    NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_IN,
+    NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT: process.env.NEXT_PUBLIC_OAUTH_REDIRECT_SIGN_OUT,
+    NEXT_PUBLIC_OAUTH_SCOPES: process.env.NEXT_PUBLIC_OAUTH_SCOPES,
+    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    APP_BASE_URL: process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL,
+    AUTH0_BASE_URL: process.env.AUTH0_BASE_URL,
+    AUTH0_ISSUER_BASE_URL: process.env.AUTH0_ISSUER_BASE_URL,
+    AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
+    AUTH0_CLIENT_SECRET: process.env.AUTH0_CLIENT_SECRET,
+    AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
+    AUTH0_SECRET: process.env.AUTH0_SECRET,
+  },
+  
+  // Page extensions
+  pageExtensions: ['js', 'jsx'],
+  
+  // Ignore errors during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
+  // Optimized webpack config for Render
+  webpack: (config, { isServer, dev }) => {
+    // Production optimizations
+    if (!dev) {
+      // Enable module concatenation
+      config.optimization.concatenateModules = true;
+      
+      // Optimize chunk splitting
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          default: false,
+          vendors: false,
+          framework: {
+            name: 'framework',
+            chunks: 'all',
+            test: /[\\/]node_modules[\\/](react|react-dom|scheduler|prop-types|use-subscription)[\\/]/,
+            priority: 40,
+            enforce: true,
+          },
+          lib: {
+            test(module) {
+              return module.size() > 160000 &&
+                /node_modules[/\\]/.test(module.identifier());
+            },
+            name(module) {
+              const hash = require('crypto')
+                .createHash('sha1')
+                .update(module.identifier())
+                .digest('hex')
+                .substring(0, 8);
+              return `lib-${hash}`;
+            },
+            priority: 30,
+            minChunks: 1,
+            reuseExistingChunk: true,
+          },
+          commons: {
+            name: 'commons',
+            minChunks: 2,
+            priority: 20,
+          },
+        },
+      };
+      
+      // Minimize main bundle
+      config.optimization.minimize = true;
+      
+      // Disable source maps for faster builds
+      config.devtool = false;
+    }
+    
+    // Handle stubs
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'chart.js': path.resolve(__dirname, 'src/utils/stubs/chart-stub.js'),
+      'react-chartjs-2': path.resolve(__dirname, 'src/utils/stubs/react-chartjs-2-stub.js'),
+      'react-datepicker': path.resolve(__dirname, 'src/utils/stubs/datepicker-stub.js'),
+    };
+
+    // Node.js polyfills
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      os: false,
+      crypto: false,
+      net: false,
+      tls: false,
+    };
+
+    // Exclude canvas and other heavy dependencies
+    config.externals = [
+      ...(config.externals || []),
+      { canvas: 'commonjs canvas' },
+      'puppeteer',
+      'puppeteer-core',
+      'chrome-aws-lambda',
+    ];
+
+    // SVG support
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: ['@svgr/webpack'],
+    });
+
+    return config;
+  },
+  
+  // Disable image optimization for Render
+  images: {
+    unoptimized: true,
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    domains: [
+      'api.dottapps.com',
+      'dottapps.com',
+      'via.placeholder.com',
+      'images.unsplash.com',
+    ],
+  },
+  
+  // Production optimizations
+  productionBrowserSourceMaps: false,
+  compress: true,
+  
+  // Enable caching headers
+  async headers() {
+    return [
+      {
+        source: '/:all*(js|css|jpg|jpeg|png|gif|ico|woff|woff2)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+        ]
+      }
+    ];
+  },
+
+  // API rewrites
+  async rewrites() {
+    return [
+      {
+        source: '/api/backend-health',
+        destination: `${BACKEND_API_URL}/health/`
+      },
+      {
+        source: '/api/backend/:path*',
+        destination: `${BACKEND_API_URL}/:path*`
+      }
+    ];
+  },
+
+  // Redirects
+  async redirects() {
+    return [
+      {
+        source: '/onboarding/components/stepundefined',
+        destination: '/onboarding/step1',
+        permanent: false
+      },
+      {
+        source: '/onboarding/components/:path*',
+        destination: '/onboarding/step1',
+        permanent: false
+      }
+    ];
+  },
+};
+
+module.exports = nextConfig;
