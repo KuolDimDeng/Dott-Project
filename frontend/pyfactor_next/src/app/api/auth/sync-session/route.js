@@ -12,7 +12,8 @@ export async function POST(request) {
     const body = await request.json();
     const { tenantId, needsOnboarding = false, onboardingCompleted = true, subscriptionPlan } = body;
     
-    logger.info('[SyncSession] Synchronizing session with:', {
+    logger.info('[SyncSession] === SESSION SYNC STARTED ===');
+    logger.info('[SyncSession] Requested updates:', {
       tenantId,
       needsOnboarding,
       onboardingCompleted,
@@ -23,7 +24,12 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
+    logger.info('[SyncSession] Session cookie found:', !!sessionCookie);
+    logger.info('[SyncSession] Cookie name:', sessionCookie?.name);
+    logger.info('[SyncSession] Cookie size:', sessionCookie?.value?.length || 0);
+    
     if (!sessionCookie) {
+      logger.error('[SyncSession] No session cookie found!');
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
     
@@ -32,10 +38,25 @@ export async function POST(request) {
     try {
       const decrypted = decrypt(sessionCookie.value);
       sessionData = JSON.parse(decrypted);
+      logger.info('[SyncSession] Session decrypted successfully');
     } catch (decryptError) {
+      logger.warn('[SyncSession] Failed to decrypt, trying base64 fallback');
       // Fallback to base64 for backward compatibility
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      try {
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        logger.info('[SyncSession] Session parsed with base64 fallback');
+      } catch (base64Error) {
+        logger.error('[SyncSession] Failed to parse session:', base64Error);
+        return NextResponse.json({ error: 'Invalid session format' }, { status: 400 });
+      }
     }
+    
+    logger.info('[SyncSession] Current session user data BEFORE update:', {
+      email: sessionData.user?.email,
+      needsOnboarding: sessionData.user?.needsOnboarding,
+      onboardingCompleted: sessionData.user?.onboardingCompleted,
+      tenantId: sessionData.user?.tenantId
+    });
     
     // Update session with new values
     const updatedSession = {
@@ -75,15 +96,24 @@ export async function POST(request) {
       }
     };
     
+    logger.info('[SyncSession] Updated session user data AFTER update:', {
+      email: updatedSession.user?.email,
+      needsOnboarding: updatedSession.user?.needsOnboarding,
+      onboardingCompleted: updatedSession.user?.onboardingCompleted,
+      tenantId: updatedSession.user?.tenantId,
+      lastUpdated: updatedSession.user?.lastUpdated
+    });
+    
     // Encrypt and save updated session
     const encryptedSession = encrypt(JSON.stringify(updatedSession));
+    logger.info('[SyncSession] Session encrypted, size:', encryptedSession.length);
     
     const response = NextResponse.json({
       success: true,
       message: 'Session synchronized',
       tenantId: tenantId || updatedSession.user?.tenantId,
-      needsOnboarding: needsOnboarding,
-      onboardingCompleted: onboardingCompleted
+      needsOnboarding: updatedSession.user?.needsOnboarding,
+      onboardingCompleted: updatedSession.user?.onboardingCompleted
     });
     
     // Set cookie with proper options
@@ -96,18 +126,26 @@ export async function POST(request) {
       domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
     };
     
+    logger.info('[SyncSession] Setting cookie with options:', cookieOptions);
     response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
     
     // Also set a non-httpOnly cookie for client-side checking
-    response.cookies.set('onboarding_status', JSON.stringify({
+    const statusCookie = JSON.stringify({
       completed: onboardingCompleted,
-      tenantId: tenantId || updatedSession.user?.tenantId
-    }), {
+      tenantId: tenantId || updatedSession.user?.tenantId,
+      needsOnboarding: updatedSession.user?.needsOnboarding
+    });
+    response.cookies.set('onboarding_status', statusCookie, {
       ...cookieOptions,
       httpOnly: false // Allow client-side access
     });
     
-    logger.info('[SyncSession] Session synchronized successfully');
+    logger.info('[SyncSession] === SESSION SYNC COMPLETED ===');
+    logger.info('[SyncSession] Final state:', {
+      needsOnboarding: updatedSession.user?.needsOnboarding,
+      onboardingCompleted: updatedSession.user?.onboardingCompleted,
+      cookieSet: true
+    });
     
     return response;
   } catch (error) {

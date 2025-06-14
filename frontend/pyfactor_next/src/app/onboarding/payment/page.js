@@ -216,9 +216,33 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       
+      // First, let's check the current session state
+      try {
+        const checkSessionResponse = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        if (checkSessionResponse.ok) {
+          const currentSession = await checkSessionResponse.json();
+          logger.info('[PaymentForm] Current session BEFORE sync:', {
+            needsOnboarding: currentSession.user?.needsOnboarding,
+            onboardingCompleted: currentSession.user?.onboardingCompleted,
+            tenantId: currentSession.user?.tenantId
+          });
+        }
+      } catch (e) {
+        logger.error('[PaymentForm] Error checking session before sync:', e);
+      }
+      
       // Synchronize session to mark onboarding as complete
       try {
         logger.info('[PaymentForm] Synchronizing session with onboarding completion');
+        logger.info('[PaymentForm] Sync payload:', {
+          tenantId: tenantId,
+          needsOnboarding: false,
+          onboardingCompleted: true,
+          subscriptionPlan: plan.toLowerCase()
+        });
+        
         const syncResponse = await fetch('/api/auth/sync-session', {
           method: 'POST',
           headers: {
@@ -233,11 +257,31 @@ function PaymentForm({ plan, billingCycle }) {
           }),
         });
         
+        const syncResponseText = await syncResponse.text();
+        logger.info('[PaymentForm] Sync response status:', syncResponse.status);
+        logger.info('[PaymentForm] Sync response headers:', Object.fromEntries(syncResponse.headers.entries()));
+        
         if (!syncResponse.ok) {
-          logger.error('[PaymentForm] Failed to sync session:', syncResponse.status);
+          logger.error('[PaymentForm] Failed to sync session:', {
+            status: syncResponse.status,
+            text: syncResponseText
+          });
         } else {
-          const syncResult = await syncResponse.json();
+          const syncResult = JSON.parse(syncResponseText);
           logger.info('[PaymentForm] Session synchronized successfully:', syncResult);
+          
+          // Verify the session was actually updated
+          const verifySessionResponse = await fetch('/api/auth/session', {
+            credentials: 'include'
+          });
+          if (verifySessionResponse.ok) {
+            const updatedSession = await verifySessionResponse.json();
+            logger.info('[PaymentForm] Session AFTER sync:', {
+              needsOnboarding: updatedSession.user?.needsOnboarding,
+              onboardingCompleted: updatedSession.user?.onboardingCompleted,
+              tenantId: updatedSession.user?.tenantId
+            });
+          }
         }
       } catch (syncError) {
         logger.error('[PaymentForm] Error synchronizing session:', syncError);
@@ -245,11 +289,55 @@ function PaymentForm({ plan, billingCycle }) {
       
       setSuccess(true);
       
-      // Redirect to tenant dashboard after short delay
-      setTimeout(() => {
+      // Wait a bit longer to ensure cookies are set
+      setTimeout(async () => {
+        logger.info('[PaymentForm] === PREPARING REDIRECT ===');
+        
+        // Final check of session state before redirect
+        try {
+          const finalCheckResponse = await fetch('/api/auth/session', {
+            credentials: 'include',
+            cache: 'no-store'
+          });
+          
+          if (finalCheckResponse.ok) {
+            const finalSession = await finalCheckResponse.json();
+            logger.info('[PaymentForm] FINAL session state before redirect:', {
+              needsOnboarding: finalSession.user?.needsOnboarding,
+              onboardingCompleted: finalSession.user?.onboardingCompleted,
+              tenantId: finalSession.user?.tenantId,
+              email: finalSession.user?.email
+            });
+          }
+          
+          // Also check the sync status
+          const syncStatusResponse = await fetch('/api/auth/sync-session', {
+            method: 'GET',
+            credentials: 'include'
+          });
+          
+          if (syncStatusResponse.ok) {
+            const syncStatus = await syncStatusResponse.json();
+            logger.info('[PaymentForm] Sync status check:', syncStatus);
+          }
+        } catch (e) {
+          logger.error('[PaymentForm] Error in final checks:', e);
+        }
+        
         if (tenantId) {
-          const redirectUrl = `/tenant/${tenantId}/dashboard?welcome=true`;
+          const redirectUrl = `/tenant/${tenantId}/dashboard?welcome=true&payment_completed=true`;
           logger.info('[PaymentForm] Redirecting to tenant dashboard:', redirectUrl);
+          logger.info('[PaymentForm] Tenant ID being used:', tenantId);
+          
+          // Clear any cached data
+          if (window.caches) {
+            window.caches.keys().then(names => {
+              names.forEach(name => {
+                window.caches.delete(name);
+              });
+            });
+          }
+          
           // Use window.location.href for a full page reload to ensure session is properly refreshed
           window.location.href = redirectUrl;
         } else {
@@ -257,7 +345,7 @@ function PaymentForm({ plan, billingCycle }) {
           logger.warn('[PaymentForm] No tenant ID available, redirecting to regular dashboard');
           window.location.href = '/dashboard?welcome=true';
         }
-      }, 2000);
+      }, 3000); // Increased delay to 3 seconds
 
     } catch (err) {
       logger.error('Payment error:', err);

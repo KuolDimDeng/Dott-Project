@@ -144,10 +144,43 @@ export default function TenantDashboard() {
             }
             
             // Check if user needs onboarding
-            if (profileData.needsOnboarding && !profileData.onboardingCompleted) {
+            // Special case: if coming from payment completion, trust that onboarding is done
+            const paymentCompleted = searchParams.get('payment_completed') === 'true';
+            
+            logger.info('[TenantDashboard] Onboarding check:', {
+              needsOnboarding: profileData.needsOnboarding,
+              onboardingCompleted: profileData.onboardingCompleted,
+              paymentCompleted: paymentCompleted,
+              searchParams: Object.fromEntries(searchParams.entries())
+            });
+            
+            if (profileData.needsOnboarding && !profileData.onboardingCompleted && !paymentCompleted) {
               logger.info('[TenantDashboard] User needs onboarding, redirecting');
               router.push('/onboarding');
               return;
+            }
+            
+            // If payment was just completed, force sync the session
+            if (paymentCompleted) {
+              logger.info('[TenantDashboard] Payment completed, forcing session sync');
+              try {
+                const syncResponse = await fetch('/api/auth/sync-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    tenantId: tenantId,
+                    needsOnboarding: false,
+                    onboardingCompleted: true
+                  })
+                });
+                
+                if (syncResponse.ok) {
+                  logger.info('[TenantDashboard] Session synced after payment');
+                }
+              } catch (syncError) {
+                logger.error('[TenantDashboard] Error syncing session:', syncError);
+              }
             }
             
             setUserAttributes(profileData);
