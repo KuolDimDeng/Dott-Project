@@ -34,10 +34,15 @@ async function handleLogin(request, { params }) {
     const state = generateState();
     const { verifier, challenge } = generatePKCE();
     
-    // Store state and PKCE verifier in cookies
+    // Store state and PKCE verifier in cookies with proper settings
     const headers = new Headers();
-    headers.set('Set-Cookie', `auth0_state=${state}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
-    headers.append('Set-Cookie', `auth0_verifier=${verifier}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`);
+    const cookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=600; Secure`;
+    
+    // Set cookies with proper domain handling
+    headers.set('Set-Cookie', `auth0_state=${state}; ${cookieOptions}`);
+    headers.append('Set-Cookie', `auth0_verifier=${verifier}; ${cookieOptions}`);
+    
+    logger.info('[Auth0] Setting auth cookies:', { state, hasVerifier: !!verifier });
     
     // Build Auth0 authorization URL
     const authParams = new URLSearchParams({
@@ -83,8 +88,18 @@ async function handleCallback(request, { params }) {
     const storedState = cookies.match(/auth0_state=([^;]+)/)?.[1];
     const storedVerifier = cookies.match(/auth0_verifier=([^;]+)/)?.[1];
     
+    logger.info('[Auth0] State verification:', { 
+      receivedState: state,
+      storedState,
+      hasStoredVerifier: !!storedVerifier,
+      cookies: cookies.substring(0, 100) + '...'
+    });
+    
     if (!storedState || state !== storedState) {
-      logger.error('[Auth0] State mismatch');
+      logger.error('[Auth0] State mismatch:', {
+        expected: storedState,
+        received: state
+      });
       return NextResponse.redirect(`${AUTH0_BASE_URL}/login?error=state_mismatch`);
     }
     
@@ -163,10 +178,11 @@ async function handleCallback(request, { params }) {
       
       const sessionData = await sessionResponse.json();
       
-      // Clear auth cookies and set session cookie
+      // Clear auth cookies
       const headers = new Headers();
-      headers.set('Set-Cookie', `auth0_state=; Path=/; HttpOnly; Max-Age=0`);
-      headers.append('Set-Cookie', `auth0_verifier=; Path=/; HttpOnly; Max-Age=0`);
+      const clearCookieOptions = `Path=/; HttpOnly; Max-Age=0; Secure`;
+      headers.set('Set-Cookie', `auth0_state=; ${clearCookieOptions}`);
+      headers.append('Set-Cookie', `auth0_verifier=; ${clearCookieOptions}`);
       
       // Redirect based on session data
       let redirectUrl = '/dashboard';

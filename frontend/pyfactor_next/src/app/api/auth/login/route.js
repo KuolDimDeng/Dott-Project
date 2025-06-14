@@ -99,74 +99,26 @@ export async function GET(request) {
       }, { status: 500 });
     }
     
-    // Handle redirect URI
-    const redirectUri = `${baseUrl}/api/auth/callback`;
-    console.log('[Auth Login Route] Redirect URI:', redirectUri);
-    
-    // Create Auth0 authorize URL with validated parameters
-    const loginParams = new URLSearchParams({
-      response_type: 'code',
-      client_id: clientId,
-      redirect_uri: redirectUri,
-      scope: 'openid profile email',
-      audience: audience,
-    });
-    
-    // Add state parameter for security
-    const state = Buffer.from(Date.now().toString()).toString('base64');
-    loginParams.append('state', state);
-    
-    // Handle additional parameters from the request
+    // Forward to the main Auth0 route handler instead of handling directly
     const { searchParams } = new URL(request.url);
     
-    // Add login_hint if provided (for email pre-fill)
-    const loginHint = searchParams.get('login_hint');
-    if (loginHint) {
-      loginParams.append('login_hint', loginHint);
+    // Build the URL for the main Auth0 handler
+    const forwardUrl = new URL(`${baseUrl}/api/auth/login`);
+    
+    // Copy all query parameters
+    for (const [key, value] of searchParams) {
+      forwardUrl.searchParams.set(key, value);
     }
     
-    // Add connection if specified (e.g., google-oauth2)
-    const connection = searchParams.get('connection');
-    if (connection) {
-      loginParams.append('connection', connection);
+    // Add connection if not already specified
+    if (!forwardUrl.searchParams.has('connection') && searchParams.get('connection')) {
+      forwardUrl.searchParams.set('connection', searchParams.get('connection'));
     }
     
-    // Add screen_hint if specified (e.g., signup)
-    const screenHint = searchParams.get('screen_hint');
-    if (screenHint) {
-      loginParams.append('screen_hint', screenHint);
-    }
+    console.log('[Auth Login Route] Forwarding to main Auth0 handler:', forwardUrl.toString());
     
-    // Check if we should use embedded login
-    const useEmbedded = searchParams.get('embedded') === 'true';
-    if (useEmbedded) {
-      // Redirect to our custom email sign-in page instead
-      console.log('[Auth Login Route] Using embedded login, redirecting to email sign-in page');
-      return NextResponse.redirect(`${baseUrl}/auth/email-signin`);
-    }
-    
-    // Normalize domain to ensure consistent format
-    // Ensure domain is in the correct format
-    const normalizeDomain = (domain) => {
-      // Remove any protocol prefix if present
-      let cleanDomain = domain.replace(/^https?:\/\//i, '');
-      
-      // Remove trailing slash if present
-      cleanDomain = cleanDomain.endsWith('/') ? cleanDomain.slice(0, -1) : cleanDomain;
-      
-      console.log('[Auth Login Route] Normalized domain:', cleanDomain);
-      return cleanDomain;
-    };
-    
-    const cleanDomain = normalizeDomain(auth0Domain);
-    
-    // Construct the URL in the same way as [...auth0]/route.js for consistency
-    const loginUrl = `https://${cleanDomain}/authorize?${loginParams}`;
-    
-    console.log('[Auth Login Route] Redirecting to Auth0:', loginUrl);
-    
-    // Create redirect response with proper cache headers
-    const response = NextResponse.redirect(loginUrl);
+    // Redirect to the main Auth0 handler which will properly set cookies
+    const response = NextResponse.redirect(forwardUrl);
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
