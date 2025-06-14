@@ -24,8 +24,21 @@ if (typeof window !== 'undefined') {
     hasKey: !!stripePublishableKey,
     keyType: typeof stripePublishableKey,
     allEnvKeys: Object.keys(process.env).filter(key => key.includes('STRIPE')),
+    allPublicEnvKeys: Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC_')),
+    rawProcessEnv: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    windowEnv: window.__ENV__,
     timestamp: new Date().toISOString()
   });
+  
+  // Additional debugging
+  console.log('[Stripe Debug] All NEXT_PUBLIC env vars:', 
+    Object.entries(process.env)
+      .filter(([key]) => key.startsWith('NEXT_PUBLIC_'))
+      .reduce((acc, [key, value]) => ({
+        ...acc,
+        [key]: value ? `${value.substring(0, 10)}...` : 'undefined'
+      }), {})
+  );
 }
 
 logger.info('Stripe Initialization', {
