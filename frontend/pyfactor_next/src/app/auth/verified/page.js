@@ -1,13 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function EmailVerifiedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [countdown, setCountdown] = useState(5);
+  const [isValid, setIsValid] = useState(true);
 
   useEffect(() => {
+    // Check if coming from Auth0 (optional security check)
+    const message = searchParams.get('message');
+    const success = searchParams.get('success');
+    
+    // If you want to verify the request came from Auth0, you could check for these params
+    // Auth0 can append query params to the redirect URL
+    
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -20,7 +29,7 @@ export default function EmailVerifiedPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [router, searchParams]);
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">

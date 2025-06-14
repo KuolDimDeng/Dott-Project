@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { sessionManager } from '@/utils/sessionManager';
@@ -9,6 +9,7 @@ import { secureLogin } from '@/utils/secureAuth';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSignup, setIsSignup] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +25,18 @@ export default function EmailPasswordSignIn() {
     lastName: '',
     rememberMe: false
   });
+
+  // Check for error from URL params (e.g., from Google OAuth)
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    const emailParam = searchParams.get('email');
+    
+    if (errorParam === 'email_not_verified' && emailParam) {
+      setError('Please verify your email address before signing in. Check your inbox for the verification email.');
+      setShowResendVerification(true);
+      setFormData(prev => ({ ...prev, email: emailParam }));
+    }
+  }, [searchParams]);
 
   const toggleMode = () => {
     setIsSignup(!isSignup);

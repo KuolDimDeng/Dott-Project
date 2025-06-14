@@ -215,6 +215,20 @@ export async function POST(request) {
         hasName: !!userInfo.name,
         emailVerified: userInfo.email_verified
       });
+      
+      // Check if email is verified
+      if (userInfo.email_verified === false) {
+        addDebugEntry('Email not verified', { email: userInfo.email });
+        return NextResponse.json(
+          { 
+            error: 'email_not_verified',
+            message: 'Please verify your email address before signing in. Check your inbox for the verification email.',
+            email: userInfo.email,
+            debugLog
+          },
+          { status: 401 }
+        );
+      }
     } else {
       addDebugEntry('Failed to fetch user info', {
         status: userInfoResponse.status,

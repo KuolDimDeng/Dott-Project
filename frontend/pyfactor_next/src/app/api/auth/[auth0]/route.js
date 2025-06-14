@@ -149,8 +149,24 @@ async function handleCallback(request, { params }) {
       
       logger.info('[Auth0] Successful authentication:', { 
         userId: userInfo.sub,
-        email: userInfo.email 
+        email: userInfo.email,
+        emailVerified: userInfo.email_verified 
       });
+      
+      // Check if email is verified
+      if (userInfo.email_verified === false) {
+        logger.error('[Auth0] Email not verified for user:', userInfo.email);
+        // Clear cookies and redirect to login with error
+        const headers = new Headers();
+        const clearCookieOptions = `Path=/; HttpOnly; Max-Age=0; Secure`;
+        headers.set('Set-Cookie', `auth0_state=; ${clearCookieOptions}`);
+        headers.append('Set-Cookie', `auth0_verifier=; ${clearCookieOptions}`);
+        
+        return NextResponse.redirect(
+          `${AUTH0_BASE_URL}/login?error=email_not_verified&email=${encodeURIComponent(userInfo.email)}`,
+          { headers }
+        );
+      }
       
       // Create session
       const sessionResponse = await fetch(`${AUTH0_BASE_URL}/api/auth/session`, {
