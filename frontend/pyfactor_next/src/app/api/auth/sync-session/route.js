@@ -81,7 +81,7 @@ export async function POST(request) {
           tenant_id: tenantId
         }),
         
-        // Update subscription plan if provided
+        // Update subscription plan if provided - set all fields for compatibility
         ...(subscriptionPlan && {
           subscriptionPlan: subscriptionPlan,
           subscription_plan: subscriptionPlan,

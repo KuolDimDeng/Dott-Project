@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { decrypt, encrypt } from '@/utils/sessionEncryption';
 
 /**
  * GET /api/tenant/business-info
@@ -11,7 +12,7 @@ export async function GET(request) {
     
     // Get Auth0 session
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       console.log('[Business Info API] No session found');
@@ -20,7 +21,15 @@ export async function GET(request) {
     
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        console.warn('[Business Info API] Using legacy base64 format');
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      }
     } catch (error) {
       console.error('[Business Info API] Error parsing session:', error);
       return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
@@ -115,21 +124,34 @@ export async function GET(request) {
         });
         
         // Update session with business info
-        if (businessInfo.businessName) {
+        if (businessInfo.businessName || businessInfo.subscriptionPlan !== 'free') {
           sessionData.user.businessName = businessInfo.businessName;
           sessionData.user.businessType = businessInfo.businessType;
           sessionData.user.subscriptionPlan = businessInfo.subscriptionPlan;
+          sessionData.user.subscription_plan = businessInfo.subscriptionPlan;
+          sessionData.user.selected_plan = businessInfo.subscriptionPlan;
+          sessionData.user.selectedPlan = businessInfo.subscriptionPlan;
+          sessionData.user.subscription_type = businessInfo.subscriptionPlan;
+          sessionData.user.subscriptionType = businessInfo.subscriptionPlan;
           
-          const updatedCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+          // Encrypt the updated session
+          const encryptedSession = encrypt(JSON.stringify(sessionData));
           
           const response = NextResponse.json(businessInfo);
-          response.cookies.set('appSession', updatedCookie, {
+          
+          // Cookie options
+          const cookieOptions = {
             path: '/',
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 // 7 days
-          });
+            maxAge: 7 * 24 * 60 * 60, // 7 days
+            domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+          };
+          
+          // Set both cookie names for compatibility
+          response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
+          response.cookies.set('appSession', encryptedSession, cookieOptions);
           
           return response;
         }

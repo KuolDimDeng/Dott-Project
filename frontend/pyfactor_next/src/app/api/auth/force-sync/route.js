@@ -61,7 +61,13 @@ export async function POST(request) {
         currentStep: onboardingCompleted ? 'completed' : sessionData.user?.currentStep,
         tenantId: tenantId || sessionData.user?.tenantId,
         tenant_id: tenantId || sessionData.user?.tenant_id,
+        // Set all subscription fields to ensure compatibility
         subscriptionPlan: subscriptionPlan || sessionData.user?.subscriptionPlan,
+        subscription_plan: subscriptionPlan || sessionData.user?.subscription_plan,
+        selected_plan: subscriptionPlan || sessionData.user?.selected_plan,
+        selectedPlan: subscriptionPlan || sessionData.user?.selectedPlan,
+        subscription_type: subscriptionPlan || sessionData.user?.subscription_type,
+        subscriptionType: subscriptionPlan || sessionData.user?.subscriptionType,
         lastSyncedAt: new Date().toISOString()
       }
     };
