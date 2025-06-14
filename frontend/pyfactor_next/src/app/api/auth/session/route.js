@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { logger } from '@/utils/logger';
+import { encrypt, decrypt } from '@/utils/sessionEncryption';
+import { generateCSRFToken } from '@/utils/csrf';
 
 // Cookie configuration for production
 const COOKIE_OPTIONS = {
@@ -64,10 +66,18 @@ export async function GET(request) {
       return NextResponse.json(null, { status: 200 });
     }
     
-    // Parse secure session cookie
+    // Parse and decrypt secure session cookie
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        console.warn('[Auth Session] Using legacy base64 format - will re-encrypt on next write');
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      }
     } catch (error) {
       console.error('[Auth Session] Cookie parse error:', error);
       return NextResponse.json(null, { status: 200 });
@@ -86,11 +96,15 @@ export async function GET(request) {
     
     console.log('[Auth Session] Valid session found for:', sessionData.user.email);
     
+    // Generate CSRF token for the session
+    const csrfToken = generateCSRFToken();
+    
     // Return session data (never include sensitive tokens in response)
     return NextResponse.json({
       user: sessionData.user,
       authenticated: true,
-      expiresAt: sessionData.expiresAt
+      expiresAt: sessionData.expiresAt,
+      csrfToken: csrfToken
     });
     
   } catch (error) {
@@ -147,11 +161,11 @@ export async function POST(request) {
       accessToken,
       idToken,
       createdAt: Date.now(),
-      expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
+      expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours (reduced from 7 days)
     };
     
-    // Encode session data
-    const encodedSession = Buffer.from(JSON.stringify(sessionData)).toString('base64');
+    // Encrypt session data
+    const encryptedSession = encrypt(JSON.stringify(sessionData));
     
     // Create response
     const response = NextResponse.json({
@@ -163,8 +177,11 @@ export async function POST(request) {
       }
     });
     
-    // Set secure HttpOnly cookie
-    response.cookies.set('dott_auth_session', encodedSession, COOKIE_OPTIONS);
+    // Set secure HttpOnly cookie with encrypted data
+    response.cookies.set('dott_auth_session', encryptedSession, {
+      ...COOKIE_OPTIONS,
+      maxAge: 24 * 60 * 60 // 24 hours
+    });
     
     console.log('[Auth Session POST] Session created successfully');
     

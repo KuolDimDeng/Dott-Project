@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
+import { checkRateLimit, rateLimitResponse } from '@/middleware/rateLimit';
 
 /**
  * Direct Email/Password Authentication Endpoint
@@ -7,6 +8,12 @@ import { logger } from '@/utils/logger';
  * Uses custom domain for embedded login experience
  */
 export async function POST(request) {
+  // Check rate limit first
+  const rateLimitResult = checkRateLimit(request, 'auth');
+  if (rateLimitResult.limited) {
+    return rateLimitResponse(rateLimitResult);
+  }
+
   const startTime = Date.now();
   const debugLog = [];
   

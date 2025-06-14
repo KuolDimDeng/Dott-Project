@@ -100,63 +100,36 @@ function PaymentForm({ plan, billingCycle }) {
 
       logger.info('Payment method created:', paymentMethod.id);
 
-      // Get access token from session
-      let accessToken = null;
-      
-      // Get token from secure session
+      // Get CSRF token from session
+      let csrfToken = null;
       try {
-        const tokenResponse = await fetch('/api/auth/get-token', {
+        const sessionResponse = await fetch('/api/auth/session', {
           credentials: 'include'
         });
         
-        if (tokenResponse.ok) {
-          const tokenData = await tokenResponse.json();
-          accessToken = tokenData.access_token;
-          logger.info('Got access token from session:', {
-            hasToken: !!accessToken,
-            tokenLength: accessToken?.length || 0,
-            expiresAt: tokenData.expires_at
-          });
-        } else {
-          const errorData = await tokenResponse.json();
-          logger.error('Failed to get token:', errorData);
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          csrfToken = sessionData.csrfToken;
+          logger.info('Got CSRF token from session');
         }
       } catch (error) {
-        logger.error('Failed to get access token:', error);
-      }
-      
-      // Fallback to localStorage (deprecated)
-      if (!accessToken) {
-        accessToken = localStorage.getItem('access_token');
-        if (accessToken) {
-          logger.warn('Using deprecated localStorage access token');
-        }
-      }
-      
-      logger.info('Access token check:', {
-        hasAccessToken: !!accessToken,
-        tokenLength: accessToken?.length || 0,
-        tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'null',
-      });
-
-      if (!accessToken) {
-        throw new Error('No access token found. Please log in again.');
+        logger.error('Failed to get CSRF token:', error);
       }
 
-      // Create subscription on backend
+      // Create subscription through secure backend proxy
       logger.info('Calling create-subscription API with:', {
-        url: `${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/payments/create-subscription/`,
-        hasToken: !!accessToken,
         plan: plan.toLowerCase(),
         billingCycle: billingCycle,
+        hasCSRFToken: !!csrfToken,
       });
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/payments/create-subscription/`, {
+      const response = await fetch('/api/payments/create-subscription', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          'X-CSRF-Token': csrfToken || '',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           payment_method_id: paymentMethod.id,
           plan: plan.toLowerCase(),
