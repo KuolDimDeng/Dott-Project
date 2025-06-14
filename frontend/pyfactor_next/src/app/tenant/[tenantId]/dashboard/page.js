@@ -178,9 +178,16 @@ export default function TenantDashboard() {
                 if (forceSyncResponse.ok) {
                   logger.info('[TenantDashboard] Session force synced after payment');
                   
-                  // Reload the page to ensure fresh session data
-                  window.location.reload();
-                  return;
+                  // Remove payment_completed parameter to prevent infinite loop
+                  const newUrl = new URL(window.location.href);
+                  newUrl.searchParams.delete('payment_completed');
+                  
+                  // Use replaceState to update URL without adding to history
+                  window.history.replaceState({}, '', newUrl.toString());
+                  
+                  logger.info('[TenantDashboard] Removed payment_completed parameter from URL');
+                  
+                  // Continue with normal flow instead of reloading
                 } else {
                   // Fallback to regular sync
                   const syncResponse = await fetch('/api/auth/sync-session', {
@@ -196,8 +203,11 @@ export default function TenantDashboard() {
                   
                   if (syncResponse.ok) {
                     logger.info('[TenantDashboard] Session synced after payment');
-                    window.location.reload();
-                    return;
+                    
+                    // Remove payment_completed parameter here too
+                    const newUrl = new URL(window.location.href);
+                    newUrl.searchParams.delete('payment_completed');
+                    window.history.replaceState({}, '', newUrl.toString());
                   }
                 }
               } catch (syncError) {
@@ -253,7 +263,7 @@ export default function TenantDashboard() {
     };
     
     initializeDashboard();
-  }, [tenantId, router, fromSignIn, emergencyAccess]);
+  }, [tenantId, router, fromSignIn, emergencyAccess, searchParams]);
 
   // If still initializing, show loader
   if (isLoading) {
