@@ -60,8 +60,8 @@ ENV AUTH0_AUDIENCE=$AUTH0_AUDIENCE
 ENV AUTH0_SCOPE=$AUTH0_SCOPE
 ENV NEXT_PUBLIC_CRISP_WEBSITE_ID=$NEXT_PUBLIC_CRISP_WEBSITE_ID
 
-# Use the standard build command that enables standalone
-RUN pnpm run build
+# Use the optimized build command for faster builds
+RUN pnpm run build:render
 
 # Production stage
 FROM node:18-alpine AS runner
