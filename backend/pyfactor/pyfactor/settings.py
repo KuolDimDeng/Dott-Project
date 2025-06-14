@@ -284,9 +284,8 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 # Authentication settings for dj-rest-auth and allauth
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_USERNAME_REQUIRED = False  # Disable username requirement
+ACCOUNT_LOGIN_METHODS = {'email'}  # Updated from deprecated ACCOUNT_AUTHENTICATION_METHOD
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Replaces ACCOUNT_EMAIL_REQUIRED and ACCOUNT_USERNAME_REQUIRED
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None  # Explicitly set no username field
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Set to 'none' for development
 SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
