@@ -81,6 +81,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/complete',
             '/api/onboarding/',  # Catch-all for onboarding endpoints
             '/api/users/close-account/',  # Close account needs Auth0 authentication
+            '/api/payments/create-subscription/',  # Stripe subscription creation during onboarding
         ]
         
         # Add custom public paths from settings if available
