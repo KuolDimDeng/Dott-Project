@@ -32,6 +32,8 @@
   - Custom domains: dottapps.com, www.dottapps.com
   - For clean builds: pnpm run build:production-clean (only if issues)
   - Environment variables must use NEXT_PUBLIC_ prefix for client-side
+  - Default next.config.js now includes optimizations and security headers
+  - Original config preserved as next.config.original.js
 - Backend Deployment: render (dott-api), custom domain api.dottapps.com
   - Service name: dott-api
   - Region: oregon
@@ -73,7 +75,7 @@
   - Remove remaining Cognito/Amplify references from backend code
   - Frontend uses Docker deployment on Render (Dockerfile in root)
   - Webpack optimizations configured for memory management
-  - Build optimizations in next.config.render-optimized.js
+  - Next.js doesn't support -c flag for custom config files  
   - Rate limiting requires lru-cache dependency (already installed)
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

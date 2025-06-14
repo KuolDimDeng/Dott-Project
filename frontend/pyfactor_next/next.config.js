@@ -31,7 +31,6 @@ const nextConfig = {
     serverActions: false,
     
     // Enable module/chunk optimizations
-    optimizeCss: true,
     optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react'],
     
     // Reduce memory usage during build
