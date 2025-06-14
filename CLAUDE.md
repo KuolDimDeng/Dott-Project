@@ -23,8 +23,13 @@
 - Package Manager: PNPM (v8.10.0 for frontend, v8.15.3 for root)
 - Environment: Production mode only
 - Data: No mock data
-- Frontend Deployment: Render, update via git in Dott_Main_Dev_Deploy branch
-  - Build command: pnpm run build:render (optimized for faster builds)
+- Frontend Deployment: Render (Docker), update via git in Dott_Main_Dev_Deploy branch
+  - Service name: dott-front
+  - Deployment type: Docker (using Dockerfile)
+  - Build command in Dockerfile: pnpm run build:render (optimized for faster builds)
+  - Optimized build reduces memory from 8GB to 3GB and is 30-50% faster
+  - Auto-deploy enabled on git push
+  - Custom domains: dottapps.com, www.dottapps.com
   - For clean builds: pnpm run build:production-clean (only if issues)
   - Environment variables must use NEXT_PUBLIC_ prefix for client-side
 - Backend Deployment: render (dott-api), custom domain api.dottapps.com
@@ -66,8 +71,10 @@
   - Implement only specified requests
 - Important Notes:
   - Remove remaining Cognito/Amplify references from backend code
-  - Docker support available but not primary deployment method
+  - Frontend uses Docker deployment on Render (Dockerfile in root)
   - Webpack optimizations configured for memory management
+  - Build optimizations in next.config.render-optimized.js
+  - Rate limiting requires lru-cache dependency (already installed)
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
