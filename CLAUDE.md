@@ -77,6 +77,17 @@
   - Webpack optimizations configured for memory management
   - Next.js doesn't support -c flag for custom config files  
   - Rate limiting requires lru-cache dependency (already installed)
+- Session Management Update (2025-06-14):
+  - NEW: Implemented server-side session management system
+  - Django app: session_manager (replaces cookie-based sessions)
+  - Database storage with optional Redis caching
+  - Works in production WITHOUT Redis (uses PostgreSQL)
+  - Session tokens stored in httpOnly cookies only
+  - Deployment: Run `python manage.py migrate session_manager` on Render
+  - Cleanup: `python manage.py cleanup_sessions` (run periodically)
+  - Frontend: Use useSession hook instead of direct cookie access
+  - Fixes: Payment redirect issues, session persistence, SSL errors
+  - Commit: bfedfc3f pushed to Dott_Main_Dev_Deploy branch
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

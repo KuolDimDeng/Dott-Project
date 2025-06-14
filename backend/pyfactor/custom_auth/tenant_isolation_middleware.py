@@ -20,6 +20,11 @@ class TenantIsolationMiddleware(MiddlewareMixin):
         """
         Set tenant context at the beginning of each request
         """
+        # Skip if user is not set yet (happens before auth middleware runs)
+        if not hasattr(request, 'user') or request.user is None:
+            logger.debug("[TenantIsolation] Skipping - user not set yet")
+            return
+            
         # Skip for anonymous users
         if isinstance(request.user, AnonymousUser) or not request.user.is_authenticated:
             logger.debug("[TenantIsolation] Skipping - user not authenticated")
@@ -103,6 +108,10 @@ class TenantSecurityMiddleware(MiddlewareMixin):
         """
         Validate tenant access before processing views
         """
+        # Skip if user is not set yet
+        if not hasattr(request, 'user') or request.user is None:
+            return None
+            
         # Skip for anonymous users
         if isinstance(request.user, AnonymousUser) or not request.user.is_authenticated:
             return None
