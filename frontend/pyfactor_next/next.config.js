@@ -17,9 +17,12 @@ console.log(`   NODE_ENV: ${process.env.NODE_ENV || 'NOT_SET'}`);
 console.log(`   VERCEL_ENV: ${process.env.VERCEL_ENV || 'NOT_SET'}`);
 
 // Debug: Print Stripe environment variables during Next.js build
+console.log("\n🚨🚨🚨 STRIPE ENVIRONMENT CHECK AT BUILD TIME 🚨🚨🚨");
 console.log("💳 [DEBUG] Next.js Build - Stripe Environment Variables:");
-console.log(`   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 20) + '...' : 'NOT_SET'}`);
-console.log(`   STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 15) + '...' : 'NOT_SET'}`);
+console.log(`   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 20) + '...' : '❌ NOT_SET - THIS IS THE PROBLEM!'}`);
+console.log(`   STRIPE_SECRET_KEY: ${process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 15) + '...' : '❌ NOT_SET'}`);
+console.log(`   Build Time: ${new Date().toISOString()}`);
+console.log("🚨🚨🚨 END STRIPE CHECK 🚨🚨🚨\n");
 
 const nextConfig = {
   // Basic Next.js settings optimized for development speed
