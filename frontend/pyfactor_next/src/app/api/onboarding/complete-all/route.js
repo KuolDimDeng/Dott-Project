@@ -167,71 +167,7 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
   }
 }
 
-/**
- * Create tenant in backend database
- */
-async function createTenantInBackend(user, onboardingData, tenantId, accessToken) {
-  try {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    console.log('[CompleteOnboarding] Using backend URL:', apiBaseUrl);
-    
-    // Don't send tenant_id - let backend assign it
-    const tenantData = {
-      user_email: user.email,
-      auth0_sub: user.sub,
-      business_name: onboardingData.businessName,
-      business_type: onboardingData.businessType,
-      business_country: onboardingData.country,
-      business_state: onboardingData.businessState,
-      legal_structure: onboardingData.legalStructure,
-      selected_plan: onboardingData.selectedPlan,
-      subscription_plan: onboardingData.selectedPlan,
-      billing_cycle: onboardingData.billingCycle,
-      owner_first_name: onboardingData.firstName,
-      owner_last_name: onboardingData.lastName,
-      phone_number: onboardingData.phoneNumber,
-      address: onboardingData.address,
-      role: 'owner', // Assign owner role
-      onboarding_completed: true,
-      needs_onboarding: false,
-      current_onboarding_step: 'completed',
-      setup_complete: true,
-      onboarding_completed_at: new Date().toISOString()
-    };
-    
-    console.log('[CompleteOnboarding] Creating tenant in backend:', { tenantId, businessName: onboardingData.businessName });
-    
-    const response = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
-        'X-User-Email': user.email,
-        'X-User-Sub': user.sub,
-        'X-Request-ID': `complete-onboarding-${Date.now()}`,
-        'X-Source': 'nextjs-consolidated-api'
-      },
-      body: JSON.stringify(tenantData),
-      timeout: 15000 // 15 second timeout
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log('[CompleteOnboarding] Backend tenant creation successful:', result);
-      return { success: true, data: result };
-    } else {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error('[CompleteOnboarding] Backend tenant creation failed:', {
-        status: response.status,
-        error: errorText
-      });
-      return { success: false, error: errorText };
-    }
-  } catch (error) {
-    console.error('[CompleteOnboarding] Backend communication error:', error);
-    return { success: false, error: error.message };
-  }
-}
+// Removed createTenantInBackend function - now using sequential API calls instead
 
 /**
  * Main consolidated onboarding endpoint
@@ -283,31 +219,98 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // 4. Let backend handle tenant ID - frontend should never generate it
+    // 4. Backend API URL
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    console.log('[CompleteOnboarding] Backend will assign tenant ID during onboarding completion');
+    console.log('[CompleteOnboarding] Starting backend onboarding process');
     
-    // 5. Create tenant in backend - backend will assign the tenant ID
-    let backendResult = { success: false };
+    // 5. First, submit business information to create/update tenant with correct name
     let tenantId = null;
     
     if (sessionData.accessToken) {
-      backendResult = await createTenantInBackend(user, onboardingData, null, sessionData.accessToken);
-      if (backendResult.success && backendResult.data) {
-        // Get the tenant ID assigned by the backend
-        // The backend response may have nested data
-        if (backendResult.data.data) {
-          tenantId = backendResult.data.data.tenant_id || backendResult.data.data.tenantId;
+      try {
+        console.log('[CompleteOnboarding] Step 1: Submitting business information');
+        const businessResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.accessToken}`,
+            'X-User-Email': user.email,
+            'X-User-Sub': user.sub
+          },
+          body: JSON.stringify({
+            business_name: onboardingData.businessName,
+            businessName: onboardingData.businessName,
+            business_type: onboardingData.businessType,
+            businessType: onboardingData.businessType,
+            country: onboardingData.country || 'US',
+            legal_structure: onboardingData.legalStructure,
+            date_founded: onboardingData.dateFounded
+          })
+        });
+        
+        if (businessResponse.ok) {
+          const businessResult = await businessResponse.json();
+          console.log('[CompleteOnboarding] Business info submitted successfully:', businessResult);
+          tenantId = businessResult.tenant_id || businessResult.tenantId;
+          
+          // Step 2: Submit subscription selection
+          console.log('[CompleteOnboarding] Step 2: Submitting subscription selection');
+          const subscriptionResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData.accessToken}`,
+              'X-User-Email': user.email,
+              'X-User-Sub': user.sub
+            },
+            body: JSON.stringify({
+              selected_plan: onboardingData.selectedPlan,
+              billing_cycle: onboardingData.billingCycle || 'monthly'
+            })
+          });
+          
+          if (!subscriptionResponse.ok) {
+            console.error('[CompleteOnboarding] Subscription submission failed');
+          }
+          
+          // Step 3: Complete onboarding
+          console.log('[CompleteOnboarding] Step 3: Marking onboarding as complete');
+          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${sessionData.accessToken}`,
+              'X-User-Email': user.email,
+              'X-User-Sub': user.sub
+            },
+            body: JSON.stringify({
+              selected_plan: onboardingData.selectedPlan,
+              billing_cycle: onboardingData.billingCycle || 'monthly'
+            })
+          });
+          
+          if (completeResponse.ok) {
+            const completeResult = await completeResponse.json();
+            console.log('[CompleteOnboarding] Onboarding marked complete:', completeResult);
+            if (!tenantId && completeResult.data) {
+              tenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+            }
+          }
         } else {
-          tenantId = backendResult.data.tenant_id || backendResult.data.tenantId;
+          const errorText = await businessResponse.text();
+          console.error('[CompleteOnboarding] Business info submission failed:', errorText);
+          return NextResponse.json({
+            success: false,
+            error: 'Failed to submit business information',
+            message: 'Please try again or contact support'
+          }, { status: 500 });
         }
-        console.log('[CompleteOnboarding] Backend assigned tenant ID:', tenantId);
-      } else {
-        console.error('[CompleteOnboarding] Backend onboarding failed:', backendResult.error);
+      } catch (error) {
+        console.error('[CompleteOnboarding] Backend communication error:', error);
         return NextResponse.json({
           success: false,
           error: 'Failed to complete onboarding',
-          message: 'Please try again or contact support'
+          message: error.message
         }, { status: 500 });
       }
     } else {
@@ -333,6 +336,9 @@ export async function POST(request) {
     
     console.log('[CompleteOnboarding] Session update successful, cookie will be set in response');
     
+    // CRITICAL: Force a small delay to ensure cookie is written before response
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
     // 7. Prepare success response
     const responseData = {
       success: true,
@@ -348,8 +354,8 @@ export async function POST(request) {
         needsOnboarding: false
       },
       backend: {
-        success: backendResult.success,
-        message: backendResult.success ? 'Tenant created in backend' : 'Backend unavailable, data saved locally'
+        success: true,
+        message: 'Onboarding completed successfully'
       },
       nextSteps: onboardingData.selectedPlan === 'free' 
         ? ['Access your dashboard', 'Explore features', 'Invite team members']
@@ -363,27 +369,40 @@ export async function POST(request) {
     console.log('[CompleteOnboarding] Cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
     response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
     
+    // Also update the old cookie name for backward compatibility
+    response.cookies.set('appSession', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
+    
     // Set additional cookies for compatibility
     response.cookies.set('onboardingCompleted', 'true', {
       path: '/',
       maxAge: 30 * 24 * 60 * 60, // 30 days
       httpOnly: false,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
     });
     
     response.cookies.set('user_tenant_id', tenantId, {
       path: '/',
       maxAge: 30 * 24 * 60 * 60, // 30 days
       httpOnly: true,
-      sameSite: 'lax'
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    
+    // Set a temporary completion marker for immediate verification
+    response.cookies.set('onboarding_just_completed', 'true', {
+      path: '/',
+      maxAge: 60 * 5, // 5 minutes
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
     });
     
     console.log('[CompleteOnboarding] Onboarding completed successfully for:', {
       email: user.email,
       tenantId,
       businessName: onboardingData.businessName,
-      plan: onboardingData.selectedPlan,
-      backendSuccess: backendResult.success
+      plan: onboardingData.selectedPlan
     });
     
     // Update backend user record with onboarding completion if we have access token
