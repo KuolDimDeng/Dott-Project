@@ -135,6 +135,16 @@ export async function POST(request) {
     // Also update the old cookie name for backward compatibility
     response.cookies.set('appSession', encryptedSession, cookieOptions);
     
+    // IMPORTANT: Set a temporary indicator cookie that onboarding is complete
+    // This helps the dashboard immediately know the status while the main cookie propagates
+    if (onboardingCompleted) {
+      response.cookies.set('onboarding_just_completed', 'true', {
+        ...cookieOptions,
+        httpOnly: false, // Allow client-side access for immediate check
+        maxAge: 60 * 5 // Only valid for 5 minutes
+      });
+    }
+    
     // Only set a non-httpOnly cookie for emergency recovery scenarios
     // This is a temporary measure and should not be relied upon for security
     if (onboardingCompleted && tenantId) {

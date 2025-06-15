@@ -231,7 +231,10 @@ export default function SimplifiedOnboardingForm() {
             }
             
             console.log('[SimplifiedOnboarding] Redirecting to dashboard...');
-            window.location.href = result.redirect_url;
+            // Add from_onboarding parameter to help dashboard know we just completed onboarding
+            const redirectUrl = new URL(result.redirect_url, window.location.origin);
+            redirectUrl.searchParams.set('from_onboarding', 'true');
+            window.location.href = redirectUrl.toString();
           }, 500); // 500ms delay to ensure cookie is set
         }
       } else {

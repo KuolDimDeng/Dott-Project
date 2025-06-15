@@ -152,6 +152,47 @@ export default function TenantDashboard() {
             // Check if user needs onboarding
             // Special case: if coming from payment completion, trust that onboarding is done
             const paymentCompleted = searchParams.get('payment_completed') === 'true';
+            const fromOnboarding = searchParams.get('from_onboarding') === 'true';
+            
+            // If coming from onboarding completion, force a session refresh first
+            if (fromOnboarding) {
+              logger.info('[TenantDashboard] Coming from onboarding, forcing session sync');
+              try {
+                const syncResponse = await fetch('/api/auth/sync-session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    tenantId: tenantId,
+                    needsOnboarding: false,
+                    onboardingCompleted: true,
+                    subscriptionPlan: profileData.subscriptionPlan || 'free'
+                  })
+                });
+                
+                if (syncResponse.ok) {
+                  logger.info('[TenantDashboard] Session synced after onboarding');
+                  // Re-fetch the profile to get updated data
+                  const updatedProfileResponse = await fetch('/api/auth/profile', {
+                    cache: 'no-store',
+                    headers: {
+                      'Cache-Control': 'no-cache',
+                      'Pragma': 'no-cache'
+                    }
+                  });
+                  
+                  if (updatedProfileResponse.ok) {
+                    profileData = await updatedProfileResponse.json();
+                    logger.info('[TenantDashboard] Updated profile data after sync:', {
+                      needsOnboarding: profileData.needsOnboarding,
+                      onboardingCompleted: profileData.onboardingCompleted
+                    });
+                  }
+                }
+              } catch (syncError) {
+                logger.error('[TenantDashboard] Error syncing session after onboarding:', syncError);
+              }
+            }
             
             // Check if we have onboarding completion indicators
             // Check the secure session cookie first (more reliable)
@@ -172,6 +213,14 @@ export default function TenantDashboard() {
               }
             } catch (e) {
               logger.warn('[TenantDashboard] Failed to check secure session status');
+            }
+            
+            // Check for immediate onboarding completion indicator
+            const justCompletedCookie = Cookies.get('onboarding_just_completed');
+            const justCompleted = justCompletedCookie === 'true';
+            
+            if (justCompleted) {
+              logger.info('[TenantDashboard] Found immediate onboarding completion indicator');
             }
             
             // Fallback: Check the client-side cookie (less secure but faster)
@@ -196,7 +245,7 @@ export default function TenantDashboard() {
             });
             
             // Trust secure session first, then other indicators
-            const shouldSkipOnboarding = sessionOnboardingCompleted || profileData.onboardingCompleted || paymentCompleted || cookieOnboardingCompleted;
+            const shouldSkipOnboarding = justCompleted || fromOnboarding || sessionOnboardingCompleted || profileData.onboardingCompleted || paymentCompleted || cookieOnboardingCompleted;
             
             if (profileData.needsOnboarding && !shouldSkipOnboarding) {
               logger.info('[TenantDashboard] User needs onboarding, redirecting');
@@ -224,14 +273,15 @@ export default function TenantDashboard() {
                 if (syncResponse.ok) {
                   logger.info('[TenantDashboard] Session synced after payment');
                   
-                  // Remove payment_completed parameter to prevent infinite loop
+                  // Clean up URL parameters
                   const newUrl = new URL(window.location.href);
                   newUrl.searchParams.delete('payment_completed');
+                  newUrl.searchParams.delete('from_onboarding');
                   
                   // Use replaceState to update URL without adding to history
                   window.history.replaceState({}, '', newUrl.toString());
                   
-                  logger.info('[TenantDashboard] Removed payment_completed parameter from URL');
+                  logger.info('[TenantDashboard] Cleaned URL parameters');
                   
                   // Override the profile data to skip onboarding check
                   profileData.needsOnboarding = false;

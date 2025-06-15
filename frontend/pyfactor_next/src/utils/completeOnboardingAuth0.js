@@ -73,9 +73,10 @@ export async function completeOnboardingAuth0(onboardingData) {
       }
     }
     
-    // Force a session refresh to pick up the new onboarding status
+    // Force a session sync to ensure the cookie is properly updated
     try {
-      await fetch('/api/auth/refresh-session', {
+      logger.info(`[completeOnboardingAuth0:${requestId}] Forcing session sync after onboarding`);
+      const syncResponse = await fetch('/api/auth/sync-session', {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -83,11 +84,23 @@ export async function completeOnboardingAuth0(onboardingData) {
         },
         body: JSON.stringify({
           tenantId: result.tenant_id || result.tenantId,
-          onboardingCompleted: true
+          needsOnboarding: false,
+          onboardingCompleted: true,
+          subscriptionPlan: onboardingData.selectedPlan
         })
       });
-    } catch (refreshError) {
-      logger.warn(`[completeOnboardingAuth0:${requestId}] Session refresh failed:`, refreshError);
+      
+      if (syncResponse.ok) {
+        const syncResult = await syncResponse.json();
+        logger.info(`[completeOnboardingAuth0:${requestId}] Session sync successful:`, syncResult);
+        
+        // Add a small delay to ensure cookie propagation
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        logger.warn(`[completeOnboardingAuth0:${requestId}] Session sync failed:`, syncResponse.status);
+      }
+    } catch (syncError) {
+      logger.warn(`[completeOnboardingAuth0:${requestId}] Session sync error:`, syncError);
     }
     
     return {
