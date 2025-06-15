@@ -2937,3 +2937,18 @@ eb-deploy-optimized-20250529_085216.zip
   - Optimized Docker configuration for memory usage
   - Updated EB configuration to use correct application
   - Created comprehensive deployment package
+
+## Version0008_fix_paid_user_auth_issues.py
+- **Date**: 2025-01-15
+- **Purpose**: Fix authentication issues for paid tier users
+- **Changes**:
+  - Fixed AttributeError in enhanced_rls_middleware.py (None user check)
+  - Added comprehensive logging to session creation
+  - Fixed Auth0 user creation to handle subscription plans
+  - Created debug endpoint at /api/debug/session-state/
+- **Files Modified**:
+  - custom_auth/enhanced_rls_middleware.py
+  - session_manager/views.py
+  - custom_auth/api/views/auth0_views.py
+  - custom_auth/api/views/debug_views.py (created)
+  - custom_auth/api/urls.py

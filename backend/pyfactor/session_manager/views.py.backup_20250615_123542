@@ -80,41 +80,13 @@ class SessionCreateView(APIView):
             if user_tenant:
                 logger.info(f"[SessionCreate] User tenant ID: {user_tenant.id}, Name: {user_tenant.name}")
             
-            # Log subscription information
-            user_subscription = None
-            if hasattr(user, 'onboardingprogress'):
-                onboarding = user.onboardingprogress
-                user_subscription = getattr(onboarding, 'subscription_plan', 'free')
-                logger.info(f"[SessionCreate] User subscription from onboarding: {user_subscription}")
-                logger.info(f"[SessionCreate] Onboarding status: {onboarding.onboarding_status}")
-                logger.info(f"[SessionCreate] Setup completed: {onboarding.setup_completed}")
-            
-            # Check if user has active Stripe subscription
-            try:
-                from accounts.models import Subscription
-                active_sub = Subscription.objects.filter(
-                    user=user,
-                    status__in=['active', 'trialing']
-                ).first()
-                if active_sub:
-                    logger.info(f"[SessionCreate] Found active Stripe subscription: {active_sub.stripe_subscription_id}")
-                    logger.info(f"[SessionCreate] Subscription plan: {active_sub.plan_name}")
-                    user_subscription = active_sub.plan_name or user_subscription
-            except Exception as e:
-                logger.warning(f"[SessionCreate] Error checking Stripe subscription: {e}")
-            
             # Create session
             logger.info(f"[SessionCreate] Calling session_service.create_session with validated data: {serializer.validated_data}")
-            # Include subscription plan in session creation
-            session_data = serializer.validated_data.copy()
-            if user_subscription:
-                session_data['subscription_plan'] = user_subscription
-            
             session = session_service.create_session(
                 user=user,
                 access_token=access_token,
                 request_meta=request_meta,
-                **session_data
+                **serializer.validated_data
             )
             
             # Prepare response

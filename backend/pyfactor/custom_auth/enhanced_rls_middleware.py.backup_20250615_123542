@@ -224,7 +224,7 @@ class EnhancedRowLevelSecurityMiddleware:
         tenant_id = self._get_tenant_from_headers(request)
         
         # 2. Try authenticated user
-        if not tenant_id and hasattr(request, 'user') and request.user and request.user.is_authenticated:
+        if not tenant_id and hasattr(request, 'user') and request.user.is_authenticated:
             tenant_id = self._get_tenant_from_user(request.user)
         
         # 3. Try session

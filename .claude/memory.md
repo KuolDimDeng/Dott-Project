@@ -25,3 +25,36 @@ Users were being redirected to the home page instead of the dashboard after comp
 - Solution maintains existing AES-256-CBC session encryption
 - Temporary cookies serve only as indicators, not for storing sensitive data
 - All authentication and authorization checks remain intact
+
+### Verification (2025-06-15)
+Fix confirmed working in production:
+- New user `support@dottapps.com` created and onboarded successfully
+- User stayed on dashboard after onboarding completion
+- No redirect to home page occurred
+- Session properly synced in background
+
+## Paid Tier User Authentication Fix (2025-06-15)
+
+### Issue
+Users with paid subscriptions couldn't sign in after clearing browser cache, while free tier users could. The issue manifested as:
+- `AttributeError: 'NoneType' object has no attribute 'is_authenticated'` in backend
+- Session creation failing with 500 errors
+- Users being redirected to onboarding despite having completed it
+
+### Root Causes
+1. **Middleware Error**: `enhanced_rls_middleware.py` was accessing `request.user.is_authenticated` without checking if `request.user` was None
+2. **Session Creation**: The error prevented proper session creation for authenticated users
+3. **Subscription Data**: Session wasn't properly maintaining subscription plan information
+
+### Solution Implemented (Backend)
+1. **Fixed Middleware**: Added null check before accessing `request.user.is_authenticated`
+   - File: `backend/pyfactor/custom_auth/enhanced_rls_middleware.py`
+   - Line 227: Added `and request.user` to the condition
+2. **Enhanced Session Creation**: Modified to include subscription plan data
+   - File: `backend/pyfactor/session_manager/views.py`
+3. **Improved Logging**: Added comprehensive logging for debugging subscription-related auth issues
+
+### Verification
+- Paid tier users (like `kuoldimdeng@outlook.com`) can now sign in after clearing cache
+- No more 500 errors during session creation
+- Subscription status properly maintained across authentication cycles

@@ -1,4 +1,5 @@
-from django.urls import path, include
+from django.urls import path
+from .views.debug_views import DebugSessionStateView, include
 from rest_framework.routers import DefaultRouter
 from .views import auth_views, tenant_views
 from .views.auth0_views import (
@@ -24,6 +25,7 @@ except ImportError:
 router = DefaultRouter()
 
 urlpatterns = [
+    path('debug/session-state/', DebugSessionStateView.as_view(), name='debug-session-state'),
     # Authentication endpoints
     path('auth/verify-credentials/', auth_views.VerifyCredentialsView.as_view(), name='verify-credentials'),
     path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),

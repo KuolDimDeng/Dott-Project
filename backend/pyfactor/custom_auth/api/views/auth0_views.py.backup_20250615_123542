@@ -221,32 +221,12 @@ class Auth0UserCreateView(APIView):
                 current_step = 'complete'
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Setting current_step to 'complete'")
                         
-            # Get user's subscription plan
-            user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
-            
-            # Check for active Stripe subscription
-            try:
-                from accounts.models import Subscription
-                active_sub = Subscription.objects.filter(
-                    user=user,
-                    status__in=['active', 'trialing']
-                ).first()
-                if active_sub:
-                    user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
-            except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
-            
-                        response_data = {
+            response_data = {
                 'success': True,
                 'tenantId': str(tenant.id),
                 'currentStep': current_step,
                 'isExistingUser': not created,
                 'onboardingComplete': bool(onboarding_complete),  # Ensure it's a boolean
-                'subscriptionPlan': user_subscription,
                 'debug': {
                     'user_id': user.id,
                     'tenant_id': str(tenant.id),
@@ -404,26 +384,7 @@ class Auth0UserProfileView(APIView):
                 except Exception as e:
                     logger.warning(f"🔥 [USER_PROFILE] Failed to get business name from Business record: {str(e)}")
             
-            # Get user's subscription plan
-            user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
-            
-            # Check for active Stripe subscription
-            try:
-                from accounts.models import Subscription
-                active_sub = Subscription.objects.filter(
-                    user=user,
-                    status__in=['active', 'trialing']
-                ).first()
-                if active_sub:
-                    user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
-            except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
-            
-                        response_data = {
+            response_data = {
                 'user': {
                     'id': user.pk,
                     'email': user.email,
@@ -864,26 +825,7 @@ class Auth0OnboardingCompleteView(APIView):
                 logger.warning(f"🎯 [ONBOARDING_COMPLETE] Error getting tenant: {str(e)}")
             
             # Prepare response with tenant information
-            # Get user's subscription plan
-            user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
-            
-            # Check for active Stripe subscription
-            try:
-                from accounts.models import Subscription
-                active_sub = Subscription.objects.filter(
-                    user=user,
-                    status__in=['active', 'trialing']
-                ).first()
-                if active_sub:
-                    user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
-            except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
-            
-                        response_data = {
+            response_data = {
                 'success': True,
                 'message': 'Onboarding completed successfully',
                 'data': {
