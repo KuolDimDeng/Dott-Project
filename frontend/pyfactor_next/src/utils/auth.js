@@ -1,6 +1,5 @@
 "use client";
 
-
 import { logger } from '@/utils/logger';
 
 /**
@@ -77,7 +76,7 @@ export const refreshUserSession = async () => {
  * Get the current API base URL based on the window location
  * This handles different ports in development mode
  */
-const getApiBaseUrl = () => {
+export const getApiBaseUrl = () => {
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL || 'https://localhost:3000';
   }
@@ -87,154 +86,98 @@ const getApiBaseUrl = () => {
 };
 
 /**
- * Directly confirm a user by their email - this bypasses the normal email verification
- * This is meant for development use only
+ * Get user attributes from the session
+ * @returns {Promise<Object|null>}
  */
-export async function confirmUserDirectly(email) {
-  if (!email) {
-    console.error('No email provided for confirmation');
-    return { success: false, error: 'No email provided' };
-  }
-
-  console.log(`Attempting to directly confirm user: ${email}`);
-  
+export const getUserAttributes = async () => {
   try {
-    // Call the admin API endpoint to confirm the user
-    const baseUrl = getApiBaseUrl();
-    const url = `${baseUrl}/api/admin/confirm-user`;
+    const user = await getCurrentUser();
+    if (!user) return null;
     
-    console.log(`Making request to: ${url} with email: ${email}`);
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
-    });
-    
-    console.log(`Response status: ${response.status} ${response.statusText}`);
-    
-    if (!response.ok) {
-      let errorText;
-      let errorObj = null;
-      
-      try {
-        const responseText = await response.text();
-        console.log('Raw response text:', responseText);
-        
-        try {
-          if (responseText && responseText.trim()) {
-            errorObj = JSON.parse(responseText);
-            console.log('Parsed error response:', errorObj);
-          } else {
-            console.log('Empty response text received');
-            errorObj = { error: 'Empty response from server' };
-          }
-        } catch (parseError) {
-          console.error('Error parsing JSON response:', parseError);
-          errorObj = { error: responseText || `${response.status} ${response.statusText}` };
-        }
-        
-        errorText = errorObj?.error || `${response.status} ${response.statusText}`;
-        console.error('API error response:', errorObj || { status: response.status, statusText: response.statusText });
-      } catch (e) {
-        console.error('Error handling API response:', e);
-        errorText = `${response.status} ${response.statusText}`;
-      }
-      
-      console.error('Failed to confirm user:', errorText);
-      return { 
-        success: false, 
-        status: response.status,
-        statusText: response.statusText,
-        error: `Failed to confirm user: ${errorText}` 
-      };
-    }
-    
-    let result;
-    try {
-      const responseText = await response.text();
-      console.log('Success response text:', responseText);
-      result = responseText ? JSON.parse(responseText) : { success: true };
-    } catch (e) {
-      console.warn('Error parsing success response:', e);
-      result = { success: true, message: 'User confirmed (no details available)' };
-    }
-    
-    console.log('User confirmed successfully:', result);
-    return { success: true, data: result };
-  } catch (error) {
-    console.error('Network error confirming user:', error);
-    return { 
-      success: false, 
-      error: error.message || 'Unknown error',
-      networkError: true
+    // Map Auth0 user fields to expected attribute names
+    return {
+      sub: user.sub || user.id,
+      email: user.email,
+      name: user.name,
+      picture: user.picture,
+      tenant_id: user.tenant_id || user.tenantId,
+      business_name: user.business_name || user.businessName,
+      ...user
     };
-  }
-}
-
-// Auto-confirm user helper function (can be called from console)
-export const confirmUserBypass = async (email) => {
-  if (!email) {
-    console.error('Email is required to confirm a user');
-    return { success: false, error: 'Email is required' };
-  }
-  
-  try {
-    // Check if we have AWS credentials
-    if (!process.env.NEXT_PUBLIC_COGNITO_USER_POOL_ID || 
-        !process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID) {
-      console.error('AWS credentials not found');
-      return { success: false, error: 'AWS credentials not found' };
-    }
-    
-    // Use the Cognito admin confirm sign up endpoint
-    const baseUrl = getApiBaseUrl();
-    const response = await fetch(`${baseUrl}/api/admin/confirm-user`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email })
-    });
-    
-    if (response.ok) {
-      const result = await response.json();
-      console.log('User confirmed successfully:', result);
-      return { success: true, result };
-    } else {
-      let errorData;
-      try {
-        errorData = await response.json();
-      } catch (e) {
-        errorData = { error: 'Unknown error' };
-      }
-      console.error('Failed to confirm user:', errorData);
-      return { success: false, error: errorData.error || 'Failed to confirm user' };
-    }
   } catch (error) {
-    console.error('Error confirming user:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+    logger.error('[Auth] Error getting user attributes:', error);
+    return null;
   }
 };
 
-// Add a simple helper for manual confirmation
-export const manualConfirmUser = async (userEmail) => {
-  console.log('Manually confirming user:', userEmail);
-  
+/**
+ * Check if user has completed onboarding
+ * @returns {Promise<boolean>}
+ */
+export const hasCompletedOnboarding = async () => {
   try {
-    // First try the confirmUserDirectly function
-    const confirmResult = await confirmUserDirectly(userEmail);
+    const response = await fetch('/api/auth/me');
+    if (!response.ok) return false;
     
-    if (confirmResult.success) {
-      console.log('✅ User confirmed successfully:', confirmResult.data);
-      return { success: true, message: 'User confirmed successfully' };
-    } else {
-      console.error('❌ Failed to confirm user:', confirmResult.error);
-      return { success: false, error: confirmResult.error };
-    }
+    const user = await response.json();
+    return !user.needs_onboarding && user.onboarding_completed;
   } catch (error) {
-    console.error('❌ Error during manual confirmation:', error);
-    return { success: false, error: error.message || 'Unknown error' };
+    logger.error('[Auth] Error checking onboarding status:', error);
+    return false;
   }
 };
 
+/**
+ * Sign in with Google OAuth via Auth0
+ */
+export const signInWithGoogle = () => {
+  window.location.href = '/api/auth/login?connection=google-oauth2';
+};
+
+/**
+ * Get the current user's tenant ID
+ * @returns {Promise<string|null>}
+ */
+export const getTenantId = async () => {
+  try {
+    const user = await getCurrentUser();
+    return user?.tenant_id || user?.tenantId || null;
+  } catch (error) {
+    logger.error('[Auth] Error getting tenant ID:', error);
+    return null;
+  }
+};
+
+/**
+ * Clear local authentication data
+ */
+export const clearAuthData = () => {
+  // Clear localStorage
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('tenant_id');
+    localStorage.removeItem('tenantId');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('auth_had_session');
+    localStorage.removeItem('auth_last_time');
+  }
+  
+  // Clear session storage
+  if (typeof window !== 'undefined' && window.sessionStorage) {
+    sessionStorage.clear();
+  }
+};
+
+// Export utility functions
+export default {
+  isAuthenticated,
+  getCurrentUser,
+  signIn,
+  signOut,
+  signInWithGoogle,
+  refreshUserSession,
+  getUserAttributes,
+  hasCompletedOnboarding,
+  getTenantId,
+  clearAuthData,
+  getApiBaseUrl
+};
