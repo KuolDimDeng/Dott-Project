@@ -196,6 +196,11 @@ export default function SimplifiedOnboardingForm() {
           selectedPlan: formData.selectedPlan
         });
         
+        // CRITICAL: Log the current cookies to verify they were set
+        console.log('[SimplifiedOnboarding] 🍪 Checking cookies after completion:');
+        console.log('[SimplifiedOnboarding] 🍪 document.cookie:', document.cookie);
+        console.log('[SimplifiedOnboarding] 🍪 Response headers:', response.headers);
+        
         // Check if paid plan requires payment
         if (formData.selectedPlan.toLowerCase() !== 'free' && 
             formData.selectedPlan.toLowerCase() !== 'basic') {
@@ -214,6 +219,35 @@ export default function SimplifiedOnboardingForm() {
             localStorage.setItem('subscription_plan', result.sessionData.subscriptionPlan);
             localStorage.setItem('business_name', result.sessionData.businessName);
             localStorage.setItem('needs_onboarding', 'false');
+          }
+          
+          // CRITICAL: Force a session refresh by calling sync-session
+          console.log('[SimplifiedOnboarding] 🔄 Forcing session sync after onboarding');
+          try {
+            const syncResponse = await fetch('/api/auth/sync-session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-onboarding-completed': 'true',
+                'x-tenant-id': result.tenant_id || result.tenantId
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                tenantId: result.tenant_id || result.tenantId,
+                needsOnboarding: false,
+                onboardingCompleted: true,
+                subscriptionPlan: formData.selectedPlan,
+                businessName: formData.businessName
+              })
+            });
+            
+            if (syncResponse.ok) {
+              console.log('[SimplifiedOnboarding] ✅ Session sync successful');
+            } else {
+              console.error('[SimplifiedOnboarding] ❌ Session sync failed:', syncResponse.status);
+            }
+          } catch (syncError) {
+            console.error('[SimplifiedOnboarding] ❌ Error syncing session:', syncError);
           }
           
           // Force a full page reload to refresh the session

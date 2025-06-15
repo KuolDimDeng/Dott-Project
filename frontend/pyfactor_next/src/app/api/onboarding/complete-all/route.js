@@ -104,6 +104,14 @@ async function validateAuth0Session(request) {
  */
 async function updateAuth0Session(sessionData, onboardingData, tenantId) {
   try {
+    console.log('[updateAuth0Session] 🔄 Starting session update');
+    console.log('[updateAuth0Session] 🔄 Current session user:', {
+      email: sessionData.user?.email,
+      needsOnboarding: sessionData.user?.needsOnboarding,
+      onboardingCompleted: sessionData.user?.onboardingCompleted,
+      tenantId: sessionData.user?.tenantId
+    });
+    
     const updatedSession = {
       ...sessionData,
       user: {
@@ -145,6 +153,14 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       }
     };
     
+    console.log('[updateAuth0Session] 🔄 Updated session user:', {
+      email: updatedSession.user?.email,
+      needsOnboarding: updatedSession.user?.needsOnboarding,
+      onboardingCompleted: updatedSession.user?.onboardingCompleted,
+      tenantId: updatedSession.user?.tenantId,
+      businessName: updatedSession.user?.businessName
+    });
+    
     const cookieStore = await cookies();
     // Use encryption instead of base64
     const updatedCookie = encrypt(JSON.stringify(updatedSession));
@@ -160,9 +176,12 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
     };
     
+    console.log('[updateAuth0Session] 🔄 Encryption complete, cookie size:', updatedCookie.length);
+    console.log('[updateAuth0Session] 🔄 Cookie options:', cookieOptions);
+    
     return { updatedCookie, cookieOptions, success: true };
   } catch (error) {
-    console.error('[CompleteOnboarding] Session update error:', error);
+    console.error('[updateAuth0Session] ❌ Session update error:', error);
     return { success: false, error: error.message };
   }
 }
@@ -334,7 +353,9 @@ export async function POST(request) {
       }, { status: 500 });
     }
     
-    console.log('[CompleteOnboarding] Session update successful, cookie will be set in response');
+    console.log('[CompleteOnboarding] 🍪 Session update successful');
+    console.log('[CompleteOnboarding] 🍪 Updated cookie length:', sessionUpdateResult.updatedCookie?.length);
+    console.log('[CompleteOnboarding] 🍪 Cookie will be set in response');
     
     // CRITICAL: Force a small delay to ensure cookie is written before response
     await new Promise(resolve => setTimeout(resolve, 50));
@@ -365,16 +386,25 @@ export async function POST(request) {
     // 8. Create response with updated session cookie
     const response = NextResponse.json(responseData);
     
+    // CRITICAL: Log the current cookies before changes
+    console.log('[CompleteOnboarding] 🍪 COOKIE UPDATE PROCESS STARTING');
+    const currentCookies = await cookies();
+    const currentDottAuth = currentCookies.get('dott_auth_session');
+    const currentAppSession = currentCookies.get('appSession');
+    console.log('[CompleteOnboarding] 🍪 Current dott_auth_session size:', currentDottAuth?.value?.length || 0);
+    console.log('[CompleteOnboarding] 🍪 Current appSession size:', currentAppSession?.value?.length || 0);
+    
     // CRITICAL: First delete old cookies to ensure clean state
-    console.log('[CompleteOnboarding] Deleting old session cookies to ensure clean update');
+    console.log('[CompleteOnboarding] 🍪 Deleting old session cookies to ensure clean update');
     response.cookies.delete('dott_auth_session');
     response.cookies.delete('appSession');
     
     // Small delay to ensure deletion
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    console.log('[CompleteOnboarding] Setting updated session cookie with onboarding complete status');
-    console.log('[CompleteOnboarding] Cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
+    console.log('[CompleteOnboarding] 🍪 Setting updated session cookie with onboarding complete status');
+    console.log('[CompleteOnboarding] 🍪 New cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
+    console.log('[CompleteOnboarding] 🍪 New cookie preview:', sessionUpdateResult.updatedCookie.substring(0, 50) + '...');
     
     // Set the new cookies with proper domain for production
     const enhancedCookieOptions = {
@@ -385,8 +415,18 @@ export async function POST(request) {
       priority: 'high'
     };
     
+    console.log('[CompleteOnboarding] 🍪 Cookie options:', JSON.stringify(enhancedCookieOptions, null, 2));
+    
     response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
     response.cookies.set('appSession', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
+    
+    // CRITICAL: Also use Set-Cookie header directly as a fallback
+    const cookieString = `dott_auth_session=${sessionUpdateResult.updatedCookie}; Path=/; HttpOnly; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''} SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Domain=.dottapps.com' : ''}`;
+    response.headers.append('Set-Cookie', cookieString);
+    console.log('[CompleteOnboarding] 🍪 Added Set-Cookie header directly');
+    
+    console.log('[CompleteOnboarding] 🍪 Cookies set on response');
+    console.log('[CompleteOnboarding] 🍪 All Set-Cookie headers:', response.headers.getSetCookie());
     
     // CRITICAL: Also return the session data in the response so client can update localStorage
     responseData.sessionData = {
@@ -423,11 +463,24 @@ export async function POST(request) {
       secure: process.env.NODE_ENV === 'production'
     });
     
-    console.log('[CompleteOnboarding] Onboarding completed successfully for:', {
+    // Log all response headers
+    const allHeaders = {};
+    response.headers.forEach((value, key) => {
+      allHeaders[key] = value;
+    });
+    console.log('[CompleteOnboarding] 🍪 Response headers:', allHeaders);
+    
+    console.log('[CompleteOnboarding] ✅ Onboarding completed successfully for:', {
       email: user.email,
       tenantId,
       businessName: onboardingData.businessName,
-      plan: onboardingData.selectedPlan
+      plan: onboardingData.selectedPlan,
+      cookiesSet: {
+        dott_auth_session: sessionUpdateResult.updatedCookie.length,
+        appSession: sessionUpdateResult.updatedCookie.length,
+        onboardingCompleted: 'true',
+        user_tenant_id: tenantId
+      }
     });
     
     // Update backend user record with onboarding completion if we have access token
