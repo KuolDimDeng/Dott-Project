@@ -175,8 +175,8 @@ async function createTenantInBackend(user, onboardingData, tenantId, accessToken
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     console.log('[CompleteOnboarding] Using backend URL:', apiBaseUrl);
     
+    // Don't send tenant_id - let backend assign it
     const tenantData = {
-      tenant_id: tenantId,
       user_email: user.email,
       auth0_sub: user.sub,
       business_name: onboardingData.businessName,
@@ -283,53 +283,35 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // 4. Get existing tenant ID from backend FIRST
-    let tenantId = null;
+    // 4. Let backend handle tenant ID - frontend should never generate it
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    console.log('[CompleteOnboarding] Backend will assign tenant ID during onboarding completion');
     
-    // Always try to get tenant ID from backend first
-    if (sessionData.accessToken) {
-      try {
-        console.log('[CompleteOnboarding] Fetching user data from backend to get tenant ID');
-        const userResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
-          headers: {
-            'Authorization': `Bearer ${sessionData.accessToken}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          tenantId = userData.tenant_id || userData.tenantId;
-          console.log('[CompleteOnboarding] Got tenant ID from backend:', tenantId);
-        }
-      } catch (error) {
-        console.warn('[CompleteOnboarding] Failed to fetch user tenant ID:', error);
-      }
-    }
-    
-    // If no backend tenant ID, check other sources
-    if (!tenantId) {
-      tenantId = user.tenant_id || user.tenantId || onboardingData.tenantId;
-    }
-    
-    // Only generate new tenant ID if absolutely necessary
-    if (!tenantId) {
-      console.warn('[CompleteOnboarding] No existing tenant ID found, generating new one');
-      tenantId = uuidv4();
-    }
-    
-    console.log('[CompleteOnboarding] Using tenant ID:', tenantId);
-    
-    // 5. Create tenant in backend (attempt with graceful fallback)
+    // 5. Create tenant in backend - backend will assign the tenant ID
     let backendResult = { success: false };
+    let tenantId = null;
+    
     if (sessionData.accessToken) {
-      backendResult = await createTenantInBackend(user, onboardingData, tenantId, sessionData.accessToken);
-      if (!backendResult.success) {
-        console.warn('[CompleteOnboarding] Backend tenant creation failed, but continuing with onboarding completion');
+      backendResult = await createTenantInBackend(user, onboardingData, null, sessionData.accessToken);
+      if (backendResult.success && backendResult.data) {
+        // Get the tenant ID assigned by the backend
+        tenantId = backendResult.data.tenant_id || backendResult.data.tenantId;
+        console.log('[CompleteOnboarding] Backend assigned tenant ID:', tenantId);
+      } else {
+        console.error('[CompleteOnboarding] Backend onboarding failed:', backendResult.error);
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to complete onboarding',
+          message: 'Please try again or contact support'
+        }, { status: 500 });
       }
     } else {
-      console.warn('[CompleteOnboarding] No access token available, skipping backend creation');
+      console.error('[CompleteOnboarding] No access token available');
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please sign in and try again'
+      }, { status: 401 });
     }
     
     // 6. Update Auth0 session with completed onboarding - ALWAYS do this even if backend fails

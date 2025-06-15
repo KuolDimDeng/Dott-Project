@@ -89,11 +89,8 @@ export async function POST(request) {
         });
       }
       
-      // Step 2: User doesn't exist - create new user with unique tenant ID
-      console.log('[UserSync] Creating new user');
-      
-      // CRITICAL: Generate a new unique tenant ID for this user
-      const newTenantId = uuidv4();
+      // Step 2: User doesn't exist - create new user WITHOUT tenant ID
+      console.log('[UserSync] Creating new user without tenant ID - backend will assign during onboarding');
       
       // Add idempotency key to prevent duplicate user creation
       const idempotencyKey = `user-create-${auth0_sub}`;
@@ -112,7 +109,7 @@ export async function POST(request) {
           name,
           picture,
           email_verified,
-          tenant_id: newTenantId,
+          tenant_id: null, // Backend assigns this during onboarding
           role: 'owner',
           needs_onboarding: true,
           created_at: new Date().toISOString()
@@ -156,32 +153,14 @@ export async function POST(request) {
         needs_onboarding: true
       });
       
-      // Step 3: Create tenant record
-      const createTenantResponse = await fetch(`${apiBaseUrl}/api/tenants/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: newTenantId,
-          name: `${email}'s Organization`,
-          owner_id: auth0_sub,
-          owner_email: email,
-          created_at: new Date().toISOString(),
-          rls_enabled: true
-        })
-      });
-      
-      if (!createTenantResponse.ok) {
-        console.error('[UserSync] Failed to create tenant record');
-      }
+      // Step 3: Skip tenant creation - backend handles this during onboarding
+      console.log('[UserSync] Skipping tenant creation - will be done during onboarding');
       
       return NextResponse.json({
         success: true,
         is_existing_user: false,
         ...newUser,
-        tenant_id: newTenantId,
+        tenant_id: null, // Will be assigned during onboarding
         needs_onboarding: true
       });
       
@@ -189,8 +168,6 @@ export async function POST(request) {
       console.error('[UserSync] Backend error:', backendError);
       
       // Fallback: Create user data locally if backend is unavailable
-      const fallbackTenantId = uuidv4();
-      
       return NextResponse.json({
         success: true,
         is_existing_user: false,
@@ -198,7 +175,7 @@ export async function POST(request) {
         auth0_sub,
         email,
         name,
-        tenant_id: fallbackTenantId,
+        tenant_id: null, // No tenant ID until onboarding
         needs_onboarding: true,
         fallback_mode: true,
         message: 'User created in fallback mode'
