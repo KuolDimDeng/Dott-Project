@@ -202,10 +202,13 @@ async function handleCallback(request, { params }) {
       
       // Redirect based on session data
       let redirectUrl = '/dashboard';
-      if (sessionData.needsOnboarding) {
+      const needsOnboarding = sessionData.user?.needsOnboarding || sessionData.user?.needs_onboarding;
+      const tenantId = sessionData.user?.tenantId || sessionData.user?.tenant_id;
+      
+      if (needsOnboarding) {
         redirectUrl = '/onboarding';
-      } else if (sessionData.tenantId) {
-        redirectUrl = `/tenant/${sessionData.tenantId}/dashboard`;
+      } else if (tenantId) {
+        redirectUrl = `/tenant/${tenantId}/dashboard`;
       }
       
       return NextResponse.redirect(`${AUTH0_BASE_URL}${redirectUrl}`, { headers });
