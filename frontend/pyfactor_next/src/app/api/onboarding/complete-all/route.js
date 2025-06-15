@@ -283,12 +283,13 @@ export async function POST(request) {
       }, { status: 400 });
     }
     
-    // 4. Generate or use existing tenant ID
-    let tenantId = onboardingData.tenantId || user.tenant_id || user.tenantId;
+    // 4. Get existing tenant ID from backend FIRST
+    let tenantId = null;
     
-    // If no tenant ID exists, try to get it from backend user
-    if (!tenantId && sessionData.accessToken) {
+    // Always try to get tenant ID from backend first
+    if (sessionData.accessToken) {
       try {
+        console.log('[CompleteOnboarding] Fetching user data from backend to get tenant ID');
         const userResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
           headers: {
             'Authorization': `Bearer ${sessionData.accessToken}`,
@@ -299,14 +300,21 @@ export async function POST(request) {
         if (userResponse.ok) {
           const userData = await userResponse.json();
           tenantId = userData.tenant_id || userData.tenantId;
+          console.log('[CompleteOnboarding] Got tenant ID from backend:', tenantId);
         }
       } catch (error) {
         console.warn('[CompleteOnboarding] Failed to fetch user tenant ID:', error);
       }
     }
     
-    // If still no tenant ID, generate one
+    // If no backend tenant ID, check other sources
     if (!tenantId) {
+      tenantId = user.tenant_id || user.tenantId || onboardingData.tenantId;
+    }
+    
+    // Only generate new tenant ID if absolutely necessary
+    if (!tenantId) {
+      console.warn('[CompleteOnboarding] No existing tenant ID found, generating new one');
       tenantId = uuidv4();
     }
     
