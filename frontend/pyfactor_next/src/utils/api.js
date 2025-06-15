@@ -1,60 +1,42 @@
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
+import { getCurrentSession } from '@/utils/sessionApi';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
- * Auth0 compatibility function
- */
-const fetchAuthSession = async () => {
-  try {
-    const response = await fetch('/api/auth/me');
-    if (response.ok) {
-      const user = await response.json();
-      return {
-        tokens: {
-          accessToken: { toString: () => 'auth0-access-token' },
-          idToken: { toString: () => 'auth0-id-token' }
-        },
-        userSub: user.sub
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('[api] Error fetching session:', error);
-    return null;
-  }
-};
-
-/**
- * Gets authentication headers from Cognito
+ * Gets authentication headers
  * @returns {Promise<Object>} Object containing auth headers
  */
 async function getAuthHeaders() {
   try {
-    // Try to get session from Cognito first
+    // First try to get backend session token
+    const session = await getCurrentSession();
+    
+    if (session?.sessionToken) {
+      logger.debug('[API] Using backend session token for auth');
+      return {
+        'Authorization': `Session ${session.sessionToken}`,
+        'Content-Type': 'application/json'
+      };
+    }
+    
+    // Fallback to legacy Auth0/cookie-based approach
     let idToken = null;
     let accessToken = null;
     
-    try {
-      const session = await fetchAuthSession();
-      if (session?.tokens?.idToken) {
-        idToken = session.tokens.idToken.toString();
-        accessToken = session.tokens.accessToken.toString();
-        
-        // Update AppCache with fresh tokens
-        if (typeof window !== 'undefined') {
-          setCacheValue('idToken', idToken);
-          setCacheValue('accessToken', accessToken);
-          setCacheValue('tokenTimestamp', Date.now().toString());
-        }
+    // Try to get session data from the session API (legacy)
+    if (session?.authenticated && session?.user) {
+      // Check if we have tokens stored in session data
+      const response = await fetch('/api/auth/access-token');
+      if (response.ok) {
+        const tokenData = await response.json();
+        accessToken = tokenData.access_token;
+        idToken = tokenData.id_token || accessToken;
       }
-    } catch (cognitoError) {
-      logger.warn('[API] Failed to get auth session from Cognito:', cognitoError);
-      // Fall back to AppCache if Cognito fails
     }
     
-    // If Cognito failed, try to get tokens from AppCache
+    // If no token from session, try AppCache
     if (!idToken && typeof window !== 'undefined') {
       idToken = getCacheValue('idToken');
       accessToken = getCacheValue('accessToken');
@@ -64,15 +46,16 @@ async function getAuthHeaders() {
       }
     }
     
-    // If we still don't have a token, authentication has failed
-    if (!idToken) {
-      throw new Error('No valid ID token in session or cache');
+    // If we have a token, use Bearer auth (legacy)
+    if (idToken || accessToken) {
+      return {
+        'Authorization': `Bearer ${idToken || accessToken}`,
+        'Content-Type': 'application/json'
+      };
     }
-
-    return {
-      'Authorization': `Bearer ${idToken}`,
-      'Content-Type': 'application/json'
-    };
+    
+    // No authentication available
+    throw new Error('No valid authentication token available');
   } catch (error) {
     logger.error('[API] Failed to get auth headers:', error);
     throw error;

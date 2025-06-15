@@ -234,15 +234,60 @@ function PaymentForm({ plan, billingCycle }) {
         logger.error('[PaymentForm] Error checking session before sync:', e);
       }
       
-      // Synchronize session to mark onboarding as complete
+      // Update backend session to mark onboarding as complete
       try {
-        logger.info('[PaymentForm] Synchronizing session with onboarding completion');
-        logger.info('[PaymentForm] Sync payload:', {
+        logger.info('[PaymentForm] Updating backend session with onboarding completion');
+        
+        // First check if we have a session token
+        const sessionCheckResponse = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
+        
+        if (sessionCheckResponse.ok) {
+          const currentSession = await sessionCheckResponse.json();
+          
+          if (currentSession.sessionToken) {
+            // Use backend session update API
+            logger.info('[PaymentForm] Using backend session update API');
+            
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+            const updateResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Session ${currentSession.sessionToken}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                needs_onboarding: false,
+                onboarding_completed: true,
+                onboarding_step: 'completed',
+                subscription_plan: plan.toLowerCase(),
+                subscription_status: 'active',
+                tenant: tenantId ? { id: tenantId } : undefined
+              })
+            });
+            
+            if (updateResponse.ok) {
+              const updatedSession = await updateResponse.json();
+              logger.info('[PaymentForm] Backend session updated successfully:', {
+                needs_onboarding: updatedSession.needs_onboarding,
+                onboarding_completed: updatedSession.onboarding_completed,
+                tenant_id: updatedSession.tenant?.id
+              });
+            } else {
+              logger.error('[PaymentForm] Backend session update failed:', updateResponse.status);
+              // Fall back to legacy sync
+            }
+          }
+        }
+        
+        // Also try legacy sync methods for backward compatibility
+        const syncPayload = {
           tenantId: tenantId,
           needsOnboarding: false,
           onboardingCompleted: true,
           subscriptionPlan: plan.toLowerCase()
-        });
+        };
         
         // Try force-sync first
         const forceSyncResponse = await fetch('/api/auth/force-sync', {
@@ -251,20 +296,13 @@ function PaymentForm({ plan, billingCycle }) {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify({
-            tenantId: tenantId,
-            needsOnboarding: false,
-            onboardingCompleted: true,
-            subscriptionPlan: plan.toLowerCase()
-          }),
+          body: JSON.stringify(syncPayload),
         });
         
         if (forceSyncResponse.ok) {
           const forceSyncResult = await forceSyncResponse.json();
-          logger.info('[PaymentForm] Force sync successful:', forceSyncResult);
+          logger.info('[PaymentForm] Legacy force sync successful:', forceSyncResult);
         } else {
-          logger.error('[PaymentForm] Force sync failed, trying regular sync');
-          
           // Fallback to regular sync
           const syncResponse = await fetch('/api/auth/sync-session', {
             method: 'POST',
@@ -272,30 +310,17 @@ function PaymentForm({ plan, billingCycle }) {
               'Content-Type': 'application/json',
             },
             credentials: 'include',
-            body: JSON.stringify({
-              tenantId: tenantId,
-              needsOnboarding: false,
-              onboardingCompleted: true,
-              subscriptionPlan: plan.toLowerCase()
-            }),
+            body: JSON.stringify(syncPayload),
           });
           
-          const syncResponseText = await syncResponse.text();
-          logger.info('[PaymentForm] Sync response status:', syncResponse.status);
-          
-          if (!syncResponse.ok) {
-            logger.error('[PaymentForm] Failed to sync session:', {
-              status: syncResponse.status,
-              text: syncResponseText
-            });
-          } else {
-            const syncResult = JSON.parse(syncResponseText);
-            logger.info('[PaymentForm] Session synchronized successfully:', syncResult);
+          if (syncResponse.ok) {
+            const syncResult = await syncResponse.json();
+            logger.info('[PaymentForm] Legacy session sync successful:', syncResult);
           }
         }
         
-        // Wait a moment for cookies to propagate
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait a moment for session updates to propagate
+        await new Promise(resolve => setTimeout(resolve, 200));
         
         // Verify the session was actually updated
         const verifySessionResponse = await fetch('/api/auth/session', {
@@ -305,16 +330,18 @@ function PaymentForm({ plan, billingCycle }) {
             'Cache-Control': 'no-cache'
           }
         });
+        
         if (verifySessionResponse.ok) {
           const updatedSession = await verifySessionResponse.json();
-          logger.info('[PaymentForm] Session AFTER sync:', {
+          logger.info('[PaymentForm] Session AFTER update:', {
             needsOnboarding: updatedSession.user?.needsOnboarding,
             onboardingCompleted: updatedSession.user?.onboardingCompleted,
-            tenantId: updatedSession.user?.tenantId
+            tenantId: updatedSession.user?.tenantId,
+            hasSessionToken: !!updatedSession.sessionToken
           });
         }
       } catch (syncError) {
-        logger.error('[PaymentForm] Error synchronizing session:', syncError);
+        logger.error('[PaymentForm] Error updating session:', syncError);
       }
       
       setSuccess(true);

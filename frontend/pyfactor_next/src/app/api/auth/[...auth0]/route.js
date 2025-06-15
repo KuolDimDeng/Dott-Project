@@ -67,6 +67,30 @@ export async function GET(request, { params }) {
     if (route === 'logout') {
       console.log('[Auth Route] Processing logout request');
       
+      // First, try to invalidate backend session if it exists
+      const sessionTokenCookie = request.cookies.get('session_token');
+      if (sessionTokenCookie) {
+        console.log('[Auth Route] Invalidating backend session');
+        
+        try {
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+          const invalidateResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Session ${sessionTokenCookie.value}`,
+            }
+          });
+          
+          if (invalidateResponse.ok) {
+            console.log('[Auth Route] Backend session invalidated successfully');
+          } else {
+            console.error('[Auth Route] Failed to invalidate backend session:', invalidateResponse.status);
+          }
+        } catch (error) {
+          console.error('[Auth Route] Error invalidating backend session:', error);
+        }
+      }
+      
       // Get current session to extract important data before logout
       const sessionCookie = request.cookies.get('appSession');
       let onboardingComplete = false;
@@ -151,9 +175,11 @@ export async function GET(request, { params }) {
       const response = NextResponse.redirect(logoutUrl);
       
       // Clear all auth-related cookies
+      response.cookies.delete('session_token');  // Backend session token
       response.cookies.delete('appSession');
       response.cookies.delete('auth0.is.authenticated');
       response.cookies.delete('auth0-session');
+      response.cookies.delete('dott_auth_session');
       
       // Set additional headers to prevent caching
       response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -223,7 +249,76 @@ export async function GET(request, { params }) {
         const user = await userResponse.json();
         console.log('[Auth Route] User info retrieved:', user.email);
         
-        // Create session data
+        // Create backend session via the session API
+        console.log('[Auth Route] Creating backend session...');
+        
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+        
+        try {
+          // Call backend session creation endpoint
+          const sessionResponse = await fetch(`${apiUrl}/api/sessions/create/`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${tokens.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              session_type: 'web',
+              // Include any additional session data if needed
+            })
+          });
+          
+          if (!sessionResponse.ok) {
+            const errorData = await sessionResponse.text();
+            console.error('[Auth Route] Backend session creation failed:', errorData);
+            // Continue with legacy cookie approach as fallback
+          } else {
+            const sessionData = await sessionResponse.json();
+            console.log('[Auth Route] Backend session created:', {
+              session_token: sessionData.session_token,
+              needs_onboarding: sessionData.needs_onboarding,
+              tenant_id: sessionData.tenant?.id
+            });
+            
+            // Build callback URL with session info
+            let callbackUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback`;
+            const params = new URLSearchParams();
+            
+            if (sessionData.session_token) {
+              params.append('session_token', sessionData.session_token);
+            }
+            if (sessionData.tenant?.id && !sessionData.needs_onboarding) {
+              params.append('tenant_id', sessionData.tenant.id);
+            }
+            if (sessionData.onboarding_completed) {
+              params.append('onboarding_completed', 'true');
+            }
+            
+            if (params.toString()) {
+              callbackUrl += `?${params.toString()}`;
+            }
+            
+            const response = NextResponse.redirect(callbackUrl);
+            
+            // Set session token as httpOnly cookie
+            if (sessionData.session_token) {
+              response.cookies.set('session_token', sessionData.session_token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                maxAge: 86400, // 24 hours
+                path: '/'
+              });
+            }
+            
+            return response;
+          }
+        } catch (sessionError) {
+          console.error('[Auth Route] Session creation error:', sessionError);
+          // Fall back to legacy approach
+        }
+        
+        // Legacy fallback - create local session data
         const sessionData = {
           user: user,
           accessToken: tokens.access_token,
@@ -246,7 +341,7 @@ export async function GET(request, { params }) {
         // Redirect to frontend callback with session cookie
         const response = NextResponse.redirect(callbackUrl);
         
-        // Set session cookie
+        // Set session cookie (legacy)
         const sessionCookie = Buffer.from(JSON.stringify(sessionData)).toString('base64');
         response.cookies.set('appSession', sessionCookie, {
           httpOnly: true,

@@ -28,6 +28,71 @@ export async function GET(request) {
     // CRITICAL: Force fresh cookie read by awaiting cookies()
     const cookieStore = await cookies();
     
+    // Check for backend session token first (new approach)
+    const sessionTokenCookie = cookieStore.get('session_token');
+    
+    if (sessionTokenCookie) {
+      console.log('[Auth Session] Found backend session token');
+      
+      try {
+        // Call backend to get session details
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+        const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `Session ${sessionTokenCookie.value}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (sessionResponse.ok) {
+          const backendSession = await sessionResponse.json();
+          console.log('[Auth Session] Retrieved backend session:', {
+            user_email: backendSession.user?.email,
+            needs_onboarding: backendSession.needs_onboarding,
+            tenant_id: backendSession.tenant?.id
+          });
+          
+          // Generate CSRF token for the session
+          const csrfToken = generateCSRFToken();
+          
+          // Return session data in the expected format
+          const response = NextResponse.json({
+            user: {
+              ...backendSession.user,
+              needsOnboarding: backendSession.needs_onboarding,
+              needs_onboarding: backendSession.needs_onboarding,
+              onboardingCompleted: backendSession.onboarding_completed,
+              onboarding_completed: backendSession.onboarding_completed,
+              tenantId: backendSession.tenant?.id,
+              tenant_id: backendSession.tenant?.id,
+              subscriptionPlan: backendSession.subscription_plan,
+              subscription_plan: backendSession.subscription_plan
+            },
+            authenticated: true,
+            expiresAt: backendSession.expires_at,
+            csrfToken: csrfToken,
+            sessionToken: sessionTokenCookie.value
+          });
+          
+          // Add cache control headers
+          response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+          response.headers.set('Pragma', 'no-cache');
+          response.headers.set('Expires', '0');
+          
+          return response;
+        } else {
+          console.error('[Auth Session] Backend session validation failed:', sessionResponse.status);
+          // Clear invalid session token
+          const response = NextResponse.json(null, { status: 200 });
+          response.cookies.delete('session_token');
+          return response;
+        }
+      } catch (error) {
+        console.error('[Auth Session] Backend session fetch error:', error);
+        // Fall through to legacy cookie check
+      }
+    }
+    
     // Check for onboarding status cookie first (non-httpOnly)
     const statusCookie = cookieStore.get('onboarding_status');
     if (statusCookie) {
@@ -39,10 +104,11 @@ export async function GET(request) {
       }
     }
     
-    // Get session cookie - check both names
+    // Get session cookie - check both names (legacy approach)
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     console.log('[Auth Session] Cookie check:', {
+      hasSessionToken: !!sessionTokenCookie,
       hasDottAuthSession: !!cookieStore.get('dott_auth_session'),
       hasAppSession: !!cookieStore.get('appSession'),
       cookieName: sessionCookie?.name,

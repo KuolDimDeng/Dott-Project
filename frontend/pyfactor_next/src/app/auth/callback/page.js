@@ -22,8 +22,24 @@ export default function Auth0CallbackPage() {
       try {
         setStatus('Verifying authentication...');
         
-        // Get session from our session API route (returns { user, accessToken, idToken })
-        const sessionResponse = await fetch('/api/auth/session');
+        // Check if we have a session token from the URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionToken = urlParams.get('session_token');
+        const backendTenantId = urlParams.get('tenant_id');
+        const onboardingCompleted = urlParams.get('onboarding_completed') === 'true';
+        
+        if (sessionToken) {
+          console.log('[Auth0Callback] Received session token from backend:', {
+            sessionToken: sessionToken.substring(0, 8) + '...',
+            tenantId: backendTenantId,
+            onboardingCompleted: onboardingCompleted
+          });
+        }
+        
+        // Get session from our session API route - this will use either the new session token or legacy cookies
+        const sessionResponse = await fetch('/api/auth/session', {
+          credentials: 'include'
+        });
         
         if (!sessionResponse.ok) {
           throw new Error(`Session API returned ${sessionResponse.status}`);
@@ -35,12 +51,26 @@ export default function Auth0CallbackPage() {
           throw new Error('No user session found');
         }
         
+        // Merge backend session data with local session data
+        if (backendTenantId) {
+          sessionData.user.tenantId = backendTenantId;
+          sessionData.user.tenant_id = backendTenantId;
+        }
+        if (onboardingCompleted !== undefined) {
+          sessionData.user.onboardingCompleted = onboardingCompleted;
+          sessionData.user.onboarding_completed = onboardingCompleted;
+          sessionData.user.needsOnboarding = !onboardingCompleted;
+          sessionData.user.needs_onboarding = !onboardingCompleted;
+        }
+        
         setUser(sessionData);
         
         console.log('[Auth0Callback] Authentication successful, session data:', {
           hasUser: !!sessionData.user,
           hasAccessToken: !!sessionData.accessToken,
-          email: sessionData.user?.email
+          email: sessionData.user?.email,
+          hasSessionToken: !!sessionToken,
+          tenantId: sessionData.user?.tenantId
         });
         
         setStatus('Loading your profile...');
