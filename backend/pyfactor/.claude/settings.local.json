@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(npm install:*)",
+      "Bash(pnpm install:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

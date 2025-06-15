@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { encrypt, decrypt } from '@/utils/sessionEncryption';
+import { logger } from '@/utils/logger';
 
 export async function POST(request) {
   try {
@@ -7,7 +9,7 @@ export async function POST(request) {
     
     // Get Auth0 session
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
       return NextResponse.json({ error: 'No Auth0 session found' }, { status: 401 });
@@ -15,8 +17,16 @@ export async function POST(request) {
     
     let sessionData;
     try {
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      // Try to decrypt first (new format)
+      if (sessionCookie.name === 'dott_auth_session') {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } else {
+        // Fall back to base64 (old format)
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+      }
     } catch (parseError) {
+      logger.error('[SetupComplete] Failed to parse session:', parseError);
       return NextResponse.json({ error: 'Invalid session data' }, { status: 401 });
     }
     
@@ -106,7 +116,8 @@ export async function POST(request) {
         }
       };
       
-      const updatedSessionCookie = Buffer.from(JSON.stringify(updatedSessionData)).toString('base64');
+      // Encrypt the updated session data
+      const encryptedSession = encrypt(JSON.stringify(updatedSessionData));
       
       const response = NextResponse.json({
         success: true,
@@ -119,21 +130,37 @@ export async function POST(request) {
         tenantId: tenantId || sessionData.tenantId // Include tenant ID in response
       });
       
-      // Update session cookie with new onboarding status
-      response.cookies.set('appSession', updatedSessionCookie, {
+      // Update session cookie with new onboarding status (encrypted format)
+      const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/'
-      });
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+      };
       
-      // Also set onboarding completion cookie
-      response.cookies.set('onboardingCompleted', 'true', {
+      response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
+      response.cookies.set('appSession', encryptedSession, cookieOptions);
+      
+      // Set onboarding completion indicators
+      response.cookies.set('onboarding_just_completed', 'true', {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30, // 30 days
+        maxAge: 60 * 5, // 5 minutes
+        path: '/'
+      });
+      
+      response.cookies.set('onboarding_status', JSON.stringify({
+        completed: true,
+        tenantId: tenantId || sessionData.tenantId,
+        timestamp: completedAt
+      }), {
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60, // 1 hour
         path: '/'
       });
       

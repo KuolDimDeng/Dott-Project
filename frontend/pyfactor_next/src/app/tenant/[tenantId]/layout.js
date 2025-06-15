@@ -54,11 +54,37 @@ export default async function TenantLayout({ children, params }) {
     }
     
     // Check onboarding status from profile data if available
-    const needsOnboarding = session.needsOnboarding || session.user?.needsOnboarding;
+    const needsOnboarding = session.needsOnboarding || session.user?.needsOnboarding || session.user?.needs_onboarding;
     const onboardingCompleted = session.onboardingCompleted || session.user?.onboardingCompleted || session.user?.onboarding_completed;
     
-    if (needsOnboarding && !onboardingCompleted) {
-      // User needs to complete onboarding
+    // Check for onboarding completion indicators in cookies
+    const onboardingJustCompletedCookie = cookieStore.get('onboarding_just_completed');
+    const onboardingStatusCookie = cookieStore.get('onboarding_status');
+    
+    let skipOnboardingRedirect = false;
+    
+    // Check if onboarding was just completed (temporary cookie)
+    if (onboardingJustCompletedCookie?.value === 'true') {
+      console.log('[TenantLayout] Found onboarding_just_completed cookie, skipping redirect');
+      skipOnboardingRedirect = true;
+    }
+    
+    // Check onboarding status cookie
+    if (onboardingStatusCookie) {
+      try {
+        const statusData = JSON.parse(onboardingStatusCookie.value);
+        if (statusData.completed === true) {
+          console.log('[TenantLayout] Found completed onboarding status cookie, skipping redirect');
+          skipOnboardingRedirect = true;
+        }
+      } catch (e) {
+        console.error('[TenantLayout] Failed to parse onboarding_status cookie:', e);
+      }
+    }
+    
+    // Only redirect to onboarding if truly needed and no completion indicators found
+    if (needsOnboarding && !onboardingCompleted && !skipOnboardingRedirect) {
+      console.log('[TenantLayout] User needs onboarding, redirecting');
       redirect('/onboarding');
     }
     
@@ -76,8 +102,23 @@ export default async function TenantLayout({ children, params }) {
       </>
     );
   } catch (error) {
-    // If any error occurs during rendering, redirect to home
-    console.error('TenantLayout error:', error);
-    redirect('/');
+    // Log the error but don't redirect to home for all errors
+    console.error('[TenantLayout] Error:', error);
+    
+    // Only redirect to home for specific critical errors
+    if (error.message?.includes('NEXT_REDIRECT')) {
+      // This is an intentional redirect, let it through
+      throw error;
+    }
+    
+    // For other errors, try to render the page anyway
+    // This prevents users from being kicked out due to transient errors
+    const { tenantId } = await params;
+    return (
+      <>
+        <TenantInitializer tenantId={tenantId} />
+        {children}
+      </>
+    );
   }
 } 
