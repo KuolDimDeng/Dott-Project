@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 
 // Added comprehensive debug logging
 const AUTH_DEBUG = process.env.AUTH_DEBUG === 'true' || true;
@@ -99,29 +100,61 @@ export async function GET(request) {
       }, { status: 500 });
     }
     
-    // Forward to the main Auth0 route handler instead of handling directly
+    // Get query parameters
     const { searchParams } = new URL(request.url);
+    const connection = searchParams.get('connection') || 'google-oauth2';
+    const loginHint = searchParams.get('login_hint');
+    const returnUrl = searchParams.get('return_url');
     
-    // Build the URL for the main Auth0 handler
-    const forwardUrl = new URL(`${baseUrl}/api/auth/login`);
+    // Generate state and PKCE values
+    const state = crypto.randomBytes(32).toString('base64url');
+    const verifier = crypto.randomBytes(32).toString('base64url');
+    const challenge = crypto
+      .createHash('sha256')
+      .update(verifier)
+      .digest('base64url');
     
-    // Copy all query parameters
-    for (const [key, value] of searchParams) {
-      forwardUrl.searchParams.set(key, value);
+    // Build Auth0 authorization URL
+    const authParams = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: `${baseUrl}/api/auth/callback`,
+      scope: 'openid profile email',
+      audience: audience,
+      state: state,
+      code_challenge: challenge,
+      code_challenge_method: 'S256'
+    });
+    
+    // Add connection parameter for social logins
+    if (connection) {
+      authParams.append('connection', connection);
     }
     
-    // Add connection if not already specified
-    if (!forwardUrl.searchParams.has('connection') && searchParams.get('connection')) {
-      forwardUrl.searchParams.set('connection', searchParams.get('connection'));
+    // Add login hint if provided
+    if (loginHint) {
+      authParams.append('login_hint', loginHint);
     }
     
-    console.log('[Auth Login Route] Forwarding to main Auth0 handler:', forwardUrl.toString());
+    const authUrl = `https://${auth0Domain}/authorize?${authParams.toString()}`;
     
-    // Redirect to the main Auth0 handler which will properly set cookies
-    const response = NextResponse.redirect(forwardUrl);
+    console.log('[Auth Login Route] Redirecting to Auth0:', authUrl);
+    
+    // Create response with redirect
+    const response = NextResponse.redirect(authUrl);
     response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+    
+    // Set cookies for state and PKCE verifier
+    const cookieOptions = `Path=/; HttpOnly; SameSite=Lax; Max-Age=600; Secure`;
+    response.headers.append('Set-Cookie', `auth0_state=${state}; ${cookieOptions}`);
+    response.headers.append('Set-Cookie', `auth0_verifier=${verifier}; ${cookieOptions}`);
+    
+    // Store return URL if provided
+    if (returnUrl) {
+      response.headers.append('Set-Cookie', `auth0_return_url=${encodeURIComponent(returnUrl)}; ${cookieOptions}`);
+    }
     
     return response;
   } catch (error) {
