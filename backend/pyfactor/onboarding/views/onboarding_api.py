@@ -376,10 +376,19 @@ class CompleteOnboardingAPI(APIView):
                 'business_id': str(progress.business.id) if progress.business else None
             })
             
+            # Get tenant ID from user or progress
+            tenant_id = None
+            if hasattr(request.user, 'tenant') and request.user.tenant:
+                tenant_id = str(request.user.tenant.id)
+            elif progress.tenant_id:
+                tenant_id = str(progress.tenant_id)
+            
             return Response({
                 'status': 'success',
                 'message': 'Onboarding completed successfully',
-                'redirect_to': '/dashboard',
+                'tenant_id': tenant_id,
+                'tenantId': tenant_id,  # Include both formats for compatibility
+                'redirect_to': f'/tenant/{tenant_id}/dashboard' if tenant_id else '/dashboard',
                 'request_id': request_id
             }, status=status.HTTP_200_OK)
             
