@@ -365,12 +365,37 @@ export async function POST(request) {
     // 8. Create response with updated session cookie
     const response = NextResponse.json(responseData);
     
+    // CRITICAL: First delete old cookies to ensure clean state
+    console.log('[CompleteOnboarding] Deleting old session cookies to ensure clean update');
+    response.cookies.delete('dott_auth_session');
+    response.cookies.delete('appSession');
+    
+    // Small delay to ensure deletion
+    await new Promise(resolve => setTimeout(resolve, 10));
+    
     console.log('[CompleteOnboarding] Setting updated session cookie with onboarding complete status');
     console.log('[CompleteOnboarding] Cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
-    response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
     
-    // Also update the old cookie name for backward compatibility
-    response.cookies.set('appSession', sessionUpdateResult.updatedCookie, sessionUpdateResult.cookieOptions);
+    // Set the new cookies with proper domain for production
+    const enhancedCookieOptions = {
+      ...sessionUpdateResult.cookieOptions,
+      // Ensure domain is set correctly for production
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined,
+      // Force overwrite with priority
+      priority: 'high'
+    };
+    
+    response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
+    response.cookies.set('appSession', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
+    
+    // CRITICAL: Also return the session data in the response so client can update localStorage
+    responseData.sessionData = {
+      needsOnboarding: false,
+      onboardingCompleted: true,
+      tenantId: tenantId,
+      subscriptionPlan: onboardingData.selectedPlan,
+      businessName: onboardingData.businessName
+    };
     
     // Set additional cookies for compatibility
     response.cookies.set('onboardingCompleted', 'true', {

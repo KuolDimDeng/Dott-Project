@@ -205,10 +205,19 @@ export default function SimplifiedOnboardingForm() {
           window.location.href = paymentUrl;
         } else {
           // Free plan - go directly to dashboard
+          // CRITICAL: Update localStorage to ensure client has latest session data
+          if (result.sessionData) {
+            logger.info('[SimplifiedOnboarding] Updating localStorage with session data', result.sessionData);
+            // Store session data in localStorage for immediate availability
+            localStorage.setItem('onboarding_completed', 'true');
+            localStorage.setItem('tenant_id', result.sessionData.tenantId);
+            localStorage.setItem('subscription_plan', result.sessionData.subscriptionPlan);
+            localStorage.setItem('business_name', result.sessionData.businessName);
+            localStorage.setItem('needs_onboarding', 'false');
+          }
+          
           // Force a full page reload to refresh the session
           // Using window.location.href instead of router.push to ensure session is refreshed
-          // Don't sync session again - the complete-all endpoint already did it
-          // Just redirect with a small delay to ensure cookies are set
           setTimeout(() => {
             console.log('[SimplifiedOnboarding] Redirecting to dashboard...');
             // Add from_onboarding parameter to help dashboard know we just completed onboarding

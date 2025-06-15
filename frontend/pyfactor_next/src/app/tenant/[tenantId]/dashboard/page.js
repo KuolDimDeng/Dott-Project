@@ -15,6 +15,7 @@ import { UserProfileProvider } from '@/contexts/UserProfileContext';
 // import { fetchUserAttributes } from '@/config/amplifyUnified'; // No longer using Cognito
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
+import { useEnhancedSession } from '@/hooks/useEnhancedSession';
 
 // Import needed for recovery
 import { signIn } from '@/config/amplifyUnified';
@@ -80,6 +81,9 @@ export default function TenantDashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [tenantStatus, setTenantStatus] = useState('pending');
   const [userAttributes, setUserAttributes] = useState(null);
+  
+  // Use enhanced session hook for better localStorage sync
+  const { user: sessionUser } = useEnhancedSession();
 
   // Initialize dashboard
   useEffect(() => {
@@ -122,6 +126,7 @@ export default function TenantDashboard() {
           logger.debug('[TenantDashboard] Auth0 user authenticated:', authData.user?.email);
           
           // Get user profile to check tenant and onboarding status
+          // The enhanced session hook will automatically add localStorage headers
           const profileResponse = await fetch('/api/auth/profile', {
             cache: 'no-store',
             headers: {
