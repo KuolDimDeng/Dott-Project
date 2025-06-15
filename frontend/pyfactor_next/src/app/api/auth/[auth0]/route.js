@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/logger';
 import crypto from 'crypto';
+import { encrypt } from '@/utils/sessionEncryption';
 
 const AUTH0_BASE_URL = process.env.AUTH0_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
 const AUTH0_ISSUER_BASE_URL = process.env.AUTH0_ISSUER_BASE_URL || 'https://auth.dottapps.com';
@@ -168,42 +169,135 @@ async function handleCallback(request, { params }) {
         );
       }
       
-      // Create session
-      const sessionResponse = await fetch(`${AUTH0_BASE_URL}/api/auth/session`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          accessToken: tokens.access_token,
-          idToken: tokens.id_token,
-          user: {
-            ...userInfo,
-            userId: userInfo.sub,
-            name: userInfo.name,
-            email: userInfo.email,
-            picture: userInfo.picture
-          }
-        })
-      });
+      // Check user's onboarding status from backend
+      let needsOnboarding = true;
+      let tenantId = null;
+      let onboardingCompleted = false;
+      let subscriptionPlan = 'free';
       
-      if (!sessionResponse.ok) {
-        logger.error('[Auth0] Failed to create session');
-        return NextResponse.redirect(`${AUTH0_BASE_URL}/login?error=session_failed`);
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+        const profileResponse = await fetch(`${apiUrl}/api/users/me/`, {
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          logger.info('[Auth0] Backend profile data:', {
+            needs_onboarding: profileData.needs_onboarding,
+            onboarding_completed: profileData.onboarding_completed,
+            tenant_id: profileData.tenant_id
+          });
+          
+          needsOnboarding = profileData.needs_onboarding !== false;
+          onboardingCompleted = profileData.onboarding_completed === true;
+          tenantId = profileData.tenant_id;
+          
+          if (profileData.onboarding && profileData.onboarding.subscription_plan) {
+            subscriptionPlan = profileData.onboarding.subscription_plan;
+          }
+        }
+      } catch (error) {
+        logger.error('[Auth0] Profile check error:', error);
       }
       
-      const sessionData = await sessionResponse.json();
+      // Create session data
+      const sessionData = {
+        user: {
+          ...userInfo,
+          userId: userInfo.sub,
+          name: userInfo.name,
+          email: userInfo.email,
+          picture: userInfo.picture,
+          needsOnboarding,
+          needs_onboarding: needsOnboarding,
+          onboardingCompleted,
+          onboarding_completed: onboardingCompleted,
+          tenantId,
+          tenant_id: tenantId,
+          subscriptionPlan,
+          subscription_plan: subscriptionPlan
+        },
+        accessToken: tokens.access_token,
+        idToken: tokens.id_token,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+      };
       
-      // Clear auth cookies
+      // Encrypt session data
+      const encryptedSession = encrypt(JSON.stringify(sessionData));
+      
+      // Cookie configuration
+      const COOKIE_OPTIONS = {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 24 * 60 * 60, // 24 hours
+        domain: '.dottapps.com'
+      };
+      
+      // Clear auth cookies and set session cookie
       const headers = new Headers();
       const clearCookieOptions = `Path=/; HttpOnly; Max-Age=0; Secure`;
       headers.set('Set-Cookie', `auth0_state=; ${clearCookieOptions}`);
       headers.append('Set-Cookie', `auth0_verifier=; ${clearCookieOptions}`);
       
+      // Set the session cookie
+      const cookieString = `dott_auth_session=${encryptedSession}; ` +
+        `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${COOKIE_OPTIONS.maxAge}; Domain=${COOKIE_OPTIONS.domain}`;
+      headers.append('Set-Cookie', cookieString);
+      
+      // Also set a client-readable status cookie for immediate checks
+      const statusCookie = `onboarding_status=${JSON.stringify({ needsOnboarding, tenantId })}; ` +
+        `Secure; SameSite=Lax; Path=/; Max-Age=${COOKIE_OPTIONS.maxAge}; Domain=${COOKIE_OPTIONS.domain}`;
+      headers.append('Set-Cookie', statusCookie);
+      
+      // Create backend session
+      let sessionToken = null;
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+        const backendSessionResponse = await fetch(`${apiUrl}/api/sessions/create/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${tokens.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            needs_onboarding: needsOnboarding,
+            onboarding_completed: onboardingCompleted,
+            subscription_plan: subscriptionPlan,
+            tenant_id: tenantId
+          })
+        });
+        
+        if (backendSessionResponse.ok) {
+          const backendSession = await backendSessionResponse.json();
+          sessionToken = backendSession.session_token;
+          
+          // Add backend session token to cookies
+          const sessionTokenCookie = `session_token=${sessionToken}; ` +
+            `HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${COOKIE_OPTIONS.maxAge}; Domain=${COOKIE_OPTIONS.domain}`;
+          headers.append('Set-Cookie', sessionTokenCookie);
+          
+          logger.info('[Auth0] Backend session created successfully');
+        }
+      } catch (error) {
+        logger.error('[Auth0] Backend session creation error:', error);
+      }
+      
+      logger.info('[Auth0] Session created with cookies:', {
+        needsOnboarding,
+        tenantId,
+        hasSessionToken: !!sessionToken,
+        hasCookies: true
+      });
+      
       // Redirect based on session data
       let redirectUrl = '/dashboard';
-      const needsOnboarding = sessionData.user?.needsOnboarding || sessionData.user?.needs_onboarding;
-      const tenantId = sessionData.user?.tenantId || sessionData.user?.tenant_id;
       
       if (needsOnboarding) {
         redirectUrl = '/onboarding';
