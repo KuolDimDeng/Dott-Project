@@ -99,9 +99,72 @@ export default function SignInForm() {
         rememberMe: formData.rememberMe
       });
       
-      // For email/password sign in, redirect to Auth0 with login_hint
-      const loginUrl = `/api/auth/login?login_hint=${encodeURIComponent(formData.username)}`;
-      window.location.href = loginUrl;
+      // Step 1: Authenticate with Auth0
+      const authResponse = await fetch('/api/auth/authenticate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.username,
+          password: formData.password,
+          connection: 'Username-Password-Authentication'
+        })
+      });
+
+      const authResult = await authResponse.json();
+
+      if (!authResponse.ok) {
+        // Check if we need to fallback to Universal Login
+        if (authResult.requiresUniversalLogin) {
+          logger.info('[SignInForm] Password grant not enabled, redirecting to Universal Login');
+          window.location.href = '/api/auth/login';
+          return;
+        }
+        
+        // Check for email verification error
+        if ((authResult.error === 'invalid_grant' || authResult.error === 'email_not_verified') && 
+            (authResult.message?.includes('email') || authResult.message?.includes('verify'))) {
+          throw new Error('Please verify your email address before signing in. Check your inbox for the verification email.');
+        }
+        
+        throw new Error(authResult.message || authResult.error || 'Authentication failed');
+      }
+
+      // Step 2: Create secure session
+      const sessionResponse = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          accessToken: authResult.access_token,
+          idToken: authResult.id_token,
+          user: authResult.user
+        })
+      });
+
+      if (!sessionResponse.ok) {
+        throw new Error('Failed to create session');
+      }
+
+      // Step 3: Use unified auth flow handler
+      const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
+      const finalUserData = await handlePostAuthFlow({
+        user: authResult.user,
+        accessToken: authResult.access_token,
+        idToken: authResult.id_token
+      }, 'email-password');
+
+      // Step 4: Redirect based on auth flow result
+      setTimeout(() => {
+        if (finalUserData.redirectUrl) {
+          router.push(finalUserData.redirectUrl);
+        } else if (finalUserData.needsOnboarding) {
+          router.push('/onboarding');
+        } else if (finalUserData.tenantId) {
+          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+        } else {
+          router.push('/dashboard');
+        }
+      }, 100); // Small delay to ensure cookies are set
       
     } catch (error) {
       logger.error('[SignInForm] Sign-in error:', error);
