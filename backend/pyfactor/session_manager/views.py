@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 from .authentication import SessionAuthentication
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from .services import session_service
 from .models import UserSession
 from .serializers import (
@@ -25,6 +27,7 @@ from custom_auth.auth0_authentication import Auth0JWTAuthentication
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class SessionCreateView(APIView):
     """
     Create a new session after Auth0 authentication
@@ -36,10 +39,30 @@ class SessionCreateView(APIView):
     def post(self, request):
         """Create new session"""
         try:
-            serializer = SessionCreateSerializer(data=request.data)
+            logger.info(f"[SessionCreate] Starting session creation for path: {request.path}")
+            logger.info(f"[SessionCreate] Request type: {type(request).__name__}")
+            logger.info(f"[SessionCreate] User authenticated: {hasattr(request, 'user') and request.user.is_authenticated}")
+            logger.info(f"[SessionCreate] User: {getattr(request, 'user', 'NO USER')}")
+            logger.info(f"[SessionCreate] Auth token present: {hasattr(request, 'auth') and bool(request.auth)}")
+            
+            # Handle different request types
+            if hasattr(request, 'data'):
+                data = request.data
+            else:
+                # Fallback for non-DRF requests
+                import json
+                if request.body:
+                    data = json.loads(request.body)
+                else:
+                    data = {}
+            
+            logger.info(f"[SessionCreate] Request data: {data}")
+            
+            serializer = SessionCreateSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             
             user = request.user
+            logger.info(f"[SessionCreate] User details - ID: {user.id}, Email: {user.email}, Auth0 Sub: {getattr(user, 'auth0_sub', 'NO AUTH0 SUB')}")
             
             # Get request metadata
             request_meta = {
@@ -49,8 +72,16 @@ class SessionCreateView(APIView):
             
             # Get access token from Auth0 authentication
             access_token = request.auth  # This is set by Auth0JWTAuthentication
+            logger.info(f"[SessionCreate] Access token length: {len(access_token) if access_token else 0}")
+            
+            # Log tenant information
+            user_tenant = getattr(user, 'tenant', None)
+            logger.info(f"[SessionCreate] User tenant: {user_tenant}")
+            if user_tenant:
+                logger.info(f"[SessionCreate] User tenant ID: {user_tenant.id}, Name: {user_tenant.name}")
             
             # Create session
+            logger.info(f"[SessionCreate] Calling session_service.create_session with validated data: {serializer.validated_data}")
             session = session_service.create_session(
                 user=user,
                 access_token=access_token,
@@ -95,7 +126,9 @@ class SessionCreateView(APIView):
             return response
             
         except Exception as e:
-            logger.error(f"Session creation error: {str(e)}")
+            logger.error(f"[SessionCreate] Session creation error: {str(e)}")
+            logger.error(f"[SessionCreate] Error type: {type(e).__name__}")
+            logger.error(f"[SessionCreate] Traceback:", exc_info=True)
             return Response(
                 {'error': 'Failed to create session', 'detail': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR

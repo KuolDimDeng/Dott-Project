@@ -37,8 +37,14 @@ class SessionService:
     def _get_redis_client(self):
         """Get Redis client instance"""
         try:
+            # Check if Redis is configured
+            redis_host = getattr(settings, 'REDIS_HOST', None)
+            if not redis_host:
+                print(f"[SessionService] Redis not configured, using in-memory fallback")
+                return None
+                
             return redis.StrictRedis(
-                host=getattr(settings, 'REDIS_HOST', 'localhost'),
+                host=redis_host,
                 port=getattr(settings, 'REDIS_PORT', 6379),
                 db=getattr(settings, 'REDIS_SESSION_DB', 1),
                 decode_responses=True,
@@ -46,7 +52,7 @@ class SessionService:
                 socket_timeout=5
             )
         except Exception as e:
-            print(f"Redis connection failed: {e}")
+            print(f"[SessionService] Redis connection failed: {e}")
             return None
     
     def _hash_token(self, token: str) -> str:
@@ -73,10 +79,20 @@ class SessionService:
             UserSession instance
         """
         try:
+            print(f"[SessionService] create_session called for user: {user.email}")
+            print(f"[SessionService] User ID: {user.id}")
+            print(f"[SessionService] Access token present: {bool(access_token)}")
+            print(f"[SessionService] Request meta: {request_meta}")
+            print(f"[SessionService] Additional kwargs: {kwargs}")
+            
             # Get or determine tenant
             tenant = kwargs.pop('tenant', None)
             if not tenant and hasattr(user, 'tenant'):
                 tenant = user.tenant
+            
+            print(f"[SessionService] Tenant resolved: {tenant}")
+            if tenant:
+                print(f"[SessionService] Tenant ID: {tenant.id}, Name: {tenant.name}")
             
             # Extract request metadata
             ip_address = None
@@ -97,7 +113,10 @@ class SessionService:
                     **kwargs
                 )
                 
+                print(f"[SessionService] Session created with ID: {session.session_id}")
+                
                 # Log session creation
+                print(f"[SessionService] Creating session event...")
                 SessionEvent.objects.create(
                     session=session,
                     event_type='created',
@@ -108,6 +127,7 @@ class SessionService:
                         'tenant_id': str(tenant.id) if tenant else None
                     }
                 )
+                print(f"[SessionService] Session event created")
                 
                 # Cache session
                 self._cache_session(session)
@@ -115,7 +135,10 @@ class SessionService:
                 return session
                 
         except Exception as e:
-            print(f"Session creation error: {e}")
+            print(f"[SessionService] Session creation error: {e}")
+            print(f"[SessionService] Error type: {type(e).__name__}")
+            import traceback
+            print(f"[SessionService] Traceback: {traceback.format_exc()}")
             raise
     
     def get_session(self, session_id: str) -> Optional[UserSession]:
@@ -313,6 +336,7 @@ class SessionService:
     def _cache_session(self, session: UserSession):
         """Cache session in Redis"""
         if not self.redis_client:
+            print(f"[SessionService] Redis not available, skipping cache")
             return
             
         try:

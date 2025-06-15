@@ -4,12 +4,12 @@ Session URL Configuration
 
 from django.urls import path
 from .views import (
-    SessionCreateView,
     SessionDetailView,
     SessionRefreshView,
     SessionListView,
     SessionInvalidateAllView
 )
+from .views_fixed import SessionCreateViewFixed as SessionCreateView
 
 app_name = 'sessions'
 
