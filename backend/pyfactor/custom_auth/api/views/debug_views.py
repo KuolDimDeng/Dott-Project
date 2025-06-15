@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from session_manager.models import UserSession
 from onboarding.models import OnboardingProgress
-from accounts.models import Subscription
+from users.models import Subscription
 
 logger = logging.getLogger(__name__)
 
