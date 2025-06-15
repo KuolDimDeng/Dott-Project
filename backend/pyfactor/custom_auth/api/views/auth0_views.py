@@ -372,6 +372,18 @@ class Auth0UserProfileView(APIView):
                 logger.info(f"  - setup_done: {setup_done}")
 
             # Prepare response
+            # Get the actual business name from business record if available
+            business_name = tenant.name if tenant else None
+            if onboarding_progress and onboarding_progress.business:
+                try:
+                    from users.models import Business
+                    business = Business.objects.filter(id=onboarding_progress.business_id).first()
+                    if business and business.name:
+                        business_name = business.name
+                        logger.info(f"🔥 [USER_PROFILE] Using business name from Business record: {business_name}")
+                except Exception as e:
+                    logger.warning(f"🔥 [USER_PROFILE] Failed to get business name from Business record: {str(e)}")
+            
             response_data = {
                 'user': {
                     'id': user.pk,
@@ -382,11 +394,12 @@ class Auth0UserProfileView(APIView):
                 },
                 'tenant': {
                     'id': str(tenant.id) if tenant else None,
-                    'name': tenant.name if tenant else None,
+                    'name': business_name,
                 } if tenant else None,
                 'tenantId': str(tenant.id) if tenant else None,  # Top-level tenant ID for easy access
                 'tenant_id': str(tenant.id) if tenant else None,  # Include both formats
-                'businessName': tenant.name if tenant else None,  # Add businessName for frontend compatibility
+                'businessName': business_name,  # Use the actual business name
+                'business_name': business_name,  # Include both formats
                 'onboarding_status': onboarding_progress.onboarding_status if onboarding_progress else 'business_info',
                 'setup_done': setup_done,
                 # Add these fields at top level for frontend compatibility

@@ -135,17 +135,20 @@ export async function POST(request) {
     // Also update the old cookie name for backward compatibility
     response.cookies.set('appSession', encryptedSession, cookieOptions);
     
-    // Set a non-httpOnly cookie for client-side checking
-    const statusCookie = JSON.stringify({
-      completed: onboardingCompleted,
-      tenantId: tenantId || updatedSession.user?.tenantId,
-      needsOnboarding: updatedSession.user?.needsOnboarding,
-      timestamp: new Date().toISOString()
-    });
-    response.cookies.set('onboarding_status', statusCookie, {
-      ...cookieOptions,
-      httpOnly: false // Allow client-side access
-    });
+    // Only set a non-httpOnly cookie for emergency recovery scenarios
+    // This is a temporary measure and should not be relied upon for security
+    if (onboardingCompleted && tenantId) {
+      const statusCookie = JSON.stringify({
+        completed: true,
+        tenantId: tenantId,
+        timestamp: new Date().toISOString()
+      });
+      response.cookies.set('onboarding_status', statusCookie, {
+        ...cookieOptions,
+        httpOnly: false, // Allow client-side access
+        maxAge: 60 * 60 // Only valid for 1 hour
+      });
+    }
     
     // Add cache control headers to prevent caching
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');

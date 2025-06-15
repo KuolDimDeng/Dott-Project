@@ -147,14 +147,35 @@ export default function TenantDashboard() {
             // Special case: if coming from payment completion, trust that onboarding is done
             const paymentCompleted = searchParams.get('payment_completed') === 'true';
             
-            // Check if we have an onboarding_status cookie that says we're done
+            // Check if we have onboarding completion indicators
+            // Check the secure session cookie first (more reliable)
+            let sessionOnboardingCompleted = false;
+            try {
+              // Try to get completion status from the encrypted session
+              const sessionResponse = await fetch('/api/auth/sync-session', { 
+                method: 'GET',
+                credentials: 'include'
+              });
+              if (sessionResponse.ok) {
+                const sessionData = await sessionResponse.json();
+                sessionOnboardingCompleted = sessionData.onboardingCompleted === true;
+                logger.info('[TenantDashboard] Onboarding status from secure session:', {
+                  onboardingCompleted: sessionData.onboardingCompleted,
+                  needsOnboarding: sessionData.needsOnboarding
+                });
+              }
+            } catch (e) {
+              logger.warn('[TenantDashboard] Failed to check secure session status');
+            }
+            
+            // Fallback: Check the client-side cookie (less secure but faster)
             const onboardingStatusCookie = Cookies.get('onboarding_status');
             let cookieOnboardingCompleted = false;
             if (onboardingStatusCookie) {
               try {
                 const statusData = JSON.parse(onboardingStatusCookie);
                 cookieOnboardingCompleted = statusData.completed === true;
-                logger.info('[TenantDashboard] Onboarding status from cookie:', statusData);
+                logger.info('[TenantDashboard] Onboarding status from client cookie:', statusData);
               } catch (e) {
                 logger.warn('[TenantDashboard] Failed to parse onboarding_status cookie');
               }
@@ -168,8 +189,8 @@ export default function TenantDashboard() {
               searchParams: Object.fromEntries(searchParams.entries())
             });
             
-            // Trust cookie or payment completion over backend status
-            const shouldSkipOnboarding = cookieOnboardingCompleted || paymentCompleted || profileData.onboardingCompleted;
+            // Trust secure session first, then other indicators
+            const shouldSkipOnboarding = sessionOnboardingCompleted || profileData.onboardingCompleted || paymentCompleted || cookieOnboardingCompleted;
             
             if (profileData.needsOnboarding && !shouldSkipOnboarding) {
               logger.info('[TenantDashboard] User needs onboarding, redirecting');
@@ -218,6 +239,21 @@ export default function TenantDashboard() {
             }
             
             setUserAttributes(profileData);
+            
+            // SECURITY: Validate that the user actually has access to this tenant
+            if (userTenantId && userTenantId !== tenantId) {
+              logger.error('[TenantDashboard] Security: User trying to access unauthorized tenant');
+              // Already handled redirect above
+              return;
+            }
+            
+            // SECURITY: Ensure user has completed onboarding and has a valid tenant
+            if (!userTenantId && !emergencyAccess) {
+              logger.error('[TenantDashboard] Security: No valid tenant ID for user');
+              setError('No valid tenant found. Please complete onboarding.');
+              router.push('/onboarding');
+              return;
+            }
           }
           
           // If the fetch succeeds, we're authenticated

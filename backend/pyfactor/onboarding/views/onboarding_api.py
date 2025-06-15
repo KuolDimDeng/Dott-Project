@@ -383,6 +383,18 @@ class CompleteOnboardingAPI(APIView):
             elif progress.tenant_id:
                 tenant_id = str(progress.tenant_id)
             
+            # Update tenant name with the actual business name if available
+            if tenant_id and progress.business:
+                try:
+                    from custom_auth.models import Tenant
+                    tenant = Tenant.objects.filter(id=tenant_id).first()
+                    if tenant and progress.business.name:
+                        logger.info(f"[CompleteOnboarding] Updating tenant name from '{tenant.name}' to '{progress.business.name}'")
+                        tenant.name = progress.business.name
+                        tenant.save()
+                except Exception as e:
+                    logger.error(f"[CompleteOnboarding] Failed to update tenant name: {str(e)}")
+            
             return Response({
                 'status': 'success',
                 'message': 'Onboarding completed successfully',
