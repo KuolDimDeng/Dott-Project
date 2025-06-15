@@ -1,5 +1,5 @@
 # PyFactor Django API Requirements - Production Build
-# BUILD CACHE BUSTER: 2025-06-04-16:58:00
+# BUILD CACHE BUSTER: 2025-06-15-deployment
 # This timestamp forces Docker layer rebuild to ensure fresh dependency installation
 
 # Core Django - Updated to 4.2.16 to resolve django-allauth dependency conflict
