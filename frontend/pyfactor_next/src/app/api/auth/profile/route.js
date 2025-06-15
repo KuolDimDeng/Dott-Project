@@ -166,6 +166,20 @@ export async function GET(request) {
       businessInfoCompleted: profileData.businessInfoCompleted
     });
     
+    // CRITICAL: Check if we have a recent onboarding completion indicator
+    const onboardingCompletedCookie = cookieStore.get('onboardingCompleted');
+    const userTenantIdCookie = cookieStore.get('user_tenant_id');
+    if (onboardingCompletedCookie && onboardingCompletedCookie.value === 'true') {
+      console.log('🚨 [PROFILE API] Found onboardingCompleted cookie, overriding initial session data');
+      profileData.needsOnboarding = false;
+      profileData.onboardingCompleted = true;
+      profileData.currentStep = 'complete';
+      if (userTenantIdCookie) {
+        profileData.tenantId = userTenantIdCookie.value;
+        profileData.tenant_id = userTenantIdCookie.value;
+      }
+    }
+    
     // Try to fetch additional data from Django backend (if available)
     let backendUser = null;
     if (accessToken) {

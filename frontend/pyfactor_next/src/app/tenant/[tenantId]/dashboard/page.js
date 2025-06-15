@@ -122,7 +122,13 @@ export default function TenantDashboard() {
           logger.debug('[TenantDashboard] Auth0 user authenticated:', authData.user?.email);
           
           // Get user profile to check tenant and onboarding status
-          const profileResponse = await fetch('/api/auth/profile');
+          const profileResponse = await fetch('/api/auth/profile', {
+            cache: 'no-store',
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
           
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();

@@ -331,6 +331,8 @@ export async function POST(request) {
       }, { status: 500 });
     }
     
+    console.log('[CompleteOnboarding] Session update successful, cookie will be set in response');
+    
     // 7. Prepare success response
     const responseData = {
       success: true,
