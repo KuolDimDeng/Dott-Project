@@ -1,5 +1,5 @@
-from django.urls import path
-from .views.debug_views import DebugSessionStateView, include
+from django.urls import path, include
+from .views.debug_views import DebugSessionStateView
 from rest_framework.routers import DefaultRouter
 from .views import auth_views, tenant_views
 from .views.auth0_views import (
