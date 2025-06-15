@@ -229,7 +229,7 @@ class Auth0UserCreateView(APIView):
             
             # Check for active Stripe subscription
             try:
-                from accounts.models import Subscription
+                from users.models import Subscription
                 active_sub = Subscription.objects.filter(
                     user=user,
                     status__in=['active', 'trialing']
@@ -240,7 +240,7 @@ class Auth0UserCreateView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
             
-                        response_data = {
+            response_data = {
                 'success': True,
                 'tenantId': str(tenant.id),
                 'currentStep': current_step,
@@ -412,7 +412,7 @@ class Auth0UserProfileView(APIView):
             
             # Check for active Stripe subscription
             try:
-                from accounts.models import Subscription
+                from users.models import Subscription
                 active_sub = Subscription.objects.filter(
                     user=user,
                     status__in=['active', 'trialing']
@@ -423,7 +423,7 @@ class Auth0UserProfileView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
             
-                        response_data = {
+            response_data = {
                 'user': {
                     'id': user.pk,
                     'email': user.email,
@@ -872,7 +872,7 @@ class Auth0OnboardingCompleteView(APIView):
             
             # Check for active Stripe subscription
             try:
-                from accounts.models import Subscription
+                from users.models import Subscription
                 active_sub = Subscription.objects.filter(
                     user=user,
                     status__in=['active', 'trialing']
@@ -883,7 +883,7 @@ class Auth0OnboardingCompleteView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
             
-                        response_data = {
+            response_data = {
                 'success': True,
                 'message': 'Onboarding completed successfully',
                 'data': {
