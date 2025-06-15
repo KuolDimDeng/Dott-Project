@@ -147,14 +147,31 @@ export default function TenantDashboard() {
             // Special case: if coming from payment completion, trust that onboarding is done
             const paymentCompleted = searchParams.get('payment_completed') === 'true';
             
+            // Check if we have an onboarding_status cookie that says we're done
+            const onboardingStatusCookie = Cookies.get('onboarding_status');
+            let cookieOnboardingCompleted = false;
+            if (onboardingStatusCookie) {
+              try {
+                const statusData = JSON.parse(onboardingStatusCookie);
+                cookieOnboardingCompleted = statusData.completed === true;
+                logger.info('[TenantDashboard] Onboarding status from cookie:', statusData);
+              } catch (e) {
+                logger.warn('[TenantDashboard] Failed to parse onboarding_status cookie');
+              }
+            }
+            
             logger.info('[TenantDashboard] Onboarding check:', {
               needsOnboarding: profileData.needsOnboarding,
               onboardingCompleted: profileData.onboardingCompleted,
+              cookieOnboardingCompleted: cookieOnboardingCompleted,
               paymentCompleted: paymentCompleted,
               searchParams: Object.fromEntries(searchParams.entries())
             });
             
-            if (profileData.needsOnboarding && !profileData.onboardingCompleted && !paymentCompleted) {
+            // Trust cookie or payment completion over backend status
+            const shouldSkipOnboarding = cookieOnboardingCompleted || paymentCompleted || profileData.onboardingCompleted;
+            
+            if (profileData.needsOnboarding && !shouldSkipOnboarding) {
               logger.info('[TenantDashboard] User needs onboarding, redirecting');
               router.push('/onboarding');
               return;
@@ -164,19 +181,21 @@ export default function TenantDashboard() {
             if (paymentCompleted) {
               logger.info('[TenantDashboard] Payment completed, forcing session sync');
               try {
-                const forceSyncResponse = await fetch('/api/auth/force-sync', {
+                // Use sync-session endpoint (force-sync doesn't exist)
+                const syncResponse = await fetch('/api/auth/sync-session', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   credentials: 'include',
                   body: JSON.stringify({
                     tenantId: tenantId,
                     needsOnboarding: false,
-                    onboardingCompleted: true
+                    onboardingCompleted: true,
+                    subscriptionPlan: profileData.subscriptionPlan || 'free'
                   })
                 });
                 
-                if (forceSyncResponse.ok) {
-                  logger.info('[TenantDashboard] Session force synced after payment');
+                if (syncResponse.ok) {
+                  logger.info('[TenantDashboard] Session synced after payment');
                   
                   // Remove payment_completed parameter to prevent infinite loop
                   const newUrl = new URL(window.location.href);
@@ -187,28 +206,11 @@ export default function TenantDashboard() {
                   
                   logger.info('[TenantDashboard] Removed payment_completed parameter from URL');
                   
-                  // Continue with normal flow instead of reloading
-                } else {
-                  // Fallback to regular sync
-                  const syncResponse = await fetch('/api/auth/sync-session', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                      tenantId: tenantId,
-                      needsOnboarding: false,
-                      onboardingCompleted: true
-                    })
-                  });
+                  // Override the profile data to skip onboarding check
+                  profileData.needsOnboarding = false;
+                  profileData.onboardingCompleted = true;
                   
-                  if (syncResponse.ok) {
-                    logger.info('[TenantDashboard] Session synced after payment');
-                    
-                    // Remove payment_completed parameter here too
-                    const newUrl = new URL(window.location.href);
-                    newUrl.searchParams.delete('payment_completed');
-                    window.history.replaceState({}, '', newUrl.toString());
-                  }
+                  // Continue with normal flow instead of reloading
                 }
               } catch (syncError) {
                 logger.error('[TenantDashboard] Error syncing session:', syncError);

@@ -385,9 +385,19 @@ export async function POST(request) {
     });
     
     // Update backend user record with onboarding completion if we have access token
-    if (sessionData.accessToken) {
+    if (sessionData.accessToken && tenantId) {
       try {
-        const backendUpdateResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/update-onboarding-status/`, {
+        console.log('[CompleteOnboarding] Updating backend user onboarding status...');
+        console.log('[CompleteOnboarding] Backend URL:', `${apiBaseUrl}/api/users/update-onboarding-status/`);
+        console.log('[CompleteOnboarding] Payload:', {
+          user_id: user.sub,
+          tenant_id: tenantId,
+          onboarding_completed: true,
+          needs_onboarding: false,
+          current_step: 'completed'
+        });
+        
+        const backendUpdateResponse = await fetch(`${apiBaseUrl}/api/users/update-onboarding-status/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -402,12 +412,23 @@ export async function POST(request) {
           })
         });
         
+        console.log('[CompleteOnboarding] Backend update response status:', backendUpdateResponse.status);
+        
         if (backendUpdateResponse.ok) {
-          console.log('[CompleteOnboarding] Successfully updated backend user onboarding status');
+          const updateResult = await backendUpdateResponse.json();
+          console.log('[CompleteOnboarding] Successfully updated backend user onboarding status:', updateResult);
+        } else {
+          const errorText = await backendUpdateResponse.text();
+          console.error('[CompleteOnboarding] Backend update failed:', {
+            status: backendUpdateResponse.status,
+            error: errorText
+          });
         }
       } catch (error) {
         console.error('[CompleteOnboarding] Failed to update backend user status:', error);
       }
+    } else {
+      console.warn('[CompleteOnboarding] Skipping backend update - no access token or tenant ID');
     }
     
     // Remove internal API calls that cause SSL errors
