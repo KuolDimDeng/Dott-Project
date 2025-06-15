@@ -285,6 +285,7 @@ export async function POST(request) {
     
     // 4. Get existing tenant ID from backend FIRST
     let tenantId = null;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
     // Always try to get tenant ID from backend first
     if (sessionData.accessToken) {
