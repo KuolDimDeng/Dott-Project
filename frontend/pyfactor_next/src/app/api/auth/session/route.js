@@ -260,7 +260,38 @@ export async function POST(request) {
       console.error('[Auth Session POST] Profile check error:', error);
     }
     
-    // Create secure session data
+    // Create backend session first
+    let sessionToken = null;
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+      console.log('[Auth Session POST] Creating backend session at:', `${apiUrl}/api/sessions/create/`);
+      
+      const backendSessionResponse = await fetch(`${apiUrl}/api/sessions/create/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          needs_onboarding: needsOnboarding,
+          onboarding_completed: onboardingCompleted,
+          subscription_plan: subscriptionPlan,
+          tenant_id: tenantId
+        })
+      });
+      
+      if (backendSessionResponse.ok) {
+        const backendSession = await backendSessionResponse.json();
+        sessionToken = backendSession.session_token;
+        console.log('[Auth Session POST] Backend session created successfully');
+      } else {
+        console.error('[Auth Session POST] Backend session creation failed:', backendSessionResponse.status);
+      }
+    } catch (error) {
+      console.error('[Auth Session POST] Backend session creation error:', error);
+    }
+    
+    // Create secure session data (for backward compatibility)
     const sessionData = {
       user: {
         ...user,
@@ -305,6 +336,15 @@ export async function POST(request) {
       ...COOKIE_OPTIONS,
       maxAge: 24 * 60 * 60 // 24 hours
     });
+    
+    // Also set the backend session token if available
+    if (sessionToken) {
+      response.cookies.set('session_token', sessionToken, {
+        ...COOKIE_OPTIONS,
+        maxAge: 24 * 60 * 60 // 24 hours
+      });
+      console.log('[Auth Session POST] Backend session token set');
+    }
     
     console.log('[Auth Session POST] Session created successfully');
     
