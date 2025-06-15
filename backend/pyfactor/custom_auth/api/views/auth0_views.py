@@ -223,9 +223,9 @@ class Auth0UserCreateView(APIView):
                         
             # Get user's subscription plan
             user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
+            if onboarding_progress and onboarding_progress.subscription_plan:
+                user_subscription = onboarding_progress.subscription_plan
+                logger.info(f"🔥 [USER_PROFILE] User subscription plan: {user_subscription}")
             
             # Check for active Stripe subscription
             try:
@@ -236,9 +236,9 @@ class Auth0UserCreateView(APIView):
                 ).first()
                 if active_sub:
                     user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
+                    logger.info(f"🔥 [USER_PROFILE] Active Stripe subscription: {user_subscription}")
             except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
+                logger.warning(f"🔥 [USER_PROFILE] Error checking Stripe: {e}")
             
             response_data = {
                 'success': True,
@@ -406,9 +406,9 @@ class Auth0UserProfileView(APIView):
             
             # Get user's subscription plan
             user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
+            if onboarding_progress and onboarding_progress.subscription_plan:
+                user_subscription = onboarding_progress.subscription_plan
+                logger.info(f"🔥 [USER_PROFILE] User subscription plan: {user_subscription}")
             
             # Check for active Stripe subscription
             try:
@@ -419,9 +419,9 @@ class Auth0UserProfileView(APIView):
                 ).first()
                 if active_sub:
                     user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
+                    logger.info(f"🔥 [USER_PROFILE] Active Stripe subscription: {user_subscription}")
             except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
+                logger.warning(f"🔥 [USER_PROFILE] Error checking Stripe: {e}")
             
             response_data = {
                 'user': {
@@ -866,9 +866,9 @@ class Auth0OnboardingCompleteView(APIView):
             # Prepare response with tenant information
             # Get user's subscription plan
             user_subscription = 'free'
-            if progress.subscription_plan:
-                user_subscription = progress.subscription_plan
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User subscription plan: {user_subscription}")
+            if onboarding_progress and onboarding_progress.subscription_plan:
+                user_subscription = onboarding_progress.subscription_plan
+                logger.info(f"🔥 [USER_PROFILE] User subscription plan: {user_subscription}")
             
             # Check for active Stripe subscription
             try:
@@ -879,9 +879,9 @@ class Auth0OnboardingCompleteView(APIView):
                 ).first()
                 if active_sub:
                     user_subscription = active_sub.plan_name
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] Active Stripe subscription: {user_subscription}")
+                    logger.info(f"🔥 [USER_PROFILE] Active Stripe subscription: {user_subscription}")
             except Exception as e:
-                logger.warning(f"🔥 [AUTH0_CREATE_USER] Error checking Stripe: {e}")
+                logger.warning(f"🔥 [USER_PROFILE] Error checking Stripe: {e}")
             
             response_data = {
                 'success': True,
