@@ -295,7 +295,12 @@ export async function POST(request) {
       backendResult = await createTenantInBackend(user, onboardingData, null, sessionData.accessToken);
       if (backendResult.success && backendResult.data) {
         // Get the tenant ID assigned by the backend
-        tenantId = backendResult.data.tenant_id || backendResult.data.tenantId;
+        // The backend response may have nested data
+        if (backendResult.data.data) {
+          tenantId = backendResult.data.data.tenant_id || backendResult.data.data.tenantId;
+        } else {
+          tenantId = backendResult.data.tenant_id || backendResult.data.tenantId;
+        }
         console.log('[CompleteOnboarding] Backend assigned tenant ID:', tenantId);
       } else {
         console.error('[CompleteOnboarding] Backend onboarding failed:', backendResult.error);
