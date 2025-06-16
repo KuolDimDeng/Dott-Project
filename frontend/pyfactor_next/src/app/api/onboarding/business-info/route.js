@@ -42,11 +42,19 @@ async function validateAuthentication(request) {
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
     
+    console.log('🚨 [BUSINESS-INFO API] Cookie debug:', {
+      hasDottAuthSession: !!dottSessionCookie,
+      hasAppSession: !!sessionCookie,
+      dottAuthSessionSize: dottSessionCookie?.value?.length || 0,
+      allCookieNames: cookieStore.getAll().map(c => c.name)
+    });
+    
     // Check dott_auth_session first (v2 session)
     if (dottSessionCookie) {
       try {
         const { decrypt } = await import('@/utils/sessionEncryption');
-        const sessionData = await decrypt(dottSessionCookie.value);
+        const decrypted = decrypt(dottSessionCookie.value);
+        const sessionData = JSON.parse(decrypted);
         
         if (sessionData && sessionData.user) {
           console.log('[api/onboarding/business-info] Dott session authenticated:', sessionData.user.email);

@@ -11,9 +11,8 @@ const COOKIE_OPTIONS = {
   sameSite: 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60, // 7 days
-  // Remove domain to let browser handle it automatically
-  // This ensures cookies work across subdomains without explicit configuration
-  // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+  // Set domain explicitly for production to ensure cookie is sent across all API routes
+  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
 };
 
 /**
@@ -367,11 +366,16 @@ export async function POST(request) {
       sameSite: cookieOptions.sameSite,
       httpOnly: cookieOptions.httpOnly,
       path: cookieOptions.path,
-      sessionSize: encryptedSession.length
+      sessionSize: encryptedSession.length,
+      nodeEnv: process.env.NODE_ENV
     });
     
     // Set the main session cookie
-    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
+    response.cookies.set('dott_auth_session', encryptedSession, {
+      ...cookieOptions,
+      // Try without domain first to ensure it works
+      domain: undefined
+    });
     
     console.log('[Auth Session POST] Session cookie set:', {
       name: 'dott_auth_session',
@@ -381,7 +385,10 @@ export async function POST(request) {
     
     // Also set the backend session token if available
     if (sessionToken) {
-      response.cookies.set('session_token', sessionToken, cookieOptions);
+      response.cookies.set('session_token', sessionToken, {
+        ...cookieOptions,
+        domain: undefined
+      });
       console.log('[Auth Session POST] Backend session token set');
     }
     
@@ -394,7 +401,8 @@ export async function POST(request) {
     };
     response.cookies.set('onboarding_status', JSON.stringify(statusCookie), {
       ...cookieOptions,
-      httpOnly: false // Make this readable by client-side JavaScript
+      httpOnly: false, // Make this readable by client-side JavaScript
+      domain: undefined
     });
     
     console.log('[Auth Session POST] Session created successfully with status cookie');
@@ -421,13 +429,15 @@ export async function DELETE(request) {
     // Clear the session cookie
     response.cookies.set('dott_auth_session', '', {
       ...COOKIE_OPTIONS,
-      maxAge: 0
+      maxAge: 0,
+      domain: undefined
     });
     
     // Also clear any legacy cookies
     response.cookies.set('appSession', '', {
       ...COOKIE_OPTIONS,
-      maxAge: 0
+      maxAge: 0,
+      domain: undefined
     });
     
     return response;
