@@ -482,3 +482,17 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Fixed 'onboarding_progress' is not defined error
   - Changed incorrect variable references from 'progress' to 'onboarding_progress' in Auth0UserProfileView
   - Fixed subscription plan retrieval in user profile endpoint
+
+### Version0010_add_payment_verification_endpoints.py
+- **Purpose**: Add payment verification to prevent dashboard access without payment for paid tiers
+- **Created**: 2025-06-16
+- **Changes**:
+  - Created payment_pending_view to mark payment as pending for paid tiers
+  - Created complete_payment_view to complete onboarding after payment verification
+  - Updated CompleteOnboardingView to check payment status before completing
+  - Added new endpoints: /api/onboarding/payment-pending/ and /api/onboarding/complete-payment/
+  - Modified complete-all route to skip completion for paid tiers until payment
+  - Updated complete-payment route to properly mark onboarding complete after payment
+  - Updated TenantLayout to redirect to payment page for pending payments
+  - Updated payment form to call complete-payment endpoint after successful payment
+  - Prevents users from bypassing payment by clicking back button

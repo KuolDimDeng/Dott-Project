@@ -217,6 +217,37 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       
+      // Call complete-payment endpoint to mark onboarding as complete
+      try {
+        logger.info('[PaymentForm] Calling complete-payment endpoint');
+        const completePaymentResponse = await fetch('/api/onboarding/complete-payment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            subscriptionId: result.subscriptionId,
+            plan: plan.toLowerCase(),
+            billingCycle: billingCycle,
+            paymentIntentId: result.paymentIntentId,
+            tenantId: tenantId
+          }),
+        });
+        
+        if (completePaymentResponse.ok) {
+          const completeResult = await completePaymentResponse.json();
+          logger.info('[PaymentForm] Payment completion successful:', completeResult);
+          if (!tenantId && completeResult.tenant_id) {
+            setTenantId(completeResult.tenant_id);
+          }
+        } else {
+          logger.error('[PaymentForm] Payment completion failed:', completePaymentResponse.status);
+        }
+      } catch (e) {
+        logger.error('[PaymentForm] Error completing payment:', e);
+      }
+      
       // First, let's check the current session state
       try {
         const checkSessionResponse = await fetch('/api/auth/session', {
@@ -224,14 +255,14 @@ function PaymentForm({ plan, billingCycle }) {
         });
         if (checkSessionResponse.ok) {
           const currentSession = await checkSessionResponse.json();
-          logger.info('[PaymentForm] Current session BEFORE sync:', {
+          logger.info('[PaymentForm] Current session AFTER complete-payment:', {
             needsOnboarding: currentSession.user?.needsOnboarding,
             onboardingCompleted: currentSession.user?.onboardingCompleted,
             tenantId: currentSession.user?.tenantId
           });
         }
       } catch (e) {
-        logger.error('[PaymentForm] Error checking session before sync:', e);
+        logger.error('[PaymentForm] Error checking session after complete-payment:', e);
       }
       
       // Update backend session to mark onboarding as complete

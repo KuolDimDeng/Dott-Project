@@ -1,75 +1,235 @@
 import { NextResponse } from 'next/server';
-import { logger } from '@/utils/logger';
-import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
+import { decrypt, encrypt } from '@/utils/sessionEncryption';
+
+/**
+ * Complete onboarding after successful payment verification
+ * This endpoint is called after a successful Stripe payment for paid tiers
+ */
+
+async function getSession() {
+  try {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    if (!sessionCookie) {
+      return null;
+    }
+    
+    let sessionData;
+    try {
+      const decrypted = decrypt(sessionCookie.value);
+      sessionData = JSON.parse(decrypted);
+    } catch (decryptError) {
+      // Fallback to old base64 format
+      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    }
+    
+    return sessionData;
+  } catch (error) {
+    console.error('[CompletePayment] Session retrieval error:', error);
+    return null;
+  }
+}
 
 export async function POST(request) {
+  console.log('[CompletePayment] Starting payment completion process');
+  
   try {
-    const { subscriptionId, plan, billingCycle, paymentIntentId } = await request.json();
-
-    // Get the auth token from cookies
-    const cookieStore = cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    // 1. Get session
+    const sessionData = await getSession();
     
-    if (!token) {
-      return NextResponse.json(
-        { error: 'User not authenticated' },
-        { status: 401 }
-      );
+    if (!sessionData || !sessionData.user) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required'
+      }, { status: 401 });
     }
-
-    // Decode the token to get user info
-    let user;
-    try {
-      const decoded = jwt.decode(token);
-      user = decoded;
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
+    
+    const user = sessionData.user;
+    console.log('[CompletePayment] Processing for user:', user.email);
+    
+    // 2. Parse request data
+    const body = await request.json();
+    const { subscriptionId, plan, billingCycle, paymentIntentId, tenantId } = body;
+    
+    if (!paymentIntentId && !subscriptionId) {
+      return NextResponse.json({
+        success: false,
+        error: 'Payment verification required'
+      }, { status: 400 });
     }
-
-    // Update the backend with subscription details
-    const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/onboarding/update-subscription/`, {
+    
+    // 3. Call backend to complete onboarding with payment verification
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    
+    // First update subscription details
+    const updateResponse = await fetch(`${apiBaseUrl}/api/onboarding/update-subscription/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${sessionData.accessToken}`,
+        'X-User-Email': user.email,
+        'X-User-Sub': user.sub
       },
       body: JSON.stringify({
         user_id: user.sub,
-        subscription_plan: plan,
-        billing_cycle: billingCycle,
+        subscription_plan: plan || user.subscriptionPlan,
+        billing_cycle: billingCycle || 'monthly',
         stripe_subscription_id: subscriptionId,
         stripe_payment_intent_id: paymentIntentId,
         payment_completed: true,
         subscription_status: 'active',
-        subscription_start_date: new Date().toISOString(),
-      }),
+        subscription_start_date: new Date().toISOString()
+      })
     });
-
-    if (!backendResponse.ok) {
-      logger.error('Error updating subscription data in backend');
-      throw new Error('Failed to update subscription data');
+    
+    if (!updateResponse.ok) {
+      const errorText = await updateResponse.text();
+      console.error('[CompletePayment] Subscription update failed:', errorText);
     }
-
-    logger.info('Payment completed and onboarding updated:', {
-      userId: user.id,
-      subscriptionId,
-      plan,
-      billingCycle,
+    
+    // Now complete the onboarding
+    const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${sessionData.accessToken}`,
+        'X-User-Email': user.email,
+        'X-User-Sub': user.sub
+      },
+      body: JSON.stringify({
+        selected_plan: plan || user.subscriptionPlan,
+        billing_cycle: billingCycle || 'monthly',
+        payment_verified: true,
+        payment_intent_id: paymentIntentId,
+        subscription_id: subscriptionId
+      })
     });
-
-    return NextResponse.json({
+    
+    let finalTenantId = tenantId || user.tenantId || user.tenant_id;
+    
+    if (completeResponse.ok) {
+      const completeResult = await completeResponse.json();
+      console.log('[CompletePayment] Backend completion successful:', completeResult);
+      if (!finalTenantId && completeResult.data) {
+        finalTenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+      }
+    } else {
+      const errorText = await completeResponse.text();
+      console.error('[CompletePayment] Backend completion failed:', errorText);
+      // Continue anyway to update session
+    }
+    
+    // 4. Update session to mark onboarding as complete
+    const updatedSession = {
+      ...sessionData,
+      user: {
+        ...sessionData.user,
+        // Mark onboarding as complete
+        needsOnboarding: false,
+        onboardingCompleted: true,
+        onboarding_completed: true,
+        needs_onboarding: false,
+        currentStep: 'completed',
+        current_onboarding_step: 'completed',
+        onboardingStatus: 'completed',
+        isOnboarded: true,
+        setupComplete: true,
+        setup_complete: true,
+        
+        // Clear payment pending flags
+        paymentPending: false,
+        payment_pending: false,
+        needsPayment: false,
+        needs_payment: false,
+        paymentCompleted: true,
+        payment_completed: true,
+        
+        // Update subscription info
+        subscriptionPlan: plan || user.subscriptionPlan,
+        subscription_plan: plan || user.subscription_plan,
+        subscriptionId: subscriptionId,
+        subscription_id: subscriptionId,
+        
+        // Ensure tenant ID is set
+        tenantId: finalTenantId,
+        tenant_id: finalTenantId,
+        
+        // Timestamps
+        paymentCompletedAt: new Date().toISOString(),
+        onboardingCompletedAt: new Date().toISOString()
+      }
+    };
+    
+    // 5. Encrypt and set updated session
+    const encryptedSession = encrypt(JSON.stringify(updatedSession));
+    
+    const response = NextResponse.json({
       success: true,
-      message: 'Payment completed successfully',
+      message: 'Payment verified and onboarding completed',
+      redirect_url: `/tenant/${finalTenantId}/dashboard`,
+      tenant_id: finalTenantId,
+      user: {
+        email: user.email,
+        onboardingCompleted: true,
+        needsOnboarding: false,
+        tenantId: finalTenantId
+      }
     });
+    
+    // Set updated session cookie
+    const cookieOptions = {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+    };
+    
+    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
+    response.cookies.set('appSession', encryptedSession, cookieOptions);
+    
+    // Set completion markers
+    response.cookies.set('payment_completed', 'true', {
+      path: '/',
+      maxAge: 60 * 5, // 5 minutes
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    
+    response.cookies.set('onboarding_just_completed', 'true', {
+      path: '/',
+      maxAge: 60 * 5, // 5 minutes
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production'
+    });
+    
+    console.log('[CompletePayment] ✅ Payment verification and onboarding completed successfully');
+    
+    return response;
+    
   } catch (error) {
-    logger.error('Error completing payment:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to complete payment' },
-      { status: 500 }
-    );
+    console.error('[CompletePayment] Unexpected error:', error);
+    return NextResponse.json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message
+    }, { status: 500 });
   }
+}
+
+// Handle OPTIONS requests for CORS
+export async function OPTIONS() {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

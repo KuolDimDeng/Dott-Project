@@ -56,10 +56,13 @@ export default async function TenantLayout({ children, params }) {
     // Check onboarding status from profile data if available
     const needsOnboarding = session.needsOnboarding || session.user?.needsOnboarding || session.user?.needs_onboarding;
     const onboardingCompleted = session.onboardingCompleted || session.user?.onboardingCompleted || session.user?.onboarding_completed;
+    const paymentPending = session.user?.paymentPending || session.user?.payment_pending || session.user?.needsPayment || session.user?.needs_payment;
+    const currentStep = session.user?.currentStep || session.user?.current_onboarding_step;
     
     // Check for onboarding completion indicators in cookies
     const onboardingJustCompletedCookie = cookieStore.get('onboarding_just_completed');
     const onboardingStatusCookie = cookieStore.get('onboarding_status');
+    const paymentCompletedCookie = cookieStore.get('payment_completed');
     
     let skipOnboardingRedirect = false;
     
@@ -69,17 +72,29 @@ export default async function TenantLayout({ children, params }) {
       skipOnboardingRedirect = true;
     }
     
+    // Check if payment was just completed (temporary cookie)
+    if (paymentCompletedCookie?.value === 'true') {
+      console.log('[TenantLayout] Found payment_completed cookie, skipping redirect');
+      skipOnboardingRedirect = true;
+    }
+    
     // Check onboarding status cookie
     if (onboardingStatusCookie) {
       try {
         const statusData = JSON.parse(onboardingStatusCookie.value);
-        if (statusData.completed === true) {
+        if (statusData.completed === true || (statusData.onboardingCompleted === true && !statusData.needsPayment)) {
           console.log('[TenantLayout] Found completed onboarding status cookie, skipping redirect');
           skipOnboardingRedirect = true;
         }
       } catch (e) {
         console.error('[TenantLayout] Failed to parse onboarding_status cookie:', e);
       }
+    }
+    
+    // Check if user has pending payment for paid tier
+    if (paymentPending && currentStep === 'payment' && !skipOnboardingRedirect) {
+      console.log('[TenantLayout] User has pending payment, redirecting to payment page');
+      redirect('/onboarding/payment');
     }
     
     // Only redirect to onboarding if truly needed and no completion indicators found

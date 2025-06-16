@@ -1514,6 +1514,22 @@ class CompleteOnboardingView(BaseOnboardingView):
                     "redirect": validation_result['redirectTo']
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Check if payment is required and completed for paid tiers
+            selected_plan = request.data.get('selected_plan', 'free')
+            payment_verified = request.data.get('payment_verified', False)
+            
+            # For paid tiers, only complete if payment is verified
+            if selected_plan != 'free' and not payment_verified:
+                logger.info(f"[CompleteOnboarding] Payment required for {selected_plan} plan")
+                return Response({
+                    'status': 'payment_required',
+                    'message': 'Payment verification required for paid tier',
+                    'data': {
+                        'selected_plan': selected_plan,
+                        'current_step': 'payment'
+                    }
+                }, status=status.HTTP_402_PAYMENT_REQUIRED)
+            
             # Complete onboarding
             await self.complete_onboarding(onboarding)
             

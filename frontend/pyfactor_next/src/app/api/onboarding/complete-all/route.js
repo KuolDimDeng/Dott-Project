@@ -116,17 +116,23 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       ...sessionData,
       user: {
         ...sessionData.user,
-        // Mark onboarding as complete with all possible variations
-        needsOnboarding: false,
-        onboardingCompleted: true,
-        onboarding_completed: true,
-        needs_onboarding: false,
-        currentStep: 'completed',
-        current_onboarding_step: 'completed',
-        onboardingStatus: 'completed',
-        isOnboarded: true,
-        setupComplete: true,
-        setup_complete: true,
+        // Mark onboarding status based on whether payment is pending
+        needsOnboarding: onboardingData.paymentPending ? true : false,
+        onboardingCompleted: onboardingData.paymentPending ? false : true,
+        onboarding_completed: onboardingData.paymentPending ? false : true,
+        needs_onboarding: onboardingData.paymentPending ? true : false,
+        currentStep: onboardingData.paymentPending ? 'payment' : 'completed',
+        current_onboarding_step: onboardingData.paymentPending ? 'payment' : 'completed',
+        onboardingStatus: onboardingData.paymentPending ? 'payment_pending' : 'completed',
+        isOnboarded: onboardingData.paymentPending ? false : true,
+        setupComplete: onboardingData.paymentPending ? false : true,
+        setup_complete: onboardingData.paymentPending ? false : true,
+        
+        // Payment status fields
+        paymentPending: onboardingData.paymentPending || false,
+        payment_pending: onboardingData.paymentPending || false,
+        needsPayment: onboardingData.needsPayment || false,
+        needs_payment: onboardingData.needsPayment || false,
         
         // Store tenant information
         tenant_id: tenantId,
@@ -292,27 +298,54 @@ export async function POST(request) {
             console.error('[CompleteOnboarding] Subscription submission failed');
           }
           
-          // Step 3: Complete onboarding
-          console.log('[CompleteOnboarding] Step 3: Marking onboarding as complete');
-          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionData.accessToken}`,
-              'X-User-Email': user.email,
-              'X-User-Sub': user.sub
-            },
-            body: JSON.stringify({
-              selected_plan: onboardingData.selectedPlan,
-              billing_cycle: onboardingData.billingCycle || 'monthly'
-            })
-          });
-          
-          if (completeResponse.ok) {
-            const completeResult = await completeResponse.json();
-            console.log('[CompleteOnboarding] Onboarding marked complete:', completeResult);
-            if (!tenantId && completeResult.data) {
-              tenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+          // Step 3: Only complete onboarding for free tier
+          // For paid tiers, we'll complete after payment
+          if (onboardingData.selectedPlan === 'free') {
+            console.log('[CompleteOnboarding] Step 3: Marking onboarding as complete (free tier)');
+            const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionData.accessToken}`,
+                'X-User-Email': user.email,
+                'X-User-Sub': user.sub
+              },
+              body: JSON.stringify({
+                selected_plan: onboardingData.selectedPlan,
+                billing_cycle: onboardingData.billingCycle || 'monthly'
+              })
+            });
+            
+            if (completeResponse.ok) {
+              const completeResult = await completeResponse.json();
+              console.log('[CompleteOnboarding] Onboarding marked complete:', completeResult);
+              if (!tenantId && completeResult.data) {
+                tenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+              }
+            }
+          } else {
+            console.log('[CompleteOnboarding] Step 3: Skipping completion - payment required for', onboardingData.selectedPlan);
+            // Mark payment as pending in backend
+            try {
+              const paymentPendingResponse = await fetch(`${apiBaseUrl}/api/onboarding/payment-pending/`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${sessionData.accessToken}`,
+                  'X-User-Email': user.email,
+                  'X-User-Sub': user.sub
+                },
+                body: JSON.stringify({
+                  selected_plan: onboardingData.selectedPlan,
+                  billing_cycle: onboardingData.billingCycle || 'monthly'
+                })
+              });
+              
+              if (paymentPendingResponse.ok) {
+                console.log('[CompleteOnboarding] Marked payment as pending for paid tier');
+              }
+            } catch (error) {
+              console.error('[CompleteOnboarding] Failed to mark payment pending:', error);
             }
           }
         } else {
@@ -341,8 +374,15 @@ export async function POST(request) {
       }, { status: 401 });
     }
     
-    // 6. Update Auth0 session with completed onboarding - ALWAYS do this even if backend fails
-    const sessionUpdateResult = await updateAuth0Session(sessionData, onboardingData, tenantId);
+    // 6. Update Auth0 session - mark as complete for free tier, pending payment for paid tiers
+    const isPaidTier = onboardingData.selectedPlan !== 'free';
+    const modifiedOnboardingData = {
+      ...onboardingData,
+      paymentPending: isPaidTier,
+      needsPayment: isPaidTier
+    };
+    
+    const sessionUpdateResult = await updateAuth0Session(sessionData, modifiedOnboardingData, tenantId);
     
     if (!sessionUpdateResult.success) {
       console.error('[CompleteOnboarding] Session update failed:', sessionUpdateResult.error);
