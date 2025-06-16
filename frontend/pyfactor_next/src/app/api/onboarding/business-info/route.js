@@ -155,15 +155,40 @@ function createSafeResponse(data, status = 200, additionalHeaders = null) {
  * Handle business information update - SECURE VERSION with Database Persistence
  */
 export async function POST(request) {
-  console.log('🚨 [BUSINESS-INFO API] POST REQUEST STARTED - Version 2.1');
+  console.log('🚨 [BUSINESS-INFO API] POST REQUEST STARTED - Version 2.2');
   console.log('🚨 [BUSINESS-INFO API] Environment:', process.env.NODE_ENV);
   console.log('🚨 [BUSINESS-INFO API] API Base URL:', process.env.NEXT_PUBLIC_API_URL);
   
   try {
+    // Debug headers
+    const headers = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
+    console.log('🚨 [BUSINESS-INFO API] Request headers:', JSON.stringify(headers, null, 2));
+    
+    // Check cookies directly
+    const cookieStore = await cookies();
+    const allCookies = cookieStore.getAll();
+    console.log('🚨 [BUSINESS-INFO API] Available cookies:', allCookies.map(c => ({
+      name: c.name,
+      size: c.value?.length || 0,
+      httpOnly: c.httpOnly,
+      secure: c.secure
+    })));
+    
     console.log('[api/onboarding/business-info] POST request received');
     
     // SECURITY: Validate authentication first
     const authResult = await validateAuthentication(request);
+    
+    console.log('🚨 [BUSINESS-INFO API] Auth validation result:', {
+      isAuthenticated: authResult.isAuthenticated,
+      error: authResult.error,
+      hasUser: !!authResult.user,
+      userEmail: authResult.user?.email
+    });
+    
     if (!authResult.isAuthenticated) {
       console.warn('[api/onboarding/business-info] Unauthorized request blocked');
       return createSafeResponse({

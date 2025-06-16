@@ -20,6 +20,12 @@ class ApiClientV2 {
    * Make API request with automatic retry and error handling
    */
   async request(url, options = {}) {
+    logger.debug('[ApiClient] Request started', {
+      url,
+      method: options.method || 'GET',
+      hasBody: !!options.body
+    });
+    
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
     
@@ -61,6 +67,12 @@ class ApiClientV2 {
         logger.debug('[ApiClient] Session is authenticated, relying on cookies (no access token available)');
       }
     }
+
+    // Log final headers being sent
+    logger.debug('[ApiClient] Final request headers:', {
+      ...requestOptions.headers,
+      credentials: requestOptions.credentials
+    });
 
     let lastError;
     let attempt = 0;

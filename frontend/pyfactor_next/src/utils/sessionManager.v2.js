@@ -21,13 +21,27 @@ class SessionManagerV2 {
    * Get current session with automatic sync
    */
   async getSession(forceRefresh = false) {
+    logger.debug('[SessionManager] getSession called', {
+      forceRefresh,
+      hasCachedSession: !!this.sessionCache,
+      cacheExpiry: this.cacheExpiry,
+      currentTime: Date.now(),
+      cacheValid: this.sessionCache && this.cacheExpiry > Date.now()
+    });
+    
     // Return cached session if valid and not forcing refresh
     if (!forceRefresh && this.sessionCache && this.cacheExpiry > Date.now()) {
-      logger.debug('[SessionManager] Returning cached session');
+      logger.debug('[SessionManager] Returning cached session', {
+        user: this.sessionCache?.user?.email,
+        authenticated: this.sessionCache?.authenticated,
+        hasAccessToken: !!this.sessionCache?.accessToken,
+        hasSessionToken: !!this.sessionCache?.sessionToken
+      });
       return this.sessionCache;
     }
 
     // Sync with backend
+    logger.debug('[SessionManager] Cache miss or expired, syncing with backend');
     return await this.syncWithBackend();
   }
 
