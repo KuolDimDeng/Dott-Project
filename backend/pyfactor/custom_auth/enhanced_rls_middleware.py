@@ -55,6 +55,7 @@ class EnhancedRowLevelSecurityMiddleware:
         self.public_paths = [
             '/api/auth/',
             '/api/session/',
+            '/api/sessions/',  # Add session management endpoints
             '/admin/',
             '/static/',
             '/media/',
