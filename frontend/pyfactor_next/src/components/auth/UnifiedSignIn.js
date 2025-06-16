@@ -84,7 +84,8 @@ export default function UnifiedSignIn() {
       // Create account via Auth0
       const signupResponse = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           email,
           password,
@@ -122,7 +123,8 @@ export default function UnifiedSignIn() {
       // Authenticate with Auth0
       const authResponse = await fetch('/api/auth/authenticate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           email,
           password,
@@ -141,7 +143,8 @@ export default function UnifiedSignIn() {
       // Create session
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           accessToken: authResult.access_token,
           idToken: authResult.id_token,

@@ -24,7 +24,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
-      },
+      ,
+        credentials: 'include'},
       credentials: 'include', // Include cookies
       body: JSON.stringify({
         email: authData.user.email,
@@ -146,7 +147,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       try {
         await fetch('/api/auth/update-session', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
           credentials: 'include', // Use 'include' for cross-subdomain
           body: JSON.stringify({
             needsOnboarding: true,
@@ -167,7 +169,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     try {
       await fetch('/api/auth/update-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         credentials: 'include', // Use 'include' for cross-subdomain
         body: JSON.stringify({
           tenantId: finalUserData.tenantId,
@@ -213,7 +216,8 @@ export async function updateAuth0Metadata(userId, metadata) {
   try {
     const response = await fetch('/api/auth/update-metadata', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
       body: JSON.stringify({
         user_id: userId,
         metadata

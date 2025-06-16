@@ -161,7 +161,8 @@ function PaymentForm({ plan, billingCycle }) {
         headers: {
           'Content-Type': 'application/json',
           'X-CSRF-Token': csrfToken || '',
-        },
+        
+        credentials: 'include',},
         credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           payment_method_id: paymentMethod.id,
@@ -224,7 +225,8 @@ function PaymentForm({ plan, billingCycle }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          },
+          
+        credentials: 'include',},
           credentials: 'include',
           body: JSON.stringify({
             subscriptionId: result.subscription?.id || result.subscriptionId,
@@ -325,7 +327,8 @@ function PaymentForm({ plan, billingCycle }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          },
+          
+        credentials: 'include',},
           credentials: 'include',
           body: JSON.stringify(syncPayload),
         });
@@ -339,7 +342,8 @@ function PaymentForm({ plan, billingCycle }) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-            },
+            
+        credentials: 'include',},
             credentials: 'include',
             body: JSON.stringify(syncPayload),
           });

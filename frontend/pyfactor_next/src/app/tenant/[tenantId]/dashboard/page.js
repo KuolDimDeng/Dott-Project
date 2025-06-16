@@ -132,7 +132,8 @@ export default function TenantDashboard() {
             headers: {
               'Cache-Control': 'no-cache',
               'Pragma': 'no-cache'
-            }
+            ,
+        credentials: 'include'}
           });
           
           if (profileResponse.ok) {
@@ -165,7 +166,8 @@ export default function TenantDashboard() {
               try {
                 const syncResponse = await fetch('/api/auth/sync-session', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
                   credentials: 'include',
                   body: JSON.stringify({
                     tenantId: tenantId,
@@ -183,7 +185,8 @@ export default function TenantDashboard() {
                     headers: {
                       'Cache-Control': 'no-cache',
                       'Pragma': 'no-cache'
-                    }
+                    ,
+        credentials: 'include'}
                   });
                   
                   if (updatedProfileResponse.ok) {
@@ -265,7 +268,8 @@ export default function TenantDashboard() {
                 // Use sync-session endpoint (force-sync doesn't exist)
                 const syncResponse = await fetch('/api/auth/sync-session', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
                   credentials: 'include',
                   body: JSON.stringify({
                     tenantId: tenantId,

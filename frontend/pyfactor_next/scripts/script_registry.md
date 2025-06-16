@@ -496,3 +496,23 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Updated TenantLayout to redirect to payment page for pending payments
   - Updated payment form to call complete-payment endpoint after successful payment
   - Prevents users from bypassing payment by clicking back button
+
+## fix_fetch_credentials.js
+- **Created**: 2025-06-16
+- **Purpose**: Add credentials: 'include' to API fetch calls to ensure cookies are sent
+- **Issue Fixed**: "No Auth0 session found" error during onboarding
+- **Changes**: 
+  - Updates fetch calls to include credentials option for proper session handling
+  - Fixed 29 fetch calls across 8 files
+  - Created backups for all modified files
+- **Files Modified**:
+  - src/utils/authFlowHandler.js
+  - src/utils/authFlowHandler.v2.js
+  - src/utils/authFlowHandler.v3.js
+  - src/app/auth/components/SignInForm.js
+  - src/components/auth/EmailPasswordSignIn.js
+  - src/components/auth/UnifiedSignIn.js
+  - src/app/onboarding/payment/page.js
+  - src/hooks/useSession.js
+  - src/app/tenant/[tenantId]/dashboard/page.js
+- **Status**: ✅ Completed

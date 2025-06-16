@@ -68,7 +68,8 @@ export function useSession() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json'
-        },
+        ,
+        credentials: 'include'},
         credentials: 'include',
         body: JSON.stringify(updates)
       });
@@ -100,7 +101,8 @@ export function useSession() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
+        ,
+        credentials: 'include'},
         credentials: 'include',
         body: JSON.stringify(authData)
       });

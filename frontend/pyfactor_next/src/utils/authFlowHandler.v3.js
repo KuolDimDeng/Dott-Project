@@ -45,7 +45,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authData.accessToken}`,
+        'Authorization': `Bearer ${authData.accessToken,
+        credentials: 'include'}`,
       },
       body: JSON.stringify({
         auth0_sub: authData.user.sub,
@@ -70,7 +71,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       
       // Log out from Auth0
       try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { method: 'POST' ,
+        credentials: 'include'});
       } catch (e) {
         console.error('[AuthFlowHandler.v3] Error logging out:', e);
       }
@@ -111,7 +113,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     
     const profileResponse = await fetch('/api/auth/profile', {
       headers: {
-        'Authorization': `Bearer ${authData.accessToken}`,
+        'Authorization': `Bearer ${authData.accessToken,
+        credentials: 'include'}`,
       }
     });
     
@@ -149,7 +152,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        },
+        
+        credentials: 'include',},
         body: JSON.stringify({
           tenant_id: tenantId,
           onboarding_completed: hasCompletedOnboarding,

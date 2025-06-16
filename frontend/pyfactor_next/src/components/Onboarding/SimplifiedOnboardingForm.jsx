@@ -184,6 +184,7 @@ export default function SimplifiedOnboardingForm() {
       const response = await fetch('/api/onboarding/complete-all', {
         method: 'POST',
         headers: getAuthHeaders(),
+        credentials: 'include', // CRITICAL: Include cookies in the request
         body: JSON.stringify(formData)
       });
       

@@ -102,7 +102,8 @@ export default function SignInForm() {
       // Step 1: Authenticate with Auth0
       const authResponse = await fetch('/api/auth/authenticate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           email: formData.username,
           password: formData.password,
@@ -132,7 +133,8 @@ export default function SignInForm() {
       // Step 2: Create secure session
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         credentials: 'include',
         body: JSON.stringify({
           accessToken: authResult.access_token,

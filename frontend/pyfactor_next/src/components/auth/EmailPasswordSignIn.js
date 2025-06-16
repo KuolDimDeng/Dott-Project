@@ -78,7 +78,8 @@ export default function EmailPasswordSignIn() {
     try {
       const response = await fetch('/api/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({ email: formData.email })
       });
 
@@ -102,7 +103,8 @@ export default function EmailPasswordSignIn() {
       setIsLoading(true);
       const response = await fetch('/api/auth/resend-verification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({ email: formData.email })
       });
 
@@ -141,7 +143,8 @@ export default function EmailPasswordSignIn() {
       // First create the account
       const signupResponse = await fetch('/api/auth/signup', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           email,
           password,
@@ -180,7 +183,8 @@ export default function EmailPasswordSignIn() {
     try {
       const authResponse = await fetch('/api/auth/authenticate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         body: JSON.stringify({
           email,
           password,
@@ -219,7 +223,8 @@ export default function EmailPasswordSignIn() {
       // Create secure session (cookie-based)
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json' ,
+        credentials: 'include'},
         credentials: 'include', // Important: include cookies for cross-subdomain
         body: JSON.stringify({
           accessToken: authResult.access_token,
