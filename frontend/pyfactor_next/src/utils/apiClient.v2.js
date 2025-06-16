@@ -34,9 +34,13 @@ class ApiClientV2 {
     };
 
     // Add auth headers if available
+    // Note: The session endpoint doesn't return accessToken for security
+    // We'll check for authenticated status instead
     const session = await sessionManager.getSession();
-    if (session?.accessToken) {
-      requestOptions.headers['Authorization'] = `Bearer ${session.accessToken}`;
+    if (session?.authenticated) {
+      // For now, we'll rely on cookies for authentication
+      // The backend will validate the session cookie
+      logger.debug('[ApiClient] Session is authenticated, relying on cookies');
     }
 
     let lastError;
