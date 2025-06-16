@@ -29,46 +29,57 @@ const PLANS = [
   {
     id: 'free',
     name: 'Basic',
-    description: 'Get started with essential features',
+    description: 'Perfect for small businesses just getting started',
     price: 'Free',
     monthlyPrice: 0,
     yearlyPrice: 0,
     features: [
-      'Up to 3 projects',
-      'Core analytics', 
-      'Basic support',
-      'Essential integrations'
-    ]
+      'Income and expense tracking',
+      'Invoice creation & reminders',
+      'Stripe & PayPal payments',
+      'Mobile money (M-Pesa, etc.)',
+      'Basic inventory tracking',
+      'Barcode scanning',
+      '3GB storage limit',
+      '1 user only'
+    ],
+    buttonText: 'Start for Free'
   },
   {
     id: 'professional',
     name: 'Professional',
-    description: 'Advanced features for growing businesses',
-    price: '$15/month',
+    description: 'Everything growing businesses need to thrive',
+    price: '$15/mo',
     monthlyPrice: 15,
-    yearlyPrice: 290,
+    yearlyPrice: 144, // 20% discount
     features: [
-      'Unlimited projects',
-      'Advanced analytics',
+      'Everything in Basic',
+      'Up to 3 users',
+      'Unlimited storage',
       'Priority support',
-      'All integrations',
-      'Custom dashboards'
-    ]
+      'All features included',
+      '20% discount on annual'
+    ],
+    popular: true,
+    buttonText: 'Choose Professional'
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    description: 'Complete solution for large organizations',
-    price: '$35/month',
+    description: 'Unlimited scale for ambitious organizations',
+    price: '$35/mo',
     monthlyPrice: 35,
-    yearlyPrice: 990,
+    yearlyPrice: 336, // 20% discount
     features: [
       'Everything in Professional',
-      'SSO integration',
-      'Advanced security',
+      'Unlimited users',
+      'Custom onboarding',
       'Dedicated support',
-      'Custom features'
-    ]
+      'All features included',
+      '20% discount on annual'
+    ],
+    premium: true,
+    buttonText: 'Choose Enterprise'
   }
 ];
 
@@ -399,41 +410,89 @@ export default function SimplifiedOnboardingForm() {
             <div
               key={plan.id}
               onClick={() => handleInputChange('selectedPlan', plan.id)}
-              className={`border-2 rounded-lg p-6 cursor-pointer transition-all ${
+              className={`relative border-2 rounded-lg p-6 cursor-pointer transition-all ${
                 formData.selectedPlan === plan.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
+                  ? 'border-blue-500 bg-blue-50 shadow-lg'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-md'
+              } ${plan.popular ? 'ring-2 ring-blue-500' : ''}`}
             >
+              {/* Popular badge */}
+              {plan.popular && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    Most popular
+                  </span>
+                </div>
+              )}
+              
+              {/* Premium badge */}
+              {plan.premium && (
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    Premium
+                  </span>
+                </div>
+              )}
+              
               <div className="text-center">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
                 <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
                 
-                {/* Pricing display with currency conversion */}
-                <div className="mb-4">
+                {/* Pricing display */}
+                <div className="mb-6">
                   {plan.id === 'free' ? (
-                    <div className="text-2xl font-bold text-blue-600">Free</div>
+                    <div>
+                      <div className="text-3xl font-bold text-gray-900">FREE</div>
+                    </div>
                   ) : (
-                    <PricingDisplay
-                      plan={plan.id}
-                      usdPrice={price}
-                      billingCycle={formData.billingCycle}
-                      isSelected={formData.selectedPlan === plan.id}
-                      showOriginal={true}
-                    />
+                    <div>
+                      <div className="text-3xl font-bold text-gray-900">
+                        ${price}
+                        <span className="text-lg font-normal text-gray-600">
+                          /{formData.billingCycle === 'yearly' ? 'year' : 'mo'}
+                        </span>
+                      </div>
+                      {formData.billingCycle === 'yearly' && (
+                        <div className="text-sm text-green-600 mt-1">
+                          ${plan.monthlyPrice * 12}/year (save 20%)
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 
-                <ul className="text-sm text-gray-600 space-y-2">
+                {/* Action button */}
+                <button
+                  type="button"
+                  className={`w-full py-3 px-4 rounded-md font-medium transition-colors mb-6 ${
+                    formData.selectedPlan === plan.id
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : plan.id === 'free'
+                      ? 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {plan.buttonText || 'Select Plan'}
+                </button>
+                
+                {/* Features list */}
+                <ul className="text-sm text-gray-600 space-y-2 text-left">
                   {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <svg className="w-4 h-4 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <li key={index} className="flex items-start">
+                      <svg className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                       {feature}
                     </li>
                   ))}
                 </ul>
+                
+                {/* View all features link */}
+                <div className="mt-4">
+                  <a href="#" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                    View all features →
+                  </a>
+                </div>
               </div>
             </div>
           );
