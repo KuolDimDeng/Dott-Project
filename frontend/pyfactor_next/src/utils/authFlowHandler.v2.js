@@ -81,8 +81,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     try {
       await fetch('/api/auth/update-session', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           tenantId: userData.tenant_id,
           needsOnboarding: finalUserData.needsOnboarding,
