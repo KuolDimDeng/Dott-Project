@@ -139,6 +139,14 @@ def complete_payment_view(request):
         onboarding_progress.setup_completed = True
         onboarding_progress.setup_timestamp = timezone.now()
         
+        # Also add 'complete' to completed_steps if not already there
+        completed_steps = onboarding_progress.completed_steps or []
+        if 'complete' not in completed_steps:
+            completed_steps.append('complete')
+        if 'setup' not in completed_steps:
+            completed_steps.append('setup')
+        onboarding_progress.completed_steps = completed_steps
+        
         # Ensure tenant_id is set
         if tenant_id:
             onboarding_progress.tenant_id = tenant_id
@@ -149,15 +157,19 @@ def complete_payment_view(request):
             elif hasattr(user, 'tenant'):
                 onboarding_progress.tenant_id = user.tenant.id if user.tenant else None
         
-        # Save all changes
-        onboarding_progress.save()
+        # Log the state before save
+        logger.info(f"[CompletePayment] Onboarding status before save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}, current_step: {onboarding_progress.current_step}")
         
-        # Log the state before and after save
-        logger.info(f"[CompletePayment] Onboarding status before save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}")
+        # Save all changes with explicit field update
+        onboarding_progress.save(update_fields=[
+            'payment_completed', 'payment_id', 'payment_method', 'payment_timestamp',
+            'subscription_status', 'current_step', 'onboarding_status', 'completed_at',
+            'setup_completed', 'setup_timestamp', 'completed_steps', 'tenant_id'
+        ])
         
         # Verify the save worked
         onboarding_progress.refresh_from_db()
-        logger.info(f"[CompletePayment] Onboarding status after save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}")
+        logger.info(f"[CompletePayment] Onboarding status after save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}, current_step: {onboarding_progress.current_step}, setup_completed: {onboarding_progress.setup_completed}")
         
         # Update user's onboarding status if the field exists
         if hasattr(user, 'needs_onboarding'):
@@ -190,6 +202,31 @@ def complete_payment_view(request):
                     logger.info(f"[CompletePayment] Updated session manager for user {user.email}")
                 else:
                     logger.warning(f"[CompletePayment] Failed to update session manager for user {user.email}")
+            else:
+                logger.info(f"[CompletePayment] No session token found, skipping session manager update")
+                
+            # Also try to update via session API directly
+            # This handles cases where the session token might be in a different format
+            try:
+                from django.db import connection
+                with connection.cursor() as cursor:
+                    cursor.execute("""
+                        UPDATE session_manager_usersession 
+                        SET needs_onboarding = false,
+                            onboarding_completed = true,
+                            onboarding_step = 'completed',
+                            subscription_plan = %s,
+                            subscription_status = 'active',
+                            updated_at = NOW()
+                        WHERE user_id = %s
+                        AND expires_at > NOW()
+                    """, [onboarding_progress.subscription_plan, user.id])
+                    
+                    if cursor.rowcount > 0:
+                        logger.info(f"[CompletePayment] Updated {cursor.rowcount} session(s) directly for user {user.email}")
+            except Exception as db_error:
+                logger.warning(f"[CompletePayment] Direct session update error: {str(db_error)}")
+                
         except Exception as session_error:
             logger.warning(f"[CompletePayment] Session manager update error: {str(session_error)}")
         

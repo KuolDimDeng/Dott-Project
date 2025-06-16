@@ -227,10 +227,10 @@ function PaymentForm({ plan, billingCycle }) {
           },
           credentials: 'include',
           body: JSON.stringify({
-            subscriptionId: result.subscriptionId,
+            subscriptionId: result.subscription?.id || result.subscriptionId,
             plan: plan.toLowerCase(),
             billingCycle: billingCycle,
-            paymentIntentId: result.paymentIntentId,
+            paymentIntentId: result.paymentIntentId || result.clientSecret,
             tenantId: tenantId
           }),
         });
