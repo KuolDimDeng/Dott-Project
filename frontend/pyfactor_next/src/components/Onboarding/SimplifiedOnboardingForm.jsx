@@ -454,7 +454,7 @@ export default function SimplifiedOnboardingForm() {
                       </div>
                       {formData.billingCycle === 'yearly' && (
                         <div className="text-sm text-green-600 mt-1">
-                          ${plan.monthlyPrice * 12}/year (save 20%)
+                          <span className="line-through text-gray-400">${plan.monthlyPrice * 12}</span> (save 20%)
                         </div>
                       )}
                     </div>
