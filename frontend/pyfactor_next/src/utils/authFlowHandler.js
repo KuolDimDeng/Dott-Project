@@ -55,7 +55,20 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       onboardingComplete: userData.onboardingComplete
     });
 
-    // Step 2: Check latest onboarding status from profile API
+    // Step 2: Force backend sync to get latest state
+    try {
+      const syncResponse = await fetch('/api/auth/force-backend-sync', {
+        credentials: 'include'
+      });
+      if (syncResponse.ok) {
+        const syncData = await syncResponse.json();
+        logger.info('[AuthFlowHandler] Forced backend sync completed', syncData.backendState);
+      }
+    } catch (error) {
+      logger.warn('[AuthFlowHandler] Force sync failed', error);
+    }
+    
+    // Step 3: Check latest onboarding status from profile API
     let profileData = null;
     try {
       const profileResponse = await fetch('/api/auth/profile', {
@@ -72,7 +85,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       logger.warn('[AuthFlowHandler] Could not fetch profile', error);
     }
 
-    // Step 3: Determine final user state and routing
+    // Step 4: Determine final user state and routing
     const finalUserData = {
       ...authData.user,
       tenantId: userData.tenantId || profileData?.tenantId,
@@ -178,7 +191,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       finalUserData.redirectUrl = '/onboarding';
     }
 
-    // Step 4: Update session with consistent data
+    // Step 5: Update session with consistent data
     try {
       await fetch('/api/auth/update-session', {
         method: 'POST',
