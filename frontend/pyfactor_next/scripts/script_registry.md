@@ -516,3 +516,60 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - src/hooks/useSession.js
   - src/app/tenant/[tenantId]/dashboard/page.js
 - **Status**: ✅ Completed
+
+## Version History
+
+### Version 0003 - Update Onboarding to v2 Implementation (2025-01-16)
+- **Script**: `Version0003_update_onboarding_to_v2_onboarding_page.js`
+- **Purpose**: Replace current onboarding with v2 implementation using state machine
+- **Changes**:
+  - Backs up current onboarding page to page.v1.backup.js
+  - Replaces with v2 implementation using centralized session management
+  - Integrates onboarding state machine for clear flow control
+  - Adds progress saving at each step
+  - Enhanced error handling and recovery
+- **Files Modified**:
+  - `/src/app/onboarding/page.js` (replaced with v2)
+  - Created backup: `/src/app/onboarding/page.v1.backup.js`
+- **New Components**:
+  - `/src/app/onboarding/page.v2.js`
+  - `/src/components/Onboarding/OnboardingFlow.v2.jsx`
+  - `/src/components/Onboarding/BusinessInfoForm.v2.jsx`
+  - `/src/components/Onboarding/SubscriptionSelectionForm.v2.jsx`
+  - `/src/utils/sessionManager.v2.js`
+  - `/src/utils/onboardingStateMachine.js`
+  - `/src/utils/errorHandler.v2.js`
+  - `/src/utils/apiClient.v2.js`
+- **Result**: Onboarding now saves progress at each step, handles errors gracefully
+
+### Version 0002 - Fix New User Onboarding Redirect (2025-01-16)
+- **Script**: `Version0002_fix_new_user_onboarding_redirect_authFlowHandler.js`
+- **Purpose**: Fix issue where new users briefly see dashboard before onboarding redirect
+- **Changes**: 
+  - Updated authFlowHandler.js to check profile API data before making redirect decisions
+  - Fixed user-sync route to correctly identify new users
+  - Added proper onboarding status checks for new sign-ups
+- **Files Modified**: 
+  - `/src/utils/authFlowHandler.js`
+  - `/src/app/api/auth0/user-sync/route.js`
+- **Result**: New users now go directly to onboarding without dashboard flash
+
+### Version 0001 - Fix Fetch Credentials (2025-01-16)
+- **Script**: `fix_fetch_credentials.js`
+- **Purpose**: Add credentials: 'include' to API fetch calls to ensure cookies are sent
+- **Issue Fixed**: "No Auth0 session found" error during onboarding
+- **Changes**: 
+  - Updates fetch calls to include credentials option for proper session handling
+  - Fixed 29 fetch calls across 8 files
+  - Created backups for all modified files
+- **Files Modified**:
+  - src/utils/authFlowHandler.js
+  - src/utils/authFlowHandler.v2.js
+  - src/utils/authFlowHandler.v3.js
+  - src/app/auth/components/SignInForm.js
+  - src/components/auth/EmailPasswordSignIn.js
+  - src/components/auth/UnifiedSignIn.js
+  - src/app/onboarding/payment/page.js
+  - src/hooks/useSession.js
+  - src/app/tenant/[tenantId]/dashboard/page.js
+- **Status**: ✅ Completed
