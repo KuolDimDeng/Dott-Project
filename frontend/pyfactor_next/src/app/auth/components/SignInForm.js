@@ -154,17 +154,17 @@ export default function SignInForm() {
       }, 'email-password');
 
       // Step 4: Redirect based on auth flow result
+      // Use a longer delay and window.location for better cookie propagation
       setTimeout(() => {
-        if (finalUserData.redirectUrl) {
-          router.push(finalUserData.redirectUrl);
-        } else if (finalUserData.needsOnboarding) {
-          router.push('/onboarding');
-        } else if (finalUserData.tenantId) {
-          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
-        } else {
-          router.push('/dashboard');
-        }
-      }, 100); // Small delay to ensure cookies are set
+        const redirectUrl = finalUserData.redirectUrl || 
+          (finalUserData.needsOnboarding ? '/onboarding' : 
+          (finalUserData.tenantId ? `/tenant/${finalUserData.tenantId}/dashboard` : '/dashboard'));
+        
+        logger.debug('[SignInForm] Redirecting to:', redirectUrl);
+        
+        // Use window.location.href for better cookie handling across redirects
+        window.location.href = redirectUrl;
+      }, 500); // 500ms delay to ensure cookies are properly set
       
     } catch (error) {
       logger.error('[SignInForm] Sign-in error:', error);

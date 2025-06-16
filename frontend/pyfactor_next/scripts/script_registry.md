@@ -464,3 +464,21 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Added detailed debug information display in development mode
 - **Files Modified**:
   - /src/app/onboarding/payment/page.js
+
+## Backend Scripts
+
+### Version0008_fix_paid_user_authentication_auth0_views.py
+- **Purpose**: Fix authentication issues for paid tier users
+- **Created**: 2025-06-15
+- **Changes**: 
+  - Fixed null check in enhanced_rls_middleware.py
+  - Added hasattr check for user.is_authenticated
+  - Fixed AttributeError when request.user is None
+
+### Version0009_fix_onboarding_progress_name_error.py
+- **Purpose**: Fix NameError in auth0_views.py 
+- **Created**: 2025-06-16
+- **Changes**:
+  - Fixed 'onboarding_progress' is not defined error
+  - Changed incorrect variable references from 'progress' to 'onboarding_progress' in Auth0UserProfileView
+  - Fixed subscription plan retrieval in user profile endpoint

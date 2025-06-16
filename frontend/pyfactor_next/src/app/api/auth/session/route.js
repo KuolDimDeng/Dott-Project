@@ -332,21 +332,40 @@ export async function POST(request) {
     });
     
     // Set secure HttpOnly cookie with encrypted data
-    response.cookies.set('dott_auth_session', encryptedSession, {
+    const cookieOptions = {
       ...COOKIE_OPTIONS,
       maxAge: 24 * 60 * 60 // 24 hours
+    };
+    
+    console.log('[Auth Session POST] Setting cookies with options:', {
+      domain: cookieOptions.domain,
+      secure: cookieOptions.secure,
+      sameSite: cookieOptions.sameSite,
+      httpOnly: cookieOptions.httpOnly,
+      path: cookieOptions.path
     });
+    
+    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
     
     // Also set the backend session token if available
     if (sessionToken) {
-      response.cookies.set('session_token', sessionToken, {
-        ...COOKIE_OPTIONS,
-        maxAge: 24 * 60 * 60 // 24 hours
-      });
+      response.cookies.set('session_token', sessionToken, cookieOptions);
       console.log('[Auth Session POST] Backend session token set');
     }
     
-    console.log('[Auth Session POST] Session created successfully');
+    // Also set a client-readable status cookie for immediate checks
+    const statusCookie = {
+      needsOnboarding,
+      onboardingCompleted,
+      tenantId,
+      hasSession: true
+    };
+    response.cookies.set('onboarding_status', JSON.stringify(statusCookie), {
+      ...cookieOptions,
+      httpOnly: false // Make this readable by client-side JavaScript
+    });
+    
+    console.log('[Auth Session POST] Session created successfully with status cookie');
     
     return response;
     

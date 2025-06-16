@@ -223,8 +223,8 @@ class Auth0UserCreateView(APIView):
                         
             # Get user's subscription plan
             user_subscription = 'free'
-            if onboarding_progress and onboarding_progress.subscription_plan:
-                user_subscription = onboarding_progress.subscription_plan
+            if progress and progress.subscription_plan:
+                user_subscription = progress.subscription_plan
                 logger.info(f"🔥 [USER_PROFILE] User subscription plan: {user_subscription}")
             
             # Check for active Stripe subscription
@@ -866,8 +866,8 @@ class Auth0OnboardingCompleteView(APIView):
             # Prepare response with tenant information
             # Get user's subscription plan
             user_subscription = 'free'
-            if onboarding_progress and onboarding_progress.subscription_plan:
-                user_subscription = onboarding_progress.subscription_plan
+            if progress and progress.subscription_plan:
+                user_subscription = progress.subscription_plan
                 logger.info(f"🔥 [USER_PROFILE] User subscription plan: {user_subscription}")
             
             # Check for active Stripe subscription

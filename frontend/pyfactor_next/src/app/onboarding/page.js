@@ -29,6 +29,20 @@ export default function OnboardingPage() {
           logger.warn('[OnboardingPage] No local session found, checking server');
         }
         
+        // First check for status cookie
+        const statusCookie = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('onboarding_status='));
+        
+        if (statusCookie) {
+          try {
+            const statusData = JSON.parse(decodeURIComponent(statusCookie.split('=')[1]));
+            console.log('[OnboardingPage] Status cookie found:', statusData);
+          } catch (e) {
+            console.error('[OnboardingPage] Error parsing status cookie:', e);
+          }
+        }
+        
         console.log('[OnboardingPage] Fetching server session...');
         const headers = {};
         if (accessToken) {
