@@ -358,34 +358,32 @@ class EnhancedRowLevelSecurityMiddleware:
             logger.warning(f"❌ Authentication failed for tenant endpoint: {request.path}")
             logger.warning(f"❌ Auth result: {auth_result}")
             return HttpResponseForbidden("Authentication required")
-            
-            if not user:
-                logger.warning(f"❌ Authentication failed - no user for tenant endpoint: {request.path}")
-                return HttpResponseForbidden("Authentication required")
-            
-            # Set the authenticated user on the request
-            request.user = user
-            request.auth = token
-            
-            # For tenant management endpoints, we allow processing without initial tenant ID
-            # but still maintain security through Auth0 authentication
-            logger.info(f"✅ Auth0 tenant endpoint authenticated: {request.path} for user: {user}")
-            
-            # Clear tenant context for safety during tenant operations
-            try:
-                if is_async:
-                    asyncio.create_task(self._set_tenant_context_async(None))
-                else:
-                    self._set_tenant_context_sync(None)
-            except Exception as e:
-                logger.debug(f"❌ Error clearing tenant context: {e}")
-            
-            # Process the request with Auth0 authentication but no tenant context
-            logger.debug(f"🔄 Processing authenticated request for: {request.path}")
+        
+        # Set the authenticated user on the request
+        request.user = user
+        request.auth = token if 'token' in locals() else None
+        
+        # For tenant management endpoints, we allow processing without initial tenant ID
+        # but still maintain security through Auth0 authentication
+        logger.info(f"✅ Tenant endpoint authenticated: {request.path} for user: {user}")
+        
+        # Clear tenant context for safety during tenant operations
+        try:
+            if is_async:
+                asyncio.create_task(self._set_tenant_context_async(None))
+            else:
+                self._set_tenant_context_sync(None)
+        except Exception as e:
+            logger.debug(f"❌ Error clearing tenant context: {e}")
+        
+        # Process the request with authentication but no tenant context
+        logger.debug(f"🔄 Processing authenticated request for: {request.path}")
+        
+        try:
             response = self.get_response(request)
             
             # Add security headers
-            if token and hasattr(token, '__class__') and 'Session' not in str(token.__class__):
+            if hasattr(request, 'auth') and request.auth and hasattr(request.auth, '__class__') and 'Session' not in str(request.auth.__class__):
                 response['X-Auth0-Verified'] = 'true'
             else:
                 response['X-Session-Verified'] = 'true'
@@ -393,7 +391,7 @@ class EnhancedRowLevelSecurityMiddleware:
             return response
             
         except Exception as e:
-            logger.error(f"❌ Auth0 authentication error for {request.path}: {e}")
+            logger.error(f"❌ Error processing tenant endpoint {request.path}: {e}")
             logger.error(f"❌ Error type: {type(e).__name__}")
             logger.error(f"❌ Error details: {str(e)}")
             
@@ -402,4 +400,4 @@ class EnhancedRowLevelSecurityMiddleware:
             auth_header = request.META.get('HTTP_AUTHORIZATION', 'NOT_SET')
             logger.debug(f"🔍 Authorization header: {auth_header[:100] if auth_header != 'NOT_SET' else 'NOT_SET'}...")
             
-            return HttpResponseForbidden("Authentication failed") 
+            return HttpResponseForbidden("Request processing failed") 
