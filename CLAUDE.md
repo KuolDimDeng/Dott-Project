@@ -188,3 +188,50 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - **Affected Files**: 
   - `/backend/pyfactor/custom_auth/enhanced_rls_middleware.py`
   - `/frontend/pyfactor_next/src/app/api/auth/clear-cache/route.js`
+
+## Onboarding V2 Architecture (January 2025)
+- **Implementation Date**: 2025-01-16
+- **Purpose**: Solve multiple sources of truth, progress loss, and redirect loops
+- **Architecture**: Single source of truth (backend) with state machine flow control
+
+### Core Components
+1. **sessionManager.v2.js** - Centralized session management
+   - Backend is authoritative source
+   - 5-minute cache to reduce API calls
+   - Automatic retry with exponential backoff
+   - Sync prevention for concurrent requests
+
+2. **onboardingStateMachine.js** - Clear state transitions
+   - States: NOT_STARTED → BUSINESS_INFO → SUBSCRIPTION_SELECTION → PAYMENT_PENDING → COMPLETED
+   - Enforces valid transitions only
+   - Progress saved after each transition
+   - Error recovery built-in
+
+3. **errorHandler.v2.js** - User-friendly error handling
+   - Maps technical errors to clear messages
+   - Provides recovery actions (retry, wait, redirect)
+   - Error categories: AUTH, NETWORK, VALIDATION, PAYMENT, SESSION, ONBOARDING, SYSTEM
+   - Determines retry eligibility
+
+4. **apiClient.v2.js** - Enhanced API communication
+   - Automatic retry (max 3 attempts)
+   - 30-second timeout with cleanup
+   - Session token auto-inclusion
+   - Handles 4xx/5xx errors appropriately
+
+### Key Improvements
+- **Progress Persistence**: Every step saved to backend immediately
+- **Browser Resilience**: Survives refresh, cache clear, network issues
+- **Error Recovery**: Clear messages with actionable steps
+- **State Consistency**: Backend always wins, no conflicting sources
+- **Network Handling**: Auto-retry with exponential backoff
+
+### Migration
+- **Enable V2**: `node scripts/Version0003_update_onboarding_to_v2_onboarding_page.js`
+- **Rollback**: `cp src/app/onboarding/page.v1.backup.js src/app/onboarding/page.js`
+- **Documentation**: `/docs/ONBOARDING_V2_IMPLEMENTATION.md`
+
+### Files
+- Components: OnboardingFlow.v2.jsx, BusinessInfoForm.v2.jsx, SubscriptionSelectionForm.v2.jsx
+- Utilities: sessionManager.v2.js, onboardingStateMachine.js, errorHandler.v2.js, apiClient.v2.js
+- Original preserved: page.v1.backup.js
