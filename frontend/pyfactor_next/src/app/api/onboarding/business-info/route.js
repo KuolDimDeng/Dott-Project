@@ -41,11 +41,14 @@ async function validateAuthentication(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
+    const sessionTokenCookie = cookieStore.get('session_token');
     
     console.log('🚨 [BUSINESS-INFO API] Cookie debug:', {
       hasDottAuthSession: !!dottSessionCookie,
       hasAppSession: !!sessionCookie,
+      hasSessionToken: !!sessionTokenCookie,
       dottAuthSessionSize: dottSessionCookie?.value?.length || 0,
+      sessionTokenSize: sessionTokenCookie?.value?.length || 0,
       allCookieNames: cookieStore.getAll().map(c => c.name)
     });
     
@@ -94,6 +97,42 @@ async function validateAuthentication(request) {
         }
       } catch (parseError) {
         console.error('[api/onboarding/business-info] Error parsing session cookie:', parseError);
+      }
+    }
+    
+    // Check for backend session token as fallback
+    if (sessionTokenCookie) {
+      try {
+        console.log('[api/onboarding/business-info] Found session token, validating with backend');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+        const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `Session ${sessionTokenCookie.value}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (sessionResponse.ok) {
+          const backendSession = await sessionResponse.json();
+          console.log('[api/onboarding/business-info] Backend session validated:', {
+            user_email: backendSession.user?.email,
+            tenant_id: backendSession.tenant?.id
+          });
+          
+          return { 
+            isAuthenticated: true, 
+            user: {
+              email: backendSession.user?.email || 'session-user',
+              sub: backendSession.user?.auth0_sub || 'session-sub',
+              name: backendSession.user?.email || 'session-user'
+            },
+            error: null 
+          };
+        } else {
+          console.error('[api/onboarding/business-info] Backend session validation failed:', sessionResponse.status);
+        }
+      } catch (error) {
+        console.error('[api/onboarding/business-info] Session token validation error:', error);
       }
     }
     

@@ -11,8 +11,9 @@ const COOKIE_OPTIONS = {
   sameSite: 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60, // 7 days
-  // Set domain explicitly for production to ensure cookie is sent across all API routes
-  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+  // Don't set domain in production - let browser handle it automatically
+  // This ensures cookies work with both dottapps.com and www.dottapps.com
+  // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
 };
 
 /**
