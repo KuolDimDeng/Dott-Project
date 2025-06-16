@@ -37,14 +37,28 @@ class ApiClientV2 {
     // Note: The session endpoint doesn't return accessToken for security
     // We'll check for authenticated status instead
     const session = await sessionManager.getSession();
+    logger.debug('[ApiClient] Session check:', {
+      hasSession: !!session,
+      authenticated: session?.authenticated,
+      hasSessionToken: !!session?.sessionToken,
+      hasAccessToken: !!session?.accessToken,
+      sessionTokenType: session?.sessionToken ? typeof session.sessionToken : 'none',
+      sessionTokenPreview: session?.sessionToken ? session.sessionToken.substring(0, 20) + '...' : 'none'
+    });
+    
     if (session?.authenticated) {
-      // For v2 onboarding, we need to pass the session token if available
-      if (session.sessionToken) {
+      // For v2 onboarding, we need to pass the access token if available
+      // Session tokens are for backend session management, not API auth
+      if (session.accessToken) {
+        requestOptions.headers['Authorization'] = `Bearer ${session.accessToken}`;
+        logger.debug('[ApiClient] Added access token to Authorization header');
+      } else if (session.sessionToken && session.sessionToken.includes('.')) {
+        // If sessionToken looks like a JWT (has dots), use it
         requestOptions.headers['Authorization'] = `Bearer ${session.sessionToken}`;
-        logger.debug('[ApiClient] Added session token to Authorization header');
+        logger.debug('[ApiClient] Added JWT-like session token to Authorization header');
       } else {
         // Fallback: rely on cookies for authentication
-        logger.debug('[ApiClient] Session is authenticated, relying on cookies');
+        logger.debug('[ApiClient] Session is authenticated, relying on cookies (no access token available)');
       }
     }
 

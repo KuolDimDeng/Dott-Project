@@ -59,19 +59,34 @@ class SessionManagerV2 {
       });
 
       if (!response.ok) {
+        logger.error('[SessionManager] Session sync failed', {
+          status: response.status,
+          statusText: response.statusText
+        });
         throw new Error(`Session sync failed: ${response.status}`);
       }
 
       const sessionData = await response.json();
+      
+      logger.debug('[SessionManager] Raw session data received', {
+        hasUser: !!sessionData?.user,
+        hasAccessToken: !!sessionData?.accessToken,
+        hasSessionToken: !!sessionData?.sessionToken,
+        authenticated: sessionData?.authenticated,
+        userEmail: sessionData?.user?.email,
+        needsOnboarding: sessionData?.user?.needsOnboarding,
+        tenantId: sessionData?.user?.tenantId || sessionData?.tenantId
+      });
       
       // Cache the session for 5 minutes
       this.sessionCache = sessionData;
       this.cacheExpiry = Date.now() + (5 * 60 * 1000);
       
       logger.info('[SessionManager] Session synced with backend', {
-        hasUser: !!sessionData.user,
-        needsOnboarding: sessionData.needsOnboarding,
-        tenantId: sessionData.tenantId
+        hasUser: !!sessionData?.user,
+        needsOnboarding: sessionData?.user?.needsOnboarding || sessionData?.needsOnboarding,
+        tenantId: sessionData?.user?.tenantId || sessionData?.tenantId,
+        authenticated: sessionData?.authenticated
       });
 
       return sessionData;

@@ -197,7 +197,7 @@ export async function GET(request) {
     // Generate CSRF token for the session
     const csrfToken = generateCSRFToken();
     
-    // Return session data (include sessionToken for v2 onboarding)
+    // Return session data (include tokens for v2 onboarding)
     const responseData = {
       user: sessionData.user,
       authenticated: true,
@@ -205,9 +205,14 @@ export async function GET(request) {
       csrfToken: csrfToken
     };
     
-    // Include sessionToken if available (for v2 onboarding)
+    // Include sessionToken if available (for backend session management)
     if (sessionData.sessionToken) {
       responseData.sessionToken = sessionData.sessionToken;
+    }
+    
+    // Include accessToken if available (for API authentication)
+    if (sessionData.accessToken) {
+      responseData.accessToken = sessionData.accessToken;
     }
     
     const response = NextResponse.json(responseData);

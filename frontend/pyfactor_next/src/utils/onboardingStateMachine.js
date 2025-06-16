@@ -151,6 +151,11 @@ class OnboardingStateMachine {
    * Handle business info submission
    */
   async submitBusinessInfo(businessData) {
+    logger.debug('[OnboardingStateMachine] submitBusinessInfo called', {
+      currentState: this.currentState,
+      businessData
+    });
+    
     if (this.currentState !== ONBOARDING_STATES.NOT_STARTED && 
         this.currentState !== ONBOARDING_STATES.BUSINESS_INFO) {
       throw new Error('Invalid state for business info submission');
@@ -161,10 +166,20 @@ class OnboardingStateMachine {
       throw new Error('Business name and type are required');
     }
 
+    // If we're at NOT_STARTED, first transition to BUSINESS_INFO
+    if (this.currentState === ONBOARDING_STATES.NOT_STARTED) {
+      await this.transitionTo(ONBOARDING_STATES.BUSINESS_INFO, {
+        startedAt: new Date().toISOString()
+      });
+    }
+
+    // Now transition to SUBSCRIPTION_SELECTION
     await this.transitionTo(ONBOARDING_STATES.SUBSCRIPTION_SELECTION, {
       businessName: businessData.businessName,
       businessType: businessData.businessType,
       country: businessData.country,
+      legalStructure: businessData.legalStructure,
+      dateFounded: businessData.dateFounded,
       completedSteps: ['business_info']
     });
   }
