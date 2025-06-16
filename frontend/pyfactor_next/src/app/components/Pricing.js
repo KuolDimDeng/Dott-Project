@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentUserPricing } from '@/utils/currencyUtils';
@@ -14,6 +13,7 @@ export default function Pricing() {
   const [dynamicPricing, setDynamicPricing] = useState(null);
   const [userCountry, setUserCountry] = useState('US');
   const [hasDiscount, setHasDiscount] = useState(false);
+  const [expandedPlan, setExpandedPlan] = useState(null);
   
   // Load dynamic pricing based on user's country
   useEffect(() => {
@@ -80,55 +80,29 @@ export default function Pricing() {
       savings: '',
       features: [
         { category: 'Core Business Tools', items: [
-          { name: 'Income and expense tracking', included: true },
-          { name: 'Invoice creation', included: true },
-          { name: 'Automated invoice reminders', included: true },
-          { name: 'Multiple users', included: false },
-          { name: 'Bank account integration', value: 'Limited (2 accounts)' },
-          { name: 'Financial reporting', value: 'Basic' },
-          { name: 'Expense categorization', included: true },
+          '✓ Income and expense tracking',
+          '✓ Invoice creation',
+          '✓ Automated invoice reminders',
+          '✓ 1 user limit'
         ]},
         { category: 'Global Payment Solutions', items: [
-          { name: 'Accept Stripe & PayPal payments', included: true },
-          { name: 'Mobile money payments (M-Pesa, etc.)', value: 'Limited' },
-          { name: 'Reduced transaction fees', included: false },
-          { name: 'Multi-currency support', value: 'Limited' },
-          { name: 'Currency exchange services', value: '2% fee' },
-          { name: 'Invoice factoring (US & Canada)', included: false },
-          { name: 'White-label payment solutions', included: false },
+          '✓ Accept Stripe & PayPal payments',
+          '✓ Mobile money payments (M-Pesa, etc.)',
+          '✓ Reduced transaction fees',
+          '✓ Multi-currency support'
         ]},
         { category: 'Inventory Management', items: [
-          { name: 'Basic inventory tracking', included: true },
-          { name: 'Low stock alerts', included: false },
-          { name: 'Barcode scanning', included: false },
-          { name: 'Inventory forecasting', included: false },
-          { name: 'Multi-location inventory', included: false },
-          { name: 'Custom inventory categories', included: false },
+          '✓ Basic inventory tracking',
+          '✓ Low stock alerts',
+          '✓ Barcode scanning',
+          '✓ Inventory forecasting'
         ]},
-        { category: 'Mobile Features', items: [
-          { name: 'Mobile app access', included: true },
-          { name: 'Mobile Point of Sale (mPOS)', included: false },
-          { name: 'Offline mode', value: 'Limited' },
-        ]},
-        { category: 'Tax & Compliance', items: [
-          { name: 'Tax calculation', included: true },
-          { name: 'Self-service payroll (0.4% fee)', value: 'Available as add-on' },
-          { name: 'Regional compliance updates', included: false },
-        ]},
-        { category: 'Integrations', items: [
-          { name: 'Accounting software integration', value: 'Limited' },
-          { name: 'E-commerce platform integration', included: false },
-          { name: 'Custom integrations', included: false },
-        ]},
-        { category: 'Additional Features', items: [
-          { name: 'Storage space', value: '2 GB' },
-          { name: 'AI-powered business insights', included: false },
-          { name: 'Advanced forecasting', included: false },
-          { name: 'Custom API access', included: false },
-          { name: 'Priority support', included: false },
-          { name: 'Dedicated account manager', included: false },
-          { name: 'HR & CRM modules', value: 'Add-on' },
-        ]},
+        { category: 'Account Limits', items: [
+          '• 3GB storage limit',
+          '• Basic support (non-priority)',
+          '• 1 user only',
+          '• All features included'
+        ]}
       ],
       cta: 'Start for Free',
       highlight: false,
@@ -145,61 +119,36 @@ export default function Pricing() {
           '$15/mo',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.professional?.annual?.formatted ? 
-            `${dynamicPricing.professional.annual.formatted}/mo` : '$77.40/year') :
-          '$154.80/year'
+            `${dynamicPricing.professional.annual.formatted}/year` : '$72/year') :
+          '$144/year'
       },
-      savings: 'Save 14%',
+      savings: 'save 20%',
       features: [
         { category: 'Core Business Tools', items: [
-          { name: 'Income and expense tracking', included: true },
-          { name: 'Invoice creation', included: true },
-          { name: 'Automated invoice reminders', included: true },
-          { name: 'Multiple users', included: true },
-          { name: 'Bank account integration', value: 'Up to 10 accounts' },
-          { name: 'Financial reporting', value: 'Advanced' },
-          { name: 'Expense categorization', included: true },
+          '✓ Income and expense tracking',
+          '✓ Invoice creation',
+          '✓ Automated invoice reminders',
+          '✓ Up to 3 users'
         ]},
         { category: 'Global Payment Solutions', items: [
-          { name: 'Accept Stripe & PayPal payments', included: true },
-          { name: 'Mobile money payments (M-Pesa, etc.)', included: true },
-          { name: 'Reduced transaction fees', included: true },
-          { name: 'Multi-currency support', included: true },
-          { name: 'Currency exchange services', value: '1.5% fee' },
-          { name: 'Invoice factoring (US & Canada)', value: 'Limited' },
-          { name: 'White-label payment solutions', value: 'Limited' },
+          '✓ Accept Stripe & PayPal payments',
+          '✓ Mobile money payments (M-Pesa, etc.)',
+          '✓ Reduced transaction fees',
+          '✓ Multi-currency support'
         ]},
         { category: 'Inventory Management', items: [
-          { name: 'Basic inventory tracking', included: true },
-          { name: 'Low stock alerts', included: true },
-          { name: 'Barcode scanning', included: true },
-          { name: 'Inventory forecasting', value: 'Limited' },
-          { name: 'Multi-location inventory', value: 'Limited' },
-          { name: 'Custom inventory categories', value: 'Limited' },
+          '✓ Basic inventory tracking',
+          '✓ Low stock alerts',
+          '✓ Barcode scanning',
+          '✓ Inventory forecasting'
         ]},
-        { category: 'Mobile Features', items: [
-          { name: 'Mobile app access', included: true },
-          { name: 'Mobile Point of Sale (mPOS)', included: true },
-          { name: 'Offline mode', included: true },
-        ]},
-        { category: 'Tax & Compliance', items: [
-          { name: 'Tax calculation', included: true },
-          { name: 'Self-service payroll (0.4% fee)', value: 'Discounted' },
-          { name: 'Regional compliance updates', included: true },
-        ]},
-        { category: 'Integrations', items: [
-          { name: 'Accounting software integration', included: true },
-          { name: 'E-commerce platform integration', included: true },
-          { name: 'Custom integrations', value: 'Limited' },
-        ]},
-        { category: 'Additional Features', items: [
-          { name: 'Storage space', value: '30 GB' },
-          { name: 'AI-powered business insights', included: true },
-          { name: 'Advanced forecasting', value: 'Limited' },
-          { name: 'Custom API access', included: false },
-          { name: 'Priority support', included: true },
-          { name: 'Dedicated account manager', included: false },
-          { name: 'HR & CRM modules', value: 'Discounted' },
-        ]},
+        { category: 'Professional Benefits', items: [
+          '• Unlimited storage',
+          '• Priority support',
+          '• 3 user collaboration',
+          '• All features included',
+          '• 20% discount on annual billing'
+        ]}
       ],
       cta: 'Choose Professional',
       highlight: true,
@@ -208,7 +157,7 @@ export default function Pricing() {
     },
     {
       name: 'Enterprise',
-      description: 'Customized solutions for large organizations',
+      description: 'Unlimited scale for ambitious organizations',
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.monthly?.formatted ? 
@@ -216,61 +165,37 @@ export default function Pricing() {
           '$35/mo',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
-            `${dynamicPricing.enterprise.annual.formatted}/mo` : '$180.60/year') :
-          '$361.20/year'
+            `${dynamicPricing.enterprise.annual.formatted}/year` : '$168/year') :
+          '$336/year'
       },
-      savings: 'Save 14%',
+      savings: 'save 20%',
       features: [
         { category: 'Core Business Tools', items: [
-          { name: 'Income and expense tracking', included: true },
-          { name: 'Invoice creation', included: true },
-          { name: 'Automated invoice reminders', included: true },
-          { name: 'Multiple users', included: true },
-          { name: 'Bank account integration', value: 'Unlimited' },
-          { name: 'Financial reporting', value: 'Custom' },
-          { name: 'Expense categorization', included: true },
+          '✓ Income and expense tracking',
+          '✓ Invoice creation',
+          '✓ Automated invoice reminders',
+          '✓ Unlimited users'
         ]},
         { category: 'Global Payment Solutions', items: [
-          { name: 'Accept Stripe & PayPal payments', included: true },
-          { name: 'Mobile money payments (M-Pesa, etc.)', included: true },
-          { name: 'Reduced transaction fees', included: true },
-          { name: 'Multi-currency support', included: true },
-          { name: 'Currency exchange services', value: '1% fee' },
-          { name: 'Invoice factoring (US & Canada)', included: true },
-          { name: 'White-label payment solutions', included: true },
+          '✓ Accept Stripe & PayPal payments',
+          '✓ Mobile money payments (M-Pesa, etc.)',
+          '✓ Reduced transaction fees',
+          '✓ Multi-currency support'
         ]},
         { category: 'Inventory Management', items: [
-          { name: 'Basic inventory tracking', included: true },
-          { name: 'Low stock alerts', included: true },
-          { name: 'Barcode scanning', included: true },
-          { name: 'Inventory forecasting', included: true },
-          { name: 'Multi-location inventory', included: true },
-          { name: 'Custom inventory categories', included: true },
+          '✓ Basic inventory tracking',
+          '✓ Low stock alerts',
+          '✓ Barcode scanning',
+          '✓ Inventory forecasting'
         ]},
-        { category: 'Mobile Features', items: [
-          { name: 'Mobile app access', included: true },
-          { name: 'Mobile Point of Sale (mPOS)', included: true },
-          { name: 'Offline mode', included: true },
-        ]},
-        { category: 'Tax & Compliance', items: [
-          { name: 'Tax calculation', included: true },
-          { name: 'Self-service payroll (0.4% fee)', value: 'Discounted' },
-          { name: 'Regional compliance updates', included: true },
-        ]},
-        { category: 'Integrations', items: [
-          { name: 'Accounting software integration', included: true },
-          { name: 'E-commerce platform integration', included: true },
-          { name: 'Custom integrations', included: true },
-        ]},
-        { category: 'Additional Features', items: [
-          { name: 'Storage space', value: 'Unlimited' },
-          { name: 'AI-powered business insights', included: true },
-          { name: 'Advanced forecasting', included: true },
-          { name: 'Custom API access', included: true },
-          { name: 'Priority support', included: true },
-          { name: 'Dedicated account manager', included: true },
-          { name: 'HR & CRM modules', value: 'Discounted' },
-        ]},
+        { category: 'Enterprise Benefits', items: [
+          '• Unlimited everything',
+          '• Priority support',
+          '• Unlimited users',
+          '• All features included',
+          '• Custom onboarding',
+          '• 20% discount on annual billing'
+        ]}
       ],
       cta: 'Choose Enterprise',
       highlight: false,
@@ -278,6 +203,10 @@ export default function Pricing() {
       color: 'bg-gradient-to-b from-purple-50 to-white border-secondary-main',
     },
   ];
+
+  const toggleFeatures = (planName) => {
+    setExpandedPlan(expandedPlan === planName ? null : planName);
+  };
 
   return (
     <div id="pricing" className="relative py-16 sm:py-24 overflow-hidden">
@@ -301,8 +230,6 @@ export default function Pricing() {
           </p>
         </div>
 
-        {/* Billing toggle */}
-        
         {/* Developing Country Discount Banner */}
         {hasDiscount && (
           <div className="mb-8 bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-lg text-center">
@@ -337,7 +264,7 @@ export default function Pricing() {
               }`}
             >
               Annual
-              <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">Save 14%</span>
+              <span className="ml-2 bg-green-100 text-green-800 text-xs font-semibold px-1.5 py-0.5 rounded-full">Save 20%</span>
             </button>
           </div>
         </div>
@@ -371,12 +298,20 @@ export default function Pricing() {
                 <p className="mt-2 text-gray-600">{plan.description}</p>
                 <div className="mt-8">
                   <p className="flex items-baseline">
-                    <span className="text-4xl font-extrabold text-gray-900">{annual ? plan.price.annual : plan.price.monthly}</span>
-                    {plan.name !== 'Basic' && <span className="ml-1 text-gray-500">{annual ? 'billed annually' : 'per month'}</span>}
+                    <span className="text-4xl font-extrabold text-gray-900">
+                      {plan.name === 'Basic' ? 'FREE' : annual ? plan.price.annual.split('/')[0] : plan.price.monthly.split('/')[0]}
+                    </span>
+                    {plan.name !== 'Basic' && (
+                      <span className="ml-1 text-gray-500">
+                        {annual ? (
+                          <>
+                            /year<br />
+                            <span className="text-sm">({plan.savings})</span>
+                          </>
+                        ) : '/mo'}
+                      </span>
+                    )}
                   </p>
-                  {plan.name !== 'Basic' && annual && (
-                    <p className="mt-1 text-sm text-green-600 font-medium">{plan.savings}</p>
-                  )}
                 </div>
                 
                 <div className="mt-8 mb-8">
@@ -397,45 +332,35 @@ export default function Pricing() {
                 </div>
                 
                 <div className="space-y-6 flex-1">
-                  {plan.features.slice(0, 3).map((category) => (
+                  {/* Always show all feature categories */}
+                  {plan.features.map((category) => (
                     <div key={category.category}>
-                      <h4 className="font-semibold text-gray-800">{category.category}</h4>
-                      <ul className="mt-2 space-y-2">
-                        {category.items.slice(0, 4).map((feature) => (
-                          <li key={feature.name} className="flex">
-                            {feature.hasOwnProperty('included') ? (
-                              feature.included ? (
-                                <svg className="h-5 w-5 text-green-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                </svg>
-                              )
-                            ) : (
-                              <svg className="h-5 w-5 text-yellow-500 mr-2 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                            <span className="text-gray-600 text-sm">{feature.name}
-                              {feature.hasOwnProperty('value') && <span className="ml-1 text-xs font-medium text-gray-500">({feature.value})</span>}
-                            </span>
+                      <h4 className="font-semibold text-gray-800 mb-2">{category.category}</h4>
+                      <ul className="space-y-1">
+                        {category.items.map((item, idx) => (
+                          <li key={idx} className="text-sm text-gray-600">
+                            {item}
                           </li>
                         ))}
                       </ul>
                     </div>
                   ))}
                   
-                  {/* View all features button/accordion */}
-                  <div className="pt-4">
+                  {/* View all features button */}
+                  <div className="pt-4 mt-auto">
                     <button 
                       type="button" 
                       className="text-primary-main hover:text-primary-dark text-sm font-medium flex items-center focus:outline-none group-hover:underline"
-                      onClick={(e) => e.preventDefault()}
+                      onClick={() => toggleFeatures(plan.name)}
                     >
                       View all features
-                      <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <svg 
+                        className={`ml-1 w-4 h-4 transform transition-transform ${expandedPlan === plan.name ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24" 
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                       </svg>
                     </button>
@@ -449,14 +374,14 @@ export default function Pricing() {
         <div className="mt-16 bg-gray-50 rounded-2xl p-8 shadow-sm">
           <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-1">
-              <h3 className="text-xl font-bold text-gray-900">Enterprise Solutions</h3>
-              <p className="mt-2 text-gray-600">Need custom features or dedicated support for your large organization?</p>
+              <h3 className="text-xl font-bold text-gray-900">Need more?</h3>
+              <p className="mt-2 text-gray-600">Contact us for custom features or dedicated support for your large organization.</p>
               <div className="mt-6">
                 <Link
-                  href="/api/auth/login"
+                  href="/contact"
                   className="inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-primary-main hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-light transition-all duration-200"
                 >
-                  Choose Enterprise
+                  Contact Sales
                 </Link>
               </div>
             </div>

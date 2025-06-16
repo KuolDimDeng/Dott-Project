@@ -22,50 +22,53 @@ const PLANS = [
   {
     id: 'free',
     name: 'Basic',
-    description: 'Get started with essential features',
-    price: { monthly: 'Free', annual: 'Free' },
+    description: 'Perfect for small businesses just getting started',
+    price: { monthly: '0', annual: '0' },
     features: [
-      'Up to 3 projects',
-      'Core analytics',
-      'Basic support',
-      'Community access'
+      'Income and expense tracking',
+      'Invoice creation & reminders',
+      'Accept Stripe & PayPal payments',
+      'Basic inventory tracking',
+      '1 user limit',
+      '3GB storage limit'
     ],
     popular: false,
     color: 'blue',
-    buttonText: 'Get Started Free'
+    buttonText: 'Start for Free'
   },
   {
     id: 'professional',
     name: 'Professional',
-    description: 'Perfect for growing businesses',
-    price: { monthly: '$29', annual: '$290' },
+    description: 'Everything growing businesses need to thrive',
+    price: { monthly: '15', annual: '144' },
     features: [
-      'Unlimited projects',
-      'Advanced analytics',
+      'All Basic features',
+      'Up to 3 users',
+      'Unlimited storage',
       'Priority support',
-      'API access',
-      'Team collaboration'
+      'Advanced payment solutions',
+      'Inventory alerts & forecasting'
     ],
     popular: true,
     color: 'indigo',
-    buttonText: 'Start Professional'
+    buttonText: 'Choose Professional'
   },
   {
     id: 'enterprise',
     name: 'Enterprise',
-    description: 'Advanced features for large teams',
-    price: { monthly: '$99', annual: '$990' },
+    description: 'Unlimited scale for ambitious organizations',
+    price: { monthly: '35', annual: '336' },
     features: [
       'All Professional features',
+      'Unlimited users',
+      'Custom onboarding',
       'Dedicated support',
-      'Custom integrations',
-      'Advanced security',
-      'Training sessions',
-      'SLA guarantees'
+      'Advanced integrations',
+      'Enterprise security'
     ],
     popular: false,
     color: 'purple',
-    buttonText: 'Start Enterprise'
+    buttonText: 'Choose Enterprise'
   }
 ];
 
@@ -644,9 +647,16 @@ export default function SubscriptionForm() {
               <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
               
               <div className="mb-6">
-                <span className="text-3xl font-bold">${plan.price[billingCycle] === '0' ? '0' : plan.price[billingCycle]}</span>
-                {plan.price[billingCycle] !== '0' && (
-                  <span className="text-gray-500 ml-1">{billingCycle === 'monthly' ? '/month' : '/year'}</span>
+                {plan.price[billingCycle] === '0' ? (
+                  <span className="text-3xl font-bold">FREE</span>
+                ) : (
+                  <>
+                    <span className="text-3xl font-bold">${plan.price[billingCycle]}</span>
+                    <span className="text-gray-500 ml-1">/{billingCycle === 'monthly' ? 'mo' : 'year'}</span>
+                    {billingCycle === 'annual' && (
+                      <div className="text-sm text-green-600 mt-1">Save 20%</div>
+                    )}
+                  </>
                 )}
               </div>
               
@@ -697,7 +707,7 @@ export default function SubscriptionForm() {
             }`}
             onClick={() => setBillingCycle('annual')}
           >
-            Annual (Save 20%)
+            Annual (save 20%)
           </button>
         </div>
       </div>
