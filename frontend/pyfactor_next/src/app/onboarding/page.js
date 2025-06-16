@@ -15,6 +15,9 @@ export default function OnboardingPage() {
       try {
         console.log('[OnboardingPage] Starting auth check...');
         
+        // Small delay to ensure cookies are properly set after redirect
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // First check local session
         const localSession = sessionManager.getSession();
         const accessToken = sessionManager.getAccessToken();

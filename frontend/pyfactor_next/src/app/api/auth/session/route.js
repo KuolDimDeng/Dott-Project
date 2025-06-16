@@ -11,7 +11,9 @@ const COOKIE_OPTIONS = {
   sameSite: 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60, // 7 days
-  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+  // Remove domain to let browser handle it automatically
+  // This ensures cookies work across subdomains without explicit configuration
+  // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
 };
 
 /**
@@ -28,10 +30,18 @@ export async function GET(request) {
     // CRITICAL: Force fresh cookie read by awaiting cookies()
     const cookieStore = await cookies();
     
-    // Check for backend session token first (new approach)
+    // First check for the main dott_auth_session cookie
+    const dottSessionCookie = cookieStore.get('dott_auth_session');
+    
+    if (dottSessionCookie) {
+      console.log('[Auth Session] Found dott_auth_session cookie, processing...');
+      // Skip to the main session processing below
+    }
+    
+    // Check for backend session token as fallback
     const sessionTokenCookie = cookieStore.get('session_token');
     
-    if (sessionTokenCookie) {
+    if (!dottSessionCookie && sessionTokenCookie) {
       console.log('[Auth Session] Found backend session token');
       
       try {
@@ -104,15 +114,16 @@ export async function GET(request) {
       }
     }
     
-    // Get session cookie - check both names (legacy approach)
-    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    // Get session cookie - prefer dott_auth_session
+    const sessionCookie = dottSessionCookie || cookieStore.get('appSession');
     
     console.log('[Auth Session] Cookie check:', {
       hasSessionToken: !!sessionTokenCookie,
-      hasDottAuthSession: !!cookieStore.get('dott_auth_session'),
+      hasDottAuthSession: !!dottSessionCookie,
       hasAppSession: !!cookieStore.get('appSession'),
       cookieName: sessionCookie?.name,
-      cookieSize: sessionCookie?.value?.length
+      cookieSize: sessionCookie?.value?.length,
+      allCookies: Array.from(cookieStore.getAll()).map(c => ({ name: c.name, size: c.value?.length }))
     });
     
     if (!sessionCookie) {
@@ -342,10 +353,18 @@ export async function POST(request) {
       secure: cookieOptions.secure,
       sameSite: cookieOptions.sameSite,
       httpOnly: cookieOptions.httpOnly,
-      path: cookieOptions.path
+      path: cookieOptions.path,
+      sessionSize: encryptedSession.length
     });
     
+    // Set the main session cookie
     response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
+    
+    console.log('[Auth Session POST] Session cookie set:', {
+      name: 'dott_auth_session',
+      size: encryptedSession.length,
+      domain: cookieOptions.domain
+    });
     
     // Also set the backend session token if available
     if (sessionToken) {
