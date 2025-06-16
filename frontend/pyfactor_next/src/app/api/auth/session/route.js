@@ -371,11 +371,7 @@ export async function POST(request) {
     });
     
     // Set the main session cookie
-    response.cookies.set('dott_auth_session', encryptedSession, {
-      ...cookieOptions,
-      // Try without domain first to ensure it works
-      domain: undefined
-    });
+    response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
     
     console.log('[Auth Session POST] Session cookie set:', {
       name: 'dott_auth_session',
@@ -385,10 +381,7 @@ export async function POST(request) {
     
     // Also set the backend session token if available
     if (sessionToken) {
-      response.cookies.set('session_token', sessionToken, {
-        ...cookieOptions,
-        domain: undefined
-      });
+      response.cookies.set('session_token', sessionToken, cookieOptions);
       console.log('[Auth Session POST] Backend session token set');
     }
     
@@ -401,8 +394,7 @@ export async function POST(request) {
     };
     response.cookies.set('onboarding_status', JSON.stringify(statusCookie), {
       ...cookieOptions,
-      httpOnly: false, // Make this readable by client-side JavaScript
-      domain: undefined
+      httpOnly: false // Make this readable by client-side JavaScript
     });
     
     console.log('[Auth Session POST] Session created successfully with status cookie');
@@ -429,15 +421,13 @@ export async function DELETE(request) {
     // Clear the session cookie
     response.cookies.set('dott_auth_session', '', {
       ...COOKIE_OPTIONS,
-      maxAge: 0,
-      domain: undefined
+      maxAge: 0
     });
     
     // Also clear any legacy cookies
     response.cookies.set('appSession', '', {
       ...COOKIE_OPTIONS,
-      maxAge: 0,
-      domain: undefined
+      maxAge: 0
     });
     
     return response;
