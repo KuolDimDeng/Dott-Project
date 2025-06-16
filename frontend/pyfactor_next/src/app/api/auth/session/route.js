@@ -197,13 +197,20 @@ export async function GET(request) {
     // Generate CSRF token for the session
     const csrfToken = generateCSRFToken();
     
-    // Return session data (never include sensitive tokens in response)
-    const response = NextResponse.json({
+    // Return session data (include sessionToken for v2 onboarding)
+    const responseData = {
       user: sessionData.user,
       authenticated: true,
       expiresAt: sessionData.expiresAt,
       csrfToken: csrfToken
-    });
+    };
+    
+    // Include sessionToken if available (for v2 onboarding)
+    if (sessionData.sessionToken) {
+      responseData.sessionToken = sessionData.sessionToken;
+    }
+    
+    const response = NextResponse.json(responseData);
     
     // Add cache control headers to ensure fresh data
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -321,6 +328,7 @@ export async function POST(request) {
       },
       accessToken,
       idToken,
+      sessionToken, // Include backend session token if available
       createdAt: Date.now(),
       expiresAt: Date.now() + (24 * 60 * 60 * 1000) // 24 hours (reduced from 7 days)
     };
