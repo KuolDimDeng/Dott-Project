@@ -176,11 +176,25 @@ export default function SubscriptionSelectionFormV2({
               <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
               
               {/* Pricing Display */}
-              <PricingDisplay 
-                plan={plan} 
-                billingCycle={billingCycle} 
-                currency={currency} 
-              />
+              <div className="mb-4">
+                {plan.id === 'free' ? (
+                  <div className="text-3xl font-bold">Free</div>
+                ) : (
+                  <div>
+                    <div className="text-3xl font-bold">
+                      ${billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice}
+                      <span className="text-base font-normal text-gray-600">
+                        /{billingCycle === 'monthly' ? 'month' : 'year'}
+                      </span>
+                    </div>
+                    {billingCycle === 'yearly' && plan.id !== 'free' && (
+                      <div className="text-sm text-green-600 mt-1">
+                        Save ${plan.monthlyPrice * 12 - plan.yearlyPrice} per year
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Features */}
