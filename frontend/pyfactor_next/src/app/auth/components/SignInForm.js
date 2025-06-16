@@ -210,6 +210,23 @@ export default function SignInForm() {
               <h3 className="text-sm font-medium text-red-800">
                 {errors.general}
               </h3>
+              {errors.showResendLink && (
+                <button
+                  type="button"
+                  onClick={() => window.location.href = '/auth/resend-verification'}
+                  className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+                >
+                  Resend verification email
+                </button>
+              )}
+              {errors.showResetLink && (
+                <Link
+                  href="/auth/forgot-password"
+                  className="mt-2 block text-sm text-red-600 hover:text-red-500 underline"
+                >
+                  Reset your password
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -298,9 +315,9 @@ export default function SignInForm() {
       <div>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !cookiesEnabled}
           className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-            isSubmitting 
+            isSubmitting || !cookiesEnabled
               ? 'bg-gray-400 cursor-not-allowed' 
               : 'bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
           }`}
@@ -323,9 +340,9 @@ export default function SignInForm() {
           <button
             type="button"
             onClick={handleGoogleSignIn}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !cookiesEnabled}
             className={`w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${
-              isSubmitting ? 'cursor-not-allowed opacity-50' : ''
+              isSubmitting || !cookiesEnabled ? 'cursor-not-allowed opacity-50' : ''
             }`}
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

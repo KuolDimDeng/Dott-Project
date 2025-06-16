@@ -92,7 +92,16 @@
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.## Session Management Fixes (2025-01-14)
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+
+## Auth Error Handling Guidelines
+- ALWAYS use handleAuthError() utility for auth-related errors
+- NEVER show raw error messages to users
+- ALWAYS provide actionable recovery options
+- CHECK for cookies enabled before auth operations
+- VALIDATE sessions proactively, don't wait for failures
+- HANDLE rate limiting gracefully with wait times
+- TEST edge cases: network errors, session expiry, concurrent logins## Session Management Fixes (2025-01-14)
 
 ### Fixed SSL Errors in Internal API Calls
 - Removed internal API calls from complete-all endpoint that were causing SSL errors
@@ -118,3 +127,45 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - CSP headers: Removed unsafe-inline ✓
 - Secure cookies: httpOnly, secure, sameSite=lax ✓
 - Current implementation is production-ready and secure
+
+## Authentication Edge Cases Implementation (2025-01-16)
+
+### Comprehensive Error Handling
+- Created authErrorHandler.js utility for 30+ error scenarios
+- Maps all Auth0 and session errors to user-friendly messages
+- Provides appropriate recovery actions (retry, wait, redirect)
+- Handles rate limiting with automatic wait periods
+
+### Session Management Middleware
+- Created sessionValidation.js for proactive session monitoring
+- Auto-refresh before expiry (5 min threshold)
+- Concurrent session detection
+- Online/offline status handling
+- Activity tracking to prevent idle timeout
+
+### Error Boundary Component
+- AuthErrorBoundary.jsx for React error catching
+- Displays contextual error messages
+- Retry mechanisms with exponential backoff
+- Automatic navigation for auth failures
+
+### Edge Cases Handled
+1. **Sign Up**: Email validation, password strength, rate limiting, cookie detection
+2. **Sign In**: Invalid credentials, unverified email, account locked, MFA
+3. **Onboarding**: Payment failures, session expiry mid-flow, back button bypass
+4. **Sessions**: Auto-refresh, concurrent detection, cookie blocking
+5. **Network**: Offline handling, timeouts, CORS errors, Auth0 unavailability
+
+### Key Files
+- /frontend/pyfactor_next/src/utils/authErrorHandler.js
+- /frontend/pyfactor_next/src/middleware/sessionValidation.js
+- /frontend/pyfactor_next/src/components/AuthErrorBoundary.jsx
+- /frontend/pyfactor_next/docs/AUTHENTICATION_EDGE_CASES.md
+
+### Testing Checklist
+- ✅ Rate limiting (5 failed attempts)
+- ✅ Session expiry (30 min idle)
+- ✅ Cookie blocking detection
+- ✅ Payment failure recovery
+- ✅ Concurrent session handling
+- ✅ Network error retry

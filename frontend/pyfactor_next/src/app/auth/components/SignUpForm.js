@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { logger } from '@/utils/logger';
 import { clearAllAuthData } from '@/utils/authUtils';
 import { setCacheValue } from '@/utils/appCache';
+import { handleAuthError, checkCookiesEnabled } from '@/utils/authErrorHandler';
 
 // Simple email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -42,11 +43,19 @@ export default function SignUpForm() {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [tenantId, setTenantId] = useState('');
+  const [cookiesEnabled, setCookiesEnabled] = useState(true);
 
   // Add early in the component right after initial state setup
   useEffect(() => {
     // Clear any existing session when the component mounts
     clearExistingSession();
+    
+    // Check if cookies are enabled
+    const enabled = checkCookiesEnabled();
+    setCookiesEnabled(enabled);
+    if (!enabled) {
+      setErrorMessage('Cookies must be enabled to sign up. Please enable cookies in your browser settings.');
+    }
   }, []); // Empty dependency array means this runs once on mount
 
   // Form validation function
@@ -134,17 +143,39 @@ export default function SignUpForm() {
     } catch (error) {
       logger.error('[SignUpForm] Sign-up error:', error);
       
-      // Handle different error types
-      if (error.name === 'UsernameExistsException' || (error.message && error.message.includes('already exists'))) {
-        setErrorMessage('An account with this email already exists. Please sign in instead.');
-      } else if (error.name === 'InvalidPasswordException') {
-        setErrors({ password: 'Password does not meet requirements' });
-      } else if (error.name === 'InvalidParameterException' && error.message.includes('email')) {
-        setErrors({ username: 'Please provide a valid email address' });
-      } else if (error.message && error.message.includes('network')) {
-        setErrorMessage('Network error. Please check your internet connection and try again.');
-      } else {
-        setErrorMessage(error.message || 'An error occurred during sign up. Please try again.');
+      // Use comprehensive error handler
+      const handled = handleAuthError(error, { context: 'signup' });
+      
+      // Handle specific actions
+      switch (handled.action) {
+        case 'redirect_signin':
+          setErrorMessage(handled.message);
+          setTimeout(() => {
+            router.push('/auth/signin');
+          }, 2000);
+          break;
+          
+        case 'retry':
+          if (handled.code === 'weak_password') {
+            setErrors({ password: handled.message });
+          } else if (handled.code === 'invalid_email') {
+            setErrors({ username: handled.message });
+          } else {
+            setErrorMessage(handled.message);
+          }
+          break;
+          
+        case 'wait':
+          setErrorMessage(handled.message);
+          setIsSubmitting(true); // Keep button disabled
+          setTimeout(() => {
+            setIsSubmitting(false);
+            setErrorMessage('');
+          }, handled.waitTime || 60000);
+          break;
+          
+        default:
+          setErrorMessage(handled.message);
       }
     } finally {
       setIsSubmitting(false);
@@ -304,7 +335,7 @@ export default function SignUpForm() {
         <div>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !cookiesEnabled}
             className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white 
               ${isSubmitting 
                 ? 'bg-blue-400 cursor-not-allowed' 
