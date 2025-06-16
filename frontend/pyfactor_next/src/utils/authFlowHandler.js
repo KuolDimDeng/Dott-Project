@@ -138,7 +138,11 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     });
 
     // Determine redirect URL based on backend status
-    if (finalUserData.needsOnboarding || !finalUserData.onboardingCompleted) {
+    // CRITICAL: For new users, always check profile data first
+    if (profileData && profileData.needsOnboarding === true) {
+      // Profile API says user needs onboarding - trust this
+      finalUserData.redirectUrl = '/onboarding';
+    } else if (finalUserData.needsOnboarding || !finalUserData.onboardingCompleted) {
       // User needs to complete onboarding
       finalUserData.redirectUrl = '/onboarding';
     } else if (finalUserData.onboardingCompleted && finalUserData.tenantId) {

@@ -147,6 +147,9 @@ export async function POST(request) {
       
       const newUser = await createUserResponse.json();
       
+      // Check if this is truly a new user creation
+      const isNewUser = newUser.isExistingUser === false || newUser.is_new_user === true;
+      
       console.log('[UserSync] Backend response:', {
         email: newUser.email,
         tenant_id: newUser.tenant_id || newUser.tenantId,
@@ -155,12 +158,12 @@ export async function POST(request) {
         isExistingUser: newUser.isExistingUser
       });
       
-      // If backend indicates this is an existing user with completed onboarding, return that data
-      if (newUser.isExistingUser && (newUser.onboardingComplete || newUser.tenantId)) {
-        console.log('[UserSync] Backend returned existing user with completed onboarding');
+      // If backend explicitly indicates onboarding is complete, respect that
+      if (newUser.onboardingComplete === true || newUser.onboarding_completed === true) {
+        console.log('[UserSync] Backend indicates onboarding is complete');
         return NextResponse.json({
           success: true,
-          is_existing_user: true,
+          is_existing_user: newUser.isExistingUser || true,
           ...newUser,
           tenant_id: newUser.tenant_id || newUser.tenantId,
           needs_onboarding: false,
@@ -175,8 +178,9 @@ export async function POST(request) {
         ...newUser,
         // Use backend-provided values if available
         tenant_id: newUser.tenant_id || newUser.tenantId || null,
-        needs_onboarding: newUser.needs_onboarding !== false,
-        onboarding_completed: newUser.onboardingComplete || false
+        // CRITICAL: For new users, always set needs_onboarding to true unless backend explicitly says otherwise
+        needs_onboarding: isNewUser ? true : (newUser.needs_onboarding !== false),
+        onboarding_completed: isNewUser ? false : (newUser.onboardingComplete || false)
       });
       
     } catch (backendError) {
