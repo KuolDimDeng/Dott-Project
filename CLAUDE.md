@@ -189,6 +189,27 @@ NEVER proactively create documentation files (*.md) or README files. Only create
   - `/backend/pyfactor/custom_auth/enhanced_rls_middleware.py`
   - `/frontend/pyfactor_next/src/app/api/auth/clear-cache/route.js`
 
+## Onboarding Redirect Loop Fix (2025-01-16)
+- **Issue**: Users redirected back to onboarding after clearing browser cache even though they completed onboarding
+- **Root Cause**: Backend returns `needs_onboarding: true` even after onboarding completion
+- **Solution**: Force backend to update onboarding status with multiple approaches:
+  1. Modified `/api/onboarding/complete-all/route.js` to force backend status update
+  2. Added explicit flags: `force_complete: true`, `payment_verified: true`
+  3. Call multiple backend endpoints to ensure status is saved
+  4. Force session update to show `needsOnboarding: false`
+- **Backend Scripts**:
+  - `fix_all_incomplete_onboarding.py` - Fix all users with tenant but needs_onboarding=true
+  - `fix_complete_onboarding_status.py` - Fix individual user status
+- **How to Run Scripts**:
+  ```bash
+  # On Render backend shell
+  python manage.py shell < scripts/fix_all_incomplete_onboarding.py
+  # Or for individual user
+  python manage.py shell
+  >>> from scripts.fix_complete_onboarding_status import fix_user_onboarding
+  >>> fix_user_onboarding('kdeng@dottapps.com')
+  ```
+
 ## Onboarding V2 Architecture (January 2025)
 - **Implementation Date**: 2025-01-16
 - **Purpose**: Solve multiple sources of truth, progress loss, and redirect loops

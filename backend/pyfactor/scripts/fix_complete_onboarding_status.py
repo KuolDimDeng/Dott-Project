@@ -1,169 +1,142 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
-Comprehensive fix for onboarding status issues
-Fixes both onboarding status and session creation problems
+Fix individual user's onboarding status who completed onboarding but still has needs_onboarding = True
+
+Usage:
+    python manage.py shell
+    >>> from scripts.fix_complete_onboarding_status import fix_user_onboarding
+    >>> fix_user_onboarding('kdeng@dottapps.com')
 """
 
 import os
 import sys
 import django
-from django.utils import timezone
 from django.db import transaction
+from datetime import datetime
 
-# Add the project root to the Python path
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-sys.path.insert(0, project_root)
-
-# Setup Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'pyfactor.settings')
+# Set up Django environment
+sys.path.append('/app')  # Render deployment path
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from custom_auth.models import User, Tenant
-from onboarding.models import OnboardingProgress
-from session_manager.models import UserSession
-from users.models import Business, Subscription
+from custom_auth.models import CustomUser, OnboardingProgress
+from tenant.models import Tenant
+
 
 def fix_user_onboarding(email):
-    """Fix onboarding status comprehensively"""
-    
-    print(f"\n=== Fixing onboarding for {email} ===\n")
+    """Fix onboarding status for a specific user"""
     
     try:
-        with transaction.atomic():
-            # Find the user
-            user = User.objects.get(email=email)
-            print(f"✅ Found user: {user.email} (ID: {user.id})")
-            print(f"   - Auth0 Sub: {user.auth0_sub}")
-            print(f"   - Active: {user.is_active}")
+        user = CustomUser.objects.get(email=email)
+        print(f"\n🔍 Checking user: {email}")
+        print(f"   - Current needs_onboarding: {user.needs_onboarding}")
+        print(f"   - Current onboarding_completed: {user.onboarding_completed}")
+        print(f"   - Has tenant: {user.tenant is not None}")
+        
+        if user.tenant:
+            print(f"   - Tenant: {user.tenant.business_name}")
+            print(f"   - Tenant ID: {user.tenant.id}")
+        
+        # Check onboarding progress
+        has_progress = hasattr(user, 'onboardingprogress')
+        if has_progress:
+            progress = user.onboardingprogress
+            print(f"\n📋 Onboarding Progress:")
+            print(f"   - Status: {progress.onboarding_status}")
+            print(f"   - Current step: {progress.current_step}")
+            print(f"   - Business info completed: {progress.business_info_completed}")
+            print(f"   - Subscription selected: {progress.subscription_selected}")
+            print(f"   - Payment completed: {progress.payment_completed}")
+            print(f"   - Selected plan: {progress.selected_plan}")
+        
+        # Fix if user has tenant but still marked as needs_onboarding
+        if user.tenant and user.needs_onboarding:
+            print(f"\n⚠️  User has tenant but needs_onboarding is True - fixing...")
             
-            # Check tenant
-            tenant = None
-            if hasattr(user, 'tenant') and user.tenant:
-                tenant = user.tenant
-                print(f"\n✅ User has tenant: {tenant.id}")
-                print(f"   - Name: {tenant.name}")
-            else:
-                # Try to find tenant by owner_id
-                tenants = Tenant.objects.filter(owner_id=str(user.id))
-                if tenants.exists():
-                    tenant = tenants.first()
-                    user.tenant = tenant
-                    user.save(update_fields=['tenant'])
-                    print(f"\n✅ Found and linked tenant: {tenant.id}")
-                    print(f"   - Name: {tenant.name}")
-                else:
-                    print(f"\n❌ No tenant found for user")
-                    return
-            
-            # Fix OnboardingProgress
-            try:
-                progress = OnboardingProgress.objects.get(user=user)
-                print(f"\n📋 Current onboarding progress:")
-                print(f"   - Status: {progress.onboarding_status}")
-                print(f"   - Current step: {progress.current_step}")
-                print(f"   - Setup completed: {progress.setup_completed}")
-                print(f"   - Payment completed: {progress.payment_completed}")
-                print(f"   - Subscription plan: {progress.subscription_plan}")
-                
-                # Check if payment was actually completed
-                if progress.payment_completed and progress.subscription_plan in ['professional', 'enterprise']:
-                    print(f"\n✅ Payment was completed for {progress.subscription_plan} plan")
-                    print("🔧 Fixing onboarding status...")
-                    
-                    # Update all fields to ensure completion
-                    progress.onboarding_status = 'complete'
-                    progress.current_step = 'complete'
-                    progress.setup_completed = True
-                    progress.setup_timestamp = progress.setup_timestamp or timezone.now()
-                    progress.completed_at = progress.completed_at or timezone.now()
-                    
-                    # Ensure completed_steps includes all steps
-                    if progress.completed_steps is None:
-                        progress.completed_steps = []
-                    
-                    required_steps = ['business_info', 'subscription', 'payment', 'setup', 'complete']
-                    for step in required_steps:
-                        if step not in progress.completed_steps:
-                            progress.completed_steps.append(step)
-                    
-                    # Ensure tenant_id is set
-                    if not progress.tenant_id and tenant:
-                        progress.tenant_id = tenant.id
-                    
-                    progress.save()
-                    
-                    print(f"\n✅ Updated onboarding progress:")
-                    print(f"   - Status: {progress.onboarding_status}")
-                    print(f"   - Current step: {progress.current_step}")
-                    print(f"   - Setup completed: {progress.setup_completed}")
-                    print(f"   - Completed steps: {progress.completed_steps}")
-                else:
-                    print(f"\n⚠️  Payment not completed or free plan - not updating status")
-                    
-            except OnboardingProgress.DoesNotExist:
-                print(f"\n❌ No onboarding progress found")
-                
-            # Update user's needs_onboarding field
-            if hasattr(user, 'needs_onboarding'):
+            with transaction.atomic():
+                # Update user status
                 user.needs_onboarding = False
-                user.save(update_fields=['needs_onboarding'])
-                print(f"\n✅ Updated user.needs_onboarding to False")
-            
-            # Check Business and Subscription
-            try:
-                from users.models import UserProfile
-                profile = UserProfile.objects.get(user=user)
-                if profile.business:
-                    print(f"\n🏢 Business: {profile.business.name}")
-                    
-                    # Check subscription
-                    try:
-                        subscription = Subscription.objects.get(business=profile.business)
-                        print(f"   - Subscription plan: {subscription.selected_plan}")
-                        print(f"   - Active: {subscription.is_active}")
-                        
-                        # Update subscription if needed
-                        if progress.subscription_plan in ['professional', 'enterprise']:
-                            subscription.selected_plan = progress.subscription_plan
-                            subscription.is_active = True
-                            subscription.save()
-                            print(f"   - ✅ Updated subscription to {progress.subscription_plan}")
-                    except Subscription.DoesNotExist:
-                        print(f"   - ❌ No subscription found")
-                        
-            except UserProfile.DoesNotExist:
-                print(f"\n⚠️  No user profile found")
+                user.onboarding_completed = True
+                user.setup_done = True
+                user.current_onboarding_step = 'completed'
+                user.onboarding_status = 'complete'
+                user.save(update_fields=[
+                    'needs_onboarding', 
+                    'onboarding_completed', 
+                    'setup_done',
+                    'current_onboarding_step',
+                    'onboarding_status'
+                ])
                 
-            # Clear any active sessions to force fresh login
-            active_sessions = UserSession.objects.filter(
-                user=user,
-                expires_at__gt=timezone.now()
-            )
-            session_count = active_sessions.count()
-            if session_count > 0:
-                active_sessions.delete()
-                print(f"\n🧹 Cleared {session_count} active session(s)")
+                # Update onboarding progress if exists
+                if has_progress:
+                    progress.onboarding_status = 'complete'
+                    progress.setup_completed = True
+                    progress.current_step = 'completed'
+                    if not progress.completed_at:
+                        progress.completed_at = datetime.now()
+                    progress.save()
+                
+                # Clear any active sessions to force refresh
+                if hasattr(user, 'sessions'):
+                    user.sessions.all().delete()
+                    print(f"   ✅ Cleared active sessions")
             
-            # Verify the fix
-            progress.refresh_from_db()
-            print(f"\n✅ Final verification:")
-            print(f"   - Onboarding status: {progress.onboarding_status}")
-            print(f"   - Setup completed: {progress.setup_completed}")
-            print(f"   - User tenant: {user.tenant_id if hasattr(user, 'tenant_id') else 'N/A'}")
+            print(f"\n✅ Fixed onboarding status for {email}")
+            print(f"   - needs_onboarding: {user.needs_onboarding}")
+            print(f"   - onboarding_completed: {user.onboarding_completed}")
+            print(f"   - setup_done: {user.setup_done}")
             
-            print(f"\n✅ Successfully fixed onboarding for {email}")
-            print("\n💡 Next steps:")
-            print("   1. User should clear browser cache/cookies")
-            print("   2. Sign in again at https://dottapps.com/auth/signin")
-            print("   3. Should be redirected to dashboard, not onboarding")
+            return True
+        
+        elif not user.tenant:
+            print(f"\n❌ User has no tenant assigned - onboarding not complete")
+            return False
+        
+        else:
+            print(f"\n✅ User onboarding status is already correct")
+            return True
             
-    except User.DoesNotExist:
+    except CustomUser.DoesNotExist:
         print(f"\n❌ User {email} not found")
+        return False
     except Exception as e:
-        print(f"\n❌ Error: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        print(f"\n❌ Error fixing user: {str(e)}")
+        return False
+
+
+def check_and_fix_multiple_users(emails):
+    """Check and fix multiple users"""
+    
+    print(f"\n🔍 Checking {len(emails)} users...")
+    
+    fixed = 0
+    already_ok = 0
+    errors = 0
+    
+    for email in emails:
+        result = fix_user_onboarding(email)
+        if result is True:
+            fixed += 1
+        elif result is False:
+            errors += 1
+        else:
+            already_ok += 1
+    
+    print(f"\n📊 Summary:")
+    print(f"   - Fixed: {fixed}")
+    print(f"   - Already OK: {already_ok}")
+    print(f"   - Errors: {errors}")
+
 
 if __name__ == "__main__":
-    # Fix support@dottapps.com
-    fix_user_onboarding('support@dottapps.com')
+    # Fix specific user
+    import sys
+    if len(sys.argv) > 1:
+        email = sys.argv[1]
+        fix_user_onboarding(email)
+    else:
+        print("Usage: python fix_complete_onboarding_status.py <email>")
+        print("Or use in Django shell:")
+        print("  from scripts.fix_complete_onboarding_status import fix_user_onboarding")
+        print("  fix_user_onboarding('user@example.com')")
