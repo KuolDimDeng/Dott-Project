@@ -226,6 +226,23 @@ export async function GET(request) {
             setup_done: backendUser.setup_done,
             onboardingProgress: onboardingProgress
           });
+          
+          // Special debug logging for kdeng@dottapps.com
+          if (user.email === 'kdeng@dottapps.com') {
+            console.log('🚨 [PROFILE API] KDENG DEBUG - Full backend response:', JSON.stringify(backendUser, null, 2));
+            console.log('🚨 [PROFILE API] KDENG DEBUG - Onboarding decision factors:', {
+              backend_needs_onboarding: backendUser.needs_onboarding,
+              backend_onboarding_completed: backendUser.onboarding_completed,
+              backend_setup_done: backendUser.setup_done,
+              backend_onboarding_status: backendUser.onboarding_status,
+              has_tenant: !!backendUser.tenant_id,
+              onboarding_progress_status: onboardingProgress?.onboarding_status,
+              onboarding_progress_completed: onboardingProgress?.setup_completed,
+              payment_completed: onboardingProgress?.payment_completed,
+              completed_steps: onboardingProgress?.completed_steps
+            });
+          }
+          
           console.log('[Profile API] Backend user data:', {
             email: backendUser.email,
             tenant_id: backendUser.tenant_id,
