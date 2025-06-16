@@ -38,9 +38,14 @@ class ApiClientV2 {
     // We'll check for authenticated status instead
     const session = await sessionManager.getSession();
     if (session?.authenticated) {
-      // For now, we'll rely on cookies for authentication
-      // The backend will validate the session cookie
-      logger.debug('[ApiClient] Session is authenticated, relying on cookies');
+      // For v2 onboarding, we need to pass the session token if available
+      if (session.sessionToken) {
+        requestOptions.headers['Authorization'] = `Bearer ${session.sessionToken}`;
+        logger.debug('[ApiClient] Added session token to Authorization header');
+      } else {
+        // Fallback: rely on cookies for authentication
+        logger.debug('[ApiClient] Session is authenticated, relying on cookies');
+      }
     }
 
     let lastError;
