@@ -147,21 +147,36 @@ export async function POST(request) {
       
       const newUser = await createUserResponse.json();
       
-      console.log('[UserSync] Created new user:', {
+      console.log('[UserSync] Backend response:', {
         email: newUser.email,
-        tenant_id: newUser.tenant_id,
-        needs_onboarding: true
+        tenant_id: newUser.tenant_id || newUser.tenantId,
+        needs_onboarding: newUser.needs_onboarding,
+        onboardingComplete: newUser.onboardingComplete,
+        isExistingUser: newUser.isExistingUser
       });
       
-      // Step 3: Skip tenant creation - backend handles this during onboarding
-      console.log('[UserSync] Skipping tenant creation - will be done during onboarding');
+      // If backend indicates this is an existing user with completed onboarding, return that data
+      if (newUser.isExistingUser && (newUser.onboardingComplete || newUser.tenantId)) {
+        console.log('[UserSync] Backend returned existing user with completed onboarding');
+        return NextResponse.json({
+          success: true,
+          is_existing_user: true,
+          ...newUser,
+          tenant_id: newUser.tenant_id || newUser.tenantId,
+          needs_onboarding: false,
+          onboarding_completed: true
+        });
+      }
       
+      // For new users, respect what backend returns
       return NextResponse.json({
         success: true,
-        is_existing_user: false,
+        is_existing_user: newUser.isExistingUser || false,
         ...newUser,
-        tenant_id: null, // Will be assigned during onboarding
-        needs_onboarding: true
+        // Use backend-provided values if available
+        tenant_id: newUser.tenant_id || newUser.tenantId || null,
+        needs_onboarding: newUser.needs_onboarding !== false,
+        onboarding_completed: newUser.onboardingComplete || false
       });
       
     } catch (backendError) {

@@ -117,6 +117,17 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       finalUserData.needsOnboarding = profileData.needsOnboarding === true;
       finalUserData.onboardingCompleted = profileData.onboardingCompleted === true;
     }
+    
+    // Also check userData for tenant and onboarding status (from create-auth0-user response)
+    if (!finalUserData.tenantId && userData.tenantId) {
+      finalUserData.tenantId = userData.tenantId;
+    }
+    
+    // If userData shows onboarding is complete, respect that
+    if (userData.onboardingComplete === true || userData.onboardingCompleted === true) {
+      finalUserData.onboardingCompleted = true;
+      finalUserData.needsOnboarding = false;
+    }
 
     console.log('[AuthFlowHandler] Redirect decision factors:', {
       tenantId: finalUserData.tenantId,
