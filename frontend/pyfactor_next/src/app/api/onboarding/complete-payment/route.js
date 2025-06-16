@@ -63,8 +63,8 @@ export async function POST(request) {
     // 3. Call backend to complete onboarding with payment verification
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
-    // First update subscription details
-    const updateResponse = await fetch(`${apiBaseUrl}/api/onboarding/update-subscription/`, {
+    // Call the backend complete-payment endpoint that properly handles payment verification
+    const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete-payment/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -73,37 +73,9 @@ export async function POST(request) {
         'X-User-Sub': user.sub
       },
       body: JSON.stringify({
-        user_id: user.sub,
-        subscription_plan: plan || user.subscriptionPlan,
-        billing_cycle: billingCycle || 'monthly',
-        stripe_subscription_id: subscriptionId,
-        stripe_payment_intent_id: paymentIntentId,
-        payment_completed: true,
-        subscription_status: 'active',
-        subscription_start_date: new Date().toISOString()
-      })
-    });
-    
-    if (!updateResponse.ok) {
-      const errorText = await updateResponse.text();
-      console.error('[CompletePayment] Subscription update failed:', errorText);
-    }
-    
-    // Now complete the onboarding
-    const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionData.accessToken}`,
-        'X-User-Email': user.email,
-        'X-User-Sub': user.sub
-      },
-      body: JSON.stringify({
-        selected_plan: plan || user.subscriptionPlan,
-        billing_cycle: billingCycle || 'monthly',
-        payment_verified: true,
         payment_intent_id: paymentIntentId,
-        subscription_id: subscriptionId
+        subscription_id: subscriptionId,
+        tenant_id: tenantId || user.tenantId || user.tenant_id
       })
     });
     
@@ -113,7 +85,35 @@ export async function POST(request) {
       const completeResult = await completeResponse.json();
       console.log('[CompletePayment] Backend completion successful:', completeResult);
       if (!finalTenantId && completeResult.data) {
-        finalTenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+        finalTenantId = completeResult.data.tenant_id || completeResult.data.tenantId;
+      }
+      
+      // Also update the backend session via session manager
+      if (sessionData.sessionToken) {
+        try {
+          const sessionUpdateResponse = await fetch(`${apiBaseUrl}/api/sessions/current/`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Session ${sessionData.sessionToken}`,
+            },
+            body: JSON.stringify({
+              needs_onboarding: false,
+              onboarding_completed: true,
+              onboarding_step: 'completed',
+              subscription_plan: plan || user.subscriptionPlan,
+              subscription_status: 'active'
+            })
+          });
+          
+          if (sessionUpdateResponse.ok) {
+            console.log('[CompletePayment] Backend session updated successfully');
+          } else {
+            console.error('[CompletePayment] Backend session update failed:', await sessionUpdateResponse.text());
+          }
+        } catch (e) {
+          console.error('[CompletePayment] Error updating backend session:', e);
+        }
       }
     } else {
       const errorText = await completeResponse.text();
@@ -124,6 +124,8 @@ export async function POST(request) {
     // 4. Update session to mark onboarding as complete
     const updatedSession = {
       ...sessionData,
+      // Preserve sessionToken if it exists
+      sessionToken: sessionData.sessionToken,
       user: {
         ...sessionData.user,
         // Mark onboarding as complete

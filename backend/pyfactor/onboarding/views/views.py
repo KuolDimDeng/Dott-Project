@@ -1471,7 +1471,7 @@ class CompleteOnboardingView(BaseOnboardingView):
         return OnboardingProgress.objects.get(user=user)
     
     @sync_to_async
-    def complete_onboarding(self, onboarding):
+    def complete_onboarding(self, onboarding, payment_data=None):
         # Manual transaction handling instead of atomic
         from django.db import connection
         
@@ -1484,9 +1484,35 @@ class CompleteOnboardingView(BaseOnboardingView):
             if connection.in_atomic_block:
                 connection.close()
                 connection.connect()
-                
+            
+            # Update payment fields if payment data is provided
+            if payment_data:
+                if payment_data.get('payment_verified'):
+                    onboarding.payment_completed = True
+                    onboarding.payment_timestamp = timezone.now()
+                    onboarding.subscription_status = 'active'
+                    
+                if payment_data.get('payment_intent_id'):
+                    onboarding.payment_id = payment_data['payment_intent_id']
+                    onboarding.payment_method = 'stripe'
+                    
+                if payment_data.get('subscription_id'):
+                    onboarding.stripe_subscription_id = payment_data['subscription_id']
+                    
+                if payment_data.get('selected_plan'):
+                    onboarding.selected_plan = payment_data['selected_plan']
+                    onboarding.subscription_plan = payment_data['selected_plan']
+                    
+                if payment_data.get('billing_cycle'):
+                    onboarding.billing_cycle = payment_data['billing_cycle']
+            
+            # Mark onboarding as complete
             onboarding.onboarding_status = 'complete'
             onboarding.current_step = 0
+            onboarding.completed_at = timezone.now()
+            onboarding.setup_completed = True
+            onboarding.setup_timestamp = timezone.now()
+            
             onboarding.save()
             return onboarding
         except Exception as e:
@@ -1530,12 +1556,43 @@ class CompleteOnboardingView(BaseOnboardingView):
                     }
                 }, status=status.HTTP_402_PAYMENT_REQUIRED)
             
-            # Complete onboarding
-            await self.complete_onboarding(onboarding)
+            # Prepare payment data if provided
+            payment_data = None
+            if payment_verified:
+                payment_data = {
+                    'payment_verified': True,
+                    'payment_intent_id': request.data.get('payment_intent_id'),
+                    'subscription_id': request.data.get('subscription_id'),
+                    'selected_plan': selected_plan,
+                    'billing_cycle': request.data.get('billing_cycle', 'monthly')
+                }
+                logger.info(f"[CompleteOnboarding] Processing payment completion for {user.email} with plan {selected_plan}")
+            
+            # Complete onboarding with payment data
+            await self.complete_onboarding(onboarding, payment_data)
+            
+            # Update user's onboarding status if the field exists
+            if hasattr(user, 'needs_onboarding'):
+                user.needs_onboarding = False
+                await sync_to_async(user.save)(update_fields=['needs_onboarding'])
+            
+            # Get tenant_id for response
+            tenant_id = onboarding.tenant_id
+            if not tenant_id and hasattr(user, 'tenant_id'):
+                tenant_id = user.tenant_id
+            
+            logger.info(f"[CompleteOnboarding] Onboarding completed successfully for {user.email}")
             
             return Response({
                 "message": "Onboarding completed successfully",
-                "redirect": "/dashboard"
+                "redirect": f"/tenant/{tenant_id}/dashboard" if tenant_id else "/dashboard",
+                "data": {
+                    "tenantId": str(tenant_id) if tenant_id else None,
+                    "tenant_id": str(tenant_id) if tenant_id else None,
+                    "onboarding_completed": True,
+                    "payment_completed": payment_verified,
+                    "subscription_plan": selected_plan
+                }
             }, status=status.HTTP_200_OK)
             
         except OnboardingProgress.DoesNotExist:

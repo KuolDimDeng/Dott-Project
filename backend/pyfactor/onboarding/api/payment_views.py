@@ -142,14 +142,56 @@ def complete_payment_view(request):
         # Ensure tenant_id is set
         if tenant_id:
             onboarding_progress.tenant_id = tenant_id
+        elif not onboarding_progress.tenant_id:
+            # Try to get tenant_id from user
+            if hasattr(user, 'tenant_id'):
+                onboarding_progress.tenant_id = user.tenant_id
+            elif hasattr(user, 'tenant'):
+                onboarding_progress.tenant_id = user.tenant.id if user.tenant else None
         
         # Save all changes
         onboarding_progress.save()
         
-        # Update user's onboarding status
+        # Log the state before and after save
+        logger.info(f"[CompletePayment] Onboarding status before save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}")
+        
+        # Verify the save worked
+        onboarding_progress.refresh_from_db()
+        logger.info(f"[CompletePayment] Onboarding status after save - status: {onboarding_progress.onboarding_status}, payment_completed: {onboarding_progress.payment_completed}")
+        
+        # Update user's onboarding status if the field exists
         if hasattr(user, 'needs_onboarding'):
             user.needs_onboarding = False
             user.save(update_fields=['needs_onboarding'])
+            logger.info(f"[CompletePayment] Updated user.needs_onboarding to False for {user.email}")
+        
+        # Update session if using session manager
+        try:
+            from session_manager.models import UserSession
+            from session_manager.services import session_service
+            
+            # Get current session from headers or cookies
+            session_token = request.headers.get('X-Session-Token')
+            if not session_token:
+                # Try to get from cookies
+                session_token = request.COOKIES.get('session_token')
+            
+            if session_token:
+                # Update session via service
+                updated_session = session_service.update_session(
+                    session_token,
+                    needs_onboarding=False,
+                    onboarding_completed=True,
+                    onboarding_step='completed',
+                    subscription_plan=onboarding_progress.subscription_plan,
+                    subscription_status='active'
+                )
+                if updated_session:
+                    logger.info(f"[CompletePayment] Updated session manager for user {user.email}")
+                else:
+                    logger.warning(f"[CompletePayment] Failed to update session manager for user {user.email}")
+        except Exception as session_error:
+            logger.warning(f"[CompletePayment] Session manager update error: {str(session_error)}")
         
         logger.info(f"[CompletePayment] Payment verified and onboarding completed for user {user.email}")
         
