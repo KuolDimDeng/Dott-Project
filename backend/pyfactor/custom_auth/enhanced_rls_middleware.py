@@ -316,40 +316,52 @@ class EnhancedRowLevelSecurityMiddleware:
             logger.error("❌ Auth0JWTAuthentication not available - cannot handle Auth0 tenant endpoint")
             return HttpResponseForbidden("Auth0 authentication module not available")
         
-        # Verify Auth0 authentication first
-        auth = Auth0JWTAuthentication()
-        logger.debug("🔍 Creating Auth0JWTAuthentication instance...")
+        # Try multiple authentication methods
+        auth_result = None
+        user = None
+        token = None
         
-        try:
-            logger.debug(f"🔍 Attempting Auth0 authentication for: {request.path}")
+        # Check if request already has an authenticated user (from DRF authentication)
+        if hasattr(request, 'user') and request.user and request.user.is_authenticated:
+            logger.info(f"✅ Request already has authenticated user: {request.user}")
+            user = request.user
+            token = getattr(request, 'auth', None)
+            auth_result = (user, token)
+        else:
+            # Try Session authentication first
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            if auth_header.startswith('Session '):
+                logger.debug(f"🔍 Attempting Session authentication for: {request.path}")
+                try:
+                    from session_manager.authentication import SessionAuthentication
+                    session_auth = SessionAuthentication()
+                    session_result = session_auth.authenticate(request)
+                    if session_result:
+                        user, session = session_result
+                        auth_result = (user, session)
+                        logger.info(f"✅ Session authentication successful for: {request.path}")
+                except Exception as e:
+                    logger.debug(f"Session auth failed: {e}")
             
-            # Check if request already has an authenticated user (from DRF authentication)
-            if hasattr(request, 'user') and request.user and request.user.is_authenticated:
-                logger.info(f"✅ Request already has authenticated user: {request.user}")
-                # Skip re-authentication if user is already authenticated
-                user = request.user
-                token = getattr(request, 'auth', None)
-                auth_result = (user, token)
-            else:
-                # Try to authenticate with Auth0
+            # If no session auth, try Auth0
+            if not auth_result:
+                logger.debug("🔍 Creating Auth0JWTAuthentication instance...")
+                auth = Auth0JWTAuthentication()
+                logger.debug(f"🔍 Attempting Auth0 authentication for: {request.path}")
                 auth_result = auth.authenticate(request)
-            
-            logger.debug(f"🔍 Auth0 authentication result type: {type(auth_result)}")
-            logger.debug(f"🔍 Auth0 authentication result: {auth_result is not None}")
-            
-            if not auth_result or (isinstance(auth_result, tuple) and len(auth_result) != 2):
-                logger.warning(f"❌ Auth0 authentication failed for tenant endpoint: {request.path}")
-                logger.warning(f"❌ Auth result: {auth_result}")
-                return HttpResponseForbidden("Auth0 authentication required")
-            
-            user, token = auth_result
-            logger.info(f"✅ Auth0 authentication successful for: {request.path}")
-            logger.debug(f"✅ Authenticated user: {user}")
-            logger.debug(f"✅ Token length: {len(token) if token else 0}")
+                
+                if auth_result and isinstance(auth_result, tuple) and len(auth_result) == 2:
+                    user, token = auth_result
+                    logger.info(f"✅ Auth0 authentication successful for: {request.path}")
+        
+        if not auth_result or not user:
+            logger.warning(f"❌ Authentication failed for tenant endpoint: {request.path}")
+            logger.warning(f"❌ Auth result: {auth_result}")
+            return HttpResponseForbidden("Authentication required")
             
             if not user:
-                logger.warning(f"❌ Auth0 authentication failed - no user for tenant endpoint: {request.path}")
-                return HttpResponseForbidden("Auth0 authentication required")
+                logger.warning(f"❌ Authentication failed - no user for tenant endpoint: {request.path}")
+                return HttpResponseForbidden("Authentication required")
             
             # Set the authenticated user on the request
             request.user = user
@@ -373,8 +385,11 @@ class EnhancedRowLevelSecurityMiddleware:
             response = self.get_response(request)
             
             # Add security headers
-            response['X-Auth0-Verified'] = 'true'
-            logger.info(f"✅ Auth0 tenant endpoint request completed successfully: {request.path}")
+            if token and hasattr(token, '__class__') and 'Session' not in str(token.__class__):
+                response['X-Auth0-Verified'] = 'true'
+            else:
+                response['X-Session-Verified'] = 'true'
+            logger.info(f"✅ Tenant endpoint request completed successfully: {request.path}")
             return response
             
         except Exception as e:

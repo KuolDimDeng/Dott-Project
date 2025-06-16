@@ -354,9 +354,16 @@ export async function POST(request) {
         'X-Source': 'nextjs-api-route'
       };
       
-      // Only add Authorization header if we have a token
-      if (accessToken) {
+      // Use session token if available (preferred for backend compatibility)
+      const sessionTokenCookie = cookieStore.get('session_token');
+      if (sessionTokenCookie) {
+        headers['Authorization'] = `Session ${sessionTokenCookie.value}`;
+        console.log('[api/onboarding/business-info] Using Session token for backend auth');
+      } else if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`;
+        console.log('[api/onboarding/business-info] Using Bearer token for backend auth');
+      } else {
+        console.warn('[api/onboarding/business-info] No auth token available for backend');
       }
       
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
