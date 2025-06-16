@@ -116,17 +116,18 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       ...sessionData,
       user: {
         ...sessionData.user,
-        // Mark onboarding status based on whether payment is pending
-        needsOnboarding: onboardingData.paymentPending ? true : false,
-        onboardingCompleted: onboardingData.paymentPending ? false : true,
-        onboarding_completed: onboardingData.paymentPending ? false : true,
-        needs_onboarding: onboardingData.paymentPending ? true : false,
-        currentStep: onboardingData.paymentPending ? 'payment' : 'completed',
-        current_onboarding_step: onboardingData.paymentPending ? 'payment' : 'completed',
-        onboardingStatus: onboardingData.paymentPending ? 'payment_pending' : 'completed',
-        isOnboarded: onboardingData.paymentPending ? false : true,
-        setupComplete: onboardingData.paymentPending ? false : true,
-        setup_complete: onboardingData.paymentPending ? false : true,
+        // CRITICAL: Always mark onboarding as complete when this function is called
+        // We're at the end of the onboarding flow, so needsOnboarding should be false
+        needsOnboarding: false,
+        onboardingCompleted: true,
+        onboarding_completed: true,
+        needs_onboarding: false,
+        currentStep: 'completed',
+        current_onboarding_step: 'completed',
+        onboardingStatus: 'completed',
+        isOnboarded: true,
+        setupComplete: true,
+        setup_complete: true,
         
         // Payment status fields
         paymentPending: onboardingData.paymentPending || false,
@@ -516,8 +517,37 @@ export async function POST(request) {
       maxAge: 60 * 5, // 5 minutes
       httpOnly: false,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production'
+      secure: process.env.NODE_ENV === 'production',
+      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
     });
+    
+    // CRITICAL: Force backend session update
+    if (sessionData.accessToken) {
+      try {
+        console.log('[CompleteOnboarding] Updating backend session state');
+        const sessionUpdateResponse = await fetch(`${apiBaseUrl}/api/auth/update-session/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionData.accessToken}`
+          },
+          body: JSON.stringify({
+            needs_onboarding: false,
+            onboarding_completed: true,
+            tenant_id: tenantId,
+            subscription_plan: onboardingData.selectedPlan
+          })
+        });
+        
+        if (sessionUpdateResponse.ok) {
+          console.log('[CompleteOnboarding] Backend session updated successfully');
+        } else {
+          console.error('[CompleteOnboarding] Failed to update backend session:', sessionUpdateResponse.status);
+        }
+      } catch (error) {
+        console.error('[CompleteOnboarding] Error updating backend session:', error);
+      }
+    }
     
     // Log all response headers
     const allHeaders = {};

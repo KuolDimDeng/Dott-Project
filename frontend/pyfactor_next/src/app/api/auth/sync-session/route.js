@@ -10,14 +10,15 @@ import { logger } from '@/utils/logger';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { tenantId, needsOnboarding = false, onboardingCompleted = true, subscriptionPlan } = body;
+    const { tenantId, needsOnboarding = false, onboardingCompleted = true, subscriptionPlan, forceBackendSync = false } = body;
     
     logger.info('[SyncSession] === SESSION SYNC STARTED ===');
     logger.info('[SyncSession] Requested updates:', {
       tenantId,
       needsOnboarding,
       onboardingCompleted,
-      subscriptionPlan
+      subscriptionPlan,
+      forceBackendSync
     });
     
     // Get current session
@@ -58,37 +59,76 @@ export async function POST(request) {
       tenantId: sessionData.user?.tenantId
     });
     
-    // Update session with new values
+    // If forceBackendSync is true, fetch latest state from backend
+    let backendData = null;
+    if (forceBackendSync && sessionData.accessToken) {
+      try {
+        logger.info('[SyncSession] Forcing backend sync - fetching latest user state');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+        const backendResponse = await fetch(`${apiUrl}/api/users/me/`, {
+          headers: {
+            'Authorization': `Bearer ${sessionData.accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (backendResponse.ok) {
+          backendData = await backendResponse.json();
+          logger.info('[SyncSession] Backend data fetched:', {
+            needs_onboarding: backendData.needs_onboarding,
+            onboarding_completed: backendData.onboarding_completed,
+            tenant_id: backendData.tenant_id
+          });
+        } else {
+          logger.error('[SyncSession] Failed to fetch backend data:', backendResponse.status);
+        }
+      } catch (error) {
+        logger.error('[SyncSession] Backend sync error:', error);
+      }
+    }
+    
+    // Update session with new values (prefer backend data if available)
+    const finalNeedsOnboarding = backendData ? backendData.needs_onboarding === true : needsOnboarding;
+    const finalOnboardingCompleted = backendData ? backendData.onboarding_completed === true : onboardingCompleted;
+    const finalTenantId = backendData?.tenant_id || tenantId;
+    const finalSubscriptionPlan = backendData?.subscription_plan || subscriptionPlan;
+    
     const updatedSession = {
       ...sessionData,
       user: {
         ...sessionData.user,
         // Update all onboarding-related fields
-        needsOnboarding: needsOnboarding,
-        needs_onboarding: needsOnboarding,
-        onboardingCompleted: onboardingCompleted,
-        onboarding_completed: onboardingCompleted,
-        currentStep: onboardingCompleted ? 'completed' : sessionData.user?.currentStep,
-        current_onboarding_step: onboardingCompleted ? 'completed' : sessionData.user?.current_onboarding_step,
-        onboardingStatus: onboardingCompleted ? 'completed' : sessionData.user?.onboardingStatus,
-        isOnboarded: onboardingCompleted,
-        setupComplete: onboardingCompleted,
-        setup_complete: onboardingCompleted,
+        needsOnboarding: finalNeedsOnboarding,
+        needs_onboarding: finalNeedsOnboarding,
+        onboardingCompleted: finalOnboardingCompleted,
+        onboarding_completed: finalOnboardingCompleted,
+        currentStep: finalOnboardingCompleted ? 'completed' : sessionData.user?.currentStep,
+        current_onboarding_step: finalOnboardingCompleted ? 'completed' : sessionData.user?.current_onboarding_step,
+        onboardingStatus: finalOnboardingCompleted ? 'completed' : sessionData.user?.onboardingStatus,
+        isOnboarded: finalOnboardingCompleted,
+        setupComplete: finalOnboardingCompleted,
+        setup_complete: finalOnboardingCompleted,
         
         // Update tenant ID if provided
-        ...(tenantId && {
-          tenantId: tenantId,
-          tenant_id: tenantId
+        ...(finalTenantId && {
+          tenantId: finalTenantId,
+          tenant_id: finalTenantId
         }),
         
         // Update subscription plan if provided - set all fields for compatibility
-        ...(subscriptionPlan && {
-          subscriptionPlan: subscriptionPlan,
-          subscription_plan: subscriptionPlan,
-          subscriptionType: subscriptionPlan,
-          subscription_type: subscriptionPlan,
-          selected_plan: subscriptionPlan,
-          selectedPlan: subscriptionPlan
+        ...(finalSubscriptionPlan && {
+          subscriptionPlan: finalSubscriptionPlan,
+          subscription_plan: finalSubscriptionPlan,
+          subscriptionType: finalSubscriptionPlan,
+          subscription_type: finalSubscriptionPlan,
+          selected_plan: finalSubscriptionPlan,
+          selectedPlan: finalSubscriptionPlan
+        }),
+        
+        // Include additional backend data if available
+        ...(backendData && {
+          businessName: backendData.business_name || sessionData.user?.businessName,
+          business_name: backendData.business_name || sessionData.user?.business_name
         }),
         
         // Update timestamp

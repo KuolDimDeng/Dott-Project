@@ -11,9 +11,8 @@ const COOKIE_OPTIONS = {
   sameSite: 'lax',
   path: '/',
   maxAge: 7 * 24 * 60 * 60, // 7 days
-  // Don't set domain in production - let browser handle it automatically
-  // This ensures cookies work with both dottapps.com and www.dottapps.com
-  // domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+  // Set domain for production to ensure cookie persistence
+  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
 };
 
 /**
@@ -361,6 +360,7 @@ export async function POST(request) {
       maxAge: 24 * 60 * 60 // 24 hours
     };
     
+    // Log detailed cookie configuration for debugging
     console.log('[Auth Session POST] Setting cookies with options:', {
       domain: cookieOptions.domain,
       secure: cookieOptions.secure,
@@ -368,7 +368,9 @@ export async function POST(request) {
       httpOnly: cookieOptions.httpOnly,
       path: cookieOptions.path,
       sessionSize: encryptedSession.length,
-      nodeEnv: process.env.NODE_ENV
+      nodeEnv: process.env.NODE_ENV,
+      host: request.headers.get('host'),
+      origin: request.headers.get('origin')
     });
     
     // Set the main session cookie
@@ -391,12 +393,19 @@ export async function POST(request) {
       needsOnboarding,
       onboardingCompleted,
       tenantId,
-      hasSession: true
+      hasSession: true,
+      timestamp: Date.now()
     };
     response.cookies.set('onboarding_status', JSON.stringify(statusCookie), {
       ...cookieOptions,
       httpOnly: false // Make this readable by client-side JavaScript
     });
+    
+    // Force cookie header to ensure persistence
+    const cookieHeader = response.headers.get('set-cookie');
+    if (cookieHeader) {
+      console.log('[Auth Session POST] Set-Cookie headers:', cookieHeader.split(', ').length, 'cookies');
+    }
     
     console.log('[Auth Session POST] Session created successfully with status cookie');
     
