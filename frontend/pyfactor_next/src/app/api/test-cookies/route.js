@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
 export async function GET(request) {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'production') {
+    return NextResponse.json({ 
+      error: 'Not available in production' 
+    }, { status: 404 });
+  }
+  
   try {
     // Get all cookies
     const cookieStore = await cookies();
