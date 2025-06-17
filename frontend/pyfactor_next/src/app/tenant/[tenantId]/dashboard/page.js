@@ -151,6 +151,9 @@ export default function TenantDashboard() {
   // Initialize dashboard
   useEffect(() => {
     const initializeDashboard = async () => {
+      // Declare idToken at function scope so it's accessible in both try and catch blocks
+      const idToken = Cookies.get('idToken') || sessionStorage.getItem('idToken');
+      
       try {
         logger.info('[TenantDashboard] Initializing dashboard for tenant:', tenantId);
         
@@ -184,9 +187,6 @@ export default function TenantDashboard() {
           setIsLoading(false);
           return;
         }
-
-        // Check cookie auth token
-        const idToken = Cookies.get('idToken') || sessionStorage.getItem('idToken');
         
         // Enhanced authentication flow with retry logic
         const authResult = await checkAuthWithRetry(fromSignIn ? 5 : 3, fromSignIn ? 1500 : 1000);

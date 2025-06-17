@@ -5,33 +5,48 @@
 
 export async function verifySessionCookie(maxAttempts = 10, delayMs = 300) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    // Check for session cookie
+    // Check for session cookie or status cookie
     const cookies = document.cookie.split(';').map(c => c.trim());
     const hasSessionCookie = cookies.some(cookie => 
       cookie.startsWith('dott_auth_session=') || 
-      cookie.startsWith('appSession=')
+      cookie.startsWith('appSession=') ||
+      cookie.startsWith('onboarding_status=')
     );
     
-    if (hasSessionCookie) {
-      // Verify session is valid by making a quick API call
+    // Also check for the status cookie which is set immediately
+    const statusCookie = cookies.find(cookie => cookie.startsWith('onboarding_status='));
+    if (statusCookie) {
       try {
-        const response = await fetch('/api/auth/session', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.user && data.authenticated) {
-            return true;
-          }
+        const statusData = JSON.parse(decodeURIComponent(statusCookie.split('=')[1]));
+        if (statusData.hasSession) {
+          console.log('[SessionVerification] Found status cookie, session should be available');
         }
-      } catch (error) {
-        console.error('[SessionVerification] Error verifying session:', error);
+      } catch (e) {
+        // Ignore parse errors
       }
+    }
+    
+    // Try to verify session even if we don't see the cookie yet
+    // (it might be a domain/path issue)
+    try {
+      const response = await fetch('/api/auth/session', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.user && data.authenticated) {
+          console.log('[SessionVerification] Session verified successfully');
+          return true;
+        }
+      }
+    } catch (error) {
+      console.error('[SessionVerification] Error verifying session:', error);
     }
     
     // Wait before next attempt
@@ -40,6 +55,7 @@ export async function verifySessionCookie(maxAttempts = 10, delayMs = 300) {
     }
   }
   
+  console.log('[SessionVerification] Failed to verify session after', maxAttempts, 'attempts');
   return false;
 }
 

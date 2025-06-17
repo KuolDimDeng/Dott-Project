@@ -18,22 +18,51 @@ export default function SessionCheck({ children }) {
         if (pendingSession) {
           console.log('[SessionCheck] Found pending session, waiting for cookie propagation...');
           
-          // Give cookies time to propagate
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Give cookies more time to propagate
+          await new Promise(resolve => setTimeout(resolve, 3000));
           
-          // Verify session is now available
-          const response = await fetch('/api/auth/session', {
-            credentials: 'include'
-          });
+          // Try multiple times to verify session
+          let sessionVerified = false;
+          for (let i = 0; i < 3; i++) {
+            const response = await fetch('/api/auth/session', {
+              credentials: 'include',
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.user && data.authenticated) {
+                sessionVerified = true;
+                setHasSession(true);
+                setIsChecking(false);
+                // Clean up pending session
+                sessionStorage.removeItem('pendingSession');
+                return;
+              }
+            }
+            
+            // Wait before retry
+            if (i < 2) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
           
-          if (response.ok) {
-            const data = await response.json();
-            if (data.user && data.authenticated) {
-              setHasSession(true);
-              setIsChecking(false);
-              // Clean up pending session
-              sessionStorage.removeItem('pendingSession');
-              return;
+          // If still no session, one more check with the me endpoint
+          if (!sessionVerified) {
+            const meResponse = await fetch('/api/auth/me?fromSignIn=true', {
+              credentials: 'include'
+            });
+            
+            if (meResponse.ok) {
+              const meData = await meResponse.json();
+              if (meData.authenticated) {
+                setHasSession(true);
+                setIsChecking(false);
+                sessionStorage.removeItem('pendingSession');
+                return;
+              }
             }
           }
         }
