@@ -8,13 +8,32 @@ import { decrypt } from '@/utils/sessionEncryption';
  */
 export async function GET(request) {
   try {
-    // Check for session cookie
-    const sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
+    // Check for session cookie - try multiple times as cookies may take time to propagate
+    let sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
     
-    if (!sessionCookie) {
+    // Also check if cookie exists but might be in process of being set
+    const allCookies = request.cookies.getAll();
+    const hasCookieHeader = request.headers.get('cookie')?.includes('dott_auth_session');
+    
+    if (!sessionCookie && !hasCookieHeader) {
       return NextResponse.json({ 
         ready: false, 
-        reason: 'No session cookie found' 
+        reason: 'No session cookie found',
+        debug: {
+          cookieCount: allCookies.length,
+          cookieNames: allCookies.map(c => c.name),
+          hasCookieHeader
+        }
+      });
+    }
+    
+    // If we have cookie header but not parsed yet, wait a bit and try again
+    if (!sessionCookie && hasCookieHeader) {
+      // Cookie exists in header but not parsed yet - consider it as being set
+      return NextResponse.json({ 
+        ready: false, 
+        reason: 'Session cookie is being set',
+        retry: true
       });
     }
     

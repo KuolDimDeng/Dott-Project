@@ -276,6 +276,11 @@ export default function EmailPasswordSignIn() {
               }
               return;
             }
+            
+            // If session is being set, continue trying
+            if (verifyData.retry) {
+              logger.info('[EmailPasswordSignIn] Session cookie is being set, continuing to wait...');
+            }
           } catch (error) {
             logger.warn('[EmailPasswordSignIn] Session verification error:', error);
           }

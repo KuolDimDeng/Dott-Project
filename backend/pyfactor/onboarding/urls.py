@@ -45,7 +45,7 @@ urlpatterns = [
     # Include router URLs
     path('', include(router.urls)),
     
-    # Webhook routes
+    # Webhook routes (no auth required)
     path('webhooks/stripe/', csrf_exempt(stripe_webhook), name='stripe-webhook'),
     
     # Authentication & Token routes

@@ -70,6 +70,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/diagnostic/',  # Temporary diagnostic endpoint for debugging
             '/api/diagnostic/restore/',  # Temporary restore endpoint for account restoration
             '/api/check-user/',  # User lookup endpoint for debugging
+            '/api/onboarding/webhooks/stripe/',  # Stripe webhook doesn't have auth
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
