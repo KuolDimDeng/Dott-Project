@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { decrypt } from '@/utils/sessionEncryption';
 
 /**
@@ -8,32 +9,68 @@ import { decrypt } from '@/utils/sessionEncryption';
  */
 export async function GET(request) {
   try {
+    // Force fresh cookie read by awaiting cookies()
+    const cookieStore = await cookies();
+    
     // Check for session cookie - try multiple times as cookies may take time to propagate
-    let sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
+    let sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    // Also check for backend session token
+    const sessionTokenCookie = cookieStore.get('session_token');
+    
+    // Also check for onboarding status cookie (client-readable)
+    const statusCookie = cookieStore.get('onboarding_status');
     
     // Also check if cookie exists but might be in process of being set
-    const allCookies = request.cookies.getAll();
+    const allCookies = cookieStore.getAll();
     const hasCookieHeader = request.headers.get('cookie')?.includes('dott_auth_session');
+    const hasSessionTokenHeader = request.headers.get('cookie')?.includes('session_token');
     
-    if (!sessionCookie && !hasCookieHeader) {
+    // If we have the status cookie, the session is being set
+    if (statusCookie && !sessionCookie) {
+      return NextResponse.json({ 
+        ready: false, 
+        reason: 'Session cookie is being set',
+        retry: true,
+        debug: {
+          hasStatusCookie: true,
+          statusCookieValue: statusCookie.value,
+          cookieCount: allCookies.length
+        }
+      });
+    }
+    
+    if (!sessionCookie && !sessionTokenCookie && !hasCookieHeader && !hasSessionTokenHeader) {
       return NextResponse.json({ 
         ready: false, 
         reason: 'No session cookie found',
         debug: {
           cookieCount: allCookies.length,
           cookieNames: allCookies.map(c => c.name),
-          hasCookieHeader
+          hasCookieHeader,
+          hasSessionTokenHeader
         }
       });
     }
     
     // If we have cookie header but not parsed yet, wait a bit and try again
-    if (!sessionCookie && hasCookieHeader) {
+    if (!sessionCookie && (hasCookieHeader || hasSessionTokenHeader)) {
       // Cookie exists in header but not parsed yet - consider it as being set
       return NextResponse.json({ 
         ready: false, 
         reason: 'Session cookie is being set',
         retry: true
+      });
+    }
+    
+    // If we have session token but no main session cookie, consider it ready
+    // (the dashboard will handle getting full session data)
+    if (!sessionCookie && sessionTokenCookie) {
+      return NextResponse.json({ 
+        ready: true,
+        hasSessionToken: true,
+        sessionToken: sessionTokenCookie.value,
+        reason: 'Session token available'
       });
     }
     

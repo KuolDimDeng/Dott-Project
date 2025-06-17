@@ -255,16 +255,23 @@ export default function EmailPasswordSignIn() {
 
       // Verify session is ready before redirect
       const waitForSession = async () => {
+        // Add initial delay to allow cookies to propagate
+        logger.info('[EmailPasswordSignIn] Waiting for session cookies to propagate...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Initial 1 second delay
+        
         let attempts = 0;
-        const maxAttempts = 10; // Try for up to 5 seconds
+        const maxAttempts = 10; // Try for up to 5 seconds more
         
         while (attempts < maxAttempts) {
           try {
             const verifyResponse = await fetch('/api/auth/verify-session-ready');
             const verifyData = await verifyResponse.json();
             
+            logger.debug('[EmailPasswordSignIn] Session verification attempt', attempts + 1, ':', verifyData);
+            
             if (verifyData.ready) {
               // Session is ready, proceed with redirect
+              logger.info('[EmailPasswordSignIn] Session verified, redirecting...');
               if (finalUserData.redirectUrl) {
                 router.push(finalUserData.redirectUrl);
               } else if (finalUserData.needsOnboarding) {
@@ -278,7 +285,7 @@ export default function EmailPasswordSignIn() {
             }
             
             // If session is being set, continue trying
-            if (verifyData.retry) {
+            if (verifyData.retry || verifyData.hasStatusCookie) {
               logger.info('[EmailPasswordSignIn] Session cookie is being set, continuing to wait...');
             }
           } catch (error) {
