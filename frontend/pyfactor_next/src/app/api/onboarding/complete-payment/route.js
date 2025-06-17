@@ -121,6 +121,36 @@ export async function POST(request) {
       // Continue anyway to update session
     }
     
+    // CRITICAL: Force complete onboarding to ensure backend saves properly
+    console.log('[CompletePayment] 🚨 FORCING backend completion after payment...');
+    try {
+      const forceCompleteResponse = await fetch(`${apiBaseUrl}/api/onboarding/force-complete/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionData.accessToken}`,
+          'X-User-Email': user.email,
+          'X-User-Sub': user.sub
+        },
+        body: JSON.stringify({
+          selected_plan: plan || user.subscriptionPlan,
+          payment_verified: true,
+          payment_id: paymentIntentId || subscriptionId,
+          tenant_id: finalTenantId
+        })
+      });
+      
+      if (forceCompleteResponse.ok) {
+        const forceResult = await forceCompleteResponse.json();
+        console.log('[CompletePayment] ✅ Force complete successful:', forceResult);
+      } else {
+        const errorText = await forceCompleteResponse.text();
+        console.error('[CompletePayment] ❌ Force complete failed:', errorText);
+      }
+    } catch (error) {
+      console.error('[CompletePayment] ❌ Force complete error:', error);
+    }
+    
     // 4. Update session to mark onboarding as complete
     const updatedSession = {
       ...sessionData,

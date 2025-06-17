@@ -362,6 +362,36 @@ export async function POST(request) {
               console.error('[CompleteOnboarding] Failed to mark payment pending:', error);
             }
           }
+          
+          // CRITICAL: Force complete onboarding in backend to ensure it's saved
+          console.log('[CompleteOnboarding] 🚨 FORCING backend completion to ensure proper save...');
+          try {
+            const forceCompleteResponse = await fetch(`${apiBaseUrl}/api/onboarding/force-complete/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionData.accessToken}`,
+                'X-User-Email': user.email,
+                'X-User-Sub': user.sub
+              },
+              body: JSON.stringify({
+                selected_plan: onboardingData.selectedPlan,
+                payment_verified: onboardingData.selectedPlan === 'free' || onboardingData.paymentCompleted,
+                payment_id: onboardingData.paymentIntentId || onboardingData.subscriptionId,
+                tenant_id: tenantId
+              })
+            });
+            
+            if (forceCompleteResponse.ok) {
+              const forceResult = await forceCompleteResponse.json();
+              console.log('[CompleteOnboarding] ✅ Force complete successful:', forceResult);
+            } else {
+              const errorText = await forceCompleteResponse.text();
+              console.error('[CompleteOnboarding] ❌ Force complete failed:', errorText);
+            }
+          } catch (error) {
+            console.error('[CompleteOnboarding] ❌ Force complete error:', error);
+          }
         } else {
           const errorText = await businessResponse.text();
           console.error('[CompleteOnboarding] Business info submission failed:', errorText);
