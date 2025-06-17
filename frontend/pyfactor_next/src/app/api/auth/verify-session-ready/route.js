@@ -9,6 +9,25 @@ import { decrypt } from '@/utils/sessionEncryption';
  */
 export async function GET(request) {
   try {
+    // Check for session token in query params (fallback for immediate verification)
+    const { searchParams } = new URL(request.url);
+    const tokenParam = searchParams.get('token');
+    
+    // Debug logging
+    console.log('[Verify Session Ready] Starting verification');
+    console.log('[Verify Session Ready] Token param:', !!tokenParam);
+    console.log('[Verify Session Ready] Raw cookie header:', request.headers.get('cookie'));
+    
+    // If token is provided in query, consider session ready
+    if (tokenParam) {
+      console.log('[Verify Session Ready] Session token provided in query, session is ready');
+      return NextResponse.json({ 
+        ready: true,
+        reason: 'Session token provided',
+        hasToken: true
+      });
+    }
+    
     // Force fresh cookie read by awaiting cookies()
     const cookieStore = await cookies();
     
@@ -25,6 +44,16 @@ export async function GET(request) {
     const allCookies = cookieStore.getAll();
     const hasCookieHeader = request.headers.get('cookie')?.includes('dott_auth_session');
     const hasSessionTokenHeader = request.headers.get('cookie')?.includes('session_token');
+    
+    console.log('[Verify Session Ready] Cookie detection:', {
+      sessionCookieFound: !!sessionCookie,
+      sessionTokenFound: !!sessionTokenCookie,
+      statusCookieFound: !!statusCookie,
+      totalCookies: allCookies.length,
+      cookieNames: allCookies.map(c => c.name),
+      hasCookieHeader,
+      hasSessionTokenHeader
+    });
     
     // If we have the status cookie, the session is being set
     if (statusCookie && !sessionCookie) {

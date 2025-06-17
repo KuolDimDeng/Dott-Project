@@ -239,6 +239,11 @@ export default function EmailPasswordSignIn() {
 
       const sessionResult = await sessionResponse.json();
       
+      // Check if session was created successfully
+      if (!sessionResult.success) {
+        throw new Error('Failed to create session');
+      }
+      
       // DEPRECATED: Remove localStorage usage after testing
       // Only keeping temporarily for backward compatibility
       if (process.env.NODE_ENV === 'development') {
@@ -253,7 +258,27 @@ export default function EmailPasswordSignIn() {
         idToken: authResult.id_token
       }, 'email-password');
 
-      // Verify session is ready before redirect
+      // If session was created successfully, we can proceed directly
+      // The cookies have been set on the response, so they'll be included in subsequent requests
+      if (sessionResult.success && sessionResult.user) {
+        logger.info('[EmailPasswordSignIn] Session created successfully, redirecting...');
+        
+        // Small delay to ensure cookies are processed by browser
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (finalUserData.redirectUrl) {
+          router.push(finalUserData.redirectUrl);
+        } else if (finalUserData.needsOnboarding) {
+          router.push('/onboarding');
+        } else if (finalUserData.tenantId) {
+          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
+
+      // Fallback: Verify session is ready before redirect
       const waitForSession = async () => {
         // Add initial delay to allow cookies to propagate
         logger.info('[EmailPasswordSignIn] Waiting for session cookies to propagate...');
