@@ -3,7 +3,7 @@
  * Ensures session cookies are properly set and verified before allowing access
  */
 
-export async function verifySessionCookie(maxAttempts = 5, delayMs = 200) {
+export async function verifySessionCookie(maxAttempts = 10, delayMs = 300) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     // Check for session cookie
     const cookies = document.cookie.split(';').map(c => c.trim());
@@ -43,7 +43,7 @@ export async function verifySessionCookie(maxAttempts = 5, delayMs = 200) {
   return false;
 }
 
-export async function waitForSessionPropagation(sessionData, maxWaitTime = 3000) {
+export async function waitForSessionPropagation(sessionData, maxWaitTime = 5000) {
   const startTime = Date.now();
   
   // Set a temporary marker to indicate session is being established
@@ -62,8 +62,8 @@ export async function waitForSessionPropagation(sessionData, maxWaitTime = 3000)
       return true;
     }
     
-    // Wait 100ms before checking again
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait 200ms before checking again
+    await new Promise(resolve => setTimeout(resolve, 200));
   }
   
   // Session verification timed out

@@ -19,7 +19,7 @@ export default function SessionCheck({ children }) {
           console.log('[SessionCheck] Found pending session, waiting for cookie propagation...');
           
           // Give cookies time to propagate
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
           // Verify session is now available
           const response = await fetch('/api/auth/session', {

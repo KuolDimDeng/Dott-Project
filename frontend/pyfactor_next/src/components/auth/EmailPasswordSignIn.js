@@ -280,7 +280,7 @@ export default function EmailPasswordSignIn() {
         if (!isSessionReady) {
           logger.error('[EmailPasswordSignIn] Session verification failed, retrying...');
           // Fallback: wait a bit more and proceed anyway
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
         
         if (finalUserData.redirectUrl) {
