@@ -130,42 +130,7 @@ def confirm_payment(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
-@api_view(['POST'])
-def stripe_webhook(request):
-    """Handle Stripe webhooks"""
-    payload = request.body
-    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-    webhook_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', '')
-    
-    if not webhook_secret:
-        logger.warning("STRIPE_WEBHOOK_SECRET not configured")
-        return Response(status=status.HTTP_200_OK)
-    
-    try:
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, webhook_secret
-        )
-    except ValueError:
-        # Invalid payload
-        logger.error("Invalid webhook payload")
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    except stripe.error.SignatureVerificationError:
-        # Invalid signature
-        logger.error("Invalid webhook signature")
-        return Response(status=status.HTTP_400_BAD_REQUEST)
-    
-    # Handle the event
-    if event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']
-        # Payment succeeded
-        logger.info(f"Payment succeeded for intent: {payment_intent['id']}")
-        
-    elif event['type'] == 'customer.subscription.updated':
-        subscription = event['data']['object']
-        # Update subscription status
-        logger.info(f"Subscription updated: {subscription['id']}")
-    
-    return Response(status=status.HTTP_200_OK)
+# Note: Stripe webhooks are handled in onboarding/api/views/webhook_views.py
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

@@ -73,6 +73,9 @@ urlpatterns = [
     # Authentication routes  
     path('accounts/', include('allauth.urls')),
     path('auth/', include('custom_auth.urls')),
+    
+    # Onboarding routes (includes Stripe webhook)
+    path('api/onboarding/', include('onboarding.urls')),
 ]
 
 # Handle debug configuration properly

@@ -259,6 +259,7 @@ class Subscription(models.Model):
             choices=BILLING_CYCLES,
             default='monthly'
         )
+    stripe_subscription_id = models.CharField(max_length=255, null=True, blank=True, unique=True)
 
     def __str__(self):
         return f"Subscription {self.pk if self.pk else 'unsaved'}"

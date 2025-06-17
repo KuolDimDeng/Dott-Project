@@ -10,8 +10,7 @@ from rest_framework import status
 from rest_framework.response import Response
 
 from onboarding.models import OnboardingProgress
-from users.models import Subscription
-from users.models import User
+from users.models import Subscription, User
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +32,7 @@ def stripe_webhook(request):
         return HttpResponse(status=400)
 
     try:
+        # Handle checkout session completed
         if event.type == 'checkout.session.completed':
             session = event.data.object
             
@@ -104,6 +104,119 @@ def stripe_webhook(request):
             except (User.DoesNotExist, OnboardingProgress.DoesNotExist) as e:
                 logger.error(f"Error handling payment failure: {str(e)}")
                 return HttpResponse(status=404)
+        
+        # Handle subscription created/updated
+        elif event.type in ['customer.subscription.created', 'customer.subscription.updated']:
+            subscription = event.data.object
+            
+            try:
+                # Get user from metadata or customer email
+                user_id = subscription.metadata.get('user_id')
+                if not user_id:
+                    # Try to find user by customer email
+                    import stripe as stripe_api
+                    stripe_api.api_key = settings.STRIPE_SECRET_KEY
+                    customer = stripe_api.Customer.retrieve(subscription.customer)
+                    user = User.objects.filter(email=customer.email).first()
+                    if not user:
+                        logger.error(f"No user found for subscription {subscription.id}")
+                        return HttpResponse(status=200)  # Return 200 to prevent retries
+                else:
+                    user = User.objects.get(id=user_id)
+                
+                # Update user's subscription status
+                progress = OnboardingProgress.objects.filter(user=user).first()
+                if progress:
+                    progress.subscription_status = subscription.status
+                    if subscription.status == 'active':
+                        progress.payment_completed = True
+                        progress.onboarding_status = 'complete'
+                        progress.setup_completed = True
+                    progress.save()
+                    logger.info(f"Updated subscription status for user {user.id}: {subscription.status}")
+                
+                # Update subscription model if it exists
+                if progress and progress.business:
+                    sub_model = Subscription.objects.filter(business=progress.business).first()
+                    if sub_model:
+                        sub_model.is_active = (subscription.status == 'active')
+                        sub_model.stripe_subscription_id = subscription.id
+                        sub_model.save()
+                        logger.info(f"Updated subscription model for business {progress.business.id}")
+                
+                return HttpResponse(status=200)
+                
+            except Exception as e:
+                logger.error(f"Error handling subscription update: {str(e)}")
+                return HttpResponse(status=200)  # Return 200 to prevent retries
+        
+        # Handle subscription cancelled/deleted
+        elif event.type == 'customer.subscription.deleted':
+            subscription = event.data.object
+            
+            try:
+                # Get user from metadata
+                user_id = subscription.metadata.get('user_id')
+                if user_id:
+                    user = User.objects.get(id=user_id)
+                    progress = OnboardingProgress.objects.filter(user=user).first()
+                    if progress:
+                        progress.subscription_status = 'cancelled'
+                        progress.save()
+                        
+                        # Deactivate subscription model
+                        if progress.business:
+                            sub_model = Subscription.objects.filter(business=progress.business).first()
+                            if sub_model:
+                                sub_model.is_active = False
+                                sub_model.save()
+                    
+                    logger.info(f"Subscription cancelled for user {user.id}")
+                
+                return HttpResponse(status=200)
+                
+            except Exception as e:
+                logger.error(f"Error handling subscription cancellation: {str(e)}")
+                return HttpResponse(status=200)  # Return 200 to prevent retries
+        
+        # Handle invoice payment succeeded
+        elif event.type == 'invoice.payment_succeeded':
+            invoice = event.data.object
+            logger.info(f"Payment succeeded for invoice {invoice.id}, amount: ${invoice.amount_paid / 100}")
+            
+            # Update subscription payment date if needed
+            if invoice.subscription:
+                try:
+                    # Find subscription by stripe ID
+                    sub_models = Subscription.objects.filter(stripe_subscription_id=invoice.subscription)
+                    for sub_model in sub_models:
+                        sub_model.is_active = True
+                        sub_model.save()
+                        logger.info(f"Updated payment success for subscription {sub_model.id}")
+                except Exception as e:
+                    logger.error(f"Error updating payment success: {str(e)}")
+            
+            return HttpResponse(status=200)
+        
+        # Handle invoice payment failed
+        elif event.type == 'invoice.payment_failed':
+            invoice = event.data.object
+            logger.warning(f"Payment failed for invoice {invoice.id}, amount: ${invoice.amount_due / 100}")
+            
+            # You might want to send email notification or update subscription status
+            # For now, just log the failure
+            
+            return HttpResponse(status=200)
+        
+        # Handle payment intent succeeded (one-time payments)
+        elif event.type == 'payment_intent.succeeded':
+            payment_intent = event.data.object
+            logger.info(f"Payment intent succeeded: {payment_intent.id}, amount: ${payment_intent.amount / 100}")
+            return HttpResponse(status=200)
+        
+        # Unhandled event type
+        else:
+            logger.info(f"Unhandled webhook event type: {event.type}")
 
         return HttpResponse(status=200)
 

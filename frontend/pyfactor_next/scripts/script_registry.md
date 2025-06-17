@@ -573,3 +573,19 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - src/hooks/useSession.js
   - src/app/tenant/[tenantId]/dashboard/page.js
 - **Status**: ✅ Completed
+
+
+## Version0004_migrate_stripe_webhook_to_backend
+- **Date**: 2025-01-17
+- **Purpose**: Migrate Stripe webhook processing from frontend to backend
+- **Changes**:
+  - Removed frontend webhook handler
+  - Enhanced backend webhook to handle all subscription events
+  - Added stripe_subscription_id field to Subscription model
+  - Updated URL configuration
+- **Files Modified**:
+  - Deleted: /src/app/api/stripe/webhook/route.js
+  - Updated: /backend/pyfactor/onboarding/api/views/webhook_views.py
+  - Updated: /backend/pyfactor/users/models.py
+  - Created: /backend/pyfactor/users/migrations/0005_add_stripe_subscription_id.py
+  - Updated: /backend/pyfactor/pyfactor/urls.py
