@@ -19,19 +19,66 @@ export default async function TenantLayout({ children, params }) {
     
     try {
       const cookieStore = await cookies();
-      const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
       
-      if (sessionCookie) {
-        // Try to decrypt the session
+      // Log all available cookies
+      const allCookies = cookieStore.getAll();
+      console.log('[TenantLayout] Available cookies:', allCookies.map(c => c.name));
+      
+      // Check for backend session token first
+      const sessionTokenCookie = cookieStore.get('session_token');
+      if (sessionTokenCookie) {
+        console.log('[TenantLayout] Found backend session token, validating...');
         try {
-          const decrypted = decrypt(sessionCookie.value);
-          session = JSON.parse(decrypted);
-        } catch (decryptError) {
-          // Fallback to old base64 format
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+          const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+            headers: {
+              'Authorization': `Session ${sessionTokenCookie.value}`,
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (sessionResponse.ok) {
+            const backendSession = await sessionResponse.json();
+            console.log('[TenantLayout] Backend session valid:', {
+              user_email: backendSession.user?.email,
+              needs_onboarding: backendSession.needs_onboarding,
+              tenant_id: backendSession.tenant?.id
+            });
+            
+            // Create session object from backend data
+            session = {
+              user: {
+                ...backendSession.user,
+                needsOnboarding: backendSession.needs_onboarding,
+                onboardingCompleted: backendSession.onboarding_completed,
+                tenantId: backendSession.tenant?.id,
+                tenant_id: backendSession.tenant?.id
+              },
+              authenticated: true
+            };
+          }
+        } catch (error) {
+          console.error('[TenantLayout] Backend session validation error:', error);
+        }
+      }
+      
+      // If no backend session, check frontend cookies
+      if (!session) {
+        const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+        
+        if (sessionCookie) {
+          console.log('[TenantLayout] Found session cookie:', sessionCookie.name);
+          // Try to decrypt the session
           try {
-            session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-          } catch (base64Error) {
-            console.error('[TenantLayout] Failed to parse session:', base64Error);
+            const decrypted = decrypt(sessionCookie.value);
+            session = JSON.parse(decrypted);
+          } catch (decryptError) {
+            // Fallback to old base64 format
+            try {
+              session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+            } catch (base64Error) {
+              console.error('[TenantLayout] Failed to parse session:', base64Error);
+            }
           }
         }
       }
@@ -52,7 +99,7 @@ export default async function TenantLayout({ children, params }) {
     // This allows us to check for pending sessions from recent logins
     if (!session || !session.user) {
       // Import the client-side session check component
-      const SessionCheck = (await import('./SessionCheck')).default;
+      const SessionCheck = (await import('./SessionCheck.jsx')).default;
       
       return (
         <SessionCheck>

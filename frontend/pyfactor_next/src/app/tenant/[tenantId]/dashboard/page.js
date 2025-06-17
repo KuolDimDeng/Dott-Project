@@ -20,6 +20,7 @@ import { useEnhancedSession } from '@/hooks/useEnhancedSession';
 // Import needed for recovery
 import { signIn } from '@/config/amplifyUnified';
 import Cookies from 'js-cookie';
+import SessionInitializer from '@/components/SessionInitializer';
 
 // Emergency recovery functions
 const checkEmergencyAccess = () => {
@@ -137,6 +138,7 @@ export default function TenantDashboard() {
   const fromSignIn = searchParams.get('fromSignIn') === 'true';
   const fromSubscription = searchParams.get('fromSubscription') === 'true';
   const sessionToken = searchParams.get('token');
+  const bridgeToken = searchParams.get('bridge');
   const emergencyAccess = fromSubscription && checkEmergencyAccess();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -156,6 +158,8 @@ export default function TenantDashboard() {
       
       try {
         logger.info('[TenantDashboard] Initializing dashboard for tenant:', tenantId);
+        logger.info('[TenantDashboard] Current cookies:', document.cookie);
+        logger.info('[TenantDashboard] SessionStorage pendingSession:', sessionStorage.getItem('pendingSession'));
         
         // CRITICAL: Verify onboarding is marked as complete in backend
         if (tenantId) {
@@ -532,6 +536,32 @@ export default function TenantDashboard() {
 
   // Render dashboard within providers, using the ensured tenantId if possible
   const effectiveTenantId = tenantId;
+  
+  // If we have a bridge token, wrap in SessionInitializer
+  if (bridgeToken) {
+    return (
+      <SessionInitializer>
+        <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>
+          <NotificationProvider>
+            <UserProfileProvider tenantId={effectiveTenantId}>
+              <DashboardProvider>
+                <DashboardContent
+                  newAccount={dashboardParams.newAccount}
+                  plan={dashboardParams.plan}
+                  mockData={dashboardParams.mockData}
+                  setupStatus={dashboardParams.setupStatus}
+                  userAttributes={userAttributes}
+                  tenantId={effectiveTenantId}
+                  fromSignIn={fromSignIn}
+                  fromSubscription={fromSubscription}
+                />
+              </DashboardProvider>
+            </UserProfileProvider>
+          </NotificationProvider>
+        </Suspense>
+      </SessionInitializer>
+    );
+  }
   
   return (
     <Suspense fallback={<DashboardLoader message="Loading dashboard content..." />}>

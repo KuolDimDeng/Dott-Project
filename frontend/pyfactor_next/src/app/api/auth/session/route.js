@@ -25,9 +25,51 @@ const COOKIE_OPTIONS = {
 export async function GET(request) {
   try {
     console.log('[Auth Session] Getting session data');
+    console.log('[Auth Session] Request URL:', request.url);
+    console.log('[Auth Session] Request headers:', {
+      cookie: request.headers.get('cookie'),
+      authorization: request.headers.get('authorization') ? 'Bearer ...' : 'None',
+      'x-pending-auth': request.headers.get('x-pending-auth'),
+      'x-retry-count': request.headers.get('x-retry-count')
+    });
     
     // CRITICAL: Force fresh cookie read by awaiting cookies()
     const cookieStore = await cookies();
+    
+    // Log all available cookies
+    const allCookies = cookieStore.getAll();
+    console.log('[Auth Session] All available cookies:', allCookies.map(c => ({
+      name: c.name,
+      value: c.value ? `${c.value.substring(0, 20)}...` : 'empty',
+      domain: c.domain,
+      path: c.path
+    })));
+    
+    // Check for cookie propagation delay indicators
+    const pendingAuth = request.headers.get('x-pending-auth');
+    const retryCount = parseInt(request.headers.get('x-retry-count') || '0');
+    
+    // If we're expecting cookies but don't see them yet, wait briefly
+    let sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    let sessionTokenCookie = cookieStore.get('session_token');
+    
+    if (!sessionCookie && !sessionTokenCookie && pendingAuth === 'true' && retryCount < 3) {
+      console.log(`[Auth Session] Cookie propagation delay detected, attempt ${retryCount + 1}/3`);
+      console.log('[Auth Session] Raw cookie header:', request.headers.get('cookie'));
+      
+      // Wait for cookies to propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Force a new cookie read
+      const freshCookieStore = await cookies();
+      sessionCookie = freshCookieStore.get('dott_auth_session') || freshCookieStore.get('appSession');
+      sessionTokenCookie = freshCookieStore.get('session_token');
+      
+      console.log('[Auth Session] After wait, found cookies:', {
+        hasSessionCookie: !!sessionCookie,
+        hasSessionToken: !!sessionTokenCookie
+      });
+    }
     
     // First check for the main dott_auth_session cookie
     const dottSessionCookie = cookieStore.get('dott_auth_session');
@@ -126,6 +168,15 @@ export async function GET(request) {
     });
     
     if (!sessionCookie) {
+      console.log('[Auth Session] NO SESSION COOKIE FOUND');
+      console.log('[Auth Session] Debug info:', {
+        pendingAuth,
+        retryCount,
+        cookieHeader: request.headers.get('cookie'),
+        hasSessionToken: !!sessionTokenCookie,
+        allCookieNames: allCookies.map(c => c.name)
+      });
+      
       // For backward compatibility, check Authorization header
       // This should be removed once all clients use cookies
       const authHeader = request.headers.get('authorization');
@@ -388,6 +439,14 @@ export async function POST(request) {
       console.log('[Auth Session POST] Backend session token set');
     }
     
+    // CRITICAL: Set a propagation marker cookie that expires quickly
+    // This helps identify when cookies are being set but not yet propagated
+    response.cookies.set('session_pending', '1', {
+      ...cookieOptions,
+      maxAge: 60, // 1 minute
+      httpOnly: false // Allow client to read this
+    });
+    
     // Also set a client-readable status cookie for immediate checks
     const statusCookie = {
       needsOnboarding,
@@ -408,6 +467,10 @@ export async function POST(request) {
     }
     
     console.log('[Auth Session POST] Session created successfully with status cookie');
+    
+    // Add response headers to help with debugging
+    response.headers.set('X-Session-Created', 'true');
+    response.headers.set('X-Session-Token', sessionToken ? 'present' : 'missing');
     
     return response;
     

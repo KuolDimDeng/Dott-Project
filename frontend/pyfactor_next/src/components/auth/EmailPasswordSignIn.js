@@ -244,6 +244,25 @@ export default function EmailPasswordSignIn() {
         throw new Error('Failed to create session');
       }
       
+      // Create bridge token for immediate availability
+      const bridgeResponse = await fetch('/api/auth/bridge-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionToken: authResult.access_token,
+          userId: authResult.user.sub,
+          tenantId: authResult.user.tenantId || authResult.user.tenant_id,
+          email: authResult.user.email
+        })
+      });
+      
+      let bridgeToken = null;
+      if (bridgeResponse.ok) {
+        const bridgeData = await bridgeResponse.json();
+        bridgeToken = bridgeData.bridgeToken;
+        logger.info('[EmailPasswordSignIn] Bridge token created for session handoff');
+      }
+      
       // DEPRECATED: Remove localStorage usage after testing
       // Only keeping temporarily for backward compatibility
       if (process.env.NODE_ENV === 'development') {
@@ -273,6 +292,10 @@ export default function EmailPasswordSignIn() {
         
         sessionStorage.setItem('pendingSession', JSON.stringify(sessionData));
         
+        // Mark authentication as complete for propagation tracking
+        const { markAuthComplete } = await import('@/middleware/sessionPropagation');
+        markAuthComplete();
+        
         // Use the new session manager to wait for session establishment
         const { waitForSession } = await import('@/utils/sessionManager');
         const session = await waitForSession(15, 1000); // Wait up to 15 seconds
@@ -285,15 +308,25 @@ export default function EmailPasswordSignIn() {
           logger.info('[EmailPasswordSignIn] Session established successfully');
         }
         
+        // Build redirect URL with bridge token if available
+        let redirectUrl;
         if (finalUserData.redirectUrl) {
-          router.push(finalUserData.redirectUrl);
+          redirectUrl = finalUserData.redirectUrl;
         } else if (finalUserData.needsOnboarding) {
-          router.push('/onboarding');
+          redirectUrl = '/onboarding';
         } else if (finalUserData.tenantId) {
-          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+          redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
         } else {
-          router.push('/dashboard');
+          redirectUrl = '/dashboard';
         }
+        
+        // Add bridge token to URL if available
+        if (bridgeToken && !finalUserData.needsOnboarding) {
+          const separator = redirectUrl.includes('?') ? '&' : '?';
+          redirectUrl = `${redirectUrl}${separator}bridge=${bridgeToken}`;
+        }
+        
+        router.push(redirectUrl);
         return;
       }
 

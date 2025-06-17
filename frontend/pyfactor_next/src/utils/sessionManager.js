@@ -32,15 +32,24 @@ class SessionManager {
   async fetchSessionFromBackend() {
     try {
       logger.info('[SessionManager] Fetching session from backend');
+      logger.info('[SessionManager] Browser cookies:', document.cookie);
+      
+      // Use session propagation handler for better cookie detection
+      const { fetchWithSessionPropagation } = await import('@/middleware/sessionPropagation');
       
       // Try the session endpoint first (includes backend session token check)
-      const sessionResponse = await fetch('/api/auth/session', {
+      const sessionResponse = await fetchWithSessionPropagation('/api/auth/session', {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache'
         }
+      });
+      
+      logger.info('[SessionManager] Session response status:', sessionResponse.status);
+      logger.info('[SessionManager] Session response headers:', {
+        'set-cookie': sessionResponse.headers.get('set-cookie')
       });
 
       if (sessionResponse.ok) {

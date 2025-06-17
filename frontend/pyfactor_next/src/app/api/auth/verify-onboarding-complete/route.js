@@ -8,16 +8,29 @@ import { decrypt } from '@/utils/sessionEncryption';
  */
 export async function GET(request) {
   console.log('[VerifyOnboardingComplete] Checking onboarding status...');
+  console.log('[VerifyOnboardingComplete] Request headers:', {
+    cookie: request.headers.get('cookie') ? 'Present' : 'None',
+    authorization: request.headers.get('authorization') ? 'Present' : 'None'
+  });
   
   try {
     // Get session
     const cookieStore = await cookies();
+    
+    // Log all cookies for debugging
+    const allCookies = cookieStore.getAll();
+    console.log('[VerifyOnboardingComplete] Available cookies:', allCookies.map(c => c.name));
+    
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     if (!sessionCookie) {
+      console.log('[VerifyOnboardingComplete] No session cookie found, returning 401');
       return NextResponse.json({
         success: false,
-        error: 'No session found'
+        error: 'No session found',
+        debug: {
+          availableCookies: allCookies.map(c => c.name)
+        }
       }, { status: 401 });
     }
     
