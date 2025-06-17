@@ -363,15 +363,29 @@ else:
 
 # Only configure Redis if explicitly provided
 if REDIS_URL or REDIS_HOST:
-    REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
-    CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
-    CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+    # If we already have REDIS_URL from environment, keep it as-is
+    if not REDIS_URL and REDIS_HOST:
+        # Only construct URL if we don't have one
+        if REDIS_PASSWORD:
+            REDIS_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}'
+        else:
+            REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
+    
+    # Build Celery URLs with password if available
+    if REDIS_PASSWORD:
+        CELERY_BROKER_URL = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
+        CELERY_RESULT_BACKEND = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/0'
+        cache_location = f'redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/1'
+    else:
+        CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+        CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
+        cache_location = f'redis://{REDIS_HOST}:{REDIS_PORT}/1'
     
     # Update your CACHES setting to use Redis when available
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': f'redis://{REDIS_HOST}:{REDIS_PORT}/1',
+            'LOCATION': cache_location,
             'OPTIONS': {
                 'db': 1,
                 'parser_class': 'redis.connection.DefaultParser',

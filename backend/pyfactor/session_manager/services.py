@@ -47,19 +47,53 @@ class SessionService:
             
             # If we have REDIS_URL, use it directly
             if redis_url:
-                print(f"[SessionService] Connecting to Redis using URL")
-                return redis.StrictRedis.from_url(
-                    redis_url,
-                    db=getattr(settings, 'REDIS_SESSION_DB', 1),
-                    decode_responses=True,
-                    health_check_interval=30,
-                    socket_keepalive=True,
-                    socket_keepalive_options={
-                        1: 1,  # TCP_KEEPIDLE
-                        2: 3,  # TCP_KEEPINTVL  
-                        3: 5   # TCP_KEEPCNT
+                print(f"[SessionService] Connecting to Redis using URL: {redis_url}")
+                try:
+                    # Parse the URL to handle any formatting issues
+                    from urllib.parse import urlparse
+                    parsed = urlparse(redis_url)
+                    
+                    # Build connection parameters from parsed URL
+                    connection_kwargs = {
+                        'host': parsed.hostname,
+                        'port': parsed.port or 6379,
+                        'db': getattr(settings, 'REDIS_SESSION_DB', 1),
+                        'decode_responses': True,
+                        'health_check_interval': 30,
+                        'socket_keepalive': True,
+                        'socket_keepalive_options': {
+                            1: 1,  # TCP_KEEPIDLE
+                            2: 3,  # TCP_KEEPINTVL  
+                            3: 5   # TCP_KEEPCNT
+                        }
                     }
-                )
+                    
+                    # Add password if present
+                    if parsed.password:
+                        connection_kwargs['password'] = parsed.password
+                    
+                    # Handle SSL if the scheme is 'rediss'
+                    if parsed.scheme == 'rediss':
+                        connection_kwargs['ssl'] = True
+                        connection_kwargs['ssl_cert_reqs'] = None
+                    
+                    print(f"[SessionService] Redis connection params: host={parsed.hostname}, port={parsed.port or 6379}, ssl={parsed.scheme == 'rediss'}")
+                    return redis.StrictRedis(**connection_kwargs)
+                except Exception as e:
+                    print(f"[SessionService] Failed to parse Redis URL: {e}")
+                    # Try direct connection as fallback
+                    return redis.StrictRedis.from_url(
+                        redis_url,
+                        db=getattr(settings, 'REDIS_SESSION_DB', 1),
+                        decode_responses=True,
+                        health_check_interval=30,
+                        socket_keepalive=True,
+                        socket_keepalive_options={
+                            1: 1,  # TCP_KEEPIDLE
+                            2: 3,  # TCP_KEEPINTVL  
+                            3: 5   # TCP_KEEPCNT
+                        }
+                    )
             
             # Otherwise use individual settings
             connection_kwargs = {
@@ -90,6 +124,7 @@ class SessionService:
             
         except Exception as e:
             print(f"[SessionService] Failed to connect to Redis: {e}")
+            print(f"[SessionService] This is expected if Redis is not configured. Using PostgreSQL for session storage.")
             return None
     def _hash_token(self, token: str) -> str:
         """Hash token for secure storage"""

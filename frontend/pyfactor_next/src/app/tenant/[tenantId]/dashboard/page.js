@@ -165,12 +165,18 @@ export default function TenantDashboard() {
         if (tenantId) {
           try {
             logger.info('[TenantDashboard] Verifying onboarding completion status...');
-            const verifyResponse = await fetch('/api/auth/verify-onboarding-complete');
+            // Use the correct endpoint that exists in the backend
+            const verifyResponse = await fetch('/api/onboarding/status/', {
+              credentials: 'include',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
             if (verifyResponse.ok) {
               const verifyResult = await verifyResponse.json();
               logger.info('[TenantDashboard] Onboarding verification result:', verifyResult);
-              if (verifyResult.data?.fixed) {
-                logger.info('[TenantDashboard] ✅ Fixed onboarding status in backend');
+              if (verifyResult.onboarding_status === 'complete' || verifyResult.setup_completed) {
+                logger.info('[TenantDashboard] ✅ Onboarding is complete in backend');
               }
             }
           } catch (error) {
