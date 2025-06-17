@@ -2,6 +2,17 @@
 
 This is the Next.js frontend for the PyFactor application.
 
+## Recent Updates
+
+### January 17, 2025
+
+- **Implemented Redis-based Session Management**
+  - Added bridge token system to handle cookie propagation delays
+  - Integrated Redis for distributed session storage
+  - Automatic fallback to in-memory storage when Redis unavailable
+  - Fixes authentication issues after browser cache clear
+  - See [Session Management Documentation](./docs/SESSION_MANAGEMENT_WITH_REDIS.md)
+
 ## Recent Fixes
 
 ### April 2, 2025

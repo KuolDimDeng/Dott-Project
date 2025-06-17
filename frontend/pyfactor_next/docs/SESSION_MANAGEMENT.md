@@ -1,8 +1,10 @@
 # Session Management - Recommended Secure Approach
 
+**Updated January 17, 2025: Now includes Redis-based bridge token system for improved reliability. See [SESSION_MANAGEMENT_WITH_REDIS.md](./SESSION_MANAGEMENT_WITH_REDIS.md) for complete Redis implementation details.**
+
 ## Overview
 
-This document outlines the recommended secure approach for managing user sessions in the Dott application, particularly for handling sessions after browser cache is cleared.
+This document outlines the recommended secure approach for managing user sessions in the Dott application, particularly for handling sessions after browser cache is cleared. The system now includes Redis support for distributed caching and bridge tokens to handle cookie propagation delays.
 
 ## Architecture
 
@@ -27,6 +29,13 @@ Browser → Frontend API Routes → Django Backend (PostgreSQL)
    - 24-hour expiration
    - Contains user data, tenant info, onboarding status
    - Survives browser cache clear
+   - Cached in Redis when available
+
+2. **Bridge Tokens (Redis/Memory)**
+   - Temporary tokens for immediate session access
+   - 60-second TTL
+   - Stored in Redis (distributed) or memory (fallback)
+   - Handles cookie propagation delays
 
 2. **Secondary: Encrypted HTTP-Only Cookies**
    - `dott_auth_session`: Encrypted session data
