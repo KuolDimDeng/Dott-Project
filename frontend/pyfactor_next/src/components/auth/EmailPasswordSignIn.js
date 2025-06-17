@@ -261,21 +261,27 @@ export default function EmailPasswordSignIn() {
       // If session was created successfully, we can proceed directly
       // The cookies have been set on the response, so they'll be included in subsequent requests
       if (sessionResult.success && sessionResult.user) {
-        logger.info('[EmailPasswordSignIn] Session created successfully, redirecting...');
+        logger.info('[EmailPasswordSignIn] Session created successfully, verifying...');
         
         // Store session info in sessionStorage as a temporary bridge during cookie propagation
-        sessionStorage.setItem('pendingSession', JSON.stringify({
+        const sessionData = {
           user: sessionResult.user,
           tenantId: finalUserData.tenantId,
           timestamp: Date.now(),
           onboardingCompleted: !finalUserData.needsOnboarding
-        }));
+        };
         
-        // Also set a temporary client-side cookie to indicate session is being set
-        document.cookie = `dott_session_status=pending; path=/; max-age=60; samesite=lax${window.location.protocol === 'https:' ? '; secure' : ''}`;
+        sessionStorage.setItem('pendingSession', JSON.stringify(sessionData));
         
-        // Small delay to ensure cookies are processed by browser
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Wait for session cookie to be properly set and verified
+        const { waitForSessionPropagation } = await import('@/middleware/sessionVerification');
+        const isSessionReady = await waitForSessionPropagation(sessionData);
+        
+        if (!isSessionReady) {
+          logger.error('[EmailPasswordSignIn] Session verification failed, retrying...');
+          // Fallback: wait a bit more and proceed anyway
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
         
         if (finalUserData.redirectUrl) {
           router.push(finalUserData.redirectUrl);

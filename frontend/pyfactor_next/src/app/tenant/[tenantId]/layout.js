@@ -48,9 +48,18 @@ export default async function TenantLayout({ children, params }) {
       }
     }
     
+    // For client-side session verification, we'll handle it in a client component
+    // This allows us to check for pending sessions from recent logins
     if (!session || !session.user) {
-      // No session, redirect to sign-in page with tenant dashboard as return URL
-      redirect(`/auth/signin?returnTo=/tenant/${tenantId}/dashboard`);
+      // Import the client-side session check component
+      const SessionCheck = (await import('./SessionCheck')).default;
+      
+      return (
+        <SessionCheck>
+          <TenantInitializer tenantId={tenantId} />
+          {children}
+        </SessionCheck>
+      );
     }
     
     // Check onboarding status from profile data if available
