@@ -91,6 +91,23 @@ export default function TenantDashboard() {
       try {
         logger.info('[TenantDashboard] Initializing dashboard for tenant:', tenantId);
         
+        // CRITICAL: Verify onboarding is marked as complete in backend
+        if (tenantId) {
+          try {
+            logger.info('[TenantDashboard] Verifying onboarding completion status...');
+            const verifyResponse = await fetch('/api/auth/verify-onboarding-complete');
+            if (verifyResponse.ok) {
+              const verifyResult = await verifyResponse.json();
+              logger.info('[TenantDashboard] Onboarding verification result:', verifyResult);
+              if (verifyResult.data?.fixed) {
+                logger.info('[TenantDashboard] ✅ Fixed onboarding status in backend');
+              }
+            }
+          } catch (error) {
+            logger.error('[TenantDashboard] Error verifying onboarding:', error);
+          }
+        }
+        
         // If this is from subscription page and we have emergency tokens
         if (emergencyAccess) {
           logger.info('[TenantDashboard] Using emergency access mode from subscription');
