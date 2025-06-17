@@ -253,19 +253,44 @@ export default function EmailPasswordSignIn() {
         idToken: authResult.id_token
       }, 'email-password');
 
-      // Small delay to ensure cookie is set before redirect
-      setTimeout(() => {
-        // Redirect based on unified flow result
-        if (finalUserData.redirectUrl) {
-          router.push(finalUserData.redirectUrl);
-        } else if (finalUserData.needsOnboarding) {
-          router.push('/onboarding');
-        } else if (finalUserData.tenantId) {
-          router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
-        } else {
-          router.push('/dashboard');
+      // Verify session is ready before redirect
+      const waitForSession = async () => {
+        let attempts = 0;
+        const maxAttempts = 10; // Try for up to 5 seconds
+        
+        while (attempts < maxAttempts) {
+          try {
+            const verifyResponse = await fetch('/api/auth/verify-session-ready');
+            const verifyData = await verifyResponse.json();
+            
+            if (verifyData.ready) {
+              // Session is ready, proceed with redirect
+              if (finalUserData.redirectUrl) {
+                router.push(finalUserData.redirectUrl);
+              } else if (finalUserData.needsOnboarding) {
+                router.push('/onboarding');
+              } else if (finalUserData.tenantId) {
+                router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+              } else {
+                router.push('/dashboard');
+              }
+              return;
+            }
+          } catch (error) {
+            logger.warn('[EmailPasswordSignIn] Session verification error:', error);
+          }
+          
+          attempts++;
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between attempts
         }
-      }, 100); // 100ms delay
+        
+        // If we get here, session verification failed
+        logger.error('[EmailPasswordSignIn] Session not ready after multiple attempts');
+        showError('Session setup failed. Please try signing in again.');
+        setIsLoading(false);
+      };
+      
+      await waitForSession();
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
       showError(error.message || 'Invalid email or password');

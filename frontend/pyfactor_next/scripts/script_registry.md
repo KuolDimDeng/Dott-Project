@@ -589,3 +589,18 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Updated: /backend/pyfactor/users/models.py
   - Created: /backend/pyfactor/users/migrations/0005_add_stripe_subscription_id.py
   - Updated: /backend/pyfactor/pyfactor/urls.py
+
+
+## Version0005_fix_session_redirect_after_cache_clear
+- **Date**: 2025-01-17
+- **Purpose**: Fix redirect to Google sign-in after browser cache clear
+- **Issue**: Users redirected to Google OAuth after signing in with email/password
+- **Root Cause**: Session cookie not ready when dashboard checks authentication
+- **Solution**:
+  - Created session verification endpoint
+  - Added wait/retry logic for session readiness
+  - Enhanced dashboard auth check with retry
+- **Files Modified**:
+  - Created: /src/app/api/auth/verify-session-ready/route.js
+  - Updated: /src/components/auth/EmailPasswordSignIn.js
+  - Updated: /src/app/tenant/[tenantId]/dashboard/page.js

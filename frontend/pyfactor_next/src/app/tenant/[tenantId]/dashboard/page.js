@@ -349,7 +349,34 @@ export default function TenantDashboard() {
         } catch (authError) {
           logger.warn('[TenantDashboard] Auth0 auth check failed:', authError);
           
-          // If we have idToken in cookies/storage but Cognito check failed,
+          // Check if we have a session cookie - it might just be a temporary API failure
+          const sessionCookie = Cookies.get('dott_auth_session') || Cookies.get('appSession');
+          
+          if (sessionCookie) {
+            logger.info('[TenantDashboard] Session cookie exists, retrying authentication check');
+            
+            // Wait a bit and retry once
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            try {
+              const retryAuthResponse = await fetch('/api/auth/me');
+              if (retryAuthResponse.ok) {
+                const retryAuthData = await retryAuthResponse.json();
+                if (retryAuthData.authenticated) {
+                  logger.info('[TenantDashboard] Authentication successful on retry');
+                  setAuthChecked(true);
+                  setTenantStatus('active');
+                  storeTenantId(tenantId);
+                  setIsLoading(false);
+                  return;
+                }
+              }
+            } catch (retryError) {
+              logger.error('[TenantDashboard] Retry also failed:', retryError);
+            }
+          }
+          
+          // If we have idToken in cookies/storage but auth check failed,
           // try emergency fallback
           if (idToken || emergencyAccess) {
             logger.info('[TenantDashboard] Using emergency token fallback');
