@@ -86,7 +86,8 @@
       "Bash(./force-backend-deployment.sh:*)",
       "Bash(./deploy-frontend-render.sh:*)",
       "Bash(git reset:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(venv/bin/python scripts/fix_onboarding_redirect_loop.py:*)"
     ],
     "deny": []
   }

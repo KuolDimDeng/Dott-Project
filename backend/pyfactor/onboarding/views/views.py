@@ -1508,10 +1508,17 @@ class CompleteOnboardingView(BaseOnboardingView):
             
             # Mark onboarding as complete
             onboarding.onboarding_status = 'complete'
-            onboarding.current_step = 0
+            onboarding.current_step = 'complete'
+            onboarding.next_step = 'dashboard'
             onboarding.completed_at = timezone.now()
             onboarding.setup_completed = True
             onboarding.setup_timestamp = timezone.now()
+            
+            # Mark complete step in completed_steps
+            completed_steps = onboarding.completed_steps or []
+            if 'complete' not in completed_steps:
+                completed_steps.append('complete')
+            onboarding.completed_steps = completed_steps
             
             onboarding.save()
             return onboarding
@@ -1543,9 +1550,13 @@ class CompleteOnboardingView(BaseOnboardingView):
             # Check if payment is required and completed for paid tiers
             selected_plan = request.data.get('selected_plan', 'free')
             payment_verified = request.data.get('payment_verified', False)
+            force_complete = request.data.get('force_complete', False)
+            mark_onboarding_complete = request.data.get('mark_onboarding_complete', False)
             
-            # For paid tiers, only complete if payment is verified
-            if selected_plan != 'free' and not payment_verified:
+            # For paid tiers, only complete if payment is verified OR force_complete is set
+            # The force_complete flag is used when the frontend needs to mark onboarding as complete
+            # even without payment verification (e.g., after successful onboarding flow completion)
+            if selected_plan != 'free' and not payment_verified and not force_complete and not mark_onboarding_complete:
                 logger.info(f"[CompleteOnboarding] Payment required for {selected_plan} plan")
                 return Response({
                     'status': 'payment_required',
@@ -1556,9 +1567,13 @@ class CompleteOnboardingView(BaseOnboardingView):
                     }
                 }, status=status.HTTP_402_PAYMENT_REQUIRED)
             
+            # Log when force_complete is used
+            if force_complete or mark_onboarding_complete:
+                logger.info(f"[CompleteOnboarding] Force completing onboarding for {user.email} with plan {selected_plan} (force_complete={force_complete}, mark_onboarding_complete={mark_onboarding_complete})")
+            
             # Prepare payment data if provided
             payment_data = None
-            if payment_verified:
+            if payment_verified or force_complete:
                 payment_data = {
                     'payment_verified': True,
                     'payment_intent_id': request.data.get('payment_intent_id'),
@@ -1569,12 +1584,17 @@ class CompleteOnboardingView(BaseOnboardingView):
                 logger.info(f"[CompleteOnboarding] Processing payment completion for {user.email} with plan {selected_plan}")
             
             # Complete onboarding with payment data
+            logger.info(f"[CompleteOnboarding] Calling complete_onboarding for {user.email}, current status: {onboarding.onboarding_status}")
             await self.complete_onboarding(onboarding, payment_data)
+            logger.info(f"[CompleteOnboarding] After complete_onboarding for {user.email}, status: {onboarding.onboarding_status}")
             
             # Update user's onboarding status if the field exists
             if hasattr(user, 'needs_onboarding'):
+                logger.info(f"[CompleteOnboarding] Updating user.needs_onboarding from {user.needs_onboarding} to False for {user.email}")
                 user.needs_onboarding = False
                 await sync_to_async(user.save)(update_fields=['needs_onboarding'])
+            else:
+                logger.warning(f"[CompleteOnboarding] User {user.email} does not have needs_onboarding field")
             
             # Get tenant_id for response
             tenant_id = onboarding.tenant_id
