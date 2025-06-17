@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { decrypt } from '@/utils/sessionEncryption';
 
 /**
  * Verify that the session is ready before redirecting to dashboard
@@ -17,35 +18,44 @@ export async function GET(request) {
       });
     }
     
-    // Verify the session is valid by calling the me endpoint
-    const meResponse = await fetch(`${request.nextUrl.origin}/api/auth/me`, {
-      headers: {
-        'Cookie': request.headers.get('cookie') || ''
+    // Try to decrypt and validate the session directly
+    try {
+      let sessionData;
+      
+      // Try to decrypt first (new format)
+      try {
+        const decrypted = decrypt(sessionCookie.value);
+        sessionData = JSON.parse(decrypted);
+      } catch (decryptError) {
+        // Fallback to old base64 format for backward compatibility
+        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
       }
-    });
-    
-    if (!meResponse.ok) {
+      
+      // Check if session has required data
+      if (!sessionData.user || !sessionData.user.email) {
+        return NextResponse.json({ 
+          ready: false, 
+          reason: 'Invalid session data' 
+        });
+      }
+      
+      // Session is ready
+      return NextResponse.json({ 
+        ready: true,
+        user: sessionData.user,
+        accessToken: sessionData.accessToken,
+        needsOnboarding: sessionData.needsOnboarding,
+        tenantId: sessionData.tenantId
+      });
+      
+    } catch (error) {
+      // If we can't decrypt/parse the session, it's not ready
       return NextResponse.json({ 
         ready: false, 
-        reason: 'Session validation failed' 
+        reason: 'Session validation failed',
+        error: error.message 
       });
     }
-    
-    const meData = await meResponse.json();
-    
-    if (!meData.authenticated) {
-      return NextResponse.json({ 
-        ready: false, 
-        reason: 'User not authenticated' 
-      });
-    }
-    
-    // Session is ready
-    return NextResponse.json({ 
-      ready: true,
-      user: meData.user,
-      accessToken: meData.accessToken
-    });
     
   } catch (error) {
     console.error('[Verify Session Ready] Error:', error);
