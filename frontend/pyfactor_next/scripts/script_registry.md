@@ -604,3 +604,8 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Created: /src/app/api/auth/verify-session-ready/route.js
   - Updated: /src/components/auth/EmailPasswordSignIn.js
   - Updated: /src/app/tenant/[tenantId]/dashboard/page.js
+
+- Version0009: Fix dashboard redirect after sign-in due to cookie propagation delays - 2025-06-17T15:30:13.955Z
+- Version0010: Simpler fix for cookie propagation using sessionStorage bridge - 2025-06-17T15:31:41.059Z
+- Version0011: Fix dashboard authentication check timing after sign-in - 2025-06-17T16:20:03.660Z
+- Version0012: Comprehensive fix for cookie propagation issues - 2025-06-17T16:21:33.781Z

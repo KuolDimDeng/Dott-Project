@@ -263,6 +263,17 @@ export default function EmailPasswordSignIn() {
       if (sessionResult.success && sessionResult.user) {
         logger.info('[EmailPasswordSignIn] Session created successfully, redirecting...');
         
+        // Store session info in sessionStorage as a temporary bridge during cookie propagation
+        sessionStorage.setItem('pendingSession', JSON.stringify({
+          user: sessionResult.user,
+          tenantId: finalUserData.tenantId,
+          timestamp: Date.now(),
+          onboardingCompleted: !finalUserData.needsOnboarding
+        }));
+        
+        // Also set a temporary client-side cookie to indicate session is being set
+        document.cookie = `dott_session_status=pending; path=/; max-age=60; samesite=lax${window.location.protocol === 'https:' ? '; secure' : ''}`;
+        
         // Small delay to ensure cookies are processed by browser
         await new Promise(resolve => setTimeout(resolve, 500));
         

@@ -1,4 +1,24 @@
-'use client';
+#!/usr/bin/env node
+
+/**
+ * Version0011: Fix Dashboard Authentication Check Timing
+ * 
+ * Problem: After clearing browser cache and signing in, users are redirected to Google OAuth
+ * because the dashboard checks authentication before cookies have propagated.
+ * 
+ * Solution: Add retry logic to dashboard authentication check and improve cookie handling
+ * 
+ * Run: node scripts/Version0011_fix_dashboard_auth_check_timing.js
+ */
+
+const fs = require('fs').promises;
+const path = require('path');
+
+const SCRIPT_VERSION = 'Version0011';
+const SCRIPT_DESCRIPTION = 'Fix dashboard authentication check timing after sign-in';
+
+// Update the dashboard page to add retry logic for authentication check
+const dashboardPageContent = `'use client';
 
 // Tenant Dashboard page (Client Component)
 // This page needs 'use client' because it accesses browser APIs like localStorage
@@ -68,7 +88,7 @@ const recoverSession = async (tenantId) => {
 const checkAuthWithRetry = async (maxRetries = 3, delayMs = 1000) => {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
-      logger.info(`[TenantDashboard] Authentication check attempt ${attempt + 1}/${maxRetries}`);
+      logger.info(\`[TenantDashboard] Authentication check attempt \${attempt + 1}/\${maxRetries}\`);
       
       const authResponse = await fetch('/api/auth/me', {
         credentials: 'include',
@@ -115,7 +135,7 @@ const checkAuthWithRetry = async (maxRetries = 3, delayMs = 1000) => {
       }
       
     } catch (error) {
-      logger.error(`[TenantDashboard] Auth check attempt ${attempt + 1} failed:`, error);
+      logger.error(\`[TenantDashboard] Auth check attempt \${attempt + 1} failed:\`, error);
     }
     
     if (attempt < maxRetries - 1) {
@@ -224,7 +244,7 @@ export default function TenantDashboard() {
             
             // Redirect to correct tenant dashboard
             if (userTenantId) {
-              router.push(`/tenant/${userTenantId}/dashboard`);
+              router.push(\`/tenant/\${userTenantId}/dashboard\`);
               return;
             }
           }
@@ -541,4 +561,59 @@ export default function TenantDashboard() {
       </NotificationProvider>
     </Suspense>
   );
+}`;
+
+async function updateDashboardPage() {
+  const dashboardPath = path.join(process.cwd(), 'src/app/tenant/[tenantId]/dashboard/page.js');
+  
+  try {
+    // Create backup
+    const originalContent = await fs.readFile(dashboardPath, 'utf8');
+    const backupPath = dashboardPath.replace('.js', '.v10.backup.js');
+    await fs.writeFile(backupPath, originalContent);
+    console.log('✓ Created backup at', backupPath);
+    
+    // Write new content
+    await fs.writeFile(dashboardPath, dashboardPageContent);
+    console.log('✓ Updated dashboard page with retry logic');
+    
+    return true;
+  } catch (error) {
+    console.error('✗ Failed to update dashboard page:', error.message);
+    return false;
+  }
 }
+
+async function main() {
+  console.log(`\n=== ${SCRIPT_VERSION}: ${SCRIPT_DESCRIPTION} ===\n`);
+  
+  const success = await updateDashboardPage();
+  
+  console.log('\n=== Summary ===');
+  if (success) {
+    console.log(`✅ ${SCRIPT_VERSION} completed successfully!`);
+    console.log('\nThe fix implements:');
+    console.log('1. Enhanced authentication check with retry logic (5 retries for sign-in)');
+    console.log('2. Longer delays between retries to allow cookie propagation');
+    console.log('3. Pending session fallback using sessionStorage');
+    console.log('4. Better handling of cookie timing issues');
+    console.log('\nThis should prevent users from being redirected to Google OAuth.');
+  } else {
+    console.log(`⚠️  ${SCRIPT_VERSION} failed.`);
+    console.log('Please check the error above and try again.');
+  }
+  
+  // Update script registry
+  const registryPath = path.join(process.cwd(), 'scripts', 'script_registry.md');
+  const registryEntry = `\n- ${SCRIPT_VERSION}: ${SCRIPT_DESCRIPTION} - ${new Date().toISOString()}`;
+  
+  try {
+    await fs.appendFile(registryPath, registryEntry);
+    console.log('\n✓ Updated script registry');
+  } catch (error) {
+    console.log('\n✗ Failed to update script registry:', error.message);
+  }
+}
+
+// Run the script
+main().catch(console.error);
