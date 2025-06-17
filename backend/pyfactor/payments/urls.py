@@ -15,7 +15,7 @@ urlpatterns = [
     path('create-payment-intent/', views_payment.create_payment_intent, name='create_payment_intent'),
     path('confirm-payment/', views_payment.confirm_payment, name='confirm_payment'),
     path('create-subscription/', views_payment.create_subscription, name='create_subscription'),
-    path('stripe-webhook/', views_payment.stripe_webhook, name='stripe_webhook'),
+    # Note: Stripe webhook is now handled at /api/onboarding/webhooks/stripe/
     
     # Payment recording endpoint
     path('record/', views.record_payment, name='record_payment'),
