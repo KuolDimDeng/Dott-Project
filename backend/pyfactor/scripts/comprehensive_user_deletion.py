@@ -32,9 +32,20 @@ from custom_auth.models import User, Tenant, AccountDeletionLog
 from onboarding.models import OnboardingProgress, UserProfile
 from session_manager.models import UserSession, SessionEvent
 from users.models import BusinessDetails, BusinessMember, Subscription
-from profiles.models import Report, Integration, WooCommerceIntegration
 from hr.models import Employee
 from tenant_utils.models import TenantAwareModel
+
+# Import optional models with try/except to handle missing modules
+try:
+    from reports.models import Report
+except ImportError:
+    Report = None
+
+try:
+    from integrations.models import Integration, WooCommerceIntegration
+except ImportError:
+    Integration = None
+    WooCommerceIntegration = None
 
 
 class UserDeletionManager:
@@ -164,31 +175,34 @@ class UserDeletionManager:
         print("\n👤 Profile Relations:")
         
         # Reports
-        reports = Report.objects.filter(user=user)
-        if reports.exists():
-            relationships['profile_relations']['Report'] = {
-                'count': reports.count(),
-                'objects': reports
-            }
-            print(f"   - Reports: {reports.count()}")
+        if Report:
+            reports = Report.objects.filter(user=user)
+            if reports.exists():
+                relationships['profile_relations']['Report'] = {
+                    'count': reports.count(),
+                    'objects': reports
+                }
+                print(f"   - Reports: {reports.count()}")
         
         # Integrations
-        integrations = Integration.objects.filter(user=user)
-        if integrations.exists():
-            relationships['profile_relations']['Integration'] = {
-                'count': integrations.count(),
-                'objects': integrations
-            }
-            print(f"   - Integrations: {integrations.count()}")
+        if Integration:
+            integrations = Integration.objects.filter(user=user)
+            if integrations.exists():
+                relationships['profile_relations']['Integration'] = {
+                    'count': integrations.count(),
+                    'objects': integrations
+                }
+                print(f"   - Integrations: {integrations.count()}")
         
         # WooCommerce Integrations
-        woo_integrations = WooCommerceIntegration.objects.filter(user=user)
-        if woo_integrations.exists():
-            relationships['profile_relations']['WooCommerceIntegration'] = {
-                'count': woo_integrations.count(),
-                'objects': woo_integrations
-            }
-            print(f"   - WooCommerce Integrations: {woo_integrations.count()}")
+        if WooCommerceIntegration:
+            woo_integrations = WooCommerceIntegration.objects.filter(user=user)
+            if woo_integrations.exists():
+                relationships['profile_relations']['WooCommerceIntegration'] = {
+                    'count': woo_integrations.count(),
+                    'objects': woo_integrations
+                }
+                print(f"   - WooCommerce Integrations: {woo_integrations.count()}")
         
         self.relationships = relationships
         self._calculate_deletion_order()
