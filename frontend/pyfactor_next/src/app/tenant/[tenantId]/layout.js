@@ -49,8 +49,8 @@ export default async function TenantLayout({ children, params }) {
     }
     
     if (!session || !session.user) {
-      // No session, redirect to login with tenant dashboard as return URL
-      redirect(`/api/auth/login?returnTo=/tenant/${tenantId}/dashboard`);
+      // No session, redirect to sign-in page with tenant dashboard as return URL
+      redirect(`/auth/signin?returnTo=/tenant/${tenantId}/dashboard`);
     }
     
     // Check onboarding status from profile data if available
