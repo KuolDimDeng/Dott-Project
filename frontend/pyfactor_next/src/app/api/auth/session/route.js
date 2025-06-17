@@ -5,14 +5,25 @@ import { encrypt, decrypt } from '@/utils/sessionEncryption';
 import { generateCSRFToken } from '@/utils/csrf';
 
 // Cookie configuration for production
-const COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: 'lax',
-  path: '/',
-  maxAge: 7 * 24 * 60 * 60, // 7 days
-  // Set domain for production to ensure cookie persistence
-  domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+// Detect if we're in production based on the URL, not just NODE_ENV
+const isProductionDomain = (host) => {
+  return host && (host.includes('dottapps.com') || host.includes('api.dottapps.com'));
+};
+
+// Cookie configuration for production
+const getCookieOptions = (request) => {
+  const host = request ? request.headers.get('host') : '';
+  const isProd = isProductionDomain(host);
+  
+  return {
+    httpOnly: true,
+    secure: isProd || process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60, // 7 days
+    // Only set domain for actual production domains, not localhost
+    domain: isProd ? '.dottapps.com' : undefined
+  };
 };
 
 /**
@@ -409,7 +420,7 @@ export async function POST(request) {
     
     // Set secure HttpOnly cookie with encrypted data
     const cookieOptions = {
-      ...COOKIE_OPTIONS,
+      ...getCookieOptions(request),
       maxAge: 24 * 60 * 60 // 24 hours
     };
     
@@ -493,15 +504,18 @@ export async function DELETE(request) {
       message: 'Session cleared' 
     });
     
+    // Get cookie options for clearing
+    const cookieOptions = getCookieOptions(request);
+    
     // Clear the session cookie
     response.cookies.set('dott_auth_session', '', {
-      ...COOKIE_OPTIONS,
+      ...cookieOptions,
       maxAge: 0
     });
     
     // Also clear any legacy cookies
     response.cookies.set('appSession', '', {
-      ...COOKIE_OPTIONS,
+      ...cookieOptions,
       maxAge: 0
     });
     

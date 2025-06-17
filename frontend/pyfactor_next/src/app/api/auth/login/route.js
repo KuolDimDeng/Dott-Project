@@ -50,6 +50,53 @@ export async function GET(request) {
   try {
     console.log('[Auth Login Route] Processing login request');
     
+    // Check for existing valid session first
+    const sessionCookie = request.cookies.get('dott_auth_session');
+    const sessionTokenCookie = request.cookies.get('session_token');
+    
+    if (sessionCookie || sessionTokenCookie) {
+      console.log('[Auth Login Route] Existing session detected, checking validity...');
+      
+      // Verify session is still valid
+      try {
+        const sessionCheckResponse = await fetch(`${request.nextUrl.origin}/api/auth/session`, {
+          headers: {
+            'Cookie': request.headers.get('cookie') || ''
+          }
+        });
+        
+        if (sessionCheckResponse.ok) {
+          const sessionData = await sessionCheckResponse.json();
+          if (sessionData && sessionData.authenticated) {
+            console.log('[Auth Login Route] Valid session exists, redirecting to dashboard');
+            
+            // If user has valid session, redirect to appropriate page
+            const returnUrl = request.nextUrl.searchParams.get('return_url');
+            if (returnUrl) {
+              return NextResponse.redirect(new URL(returnUrl, request.nextUrl.origin));
+            }
+            
+            // Check if user needs onboarding
+            if (sessionData.user?.needsOnboarding || sessionData.user?.needs_onboarding) {
+              return NextResponse.redirect(new URL('/onboarding', request.nextUrl.origin));
+            }
+            
+            // Otherwise redirect to dashboard
+            const tenantId = sessionData.user?.tenantId || sessionData.user?.tenant_id;
+            if (tenantId) {
+              return NextResponse.redirect(new URL(`/tenant/${tenantId}/dashboard`, request.nextUrl.origin));
+            }
+            
+            // Fallback to home
+            return NextResponse.redirect(new URL('/', request.nextUrl.origin));
+          }
+        }
+      } catch (error) {
+        console.error('[Auth Login Route] Session check error:', error);
+        // Continue with login flow if session check fails
+      }
+    }
+    
     // Get Auth0 configuration from environment variables with fallbacks
     // IMPORTANT: Force custom domain for embedded login to work properly
     auth0Domain = 'auth.dottapps.com'; // Force custom domain - required for email/password
