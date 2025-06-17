@@ -101,6 +101,40 @@ class SessionService:
                 ip_address = request_meta.get('ip_address')
                 user_agent = request_meta.get('user_agent')
             
+            # Check onboarding status from OnboardingProgress model
+            from onboarding.models import OnboardingProgress
+            onboarding_progress = None
+            needs_onboarding = True
+            onboarding_completed = False
+            onboarding_step = 'business_info'
+            
+            try:
+                onboarding_progress = OnboardingProgress.objects.filter(user=user).first()
+                if onboarding_progress:
+                    print(f"[SessionService] Found OnboardingProgress: status={onboarding_progress.onboarding_status}, setup_completed={onboarding_progress.setup_completed}")
+                    
+                    # Determine onboarding status based on OnboardingProgress
+                    if onboarding_progress.onboarding_status == 'complete' or onboarding_progress.setup_completed:
+                        needs_onboarding = False
+                        onboarding_completed = True
+                        onboarding_step = 'complete'
+                    else:
+                        needs_onboarding = True
+                        onboarding_completed = False
+                        onboarding_step = onboarding_progress.current_step or 'business_info'
+                    
+                    # Override with values from kwargs if explicitly provided
+                    if 'needs_onboarding' in kwargs:
+                        needs_onboarding = kwargs.pop('needs_onboarding')
+                    if 'onboarding_completed' in kwargs:
+                        onboarding_completed = kwargs.pop('onboarding_completed')
+                    if 'onboarding_step' in kwargs:
+                        onboarding_step = kwargs.pop('onboarding_step')
+                else:
+                    print(f"[SessionService] No OnboardingProgress found for user")
+            except Exception as e:
+                print(f"[SessionService] Error checking OnboardingProgress: {e}")
+            
             # Create session
             with transaction.atomic():
                 session = UserSession.objects.create(
@@ -110,6 +144,9 @@ class SessionService:
                     ip_address=ip_address,
                     user_agent=user_agent,
                     expires_at=timezone.now() + timedelta(seconds=self.session_ttl),
+                    needs_onboarding=needs_onboarding,
+                    onboarding_completed=onboarding_completed,
+                    onboarding_step=onboarding_step,
                     **kwargs
                 )
                 
