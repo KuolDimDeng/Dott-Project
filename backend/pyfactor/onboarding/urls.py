@@ -32,6 +32,7 @@ from .api.views.webhook_views import stripe_webhook
 from .api.payment_views import payment_pending_view, complete_payment_view
 from .views.subscription import SubscriptionSaveView
 from .views.onboarding_api import OnboardingStatusAPI, CompleteOnboardingAPI, ResumeOnboardingAPI
+from .api.status_views import OnboardingStatusView, ForceCompleteOnboardingView
 from rest_framework.routers import DefaultRouter
 
 
@@ -106,4 +107,8 @@ urlpatterns = [
     # Payment verification endpoints
     path('payment-pending/', payment_pending_view, name='payment-pending'),
     path('complete-payment/', complete_payment_view, name='complete-payment'),
+    
+    # Single source of truth status endpoints
+    path('status/', OnboardingStatusView.as_view(), name='onboarding-status'),
+    path('force-complete/', ForceCompleteOnboardingView.as_view(), name='force-complete-onboarding'),
 ]
