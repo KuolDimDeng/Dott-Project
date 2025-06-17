@@ -385,20 +385,17 @@ function PaymentForm({ plan, billingCycle }) {
       setTimeout(async () => {
         logger.info('[PaymentForm] === PREPARING REDIRECT ===');
         
-        // Final check of session state before redirect
+        // Use sessionManager to force sync and verify session
         try {
-          const finalCheckResponse = await fetch('/api/auth/session', {
-            credentials: 'include',
-            cache: 'no-store'
-          });
+          const { syncSession } = await import('@/utils/sessionManager');
+          const syncedSession = await syncSession();
           
-          if (finalCheckResponse.ok) {
-            const finalSession = await finalCheckResponse.json();
-            logger.info('[PaymentForm] FINAL session state before redirect:', {
-              needsOnboarding: finalSession.user?.needsOnboarding,
-              onboardingCompleted: finalSession.user?.onboardingCompleted,
-              tenantId: finalSession.user?.tenantId,
-              email: finalSession.user?.email
+          if (syncedSession) {
+            logger.info('[PaymentForm] Session synced via SessionManager:', {
+              needsOnboarding: syncedSession.user?.needsOnboarding,
+              onboardingCompleted: syncedSession.user?.onboardingCompleted,
+              tenantId: syncedSession.user?.tenantId,
+              email: syncedSession.user?.email
             });
           }
           
