@@ -38,23 +38,59 @@ class SessionService:
         """Get Redis client instance"""
         try:
             # Check if Redis is configured
+            redis_url = getattr(settings, 'REDIS_URL', None)
             redis_host = getattr(settings, 'REDIS_HOST', None)
-            if not redis_host:
+            
+            if not redis_url and not redis_host:
                 print(f"[SessionService] Redis not configured, using in-memory fallback")
                 return None
-                
-            return redis.StrictRedis(
-                host=redis_host,
-                port=getattr(settings, 'REDIS_PORT', 6379),
-                db=getattr(settings, 'REDIS_SESSION_DB', 1),
-                decode_responses=True,
-                socket_connect_timeout=5,
-                socket_timeout=5
-            )
+            
+            # If we have REDIS_URL, use it directly
+            if redis_url:
+                print(f"[SessionService] Connecting to Redis using URL")
+                return redis.StrictRedis.from_url(
+                    redis_url,
+                    db=getattr(settings, 'REDIS_SESSION_DB', 1),
+                    decode_responses=True,
+                    health_check_interval=30,
+                    socket_keepalive=True,
+                    socket_keepalive_options={
+                        1: 1,  # TCP_KEEPIDLE
+                        2: 3,  # TCP_KEEPINTVL  
+                        3: 5   # TCP_KEEPCNT
+                    }
+                )
+            
+            # Otherwise use individual settings
+            connection_kwargs = {
+                'host': redis_host,
+                'port': getattr(settings, 'REDIS_PORT', 6379),
+                'db': getattr(settings, 'REDIS_SESSION_DB', 1),
+                'decode_responses': True,
+                'health_check_interval': 30,
+                'socket_keepalive': True,
+                'socket_keepalive_options': {
+                    1: 1,  # TCP_KEEPIDLE
+                    2: 3,  # TCP_KEEPINTVL  
+                    3: 5   # TCP_KEEPCNT
+                }
+            }
+            
+            # Add password if configured
+            redis_password = getattr(settings, 'REDIS_PASSWORD', None)
+            if redis_password:
+                connection_kwargs['password'] = redis_password
+            
+            # Add SSL if configured
+            if getattr(settings, 'REDIS_SSL', False):
+                connection_kwargs['ssl'] = True
+                connection_kwargs['ssl_cert_reqs'] = None
+            
+            return redis.StrictRedis(**connection_kwargs)
+            
         except Exception as e:
-            print(f"[SessionService] Redis connection failed: {e}")
+            print(f"[SessionService] Failed to connect to Redis: {e}")
             return None
-    
     def _hash_token(self, token: str) -> str:
         """Hash token for secure storage"""
         return hashlib.sha256(token.encode()).hexdigest()

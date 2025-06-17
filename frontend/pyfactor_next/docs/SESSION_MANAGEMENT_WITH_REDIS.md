@@ -384,6 +384,31 @@ app.get('/health/redis', async (req, res) => {
 });
 ```
 
+## Recent Fixes (January 17, 2025)
+
+### Cookie Domain Issue
+- **Problem**: Cookies set with `.dottapps.com` domain when running locally caused session persistence failures
+- **Solution**: Dynamic domain detection based on actual host instead of NODE_ENV
+- **Result**: Cookies now work correctly in both local and production environments
+
+### Auth0 Login Session Check
+- **Problem**: Clicking "Continue with Google" would clear existing valid sessions
+- **Solution**: Added session validation before redirecting to Auth0
+- **Result**: Users with valid sessions are redirected to dashboard instead of re-authenticating
+
+### Implementation Details
+```javascript
+// Dynamic cookie domain detection
+const isProductionDomain = (host) => {
+  return host && (host.includes('dottapps.com') || host.includes('api.dottapps.com'));
+};
+
+// Session check before OAuth redirect
+if (sessionCookie || sessionTokenCookie) {
+  // Verify and redirect to dashboard if valid
+}
+```
+
 ## Conclusion
 
 The Redis-based session management system provides:

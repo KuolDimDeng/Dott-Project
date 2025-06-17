@@ -344,12 +344,25 @@ CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 1
 CELERY_WORKER_CONCURRENCY = 1              # Limit to a single worker
 
-# Redis settings - only configure if explicitly provided
-REDIS_HOST = os.environ.get('REDIS_HOST')
-REDIS_PORT = os.environ.get('REDIS_PORT', 6379)
+# Redis settings - support both REDIS_URL and individual settings
+REDIS_URL = os.environ.get('REDIS_URL')
+if REDIS_URL:
+    # Parse REDIS_URL for components
+    from urllib.parse import urlparse
+    _parsed = urlparse(REDIS_URL)
+    REDIS_HOST = _parsed.hostname
+    REDIS_PORT = _parsed.port or 6379
+    REDIS_PASSWORD = _parsed.password
+    REDIS_SSL = _parsed.scheme == 'rediss'
+else:
+    # Fallback to individual settings
+    REDIS_HOST = os.environ.get('REDIS_HOST')
+    REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
+    REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD')
+    REDIS_SSL = os.environ.get('REDIS_SSL', 'False').lower() == 'true'
 
 # Only configure Redis if explicitly provided
-if REDIS_HOST:
+if REDIS_URL or REDIS_HOST:
     REDIS_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}'
     CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
     CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
@@ -395,6 +408,7 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 }
 
 # Redis database numbers for different uses (only used when Redis is available)
+REDIS_SESSION_DB = int(os.environ.get('REDIS_SESSION_DB', 1))  # Session storage
 REDIS_TENANT_DB = 2  # Use a separate Redis database for tenant metadata
 REDIS_ONBOARDING_DB = 3  # Use a separate Redis database for onboarding sessions
 

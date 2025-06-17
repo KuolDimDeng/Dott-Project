@@ -135,6 +135,9 @@ GET /api/auth/bridge-session?token=abc123
 | Token expired | 60s TTL, user must re-auth |
 | Using memory fallback | Redis not configured/available |
 | High memory usage | Check maxmemory policy |
+| Cookie domain mismatch | Check NODE_ENV vs actual domain |
+| Session deleted on login | Fixed - now checks existing session |
+| Backend "Redis not available" | Ensure REDIS_URL is set in backend env |
 
 ## Benefits
 
