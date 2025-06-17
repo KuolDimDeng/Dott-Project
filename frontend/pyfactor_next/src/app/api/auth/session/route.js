@@ -158,7 +158,7 @@ export async function GET(request) {
     }
     
     // Get session cookie - prefer dott_auth_session
-    const sessionCookie = dottSessionCookie || cookieStore.get('appSession');
+    sessionCookie = dottSessionCookie || sessionCookie || cookieStore.get('appSession');
     
     console.log('[Auth Session] Cookie check:', {
       hasSessionToken: !!sessionTokenCookie,
