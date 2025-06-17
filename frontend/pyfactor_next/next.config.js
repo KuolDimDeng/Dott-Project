@@ -18,17 +18,15 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // Enable SWC minification for faster builds
-  swcMinify: true,
+  // SWC is now the default in Next.js 13+
   
   // Optimize for Render's infrastructure
   experimental: {
-    // Enable build cache
-    isrMemoryCacheSize: 0, // Disable in-memory cache, use filesystem
-    
-    // Optimize for serverless
-    runtime: undefined,
-    serverActions: false,
+    // Server actions configuration (Next.js 15 format)
+    serverActions: {
+      bodySizeLimit: '2mb',
+      allowedOrigins: ['dottapps.com', 'www.dottapps.com']
+    },
     
     // Enable module/chunk optimizations
     optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react'],

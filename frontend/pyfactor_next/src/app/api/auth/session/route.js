@@ -80,7 +80,9 @@ export async function GET(request) {
     }
     
     // Check for backend session token as fallback
-    const sessionTokenCookie = cookieStore.get('session_token');
+    if (!sessionTokenCookie) {
+      sessionTokenCookie = cookieStore.get('session_token');
+    }
     
     if (!dottSessionCookie && sessionTokenCookie) {
       console.log('[Auth Session] Found backend session token');
