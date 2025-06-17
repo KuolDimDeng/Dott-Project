@@ -273,14 +273,16 @@ export default function EmailPasswordSignIn() {
         
         sessionStorage.setItem('pendingSession', JSON.stringify(sessionData));
         
-        // Wait for session cookie to be properly set and verified
-        const { waitForSessionPropagation } = await import('@/middleware/sessionVerification');
-        const isSessionReady = await waitForSessionPropagation(sessionData);
+        // Use the new session manager to wait for session establishment
+        const { waitForSession } = await import('@/utils/sessionManager');
+        const session = await waitForSession(15, 1000); // Wait up to 15 seconds
         
-        if (!isSessionReady) {
-          logger.error('[EmailPasswordSignIn] Session verification failed, retrying...');
-          // Fallback: wait a bit more and proceed anyway
+        if (!session) {
+          logger.error('[EmailPasswordSignIn] Session establishment failed, proceeding anyway...');
+          // Fallback: wait a bit more and proceed
           await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          logger.info('[EmailPasswordSignIn] Session established successfully');
         }
         
         if (finalUserData.redirectUrl) {

@@ -188,16 +188,28 @@ export default function TenantDashboard() {
           return;
         }
         
-        // Enhanced authentication flow with retry logic
-        const authResult = await checkAuthWithRetry(fromSignIn ? 5 : 3, fromSignIn ? 1500 : 1000);
+        // Use SessionManager to get authentication state
+        const { getSession, waitForSession } = await import('@/utils/sessionManager');
         
-        if (!authResult.success) {
-          throw new Error('Not authenticated');
+        // If coming from sign in, wait for session to be established
+        let authData;
+        if (fromSignIn) {
+          logger.info('[TenantDashboard] Coming from sign-in, waiting for session...');
+          const session = await waitForSession(10, 1000); // Wait up to 10 seconds
+          if (!session) {
+            throw new Error('Session not established after sign-in');
+          }
+          authData = { authenticated: true, user: session.user };
+        } else {
+          // Normal session check
+          const session = await getSession();
+          if (!session || !session.authenticated) {
+            throw new Error('Not authenticated');
+          }
+          authData = { authenticated: true, user: session.user };
         }
         
-        const authData = authResult.data;
-        
-        logger.debug('[TenantDashboard] Auth0 user authenticated:', authData.user?.email);
+        logger.debug('[TenantDashboard] User authenticated:', authData.user?.email);
         
         // Get user profile to check tenant and onboarding status
         // The enhanced session hook will automatically add localStorage headers
@@ -408,7 +420,7 @@ export default function TenantDashboard() {
         sessionStorage.removeItem('pendingSession');
         
       } catch (authError) {
-        logger.warn('[TenantDashboard] Auth0 auth check failed:', authError);
+        logger.warn('[TenantDashboard] Auth check failed:', authError);
         
         // Check if we have a session cookie - it might just be a temporary API failure
         const sessionCookie = Cookies.get('dott_auth_session') || Cookies.get('appSession');

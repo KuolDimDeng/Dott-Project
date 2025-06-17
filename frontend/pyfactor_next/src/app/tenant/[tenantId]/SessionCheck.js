@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getSessionFromStorage } from '@/middleware/sessionVerification';
+import { isAuthenticated } from '@/utils/sessionManager';
 
 export default function SessionCheck({ children }) {
   const router = useRouter();
@@ -13,76 +13,36 @@ export default function SessionCheck({ children }) {
   useEffect(() => {
     async function checkSession() {
       try {
-        // First check for pending session from recent login
-        const pendingSession = getSessionFromStorage();
-        if (pendingSession) {
-          console.log('[SessionCheck] Found pending session, waiting for cookie propagation...');
-          
-          // Give cookies more time to propagate
-          await new Promise(resolve => setTimeout(resolve, 3000));
-          
-          // Try multiple times to verify session
-          let sessionVerified = false;
-          for (let i = 0; i < 3; i++) {
-            const response = await fetch('/api/auth/session', {
-              credentials: 'include',
-              headers: {
-                'Cache-Control': 'no-cache'
-              }
-            });
-            
-            if (response.ok) {
-              const data = await response.json();
-              if (data.user && data.authenticated) {
-                sessionVerified = true;
-                setHasSession(true);
-                setIsChecking(false);
-                // Clean up pending session
-                sessionStorage.removeItem('pendingSession');
-                return;
-              }
-            }
-            
-            // Wait before retry
-            if (i < 2) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-          
-          // If still no session, one more check with the me endpoint
-          if (!sessionVerified) {
-            const meResponse = await fetch('/api/auth/me?fromSignIn=true', {
-              credentials: 'include'
-            });
-            
-            if (meResponse.ok) {
-              const meData = await meResponse.json();
-              if (meData.authenticated) {
-                setHasSession(true);
-                setIsChecking(false);
-                sessionStorage.removeItem('pendingSession');
-                return;
-              }
-            }
-          }
-        }
+        // Use SessionManager to check authentication
+        const authenticated = await isAuthenticated();
         
-        // Check for existing session
-        const sessionResponse = await fetch('/api/auth/session', {
-          credentials: 'include'
-        });
-        
-        if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
-          if (sessionData.user && sessionData.authenticated) {
-            setHasSession(true);
+        if (authenticated) {
+          console.log('[SessionCheck] User is authenticated');
+          setHasSession(true);
+        } else {
+          // Check if we're in the process of establishing a session
+          const pendingSession = sessionStorage.getItem('pendingSession');
+          if (pendingSession) {
+            console.log('[SessionCheck] Found pending session, waiting...');
+            
+            // Use sessionManager to wait for session
+            const { waitForSession } = await import('@/utils/sessionManager');
+            const session = await waitForSession(10, 1000); // Wait up to 10 seconds
+            
+            if (session && session.authenticated) {
+              console.log('[SessionCheck] Session established successfully');
+              setHasSession(true);
+              sessionStorage.removeItem('pendingSession');
+            } else {
+              // No valid session, redirect to sign-in
+              console.log('[SessionCheck] No valid session found, redirecting...');
+              router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
+            }
           } else {
-            // No valid session, redirect to sign-in
+            // No session and no pending session, redirect to sign-in
+            console.log('[SessionCheck] No session found, redirecting...');
             router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
           }
-        } else {
-          // Session check failed, redirect to sign-in
-          router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
         }
       } catch (error) {
         console.error('[SessionCheck] Error checking session:', error);
