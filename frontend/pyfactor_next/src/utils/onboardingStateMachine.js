@@ -269,7 +269,7 @@ class OnboardingStateMachine {
         return { action: 'wait', message: 'Processing payment...' };
       
       case ONBOARDING_STATES.COMPLETED:
-        return { action: 'access_dashboard', url: `/tenant/${this.stateData.tenantId}/dashboard` };
+        return { action: 'access_dashboard', url: `/${this.stateData.tenantId}/dashboard` };
       
       case ONBOARDING_STATES.ERROR:
         return { action: 'retry', url: '/onboarding' };

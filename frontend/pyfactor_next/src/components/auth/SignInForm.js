@@ -34,7 +34,7 @@ export default function SignInForm({ propEmail, setParentEmail, mode, setMode, r
   useEffect(() => {
     if (!sessionLoading && session && session.tenantId) {
       logger.info('[SignInForm] User already authenticated, redirecting to dashboard');
-      const dashboardUrl = redirectPath || `/tenant/${session.tenantId}/dashboard`;
+      const dashboardUrl = redirectPath || `/${session.tenantId}/dashboard`;
       router.push(dashboardUrl);
     }
   }, [session, sessionLoading, router, redirectPath]);

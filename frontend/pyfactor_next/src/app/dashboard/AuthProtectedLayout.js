@@ -61,7 +61,7 @@ export default async function AuthProtectedLayout({ children }) {
   // If user has a tenant, redirect to tenant-specific dashboard
   if (tenantId) {
     console.log('[AuthProtectedLayout] Redirecting to tenant dashboard:', tenantId);
-    redirect(`/tenant/${tenantId}/dashboard`);
+    redirect(`/${tenantId}/dashboard`);
   }
   
   // Session exists and onboarding is completed

@@ -163,7 +163,7 @@ export default async function TenantLayout({ children, params }) {
     const userTenantId = session.tenantId || session.user?.tenantId || session.user?.tenant_id;
     if (userTenantId && userTenantId !== tenantId) {
       // User is trying to access a different tenant
-      redirect(`/tenant/${userTenantId}/dashboard`);
+      redirect(`/${userTenantId}/dashboard`);
     }
     
     return (

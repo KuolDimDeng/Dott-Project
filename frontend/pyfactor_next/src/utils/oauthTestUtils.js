@@ -267,7 +267,7 @@ export const OAuthTestUtils = {
       let reason = 'New user or no tenant - start onboarding';
       
       if (setupDone && tenantId) {
-        redirectPath = `/tenant/${tenantId}/dashboard?fromAuth=true&provider=google`;
+        redirectPath = `/${tenantId}/dashboard?fromAuth=true&provider=google`;
         reason = 'Setup complete with tenant';
       } else if (tenantId && onboardingStatus !== 'not_started') {
         const normalizedStatus = onboardingStatus.toLowerCase().replace(/[_-]/g, '');

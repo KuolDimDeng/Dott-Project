@@ -33,7 +33,7 @@ export default function SignInForm({ redirectPath, plan }) {
             router.push('/onboarding/business-info');
           } else if (user.tenantId) {
             logger.debug('[SignInForm] User has tenant, redirecting to dashboard');
-            router.push(`/tenant/${user.tenantId}/dashboard`);
+            router.push(`/${user.tenantId}/dashboard`);
           } else {
             // Fallback - check onboarding status from API
             const status = await getOnboardingStatus();
@@ -71,7 +71,7 @@ export default function SignInForm({ redirectPath, plan }) {
         break;
       case 'completed':
         if (status.tenant_id) {
-          router.push(`/tenant/${status.tenant_id}/dashboard`);
+          router.push(`/${status.tenant_id}/dashboard`);
         } else {
           router.push('/dashboard');
         }

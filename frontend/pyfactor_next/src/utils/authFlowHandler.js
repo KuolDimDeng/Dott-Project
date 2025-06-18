@@ -160,7 +160,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       finalUserData.redirectUrl = '/onboarding';
     } else if (finalUserData.onboardingCompleted && finalUserData.tenantId) {
       // User has completed onboarding AND has a valid tenant ID
-      finalUserData.redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
+      finalUserData.redirectUrl = `/${finalUserData.tenantId}/dashboard`;
     } else if (finalUserData.onboardingCompleted && !finalUserData.tenantId) {
       // Backend shows complete but no tenant ID - this is a data inconsistency
       // Force re-onboarding to fix the data

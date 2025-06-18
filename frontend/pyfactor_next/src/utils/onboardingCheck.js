@@ -85,7 +85,7 @@ export function getRedirectUrl(status) {
     }
     
     if (status.tenantId) {
-        return `/tenant/${status.tenantId}/dashboard`;
+        return `/${status.tenantId}/dashboard`;
     }
     
     // Fallback to home if no tenant (shouldn't happen)

@@ -106,7 +106,7 @@ export async function completeOnboardingAuth0(onboardingData) {
     return {
       success: true,
       tenantId: result.tenant_id || result.tenantId,
-      redirectUrl: result.redirect_url || `/tenant/${result.tenant_id || result.tenantId}/dashboard`,
+      redirectUrl: result.redirect_url || `/${result.tenant_id || result.tenantId}/dashboard`,
       message: result.message || 'Onboarding completed successfully!',
       user: result.user,
       nextSteps: result.nextSteps

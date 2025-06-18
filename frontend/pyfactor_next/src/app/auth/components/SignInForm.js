@@ -46,7 +46,7 @@ export default function SignInForm() {
   useEffect(() => {
     if (!sessionLoading && session && session.tenantId) {
       logger.info('[SignInForm] User already authenticated, redirecting to dashboard');
-      router.push(`/tenant/${session.tenantId}/dashboard`);
+      router.push(`/${session.tenantId}/dashboard`);
     }
   }, [session, sessionLoading, router]);
 
@@ -160,7 +160,7 @@ export default function SignInForm() {
       setTimeout(() => {
         const redirectUrl = finalUserData.redirectUrl || 
           (finalUserData.needsOnboarding ? '/onboarding' : 
-          (finalUserData.tenantId ? `/tenant/${finalUserData.tenantId}/dashboard` : '/dashboard'));
+          (finalUserData.tenantId ? `/${finalUserData.tenantId}/dashboard` : '/dashboard'));
         
         logger.debug('[SignInForm] Redirecting to:', redirectUrl);
         

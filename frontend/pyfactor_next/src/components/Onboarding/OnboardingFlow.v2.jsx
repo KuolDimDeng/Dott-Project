@@ -42,7 +42,7 @@ export default function OnboardingFlowV2() {
         const tenantId = await sessionManager.getTenantId();
         
         if (tenantId) {
-          router.push(`/tenant/${tenantId}/dashboard`);
+          router.push(`/${tenantId}/dashboard`);
         } else {
           // Data inconsistency - restart onboarding
           await onboardingStateMachine.reset();
@@ -162,7 +162,7 @@ export default function OnboardingFlowV2() {
         });
         
         // Redirect to dashboard
-        router.push(`/tenant/${response.tenantId}/dashboard`);
+        router.push(`/${response.tenantId}/dashboard`);
       }
       
     } catch (err) {

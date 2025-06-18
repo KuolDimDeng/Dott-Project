@@ -49,7 +49,7 @@ export default function CreateTenantPage() {
       logger.info('[CreateTenant] Tenant created successfully:', newTenant);
       
       // Redirect to the new tenant's dashboard
-      router.push(`/tenant/${newTenant.id}/dashboard`);
+      router.push(`/${newTenant.id}/dashboard`);
     } catch (err) {
       logger.error('[CreateTenant] Error creating tenant:', err);
       setError(err.message || 'Failed to create tenant. Please try again.');
@@ -59,7 +59,7 @@ export default function CreateTenantPage() {
   
   // Cancel and go back
   const handleCancel = () => {
-    router.push('/tenant/select');
+    router.push(`/select');
   };
   
   return (

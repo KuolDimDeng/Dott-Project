@@ -81,7 +81,7 @@ export async function determineUserRoute(options = {}) {
     if (user.tenantId && user.onboardingCompleted) {
       return {
         type: ROUTE_TYPES.COMPLETE_USER,
-        route: `/tenant/${user.tenantId}/dashboard`,
+        route: `/${user.tenantId}/dashboard`,
         reason: 'User onboarding complete',
         tenantId: user.tenantId
       };
@@ -129,7 +129,7 @@ export async function checkRouteAccess(pathname, user = null) {
       if (userData.onboardingCompleted && userData.tenantId) {
         return {
           allowed: false,
-          redirectTo: `/tenant/${userData.tenantId}/dashboard`,
+          redirectTo: `/${userData.tenantId}/dashboard`,
           reason: 'Onboarding already completed'
         };
       }
@@ -151,7 +151,7 @@ export async function checkRouteAccess(pathname, user = null) {
       if (pathname === '/dashboard' && userData.tenantId) {
         return {
           allowed: false,
-          redirectTo: `/tenant/${userData.tenantId}/dashboard`,
+          redirectTo: `/${userData.tenantId}/dashboard`,
           reason: 'Redirect to tenant dashboard'
         };
       }
@@ -213,7 +213,7 @@ export async function smartNavigate(router, options = {}) {
  */
 export function getDashboardRoute(user) {
   if (user?.tenantId) {
-    return `/tenant/${user.tenantId}/dashboard`;
+    return `/${user.tenantId}/dashboard`;
   }
   return '/dashboard';
 }

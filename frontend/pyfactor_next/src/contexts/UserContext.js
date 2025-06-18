@@ -15,7 +15,7 @@ export const UserContext = createContext(null);
 const isDashboardRoute = (pathname) => {
   return pathname && (
     pathname.startsWith('/dashboard') || 
-    pathname.includes('/tenant/') && pathname.includes('/dashboard')
+    pathname.includes('/') && pathname.includes('/dashboard')
   );
 };
 

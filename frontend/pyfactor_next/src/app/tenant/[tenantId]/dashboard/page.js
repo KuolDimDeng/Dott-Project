@@ -246,7 +246,7 @@ export default function TenantDashboard() {
             
             // Redirect to correct tenant dashboard
             if (userTenantId) {
-              router.push(`/tenant/${userTenantId}/dashboard`);
+              router.push(`/${userTenantId}/dashboard`);
               return;
             }
           }

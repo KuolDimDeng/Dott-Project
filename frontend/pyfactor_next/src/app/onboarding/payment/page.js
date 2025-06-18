@@ -418,7 +418,7 @@ function PaymentForm({ plan, billingCycle }) {
         }
         
         if (tenantId) {
-          const redirectUrl = `/tenant/${tenantId}/dashboard?welcome=true&payment_completed=true`;
+          const redirectUrl = `/${tenantId}/dashboard?welcome=true&payment_completed=true`;
           logger.info('[PaymentForm] Redirecting to tenant dashboard:', redirectUrl);
           logger.info('[PaymentForm] Tenant ID being used:', tenantId);
           

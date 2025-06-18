@@ -36,17 +36,17 @@ export default function SessionCheck({ children }) {
             } else {
               // No valid session, redirect to sign-in
               console.log('[SessionCheck] No valid session found, redirecting...');
-              router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
+              router.push(`/auth/signin?returnTo=/${params.tenantId}/dashboard`);
             }
           } else {
             // No session and no pending session, redirect to sign-in
             console.log('[SessionCheck] No session found, redirecting...');
-            router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
+            router.push(`/auth/signin?returnTo=/${params.tenantId}/dashboard`);
           }
         }
       } catch (error) {
         console.error('[SessionCheck] Error checking session:', error);
-        router.push(`/auth/signin?returnTo=/tenant/${params.tenantId}/dashboard`);
+        router.push(`/auth/signin?returnTo=/${params.tenantId}/dashboard`);
       } finally {
         setIsChecking(false);
       }

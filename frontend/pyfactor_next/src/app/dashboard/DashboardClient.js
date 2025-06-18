@@ -1143,7 +1143,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
               setTenantCreated(true);
               
               // Redirect to tenant dashboard
-              router.push(`/tenant/${result.tenantId}/dashboard?freePlan=true&newTenant=true`);
+              router.push(`/${result.tenantId}/dashboard?freePlan=true&newTenant=true`);
             } else {
               console.error('[DashboardClient] Failed to create tenant:', result);
             }

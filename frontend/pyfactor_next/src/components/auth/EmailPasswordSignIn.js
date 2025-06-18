@@ -315,7 +315,7 @@ export default function EmailPasswordSignIn() {
         } else if (finalUserData.needsOnboarding) {
           redirectUrl = '/onboarding';
         } else if (finalUserData.tenantId) {
-          redirectUrl = `/tenant/${finalUserData.tenantId}/dashboard`;
+          redirectUrl = `/${finalUserData.tenantId}/dashboard`;
         } else {
           redirectUrl = '/dashboard';
         }
@@ -354,7 +354,7 @@ export default function EmailPasswordSignIn() {
               } else if (finalUserData.needsOnboarding) {
                 router.push('/onboarding');
               } else if (finalUserData.tenantId) {
-                router.push(`/tenant/${finalUserData.tenantId}/dashboard`);
+                router.push(`/${finalUserData.tenantId}/dashboard`);
               } else {
                 router.push('/dashboard');
               }

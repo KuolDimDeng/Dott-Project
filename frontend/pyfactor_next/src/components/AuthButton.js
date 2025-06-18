@@ -141,7 +141,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
       return {
         text: t('go_to_dashboard', 'DASHBOARD'),
         action: () => {
-          router.push(`/tenant/${tenantId}/dashboard`);
+          router.push(`/${tenantId}/dashboard`);
         }
       };
     }
@@ -172,7 +172,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
               
               if (profileData.tenantId) {
                 logger.debug('[AuthButton] Got tenant ID from profile:', profileData.tenantId);
-                router.push(`/tenant/${profileData.tenantId}/dashboard`);
+                router.push(`/${profileData.tenantId}/dashboard`);
                 return;
               }
             }
@@ -184,7 +184,7 @@ export default function AuthButton({ size = 'medium', variant = 'primary', theme
               
               if (sessionData.user && sessionData.user.tenantId) {
                 logger.debug('[AuthButton] Got tenant ID from session:', sessionData.user.tenantId);
-                router.push(`/tenant/${sessionData.user.tenantId}/dashboard`);
+                router.push(`/${sessionData.user.tenantId}/dashboard`);
                 return;
               }
             }

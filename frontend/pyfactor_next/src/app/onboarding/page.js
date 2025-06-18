@@ -44,7 +44,7 @@ export default function OnboardingPageV2() {
         const tenantId = await sessionManager.getTenantId();
         if (tenantId) {
           logger.info('[OnboardingPage.v2] Onboarding already completed, redirecting to dashboard');
-          router.push(`/tenant/${tenantId}/dashboard`);
+          router.push(`/${tenantId}/dashboard`);
           return;
         }
       }

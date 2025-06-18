@@ -302,7 +302,7 @@ async function handleCallback(request, { params }) {
       if (needsOnboarding) {
         redirectUrl = '/onboarding';
       } else if (tenantId) {
-        redirectUrl = `/tenant/${tenantId}/dashboard`;
+        redirectUrl = `/${tenantId}/dashboard`;
       }
       
       return NextResponse.redirect(`${AUTH0_BASE_URL}${redirectUrl}`, { headers });

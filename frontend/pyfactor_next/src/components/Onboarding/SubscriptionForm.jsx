@@ -390,7 +390,7 @@ export default function SubscriptionForm() {
         // Redirect directly to dashboard for free plans - avoid intermediate subscription page
         const tenantId = localStorage.getItem('tenantId') || '';
         if (tenantId) {
-          window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
+          window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
         } else {
           window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
         }
@@ -533,7 +533,7 @@ export default function SubscriptionForm() {
     logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
     
     // Redirect with tenant ID if we have it
-    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
+    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
         return;
       }
     }
@@ -542,13 +542,13 @@ export default function SubscriptionForm() {
     logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
     
     // Redirect with tenant ID if we have it
-    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
+    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
         return;
       }
     }
     
     // Redirect with tenant ID if we have it
-    window.location.href = `/tenant/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
+    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
   };
   
   // Handle plan card click
