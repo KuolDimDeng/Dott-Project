@@ -12,7 +12,7 @@ import {
 import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
-import { logSessionStatus } from '@/utils/sessionStatus';
+// Removed sessionStatus import - using session-v2 system
 
 // PaymentForm component that uses Stripe hooks
 function PaymentForm({ plan, billingCycle }) {
@@ -133,10 +133,10 @@ function PaymentForm({ plan, billingCycle }) {
 
       logger.info('Payment method created:', paymentMethod.id);
 
-      // Get CSRF token from session
+      // Get CSRF token from session using v2 endpoint
       let csrfToken = null;
       try {
-        const sessionResponse = await fetch('/api/auth/session', {
+        const sessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
         
@@ -250,9 +250,9 @@ function PaymentForm({ plan, billingCycle }) {
         logger.error('[PaymentForm] Error completing payment:', e);
       }
       
-      // First, let's check the current session state
+      // First, let's check the current session state using v2 endpoint
       try {
-        const checkSessionResponse = await fetch('/api/auth/session', {
+        const checkSessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
         if (checkSessionResponse.ok) {
@@ -271,8 +271,8 @@ function PaymentForm({ plan, billingCycle }) {
       try {
         logger.info('[PaymentForm] Updating backend session with onboarding completion');
         
-        // First check if we have a session token
-        const sessionCheckResponse = await fetch('/api/auth/session', {
+        // First check if we have a session token using v2 endpoint
+        const sessionCheckResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
         
@@ -357,8 +357,8 @@ function PaymentForm({ plan, billingCycle }) {
         // Wait a moment for session updates to propagate
         await new Promise(resolve => setTimeout(resolve, 200));
         
-        // Verify the session was actually updated
-        const verifySessionResponse = await fetch('/api/auth/session', {
+        // Verify the session was actually updated using v2 endpoint
+        const verifySessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include',
           cache: 'no-store',
           headers: {
@@ -385,10 +385,10 @@ function PaymentForm({ plan, billingCycle }) {
       setTimeout(async () => {
         logger.info('[PaymentForm] === PREPARING REDIRECT ===');
         
-        // Use sessionManager to force sync and verify session
+        // Use sessionManager-v2 to verify session
         try {
-          const { syncSession } = await import('@/utils/sessionManager');
-          const syncedSession = await syncSession();
+          const { sessionManager } = await import('@/utils/sessionManager-v2');
+          const syncedSession = await sessionManager.getSession();
           
           if (syncedSession) {
             logger.info('[PaymentForm] Session synced via SessionManager:', {
@@ -410,9 +410,8 @@ function PaymentForm({ plan, billingCycle }) {
             logger.info('[PaymentForm] Sync status check:', syncStatus);
           }
           
-          // Log client-side cookie status
-          const clientStatus = logSessionStatus();
-          logger.info('[PaymentForm] Client-side status:', clientStatus);
+          // Session status now handled by v2 system
+          logger.info('[PaymentForm] Using session-v2 system for status checks');
         } catch (e) {
           logger.error('[PaymentForm] Error in final checks:', e);
         }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { appCache } from '../../../utils/appCache';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Add logging utility
 const logger = {
@@ -31,7 +31,7 @@ if (typeof window !== 'undefined') {
 export default function SignInForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { session, loading: sessionLoading } = useSession();
+  const { user, tenantId, needsOnboarding, loading: sessionLoading } = useSession();
   
   const [formData, setFormData] = useState({
     username: '',
@@ -41,14 +41,28 @@ export default function SignInForm() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [cookiesEnabled, setCookiesEnabled] = useState(true);
 
   // Check if user is already authenticated
   useEffect(() => {
-    if (!sessionLoading && session && session.tenantId) {
+    if (!sessionLoading && user && tenantId) {
       logger.info('[SignInForm] User already authenticated, redirecting to dashboard');
-      router.push(`/${session.tenantId}/dashboard`);
+      router.push(`/${tenantId}/dashboard`);
     }
-  }, [session, sessionLoading, router]);
+  }, [user, tenantId, sessionLoading, router]);
+
+  // Check if cookies are enabled
+  useEffect(() => {
+    try {
+      document.cookie = 'test=1; path=/';
+      const cookieEnabled = document.cookie.indexOf('test=1') !== -1;
+      setCookiesEnabled(cookieEnabled);
+      // Clean up test cookie
+      document.cookie = 'test=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+    } catch (e) {
+      setCookiesEnabled(false);
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -130,11 +144,10 @@ export default function SignInForm() {
         throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
-      // Step 2: Create secure session
-      const sessionResponse = await fetch('/api/auth/session', {
+      // Step 2: Create secure session with v2 endpoint
+      const sessionResponse = await fetch('/api/auth/session-v2', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
           accessToken: authResult.access_token,

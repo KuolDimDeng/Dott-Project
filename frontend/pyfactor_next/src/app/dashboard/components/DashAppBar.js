@@ -52,7 +52,7 @@ import { logger } from '@/utils/logger';
 import SubscriptionPopup from './SubscriptionPopup';
 import clsx from 'clsx';
 import { useToast } from '@/hooks/useToast';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
