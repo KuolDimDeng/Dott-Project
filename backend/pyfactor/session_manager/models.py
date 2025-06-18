@@ -237,3 +237,6 @@ class SessionEvent(models.Model):
     
     def __str__(self):
         return f"{self.event_type} - {self.session.session_id}"
+
+# Import security models to ensure they are discovered by migrations
+from .security_models import DeviceFingerprint, SessionSecurity, DeviceTrust

@@ -708,26 +708,28 @@ logging.config.dictConfig(LOGGING)
 
 
 MIDDLEWARE = [
-'django.middleware.security.SecurityMiddleware',
-'custom_auth.cors.CorsMiddleware',
-'corsheaders.middleware.CorsMiddleware',
-'django.middleware.common.CommonMiddleware',
-'django.middleware.csrf.CsrfViewMiddleware',
-'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
-'session_manager.middleware.SessionMiddleware',  # New session management middleware
-    'session_manager.security_middleware.SessionSecurityMiddleware',
-    'session_manager.security_middleware.DeviceFingerprintMiddleware',
-    'session_manager.security_middleware.SessionHeartbeatMiddleware',
-'django.middleware.clickjacking.XFrameOptionsMiddleware',
-'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
-'hr.middleware.HrCorsMiddleware',  # Add HR CORS middleware
-'onboarding.middleware.SchemaNameMiddleware',
-'allauth.account.middleware.AccountMiddleware',
-'custom_auth.middleware.RequestIDMiddleware',
-'custom_auth.middleware.TenantMiddleware',
-'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
-'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
-'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',
+    'django.middleware.security.SecurityMiddleware',
+    'custom_auth.cors.CorsMiddleware',
+        'corsheaders.middleware.CorsMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'custom_auth.middleware.TokenRefreshMiddleware',  # Add Token Refresh Middleware
+    'session_manager.middleware.SessionMiddleware',  # New session management middleware
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'custom_auth.enhanced_rls_middleware.EnhancedRowLevelSecurityMiddleware',  # Use enhanced RLS middleware
+    'hr.middleware.HrCorsMiddleware',  # Add HR CORS middleware
+    'onboarding.middleware.SchemaNameMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'custom_auth.middleware.RequestIDMiddleware',
+    'custom_auth.middleware.TenantMiddleware',
+    'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
+    # Add tenant isolation middleware for proper RLS
+    'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
+    'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',
+    # Temporarily disable until we fix the async compatibility issue
+    # 'onboarding.middleware.OnboardingSessionMiddleware',
 ]
 
 # Maximum number of database connections allowed
@@ -780,7 +782,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
-                # 'django.contrib.messages.context_processors.messages',  # Requires Django sessions
+                'django.contrib.messages.context_processors.messages',
             ],
         },
     },
@@ -801,7 +803,7 @@ SHARED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
-    # 'django.contrib.messages',  # Requires Django sessions
+        'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
     'django_celery_beat',
@@ -1082,21 +1084,3 @@ print(f"   Debug mode: {DEBUG}")
 # Auth0 Configuration
 AUTH0_DOMAIN = os.getenv('AUTH0_DOMAIN', 'dev-cbyy63jovi6zrcos.us.auth0.com')
 # Force deployment refresh Fri Jun  6 05:44:20 MDT 2025
-
-# ===== ENHANCED SECURITY SETTINGS =====
-# Risk thresholds for session security
-SESSION_SECURITY_RISK_THRESHOLD_HIGH = 70
-SESSION_SECURITY_RISK_THRESHOLD_MEDIUM = 50
-
-# Heartbeat configuration
-SESSION_HEARTBEAT_INTERVAL = 60  # seconds
-SESSION_HEARTBEAT_GRACE_PERIOD = 120  # seconds
-
-# Device trust configuration
-DEVICE_TRUST_DURATION_DAYS = 90
-MAX_FAILED_LOGIN_ATTEMPTS = 5
-DEVICE_BLOCK_DURATION_HOURS = 1
-
-# Security event retention
-SECURITY_EVENT_RETENTION_DAYS = 90
-# =====================================

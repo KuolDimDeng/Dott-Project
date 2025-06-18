@@ -2,7 +2,7 @@
 Session URL Configuration
 """
 
-from django.urls import path
+from django.urls import path, include
 from .views import (
     SessionDetailView,
     SessionRefreshView,
@@ -20,4 +20,7 @@ urlpatterns = [
     path('refresh/', SessionRefreshView.as_view(), name='session-refresh'),
     path('', SessionListView.as_view(), name='session-list'),
     path('invalidate-all/', SessionInvalidateAllView.as_view(), name='session-invalidate-all'),
+    
+    # Security endpoints
+    path('security/', include('session_manager.security_urls')),
 ]
