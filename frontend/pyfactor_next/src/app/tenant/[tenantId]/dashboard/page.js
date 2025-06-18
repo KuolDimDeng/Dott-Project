@@ -166,7 +166,7 @@ export default function TenantDashboard() {
           try {
             logger.info('[TenantDashboard] Verifying onboarding completion status...');
             // Use the correct endpoint that exists in the backend
-            const verifyResponse = await fetch('/api/onboarding/status/', {
+            const verifyResponse = await fetch('/api/onboarding/status', {
               credentials: 'include',
               headers: {
                 'Content-Type': 'application/json'
