@@ -6,6 +6,17 @@ export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   
+  // Debug logging for double tenant ID issue
+  if (pathname.includes('/dashboard') || pathname.includes('tenant')) {
+    console.log('[Middleware] URL Debug:', {
+      pathname,
+      fullURL: request.url,
+      search: url.search,
+      tenantIdCount: (pathname.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g) || []).length,
+      hasTenantPrefix: pathname.includes('/tenant/')
+    });
+  }
+  
   // Special handling for auth routes to prevent RSC payload fetch errors
   if (pathname.startsWith('/api/auth/')) {
     const response = NextResponse.next();

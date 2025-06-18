@@ -145,7 +145,9 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       tenantId,
       needsOnboarding,
       hasCompletedOnboarding,
-      redirectUrl
+      redirectUrl,
+      currentURL: window.location.href,
+      currentPath: window.location.pathname
     });
     
     // Step 5: Update session with latest data

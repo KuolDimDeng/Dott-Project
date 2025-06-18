@@ -158,6 +158,10 @@ export default function TenantDashboard() {
       
       try {
         logger.info('[TenantDashboard] Initializing dashboard for tenant:', tenantId);
+        logger.info('[TenantDashboard] Current URL:', window.location.href);
+        logger.info('[TenantDashboard] Current pathname:', window.location.pathname);
+        logger.info('[TenantDashboard] URL params:', params);
+        logger.info('[TenantDashboard] Search params:', Object.fromEntries(searchParams.entries()));
         logger.info('[TenantDashboard] Current cookies:', document.cookie);
         logger.info('[TenantDashboard] SessionStorage pendingSession:', sessionStorage.getItem('pendingSession'));
         
