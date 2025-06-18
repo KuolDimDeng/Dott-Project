@@ -263,12 +263,8 @@ class SessionService:
         Returns:
             UserSession instance or None
         """
-        # Try cache first
-        cached = self._get_cached_session(session_id)
-        if cached:
-            return cached
-        
-        # Fallback to database
+        # Always get from database to ensure we return a UserSession instance
+        # Redis cache should only be used for performance, not as the source of truth
         try:
             session = UserSession.objects.select_related('user', 'tenant').get(
                 session_id=session_id,
@@ -279,7 +275,7 @@ class SessionService:
             # Update activity
             session.update_activity()
             
-            # Cache for next time
+            # Cache for next time (if Redis is available)
             self._cache_session(session)
             
             return session
