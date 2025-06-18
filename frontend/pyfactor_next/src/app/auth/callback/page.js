@@ -119,37 +119,47 @@ export default function Auth0CallbackPage() {
         setRedirectHandled(true);
         
         // CRITICAL: Ensure session is properly set before redirecting
-        if (sessionToken) {
-          console.log('[Auth0Callback] Creating session with backend token');
-          try {
-            const sessionCreateResponse = await fetch('/api/auth/session', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              credentials: 'include',
-              body: JSON.stringify({
-                accessToken: sessionData.accessToken || accessToken,
-                idToken: sessionData.idToken,
-                user: {
-                  ...sessionData.user,
-                  ...backendUser,
-                  tenantId: backendUser.tenantId,
-                  needsOnboarding: backendUser.needsOnboarding,
-                  onboardingCompleted: backendUser.onboardingCompleted
-                }
-              })
+        // Always create a session, not just when we have sessionToken
+        console.log('[Auth0Callback] Creating session for user');
+        
+        // Set a temporary cookie to indicate session is being established
+        document.cookie = 'session_establishing=true; path=/; max-age=60; samesite=lax';
+        
+        try {
+          const sessionCreateResponse = await fetch('/api/auth/session', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              accessToken: sessionData.accessToken || accessToken,
+              idToken: sessionData.idToken,
+              user: {
+                ...sessionData.user,
+                ...backendUser,
+                tenantId: backendUser.tenantId,
+                needsOnboarding: backendUser.needsOnboarding,
+                onboardingCompleted: backendUser.onboardingCompleted
+              }
+            })
+          });
+          
+          if (sessionCreateResponse.ok) {
+            console.log('[Auth0Callback] Session created successfully');
+            
+            // Get the session token from the response to include in redirect
+            const sessionResult = await sessionCreateResponse.json();
+            console.log('[Auth0Callback] Session creation result:', {
+              success: sessionResult.success,
+              hasUser: !!sessionResult.user
             });
             
-            if (sessionCreateResponse.ok) {
-              console.log('[Auth0Callback] Session created successfully');
-              
-              // Wait a bit for cookies to propagate
-              await new Promise(resolve => setTimeout(resolve, 500));
-            }
-          } catch (error) {
-            console.error('[Auth0Callback] Error creating session:', error);
+            // Wait a bit for cookies to propagate
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
+        } catch (error) {
+          console.error('[Auth0Callback] Error creating session:', error);
         }
         
         // CRITICAL: Always use the redirect URL from the flow handler
@@ -161,6 +171,9 @@ export default function Auth0CallbackPage() {
           setStatus(displayStatus);
           
           console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
+          
+          // Remove the temporary cookie before redirecting
+          document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           
           // Use replace instead of push to prevent back button issues
           setTimeout(() => {

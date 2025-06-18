@@ -13,6 +13,48 @@ export default function SessionCheck({ children }) {
   useEffect(() => {
     async function checkSession() {
       try {
+        // First check if session is being established
+        const sessionEstablishing = document.cookie.includes('session_establishing=true');
+        
+        if (sessionEstablishing) {
+          console.log('[SessionCheck] Session is being established, waiting for completion...');
+          
+          // Wait for session to be established (max 15 seconds)
+          const maxAttempts = 30;
+          let attempts = 0;
+          
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Check if session cookies are now available
+            const hasDottAuth = document.cookie.includes('dott_auth_session');
+            const hasSessionToken = document.cookie.includes('session_token');
+            const stillEstablishing = document.cookie.includes('session_establishing=true');
+            
+            console.log(`[SessionCheck] Attempt ${attempts + 1}: cookies found=${hasDottAuth || hasSessionToken}, still establishing=${stillEstablishing}`);
+            
+            if ((hasDottAuth || hasSessionToken) && !stillEstablishing) {
+              console.log('[SessionCheck] Session cookies detected, verifying with backend...');
+              
+              // Give it a bit more time for server-side propagation
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // Now check with session manager
+              const authenticated = await isAuthenticated();
+              if (authenticated) {
+                console.log('[SessionCheck] Session verified successfully');
+                setHasSession(true);
+                setIsChecking(false);
+                return;
+              }
+            }
+            
+            attempts++;
+          }
+          
+          console.warn('[SessionCheck] Session establishment timeout after', attempts, 'attempts');
+        }
+        
         // Use SessionManager to check authentication
         const authenticated = await isAuthenticated();
         
@@ -39,6 +81,25 @@ export default function SessionCheck({ children }) {
               router.push(`/auth/signin?returnTo=/${params.tenantId}/dashboard`);
             }
           } else {
+            // Check for any cookies that might indicate a session
+            const hasDottAuth = document.cookie.includes('dott_auth_session');
+            const hasSessionToken = document.cookie.includes('session_token');
+            
+            if (hasDottAuth || hasSessionToken) {
+              console.log('[SessionCheck] Found session cookies, attempting to verify...');
+              // Wait a bit more for server-side propagation
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Try one more time
+              const finalCheck = await isAuthenticated();
+              if (finalCheck) {
+                console.log('[SessionCheck] Session verified on retry');
+                setHasSession(true);
+                setIsChecking(false);
+                return;
+              }
+            }
+            
             // No session and no pending session, redirect to sign-in
             console.log('[SessionCheck] No session found, redirecting...');
             router.push(`/auth/signin?returnTo=/${params.tenantId}/dashboard`);

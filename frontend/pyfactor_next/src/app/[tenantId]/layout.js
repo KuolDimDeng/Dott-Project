@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import TenantInitializer from './TenantInitializer';
+import TenantLayoutWrapper from './TenantLayoutWrapper';
 import { decrypt } from '@/utils/sessionEncryption';
 
 // This layout is a server component that wraps all tenant-specific pages
@@ -24,6 +25,20 @@ export default async function TenantLayout({ children, params }) {
       const allCookies = cookieStore.getAll();
       console.log('[TenantLayout] Available cookies:', allCookies.map(c => c.name));
       
+      // Check for session establishment status cookie first
+      const sessionEstablishing = cookieStore.get('session_establishing');
+      if (sessionEstablishing?.value === 'true') {
+        console.log('[TenantLayout] Session is being established, delegating to client component');
+        // Session is being established, let client component handle it
+        const SessionCheck = (await import('./SessionCheck.jsx')).default;
+        return (
+          <SessionCheck>
+            <TenantInitializer tenantId={tenantId} />
+            {children}
+          </SessionCheck>
+        );
+      }
+      
       // Check for backend session token first
       const sessionTokenCookie = cookieStore.get('session_token');
       console.log('[TenantLayout] Backend session token check:', {
@@ -40,7 +55,8 @@ export default async function TenantLayout({ children, params }) {
             headers: {
               'Authorization': `Session ${sessionTokenCookie.value}`,
               'Content-Type': 'application/json',
-            }
+            },
+            cache: 'no-store'
           });
           
           if (sessionResponse.ok) {
@@ -175,10 +191,9 @@ export default async function TenantLayout({ children, params }) {
     }
     
     return (
-      <>
-        <TenantInitializer tenantId={tenantId} />
+      <TenantLayoutWrapper tenantId={tenantId} initialSession={session}>
         {children}
-      </>
+      </TenantLayoutWrapper>
     );
   } catch (error) {
     // Log the error but don't redirect to home for all errors
@@ -194,10 +209,9 @@ export default async function TenantLayout({ children, params }) {
     // This prevents users from being kicked out due to transient errors
     const { tenantId } = await params;
     return (
-      <>
-        <TenantInitializer tenantId={tenantId} />
+      <TenantLayoutWrapper tenantId={tenantId} initialSession={null}>
         {children}
-      </>
+      </TenantLayoutWrapper>
     );
   }
 } 

@@ -220,6 +220,9 @@ export default function EmailPasswordSignIn() {
         throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
+      // Set a temporary cookie to indicate session is being established
+      document.cookie = 'session_establishing=true; path=/; max-age=60; samesite=lax';
+      
       // Create secure session (cookie-based)
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
@@ -234,6 +237,8 @@ export default function EmailPasswordSignIn() {
       });
 
       if (!sessionResponse.ok) {
+        // Remove the temporary cookie on failure
+        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Failed to create session');
       }
 
@@ -241,6 +246,8 @@ export default function EmailPasswordSignIn() {
       
       // Check if session was created successfully
       if (!sessionResult.success) {
+        // Remove the temporary cookie on failure
+        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Failed to create session');
       }
       
@@ -325,6 +332,9 @@ export default function EmailPasswordSignIn() {
           const separator = redirectUrl.includes('?') ? '&' : '?';
           redirectUrl = `${redirectUrl}${separator}bridge=${bridgeToken}`;
         }
+        
+        // Remove the temporary cookie before redirecting
+        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         
         router.push(redirectUrl);
         return;

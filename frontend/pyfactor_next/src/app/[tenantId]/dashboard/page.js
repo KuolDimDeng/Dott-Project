@@ -229,6 +229,12 @@ export default function TenantDashboard() {
           hasOnboardingStatus: document.cookie.includes('onboarding_status')
         });
         
+        // If we have a bridge token, wait a bit for server-side cookies to propagate
+        if (bridgeToken) {
+          logger.info('[TenantDashboard] Bridge token detected, waiting for cookie propagation...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
         // If coming from sign in, wait for session to be established
         let authData;
         if (fromSignIn) {
