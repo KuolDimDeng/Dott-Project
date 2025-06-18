@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import sessionManager from '@/utils/sessionManager-v2';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 export function useSession() {
   const [session, setSession] = useState(null);
@@ -21,7 +21,7 @@ export function useSession() {
       setLoading(true);
       setError(null);
       
-      const sessionData = await sessionManager.getSession();
+      const sessionData = await sessionManagerEnhanced.getSession();
       setSession(sessionData);
     } catch (err) {
       console.error('[useSession] Error loading session:', err);
@@ -34,7 +34,7 @@ export function useSession() {
 
   // Refresh session (clears cache and reloads)
   const refreshSession = useCallback(async () => {
-    sessionManager.clearCache();
+    sessionManagerEnhanced.clearCache();
     await loadSession();
   }, [loadSession]);
 
@@ -44,7 +44,7 @@ export function useSession() {
       setLoading(true);
       setError(null);
       
-      await sessionManager.createSession(email, password, accessToken);
+      await sessionManagerEnhanced.createSession(email, password, accessToken);
       await loadSession();
       
       return { success: true };
@@ -60,7 +60,7 @@ export function useSession() {
   const logout = useCallback(async () => {
     try {
       setLoading(true);
-      await sessionManager.logout();
+      await sessionManagerEnhanced.logout();
       // Note: logout redirects, so this might not run
     } catch (err) {
       console.error('[useSession] Logout error:', err);

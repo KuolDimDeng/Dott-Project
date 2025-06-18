@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { logger } from '@/utils/serverLogger';
-import { getSession } from '@/utils/serverSession';
+import { cookies } from 'next/headers';
+import { decrypt } from '@/utils/sessionEncryption';
 
 /**
  * Proxy API route for /api/customers to handle CORS and authentication
@@ -22,7 +23,17 @@ export async function GET(request) {
     let tenantIdFromCognito = null;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
-        const session = await getSession(request);
+        const cookieStore = await cookies();
+        const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+        let session = null;
+        if (sessionCookie) {
+          try {
+            const decrypted = decrypt(sessionCookie.value);
+            session = JSON.parse(decrypted);
+          } catch (e) {
+            logger.warn('[ProxyAPI] Failed to decrypt session cookie');
+          }
+        }
         if (session?.user?.tenantId) {
           tenantIdFromCognito = session.user.tenantId;
           logger.debug('[ProxyAPI] Retrieved tenant ID from Cognito session', { 

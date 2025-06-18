@@ -3,12 +3,12 @@
  * Checks both sessionStorage/localStorage and returns proper headers
  */
 
-import { sessionManager } from './sessionManager';
+import { sessionManagerEnhanced } from './sessionManager-v2-enhanced';
 
-export function getAuthHeaders() {
+export async function getAuthHeaders() {
   try {
     // Get session from sessionManager
-    const session = sessionManager.getSession();
+    const session = await sessionManagerEnhanced.getSession();
     
     if (session && session.accessToken) {
       return {

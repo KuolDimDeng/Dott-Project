@@ -1,6 +1,6 @@
 import { logger } from '@/utils/logger';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
-import { getCurrentSession } from '@/utils/sessionApi';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 async function getAuthHeaders() {
   try {
     // First try to get backend session token
-    const session = await getCurrentSession();
+    const session = await sessionManagerEnhanced.getSession();
     
     if (session?.sessionToken) {
       logger.debug('[API] Using backend session token for auth');

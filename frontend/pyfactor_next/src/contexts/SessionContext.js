@@ -6,7 +6,7 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 const SessionContext = createContext(null);
 

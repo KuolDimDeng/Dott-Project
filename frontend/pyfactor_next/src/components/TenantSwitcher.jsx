@@ -6,7 +6,7 @@ import { useTenant } from '@/context/TenantContext';
 import { apiService } from '@/lib/apiService';
 import { logger } from '@/utils/logger';
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 /**
  * TenantSwitcher component allows users to switch between available tenants

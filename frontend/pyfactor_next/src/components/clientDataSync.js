@@ -142,8 +142,11 @@ export default function ClientDataSync() {
  */
 function useOptionalSession() {
   try {
-    const { data, status } = useSession({ required: false });
-    return { data, status };
+    const { user, loading } = useSession();
+    return { 
+      data: user ? { user } : null, 
+      status: loading ? 'loading' : user ? 'authenticated' : 'unauthenticated' 
+    };
   } catch (error) {
     // If useSession fails (no provider), return null values
     return { data: null, status: 'unauthenticated' };

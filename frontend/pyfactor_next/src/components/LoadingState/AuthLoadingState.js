@@ -2,7 +2,7 @@
 
 
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 
 export function AuthLoadingState() {

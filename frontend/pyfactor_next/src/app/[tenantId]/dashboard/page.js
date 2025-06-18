@@ -15,7 +15,7 @@ import { UserProfileProvider } from '@/contexts/UserProfileContext';
 // import { fetchUserAttributes } from '@/config/amplifyUnified'; // No longer using Cognito
 import useEnsureTenant from '@/hooks/useEnsureTenant';
 import { getFallbackTenantId, storeReliableTenantId } from '@/utils/tenantFallback';
-import { useEnhancedSession } from '@/hooks/useEnhancedSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Import needed for recovery
 import { signIn } from '@/config/amplifyUnified';
@@ -147,8 +147,9 @@ export default function TenantDashboard() {
   const [tenantStatus, setTenantStatus] = useState('pending');
   const [userAttributes, setUserAttributes] = useState(null);
   
-  // Use enhanced session hook for better localStorage sync
-  const { user: sessionUser } = useEnhancedSession();
+  // Use session hook for better localStorage sync
+  const { data: sessionData } = useSession();
+  const sessionUser = sessionData?.user;
 
   // Initialize dashboard
   useEffect(() => {

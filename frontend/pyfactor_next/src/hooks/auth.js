@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import { SafeHub } from '../utils/safeHub';
 // Removed CognitoNetworkDiagnostic import - using Auth0
-import { useSession } from './useSession';
+import { useSession } from './useSession-v2';
 // Removed setupHubDeduplication import - using Auth0
 import { safeUpdateUserAttributes } from '@/utils/safeAttributes';
 import { useAuth0 } from '@auth0/auth0-react';

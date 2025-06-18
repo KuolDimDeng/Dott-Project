@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decrypt, encrypt } from '@/utils/sessionEncryption';
-import { sessionManager } from '@/utils/sessionManager';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 /**
  * Complete onboarding after successful payment verification
@@ -245,8 +245,8 @@ export async function POST(request) {
     console.log('[CompletePayment] Forcing session sync after payment completion...');
     try {
       // Clear the session cache to force a refresh on next access
-      if (typeof sessionManager !== 'undefined' && sessionManager.clearCache) {
-        sessionManager.clearCache();
+      if (typeof sessionManagerEnhanced !== 'undefined' && sessionManagerEnhanced.clearCache) {
+        sessionManagerEnhanced.clearCache();
         console.log('[CompletePayment] Session cache cleared for fresh sync');
       }
     } catch (e) {

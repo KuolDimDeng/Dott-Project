@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { fetchAuthSession, getCurrentUser  } from '@/config/amplifyUnified';
 import { logger } from '@/utils/logger';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { useOnboardingPolling } from '@/hooks/useOnboardingPolling';
 import useOnboardingStore from '@/app/onboarding/store/onboardingStore';
 import { ONBOARDING_STATES } from '@/utils/userAttributes';

@@ -4,7 +4,7 @@
 
 import { appCache } from '../utils/appCache';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { useRouter } from 'next/navigation';
 import { useOnboarding } from '@/app/onboarding/hooks/useOnboarding';
 import { persistenceService } from '@/services/persistenceService';

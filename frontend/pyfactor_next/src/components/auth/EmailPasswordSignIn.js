@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import Script from 'next/script';
-import { sessionManager } from '@/utils/sessionManager';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 import { secureLogin } from '@/utils/secureAuth';
 import { securityLogger } from '@/utils/securityLogger';
 import { anomalyDetector } from '@/utils/anomalyDetection';

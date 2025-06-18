@@ -3,7 +3,7 @@
 // src/hooks/useOnboardingQueries.js
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { axiosInstance } from '@/lib/axiosConfig';
 import { APP_CONFIG } from '@/config';
 import { logger } from '@/utils/logger';

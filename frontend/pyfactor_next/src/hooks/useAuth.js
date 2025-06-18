@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { sessionManager } from '@/utils/sessionManager';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 export function useAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -16,8 +16,8 @@ export function useAuth() {
 
   const checkAuth = async () => {
     try {
-      // First check localStorage/sessionStorage
-      const localSession = sessionManager.getSession();
+      // First check session using enhanced manager
+      const localSession = await sessionManagerEnhanced.getSession();
       
       if (localSession && localSession.user) {
         setIsAuthenticated(true);
@@ -52,8 +52,8 @@ export function useAuth() {
     }
   };
 
-  const signOut = () => {
-    sessionManager.clearSession();
+  const signOut = async () => {
+    await sessionManagerEnhanced.clearSession();
     setIsAuthenticated(false);
     setUser(null);
     router.push('/');

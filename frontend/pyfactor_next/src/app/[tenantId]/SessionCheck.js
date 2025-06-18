@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { isAuthenticated } from '@/utils/sessionManager';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 export default function SessionCheck({ children }) {
   const router = useRouter();
@@ -14,7 +14,8 @@ export default function SessionCheck({ children }) {
     async function checkSession() {
       try {
         // Simple check - is user authenticated?
-        const authenticated = await isAuthenticated();
+        const session = await sessionManagerEnhanced.getSession();
+        const authenticated = session && session.authenticated;
         
         if (authenticated) {
           console.log('[SessionCheck] User is authenticated');

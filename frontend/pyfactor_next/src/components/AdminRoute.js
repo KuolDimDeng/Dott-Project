@@ -3,12 +3,14 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 
 export default function AdminRoute({ children }) {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { user, loading } = useSession();
+  const session = { user };
+  const status = loading ? 'loading' : user ? 'authenticated' : 'unauthenticated';
 
   useEffect(() => {
     const checkAdminAccess = async () => {
