@@ -42,7 +42,7 @@ class SessionService:
             redis_host = getattr(settings, 'REDIS_HOST', None)
             
             if not redis_url and not redis_host:
-                print(f"[SessionService] Redis not configured, using in-memory fallback")
+                print(f"[SessionService] Redis not configured, using PostgreSQL-only session storage")
                 return None
             
             # If we have REDIS_URL, use it directly
@@ -128,6 +128,7 @@ class SessionService:
         except Exception as e:
             print(f"[SessionService] Failed to connect to Redis: {e}")
             print(f"[SessionService] This is expected if Redis is not configured. Using PostgreSQL for session storage.")
+            # Disable Redis completely if connection fails
             return None
     def _hash_token(self, token: str) -> str:
         """Hash token for secure storage"""

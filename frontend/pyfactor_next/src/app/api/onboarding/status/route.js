@@ -40,36 +40,43 @@ export async function GET(request) {
     // If we have a session token, we need to exchange it for user info first
     if (sessionToken) {
       try {
-        // Get the session data which should contain the Auth0 token
-        const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+        // First try the session-based user profile endpoint that accepts session tokens
+        const statusResponse = await fetch(`${apiUrl}/api/users/me/session/`, {
           headers: {
             'Authorization': `Session ${sessionToken.value}`,
             'Content-Type': 'application/json',
           }
         });
         
-        if (sessionResponse.ok) {
-          const sessionData = await sessionResponse.json();
-          // Use the user's email to check onboarding status
-          const userEmail = sessionData.user?.email;
-          if (userEmail) {
-            // Call the session endpoint that accepts session tokens
-            const statusResponse = await fetch(`${apiUrl}/api/users/me/session/`, {
-              headers: {
-                'Authorization': `Session ${sessionToken.value}`,
-                'Content-Type': 'application/json',
-              }
-            });
-            
-            if (statusResponse.ok) {
-              const userData = await statusResponse.json();
-              return NextResponse.json({
-                onboarding_status: userData.onboarding_status || 'complete',
-                setup_completed: userData.onboarding_completed || true,
-                needs_onboarding: userData.needs_onboarding || false,
-                current_step: userData.current_onboarding_step || 'complete'
-              });
+        if (statusResponse.ok) {
+          const userData = await statusResponse.json();
+          return NextResponse.json({
+            onboarding_status: userData.onboarding_status || 'complete',
+            setup_completed: userData.onboarding_completed || true,
+            needs_onboarding: userData.needs_onboarding || false,
+            current_step: userData.current_onboarding_step || 'complete'
+          });
+        } else {
+          console.error('[Onboarding Status API] Session profile endpoint failed:', statusResponse.status, await statusResponse.text());
+          
+          // Fallback: Try to get session data directly
+          const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+            headers: {
+              'Authorization': `Session ${sessionToken.value}`,
+              'Content-Type': 'application/json',
             }
+          });
+          
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            return NextResponse.json({
+              onboarding_status: sessionData.onboarding_status || 'complete',
+              setup_completed: sessionData.onboarding_completed || true,
+              needs_onboarding: sessionData.needs_onboarding || false,
+              current_step: sessionData.onboarding_step || 'complete'
+            });
+          } else {
+            console.error('[Onboarding Status API] Sessions current endpoint failed:', sessionResponse.status, await sessionResponse.text());
           }
         }
       } catch (error) {
