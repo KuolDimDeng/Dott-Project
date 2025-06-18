@@ -609,3 +609,15 @@ This document tracks all scripts used for the pyfactor project, their execution 
 - Version0010: Simpler fix for cookie propagation using sessionStorage bridge - 2025-06-17T15:31:41.059Z
 - Version0011: Fix dashboard authentication check timing after sign-in - 2025-06-17T16:20:03.660Z
 - Version0012: Comprehensive fix for cookie propagation issues - 2025-06-17T16:21:33.781Z
+### Version0104_fix_establish_session_localhost_redirect.js
+- **Version**: 0104
+- **Purpose**: Fix establish-session endpoint redirecting to localhost instead of production URL
+- **Status**: ✅ EXECUTED SUCCESSFULLY (2025-06-18T22:34:55.803Z)
+- **Issue**: Endpoint was redirecting to 0.0.0.0:10000 due to proxy URL in request
+- **Solution**: 
+  - Use hardcoded production URL (https://dottapps.com) when NODE_ENV=production
+  - Extract base URL from request only in development
+  - Convert all relative URLs to absolute using the correct base
+- **Files Modified**: 
+  - src/app/api/auth/establish-session/route.js
+- **Backup Created**: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/establish-session/route.backup_2025-06-18T22-34-55-802Z.js
