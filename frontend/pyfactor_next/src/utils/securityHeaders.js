@@ -1,20 +1,27 @@
-import crypto from 'crypto';
-
 // Enhanced security headers for financial data protection
 export function addSecurityHeaders(response, nonce = null) {
   // Generate nonce if not provided
   if (!nonce) {
-    nonce = crypto.randomBytes(16).toString('base64');
+    // Use Web Crypto API for Edge Runtime compatibility
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      const array = new Uint8Array(16);
+      crypto.getRandomValues(array);
+      nonce = btoa(String.fromCharCode.apply(null, array));
+    } else {
+      // Fallback for older environments
+      nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    }
   }
   
   // Store nonce in response for use in components
   response.headers.set('X-Nonce', nonce);
   
   // Content Security Policy - Strict mode for financial data
+  // TODO: Re-enable nonces after fixing Next.js Edge Runtime compatibility
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat`,
-    `style-src 'self' 'nonce-${nonce}' https://fonts.googleapis.com https://client.crisp.chat`,
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.auth0.com https://*.stripe.com https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googletagmanager.com https://*.google-analytics.com https://client.crisp.chat https://*.crisp.chat",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
     "font-src 'self' https://fonts.gstatic.com https://client.crisp.chat data:",
     "img-src 'self' data: blob: https:",
     "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com",

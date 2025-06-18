@@ -1,12 +1,24 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import crypto from 'crypto';
+
+/**
+ * Simple hash function for Edge Runtime
+ * Uses Web Crypto API which is available in Edge Runtime
+ */
+async function hashString(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex.substring(0, 16);
+}
 
 /**
  * Generate a session fingerprint from request headers
  * This helps detect session hijacking attempts
  */
-export function generateFingerprint(request) {
+export async function generateFingerprint(request) {
   const components = [
     request.headers.get('user-agent') || '',
     request.headers.get('accept-language') || '',
@@ -16,11 +28,7 @@ export function generateFingerprint(request) {
   ];
   
   const fingerprint = components.join('|');
-  return crypto
-    .createHash('sha256')
-    .update(fingerprint)
-    .digest('hex')
-    .substring(0, 16);
+  return await hashString(fingerprint);
 }
 
 /**
@@ -38,7 +46,7 @@ export async function validateSessionFingerprint(request) {
     }
     
     // Calculate current fingerprint
-    const currentFingerprint = generateFingerprint(request);
+    const currentFingerprint = await generateFingerprint(request);
     
     // No stored fingerprint (old session), set it
     if (!storedFingerprint) {

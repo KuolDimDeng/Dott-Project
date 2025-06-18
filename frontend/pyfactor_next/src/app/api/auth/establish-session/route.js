@@ -55,11 +55,12 @@ export async function POST(request) {
                        request.headers.get('accept-language') +
                        request.headers.get('sec-ch-ua');
     
-    const { createHash } = await import('crypto');
-    const fingerprintHash = createHash('sha256')
-      .update(fingerprint)
-      .digest('hex')
-      .substring(0, 16);
+    // Use Web Crypto API for Edge Runtime
+    const encoder = new TextEncoder();
+    const data = encoder.encode(fingerprint);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const fingerprintHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 16);
     
     cookieStore.set('session_fp', fingerprintHash, {
       httpOnly: true,
