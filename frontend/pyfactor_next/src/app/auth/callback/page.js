@@ -123,7 +123,9 @@ export default function Auth0CallbackPage() {
         console.log('[Auth0Callback] Creating session for user');
         
         // Set a temporary cookie to indicate session is being established
-        document.cookie = 'session_establishing=true; path=/; max-age=60; samesite=lax';
+        const isProduction = window.location.protocol === 'https:';
+        const secureFlag = isProduction ? '; secure' : '';
+        document.cookie = `session_establishing=true; path=/; max-age=60; samesite=lax${secureFlag}`;
         
         try {
           const sessionCreateResponse = await fetch('/api/auth/session', {

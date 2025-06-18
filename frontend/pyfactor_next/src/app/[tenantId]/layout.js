@@ -30,6 +30,10 @@ export default async function TenantLayout({ children, params }) {
       if (sessionEstablishing?.value === 'true') {
         console.log('[TenantLayout] Session is being established, delegating to client component');
         // Session is being established, let client component handle it
+        // This is safe because:
+        // 1. The cookie doesn't grant any access
+        // 2. SessionCheck still validates the actual session
+        // 3. It only affects the rendering flow, not authentication
         const SessionCheck = (await import('./SessionCheck.jsx')).default;
         return (
           <SessionCheck>

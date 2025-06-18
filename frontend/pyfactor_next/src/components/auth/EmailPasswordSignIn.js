@@ -221,7 +221,9 @@ export default function EmailPasswordSignIn() {
       }
 
       // Set a temporary cookie to indicate session is being established
-      document.cookie = 'session_establishing=true; path=/; max-age=60; samesite=lax';
+      const isProduction = window.location.protocol === 'https:';
+      const secureFlag = isProduction ? '; secure' : '';
+      document.cookie = `session_establishing=true; path=/; max-age=60; samesite=lax${secureFlag}`;
       
       // Create secure session (cookie-based)
       const sessionResponse = await fetch('/api/auth/session', {
