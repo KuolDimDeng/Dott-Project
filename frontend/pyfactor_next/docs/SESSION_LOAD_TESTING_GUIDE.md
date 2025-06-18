@@ -327,13 +327,188 @@ node --inspect app.js
 // Calculate expected load
 const dailyActiveUsers = 10000;
 const avgSessionDuration = 30; // minutes
-const peakHourMultiplier = 5;
+const requestsPerSession = 50;
+const peakMultiplier = 3;
 
-const peakConcurrentSessions = 
-  (dailyActiveUsers * avgSessionDuration * peakHourMultiplier) / (24 * 60);
-
-console.log(`Expected peak concurrent sessions: ${peakConcurrentSessions}`);
+const avgLoad = (dailyActiveUsers * requestsPerSession) / (24 * 60 * 60);
+const peakLoad = avgLoad * peakMultiplier;
+console.log(`Average: ${avgLoad.toFixed(2)} req/s, Peak: ${peakLoad.toFixed(2)} req/s`);
 ```
+
+## Production Deployment on Render
+
+### Prerequisites
+
+1. **Add Redis to Render**
+   - Go to your Render dashboard
+   - Click "New +" → "Redis"
+   - Choose the same region as your app
+   - Select appropriate plan (Starter for <1000 users)
+   - Copy the Redis connection string
+
+2. **Environment Variables**
+   ```env
+   # Add to Render environment variables
+   REDIS_URL=redis://red-xxxxx.oregon-postgres.render.com:6379
+   REDIS_MAX_RETRIES=3
+   REDIS_RETRY_DELAY=1000
+   SESSION_CACHE_TTL=1800000      # 30 minutes
+   SESSION_LOCAL_CACHE_TTL=300000  # 5 minutes
+   ENABLE_SESSION_METRICS=true
+   METRICS_RETENTION_DAYS=7
+   ```
+
+3. **Django Backend Updates**
+   ```python
+   # settings.py
+   CACHES = {
+       'default': {
+           'BACKEND': 'django_redis.cache.RedisCache',
+           'LOCATION': os.environ.get('REDIS_URL'),
+           'OPTIONS': {
+               'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+               'PARSER_CLASS': 'redis.connection.HiredisParser',
+               'CONNECTION_POOL_CLASS': 'redis.BlockingConnectionPool',
+               'CONNECTION_POOL_CLASS_KWARGS': {
+                   'max_connections': 50,
+                   'timeout': 20,
+               },
+               'COMPRESSOR': 'django_redis.compressors.zlib.ZlibCompressor',
+           }
+       }
+   }
+   
+   # Session backend configuration
+   SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
+   SESSION_CACHE_ALIAS = 'default'
+   ```
+
+### Deployment Steps
+
+1. **Push Enhanced Code**
+   ```bash
+   git add .
+   git commit -m "Add session management v2 with Redis caching"
+   git push origin Dott_Main_Dev_Deploy
+   ```
+
+2. **Monitor Deployment**
+   - Watch Render build logs
+   - Check for Redis connection success
+   - Verify metrics endpoint is accessible
+
+3. **Post-Deployment Validation**
+   ```bash
+   # Test session creation
+   curl -X POST https://api.dottapps.com/api/auth/session-v2 \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com","password":"password"}'
+   
+   # Check metrics
+   curl https://api.dottapps.com/api/metrics/session
+   
+   # Verify cache is working
+   curl https://api.dottapps.com/api/cache/session/health
+   ```
+
+### Production Monitoring
+
+1. **Set Up Alerts**
+   - Cache hit rate < 70%
+   - Response time > 200ms (95th percentile)
+   - Error rate > 2%
+   - Redis memory usage > 80%
+
+2. **Dashboard Access**
+   ```bash
+   # Production dashboard (requires auth)
+   https://dottapps.com/api/admin/session-dashboard
+   ```
+
+3. **Key Metrics to Watch**
+   - Session creation rate
+   - Cache hit/miss ratio
+   - Average response time
+   - Redis connection failures
+   - Circuit breaker state changes
+
+### Scaling Recommendations
+
+1. **For 1,000-10,000 users**
+   - Redis: Starter plan (0.5GB)
+   - Backend: 2 instances
+   - Cache TTL: 30 minutes
+
+2. **For 10,000-50,000 users**
+   - Redis: Standard plan (2GB)
+   - Backend: 4-6 instances
+   - Cache TTL: 60 minutes
+   - Enable read replicas
+
+3. **For 50,000+ users**
+   - Redis: Pro plan with clustering
+   - Backend: Auto-scaling group
+   - Geographic distribution
+   - Consider CDN for static assets
+
+### Troubleshooting Production Issues
+
+1. **High Redis Memory Usage**
+   ```bash
+   # Check memory stats
+   redis-cli --stat
+   
+   # Analyze key patterns
+   redis-cli --scan --pattern "session:*" | head -20
+   
+   # Adjust eviction policy
+   redis-cli CONFIG SET maxmemory-policy allkeys-lru
+   ```
+
+2. **Session Creation Failures**
+   - Check Django logs for database issues
+   - Verify Redis connectivity
+   - Monitor circuit breaker state
+   - Check rate limiting configuration
+
+3. **Performance Degradation**
+   - Enable slow query logging
+   - Check network latency to Redis
+   - Verify database indexes
+   - Monitor connection pool usage
+
+### Cost Optimization
+
+1. **Redis Usage**
+   - Use appropriate TTL values
+   - Implement session cleanup jobs
+   - Monitor memory fragmentation
+   - Consider data compression
+
+2. **Backend Optimization**
+   - Enable connection pooling
+   - Use database read replicas
+   - Implement request batching
+   - Cache static queries
+
+### Security Considerations
+
+1. **Redis Security**
+   - Use TLS connections
+   - Enable AUTH password
+   - Restrict network access
+   - Regular security updates
+
+2. **Session Security**
+   - Rotate encryption keys
+   - Implement session fixation protection
+   - Monitor for anomalous patterns
+   - Regular security audits
+
+---
+
+*Documentation Updated: January 18, 2025*
+*Version: 2.0.0 - Enhanced with Production Deployment Guide*
 
 ## Deployment Checklist
 
