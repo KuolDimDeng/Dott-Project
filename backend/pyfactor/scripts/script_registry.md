@@ -1,5 +1,5 @@
 # Backend Scripts Registry
-Last Updated: 2025-05-23 19:00:00
+Last Updated: 2025-06-18
 
 ## Purpose
 This registry tracks all scripts in the backend/pyfactor/scripts directory, their purpose, and execution status.
@@ -47,6 +47,23 @@ This registry tracks all scripts in the backend/pyfactor/scripts directory, thei
 - All backups stored with timestamp format: `filename.backup-YYYYMMDD_HHMMSS`
 - Example: `Dockerfile.backup-20250523_180619`
 - Latest backups: `configuration_backups/staticfiles_fix_2025-05-23T19-00-00-298975Z/`
+
+### Version0103_fix_session_duplicate_kwargs_services.py
+- **Version**: 0103
+- **Purpose**: Fix Django session service duplicate keyword arguments issue in create_session method
+- **Status**: ⏳ PENDING EXECUTION
+- **Issue**: UserSession.objects.create() receives duplicate keyword arguments (needs_onboarding, onboarding_completed, onboarding_step) causing TypeError
+- **Solution**: 
+  - Ensure fields are properly popped from kwargs before passing to create()
+  - Add pop operations in all code paths (try/except/else blocks)
+  - Prevent duplicate keyword arguments error
+- **Target File**: session_manager/services.py
+- **Key Changes**:
+  - Pop onboarding fields from kwargs in else block when no OnboardingProgress found
+  - Pop onboarding fields from kwargs in exception handler
+  - Ensures fields from serializer take precedence
+- **Backup**: Creates timestamped backup before modification
+- **Usage**: `python scripts/Version0103_fix_session_duplicate_kwargs_services.py`
 
 ## Execution Log
 ```

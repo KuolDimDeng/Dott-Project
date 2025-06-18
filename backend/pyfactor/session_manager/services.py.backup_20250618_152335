@@ -199,7 +199,6 @@ class SessionService:
                         onboarding_step = onboarding_progress.current_step or 'business_info'
                     
                     # Override with values from kwargs if explicitly provided
-                    # Pop these values to avoid duplicate keyword arguments
                     if 'needs_onboarding' in kwargs:
                         needs_onboarding = kwargs.pop('needs_onboarding')
                     if 'onboarding_completed' in kwargs:
@@ -208,16 +207,8 @@ class SessionService:
                         onboarding_step = kwargs.pop('onboarding_step')
                 else:
                     print(f"[SessionService] No OnboardingProgress found for user")
-                    # Still need to pop these from kwargs if they exist to avoid duplicates
-                    kwargs.pop('needs_onboarding', None)
-                    kwargs.pop('onboarding_completed', None)
-                    kwargs.pop('onboarding_step', None)
             except Exception as e:
                 print(f"[SessionService] Error checking OnboardingProgress: {e}")
-                # Pop these values to avoid duplicate keyword arguments in error case
-                kwargs.pop('needs_onboarding', None)
-                kwargs.pop('onboarding_completed', None)
-                kwargs.pop('onboarding_step', None)
             
             # Create session
             with transaction.atomic():
