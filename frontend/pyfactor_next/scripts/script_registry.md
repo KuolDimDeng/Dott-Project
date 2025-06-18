@@ -621,3 +621,41 @@ This document tracks all scripts used for the pyfactor project, their execution 
 - **Files Modified**: 
   - src/app/api/auth/establish-session/route.js
 - **Backup Created**: /Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/api/auth/establish-session/route.backup_2025-06-18T22-34-55-802Z.js
+
+## Backend Scripts
+
+### Version0001_fix_django_session_migrations.py
+- **Date**: 2025-01-18
+- **Purpose**: Run Django migrations to create missing django_session table
+- **Status**: 🔄 PENDING EXECUTION
+- **Issue**: Django session table missing, causing session management errors
+- **Solution**: 
+  - Run all Django migrations
+  - Specifically ensure sessions app migrations are applied
+  - Verify django_session table exists after migration
+- **Usage**: 
+  - Local: `python scripts/Version0001_fix_django_session_migrations.py`
+  - Render: `python manage.py migrate`
+- **Location**: /backend/pyfactor/scripts/Version0001_fix_django_session_migrations.py
+
+### fix_django_session_table.py
+- **Date**: 2025-01-18
+- **Purpose**: Quick fix for missing django_session table on Render
+- **Status**: 🔄 PENDING EXECUTION
+- **Issue**: django_session table doesn't exist in production
+- **Solution**: 
+  - Check if table exists
+  - Try migrations with --run-syncdb flag
+  - Create table manually if migrations fail
+- **Usage**: `python scripts/fix_django_session_table.py`
+- **Location**: /backend/pyfactor/scripts/fix_django_session_table.py
+
+### enhanced_rls_middleware.py UUID Fix
+- **Date**: 2025-01-18
+- **Purpose**: Fix UUID type error in enhanced_rls_middleware.py
+- **Status**: ✅ COMPLETED
+- **Issue**: AttributeError: 'UUID' object has no attribute 'replace' at line 243
+- **Solution**: 
+  - Check if tenant_id is already a UUID object before conversion
+  - Convert to string first if needed
+- **File Modified**: /backend/pyfactor/custom_auth/enhanced_rls_middleware.py

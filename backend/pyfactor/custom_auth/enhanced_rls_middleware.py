@@ -240,8 +240,12 @@ class EnhancedRowLevelSecurityMiddleware:
         # Validate and return as UUID if possible
         if tenant_id:
             try:
-                return uuid.UUID(tenant_id)
-            except (ValueError, TypeError):
+                # If already a UUID object, return it
+                if isinstance(tenant_id, uuid.UUID):
+                    return tenant_id
+                # Otherwise, convert string to UUID
+                return uuid.UUID(str(tenant_id))
+            except (ValueError, TypeError, AttributeError):
                 logger.warning(f"Invalid tenant ID format: {tenant_id}")
                 return None
                 
