@@ -37,7 +37,7 @@ export default function Auth0CallbackPage() {
         }
         
         // Get session from our session API route - this will use either the new session token or legacy cookies
-        const sessionResponse = await fetch('/api/auth/session', {
+        const sessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
         
@@ -123,7 +123,7 @@ export default function Auth0CallbackPage() {
         console.log('[Auth0Callback] Creating session for user');
         
         try {
-          const sessionCreateResponse = await fetch('/api/auth/session', {
+          const sessionCreateResponse = await fetch('/api/auth/session-v2', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

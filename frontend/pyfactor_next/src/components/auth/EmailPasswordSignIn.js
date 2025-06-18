@@ -239,10 +239,9 @@ export default function EmailPasswordSignIn() {
       }
 
       // Create secure session (cookie-based)
-      const sessionResponse = await fetch('/api/auth/session', {
+      const sessionResponse = await fetch('/api/auth/session-v2', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'include', // Important: include cookies for cross-subdomain
         body: JSON.stringify({
           accessToken: authResult.access_token,
