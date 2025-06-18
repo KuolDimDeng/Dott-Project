@@ -24,9 +24,10 @@ export async function GET(request) {
     console.log('[Session-V2] Found session ID, validating with backend...');
     
     // Fetch session from backend - single source of truth
-    const response = await fetch(`${API_URL}/api/sessions/${sessionId.value}/`, {
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
         'Authorization': `SessionID ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store' // Never cache session data
     });
@@ -70,47 +71,73 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
-    const { email, password, accessToken } = await request.json();
+    const { accessToken, idToken, user } = await request.json();
     
-    console.log('[Session-V2] Creating new session for:', email);
+    console.log('[Session-V2] Creating new session for:', user?.email);
     
-    // Authenticate with backend
-    const authResponse = await fetch(`${API_URL}/api/auth/login/`, {
+    // Create session with Django backend using Auth0 token
+    const authResponse = await fetch(`${API_URL}/api/sessions/create/`, {
       method: 'POST',
       headers: { 
-        'Content-Type': 'application/json' 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
       },
       body: JSON.stringify({ 
-        email, 
-        password,
-        access_token: accessToken 
+        // Django session create endpoint accepts these fields
+        access_token: accessToken,
+        id_token: idToken,
+        user_data: {
+          email: user?.email,
+          name: user?.name,
+          sub: user?.sub
+        }
       })
     });
     
     if (!authResponse.ok) {
-      console.log('[Session-V2] Authentication failed:', authResponse.status);
+      console.log('[Session-V2] Session creation failed:', authResponse.status);
+      const errorData = await authResponse.text();
+      console.log('[Session-V2] Error details:', errorData);
       return NextResponse.json({ 
-        error: 'Authentication failed' 
+        error: 'Session creation failed' 
       }, { status: 401 });
     }
     
-    const { session_id, expires_at } = await authResponse.json();
-    console.log('[Session-V2] Backend session created:', { session_id });
+    const sessionData = await authResponse.json();
+    console.log('[Session-V2] Backend session created:', { 
+      session_token: sessionData.session_token?.substring(0, 8) + '...',
+      expires_at: sessionData.expires_at,
+      needs_onboarding: sessionData.needs_onboarding
+    });
     
-    // Set session cookie
-    const response = NextResponse.json({ success: true });
-    response.cookies.set('sid', session_id, {
+    // Set session cookie with the session token from Django
+    const response = NextResponse.json({ 
+      success: true,
+      user: sessionData.user,
+      tenant: sessionData.tenant,
+      needs_onboarding: sessionData.needs_onboarding
+    });
+    
+    response.cookies.set('sid', sessionData.session_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      expires: new Date(expires_at),
+      expires: new Date(sessionData.expires_at),
+      path: '/'
+    });
+    
+    // Also set the session_token cookie for backward compatibility
+    response.cookies.set('session_token', sessionData.session_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(sessionData.expires_at),
       path: '/'
     });
     
     // Clear all old cookies that were causing conflicts
     const oldCookies = [
       'dott_auth_session',
-      'session_token',
       'session_pending',
       'onboarding_status',
       'appSession',
