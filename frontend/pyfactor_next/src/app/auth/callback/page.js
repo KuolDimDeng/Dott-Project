@@ -118,6 +118,40 @@ export default function Auth0CallbackPage() {
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
         
+        // CRITICAL: Ensure session is properly set before redirecting
+        if (sessionToken) {
+          console.log('[Auth0Callback] Creating session with backend token');
+          try {
+            const sessionCreateResponse = await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                accessToken: sessionData.accessToken || accessToken,
+                idToken: sessionData.idToken,
+                user: {
+                  ...sessionData.user,
+                  ...backendUser,
+                  tenantId: backendUser.tenantId,
+                  needsOnboarding: backendUser.needsOnboarding,
+                  onboardingCompleted: backendUser.onboardingCompleted
+                }
+              })
+            });
+            
+            if (sessionCreateResponse.ok) {
+              console.log('[Auth0Callback] Session created successfully');
+              
+              // Wait a bit for cookies to propagate
+              await new Promise(resolve => setTimeout(resolve, 500));
+            }
+          } catch (error) {
+            console.error('[Auth0Callback] Error creating session:', error);
+          }
+        }
+        
         // CRITICAL: Always use the redirect URL from the flow handler
         if (backendUser.redirectUrl) {
           const displayStatus = backendUser.redirectUrl.includes('/onboarding')

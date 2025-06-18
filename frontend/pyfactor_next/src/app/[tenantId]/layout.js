@@ -26,10 +26,16 @@ export default async function TenantLayout({ children, params }) {
       
       // Check for backend session token first
       const sessionTokenCookie = cookieStore.get('session_token');
+      console.log('[TenantLayout] Backend session token check:', {
+        found: !!sessionTokenCookie,
+        value: sessionTokenCookie?.value ? 'present' : 'missing'
+      });
+      
       if (sessionTokenCookie) {
         console.log('[TenantLayout] Found backend session token, validating...');
         try {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+          console.log('[TenantLayout] Making request to:', `${apiUrl}/api/sessions/current/`);
           const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
             headers: {
               'Authorization': `Session ${sessionTokenCookie.value}`,
@@ -116,9 +122,11 @@ export default async function TenantLayout({ children, params }) {
     const currentStep = session.user?.currentStep || session.user?.current_onboarding_step;
     
     // Check for onboarding completion indicators in cookies
-    const onboardingJustCompletedCookie = cookieStore.get('onboarding_just_completed');
-    const onboardingStatusCookie = cookieStore.get('onboarding_status');
-    const paymentCompletedCookie = cookieStore.get('payment_completed');
+    // Get cookies again since cookieStore is out of scope from the try block
+    const cookieStore2 = await cookies();
+    const onboardingJustCompletedCookie = cookieStore2.get('onboarding_just_completed');
+    const onboardingStatusCookie = cookieStore2.get('onboarding_status');
+    const paymentCompletedCookie = cookieStore2.get('payment_completed');
     
     let skipOnboardingRedirect = false;
     

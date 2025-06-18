@@ -165,6 +165,22 @@ export default function TenantDashboard() {
         logger.info('[TenantDashboard] Current cookies:', document.cookie);
         logger.info('[TenantDashboard] SessionStorage pendingSession:', sessionStorage.getItem('pendingSession'));
         
+        // Check for double tenant ID in URL
+        const pathSegments = window.location.pathname.split('/');
+        const tenantIdCount = pathSegments.filter(segment => segment === tenantId).length;
+        if (tenantIdCount > 1) {
+          logger.error('[TenantDashboard] DOUBLE TENANT ID DETECTED IN URL!', {
+            pathname: window.location.pathname,
+            segments: pathSegments,
+            tenantIdCount: tenantIdCount
+          });
+          
+          // Fix the URL by removing the duplicate
+          const correctUrl = `/${tenantId}/dashboard${window.location.search}`;
+          logger.info('[TenantDashboard] Fixing URL to:', correctUrl);
+          window.history.replaceState(null, '', correctUrl);
+        }
+        
         // CRITICAL: Verify onboarding is marked as complete in backend
         if (tenantId) {
           try {
@@ -205,15 +221,57 @@ export default function TenantDashboard() {
         // Use SessionManager to get authentication state
         const { getSession, waitForSession } = await import('@/utils/sessionManager');
         
+        // Log all cookies to debug session issue
+        logger.info('[TenantDashboard] All cookies:', {
+          cookies: document.cookie.split(';').map(c => c.trim().split('=')[0]),
+          hasDottAuth: document.cookie.includes('dott_auth_session'),
+          hasSessionToken: document.cookie.includes('session_token'),
+          hasOnboardingStatus: document.cookie.includes('onboarding_status')
+        });
+        
         // If coming from sign in, wait for session to be established
         let authData;
         if (fromSignIn) {
           logger.info('[TenantDashboard] Coming from sign-in, waiting for session...');
           const session = await waitForSession(10, 1000); // Wait up to 10 seconds
           if (!session) {
-            throw new Error('Session not established after sign-in');
+            // Check if we have a session token in URL params (fallback)
+            if (sessionToken || bridgeToken) {
+              logger.info('[TenantDashboard] No session found but have token in URL, creating session...');
+              // Try to create session from URL token
+              const sessionCreateResponse = await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                  accessToken: sessionToken || bridgeToken,
+                  user: {
+                    email: searchParams.get('email'),
+                    sub: searchParams.get('sub'),
+                    tenantId: tenantId
+                  }
+                })
+              });
+              
+              if (sessionCreateResponse.ok) {
+                logger.info('[TenantDashboard] Session created from URL token, retrying...');
+                const newSession = await waitForSession(5, 1000);
+                if (newSession) {
+                  authData = { authenticated: true, user: newSession.user };
+                } else {
+                  throw new Error('Session not established after token creation');
+                }
+              } else {
+                throw new Error('Failed to create session from URL token');
+              }
+            } else {
+              throw new Error('Session not established after sign-in');
+            }
+          } else {
+            authData = { authenticated: true, user: session.user };
           }
-          authData = { authenticated: true, user: session.user };
         } else {
           // Normal session check
           const session = await getSession();
