@@ -60,14 +60,7 @@ export function extractTenantId(request) {
       source = 'url_path';
     }
 
-    // 2. Check URL path for /tenant/<tenant-id>/... format (legacy pattern)
-    if (!tenantId) {
-      const legacyPathMatch = pathname.match(/^\/tenant\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\//i);
-      if (legacyPathMatch && legacyPathMatch[1]) {
-        tenantId = legacyPathMatch[1];
-        source = 'legacy_url_path';
-      }
-    }
+    // 2. Query parameter check moved here
     
     // 3. Check for tenantId query parameter (including tid param)
     if (!tenantId) {

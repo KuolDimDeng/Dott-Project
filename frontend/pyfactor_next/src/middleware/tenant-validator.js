@@ -20,8 +20,8 @@ const TENANT_ROUTES = [
 
 // Skip validation for public routes
 const PUBLIC_TENANT_ROUTES = [
-  '/tenant/select',
-  '/tenant/create',
+  '/select-tenant',
+  '/create-tenant',
   '/onboarding',
   '/reset'
 ];
@@ -294,7 +294,7 @@ export async function tenantValidationMiddleware(request) {
   console.warn(`[TenantValidator] Invalid tenant access: ${error}`);
   
   // Create redirect response
-  const redirectUrl = new URL('/tenant/select', request.url);
+  const redirectUrl = new URL('/select-tenant', request.url);
   
   // Add error parameter if there's an error message
   if (error) {

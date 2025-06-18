@@ -59,7 +59,7 @@ export default function CreateTenantPage() {
   
   // Cancel and go back
   const handleCancel = () => {
-    router.push(`/select');
+    router.push('/select-tenant');
   };
   
   return (

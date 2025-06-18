@@ -24,11 +24,6 @@ function extractTenantIdFromPath(path) {
     return segments[0];
   }
   
-  // Pattern: /tenant/{tenantId}/dashboard (old format)
-  if (segments.length >= 3 && segments[0] === 'tenant' && UUID_PATTERN.test(segments[1]) && segments[2] === 'dashboard') {
-    return segments[1];
-  }
-  
   return null;
 }
 

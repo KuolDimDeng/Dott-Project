@@ -255,6 +255,23 @@ const nextConfig = {
   // Redirects
   async redirects() {
     return [
+      // Redirect legacy tenant URLs to new format
+      {
+        source: '/tenant/:tenantId/dashboard',
+        destination: '/:tenantId/dashboard',
+        permanent: true
+      },
+      {
+        source: '/tenant/:tenantId/dashboard/:path*',
+        destination: '/:tenantId/dashboard/:path*',
+        permanent: true
+      },
+      {
+        source: '/tenant/:tenantId/:path*',
+        destination: '/:tenantId/:path*',
+        permanent: true
+      },
+      // Existing redirects
       {
         source: '/onboarding/components/stepundefined',
         destination: '/onboarding/step1',
