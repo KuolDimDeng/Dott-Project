@@ -116,7 +116,7 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - Session updates now properly propagate between frontend and backend
 
 ### Result
-- Payment flow now correctly redirects to /tenant/{tenantId}/dashboard after successful payment
+- Payment flow now correctly redirects to /{tenantId}/dashboard after successful payment
 - Session state (needsOnboarding, tenantId, subscriptionPlan) properly synchronized
 - No more SSL errors or session update failures
 
@@ -256,3 +256,21 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - Components: OnboardingFlow.v2.jsx, BusinessInfoForm.v2.jsx, SubscriptionSelectionForm.v2.jsx
 - Utilities: sessionManager.v2.js, onboardingStateMachine.js, errorHandler.v2.js, apiClient.v2.js
 - Original preserved: page.v1.backup.js
+
+## URL Standardization (2025-01-18)
+- **Issue**: Double tenant ID in URLs like `tenant/{tenantid}/dashboard/...../{tenantid}`
+- **Root Cause**: Two coexisting route structures:
+  - Legacy: `/tenant/{tenantId}/dashboard`
+  - Current: `/{tenantId}/dashboard`
+- **Solution**: Standardized all URLs to use `/{tenantId}/dashboard` pattern
+- **Changes Made**:
+  1. Updated 26 files to use consistent URL pattern
+  2. Removed legacy `/tenant/[tenantId]` route structure entirely
+  3. Moved routes to new structure: `/app/[tenantId]/`
+  4. Updated middleware to remove legacy pattern support
+  5. Added permanent redirects for backward compatibility
+  6. Moved `/tenant/select` → `/select-tenant`
+  7. Moved `/tenant/create` → `/create-tenant`
+- **Result**: No more double tenant IDs, cleaner codebase, better performance
+- **Important**: Always use `/{tenantId}/dashboard` pattern in new code
+- **Documentation**: `/docs/URL_STANDARDIZATION.md`
