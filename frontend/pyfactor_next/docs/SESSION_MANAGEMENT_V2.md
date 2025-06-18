@@ -254,14 +254,9 @@ console.log(`Cache hit rate: ${metrics.cacheHitRate}%`);
 
 ### Load Testing
 ```bash
-# Quick test (5 users, 30 seconds)
-pnpm run load-test:smoke
-
-# Standard test (50 users, 60 seconds)  
-pnpm run load-test
-
-# Stress test (200 users, 10 minutes)
-pnpm run load-test:stress
+# Run from frontend directory
+cd /Users/kuoldeng/projectx/frontend/pyfactor_next
+node scripts/load-test-sessions.js --scenario=mixed --users=100
 ```
 
 ### Monitoring Dashboard
@@ -280,6 +275,82 @@ Features:
 REDIS_URL=redis://your-redis-instance:6379
 SESSION_CACHE_TTL=1800000  # 30 minutes
 ENABLE_SESSION_METRICS=true
+```
+
+## Recent Fixes (January 18, 2025)
+
+### 1. Session Creation Error
+**Issue**: `TypeError: django.db.models.query.QuerySet.create() got multiple values for keyword argument 'needs_onboarding'`
+**Fix**: Updated Django `SessionService.create_session()` to properly pop kwargs in all code paths
+**Script**: `Version0103_fix_session_duplicate_kwargs_services.py`
+
+### 2. Missing Establish-Session Endpoint
+**Issue**: Session bridge failing with 405 Method Not Allowed
+**Fix**: Created `/api/auth/establish-session/route.js` to handle session cookie setting
+**Result**: Complete login flow now works end-to-end
+
+### 3. Import Path Updates
+**Issue**: Build failures due to old import paths
+**Fix**: Updated all imports from `@/hooks/useSession` to `@/hooks/useSession-v2`
+**Files**: Multiple components updated to use v2 session management
+
+### 4. Redis Integration
+**Status**: Fully operational with graceful fallback
+**Logs**: Look for `[Redis] Redis connection successful` in backend logs
+**Fallback**: If Redis unavailable, uses PostgreSQL-only mode
+
+## Authentication Flow (Current)
+
+1. **User Signs In**
+   - Auth0 authentication returns tokens
+   - Frontend calls `/api/auth/session-v2` POST
+
+2. **Session Creation**
+   - Frontend sends empty body to Django `/api/sessions/create/`
+   - Django validates Auth0 token
+   - Creates session in PostgreSQL
+   - Caches in Redis if available
+   - Returns session token
+
+3. **Session Bridge**
+   - Frontend creates bridge token
+   - Redirects to `/auth/session-bridge`
+   - Bridge submits to `/api/auth/establish-session`
+   - Cookies are set securely
+
+4. **Session Validation**
+   - Every request includes `sid` cookie
+   - Backend validates against database
+   - Updates cache for performance
+
+## Files Structure
+
+### Frontend Session Files
+```
+/src/app/api/auth/
+├── session-v2/route.js         # Main session endpoint
+├── bridge-session/route.js     # Bridge token creation
+├── establish-session/route.js  # Cookie setting endpoint
+└── migrate-session/route.js    # Legacy migration
+
+/src/utils/
+├── sessionManager-v2-enhanced.js  # Enhanced with Redis
+├── sessionManager-v2.js          # Base implementation
+└── sessionApi.js                 # Legacy (deprecated)
+
+/src/hooks/
+├── useSession-v2.js             # React hook
+└── useSession.js                # Legacy (deprecated)
+```
+
+### Backend Session Files
+```
+/session_manager/
+├── models.py                    # UserSession model
+├── services.py                  # SessionService class
+├── views_fixed.py              # API endpoints
+├── redis_config.py             # Redis configuration
+└── urls.py                     # URL routing
 ```
 
 For detailed documentation on the enhanced features, see [SESSION_LOAD_TESTING_GUIDE.md](./SESSION_LOAD_TESTING_GUIDE.md).

@@ -95,13 +95,16 @@
     - /api/admin/session-dashboard: Real-time monitoring dashboard
   - Load Testing Scripts: 
     - scripts/load-test-sessions.js: Main testing framework
-    - pnpm run load-test:smoke (5 users, 30s)
-    - pnpm run load-test (50 users, 60s)
-    - pnpm run load-test:stress (200 users, 600s)
+    - Run: node scripts/load-test-sessions.js --scenario=mixed --users=100
   - Production Config:
-    - REDIS_URL: Redis connection string
+    - REDIS_URL: Redis connection string (set in Render)
     - SESSION_CACHE_TTL: 30 minutes default
     - ENABLE_SESSION_METRICS: Enable monitoring
+  - Recent Fixes (January 18):
+    - Fixed Django duplicate kwargs error in SessionService
+    - Created /api/auth/establish-session endpoint
+    - Updated all imports to use -v2 versions
+    - Redis fully operational with fallback
   - Documentation: 
     - docs/SESSION_MANAGEMENT_V2.md: Complete system docs
     - docs/SESSION_LOAD_TESTING_GUIDE.md: Load testing guide
