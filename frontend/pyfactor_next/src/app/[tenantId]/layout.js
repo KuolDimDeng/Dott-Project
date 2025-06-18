@@ -15,31 +15,7 @@ export default async function TenantLayout({ children, params, searchParams }) {
       redirect('/');
     }
     
-    // Check for session token in URL (from auth callback)
-    const urlSessionToken = searchParams?.st;
-    if (urlSessionToken) {
-      console.log('[TenantLayout] Found session token in URL, establishing session...');
-      
-      try {
-        // Set the session cookie server-side
-        const cookieStore = await cookies();
-        cookieStore.set('session_token', urlSessionToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/',
-          maxAge: 60 * 60 * 24 // 24 hours
-        });
-        
-        console.log('[TenantLayout] Session cookie set, redirecting to clean URL');
-        
-        // Clean redirect without token
-        const cleanUrl = `/${tenantId}/dashboard`;
-        redirect(cleanUrl);
-      } catch (error) {
-        console.error('[TenantLayout] Error validating URL session token:', error);
-      }
-    }
+    // No longer using URL tokens - more secure POST-based approach
     
     // Check for custom Auth0 session
     let session = null;

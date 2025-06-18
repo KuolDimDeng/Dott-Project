@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { addSecurityHeaders } from './utils/securityHeaders';
+import { validateSessionFingerprint } from './middleware/sessionFingerprint';
 
-// This middleware now only handles security headers and auth route optimization
+// This middleware now handles security headers, auth route optimization, and session fingerprinting
 export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -34,6 +35,37 @@ export async function middleware(request) {
     }
     
     return response;
+  }
+  
+  // For protected routes, validate session fingerprint
+  const protectedPaths = ['/dashboard', '/api/', '/tenant/', '/settings'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path)) ||
+                         pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//);
+  
+  if (isProtectedPath) {
+    const validation = await validateSessionFingerprint(request);
+    
+    if (!validation.valid) {
+      // Session hijacking detected, clear session and redirect
+      const response = NextResponse.redirect(new URL('/auth/signin?error=session_invalid', request.url));
+      response.cookies.delete('session_token');
+      response.cookies.delete('session_fp');
+      response.cookies.delete('dott_auth_session');
+      return addSecurityHeaders(response);
+    }
+    
+    // Set fingerprint if needed
+    if (validation.action === 'set_fingerprint') {
+      const response = NextResponse.next();
+      response.cookies.set('session_fp', validation.fingerprint, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+        maxAge: 60 * 60 * 24
+      });
+      return addSecurityHeaders(response);
+    }
   }
   
   // For all other routes, apply security headers and continue normally

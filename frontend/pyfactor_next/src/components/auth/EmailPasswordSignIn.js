@@ -6,6 +6,8 @@ import { logger } from '@/utils/logger';
 import Script from 'next/script';
 import { sessionManager } from '@/utils/sessionManager';
 import { secureLogin } from '@/utils/secureAuth';
+import { securityLogger } from '@/utils/securityLogger';
+import { anomalyDetector } from '@/utils/anomalyDetection';
 
 export default function EmailPasswordSignIn() {
   const router = useRouter();
@@ -181,6 +183,10 @@ export default function EmailPasswordSignIn() {
     const { email, password } = formData;
 
     try {
+      // Get client IP and user agent for anomaly detection
+      const userAgent = navigator.userAgent;
+      const ip = 'client'; // In production, get from header
+      
       const authResponse = await fetch('/api/auth/authenticate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' ,
@@ -195,6 +201,18 @@ export default function EmailPasswordSignIn() {
       const authResult = await authResponse.json();
 
       if (!authResponse.ok) {
+        // Check for anomalies in failed login
+        const anomalies = await anomalyDetector.checkLoginAttempt(email, ip, userAgent, false);
+        
+        // Log failed login attempt
+        await securityLogger.loginFailed(email, authResult.error || 'Authentication failed', 'email-password');
+        
+        // If high-risk anomalies detected, show additional security message
+        if (anomalies.some(a => a.severity === 'high')) {
+          showError('Multiple failed login attempts detected. Your account may be temporarily locked for security.');
+          return;
+        }
+        
         // Check if we need to fallback to Universal Login
         if (authResult.requiresUniversalLogin) {
           logger.info('[EmailPasswordSignIn] Password grant not enabled, redirecting to Universal Login');
@@ -277,11 +295,21 @@ export default function EmailPasswordSignIn() {
         idToken: authResult.id_token
       }, 'email-password');
 
-      // If session was created successfully, redirect with token
+      // If session was created successfully, use secure bridge
       if (sessionResult.success) {
         logger.info('[EmailPasswordSignIn] Session created successfully');
         
-        // Build redirect URL with session token for SSR
+        // Check for anomalies in successful login
+        await anomalyDetector.checkLoginAttempt(email, ip, userAgent, true);
+        
+        // Log successful login
+        await securityLogger.loginSuccess(
+          authResult.user?.sub,
+          email,
+          'email-password'
+        );
+        
+        // Build redirect URL
         let redirectUrl;
         if (finalUserData.redirectUrl) {
           redirectUrl = finalUserData.redirectUrl;
@@ -293,13 +321,24 @@ export default function EmailPasswordSignIn() {
           redirectUrl = '/dashboard';
         }
         
-        // Add session token to URL for immediate SSR verification
+        // For non-onboarding flows, use secure session bridge
         if (!finalUserData.needsOnboarding && authResult.access_token) {
-          const separator = redirectUrl.includes('?') ? '&' : '?';
-          redirectUrl = `${redirectUrl}${separator}st=${authResult.access_token}`;
+          // Store session data in sessionStorage for bridge
+          const bridgeData = {
+            token: authResult.access_token,
+            redirectUrl: redirectUrl,
+            timestamp: Date.now()
+          };
+          
+          sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+          
+          // Redirect to session bridge
+          router.push('/auth/session-bridge');
+        } else {
+          // Direct redirect for onboarding
+          router.push(redirectUrl);
         }
         
-        router.push(redirectUrl);
         return;
       }
 

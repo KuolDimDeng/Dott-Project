@@ -169,17 +169,25 @@ export default function Auth0CallbackPage() {
           
           console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
           
-          // Add session token to URL for immediate SSR verification
+          // Use secure session bridge for non-onboarding flows
           const token = sessionToken || sessionData.accessToken || sessionResult?.session_token;
-          const redirectUrl = new URL(backendUser.redirectUrl, window.location.origin);
           
-          // Only add token for non-onboarding redirects
           if (!backendUser.needsOnboarding && token) {
-            redirectUrl.searchParams.set('st', token);
+            // Store session data in sessionStorage for bridge
+            const bridgeData = {
+              token: token,
+              redirectUrl: backendUser.redirectUrl,
+              timestamp: Date.now()
+            };
+            
+            sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+            
+            // Redirect to session bridge
+            router.replace('/auth/session-bridge');
+          } else {
+            // Direct redirect for onboarding
+            router.replace(backendUser.redirectUrl);
           }
-          
-          // Use replace instead of push to prevent back button issues
-          router.replace(redirectUrl.toString());
           return;
         }
         
