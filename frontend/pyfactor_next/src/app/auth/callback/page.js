@@ -122,11 +122,6 @@ export default function Auth0CallbackPage() {
         // Always create a session, not just when we have sessionToken
         console.log('[Auth0Callback] Creating session for user');
         
-        // Set a temporary cookie to indicate session is being established
-        const isProduction = window.location.protocol === 'https:';
-        const secureFlag = isProduction ? '; secure' : '';
-        document.cookie = `session_establishing=true; path=/; max-age=60; samesite=lax${secureFlag}`;
-        
         try {
           const sessionCreateResponse = await fetch('/api/auth/session', {
             method: 'POST',
@@ -174,13 +169,17 @@ export default function Auth0CallbackPage() {
           
           console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
           
-          // Remove the temporary cookie before redirecting
-          document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          // Add session token to URL for immediate SSR verification
+          const token = sessionToken || sessionData.accessToken || sessionResult?.session_token;
+          const redirectUrl = new URL(backendUser.redirectUrl, window.location.origin);
+          
+          // Only add token for non-onboarding redirects
+          if (!backendUser.needsOnboarding && token) {
+            redirectUrl.searchParams.set('st', token);
+          }
           
           // Use replace instead of push to prevent back button issues
-          setTimeout(() => {
-            router.replace(backendUser.redirectUrl);
-          }, 1000);
+          router.replace(redirectUrl.toString());
           return;
         }
         

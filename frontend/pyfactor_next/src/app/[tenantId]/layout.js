@@ -5,7 +5,7 @@ import TenantLayoutWrapper from './TenantLayoutWrapper';
 import { decrypt } from '@/utils/sessionEncryption';
 
 // This layout is a server component that wraps all tenant-specific pages
-export default async function TenantLayout({ children, params }) {
+export default async function TenantLayout({ children, params, searchParams }) {
   try {
     // Get the tenant ID from params (properly awaited for Next.js 15+)
     const { tenantId } = await params;
@@ -13,6 +13,32 @@ export default async function TenantLayout({ children, params }) {
     // If we don't have a tenant ID in the URL, redirect to home
     if (!tenantId) {
       redirect('/');
+    }
+    
+    // Check for session token in URL (from auth callback)
+    const urlSessionToken = searchParams?.st;
+    if (urlSessionToken) {
+      console.log('[TenantLayout] Found session token in URL, establishing session...');
+      
+      try {
+        // Set the session cookie server-side
+        const cookieStore = await cookies();
+        cookieStore.set('session_token', urlSessionToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 60 * 60 * 24 // 24 hours
+        });
+        
+        console.log('[TenantLayout] Session cookie set, redirecting to clean URL');
+        
+        // Clean redirect without token
+        const cleanUrl = `/${tenantId}/dashboard`;
+        redirect(cleanUrl);
+      } catch (error) {
+        console.error('[TenantLayout] Error validating URL session token:', error);
+      }
     }
     
     // Check for custom Auth0 session
@@ -24,24 +50,6 @@ export default async function TenantLayout({ children, params }) {
       // Log all available cookies
       const allCookies = cookieStore.getAll();
       console.log('[TenantLayout] Available cookies:', allCookies.map(c => c.name));
-      
-      // Check for session establishment status cookie first
-      const sessionEstablishing = cookieStore.get('session_establishing');
-      if (sessionEstablishing?.value === 'true') {
-        console.log('[TenantLayout] Session is being established, delegating to client component');
-        // Session is being established, let client component handle it
-        // This is safe because:
-        // 1. The cookie doesn't grant any access
-        // 2. SessionCheck still validates the actual session
-        // 3. It only affects the rendering flow, not authentication
-        const SessionCheck = (await import('./SessionCheck.jsx')).default;
-        return (
-          <SessionCheck>
-            <TenantInitializer tenantId={tenantId} />
-            {children}
-          </SessionCheck>
-        );
-      }
       
       // Check for backend session token first
       const sessionTokenCookie = cookieStore.get('session_token');

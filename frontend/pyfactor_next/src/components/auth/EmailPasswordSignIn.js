@@ -220,11 +220,6 @@ export default function EmailPasswordSignIn() {
         throw new Error(authResult.message || authResult.error || 'Authentication failed');
       }
 
-      // Set a temporary cookie to indicate session is being established
-      const isProduction = window.location.protocol === 'https:';
-      const secureFlag = isProduction ? '; secure' : '';
-      document.cookie = `session_establishing=true; path=/; max-age=60; samesite=lax${secureFlag}`;
-      
       // Create secure session (cookie-based)
       const sessionResponse = await fetch('/api/auth/session', {
         method: 'POST',
@@ -239,8 +234,6 @@ export default function EmailPasswordSignIn() {
       });
 
       if (!sessionResponse.ok) {
-        // Remove the temporary cookie on failure
-        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Failed to create session');
       }
 
@@ -248,8 +241,6 @@ export default function EmailPasswordSignIn() {
       
       // Check if session was created successfully
       if (!sessionResult.success) {
-        // Remove the temporary cookie on failure
-        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         throw new Error('Failed to create session');
       }
       
@@ -286,38 +277,11 @@ export default function EmailPasswordSignIn() {
         idToken: authResult.id_token
       }, 'email-password');
 
-      // If session was created successfully, we can proceed directly
-      // The cookies have been set on the response, so they'll be included in subsequent requests
-      if (sessionResult.success && sessionResult.user) {
-        logger.info('[EmailPasswordSignIn] Session created successfully, verifying...');
+      // If session was created successfully, redirect with token
+      if (sessionResult.success) {
+        logger.info('[EmailPasswordSignIn] Session created successfully');
         
-        // Store session info in sessionStorage as a temporary bridge during cookie propagation
-        const sessionData = {
-          user: sessionResult.user,
-          tenantId: finalUserData.tenantId,
-          timestamp: Date.now(),
-          onboardingCompleted: !finalUserData.needsOnboarding
-        };
-        
-        sessionStorage.setItem('pendingSession', JSON.stringify(sessionData));
-        
-        // Mark authentication as complete for propagation tracking
-        const { markAuthComplete } = await import('@/middleware/sessionPropagation');
-        markAuthComplete();
-        
-        // Use the new session manager to wait for session establishment
-        const { waitForSession } = await import('@/utils/sessionManager');
-        const session = await waitForSession(15, 1000); // Wait up to 15 seconds
-        
-        if (!session) {
-          logger.error('[EmailPasswordSignIn] Session establishment failed, proceeding anyway...');
-          // Fallback: wait a bit more and proceed
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-          logger.info('[EmailPasswordSignIn] Session established successfully');
-        }
-        
-        // Build redirect URL with bridge token if available
+        // Build redirect URL with session token for SSR
         let redirectUrl;
         if (finalUserData.redirectUrl) {
           redirectUrl = finalUserData.redirectUrl;
@@ -329,69 +293,20 @@ export default function EmailPasswordSignIn() {
           redirectUrl = '/dashboard';
         }
         
-        // Add bridge token to URL if available
-        if (bridgeToken && !finalUserData.needsOnboarding) {
+        // Add session token to URL for immediate SSR verification
+        if (!finalUserData.needsOnboarding && authResult.access_token) {
           const separator = redirectUrl.includes('?') ? '&' : '?';
-          redirectUrl = `${redirectUrl}${separator}bridge=${bridgeToken}`;
+          redirectUrl = `${redirectUrl}${separator}st=${authResult.access_token}`;
         }
-        
-        // Remove the temporary cookie before redirecting
-        document.cookie = 'session_establishing=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         
         router.push(redirectUrl);
         return;
       }
 
-      // Fallback: Verify session is ready before redirect
-      const waitForSession = async () => {
-        // Add initial delay to allow cookies to propagate
-        logger.info('[EmailPasswordSignIn] Waiting for session cookies to propagate...');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Initial 1 second delay
-        
-        let attempts = 0;
-        const maxAttempts = 10; // Try for up to 5 seconds more
-        
-        while (attempts < maxAttempts) {
-          try {
-            const verifyResponse = await fetch('/api/auth/verify-session-ready');
-            const verifyData = await verifyResponse.json();
-            
-            logger.debug('[EmailPasswordSignIn] Session verification attempt', attempts + 1, ':', verifyData);
-            
-            if (verifyData.ready) {
-              // Session is ready, proceed with redirect
-              logger.info('[EmailPasswordSignIn] Session verified, redirecting...');
-              if (finalUserData.redirectUrl) {
-                router.push(finalUserData.redirectUrl);
-              } else if (finalUserData.needsOnboarding) {
-                router.push('/onboarding');
-              } else if (finalUserData.tenantId) {
-                router.push(`/${finalUserData.tenantId}/dashboard`);
-              } else {
-                router.push('/dashboard');
-              }
-              return;
-            }
-            
-            // If session is being set, continue trying
-            if (verifyData.retry || verifyData.hasStatusCookie) {
-              logger.info('[EmailPasswordSignIn] Session cookie is being set, continuing to wait...');
-            }
-          } catch (error) {
-            logger.warn('[EmailPasswordSignIn] Session verification error:', error);
-          }
-          
-          attempts++;
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms between attempts
-        }
-        
-        // If we get here, session verification failed
-        logger.error('[EmailPasswordSignIn] Session not ready after multiple attempts');
-        showError('Session setup failed. Please try signing in again.');
-        setIsLoading(false);
-      };
-      
-      await waitForSession();
+      // If we get here, something went wrong
+      logger.error('[EmailPasswordSignIn] Session creation failed');
+      showError('Session setup failed. Please try signing in again.');
+      setIsLoading(false);
     } catch (error) {
       logger.error('[EmailPasswordSignIn] Login error:', error);
       showError(error.message || 'Invalid email or password');
