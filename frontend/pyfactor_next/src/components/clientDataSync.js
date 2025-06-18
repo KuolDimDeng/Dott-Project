@@ -2,7 +2,7 @@
 
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession-v2';
 import { logger } from '@/utils/logger';
 import { getTenantIdFromCognito, updateTenantIdInCognito } from '@/utils/tenantUtils';
 

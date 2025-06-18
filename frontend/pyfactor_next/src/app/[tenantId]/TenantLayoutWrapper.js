@@ -18,17 +18,15 @@ export default function TenantLayoutWrapper({ children, tenantId, initialSession
         return;
       }
 
-      // Check for session in cookies on client side
-      const hasDottAuth = document.cookie.includes('dott_auth_session');
-      const hasSessionToken = document.cookie.includes('session_token');
+      // Check for session ID cookie on client side
+      const hasSessionId = document.cookie.includes('sid=');
       
-      console.log('[TenantLayoutWrapper] Client-side cookie check:', {
-        hasDottAuth,
-        hasSessionToken,
-        cookies: document.cookie.split(';').map(c => c.trim().split('=')[0])
+      console.log('[TenantLayoutWrapper] Client-side session check:', {
+        hasSessionId,
+        tenantId
       });
 
-      if (!hasDottAuth && !hasSessionToken) {
+      if (!hasSessionId) {
         // No session at all, redirect to home
         router.push('/');
         return;
@@ -36,13 +34,13 @@ export default function TenantLayoutWrapper({ children, tenantId, initialSession
 
       // Try to get session from API
       try {
-        const response = await fetch('/api/auth/session', {
+        const response = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
         
         if (response.ok) {
           const sessionData = await response.json();
-          if (sessionData && sessionData.user) {
+          if (sessionData && sessionData.authenticated) {
             setSession(sessionData);
             
             // Check if user needs onboarding

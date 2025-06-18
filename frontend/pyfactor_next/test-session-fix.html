@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Session Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+        .log-entry { margin: 5px 0; padding: 5px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <h1>Session Establishment Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="clearAll()">1. Clear All Storage</button>
+        <button onclick="simulateAuthCallback()">2. Simulate Auth Callback</button>
+        <button onclick="checkSession()">3. Check Session</button>
+        <button onclick="runFullTest()">Run Full Test</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Form Test</h2>
+        <p>This simulates what session-bridge does:</p>
+        <form id="test-form" method="POST" action="/api/auth/establish-session">
+            <input type="text" name="token" id="token-input" placeholder="Token" style="width: 300px;">
+            <input type="hidden" name="redirectUrl" value="/dashboard">
+            <input type="hidden" name="timestamp" id="timestamp-input">
+            <button type="button" onclick="submitTestForm()">Submit Form</button>
+        </form>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="log"></div>
+    </div>
+    
+    <script>
+        const log = (message, type = 'info') => {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            console.log(message);
+        };
+        
+        const clearAll = () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            document.cookie.split(";").forEach(c => {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            log('✅ Cleared all storage and cookies', 'success');
+        };
+        
+        const simulateAuthCallback = () => {
+            // This simulates what happens in the auth callback
+            const mockToken = 'mock-token-' + Date.now();
+            const bridgeData = {
+                token: mockToken,
+                redirectUrl: '/dashboard',
+                timestamp: Date.now()
+            };
+            
+            sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
+            log('✅ Stored bridge data in sessionStorage', 'success');
+            log('Bridge data: ' + JSON.stringify(bridgeData, null, 2), 'info');
+            
+            // Update form
+            document.getElementById('token-input').value = mockToken;
+            document.getElementById('timestamp-input').value = bridgeData.timestamp;
+        };
+        
+        const checkSession = async () => {
+            try {
+                log('Checking session...', 'info');
+                const response = await fetch('/api/auth/session');
+                const data = await response.json();
+                
+                if (data && data.authenticated) {
+                    log('✅ Session is valid!', 'success');
+                    log('Session data: ' + JSON.stringify(data, null, 2), 'info');
+                } else {
+                    log('❌ No valid session found', 'error');
+                }
+                
+                // Check cookies
+                log('Cookies: ' + document.cookie, 'info');
+                
+            } catch (error) {
+                log('❌ Error checking session: ' + error.message, 'error');
+            }
+        };
+        
+        const submitTestForm = () => {
+            const form = document.getElementById('test-form');
+            const token = document.getElementById('token-input').value;
+            
+            if (!token) {
+                log('❌ Please enter a token or click "Simulate Auth Callback" first', 'error');
+                return;
+            }
+            
+            document.getElementById('timestamp-input').value = Date.now();
+            log('Submitting form...', 'info');
+            
+            // Create a hidden iframe to submit the form without leaving the page
+            const iframe = document.createElement('iframe');
+            iframe.name = 'test-frame';
+            iframe.style.display = 'none';
+            document.body.appendChild(iframe);
+            
+            form.target = 'test-frame';
+            form.submit();
+            
+            // Check result after a delay
+            setTimeout(() => {
+                checkSession();
+                document.body.removeChild(iframe);
+            }, 2000);
+        };
+        
+        const runFullTest = async () => {
+            log('=== Starting Full Test ===', 'info');
+            
+            // Step 1: Clear
+            clearAll();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // Step 2: Simulate auth
+            simulateAuthCallback();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // Step 3: Submit form
+            submitTestForm();
+            await new Promise(r => setTimeout(r, 3000));
+            
+            // Step 4: Try to navigate
+            log('Test complete! Try navigating to /dashboard', 'success');
+        };
+        
+        // Auto-run on load
+        window.onload = () => {
+            log('Test page loaded. Click "Run Full Test" to begin.', 'info');
+        };
+    </script>
+</body>
+</html>

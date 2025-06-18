@@ -2,7 +2,6 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import TenantInitializer from './TenantInitializer';
 import TenantLayoutWrapper from './TenantLayoutWrapper';
-import { decrypt } from '@/utils/sessionEncryption';
 
 // This layout is a server component that wraps all tenant-specific pages
 export default async function TenantLayout({ children, params, searchParams }) {
@@ -15,33 +14,25 @@ export default async function TenantLayout({ children, params, searchParams }) {
       redirect('/');
     }
     
-    // No longer using URL tokens - more secure POST-based approach
-    
-    // Check for custom Auth0 session
+    // Check for session using new approach
     let session = null;
     
     try {
       const cookieStore = await cookies();
+      const sessionId = cookieStore.get('sid');
       
-      // Log all available cookies
-      const allCookies = cookieStore.getAll();
-      console.log('[TenantLayout] Available cookies:', allCookies.map(c => c.name));
-      
-      // Check for backend session token first
-      const sessionTokenCookie = cookieStore.get('session_token');
-      console.log('[TenantLayout] Backend session token check:', {
-        found: !!sessionTokenCookie,
-        value: sessionTokenCookie?.value ? 'present' : 'missing'
+      console.log('[TenantLayout] Session check:', {
+        sessionId: sessionId ? 'present' : 'missing',
+        tenantId
       });
       
-      if (sessionTokenCookie) {
-        console.log('[TenantLayout] Found backend session token, validating...');
+      if (sessionId) {
+        console.log('[TenantLayout] Validating session with backend...');
         try {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
-          console.log('[TenantLayout] Making request to:', `${apiUrl}/api/sessions/current/`);
-          const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
+          const sessionResponse = await fetch(`${apiUrl}/api/sessions/${sessionId.value}/`, {
             headers: {
-              'Authorization': `Session ${sessionTokenCookie.value}`,
+              'Authorization': `SessionID ${sessionId.value}`,
               'Content-Type': 'application/json',
             },
             cache: 'no-store'
@@ -50,46 +41,26 @@ export default async function TenantLayout({ children, params, searchParams }) {
           if (sessionResponse.ok) {
             const backendSession = await sessionResponse.json();
             console.log('[TenantLayout] Backend session valid:', {
-              user_email: backendSession.user?.email,
+              email: backendSession.email,
               needs_onboarding: backendSession.needs_onboarding,
-              tenant_id: backendSession.tenant?.id
+              tenant_id: backendSession.tenant_id
             });
             
             // Create session object from backend data
             session = {
               user: {
-                ...backendSession.user,
+                email: backendSession.email,
                 needsOnboarding: backendSession.needs_onboarding,
                 onboardingCompleted: backendSession.onboarding_completed,
-                tenantId: backendSession.tenant?.id,
-                tenant_id: backendSession.tenant?.id
+                tenantId: backendSession.tenant_id,
+                tenant_id: backendSession.tenant_id,
+                permissions: backendSession.permissions || []
               },
               authenticated: true
             };
           }
         } catch (error) {
           console.error('[TenantLayout] Backend session validation error:', error);
-        }
-      }
-      
-      // If no backend session, check frontend cookies
-      if (!session) {
-        const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
-        
-        if (sessionCookie) {
-          console.log('[TenantLayout] Found session cookie:', sessionCookie.name);
-          // Try to decrypt the session
-          try {
-            const decrypted = decrypt(sessionCookie.value);
-            session = JSON.parse(decrypted);
-          } catch (decryptError) {
-            // Fallback to old base64 format
-            try {
-              session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-            } catch (base64Error) {
-              console.error('[TenantLayout] Failed to parse session:', base64Error);
-            }
-          }
         }
       }
     } catch (error) {
@@ -119,54 +90,18 @@ export default async function TenantLayout({ children, params, searchParams }) {
       );
     }
     
-    // Check onboarding status from profile data if available
-    const needsOnboarding = session.needsOnboarding || session.user?.needsOnboarding || session.user?.needs_onboarding;
-    const onboardingCompleted = session.onboardingCompleted || session.user?.onboardingCompleted || session.user?.onboarding_completed;
-    const paymentPending = session.user?.paymentPending || session.user?.payment_pending || session.user?.needsPayment || session.user?.needs_payment;
-    const currentStep = session.user?.currentStep || session.user?.current_onboarding_step;
+    // Check onboarding status from session data only
+    const needsOnboarding = session.user?.needsOnboarding;
+    const onboardingCompleted = session.user?.onboardingCompleted;
     
-    // Check for onboarding completion indicators in cookies
-    // Get cookies again since cookieStore is out of scope from the try block
-    const cookieStore2 = await cookies();
-    const onboardingJustCompletedCookie = cookieStore2.get('onboarding_just_completed');
-    const onboardingStatusCookie = cookieStore2.get('onboarding_status');
-    const paymentCompletedCookie = cookieStore2.get('payment_completed');
+    console.log('[TenantLayout] Session status:', {
+      needsOnboarding,
+      onboardingCompleted,
+      tenantId: session.user?.tenantId
+    });
     
-    let skipOnboardingRedirect = false;
-    
-    // Check if onboarding was just completed (temporary cookie)
-    if (onboardingJustCompletedCookie?.value === 'true') {
-      console.log('[TenantLayout] Found onboarding_just_completed cookie, skipping redirect');
-      skipOnboardingRedirect = true;
-    }
-    
-    // Check if payment was just completed (temporary cookie)
-    if (paymentCompletedCookie?.value === 'true') {
-      console.log('[TenantLayout] Found payment_completed cookie, skipping redirect');
-      skipOnboardingRedirect = true;
-    }
-    
-    // Check onboarding status cookie
-    if (onboardingStatusCookie) {
-      try {
-        const statusData = JSON.parse(onboardingStatusCookie.value);
-        if (statusData.completed === true || (statusData.onboardingCompleted === true && !statusData.needsPayment)) {
-          console.log('[TenantLayout] Found completed onboarding status cookie, skipping redirect');
-          skipOnboardingRedirect = true;
-        }
-      } catch (e) {
-        console.error('[TenantLayout] Failed to parse onboarding_status cookie:', e);
-      }
-    }
-    
-    // Check if user has pending payment for paid tier
-    if (paymentPending && currentStep === 'payment' && !skipOnboardingRedirect) {
-      console.log('[TenantLayout] User has pending payment, redirecting to payment page');
-      redirect('/onboarding/payment');
-    }
-    
-    // Only redirect to onboarding if truly needed and no completion indicators found
-    if (needsOnboarding && !onboardingCompleted && !skipOnboardingRedirect) {
+    // Redirect to onboarding if needed (session is the only source of truth)
+    if (needsOnboarding && !onboardingCompleted) {
       console.log('[TenantLayout] User needs onboarding, redirecting');
       redirect('/onboarding');
     }

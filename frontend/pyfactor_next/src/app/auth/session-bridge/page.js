@@ -7,37 +7,77 @@ export default function SessionBridge() {
   const router = useRouter();
 
   useEffect(() => {
+    console.log('[SessionBridge] Component mounted');
+    
     // Get session data from sessionStorage (set during login)
     const bridgeData = sessionStorage.getItem('session_bridge');
+    console.log('[SessionBridge] Bridge data exists:', !!bridgeData);
     
     if (!bridgeData) {
-      console.error('[SessionBridge] No bridge data found');
-      router.push('/auth/signin');
+      console.error('[SessionBridge] No bridge data found in sessionStorage');
+      console.log('[SessionBridge] SessionStorage keys:', Object.keys(sessionStorage));
+      router.push('/auth/signin?error=no_bridge_data');
       return;
     }
 
     try {
-      const { token, redirectUrl, timestamp } = JSON.parse(bridgeData);
+      const parsed = JSON.parse(bridgeData);
+      console.log('[SessionBridge] Parsed bridge data:', {
+        hasToken: !!parsed.token,
+        tokenLength: parsed.token?.length,
+        redirectUrl: parsed.redirectUrl,
+        timestamp: parsed.timestamp,
+        age: Date.now() - parsed.timestamp
+      });
+      
+      const { token, redirectUrl, timestamp } = parsed;
       
       // Verify the bridge data is recent (within 30 seconds)
       if (Date.now() - timestamp > 30000) {
-        console.error('[SessionBridge] Bridge data expired');
+        console.error('[SessionBridge] Bridge data expired', {
+          age: Date.now() - timestamp,
+          maxAge: 30000
+        });
         sessionStorage.removeItem('session_bridge');
-        router.push('/auth/signin');
+        router.push('/auth/signin?error=bridge_expired');
         return;
       }
 
       // Clear the bridge data immediately
       sessionStorage.removeItem('session_bridge');
+      console.log('[SessionBridge] Bridge data cleared from sessionStorage');
 
       // Submit form programmatically
       const form = document.getElementById('session-form');
+      console.log('[SessionBridge] Form element found:', !!form);
+      
       if (form) {
-        form.submit();
+        // Log all form inputs
+        const formData = new FormData(form);
+        const formEntries = {};
+        for (const [key, value] of formData.entries()) {
+          formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
+        }
+        
+        console.log('[SessionBridge] Submitting form with data:', {
+          action: form.action,
+          method: form.method,
+          tokenLength: token?.length,
+          formData: formEntries
+        });
+        
+        // Add a small delay to ensure form is ready
+        setTimeout(() => {
+          console.log('[SessionBridge] Actually submitting form now');
+          form.submit();
+        }, 100);
+      } else {
+        console.error('[SessionBridge] Form element not found!');
+        router.push('/auth/signin?error=form_not_found');
       }
     } catch (error) {
       console.error('[SessionBridge] Error processing bridge data:', error);
-      router.push('/auth/signin');
+      router.push('/auth/signin?error=bridge_error');
     }
   }, [router]);
 

@@ -88,6 +88,18 @@
   - Frontend: Use useSession hook instead of direct cookie access
   - Fixes: Payment redirect issues, session persistence, SSL errors
   - Commit: bfedfc3f pushed to Dott_Main_Dev_Deploy branch
+- Session Management V2 Migration (2025-06-18) - BREAKING CHANGE:
+  - COMPLETE OVERHAUL: Removed ALL old cookie-based session code (255+ files)
+  - Industry standard: Server-side sessions only (Wave/Stripe/banking pattern)
+  - Session storage: Only 'sid' cookie (36 bytes) vs old 15+ cookies (3.8KB)
+  - Backend truth: All session data in Django, zero client-side storage
+  - New API: /api/auth/session-v2 (GET/POST/DELETE) - old endpoints REMOVED
+  - Frontend: useSession from '@/hooks/useSession-v2' (old hooks REMOVED)
+  - Auth flow: Auth0 → backend session → session ID only
+  - Migration: Clean break - old sessions invalidated, users re-login
+  - Fixes: Login loops, conflicting cookies, sync issues PERMANENTLY solved
+  - Security: Session revocation, device tracking, audit trail, no hijacking
+  - Deployment: Backend needs session endpoints, frontend auto-clears old cookies
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

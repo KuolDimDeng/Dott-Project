@@ -17,7 +17,7 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession-v2';
 
 // Lock keys
 const TENANT_LOCK_KEY = 'tenant_initialization_lock';

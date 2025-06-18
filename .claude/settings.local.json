@@ -89,7 +89,8 @@
       "Bash(curl:*)",
       "Bash(venv/bin/python scripts/fix_onboarding_redirect_loop.py:*)",
       "Bash(venv/bin/python scripts/fix_user_onboarding_status.py:*)",
-      "WebFetch(domain:www.waveapps.com)"
+      "WebFetch(domain:www.waveapps.com)",
+      "Bash(./scripts/test_session_locally.sh:*)"
     ],
     "deny": []
   }

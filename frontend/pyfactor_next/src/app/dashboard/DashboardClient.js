@@ -15,7 +15,7 @@ import dynamic from 'next/dynamic';
 import React from 'react';
 import DashboardLoader from '@/components/DashboardLoader';
 import { useNotification } from '@/context/NotificationContext';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/hooks/useSession-v2';
 import { v4 as uuidv4 } from 'uuid';
 import cls from '@/utils/cls';
 import styles from '@/styles/DashboardClient.module.css';
