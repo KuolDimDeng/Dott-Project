@@ -61,11 +61,9 @@ class SessionService:
                         'decode_responses': True,
                         'health_check_interval': 30,
                         'socket_keepalive': True,
-                        'socket_keepalive_options': {
-                            1: 1,  # TCP_KEEPIDLE
-                            2: 3,  # TCP_KEEPINTVL  
-                            3: 5   # TCP_KEEPCNT
-                        }
+                        'socket_connect_timeout': 5,
+                        'socket_timeout': 5,
+                        'retry_on_timeout': True
                     }
                     
                     # Add password if present
@@ -88,11 +86,9 @@ class SessionService:
                         decode_responses=True,
                         health_check_interval=30,
                         socket_keepalive=True,
-                        socket_keepalive_options={
-                            1: 1,  # TCP_KEEPIDLE
-                            2: 3,  # TCP_KEEPINTVL  
-                            3: 5   # TCP_KEEPCNT
-                        }
+                        socket_connect_timeout=5,
+                        socket_timeout=5,
+                        retry_on_timeout=True
                     )
             
             # Otherwise use individual settings
@@ -103,11 +99,9 @@ class SessionService:
                 'decode_responses': True,
                 'health_check_interval': 30,
                 'socket_keepalive': True,
-                'socket_keepalive_options': {
-                    1: 1,  # TCP_KEEPIDLE
-                    2: 3,  # TCP_KEEPINTVL  
-                    3: 5   # TCP_KEEPCNT
-                }
+                'socket_connect_timeout': 5,
+                'socket_timeout': 5,
+                'retry_on_timeout': True
             }
             
             # Add password if configured
@@ -120,7 +114,16 @@ class SessionService:
                 connection_kwargs['ssl'] = True
                 connection_kwargs['ssl_cert_reqs'] = None
             
-            return redis.StrictRedis(**connection_kwargs)
+            # Create Redis connection with fixed parameters
+            try:
+                client = redis.StrictRedis(**connection_kwargs)
+                # Test the connection
+                client.ping()
+                print(f"[SessionService] Redis connection successful")
+                return client
+            except Exception as e:
+                print(f"[SessionService] Redis connection failed: {e}")
+                return None
             
         except Exception as e:
             print(f"[SessionService] Failed to connect to Redis: {e}")

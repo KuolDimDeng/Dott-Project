@@ -53,8 +53,8 @@ export async function GET(request) {
           // Use the user's email to check onboarding status
           const userEmail = sessionData.user?.email;
           if (userEmail) {
-            // Call a different endpoint that accepts session tokens
-            const statusResponse = await fetch(`${apiUrl}/api/users/me/`, {
+            // Call the session endpoint that accepts session tokens
+            const statusResponse = await fetch(`${apiUrl}/api/users/me/session/`, {
               headers: {
                 'Authorization': `Session ${sessionToken.value}`,
                 'Content-Type': 'application/json',

@@ -14,6 +14,7 @@ from .views.user_check_views import CheckUserView
 from .views.close_account_view import CloseAccountView
 from .views.onboarding_status_view import UpdateOnboardingStatusView
 from .views.update_session_view import UpdateSessionView
+from .views.session_profile_view import SessionUserProfileView
 
 # Import new Auth0 views
 try:
@@ -48,6 +49,7 @@ urlpatterns = [
     # Auth0 endpoints
     path('auth0/create-user/', Auth0UserCreateView.as_view(), name='auth0-create-user'),
     path('users/me/', Auth0UserProfileView.as_view(), name='auth0-user-profile'),
+    path('users/me/session/', SessionUserProfileView.as_view(), name='session-user-profile'),
     path('onboarding/business-info/', Auth0OnboardingBusinessInfoView.as_view(), name='auth0-onboarding-business-info'),
     path('onboarding/subscription/', Auth0OnboardingSubscriptionView.as_view(), name='auth0-onboarding-subscription'),
     path('onboarding/payment/', Auth0OnboardingPaymentView.as_view(), name='auth0-onboarding-payment'),
