@@ -659,3 +659,14 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Check if tenant_id is already a UUID object before conversion
   - Convert to string first if needed
 - **File Modified**: /backend/pyfactor/custom_auth/enhanced_rls_middleware.py
+
+### Version0105_run_django_migrations_on_render.js
+- **Version**: 0105
+- **Purpose**: Instructions to fix missing django_session table on Render
+- **Status**: ✅ CREATED (2025-06-18T23:17:46.918Z)
+- **Issue**: django.db.utils.ProgrammingError: relation "django_session" does not exist
+- **Solution**: Run Django migrations to create session table
+- **Commands**: 
+  - bash scripts/quick_fix_django_sessions.sh
+  - python manage.py migrate sessions --run-syncdb
+  - python scripts/fix_django_session_table.py
