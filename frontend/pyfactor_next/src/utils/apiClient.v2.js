@@ -6,7 +6,7 @@
 
 import { logger } from '@/utils/logger';
 import { errorHandler } from '@/utils/errorHandler.v2';
-import { sessionManager } from '@/utils/sessionManager.v2';
+import { sessionManagerEnhanced as sessionManager } from '@/utils/sessionManager-v2-enhanced';
 
 class ApiClientV2 {
   constructor() {

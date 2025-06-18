@@ -1,7 +1,7 @@
 'use client';
 
 
-import { useSession } from './useSession';
+import { useSession } from './useSession-v2';
 import { logger } from '@/utils/logger';
 
 /**

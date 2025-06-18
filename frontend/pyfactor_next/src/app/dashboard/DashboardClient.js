@@ -205,7 +205,7 @@ const fetchTenantFromServer = async (isAuthFlow = false) => {
     
     // First try to get tenant directly from Cognito attributes
     try {
-      const { fetchUserAttributes, fetchAuthSession } = await import("../../../utils/auth0Adapter.js");
+      const { fetchUserAttributes, fetchAuthSession } = await import("@/utils/auth0Adapter");
 // Get the user attributes directly from Cognito
       const userAttributes = await fetchUserAttributes();
       const tenantIdFromCognito = userAttributes['custom:businessid'] || userAttributes['custom:tenant_ID'];

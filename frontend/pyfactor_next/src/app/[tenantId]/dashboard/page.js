@@ -220,7 +220,9 @@ export default function TenantDashboard() {
         }
         
         // Use SessionManager to get authentication state
-        const { getSession, waitForSession } = await import('@/utils/sessionManager');
+        const { sessionManagerEnhanced } = await import('@/utils/sessionManager-v2-enhanced');
+        const getSession = () => sessionManagerEnhanced.getSession();
+        const waitForSession = (retries, delay) => sessionManagerEnhanced.waitForSession(retries, delay);
         
         // Log all cookies to debug session issue
         logger.info('[TenantDashboard] All cookies:', {

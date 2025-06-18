@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { sessionManager } from '@/utils/sessionManager.v2';
+import { sessionManagerEnhanced as sessionManager } from '@/utils/sessionManager-v2-enhanced';
 import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingStateMachine';
 import { apiClient } from '@/utils/apiClient.v2';
 import { errorHandler } from '@/utils/errorHandler.v2';

@@ -89,6 +89,7 @@
     "http-proxy-middleware": "^3.0.5",
     "i18next": "^24.2.3",
     "i18next-browser-languagedetector": "^8.0.4",
+    "ioredis": "^5.6.1",
     "js-cookie": "^3.0.5",
     "jsbarcode": "^3.11.6",
     "jsonwebtoken": "^9.0.2",
