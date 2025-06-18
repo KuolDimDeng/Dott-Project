@@ -83,14 +83,8 @@ export async function POST(request) {
         'Authorization': `Bearer ${accessToken}`
       },
       body: JSON.stringify({ 
-        // Django session create endpoint accepts these fields
-        access_token: accessToken,
-        id_token: idToken,
-        user_data: {
-          email: user?.email,
-          name: user?.name,
-          sub: user?.sub
-        }
+        // Send empty body - Django will create session from the Auth0 token
+        // The serializer has defaults for all fields
       })
     });
     
