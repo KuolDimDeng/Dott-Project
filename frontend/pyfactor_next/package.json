@@ -44,7 +44,18 @@
     "clear": "rm -rf .next && rm -rf node_modules/.cache",
     "fix": "./fix-modules.sh",
     "verify-tailwind": "node verify-tailwind-setup.js",
-    "fix-auth0-logout": "node fix-auth0-logout.js"
+    "fix-auth0-logout": "node fix-auth0-logout.js",
+    "load-test": "node scripts/load-test-sessions.js",
+    "load-test:smoke": "node scripts/load-test-sessions.js --users=5 --duration=30 --scenarios=auth",
+    "load-test:load": "node scripts/load-test-sessions.js --users=50 --duration=300 --scenarios=mixed",
+    "load-test:stress": "node scripts/load-test-sessions.js --users=200 --duration=600 --scenarios=stress",
+    "load-test:spike": "node scripts/load-test-sessions.js --users=500 --duration=180 --scenarios=auth",
+    "load-test:endurance": "node scripts/load-test-sessions.js --users=100 --duration=3600 --scenarios=mixed",
+    "load-test:cache": "node scripts/load-test-sessions.js --users=150 --duration=300 --scenarios=cache",
+    "session-metrics": "curl -s http://localhost:3000/api/metrics/session?detailed=true | jq",
+    "session-dashboard": "open http://localhost:3000/api/admin/session-dashboard",
+    "session-health": "curl -s http://localhost:3000/api/metrics/session | jq '.status,.score,.cache_hit_rate,.avg_response_time'",
+    "cache-status": "curl -s http://localhost:3000/api/cache/session | jq"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.3.0",

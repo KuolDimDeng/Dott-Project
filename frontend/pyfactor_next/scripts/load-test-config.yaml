@@ -1,0 +1,267 @@
+# Session Load Testing Configuration
+# Used by load-test-sessions.js and other testing tools
+
+# Environment Configuration
+environments:
+  local:
+    url: "http://localhost:3000"
+    redis_url: "redis://localhost:6379"
+    expected_response_time: 200  # ms
+    max_users: 100
+    
+  staging:
+    url: "https://staging.dottapps.com"
+    redis_url: "${REDIS_URL}"
+    expected_response_time: 500  # ms
+    max_users: 500
+    
+  production:
+    url: "https://dottapps.com"
+    redis_url: "${REDIS_URL}"
+    expected_response_time: 300  # ms
+    max_users: 1000
+
+# Test Scenarios
+scenarios:
+  # Basic authentication flow
+  auth_basic:
+    name: "Basic Authentication Test"
+    description: "Test login/logout cycle"
+    actions:
+      - login
+      - session_check
+      - logout
+    weight: 1.0
+    think_time: [500, 1000]  # ms range
+    
+  # Session management stress test
+  session_stress:
+    name: "Session Management Stress Test"
+    description: "Heavy session validation and refresh"
+    actions:
+      - login
+      - session_check
+      - session_check
+      - session_refresh
+      - session_check
+      - api_call
+      - session_check
+      - logout
+    weight: 2.0
+    think_time: [100, 500]
+    
+  # Cache performance test
+  cache_performance:
+    name: "Cache Performance Test"
+    description: "Test Redis cache efficiency"
+    actions:
+      - login
+      - cache_burst_test
+      - session_check
+      - cache_burst_test
+      - logout
+    weight: 1.5
+    think_time: [50, 200]
+    
+  # Mixed workload (realistic user behavior)
+  mixed_workload:
+    name: "Mixed Workload Test"
+    description: "Simulate realistic user patterns"
+    actions:
+      - login
+      - api_call
+      - session_check
+      - api_call
+      - session_refresh
+      - api_call
+      - cache_test
+      - logout
+    weight: 1.0
+    think_time: [1000, 3000]
+    
+  # Long session test
+  long_session:
+    name: "Long Session Test"
+    description: "Test session persistence over time"
+    actions:
+      - login
+      - long_running_session
+    weight: 0.5
+    think_time: [5000, 10000]
+    
+  # Concurrent session test
+  concurrent_sessions:
+    name: "Concurrent Sessions Test"
+    description: "Test multiple sessions per user"
+    actions:
+      - multi_device_login
+      - concurrent_api_calls
+      - session_conflict_test
+      - cleanup_sessions
+    weight: 1.5
+    think_time: [500, 1500]
+
+# Load Test Profiles
+profiles:
+  smoke:
+    name: "Smoke Test"
+    users: 5
+    duration: 30  # seconds
+    rampup: 5
+    scenarios: ["auth_basic"]
+    
+  load:
+    name: "Load Test"
+    users: 50
+    duration: 300  # 5 minutes
+    rampup: 30
+    scenarios: ["mixed_workload", "auth_basic"]
+    
+  stress:
+    name: "Stress Test"
+    users: 200
+    duration: 600  # 10 minutes
+    rampup: 60
+    scenarios: ["session_stress", "cache_performance"]
+    
+  spike:
+    name: "Spike Test"
+    users: 500
+    duration: 180  # 3 minutes
+    rampup: 10  # Quick ramp-up
+    scenarios: ["auth_basic", "session_stress"]
+    
+  endurance:
+    name: "Endurance Test"
+    users: 100
+    duration: 3600  # 1 hour
+    rampup: 120
+    scenarios: ["mixed_workload", "long_session"]
+    
+  cache_focused:
+    name: "Cache Performance Test"
+    users: 150
+    duration: 300
+    rampup: 30
+    scenarios: ["cache_performance"]
+
+# Performance Thresholds
+thresholds:
+  response_time:
+    avg_max: 500  # ms
+    p95_max: 1000  # ms
+    p99_max: 2000  # ms
+    
+  success_rate:
+    min: 99.0  # percentage
+    
+  cache_performance:
+    hit_rate_min: 80  # percentage
+    redis_latency_max: 10  # ms
+    
+  session_metrics:
+    creation_rate_min: 10  # sessions/second
+    validation_rate_min: 100  # validations/second
+    
+  resource_usage:
+    cpu_max: 80  # percentage
+    memory_max: 2048  # MB
+    
+  error_rates:
+    4xx_max: 1.0  # percentage
+    5xx_max: 0.5  # percentage
+    timeout_max: 0.1  # percentage
+
+# Monitoring Configuration
+monitoring:
+  metrics_endpoints:
+    - "/api/metrics/session"
+    - "/api/cache/session"
+    - "/api/health"
+    
+  collection_interval: 10  # seconds
+  
+  alerts:
+    response_time_spike:
+      threshold: 1000  # ms
+      duration: 60  # seconds
+      
+    error_rate_spike:
+      threshold: 5.0  # percentage
+      duration: 30  # seconds
+      
+    cache_hit_rate_drop:
+      threshold: 70  # percentage
+      duration: 120  # seconds
+      
+    session_creation_failure:
+      threshold: 10  # failures in window
+      duration: 60  # seconds
+
+# Redis Configuration
+redis:
+  # Connection settings
+  max_connections: 100
+  connection_timeout: 5000  # ms
+  command_timeout: 1000  # ms
+  
+  # Cache settings
+  session_ttl: 1800  # seconds (30 minutes)
+  max_memory_policy: "allkeys-lru"
+  
+  # Monitoring
+  slow_log_threshold: 10  # ms
+  max_slow_log_entries: 100
+
+# Database Configuration
+database:
+  # Connection pooling
+  max_connections: 50
+  connection_timeout: 10000  # ms
+  query_timeout: 5000  # ms
+  
+  # Session table settings
+  cleanup_interval: 3600  # seconds (1 hour)
+  max_session_age: 86400  # seconds (24 hours)
+  
+  # Monitoring
+  slow_query_threshold: 1000  # ms
+
+# Test Data
+test_data:
+  user_pool_size: 1000
+  session_data_size: 1024  # bytes
+  concurrent_sessions_per_user: 3
+  
+  # User pattern simulation
+  user_types:
+    - name: "light_user"
+      weight: 60
+      session_duration: [300, 900]  # 5-15 minutes
+      api_calls_per_session: [5, 15]
+      
+    - name: "heavy_user"
+      weight: 30
+      session_duration: [1800, 3600]  # 30-60 minutes
+      api_calls_per_session: [50, 150]
+      
+    - name: "power_user"
+      weight: 10
+      session_duration: [3600, 7200]  # 1-2 hours
+      api_calls_per_session: [200, 500]
+
+# Reporting Configuration
+reporting:
+  output_formats:
+    - console
+    - json
+    - html
+    - prometheus
+    
+  detailed_metrics: true
+  
+  export_raw_data: false
+  
+  comparison_baseline: "load"  # Profile to compare against
+  
+  dashboard_update_interval: 5  # seconds
