@@ -68,10 +68,10 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Determine redirect URL based on onboarding status
     if (onboardingStatus.onboarding_completed && userData.tenant_id) {
       // User has completed onboarding and has valid tenant
-      finalUserData.redirectUrl = `/tenant/${userData.tenant_id}/dashboard`;
+      finalUserData.redirectUrl = `/${userData.tenant_id}/dashboard`;
     } else if (userData.tenant_id && !onboardingStatus.needs_onboarding) {
       // User has tenant but onboarding status is unclear - redirect to dashboard
-      finalUserData.redirectUrl = `/tenant/${userData.tenant_id}/dashboard`;
+      finalUserData.redirectUrl = `/${userData.tenant_id}/dashboard`;
     } else {
       // User needs onboarding
       finalUserData.redirectUrl = '/onboarding';

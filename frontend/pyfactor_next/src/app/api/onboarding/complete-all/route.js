@@ -453,7 +453,7 @@ export async function POST(request) {
       message: 'Onboarding completed successfully!',
       tenant_id: tenantId,
       tenantId: tenantId,
-      redirect_url: `/tenant/${tenantId}/dashboard`,
+      redirect_url: `/${tenantId}/dashboard`,
       user: {
         email: user.email,
         businessName: onboardingData.businessName,

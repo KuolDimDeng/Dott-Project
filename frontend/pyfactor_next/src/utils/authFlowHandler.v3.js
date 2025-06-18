@@ -138,7 +138,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     if (!tenantId || needsOnboarding || !hasCompletedOnboarding) {
       redirectUrl = '/onboarding';
     } else {
-      redirectUrl = `/tenant/${tenantId}/dashboard`;
+      redirectUrl = `/${tenantId}/dashboard`;
     }
     
     console.log('[AuthFlowHandler.v3] Redirect decision:', {

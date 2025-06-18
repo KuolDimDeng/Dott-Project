@@ -201,7 +201,7 @@ export async function POST(request) {
     const response = NextResponse.json({
       success: true,
       message: 'Payment verified and onboarding completed',
-      redirect_url: `/tenant/${finalTenantId}/dashboard`,
+      redirect_url: `/${finalTenantId}/dashboard`,
       tenant_id: finalTenantId,
       user: {
         email: user.email,

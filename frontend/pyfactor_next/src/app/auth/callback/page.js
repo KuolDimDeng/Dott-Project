@@ -142,7 +142,7 @@ export default function Auth0CallbackPage() {
         if (backendUser.onboardingCompleted && backendUser.tenantId) {
           setStatus('Loading your dashboard...');
           setTimeout(() => {
-            router.replace(`/tenant/${backendUser.tenantId}/dashboard`);
+            router.replace(`/${backendUser.tenantId}/dashboard`);
           }, 1000);
         } else {
           setStatus('Setting up your account...');
