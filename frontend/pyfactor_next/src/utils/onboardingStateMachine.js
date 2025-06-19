@@ -53,18 +53,18 @@ class OnboardingStateMachine {
       const progress = await sessionManager.getOnboardingProgress();
       
       // Determine current state from session data
-      if (!session.authenticated) {
+      if (!session?.authenticated) {
         this.currentState = null;
         return;
       }
 
-      if (session.onboardingCompleted) {
+      if (progress?.onboardingCompleted || session.user?.onboardingCompleted) {
         this.currentState = ONBOARDING_STATES.COMPLETED;
-      } else if (progress.paymentPending) {
+      } else if (progress?.paymentPending) {
         this.currentState = ONBOARDING_STATES.PAYMENT_PENDING;
-      } else if (progress.selectedPlan) {
+      } else if (progress?.selectedPlan) {
         this.currentState = ONBOARDING_STATES.SUBSCRIPTION_SELECTION;
-      } else if (progress.businessName) {
+      } else if (progress?.businessName) {
         this.currentState = ONBOARDING_STATES.BUSINESS_INFO;
       } else {
         this.currentState = ONBOARDING_STATES.NOT_STARTED;

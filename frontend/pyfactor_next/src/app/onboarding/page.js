@@ -30,28 +30,6 @@ export default function OnboardingPageV2() {
         return;
       }
 
-      // Check if user has tenant but still marked as needing onboarding
-      if (session.user?.tenantId && session.user?.needsOnboarding) {
-        logger.warn('[OnboardingPage.v2] User has tenant but needs_onboarding=true, attempting to fix...');
-        
-        try {
-          const fixResponse = await fetch('/api/auth/force-clear-onboarding', {
-            method: 'POST',
-            credentials: 'include'
-          });
-          
-          if (fixResponse.ok) {
-            const fixResult = await fixResponse.json();
-            logger.info('[OnboardingPage.v2] Onboarding status fixed:', fixResult);
-            
-            // Redirect to dashboard
-            router.push(`/tenant/${session.user.tenantId}/dashboard`);
-            return;
-          }
-        } catch (fixError) {
-          logger.error('[OnboardingPage.v2] Failed to fix onboarding status:', fixError);
-        }
-      }
 
       // Initialize onboarding state machine
       await onboardingStateMachine.initialize();

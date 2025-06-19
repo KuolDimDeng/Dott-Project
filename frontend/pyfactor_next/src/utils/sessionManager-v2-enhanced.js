@@ -444,6 +444,25 @@ class SessionManagerV2Enhanced {
     const session = await this.getSession();
     return session?.user?.tenantId || null;
   }
+
+  /**
+   * Get onboarding progress
+   */
+  async getOnboardingProgress() {
+    const session = await this.getSession();
+    if (!session.authenticated) {
+      return {};
+    }
+    
+    // Return a structured progress object
+    return {
+      businessName: session.user?.businessName || null,
+      selectedPlan: session.user?.subscriptionPlan || null,
+      paymentPending: false,
+      onboardingCompleted: session.user?.onboardingCompleted || false,
+      currentStep: session.user?.currentOnboardingStep || 'not_started'
+    };
+  }
 }
 
 // Create singleton instance
