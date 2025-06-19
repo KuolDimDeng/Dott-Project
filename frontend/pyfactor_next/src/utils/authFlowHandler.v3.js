@@ -62,6 +62,25 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     
     const data = await response.json();
     
+    // CRITICAL: Check for tenant verification failure
+    if (response.status === 403 && data.error === 'TENANT_VERIFICATION_FAILED') {
+      console.error('[AuthFlowHandler.v3] Tenant verification failed:', data);
+      
+      // Clear auth data
+      await clearAuthData();
+      
+      // Redirect to support page with error details
+      const params = new URLSearchParams({
+        error: 'tenant_verification_failed',
+        code: data.support_code,
+        email: encodeURIComponent(data.support_email),
+        message: encodeURIComponent(data.message)
+      });
+      
+      window.location.href = `/auth/error?${params.toString()}`;
+      return null;
+    }
+    
     // CRITICAL: Check for deleted account
     if (response.status === 403 && data.account_closed) {
       console.error('[AuthFlowHandler.v3] Account is closed/deleted:', data);

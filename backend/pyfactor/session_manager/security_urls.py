@@ -20,4 +20,7 @@ urlpatterns = [
     
     # Failed login handling
     path('failed-login/', security_views.handle_failed_login, name='failed-login'),
+    
+    # Session monitoring
+    path('session-alert/', security_views.handle_security_alert, name='session-alert'),
 ]

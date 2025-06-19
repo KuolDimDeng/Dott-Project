@@ -15,6 +15,7 @@ const ERROR_MESSAGES = {
   Configuration: 'There was an issue with the authentication configuration.',
   Unauthorized: 'Your session has expired or you are not authorized. Please sign in again.',
   Verification: 'Email verification is required. Please check your inbox.',
+  tenant_verification_failed: 'Account verification required. Please contact support for assistance.',
   Default: 'An unknown error occurred. Please try again.',
 };
 
@@ -25,19 +26,28 @@ export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');
   const errorDescription = searchParams.get('error_description');
+  const supportCode = searchParams.get('code');
+  const supportEmail = searchParams.get('email');
+  const message = searchParams.get('message');
 
   useEffect(() => {
     // Log error
     logger.error('Authentication error occurred', {
       error,
       description: errorDescription,
+      supportCode,
     });
 
     // Show error toast
-    toast.error(ERROR_MESSAGES[error] || ERROR_MESSAGES.Default, {
+    toast.error(message || ERROR_MESSAGES[error] || ERROR_MESSAGES.Default, {
       toastId: error, // Prevent duplicate toasts
       autoClose: REDIRECT_DELAY - 1000, // Close just before redirect
     });
+
+    // Don't auto-redirect for tenant verification failures
+    if (error === 'tenant_verification_failed') {
+      return;
+    }
 
     // Redirect to sign-in page
     const timer = setTimeout(() => {
@@ -46,7 +56,7 @@ export default function AuthErrorPage() {
     }, REDIRECT_DELAY);
 
     return () => clearTimeout(timer);
-  }, [router, error, errorDescription]);
+  }, [router, error, errorDescription, supportCode, message]);
 
   const getErrorDetails = () => {
     return {
@@ -84,18 +94,27 @@ export default function AuthErrorPage() {
             : 'bg-red-50 border-red-200 text-red-800'
         }`}>
           <p className="mb-2">
-            {errorDetails.message}
+            {message || errorDetails.message}
           </p>
           {errorDescription && (
             <p className="text-sm text-gray-600">
               {errorDetails.description}
             </p>
           )}
+          {error === 'tenant_verification_failed' && supportCode && (
+            <div className="mt-4 p-3 bg-gray-100 rounded text-sm">
+              <p className="font-semibold">Support Information:</p>
+              <p>Reference Code: <code className="bg-gray-200 px-1 rounded">{supportCode}</code></p>
+              <p>Email: <a href={`mailto:${supportEmail}`} className="text-blue-600 hover:underline">{decodeURIComponent(supportEmail || 'support@dottapps.com')}</a></p>
+            </div>
+          )}
         </div>
 
-        <p className="text-sm text-gray-600 mb-4">
-          You will be redirected to the sign-in page in 5 seconds.
-        </p>
+        {error !== 'tenant_verification_failed' && (
+          <p className="text-sm text-gray-600 mb-4">
+            You will be redirected to the sign-in page in 5 seconds.
+          </p>
+        )}
 
         <div className="flex gap-4 justify-center mt-4">
           <Link

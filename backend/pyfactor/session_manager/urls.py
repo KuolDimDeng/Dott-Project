@@ -10,6 +10,7 @@ from .views import (
     SessionInvalidateAllView
 )
 from .views_fixed import SessionCreateViewFixed as SessionCreateView
+from .security_views import get_active_sessions
 
 app_name = 'sessions'
 
@@ -19,6 +20,7 @@ urlpatterns = [
     path('current/', SessionDetailView.as_view(), name='session-current'),
     path('refresh/', SessionRefreshView.as_view(), name='session-refresh'),
     path('', SessionListView.as_view(), name='session-list'),
+    path('active/', get_active_sessions, name='session-active'),
     path('invalidate-all/', SessionInvalidateAllView.as_view(), name='session-invalidate-all'),
     
     # Security endpoints

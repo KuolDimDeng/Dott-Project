@@ -75,10 +75,28 @@ export async function POST(request) {
           });
           
           if (!tenantCheckResponse.ok) {
-            console.error('[UserSync] CRITICAL: Tenant ownership verification failed!');
-            // Generate new tenant ID for security
-            existingUser.tenant_id = uuidv4();
-            existingUser.needs_fixing = true;
+            console.error('[UserSync] CRITICAL: Tenant ownership verification failed!', {
+              email,
+              auth0_sub,
+              tenant_id: existingUser.tenant_id,
+              status: tenantCheckResponse.status
+            });
+            
+            // DO NOT generate new tenant ID - this causes data loss!
+            // Instead, return error requiring support intervention
+            const supportCode = `TVF-${Date.now()}-${auth0_sub.slice(-6)}`;
+            
+            return NextResponse.json({
+              success: false,
+              error: 'TENANT_VERIFICATION_FAILED',
+              message: 'Account verification required. Please contact support.',
+              support_code: supportCode,
+              support_email: 'support@dottapps.com',
+              details: {
+                reason: 'Tenant ownership could not be verified',
+                action_required: 'Contact support with the provided code'
+              }
+            }, { status: 403 });
           }
         }
         
