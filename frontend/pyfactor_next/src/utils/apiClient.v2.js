@@ -87,7 +87,9 @@ class ApiClientV2 {
 
         // Handle non-2xx responses
         if (!response.ok) {
-          const error = await this.parseErrorResponse(response);
+          // Clone response to avoid "body consumed" error
+          const responseClone = response.clone();
+          const error = await this.parseErrorResponse(responseClone);
           
           // Don't retry client errors (4xx)
           if (response.status >= 400 && response.status < 500) {
@@ -104,8 +106,9 @@ class ApiClientV2 {
           }
         }
 
-        // Success
-        return await this.parseResponse(response);
+        // Success - clone response to avoid issues
+        const responseClone = response.clone();
+        return await this.parseResponse(responseClone);
 
       } catch (error) {
         clearTimeout(timeoutId);

@@ -363,10 +363,27 @@ export async function POST(request) {
         console.warn('[api/onboarding/business-info] No auth token available for backend');
       }
       
+      // Convert camelCase to snake_case for Django backend
+      const djangoData = {
+        business_name: businessData.businessName,
+        business_type: businessData.businessType,
+        country: businessData.country === 'United States' ? 'US' : businessData.country, // Fix country code
+        legal_structure: businessData.legalStructure,
+        date_founded: businessData.dateFounded,
+        first_name: businessData.firstName || '',
+        last_name: businessData.lastName || '',
+        industry: businessData.industry || '',
+        address: businessData.address || '',
+        phone_number: businessData.phoneNumber || '',
+        tax_id: businessData.taxId || ''
+      };
+
+      console.log('[api/onboarding/business-info] Sending to Django:', djangoData);
+
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(businessData),
+        body: JSON.stringify(djangoData),
         timeout: 10000 // 10 second timeout
       });
       
