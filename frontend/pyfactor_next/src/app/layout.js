@@ -52,29 +52,8 @@ export default function RootLayout({ children }) {
           />
         )}
         
-        {/* Device Fingerprinting Script */}
-        <Script
-          id="device-fingerprint-init"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Initialize device fingerprinting on page load
-              if (typeof window !== 'undefined') {
-                window.addEventListener('load', async () => {
-                  try {
-                    // Import from src/utils instead of public folder
-                    const { default: deviceFingerprint } = await import('@/utils/deviceFingerprint');
-                    const fingerprint = await deviceFingerprint.collect();
-                    window.__deviceFingerprint = fingerprint;
-                    console.log('[DeviceFingerprint] Collected successfully');
-                  } catch (error) {
-                    console.error('[DeviceFingerprint] Collection failed:', error);
-                  }
-                });
-              }
-            `,
-          }}
-        />
+        {/* Device Fingerprinting Script - Disabled temporarily due to import issues */}
+        {/* Will be initialized within components that need it */}
       </body>
     </html>
   );

@@ -225,7 +225,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://client.crisp.chat",
               "font-src 'self' data: https://fonts.gstatic.com https://client.crisp.chat",
               "img-src 'self' data: https: blob:",
-              "connect-src 'self' https://api.dottapps.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://auth.dottapps.com https://accounts.google.com https://api.stripe.com https://api.country.is https://ipinfo.io https://ipapi.co https://client.crisp.chat https://widget.api.crisp.chat wss://client.relay.crisp.chat",
+              "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io",
               "frame-src 'self' https://accounts.google.com https://dev-cbyy63jovi6zrcos.us.auth0.com https://js.stripe.com https://auth.dottapps.com https://client.crisp.chat",
               "object-src 'none'",
               "base-uri 'self'",

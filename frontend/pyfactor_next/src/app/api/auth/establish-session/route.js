@@ -81,6 +81,51 @@ export async function POST(request) {
       securityInfo: sessionData.security
     });
     
+    // Fix for users who have tenant but still marked as needing onboarding
+    if (sessionData.tenant_id && sessionData.needs_onboarding) {
+      console.warn('[EstablishSession] User has tenant but needs_onboarding=true, attempting to fix...');
+      
+      try {
+        const fixResponse = await fetch(`${baseUrl}/api/auth/force-clear-onboarding`, {
+          method: 'POST',
+          headers: {
+            'Cookie': `session_token=${token}`
+          }
+        });
+        
+        if (fixResponse.ok) {
+          const fixResult = await fixResponse.json();
+          console.log('[EstablishSession] Onboarding status fixed:', fixResult);
+          // Update sessionData to reflect the fix
+          sessionData.needs_onboarding = false;
+          // Change redirect to dashboard
+          const dashboardUrl = `/tenant/${sessionData.tenant_id}/dashboard`;
+          const response = NextResponse.redirect(new URL(dashboardUrl, baseUrl));
+          
+          // Set all the cookies as before
+          response.cookies.set('sid', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            expires: new Date(sessionData.expires_at),
+            path: '/'
+          });
+          
+          response.cookies.set('session_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            expires: new Date(sessionData.expires_at),
+            path: '/'
+          });
+          
+          return response;
+        }
+      } catch (fixError) {
+        console.error('[EstablishSession] Failed to fix onboarding status:', fixError);
+      }
+    }
+    
     // Check security status
     if (sessionData.security?.requires_verification) {
       console.warn('[EstablishSession] Session requires additional verification');
