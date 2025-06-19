@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Global lock for schema creation to prevent race conditions
 schema_creation_lock = threading.RLock()
 
-def verify_essential_tables(tenant_id: uuid.UUID:
+def verify_essential_tables(tenant_id: uuid.UUID):
     """
     Verify that all essential tables exist in the schema.
     Returns a tuple of (all_tables_exist, missing_tables)

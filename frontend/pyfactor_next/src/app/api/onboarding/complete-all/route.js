@@ -54,16 +54,16 @@ async function validateAuth0Session(request) {
     
     const sessionData = await response.json();
     console.log('[CompleteOnboarding] Session validated successfully:', {
-      email: sessionData.email,
-      tenantId: sessionData.tenant_id,
+      email: sessionData.user?.email,
+      tenantId: sessionData.tenant?.id,
       needsOnboarding: sessionData.needs_onboarding
     });
     
     const user = {
-      email: sessionData.email,
-      sub: sessionData.auth0_sub || sessionData.user_id,
-      name: sessionData.name || sessionData.email,
-      tenantId: sessionData.tenant_id,
+      email: sessionData.user?.email,
+      sub: sessionData.user?.id || sessionData.session_token,
+      name: sessionData.user?.name || sessionData.user?.email,
+      tenantId: sessionData.tenant?.id,
       needsOnboarding: sessionData.needs_onboarding,
       onboardingCompleted: sessionData.onboarding_completed
     };
