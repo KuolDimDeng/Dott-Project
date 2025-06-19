@@ -3,7 +3,7 @@
 ///Users/kuoldeng/projectx/frontend/pyfactor_next/src/app/error.js
 
 import React, { useEffect } from 'react';
-import { removeCacheValue } from '@/utils/appCache';
+import { removeCacheValue, appCache } from '@/utils/appCache';
 
 export default function Error({ error, reset }) {
   useEffect(() => {
