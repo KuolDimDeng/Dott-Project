@@ -107,7 +107,7 @@ async function validateAuthentication(request) {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
         const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`,
+            'Authorization': `Session ${sessionTokenCookie.value}`,
             'Content-Type': 'application/json',
           }
         });
@@ -357,11 +357,8 @@ export async function POST(request) {
       // Use session token if available (preferred for backend compatibility)
       const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid');
       if (sessionTokenCookie) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+        headers['Authorization'] = `Session ${sessionTokenCookie.value}`;
         console.log('[api/onboarding/business-info] Using Session token for backend auth');
-      } else if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
-        console.log('[api/onboarding/business-info] Using Bearer token for backend auth');
       } else {
         console.warn('[api/onboarding/business-info] No auth token available for backend');
       }
