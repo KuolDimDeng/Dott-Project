@@ -10,23 +10,49 @@ import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 async function getSession() {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    console.log('[CompletePayment] Getting session using new token system');
     
-    if (!sessionCookie) {
+    // Get session token from cookies
+    const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('session_token');
+    
+    if (!sessionToken) {
+      console.log('[CompletePayment] No session_token cookie found');
       return null;
     }
     
-    let sessionData;
-    try {
-      const decrypted = decrypt(sessionCookie.value);
-      sessionData = JSON.parse(decrypted);
-    } catch (decryptError) {
-      // Fallback to old base64 format
-      sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+    // Validate session token with backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionToken.value}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      console.error('[CompletePayment] Backend session validation failed:', response.status);
+      return null;
     }
     
-    return sessionData;
+    const sessionData = await response.json();
+    console.log('[CompletePayment] Session validated successfully');
+    
+    const user = {
+      email: sessionData.email,
+      sub: sessionData.auth0_sub || sessionData.user_id,
+      name: sessionData.name || sessionData.email,
+      tenantId: sessionData.tenant_id,
+      needsOnboarding: sessionData.needs_onboarding,
+      onboardingCompleted: sessionData.onboarding_completed
+    };
+    
+    return {
+      user,
+      sessionToken: sessionToken.value,
+      accessToken: null // Not used in new system
+    };
+    
   } catch (error) {
     console.error('[CompletePayment] Session retrieval error:', error);
     return null;
@@ -69,7 +95,7 @@ export async function POST(request) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionData.accessToken}`,
+        'Authorization': `Session ${sessionData.sessionToken}`,
         'X-User-Email': user.email,
         'X-User-Sub': user.sub
       },
@@ -129,7 +155,7 @@ export async function POST(request) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sessionData.accessToken}`,
+          'Authorization': `Session ${sessionData.sessionToken}`,
           'X-User-Email': user.email,
           'X-User-Sub': user.sub
         },
