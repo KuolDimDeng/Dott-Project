@@ -62,8 +62,9 @@ export default function RootLayout({ children }) {
               if (typeof window !== 'undefined') {
                 window.addEventListener('load', async () => {
                   try {
-                    const deviceFingerprintModule = await import('/utils/deviceFingerprint.js');
-                    const fingerprint = await deviceFingerprintModule.default.collect();
+                    // Import from src/utils instead of public folder
+                    const { default: deviceFingerprint } = await import('@/utils/deviceFingerprint');
+                    const fingerprint = await deviceFingerprint.collect();
                     window.__deviceFingerprint = fingerprint;
                     console.log('[DeviceFingerprint] Collected successfully');
                   } catch (error) {

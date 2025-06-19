@@ -44,7 +44,7 @@ class SessionManagerV2Enhanced {
     
     if (!sessionId) {
       this.recordMetric('cache_miss', startTime);
-      return null;
+      return { authenticated: false, user: null };
     }
 
     try {
@@ -59,11 +59,11 @@ class SessionManagerV2Enhanced {
       const result = await sessionPromise;
       this.pendingRequests.delete(sessionId);
       
-      return result;
+      return result || { authenticated: false, user: null };
     } catch (error) {
       this.pendingRequests.delete(sessionId);
       this.handleError(error, startTime);
-      return null;
+      return { authenticated: false, user: null };
     }
   }
 
@@ -168,9 +168,9 @@ class SessionManagerV2Enhanced {
   async getFromDatabase(sessionId) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     
-    const response = await fetch(`${apiUrl}/api/sessions/${sessionId}/`, {
+    const response = await fetch(`${apiUrl}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sessionId}`,
+        'Authorization': `Session ${sessionId}`,
         'Content-Type': 'application/json',
       },
       cache: 'no-store'
@@ -377,7 +377,7 @@ class SessionManagerV2Enhanced {
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'sid') {
+      if (name === 'session_token') {
         return value;
       }
     }
@@ -435,6 +435,14 @@ class SessionManagerV2Enhanced {
     });
 
     await Promise.allSettled(promises);
+  }
+
+  /**
+   * Get tenant ID from current session
+   */
+  async getTenantId() {
+    const session = await this.getSession();
+    return session?.user?.tenantId || null;
   }
 }
 
