@@ -56,6 +56,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from session_manager.authentication import SessionAuthentication as SessionTokenAuthentication
 
 
 
@@ -1786,7 +1787,7 @@ def cleanup_expired_onboarding(self):
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep1View(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -2557,7 +2558,7 @@ class SaveStep1View(APIView):
 @method_decorator(csrf_exempt, name='dispatch')
 class SaveStep2View(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -3337,7 +3338,7 @@ class GetBusinessInfoView(APIView):
     View to retrieve business information for the authenticated user.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
 
     def get(self, request, *args, **kwargs):
         try:
@@ -4695,7 +4696,7 @@ class OnboardingSuccessView(BaseOnboardingView):
     - Next steps guidance
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     

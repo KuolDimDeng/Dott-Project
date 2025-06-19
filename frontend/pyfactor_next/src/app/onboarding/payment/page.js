@@ -218,15 +218,14 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       
-      // Call complete-payment endpoint to mark onboarding as complete
+      // Single API call to complete payment and mark onboarding as complete
       try {
-        logger.info('[PaymentForm] Calling complete-payment endpoint');
+        logger.info('[PaymentForm] Completing payment and onboarding...');
         const completePaymentResponse = await fetch('/api/onboarding/complete-payment', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-          
-        credentials: 'include',},
+          },
           credentials: 'include',
           body: JSON.stringify({
             subscriptionId: result.subscription?.id || result.subscriptionId,
@@ -237,207 +236,41 @@ function PaymentForm({ plan, billingCycle }) {
           }),
         });
         
-        if (completePaymentResponse.ok) {
-          const completeResult = await completePaymentResponse.json();
-          logger.info('[PaymentForm] Payment completion successful:', completeResult);
-          if (!tenantId && completeResult.tenant_id) {
-            setTenantId(completeResult.tenant_id);
-          }
-        } else {
-          logger.error('[PaymentForm] Payment completion failed:', completePaymentResponse.status);
-        }
-      } catch (e) {
-        logger.error('[PaymentForm] Error completing payment:', e);
-      }
-      
-      // First, let's check the current session state using v2 endpoint
-      try {
-        const checkSessionResponse = await fetch('/api/auth/session-v2', {
-          credentials: 'include'
-        });
-        if (checkSessionResponse.ok) {
-          const currentSession = await checkSessionResponse.json();
-          logger.info('[PaymentForm] Current session AFTER complete-payment:', {
-            needsOnboarding: currentSession.user?.needsOnboarding,
-            onboardingCompleted: currentSession.user?.onboardingCompleted,
-            tenantId: currentSession.user?.tenantId
-          });
-        }
-      } catch (e) {
-        logger.error('[PaymentForm] Error checking session after complete-payment:', e);
-      }
-      
-      // Update backend session to mark onboarding as complete
-      try {
-        logger.info('[PaymentForm] Updating backend session with onboarding completion');
-        
-        // First check if we have a session token using v2 endpoint
-        const sessionCheckResponse = await fetch('/api/auth/session-v2', {
-          credentials: 'include'
-        });
-        
-        if (sessionCheckResponse.ok) {
-          const currentSession = await sessionCheckResponse.json();
-          
-          if (currentSession.sessionToken) {
-            // Use backend session update API
-            logger.info('[PaymentForm] Using backend session update API');
-            
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-            const updateResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Session ${currentSession.sessionToken}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                needs_onboarding: false,
-                onboarding_completed: true,
-                onboarding_step: 'completed',
-                subscription_plan: plan.toLowerCase(),
-                subscription_status: 'active',
-                tenant: tenantId ? { id: tenantId } : undefined
-              })
-            });
-            
-            if (updateResponse.ok) {
-              const updatedSession = await updateResponse.json();
-              logger.info('[PaymentForm] Backend session updated successfully:', {
-                needs_onboarding: updatedSession.needs_onboarding,
-                onboarding_completed: updatedSession.onboarding_completed,
-                tenant_id: updatedSession.tenant?.id
-              });
-            } else {
-              logger.error('[PaymentForm] Backend session update failed:', updateResponse.status);
-              // Fall back to legacy sync
-            }
-          }
+        if (!completePaymentResponse.ok) {
+          const errorData = await completePaymentResponse.json().catch(() => ({}));
+          throw new Error(errorData.error || `Payment completion failed: ${completePaymentResponse.status}`);
         }
         
-        // Also try legacy sync methods for backward compatibility
-        const syncPayload = {
-          tenantId: tenantId,
-          needsOnboarding: false,
-          onboardingCompleted: true,
-          subscriptionPlan: plan.toLowerCase()
-        };
+        const completeResult = await completePaymentResponse.json();
+        logger.info('[PaymentForm] Payment completion successful:', completeResult);
         
-        // Try force-sync first
-        const forceSyncResponse = await fetch('/api/auth/force-sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          
-        credentials: 'include',},
-          credentials: 'include',
-          body: JSON.stringify(syncPayload),
-        });
-        
-        if (forceSyncResponse.ok) {
-          const forceSyncResult = await forceSyncResponse.json();
-          logger.info('[PaymentForm] Legacy force sync successful:', forceSyncResult);
-        } else {
-          // Fallback to regular sync
-          const syncResponse = await fetch('/api/auth/sync-session', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            
-        credentials: 'include',},
-            credentials: 'include',
-            body: JSON.stringify(syncPayload),
-          });
-          
-          if (syncResponse.ok) {
-            const syncResult = await syncResponse.json();
-            logger.info('[PaymentForm] Legacy session sync successful:', syncResult);
-          }
+        // Update tenantId if received from backend
+        if (!tenantId && completeResult.tenant_id) {
+          setTenantId(completeResult.tenant_id);
+          tenantId = completeResult.tenant_id;
         }
         
-        // Wait a moment for session updates to propagate
-        await new Promise(resolve => setTimeout(resolve, 200));
-        
-        // Verify the session was actually updated using v2 endpoint
-        const verifySessionResponse = await fetch('/api/auth/session-v2', {
-          credentials: 'include',
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-        
-        if (verifySessionResponse.ok) {
-          const updatedSession = await verifySessionResponse.json();
-          logger.info('[PaymentForm] Session AFTER update:', {
-            needsOnboarding: updatedSession.user?.needsOnboarding,
-            onboardingCompleted: updatedSession.user?.onboardingCompleted,
-            tenantId: updatedSession.user?.tenantId,
-            hasSessionToken: !!updatedSession.sessionToken
-          });
-        }
-      } catch (syncError) {
-        logger.error('[PaymentForm] Error updating session:', syncError);
+      } catch (error) {
+        logger.error('[PaymentForm] Payment completion failed:', error);
+        setError(error.message || 'Failed to complete payment. Please contact support.');
+        return;
       }
       
       setSuccess(true);
       
-      // Wait a bit longer to ensure cookies are set
-      setTimeout(async () => {
-        logger.info('[PaymentForm] === PREPARING REDIRECT ===');
-        
-        // Use sessionManager-v2 to verify session
-        try {
-          const { sessionManager } = await import('@/utils/sessionManager-v2');
-          const syncedSession = await sessionManager.getSession();
-          
-          if (syncedSession) {
-            logger.info('[PaymentForm] Session synced via SessionManager:', {
-              needsOnboarding: syncedSession.user?.needsOnboarding,
-              onboardingCompleted: syncedSession.user?.onboardingCompleted,
-              tenantId: syncedSession.user?.tenantId,
-              email: syncedSession.user?.email
-            });
-          }
-          
-          // Also check the sync status
-          const syncStatusResponse = await fetch('/api/auth/sync-session', {
-            method: 'GET',
-            credentials: 'include'
-          });
-          
-          if (syncStatusResponse.ok) {
-            const syncStatus = await syncStatusResponse.json();
-            logger.info('[PaymentForm] Sync status check:', syncStatus);
-          }
-          
-          // Session status now handled by v2 system
-          logger.info('[PaymentForm] Using session-v2 system for status checks');
-        } catch (e) {
-          logger.error('[PaymentForm] Error in final checks:', e);
-        }
+      // Brief delay to ensure session updates are complete, then redirect
+      setTimeout(() => {
+        logger.info('[PaymentForm] Redirecting to dashboard after successful payment');
         
         if (tenantId) {
           const redirectUrl = `/${tenantId}/dashboard?welcome=true&payment_completed=true`;
           logger.info('[PaymentForm] Redirecting to tenant dashboard:', redirectUrl);
-          logger.info('[PaymentForm] Tenant ID being used:', tenantId);
-          
-          // Clear any cached data
-          if (window.caches) {
-            window.caches.keys().then(names => {
-              names.forEach(name => {
-                window.caches.delete(name);
-              });
-            });
-          }
-          
-          // Use window.location.href for a full page reload to ensure session is properly refreshed
           window.location.href = redirectUrl;
         } else {
-          // Fallback to regular dashboard if no tenant ID
-          logger.warn('[PaymentForm] No tenant ID available, redirecting to regular dashboard');
-          window.location.href = '/dashboard?welcome=true';
+          logger.warn('[PaymentForm] No tenant ID available, redirecting to general dashboard');
+          window.location.href = '/dashboard?welcome=true&payment_completed=true';
         }
-      }, 3000); // Increased delay to 3 seconds
+      }, 1000); // Reduced from 3000ms to 1000ms
 
     } catch (err) {
       logger.error('Payment error:', err);
