@@ -10,8 +10,12 @@ export const metadata = {
   description: "All-in-one platform for accounting, inventory, HR, and transport management",
   keywords: "accounting, inventory management, HR software, transport management, business software",
   authors: [{ name: "Dott Apps" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#1e40af",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#1e40af',
 };
 
 export default function RootLayout({ children }) {
@@ -23,15 +27,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className={inter.className}>
         {/* Session Heartbeat Component */}
-        <SessionHeartbeat 
-          interval={60000} 
-          onMissedHeartbeat={(count) => {
-            if (count >= 3) {
-              console.warn('[Layout] Multiple heartbeats missed, session may be at risk');
-              // Could trigger session refresh or show warning
-            }
-          }}
-        />
+        <SessionHeartbeat interval={60000} />
         
         {children}
         
