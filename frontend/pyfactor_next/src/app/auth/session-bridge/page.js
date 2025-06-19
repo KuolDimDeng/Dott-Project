@@ -47,33 +47,73 @@ export default function SessionBridge() {
       sessionStorage.removeItem('session_bridge');
       console.log('[SessionBridge] Bridge data cleared from sessionStorage');
 
-      // Submit form programmatically
-      const form = document.getElementById('session-form');
-      console.log('[SessionBridge] Form element found:', !!form);
+      // First, exchange the bridge token for the actual session token
+      console.log('[SessionBridge] Exchanging bridge token for session token...');
       
-      if (form) {
-        // Log all form inputs
-        const formData = new FormData(form);
-        const formEntries = {};
-        for (const [key, value] of formData.entries()) {
-          formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
+      try {
+        const bridgeResponse = await fetch(`/api/auth/bridge-session?token=${encodeURIComponent(token)}`);
+        
+        if (!bridgeResponse.ok) {
+          console.error('[SessionBridge] Failed to exchange bridge token:', bridgeResponse.status);
+          router.push('/auth/signin?error=bridge_exchange_failed');
+          return;
         }
         
-        console.log('[SessionBridge] Submitting form with data:', {
-          action: form.action,
-          method: form.method,
-          tokenLength: token?.length,
-          formData: formEntries
+        const bridgeResult = await bridgeResponse.json();
+        console.log('[SessionBridge] Bridge exchange result:', {
+          success: bridgeResult.success,
+          hasSessionToken: !!bridgeResult.sessionToken,
+          email: bridgeResult.email,
+          tenantId: bridgeResult.tenantId
         });
         
-        // Add a small delay to ensure form is ready
-        setTimeout(() => {
-          console.log('[SessionBridge] Actually submitting form now');
-          form.submit();
-        }, 100);
-      } else {
-        console.error('[SessionBridge] Form element not found!');
-        router.push('/auth/signin?error=form_not_found');
+        if (!bridgeResult.success || !bridgeResult.sessionToken) {
+          console.error('[SessionBridge] No session token in bridge response');
+          router.push('/auth/signin?error=no_session_token');
+          return;
+        }
+        
+        // Now use the actual session token
+        const sessionToken = bridgeResult.sessionToken;
+        
+        // Submit form programmatically with the real session token
+        const form = document.getElementById('session-form');
+        console.log('[SessionBridge] Form element found:', !!form);
+        
+        if (form) {
+          // Update the token input with the real session token
+          const tokenInput = form.querySelector('input[name="token"]');
+          if (tokenInput) {
+            tokenInput.value = sessionToken;
+          }
+          
+          // Log all form inputs
+          const formData = new FormData(form);
+          const formEntries = {};
+          for (const [key, value] of formData.entries()) {
+            formEntries[key] = key === 'token' ? `${value.substring(0, 20)}...` : value;
+          }
+          
+          console.log('[SessionBridge] Submitting form with data:', {
+            action: form.action,
+            method: form.method,
+            tokenLength: sessionToken?.length,
+            isUUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionToken),
+            formData: formEntries
+          });
+          
+          // Add a small delay to ensure form is ready
+          setTimeout(() => {
+            console.log('[SessionBridge] Actually submitting form now');
+            form.submit();
+          }, 100);
+        } else {
+          console.error('[SessionBridge] Form element not found!');
+          router.push('/auth/signin?error=form_not_found');
+        }
+      } catch (error) {
+        console.error('[SessionBridge] Error exchanging bridge token:', error);
+        router.push('/auth/signin?error=bridge_error');
       }
     } catch (error) {
       console.error('[SessionBridge] Error processing bridge data:', error);

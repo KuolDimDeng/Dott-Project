@@ -256,19 +256,26 @@ export default function EmailPasswordSignIn() {
 
       const sessionResult = await sessionResponse.json();
       
+      logger.info('[EmailPasswordSignIn] Session response:', {
+        success: sessionResult.success,
+        hasUser: !!sessionResult.user,
+        hasTenant: !!sessionResult.tenant,
+        needsOnboarding: sessionResult.needs_onboarding
+      });
+      
       // Check if session was created successfully
       if (!sessionResult.success) {
         throw new Error('Failed to create session');
       }
       
-      // Create bridge token for immediate availability
+      // Create bridge token for immediate availability using the real session token
       const bridgeResponse = await fetch('/api/auth/bridge-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionToken: authResult.access_token,
+          sessionToken: sessionResult.session_token, // Use the actual session token from backend
           userId: authResult.user.sub,
-          tenantId: authResult.user.tenantId || authResult.user.tenant_id,
+          tenantId: sessionResult.tenant?.id || authResult.user.tenantId || authResult.user.tenant_id,
           email: authResult.user.email
         })
       });
@@ -321,10 +328,12 @@ export default function EmailPasswordSignIn() {
         }
         
         // For non-onboarding flows, use secure session bridge
-        if (!finalUserData.needsOnboarding && authResult.access_token) {
-          // Store session data in sessionStorage for bridge
+        if (!finalUserData.needsOnboarding && bridgeToken) {
+          logger.info('[EmailPasswordSignIn] Using bridge token for session handoff');
+          
+          // Store bridge token in sessionStorage for bridge
           const bridgeData = {
-            token: authResult.access_token,
+            token: bridgeToken, // This is the bridge token from backend, NOT the JWT
             redirectUrl: redirectUrl,
             timestamp: Date.now()
           };
@@ -333,8 +342,12 @@ export default function EmailPasswordSignIn() {
           
           // Redirect to session bridge
           router.push('/auth/session-bridge');
+        } else if (!finalUserData.needsOnboarding && !bridgeToken) {
+          // Fallback: direct redirect if bridge token creation failed
+          logger.warn('[EmailPasswordSignIn] No bridge token available, using direct redirect');
+          router.push(redirectUrl);
         } else {
-          // Direct redirect for onboarding
+          // Direct redirect for onboarding (doesn't need session bridge)
           router.push(redirectUrl);
         }
         

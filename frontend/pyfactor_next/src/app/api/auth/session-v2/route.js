@@ -100,8 +100,11 @@ export async function POST(request) {
     const sessionData = await authResponse.json();
     console.log('[Session-V2] Backend session created:', { 
       session_token: sessionData.session_token?.substring(0, 8) + '...',
+      session_token_length: sessionData.session_token?.length,
       expires_at: sessionData.expires_at,
-      needs_onboarding: sessionData.needs_onboarding
+      needs_onboarding: sessionData.needs_onboarding,
+      user_email: sessionData.user?.email,
+      tenant_id: sessionData.tenant?.id
     });
     
     // Set session cookie with the session token from Django
@@ -109,7 +112,8 @@ export async function POST(request) {
       success: true,
       user: sessionData.user,
       tenant: sessionData.tenant,
-      needs_onboarding: sessionData.needs_onboarding
+      needs_onboarding: sessionData.needs_onboarding,
+      session_token: sessionData.session_token // Include session token in response
     });
     
     response.cookies.set('sid', sessionData.session_token, {

@@ -18,9 +18,33 @@ export async function POST(request) {
       ? 'https://dottapps.com' 
       : request.url.split('/').slice(0, 3).join('/');
     
+    console.log('[EstablishSession] Form data received:', {
+      hasToken: !!token,
+      tokenType: typeof token,
+      tokenLength: token ? token.length : 0,
+      tokenPreview: token ? token.substring(0, 50) + '...' : 'none',
+      redirectUrl: redirectUrl
+    });
+    
     if (!token) {
       console.error('[EstablishSession] No token provided');
       return NextResponse.redirect(new URL('/auth/email-signin?error=no_token', baseUrl));
+    }
+    
+    // Check if token looks like a UUID (session token) vs JWT
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
+    const isJWT = token.startsWith('eyJ');
+    
+    console.log('[EstablishSession] Token analysis:', {
+      isUUID: isUUID,
+      isJWT: isJWT,
+      tokenLength: token.length
+    });
+    
+    if (isJWT) {
+      console.error('[EstablishSession] ERROR: Received JWT token instead of session token!');
+      console.error('[EstablishSession] This should be a UUID session token from the backend');
+      return NextResponse.redirect(new URL('/auth/email-signin?error=invalid_token_type', baseUrl));
     }
     
     console.log('[EstablishSession] Processing session token...');
