@@ -344,7 +344,7 @@ export async function POST(request) {
       
       console.log('🚨 [BUSINESS-INFO API] ABOUT TO CALL DJANGO BACKEND');
       console.log('🚨 [BUSINESS-INFO API] Access token exists:', !!accessToken);
-      console.log('🚨 [BUSINESS-INFO API] Backend URL:', `${apiBaseUrl}/api/onboarding/business-info/`);
+      console.log('🚨 [BUSINESS-INFO API] Backend URL:', `${apiBaseUrl}/api/onboarding/save-business-info/`);
       
       // Forward authenticated request to Django backend
       const headers = {
@@ -363,7 +363,7 @@ export async function POST(request) {
         console.warn('[api/onboarding/business-info] No auth token available for backend');
       }
       
-      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
         method: 'POST',
         headers,
         body: JSON.stringify(businessData),

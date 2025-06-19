@@ -56,7 +56,7 @@ from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.exceptions import TokenError
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
-from session_manager.authentication import SessionAuthentication as SessionTokenAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
 
 
 
@@ -307,7 +307,7 @@ async def get_task_status(task_id: str) -> dict:
 class BaseOnboardingView(APIView):
     """Base view for all onboarding-related views with proper authentication handling"""
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 

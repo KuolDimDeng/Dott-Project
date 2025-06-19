@@ -13,6 +13,7 @@ import asyncio
 from asgiref.sync import sync_to_async
 
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
 from custom_auth.models import Tenant
 from custom_auth.rls import setup_tenant_context_in_db, setup_tenant_context_in_db_async
 from custom_auth.rls import set_tenant_in_db, set_tenant_in_db_async
@@ -29,7 +30,7 @@ class SubscriptionSaveView(APIView):
     for both free and paid tiers.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     

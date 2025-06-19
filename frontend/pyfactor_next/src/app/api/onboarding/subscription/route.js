@@ -254,7 +254,7 @@ export async function POST(request) {
       console.log('[api/onboarding/subscription] Forwarding to Django backend with session token');
       
       // Forward authenticated request to Django backend
-      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/save/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
