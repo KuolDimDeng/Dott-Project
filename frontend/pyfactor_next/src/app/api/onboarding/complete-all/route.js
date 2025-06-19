@@ -635,7 +635,14 @@ export async function POST(request) {
         if (adminFixResponse.ok) {
           console.log('[CompleteOnboarding] ✅ Admin fix endpoint succeeded');
         } else {
-          console.error('[CompleteOnboarding] ❌ Admin fix failed:', await adminFixResponse.text());
+          // Clone the response to avoid "Body has already been consumed" error
+          const responseClone = adminFixResponse.clone();
+          try {
+            const errorText = await responseClone.text();
+            console.error('[CompleteOnboarding] ❌ Admin fix failed:', errorText);
+          } catch (textError) {
+            console.error('[CompleteOnboarding] ❌ Admin fix failed with status:', adminFixResponse.status);
+          }
         }
         
       } catch (error) {

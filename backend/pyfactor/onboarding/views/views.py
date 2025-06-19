@@ -942,7 +942,7 @@ class StartOnboardingView(BaseOnboardingView):
     permission_classes = [SetupEndpointPermission]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
-    authentication_classes = [Auth0JWTAuthentication]  # Add proper authentication
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]  # Add proper authentication
 
     def dispatch(self, request, *args, **kwargs):
         """Handle preflight requests and add CORS headers"""
@@ -2824,7 +2824,7 @@ class SaveStep2View(APIView):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([Auth0JWTAuthentication])
+@authentication_classes([SessionTokenAuthentication, Auth0JWTAuthentication])
 async def get_schema_status(request):
     try:
         if not request.user.tenant:
@@ -2943,7 +2943,7 @@ def check_schema_setup(tenant_id: uuid.UUID):
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-@authentication_classes([Auth0JWTAuthentication])
+@authentication_classes([SessionTokenAuthentication, Auth0JWTAuthentication])
 async def cancel_task(request, task_id: str):
     """
     Cancel a running Celery task
@@ -2989,7 +2989,7 @@ class SetupStatusView(BaseOnboardingView):
     """
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -3227,7 +3227,7 @@ class SetupStatusCheckView(APIView):
     View to check the status of a background schema setup task.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     
     def get(self, request, task_id):
         """
@@ -3821,7 +3821,7 @@ def update_session(request):
 # Add CheckOnboardingStatusView class
 class CheckOnboardingStatusView(APIView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
 
@@ -4132,7 +4132,7 @@ def update_session(request):
 
 class SaveStep3View(BaseOnboardingView):
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -4375,7 +4375,7 @@ class SaveStep4View(BaseOnboardingView):
     """
 
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     

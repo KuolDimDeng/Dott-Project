@@ -18,6 +18,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated
 
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
 from custom_auth.models import User
 from onboarding.models import OnboardingProgress
 from onboarding.services.redis_session import onboarding_session_service
@@ -33,7 +34,7 @@ class OnboardingStatusAPI(APIView):
     with Redis for session management and PostgreSQL with RLS for secure data storage.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -311,7 +312,7 @@ class CompleteOnboardingAPI(APIView):
     and triggers necessary setup processes.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     
@@ -425,7 +426,7 @@ class ResumeOnboardingAPI(APIView):
     information to resume the onboarding process from where they left off.
     """
     permission_classes = [IsAuthenticated]
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     renderer_classes = [JSONRenderer]
     parser_classes = [JSONParser]
     

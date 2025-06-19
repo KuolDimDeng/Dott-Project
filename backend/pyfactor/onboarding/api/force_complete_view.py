@@ -13,7 +13,8 @@ from django.utils import timezone
 from django.db import transaction
 import logging
 
-from custom_auth.authentication import Auth0JWTAuthentication
+from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
 from onboarding.models import OnboardingProgress
 from session_manager.models import UserSession
 
@@ -25,7 +26,7 @@ class ForceCompleteOnboardingView(APIView):
     Force complete onboarding for authenticated users.
     This endpoint ensures the backend properly marks onboarding as complete.
     """
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from core.authentication.session_token_auth import SessionTokenAuthentication
 from onboarding.models import OnboardingProgress
 from django.utils import timezone
 
@@ -20,7 +21,7 @@ class OnboardingStatusView(APIView):
     Get current onboarding status from database
     This is the SINGLE SOURCE OF TRUTH for onboarding status
     """
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -81,7 +82,7 @@ class ForceCompleteOnboardingView(APIView):
     Force complete onboarding for a user
     This ensures the database is updated correctly
     """
-    authentication_classes = [Auth0JWTAuthentication]
+    authentication_classes = [SessionTokenAuthentication, Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
     def post(self, request):

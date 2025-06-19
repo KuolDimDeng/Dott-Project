@@ -43,11 +43,11 @@ class SessionManagerV2Enhanced {
     const startTime = performance.now();
     const sessionId = this.getSessionIdFromCookie();
     
-    console.log('[SessionManager] Session ID from cookie:', sessionId);
+    console.debug('[SessionManager] Session ID from cookie:', sessionId);
     
     if (!sessionId) {
       this.recordMetric('cache_miss', startTime);
-      console.log('[SessionManager] No session ID, returning unauthenticated');
+      console.debug('[SessionManager] No session ID, returning unauthenticated (expected - session managed server-side)');
       return { authenticated: false, user: null };
     }
 
@@ -404,7 +404,7 @@ class SessionManagerV2Enhanced {
         return value;
       }
     }
-    console.log('[SessionManager] No sid or session_token found in cookies');
+    console.debug('[SessionManager] No sid or session_token found in cookies (expected - cookies are httpOnly for security)');
     return null;
   }
 
