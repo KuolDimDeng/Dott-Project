@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                 ('is_blocked', models.BooleanField(default=False)),
                 ('blocked_reason', models.TextField(blank=True, null=True)),
                 ('blocked_at', models.DateTimeField(blank=True, null=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='device_fingerprints', to='custom_auth.customuser')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='device_fingerprints', to='custom_auth.user')),
             ],
             options={
                 'db_table': 'device_fingerprints',
@@ -89,7 +89,7 @@ class Migration(migrations.Migration):
                 ('revoked_at', models.DateTimeField(blank=True, null=True)),
                 ('revoked_reason', models.TextField(blank=True, null=True)),
                 ('device_fingerprint', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='session_manager.devicefingerprint')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='trusted_devices', to='custom_auth.customuser')),
+                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='trusted_devices', to='custom_auth.user')),
             ],
             options={
                 'db_table': 'device_trust',
