@@ -318,8 +318,7 @@ export async function POST(request) {
               tenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
             }
           } else {
-            const errorText = await completeResponse.text();
-            console.error('[CompleteOnboarding] ❌ Failed to mark onboarding complete:', errorText);
+            console.error('[CompleteOnboarding] ❌ Failed to mark onboarding complete, status:', completeResponse.status);
             // Don't fail the whole process, continue with session update
           }
           
@@ -372,15 +371,13 @@ export async function POST(request) {
               const forceResult = await forceCompleteResponse.json();
               console.log('[CompleteOnboarding] ✅ Force complete successful:', forceResult);
             } else {
-              const errorText = await forceCompleteResponse.text();
-              console.error('[CompleteOnboarding] ❌ Force complete failed:', errorText);
+              console.error('[CompleteOnboarding] ❌ Force complete failed, status:', forceCompleteResponse.status);
             }
           } catch (error) {
             console.error('[CompleteOnboarding] ❌ Force complete error:', error);
           }
         } else {
-          const errorText = await businessResponse.text();
-          console.error('[CompleteOnboarding] Business info submission failed:', errorText);
+          console.error('[CompleteOnboarding] Business info submission failed, status:', businessResponse.status);
           return NextResponse.json({
             success: false,
             error: 'Failed to submit business information',
@@ -616,7 +613,7 @@ export async function POST(request) {
           const updateResult = await backendUpdateResponse.json();
           console.log('[CompleteOnboarding] ✅ Backend user status updated:', updateResult);
         } else {
-          console.error('[CompleteOnboarding] ❌ User status update failed:', await backendUpdateResponse.text());
+          console.error('[CompleteOnboarding] ❌ User status update failed, status:', backendUpdateResponse.status);
         }
         
         // Method 2: Call the admin fix endpoint as fallback
