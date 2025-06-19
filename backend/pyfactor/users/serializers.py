@@ -94,7 +94,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         Safely retrieves business name with error handling.
         """
         try:
-            return obj.business.business_name if obj.business else None
+            return obj.business.name if obj.business else None
         except Exception as e:
             logger.error(f"Error getting business name for profile {obj.id}: {str(e)}")
             return None

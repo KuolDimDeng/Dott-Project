@@ -415,7 +415,7 @@ class AddBusinessMemberView(APIView):
                     role=role
                 )
 
-                logger.info(f"User {email} added to business {business.business_name} with role {role}")
+                logger.info(f"User {email} added to business {business.name} with role {role}")
                 return Response({"detail": f"User {email} added to the business with role {role}."}, status=status.HTTP_201_CREATED)
 
             except Business.DoesNotExist:

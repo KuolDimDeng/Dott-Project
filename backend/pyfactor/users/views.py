@@ -53,7 +53,7 @@ class ProfileView(APIView):
                     logger.info(f"Profile details for {user.email}:", {
                         'schema_name': profile. tenant.id if profile.tenant else None,
                         'has_business': bool(profile.business),
-                        'business_name': profile.business.business_name if profile.business else None,
+                        'business_name': profile.business.name if profile.business else None,
                         'is_business_owner': profile.is_business_owner
                     })
                 else:
