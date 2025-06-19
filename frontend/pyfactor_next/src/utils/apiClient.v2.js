@@ -220,7 +220,10 @@ class ApiClientV2 {
    * Special methods for common operations
    */
   async updateSession(updates) {
-    return this.post('/api/auth/update-session', updates);
+    console.warn('[ApiClient] updateSession is deprecated in session-v2 system');
+    console.warn('[ApiClient] Session updates are handled server-side automatically');
+    console.log('[ApiClient] Requested updates were:', updates);
+    throw new Error('updateSession is deprecated - session updates are handled server-side in session-v2 system');
   }
 
   async completeOnboarding(data) {

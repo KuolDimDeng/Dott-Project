@@ -85,9 +85,10 @@ export default function OnboardingFlowV2() {
       // Update state machine
       await onboardingStateMachine.submitBusinessInfo(data);
       
-      // Update tenant ID if provided
+      // Session updates are handled automatically by backend in session-v2 system
       if (response.tenant_id) {
-        await sessionManager.updateSession({ tenantId: response.tenant_id });
+        // Force session refresh to get updated data
+        sessionManager.clearCache();
       }
       
       setCurrentState(ONBOARDING_STATES.SUBSCRIPTION_SELECTION);
@@ -154,12 +155,9 @@ export default function OnboardingFlowV2() {
       });
       
       if (response.success && response.tenantId) {
-        // Update session
-        await sessionManager.updateSession({
-          tenantId: response.tenantId,
-          needsOnboarding: false,
-          onboardingCompleted: true
-        });
+        // Session updates are handled automatically by backend in session-v2 system
+        // Force session refresh to get updated data
+        sessionManager.clearCache();
         
         // Redirect to dashboard
         router.push(`/${response.tenantId}/dashboard`);

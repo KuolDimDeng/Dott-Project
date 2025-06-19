@@ -489,41 +489,34 @@ class SessionManagerV2Enhanced {
   }
 
   /**
-   * Update session data
+   * Clear all caches to force fresh data fetch
+   */
+  clearCache(sessionId = null) {
+    if (sessionId) {
+      // Clear specific session
+      this.cache.delete(sessionId);
+      this.cacheTTL.delete(sessionId);
+    } else {
+      // Clear all caches
+      this.cache.clear();
+      this.cacheTTL.clear();
+    }
+    console.log('[SessionManager] Cache cleared');
+  }
+
+  /**
+   * Update session data (deprecated - session updates handled server-side)
+   * The session-v2 system is server-side only. Session updates should happen
+   * automatically through backend API calls during onboarding/business operations.
    */
   async updateSession(updates) {
-    console.log('[SessionManager] updateSession called with:', updates);
-    const sessionId = this.getSessionIdFromCookie();
+    console.warn('[SessionManager] updateSession is deprecated in session-v2 system');
+    console.warn('[SessionManager] Session updates are handled server-side automatically');
+    console.log('[SessionManager] Requested updates were:', updates);
     
-    if (!sessionId) {
-      throw new Error('No session to update');
-    }
-
-    try {
-      const response = await fetch('/api/session', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(updates)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update session: ${response.status}`);
-      }
-
-      const updatedSession = await response.json();
-      
-      // Update caches
-      if (updatedSession) {
-        this.setLocalCache(sessionId, updatedSession);
-        this.setRedisCache(sessionId, updatedSession).catch(console.warn);
-      }
-
-      return updatedSession;
-    } catch (error) {
-      console.error('[SessionManager] Update session error:', error);
-      throw error;
-    }
+    // For compatibility, just clear cache to force refresh from backend
+    this.clearCache();
+    return await this.getSession();
   }
 }
 
