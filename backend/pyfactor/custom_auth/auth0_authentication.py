@@ -416,6 +416,12 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             if auth_type.lower() not in ['bearer', 'session']:
                 logger.debug(f"❌ Invalid auth type: {auth_type} (expected: Bearer or Session)")
                 return None
+                
+            # If it's a Session token and not a JWT (doesn't have dots), skip this authenticator
+            if auth_type.lower() == 'session' and '.' not in token:
+                logger.debug(f"🔍 Session token detected (not JWT), skipping Auth0 authentication")
+                return None
+                
             return token
         except ValueError as e:
             logger.error(f"❌ Error parsing Authorization header: {e}")
