@@ -335,18 +335,30 @@ class EnhancedRowLevelSecurityMiddleware:
         else:
             # Try Session authentication first
             auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-            if auth_header.startswith('Session '):
-                logger.debug(f"🔍 Attempting Session authentication for: {request.path}")
+            if auth_header.startswith('Session ') or auth_header.startswith('Bearer '):
+                logger.debug(f"🔍 Attempting Session token authentication for: {request.path}")
                 try:
-                    from session_manager.authentication import SessionAuthentication
-                    session_auth = SessionAuthentication()
-                    session_result = session_auth.authenticate(request)
+                    # Try our new SessionTokenAuthentication first
+                    from core.authentication.session_token_auth import SessionTokenAuthentication
+                    session_token_auth = SessionTokenAuthentication()
+                    session_result = session_token_auth.authenticate(request)
                     if session_result:
                         user, session = session_result
                         auth_result = (user, session)
-                        logger.info(f"✅ Session authentication successful for: {request.path}")
+                        logger.info(f"✅ Session token authentication successful for: {request.path}")
                 except Exception as e:
-                    logger.debug(f"Session auth failed: {e}")
+                    logger.debug(f"Session token auth failed: {e}")
+                    # Fallback to original session auth
+                    try:
+                        from session_manager.authentication import SessionAuthentication
+                        session_auth = SessionAuthentication()
+                        session_result = session_auth.authenticate(request)
+                        if session_result:
+                            user, session = session_result
+                            auth_result = (user, session)
+                            logger.info(f"✅ Session authentication successful for: {request.path}")
+                    except Exception as e2:
+                        logger.debug(f"Session auth failed: {e2}")
             
             # If no session auth, try Auth0
             if not auth_result:

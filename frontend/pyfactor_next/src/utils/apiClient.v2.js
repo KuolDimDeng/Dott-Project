@@ -53,18 +53,18 @@ class ApiClientV2 {
     });
     
     if (session?.authenticated) {
-      // For v2 onboarding, we need to pass the access token if available
-      // Session tokens are for backend session management, not API auth
-      if (session.accessToken) {
+      // For v2 onboarding, we need to pass the session token
+      // Django backend now accepts Session tokens via SessionTokenAuthentication
+      if (session.sessionToken) {
+        requestOptions.headers['Authorization'] = `Session ${session.sessionToken}`;
+        logger.debug('[ApiClient] Added session token to Authorization header');
+      } else if (session.accessToken) {
+        // Fallback to access token if no session token
         requestOptions.headers['Authorization'] = `Bearer ${session.accessToken}`;
-        logger.debug('[ApiClient] Added access token to Authorization header');
-      } else if (session.sessionToken && session.sessionToken.includes('.')) {
-        // If sessionToken looks like a JWT (has dots), use it
-        requestOptions.headers['Authorization'] = `Bearer ${session.sessionToken}`;
-        logger.debug('[ApiClient] Added JWT-like session token to Authorization header');
+        logger.debug('[ApiClient] Added access token to Authorization header (fallback)');
       } else {
         // Fallback: rely on cookies for authentication
-        logger.debug('[ApiClient] Session is authenticated, relying on cookies (no access token available)');
+        logger.debug('[ApiClient] Session is authenticated, relying on cookies (no session/access token available)');
       }
     }
 
