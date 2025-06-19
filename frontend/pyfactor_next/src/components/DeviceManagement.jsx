@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 import { formatDistanceToNow } from 'date-fns';
 
 const DeviceManagement = () => {

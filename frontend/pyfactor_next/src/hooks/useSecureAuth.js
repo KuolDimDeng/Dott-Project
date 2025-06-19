@@ -6,7 +6,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import deviceFingerprint from '@/utils/deviceFingerprint';
-import { useSession } from '@/hooks/useSession';
+import { useSession } from '@/hooks/useSession-v2';
 
 export const useSecureAuth = () => {
   const router = useRouter();
