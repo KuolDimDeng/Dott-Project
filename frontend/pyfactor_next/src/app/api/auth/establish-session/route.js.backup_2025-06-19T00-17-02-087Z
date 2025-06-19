@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import deviceFingerprint from '@/utils/deviceFingerprint';
 
 /**
- * Enhanced Establish Session Endpoint
- * Includes device fingerprinting and security features
+ * Establish Session Endpoint
+ * Receives session token from session bridge and sets secure cookies
  */
 
 export async function POST(request) {
@@ -25,22 +24,12 @@ export async function POST(request) {
     
     console.log('[EstablishSession] Processing session token...');
     
-    // Collect device fingerprint from headers
-    const fingerprintData = {
-      userAgent: request.headers.get('user-agent') || '',
-      ipAddress: request.headers.get('x-forwarded-for')?.split(',')[0] || 
-                  request.headers.get('x-real-ip') || 
-                  'unknown',
-      // Additional fingerprint data would come from client-side
-    };
-    
     // Get session details from Django using the token
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
         'Authorization': `SessionID ${token}`,
-        'Cookie': `session_token=${token}`,
-        'X-Device-Fingerprint': JSON.stringify(fingerprintData)
+        'Cookie': `session_token=${token}`
       }
     });
     
@@ -53,15 +42,8 @@ export async function POST(request) {
     console.log('[EstablishSession] Session validated:', {
       email: sessionData.email,
       tenantId: sessionData.tenant_id,
-      needsOnboarding: sessionData.needs_onboarding,
-      securityInfo: sessionData.security
+      needsOnboarding: sessionData.needs_onboarding
     });
-    
-    // Check security status
-    if (sessionData.security?.requires_verification) {
-      console.warn('[EstablishSession] Session requires additional verification');
-      // Could redirect to verification page
-    }
     
     // Create response with redirect
     const finalRedirectUrl = redirectUrl.startsWith('http') 
@@ -87,21 +69,7 @@ export async function POST(request) {
       path: '/'
     });
     
-    // Set security info cookie (non-httpOnly for client access)
-    if (sessionData.security) {
-      response.cookies.set('session_security', JSON.stringify({
-        riskScore: sessionData.security.risk_score,
-        deviceTrusted: sessionData.security.device_trusted,
-        requiresVerification: sessionData.security.requires_verification
-      }), {
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        expires: new Date(sessionData.expires_at),
-        path: '/'
-      });
-    }
-    
-    console.log('[EstablishSession] Enhanced session established, redirecting to:', redirectUrl);
+    console.log('[EstablishSession] Session established, redirecting to:', redirectUrl);
     
     return response;
     

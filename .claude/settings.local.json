@@ -92,7 +92,8 @@
       "WebFetch(domain:www.waveapps.com)",
       "Bash(./scripts/test_session_locally.sh:*)",
       "Bash(rg:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(./scripts/update_signin_form.sh:*)"
     ],
     "deny": []
   }
