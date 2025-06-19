@@ -1,4 +1,4 @@
-from django.contrib import admin
+# from django.contrib import admin  # Disabled - requires Django sessions
 from django.urls import path, include, register_converter
 from django.conf import settings
 from django.conf.urls.static import static
@@ -25,7 +25,7 @@ register_converter(UUIDConverter, 'uuid')
 # Minimal URL patterns for health check only
 urlpatterns = [
     # Admin interface
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),  # Disabled - requires Django sessions
     
     # Health check endpoints for AWS and Render
     path('health/', health_check, name='health_check'),
