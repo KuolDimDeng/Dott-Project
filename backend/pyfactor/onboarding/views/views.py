@@ -1811,8 +1811,11 @@ class SaveStep1View(APIView):
             connection.set_autocommit(True)
             
             # Validate request data
-            serializer = BusinessInfoSerializer(data=request.data)
+            logger.info(f"Request data received: {request.data}")
+            serializer = BusinessInfoSerializer(data=request.data, context={'request': request})
             if not serializer.is_valid():
+                logger.error(f"Validation failed with errors: {serializer.errors}")
+                logger.error(f"Request data was: {request.data}")
                 return Response({
                     'success': False,
                     'message': 'Validation failed',
