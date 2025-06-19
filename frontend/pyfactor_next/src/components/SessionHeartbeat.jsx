@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * Session Heartbeat Component
  * Maintains session health by sending periodic heartbeats
