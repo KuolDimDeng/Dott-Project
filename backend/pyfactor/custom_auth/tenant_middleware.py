@@ -256,7 +256,6 @@ from custom_auth.rls import set_current_tenant_id, tenant_context
             try:
                 # Reset search path to public
                 with connection.cursor() as cursor:
-                    cursor.execute('-- RLS: No need to set search_path with tenant-aware context
-    -- Original: SET search_path TO public')
+                    cursor.execute("-- RLS: No need to set search_path with tenant-aware context\n-- Original: SET search_path TO public")
             except Exception as e:
                 logger.error(f"[TENANT-{request_id}] Error resetting search path: {str(e)}")
