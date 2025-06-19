@@ -394,16 +394,17 @@ class SessionManagerV2Enhanced {
       return null;
     }
     
-    console.log('[SessionManager] Looking for session_token in cookies:', document.cookie);
+    console.log('[SessionManager] Looking for sid in cookies:', document.cookie);
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
-      if (name === 'session_token') {
-        console.log('[SessionManager] Found session_token:', value);
+      // Look for either 'sid' or 'session_token' (for backward compatibility)
+      if (name === 'sid' || name === 'session_token') {
+        console.log(`[SessionManager] Found ${name}:`, value);
         return value;
       }
     }
-    console.log('[SessionManager] No session_token found in cookies');
+    console.log('[SessionManager] No sid or session_token found in cookies');
     return null;
   }
 

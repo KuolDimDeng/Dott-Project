@@ -27,12 +27,12 @@ async function validateAuth0Session(request) {
   try {
     console.log('[CompleteOnboarding] Validating session with new token system');
     
-    // Get session token from cookies
+    // Get session token from cookies (check both sid and session_token)
     const cookieStore = await cookies();
-    const sessionToken = cookieStore.get('session_token');
+    const sessionToken = cookieStore.get('session_token') || cookieStore.get('sid');
     
     if (!sessionToken) {
-      console.log('[CompleteOnboarding] No session_token cookie found');
+      console.log('[CompleteOnboarding] No session_token or sid cookie found');
       return { isAuthenticated: false, error: 'No session token found', user: null };
     }
     

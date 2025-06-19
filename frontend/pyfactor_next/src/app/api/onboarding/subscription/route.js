@@ -38,7 +38,7 @@ async function validateAuthentication(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
-    const sessionTokenCookie = cookieStore.get('session_token');
+    const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid'); // Check both cookie names
     
     if (sessionCookie) {
       try {
@@ -242,32 +242,23 @@ export async function POST(request) {
     }
 
     try {
-      // Get Auth0 access token for backend authentication
+      // Use session token for backend authentication
       const cookieStore = await cookies();
-      const sessionCookie = cookieStore.get('appSession');
-      let accessToken = null;
+      const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid');
       
-      if (sessionCookie) {
-        try {
-          const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-          accessToken = sessionData.accessToken;
-        } catch (parseError) {
-          console.error('[api/onboarding/subscription] Error parsing session for token:', parseError);
-        }
+      if (!sessionTokenCookie) {
+        console.warn('[api/onboarding/subscription] No session token found, cannot communicate with backend');
+        throw new Error('No valid session token found for backend authentication');
       }
       
-      if (!accessToken) {
-        throw new Error('No valid access token found for backend authentication');
-      }
-      
-      console.log('[api/onboarding/subscription] Forwarding to Django backend with Auth0 token');
+      console.log('[api/onboarding/subscription] Forwarding to Django backend with session token');
       
       // Forward authenticated request to Django backend
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Session ${sessionTokenCookie.value}`,
           'X-User-Email': authenticatedUser.email,
           'X-Request-ID': `frontend-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           'X-Source': 'nextjs-api-route'
@@ -314,7 +305,7 @@ export async function POST(request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${accessToken}`,
+              'Authorization': `Session ${sessionTokenCookie.value}`,
               'X-User-Email': authenticatedUser.email,
               'X-Request-ID': `onboarding-complete-${Date.now()}`,
               'X-Source': 'free-plan-auto-complete'

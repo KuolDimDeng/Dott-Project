@@ -41,7 +41,7 @@ async function validateAuthentication(request) {
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
-    const sessionTokenCookie = cookieStore.get('session_token');
+    const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid'); // Check both cookie names
     
     console.log('🚨 [BUSINESS-INFO API] Cookie debug:', {
       hasDottAuthSession: !!dottSessionCookie,
@@ -355,7 +355,7 @@ export async function POST(request) {
       };
       
       // Use session token if available (preferred for backend compatibility)
-      const sessionTokenCookie = cookieStore.get('session_token');
+      const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid');
       if (sessionTokenCookie) {
         headers['Authorization'] = `Session ${sessionTokenCookie.value}`;
         console.log('[api/onboarding/business-info] Using Session token for backend auth');
