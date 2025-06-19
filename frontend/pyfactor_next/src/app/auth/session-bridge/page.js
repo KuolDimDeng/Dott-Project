@@ -7,20 +7,21 @@ export default function SessionBridge() {
   const router = useRouter();
 
   useEffect(() => {
-    console.log('[SessionBridge] Component mounted');
-    
-    // Get session data from sessionStorage (set during login)
-    const bridgeData = sessionStorage.getItem('session_bridge');
-    console.log('[SessionBridge] Bridge data exists:', !!bridgeData);
-    
-    if (!bridgeData) {
-      console.error('[SessionBridge] No bridge data found in sessionStorage');
-      console.log('[SessionBridge] SessionStorage keys:', Object.keys(sessionStorage));
-      router.push('/auth/signin?error=no_bridge_data');
-      return;
-    }
+    const processBridge = async () => {
+      console.log('[SessionBridge] Component mounted');
+      
+      // Get session data from sessionStorage (set during login)
+      const bridgeData = sessionStorage.getItem('session_bridge');
+      console.log('[SessionBridge] Bridge data exists:', !!bridgeData);
+      
+      if (!bridgeData) {
+        console.error('[SessionBridge] No bridge data found in sessionStorage');
+        console.log('[SessionBridge] SessionStorage keys:', Object.keys(sessionStorage));
+        router.push('/auth/signin?error=no_bridge_data');
+        return;
+      }
 
-    try {
+      try {
       const parsed = JSON.parse(bridgeData);
       console.log('[SessionBridge] Parsed bridge data:', {
         hasToken: !!parsed.token,
@@ -119,6 +120,9 @@ export default function SessionBridge() {
       console.error('[SessionBridge] Error processing bridge data:', error);
       router.push('/auth/signin?error=bridge_error');
     }
+    };
+    
+    processBridge();
   }, [router]);
 
   // Get bridge data for form
