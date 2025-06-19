@@ -598,7 +598,7 @@ os.makedirs(os.path.join(BASE_DIR, 'logs'), exist_ok=True)
 # Configure Django REST Framework for Auth0 Authentication
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'core.authentication.SessionTokenAuthentication',  # Primary: Custom session auth (accepts Session/Bearer)
+        'core.authentication.session_token_auth.SessionTokenAuthentication',  # Primary: Custom session auth (accepts Session/Bearer)
         'session_manager.authentication.SessionAuthentication',  # Fallback: Original session auth
         'custom_auth.auth0_authentication.Auth0JWTAuthentication',  # Secondary: Auth0 JWT
         # Removed rest_framework.authentication.SessionAuthentication - using only custom sessions
