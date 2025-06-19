@@ -61,7 +61,7 @@ def fix_all_incomplete_onboarding():
             # Fix users who have completed all steps but still marked as needs_onboarding
             if has_tenant and (all_steps_complete or payment_completed):
                 print(f"✅ Fixing user: {user.email}")
-                print(f"   - Tenant: {user.tenant.business_name if user.tenant else 'None'}")
+                print(f"   - Tenant: {user.tenant.name if user.tenant else 'None'}")
                 print(f"   - Current needs_onboarding: {user.needs_onboarding}")
                 
                 with transaction.atomic():

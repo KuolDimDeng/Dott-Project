@@ -34,7 +34,7 @@ def fix_user_onboarding(email):
         print(f"   - Has tenant: {user.tenant is not None}")
         
         if user.tenant:
-            print(f"   - Tenant: {user.tenant.business_name}")
+            print(f"   - Tenant: {user.tenant.name}")
             print(f"   - Tenant ID: {user.tenant.id}")
         
         # Check onboarding progress

@@ -1089,7 +1089,7 @@ class StartOnboardingView(BaseOnboardingView):
                     # Create a default business first
                     business = Business.objects.create(
                         owner=user,
-                        business_name=f"{user.first_name}'s Business",
+                        name=f"{user.first_name}'s Business",
                         business_type='default'
                     )
                     
@@ -1133,7 +1133,7 @@ class StartOnboardingView(BaseOnboardingView):
                         
                         business = Business.objects.create(
                             owner=user,
-                            business_name=f"{user.first_name}'s Business",
+                            name=f"{user.first_name}'s Business",
                             business_type='default'
                         )
                         profile = UserProfile.objects.create(
@@ -1232,7 +1232,7 @@ class StartOnboardingView(BaseOnboardingView):
                         
                         business = Business.objects.create(
                             owner=request.user,
-                            business_name=f"{request.user.first_name}'s Business",
+                            name=f"{request.user.first_name}'s Business",
                             business_type='default'
                         )
                         # Update profile in a separate query to avoid deadlocks
@@ -2132,7 +2132,7 @@ class SaveStep1View(APIView):
                                     """, [
                                         str(business_id),
                                         business_num,
-                                        serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
+                                        serializer.validated_data['name'],
                                         serializer.validated_data['business_type'],
                                         now,
                                         now,
@@ -2346,7 +2346,7 @@ class SaveStep1View(APIView):
                 'schema_name': schema_name,  # Store the schema name
                 'business_data': {
                     'business_num': business_num,
-                    'business_name': serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
+                    'business_name': serializer.validated_data['name'],
                     'business_type': serializer.validated_data['business_type'],
                     'country': str(serializer.validated_data['country']),
                     'legal_structure': serializer.validated_data['legal_structure'],
@@ -2378,7 +2378,7 @@ class SaveStep1View(APIView):
                     "businessInfo": {
                         "id": str(business_id),
                         "business_num": business_num,
-                        "business_name": serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
+                        "business_name": serializer.validated_data['name'],
                         "business_type": serializer.validated_data['business_type'],
                         "country": serializer.validated_data['country'].code if hasattr(serializer.validated_data['country'], 'code') else None,
                         "legal_structure": serializer.validated_data['legal_structure'],
