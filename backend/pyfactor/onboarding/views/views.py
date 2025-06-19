@@ -2132,7 +2132,7 @@ class SaveStep1View(APIView):
                                     """, [
                                         str(business_id),
                                         business_num,
-                                        serializer.validated_data['business_name'],
+                                        serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
                                         serializer.validated_data['business_type'],
                                         now,
                                         now,
@@ -2346,7 +2346,7 @@ class SaveStep1View(APIView):
                 'schema_name': schema_name,  # Store the schema name
                 'business_data': {
                     'business_num': business_num,
-                    'business_name': serializer.validated_data['business_name'],
+                    'business_name': serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
                     'business_type': serializer.validated_data['business_type'],
                     'country': str(serializer.validated_data['country']),
                     'legal_structure': serializer.validated_data['legal_structure'],
@@ -2378,7 +2378,7 @@ class SaveStep1View(APIView):
                     "businessInfo": {
                         "id": str(business_id),
                         "business_num": business_num,
-                        "business_name": serializer.validated_data['business_name'],
+                        "business_name": serializer.validated_data.get('business_name', serializer.validated_data.get('name')),
                         "business_type": serializer.validated_data['business_type'],
                         "country": serializer.validated_data['country'].code if hasattr(serializer.validated_data['country'], 'code') else None,
                         "legal_structure": serializer.validated_data['legal_structure'],
@@ -3124,7 +3124,7 @@ class ValidateSubscriptionAccessView(BaseOnboardingView):
             
             if business:
                 required_fields = [
-                    getattr(business, 'business_name', None),
+                    getattr(business, 'name', None),
                     getattr(business, 'business_type', None),
                     getattr(business, 'country', None),
                     getattr(business, 'legal_structure', None)
@@ -3164,7 +3164,7 @@ class ValidateSubscriptionAccessView(BaseOnboardingView):
                 response_data['business_info'] = {
                     'is_complete': has_business_info,
                     'business_id': str(business.id),
-                    'business_name': getattr(business, 'business_name', None),
+                    'business_name': getattr(business, 'name', None),
                     'business_type': getattr(business, 'business_type', None),
                     'country': business.country.code if getattr(business, 'country', None) else None,
                     'legal_structure': getattr(business, 'legal_structure', None)
