@@ -34,7 +34,7 @@ const STATE_TRANSITIONS = {
     ONBOARDING_STATES.COMPLETED,
     ONBOARDING_STATES.PAYMENT_PENDING // Payment failed
   ],
-  [ONBOARDING_STATES.COMPLETED]: [], // Terminal state
+  [ONBOARDING_STATES.COMPLETED]: [ONBOARDING_STATES.SUBSCRIPTION_SELECTION], // Allow re-selecting subscription
   [ONBOARDING_STATES.ERROR]: [ONBOARDING_STATES.BUSINESS_INFO] // Allow retry
 };
 
@@ -189,8 +189,19 @@ class OnboardingStateMachine {
    * Handle subscription selection
    */
   async selectSubscription(plan, billingCycle = 'monthly') {
-    if (this.currentState !== ONBOARDING_STATES.SUBSCRIPTION_SELECTION) {
+    // Allow selecting subscription from SUBSCRIPTION_SELECTION or COMPLETED states
+    if (this.currentState !== ONBOARDING_STATES.SUBSCRIPTION_SELECTION && 
+        this.currentState !== ONBOARDING_STATES.COMPLETED) {
       throw new Error('Invalid state for subscription selection');
+    }
+    
+    // If we're in COMPLETED state, first transition back to SUBSCRIPTION_SELECTION
+    if (this.currentState === ONBOARDING_STATES.COMPLETED) {
+      logger.info('[OnboardingStateMachine] Re-selecting subscription from completed state');
+      await this.transitionTo(ONBOARDING_STATES.SUBSCRIPTION_SELECTION, {
+        reselecting: true,
+        previousPlan: this.stateData.selectedPlan
+      });
     }
 
     const nextState = plan === 'free' 

@@ -443,7 +443,7 @@ class SubscriptionSaveView(APIView):
                                     TRUE, TRUE, %s
                                 )
                             """, [
-                                tenant_id, business.business_name, timezone.now(), 
+                                tenant_id, business.name, timezone.now(), 
                                 str(request.user.id), 'active', timezone.now()
                             ])
                     
