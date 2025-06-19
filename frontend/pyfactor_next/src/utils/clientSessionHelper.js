@@ -7,7 +7,7 @@ export async function getClientSession() {
   console.log('[ClientSessionHelper] Getting session...');
   
   try {
-    const response = await fetch('/api/session', {
+    const response = await fetch('/api/auth/session-v2', {
       method: 'GET',
       credentials: 'include',
       cache: 'no-store'
@@ -23,18 +23,12 @@ export async function getClientSession() {
       throw new Error(`Session fetch failed: ${response.status}`);
     }
 
-    const session = await response.json();
-    console.log('[ClientSessionHelper] Session data:', session);
+    const sessionData = await response.json();
+    console.log('[ClientSessionHelper] Session data:', sessionData);
     
     return {
-      authenticated: true,
-      user: {
-        email: session.email,
-        needsOnboarding: session.needs_onboarding,
-        onboardingCompleted: session.onboarding_completed,
-        tenantId: session.tenant_id,
-        permissions: session.permissions || []
-      }
+      authenticated: sessionData.authenticated || false,
+      user: sessionData.user || null
     };
   } catch (error) {
     console.error('[ClientSessionHelper] Error fetching session:', error);
@@ -43,25 +37,10 @@ export async function getClientSession() {
 }
 
 export async function updateClientSession(updates) {
-  console.log('[ClientSessionHelper] Updating session with:', updates);
+  console.warn('[ClientSessionHelper] updateClientSession is deprecated in session-v2 system');
+  console.warn('[ClientSessionHelper] Session updates are handled server-side automatically');
+  console.log('[ClientSessionHelper] Requested updates were:', updates);
   
-  try {
-    const response = await fetch('/api/session', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(updates)
-    });
-
-    if (!response.ok) {
-      throw new Error(`Session update failed: ${response.status}`);
-    }
-
-    const updatedSession = await response.json();
-    console.log('[ClientSessionHelper] Session updated:', updatedSession);
-    return updatedSession;
-  } catch (error) {
-    console.error('[ClientSessionHelper] Error updating session:', error);
-    throw error;
-  }
+  // In session-v2 system, just return current session since updates happen server-side
+  return await getClientSession();
 }

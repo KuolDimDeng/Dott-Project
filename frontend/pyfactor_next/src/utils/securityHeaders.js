@@ -24,7 +24,7 @@ export function addSecurityHeaders(response, nonce = null) {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://client.crisp.chat",
     "font-src 'self' https://fonts.gstatic.com https://client.crisp.chat data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com",
+    "connect-src 'self' https://*.auth0.com https://*.stripe.com https://*.googleapis.com wss://*.crisp.chat https://*.crisp.chat https://api.stripe.com https://api.dottapps.com https://auth.dottapps.com https://ipapi.co https://api.country.is https://ipinfo.io",
     "frame-src 'self' https://*.auth0.com https://*.stripe.com",
     "frame-ancestors 'none'",
     "object-src 'none'",

@@ -169,23 +169,8 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       currentPath: window.location.pathname
     });
     
-    // Step 5: Update session with latest data
-    try {
-      await fetch('/api/auth/update-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        
-        credentials: 'include',},
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          onboarding_completed: hasCompletedOnboarding,
-          needs_onboarding: needsOnboarding
-        })
-      });
-    } catch (error) {
-      console.error('[AuthFlowHandler.v3] Session update failed:', error);
-    }
+    // Session updates are handled automatically by the backend in session-v2 system
+    // No need to manually update session as it's done server-side during auth flow
     
     // Return complete user data with redirect URL
     return {
