@@ -413,8 +413,8 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             logger.debug(f"🔍 Auth type: {auth_type}")
             logger.debug(f"🔍 Token length: {len(token) if token else 0}")
             
-            if auth_type.lower() != 'bearer':
-                logger.debug(f"❌ Invalid auth type: {auth_type} (expected: Bearer)")
+            if auth_type.lower() not in ['bearer', 'session']:
+                logger.debug(f"❌ Invalid auth type: {auth_type} (expected: Bearer or Session)")
                 return None
             return token
         except ValueError as e:
