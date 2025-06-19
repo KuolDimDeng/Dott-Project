@@ -1,10 +1,32 @@
 # Backend Scripts Registry
-Last Updated: 2025-06-18
+Last Updated: 2025-06-19
 
 ## Purpose
 This registry tracks all scripts in the backend/pyfactor/scripts directory, their purpose, and execution status.
 
 ## Script Inventory
+
+### Version0001_fix_backend_errors_tenant_and_onboarding.py
+- **Version**: 0001
+- **Purpose**: Fix critical backend errors in tenant middleware, database transactions, and onboarding state machine
+- **Status**: ✅ EXECUTED SUCCESSFULLY (2025-06-19 12:05:28)
+- **Issues Fixed**:
+  1. Syntax error in tenant_middleware.py line 87 - unterminated string literal
+  2. Invalid database transaction isolation level - "read" should be "read committed"
+  3. setup_tenant_context_in_db() missing tenant_id argument
+  4. Onboarding state machine error when selecting subscription after it's already completed
+- **Files Modified**:
+  - /pyfactor/custom_auth/tenant_middleware.py (fixed syntax errors on lines 87 and 166)
+  - /pyfactor/onboarding/views/subscription.py (fixed missing tenant_id argument)
+  - /pyfactor/onboarding/state.py (updated state transitions to allow re-selecting subscription)
+- **Backups Created**: All modified files backed up with timestamp 20250619_120528
+- **Key Changes**:
+  - Fixed unterminated string literal: `set_current_tenant_id(tenant_id)'` → `set_current_tenant_id(tenant_id)`
+  - Fixed typo: `request.id` → `request.schema_name`
+  - Added tenant_id parameter to setup_tenant_context_in_db() call
+  - Updated VALID_TRANSITIONS to allow 'complete' → 'step2' transition
+  - Added special case handling for users re-selecting subscription after completion
+- **Result**: All 4 fixes applied successfully
 
 ### Version0001_fix_docker_deployment_comprehensive.py
 - **Version**: 0001

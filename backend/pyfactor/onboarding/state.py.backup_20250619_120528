@@ -55,7 +55,7 @@ class OnboardingStateManager:
         'step2': ['step3', 'step4', 'complete'],  # Allow step3, step4, or direct to complete from step2
         'step3': ['step4', 'complete'],  # Allow direct transition to complete from step3 (payment)
         'step4': ['complete'],
-        'complete': ['step2']  # Allow returning to subscription selection from complete state
+        'complete': []
     }
 
     def __init__(self, user):
@@ -126,11 +126,6 @@ class OnboardingStateManager:
             if next_state not in self.STATES.values():
                 raise ValidationError(f"Invalid next state: {next_state}")
             
-            # Handle special case: allow re-selecting subscription after completion
-            if self.current_state == 'complete' and next_state == 'step2':
-                logger.info('Allowing user to re-select subscription after completion')
-                return True
-
             # Handle special cases for plan types
             if self.current_state == 'step2':
                 if next_state == 'step4' and plan_type != 'Basic':

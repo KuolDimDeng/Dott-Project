@@ -245,7 +245,7 @@ class SubscriptionSaveView(APIView):
         """Set up RLS policies for free plan users (synchronous version)"""
         try:
             # Initialize tenant context for RLS
-            setup_tenant_context_in_db(tenant_id)
+            setup_tenant_context_in_db()
             set_tenant_in_db(tenant_id)
             logger.info(f"Set tenant context to {tenant_id} for RLS application")
             
