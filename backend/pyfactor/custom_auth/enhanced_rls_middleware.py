@@ -78,10 +78,9 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/users/me/',
             '/api/auth0/create-user/',
             '/api/user/create-auth0-user/',  # Frontend endpoint
-            '/api/onboarding/business-info/',
-            '/api/onboarding/subscription/',
-            '/api/onboarding/complete',
-            '/api/onboarding/',  # Catch-all for onboarding endpoints
+            # Removed business-info and subscription - they need tenant context
+            '/api/onboarding/complete/',
+            # Don't use catch-all for onboarding - be specific about which endpoints need special handling
             '/api/users/close-account/',  # Close account needs Auth0 authentication
             '/api/payments/create-subscription/',  # Stripe subscription creation during onboarding
         ]
@@ -275,12 +274,26 @@ class EnhancedRowLevelSecurityMiddleware:
     def _get_tenant_from_user(self, user):
         """Extract tenant ID from user object"""
         # Try direct attribute first (most common)
-        if hasattr(user, 'tenant_id'):
+        if hasattr(user, 'tenant_id') and user.tenant_id:
             return user.tenant_id
             
+        # Try user.tenant relationship (ForeignKey to Tenant model)
+        if hasattr(user, 'tenant') and user.tenant:
+            return user.tenant.id
+            
         # Try user.profile.tenant_id
-        if hasattr(user, 'profile') and hasattr(user.profile, 'tenant_id'):
+        if hasattr(user, 'profile') and hasattr(user.profile, 'tenant_id') and user.profile.tenant_id:
             return user.profile.tenant_id
+            
+        # Try to find tenant where user is owner (for onboarding scenarios)
+        try:
+            from custom_auth.models import Tenant
+            tenant = Tenant.objects.filter(owner_id=str(user.pk)).first()
+            if tenant:
+                logger.debug(f"Found tenant {tenant.id} where user {user.pk} is owner")
+                return tenant.id
+        except Exception as e:
+            logger.debug(f"Error looking up tenant by owner: {e}")
             
         # Auth0 mode - no additional attribute extraction needed
         return None

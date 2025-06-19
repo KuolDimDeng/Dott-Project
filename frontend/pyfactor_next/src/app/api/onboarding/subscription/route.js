@@ -361,8 +361,9 @@ export async function POST(request) {
         // Update session with subscription plan
         try {
           // Update the session cookie to include subscription plan
-          if (sessionCookie) {
-            const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+          const appSessionCookie = cookieStore.get('appSession');
+          if (appSessionCookie) {
+            const sessionData = JSON.parse(Buffer.from(appSessionCookie.value, 'base64').toString());
             sessionData.user.subscriptionPlan = subscriptionData.selected_plan;
             sessionData.user.subscription_plan = subscriptionData.selected_plan;
             sessionData.user.subscriptionType = subscriptionData.selected_plan;
@@ -387,8 +388,8 @@ export async function POST(request) {
             
             console.log('[api/onboarding/subscription] Session updated with subscription plan:', subscriptionData.selected_plan);
           }
-        } catch (sessionError) {
-          console.error('[api/onboarding/subscription] Error updating session:', sessionError);
+        } catch (sessionUpdateError) {
+          console.error('[api/onboarding/subscription] Error updating session:', sessionUpdateError);
           // Continue - don't fail for session update issues
         }
       } catch (cookieError) {

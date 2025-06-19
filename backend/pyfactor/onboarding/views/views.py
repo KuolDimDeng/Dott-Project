@@ -3342,7 +3342,8 @@ class GetBusinessInfoView(APIView):
 
     def get(self, request, *args, **kwargs):
         try:
-            progress = OnboardingProgress.objects.get(user=request.user)
+            # Use the custom method that handles tenant context during onboarding
+            progress = OnboardingProgress.get_for_user(request.user)
             serializer = BusinessInfoSerializer(progress)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except OnboardingProgress.DoesNotExist:

@@ -93,7 +93,9 @@
       "Bash(./scripts/test_session_locally.sh:*)",
       "Bash(rg:*)",
       "Bash(true)",
-      "Bash(./scripts/update_signin_form.sh:*)"
+      "Bash(./scripts/update_signin_form.sh:*)",
+      "Bash(timeout 30 pnpm run build:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

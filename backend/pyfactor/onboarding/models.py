@@ -1,13 +1,15 @@
 #/Users/kuoldeng/projectx/backend/pyfactor/onboarding/models.py
-from django.db import models
+from django.db import models, connection
 from django.contrib.auth import get_user_model
 from django.core.validators import MinLengthValidator, MaxLengthValidator
 from users.models import Business
 from django.conf import settings
 from django.utils import timezone
 import uuid
+import logging
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class OnboardingProgress(models.Model):
     """Track user onboarding progress and status"""
@@ -173,6 +175,59 @@ class OnboardingProgress(models.Model):
 
     def __str__(self):
         return f"{self.user.email} - {self.onboarding_status}"
+    
+    @classmethod
+    def get_for_user(cls, user):
+        """
+        Get OnboardingProgress for a user, handling cases where tenant context might not be set.
+        This is used during onboarding when the user might not have a tenant assigned yet.
+        """
+        try:
+            # First try regular query (works if tenant context is set)
+            return cls.objects.get(user=user)
+        except cls.DoesNotExist:
+            # If that fails, try to find the tenant and set context
+            from custom_auth.models import Tenant
+            from custom_auth.rls import set_tenant_context, clear_tenant_context
+            
+            try:
+                # Find tenant where user is owner or user is assigned to
+                tenant = None
+                if hasattr(user, 'tenant') and user.tenant:
+                    tenant = user.tenant
+                else:
+                    tenant = Tenant.objects.filter(owner_id=str(user.pk)).first()
+                
+                if tenant:
+                    # Temporarily set tenant context for this query
+                    set_tenant_context(str(tenant.id))
+                    try:
+                        progress = cls.objects.get(user=user)
+                        return progress
+                    finally:
+                        # Always clear context after query
+                        clear_tenant_context()
+                else:
+                    # No tenant found, try raw SQL as last resort
+                    with connection.cursor() as cursor:
+                        cursor.execute("""
+                            SELECT * FROM onboarding_onboardingprogress 
+                            WHERE user_id = %s
+                            LIMIT 1
+                        """, [user.id])
+                        
+                        row = cursor.fetchone()
+                        if row:
+                            columns = [col[0] for col in cursor.description]
+                            progress_data = dict(zip(columns, row))
+                            progress = cls(**progress_data)
+                            progress._state.adding = False
+                            return progress
+                        else:
+                            raise cls.DoesNotExist(f"OnboardingProgress not found for user {user.id}")
+            except Exception as e:
+                logger.error(f"Error getting OnboardingProgress for user {user.id}: {str(e)}")
+                raise cls.DoesNotExist(f"OnboardingProgress not found for user {user.id}")
         
     def save(self, *args, **kwargs):
         """
