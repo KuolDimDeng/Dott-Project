@@ -10,7 +10,7 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('session_manager', '0002_auto_20250107_0000'),
+        ('session_manager', '0001_initial'),
         ('custom_auth', '0001_initial'),
     ]
 
