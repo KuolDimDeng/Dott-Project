@@ -200,6 +200,8 @@ class ApiClientV2 {
   }
 
   async post(url, data, options = {}) {
+    logger.info('[ApiClient] POST request:', { url, data });
+    console.log('🚨 [ApiClient] POST data being sent:', JSON.stringify(data, null, 2));
     return this.request(url, {
       ...options,
       method: 'POST',

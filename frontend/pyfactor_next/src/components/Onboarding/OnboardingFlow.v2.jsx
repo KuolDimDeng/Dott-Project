@@ -69,18 +69,28 @@ export default function OnboardingFlowV2() {
       setSubmitting(true);
       setError(null);
       
+      // Debug: Log received data
+      logger.info('[OnboardingFlow] Received data from BusinessInfoForm:', data);
+      console.log('🚨 [OnboardingFlow] Raw data from form:', JSON.stringify(data, null, 2));
+      
       // Update form data
       const updatedData = { ...formData, ...data };
       setFormData(updatedData);
       
-      // Submit to backend
-      const response = await apiClient.post('/api/onboarding/business-info', {
+      // Prepare data for backend
+      const backendData = {
         business_name: data.businessName,
         business_type: data.businessType,
         country: data.country || 'US',
         legal_structure: data.legalStructure,
         date_founded: data.dateFounded
-      });
+      };
+      
+      logger.info('[OnboardingFlow] Sending to backend:', backendData);
+      console.log('🚨 [OnboardingFlow] Backend data:', JSON.stringify(backendData, null, 2));
+      
+      // Submit to backend
+      const response = await apiClient.post('/api/onboarding/business-info', backendData);
       
       // Update state machine
       await onboardingStateMachine.submitBusinessInfo(data);

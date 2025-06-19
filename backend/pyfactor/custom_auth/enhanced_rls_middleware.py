@@ -78,7 +78,9 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/users/me/',
             '/api/auth0/create-user/',
             '/api/user/create-auth0-user/',  # Frontend endpoint
-            # Removed business-info and subscription - they need tenant context
+            '/api/onboarding/business-info/',  # Needs to work without tenant during initial onboarding
+            '/api/onboarding/save-business-info/',  # Backend endpoint
+            '/api/onboarding/subscription/save/',  # Subscription endpoint
             '/api/onboarding/complete/',
             # Don't use catch-all for onboarding - be specific about which endpoints need special handling
             '/api/users/close-account/',  # Close account needs Auth0 authentication

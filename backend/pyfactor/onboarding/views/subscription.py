@@ -77,15 +77,15 @@ class SubscriptionSaveView(APIView):
                 logger.warning(f"Error getting business from profile: {str(e)}")
             
             # Then try direct query for business owned by user
-            business = Business.objects.filter(owner=request.user).first()
+            business = Business.objects.filter(owner_id=request.user.id).first()
             if business:
                 return business
                 
             # Create a basic business if none exists
             business_name = f"{request.user.first_name or request.user.email.split('@')[0]}'s Business"
             business = Business.objects.create(
-                owner=request.user,
-                business_name=business_name
+                owner_id=request.user.id,
+                name=business_name
             )
             
             logger.info(f"Created new business for user {request.user.email}")
@@ -110,15 +110,15 @@ class SubscriptionSaveView(APIView):
                 logger.warning(f"Error getting business from profile: {str(e)}")
             
             # Then try direct query for business owned by user
-            business = Business.objects.filter(owner=request.user).first()
+            business = Business.objects.filter(owner_id=request.user.id).first()
             if business:
                 return business
                 
             # Create a basic business if none exists
             business_name = f"{request.user.first_name or request.user.email.split('@')[0]}'s Business"
             business = Business.objects.create(
-                owner=request.user,
-                business_name=business_name
+                owner_id=request.user.id,
+                name=business_name
             )
             
             logger.info(f"Created new business for user {request.user.email}")

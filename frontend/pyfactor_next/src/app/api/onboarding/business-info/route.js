@@ -254,6 +254,7 @@ export async function POST(request) {
       if (request.body) {
         data = await request.json();
         console.log('[api/onboarding/business-info] Request body parsed:', { fields: Object.keys(data) });
+        console.log('🚨 [BUSINESS-INFO API] Raw request data:', JSON.stringify(data, null, 2));
       }
     } catch (parseError) {
       console.warn('[api/onboarding/business-info] Error parsing request body:', parseError.message);
@@ -264,22 +265,24 @@ export async function POST(request) {
       }, 400);
     }
     
-    // Extract and validate business info data
+    // Extract and validate business info data - check both camelCase and snake_case
     const businessData = {
-      businessName: data.businessName || '',
-      businessType: data.businessType || '',
-      businessSubtypeSelections: data.businessSubtypeSelections || [],
+      businessName: data.business_name || data.businessName || '',
+      businessType: data.business_type || data.businessType || '',
+      businessSubtypeSelections: data.business_subtype_selections || data.businessSubtypeSelections || [],
       country: data.country || '',
-      businessState: data.businessState || '',
-      legalStructure: data.legalStructure || '',
-      dateFounded: data.dateFounded || '',
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
+      businessState: data.business_state || data.businessState || '',
+      legalStructure: data.legal_structure || data.legalStructure || '',
+      dateFounded: data.date_founded || data.dateFounded || '',
+      firstName: data.first_name || data.firstName || '',
+      lastName: data.last_name || data.lastName || '',
       industry: data.industry || '',
       address: data.address || '',
-      phoneNumber: data.phoneNumber || '',
-      taxId: data.taxId || ''
+      phoneNumber: data.phone_number || data.phoneNumber || '',
+      taxId: data.tax_id || data.taxId || ''
     };
+    
+    console.log('🚨 [BUSINESS-INFO API] Extracted business data:', JSON.stringify(businessData, null, 2));
     
     console.log('[api/onboarding/business-info] Validated business data:', {
       businessName: businessData.businessName,
@@ -379,6 +382,13 @@ export async function POST(request) {
       };
 
       console.log('[api/onboarding/business-info] Sending to Django:', djangoData);
+      console.log('🚨 [BUSINESS-INFO API] Django data being sent:', JSON.stringify(djangoData, null, 2));
+      
+      // During initial onboarding, we don't have a tenant ID yet
+      // Generate a temporary one or use a placeholder
+      const tempTenantId = uuidv4();
+      headers['X-Tenant-ID'] = tempTenantId;
+      console.log('[api/onboarding/business-info] Using temporary tenant ID:', tempTenantId);
 
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
         method: 'POST',

@@ -55,7 +55,12 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
 
   // Handle input changes
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log(`🚨 [BusinessInfoForm] Field change: ${field} = "${value}"`);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('🚨 [BusinessInfoForm] Updated form data:', updated);
+      return updated;
+    });
     // Clear field error when user types
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: null }));
@@ -135,10 +140,20 @@ export default function BusinessInfoFormV2({ initialData = {}, onSubmit, submitt
     
     if (!validateAll()) {
       logger.warn('[BusinessInfoForm] Validation failed', errors);
+      console.log('🚨 [BusinessInfoForm] Validation errors:', errors);
       return;
     }
     
     logger.info('[BusinessInfoForm] Submitting business info', formData);
+    console.log('🚨 [BusinessInfoForm] Form data being submitted:', JSON.stringify(formData, null, 2));
+    console.log('🚨 [BusinessInfoForm] Individual fields:', {
+      businessName: formData.businessName,
+      businessType: formData.businessType,
+      country: formData.country,
+      legalStructure: formData.legalStructure,
+      dateFounded: formData.dateFounded
+    });
+    
     await onSubmit(formData);
   };
 
