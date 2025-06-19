@@ -236,18 +236,20 @@ export async function POST(request) {
     console.log('[CompleteOnboarding] Starting backend onboarding process');
     
     // 5. First, submit business information to create/update tenant with correct name
-    let tenantId = null;
+    // Generate tenant ID upfront if user doesn't have one
+    let tenantId = user.tenantId || user.tenant_id || uuidv4();
     
     if (sessionData.sessionToken) {
       try {
         console.log('[CompleteOnboarding] Step 1: Submitting business information');
-        const businessResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
+        const businessResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Session ${sessionData.sessionToken}`,
             'X-User-Email': user.email,
-            'X-User-Sub': user.sub
+            'X-User-Sub': user.sub,
+            'X-Tenant-ID': tenantId // Use the generated tenant ID
           },
           body: JSON.stringify({
             business_name: onboardingData.businessName,
@@ -267,13 +269,14 @@ export async function POST(request) {
           
           // Step 2: Submit subscription selection
           console.log('[CompleteOnboarding] Step 2: Submitting subscription selection');
-          const subscriptionResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/`, {
+          const subscriptionResponse = await fetch(`${apiBaseUrl}/api/onboarding/subscription/save/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Session ${sessionData.sessionToken}`,
               'X-User-Email': user.email,
-              'X-User-Sub': user.sub
+              'X-User-Sub': user.sub,
+              'X-Tenant-ID': tenantId
             },
             body: JSON.stringify({
               selected_plan: onboardingData.selectedPlan,
@@ -297,7 +300,8 @@ export async function POST(request) {
               'Content-Type': 'application/json',
               'Authorization': `Session ${sessionData.sessionToken}`,
               'X-User-Email': user.email,
-              'X-User-Sub': user.sub
+              'X-User-Sub': user.sub,
+              'X-Tenant-ID': tenantId
             },
             body: JSON.stringify({
               selected_plan: onboardingData.selectedPlan,
@@ -330,7 +334,7 @@ export async function POST(request) {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${sessionData.accessToken}`,
+                  'Authorization': `Session ${sessionData.sessionToken}`,
                   'X-User-Email': user.email,
                   'X-User-Sub': user.sub
                 },
@@ -535,14 +539,14 @@ export async function POST(request) {
     });
     
     // CRITICAL: Force backend session update
-    if (sessionData.accessToken) {
+    if (sessionData.sessionToken) {
       try {
         console.log('[CompleteOnboarding] Updating backend session state');
         const sessionUpdateResponse = await fetch(`${apiBaseUrl}/api/auth/update-session/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.accessToken}`
+            'Authorization': `Session ${sessionData.sessionToken}`
           },
           body: JSON.stringify({
             needs_onboarding: false,
@@ -583,7 +587,7 @@ export async function POST(request) {
     });
     
     // CRITICAL: Force update backend user record to mark onboarding as complete
-    if (sessionData.accessToken) {
+    if (sessionData.sessionToken) {
       try {
         console.log('[CompleteOnboarding] 🚨 FORCING backend user onboarding completion...');
         
@@ -592,7 +596,7 @@ export async function POST(request) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.accessToken}`,
+            'Authorization': `Session ${sessionData.sessionToken}`,
             'X-User-Email': user.email,
             'X-User-Sub': user.sub
           },
@@ -622,7 +626,7 @@ export async function POST(request) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.accessToken}`,
+            'Authorization': `Session ${sessionData.sessionToken}`,
             'X-User-Email': user.email
           },
           body: JSON.stringify({
