@@ -21,78 +21,64 @@ import { decrypt, encrypt } from '@/utils/sessionEncryption';
  */
 
 /**
- * Validate Auth0 session
+ * Validate session using the new session token system
  */
 async function validateAuth0Session(request) {
   try {
-    // First try to get session from cookie - try new name first, then old
+    console.log('[CompleteOnboarding] Validating session with new token system');
+    
+    // Get session token from cookies
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    const sessionToken = cookieStore.get('session_token');
     
-    if (sessionCookie) {
-      let sessionData;
-      try {
-        // Try to decrypt first (new format)
-        try {
-          const decrypted = decrypt(sessionCookie.value);
-          sessionData = JSON.parse(decrypted);
-        } catch (decryptError) {
-          // Fallback to old base64 format for backward compatibility
-          console.warn('[CompleteOnboarding] Using legacy base64 format');
-          sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-        }
-        
-        // Check if session is expired
-        if (sessionData.accessTokenExpiresAt && Date.now() > sessionData.accessTokenExpiresAt) {
-          return { isAuthenticated: false, error: 'Session expired', user: null };
-        }
-        
-        if (sessionData.user) {
-          return { isAuthenticated: true, user: sessionData.user, sessionData, error: null };
-        }
-      } catch (error) {
-        console.error('[CompleteOnboarding] Error parsing session cookie:', error);
-      }
+    if (!sessionToken) {
+      console.log('[CompleteOnboarding] No session_token cookie found');
+      return { isAuthenticated: false, error: 'No session token found', user: null };
     }
     
-    // If no cookie, check Authorization header (from localStorage)
-    const authHeader = request.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      console.log('[CompleteOnboarding] Using authorization header for authentication');
-      
-      try {
-        // Decode JWT to get user info
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-          
-          // Check if token is expired
-          if (payload.exp && Date.now() / 1000 > payload.exp) {
-            return { isAuthenticated: false, error: 'Token expired', user: null };
-          }
-          
-          const user = {
-            email: payload.email,
-            sub: payload.sub,
-            name: payload.name || payload.email,
-            ...payload // Include all payload data
-          };
-          
-          const sessionData = {
-            user,
-            accessToken: token,
-            accessTokenExpiresAt: payload.exp ? payload.exp * 1000 : Date.now() + 86400000 // 24 hours
-          };
-          
-          return { isAuthenticated: true, user, sessionData, error: null };
-        }
-      } catch (error) {
-        console.error('[CompleteOnboarding] Error decoding token:', error);
+    console.log('[CompleteOnboarding] Found session token, validating with backend');
+    
+    // Validate session token with backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionToken.value}`,
+        'Content-Type': 'application/json'
       }
+    });
+    
+    if (!response.ok) {
+      console.error('[CompleteOnboarding] Backend session validation failed:', response.status);
+      return { isAuthenticated: false, error: 'Session validation failed', user: null };
     }
     
-    return { isAuthenticated: false, error: 'No Auth0 session found', user: null };
+    const sessionData = await response.json();
+    console.log('[CompleteOnboarding] Session validated successfully:', {
+      email: sessionData.email,
+      tenantId: sessionData.tenant_id,
+      needsOnboarding: sessionData.needs_onboarding
+    });
+    
+    const user = {
+      email: sessionData.email,
+      sub: sessionData.auth0_sub || sessionData.user_id,
+      name: sessionData.name || sessionData.email,
+      tenantId: sessionData.tenant_id,
+      needsOnboarding: sessionData.needs_onboarding,
+      onboardingCompleted: sessionData.onboarding_completed
+    };
+    
+    // Create compatible session data structure
+    const compatibleSessionData = {
+      user,
+      sessionToken: sessionToken.value,
+      // Note: We don't have an access token in this system, will handle backend calls differently
+      accessToken: null,
+      accessTokenExpiresAt: null
+    };
+    
+    return { isAuthenticated: true, user, sessionData: compatibleSessionData, error: null };
+    
   } catch (error) {
     console.error('[CompleteOnboarding] Session validation error:', error);
     return { isAuthenticated: false, error: 'Session validation failed', user: null };
@@ -252,14 +238,14 @@ export async function POST(request) {
     // 5. First, submit business information to create/update tenant with correct name
     let tenantId = null;
     
-    if (sessionData.accessToken) {
+    if (sessionData.sessionToken) {
       try {
         console.log('[CompleteOnboarding] Step 1: Submitting business information');
         const businessResponse = await fetch(`${apiBaseUrl}/api/onboarding/business-info/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sessionData.accessToken}`,
+            'Authorization': `Session ${sessionData.sessionToken}`,
             'X-User-Email': user.email,
             'X-User-Sub': user.sub
           },
@@ -285,7 +271,7 @@ export async function POST(request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionData.accessToken}`,
+              'Authorization': `Session ${sessionData.sessionToken}`,
               'X-User-Email': user.email,
               'X-User-Sub': user.sub
             },
@@ -309,7 +295,7 @@ export async function POST(request) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${sessionData.accessToken}`,
+              'Authorization': `Session ${sessionData.sessionToken}`,
               'X-User-Email': user.email,
               'X-User-Sub': user.sub
             },
@@ -370,7 +356,7 @@ export async function POST(request) {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${sessionData.accessToken}`,
+                'Authorization': `Session ${sessionData.sessionToken}`,
                 'X-User-Email': user.email,
                 'X-User-Sub': user.sub
               },
@@ -410,7 +396,7 @@ export async function POST(request) {
         }, { status: 500 });
       }
     } else {
-      console.error('[CompleteOnboarding] No access token available');
+      console.error('[CompleteOnboarding] No session token available');
       return NextResponse.json({
         success: false,
         error: 'Authentication required',
