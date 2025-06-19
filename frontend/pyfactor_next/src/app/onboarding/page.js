@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { logger } from '@/utils/logger';
-import { sessionManagerEnhanced as sessionManager } from '@/utils/sessionManager-v2-enhanced';
+import { getClientSession } from '@/utils/clientSessionHelper';
 import { onboardingStateMachine, ONBOARDING_STATES } from '@/utils/onboardingStateMachine';
 import OnboardingFlowV2 from '@/components/Onboarding/OnboardingFlow.v2';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -21,8 +21,8 @@ export default function OnboardingPageV2() {
     try {
       logger.info('[OnboardingPage.v2] Checking authentication...');
       
-      // Get session from centralized manager
-      const session = await sessionManager.getSession();
+      // Get session using client helper
+      const session = await getClientSession();
       
       if (!session.authenticated) {
         logger.warn('[OnboardingPage.v2] Not authenticated, redirecting to login');
@@ -30,6 +30,22 @@ export default function OnboardingPageV2() {
         return;
       }
 
+      logger.info('[OnboardingPage.v2] Session authenticated:', {
+        email: session.user?.email,
+        needsOnboarding: session.user?.needsOnboarding,
+        onboardingCompleted: session.user?.onboardingCompleted,
+        tenantId: session.user?.tenantId
+      });
+
+      // If already completed, redirect to dashboard
+      if (session.user?.onboardingCompleted || session.user?.tenantId) {
+        const tenantId = session.user?.tenantId;
+        if (tenantId) {
+          logger.info('[OnboardingPage.v2] Onboarding already completed, redirecting to dashboard');
+          router.push(`/tenant/${tenantId}/dashboard`);
+          return;
+        }
+      }
 
       // Initialize onboarding state machine
       await onboardingStateMachine.initialize();
@@ -39,16 +55,6 @@ export default function OnboardingPageV2() {
         currentState,
         isComplete: onboardingStateMachine.isComplete()
       });
-
-      // If already completed, redirect to dashboard
-      if (currentState === ONBOARDING_STATES.COMPLETED) {
-        const tenantId = await sessionManager.getTenantId();
-        if (tenantId) {
-          logger.info('[OnboardingPage.v2] Onboarding already completed, redirecting to dashboard');
-          router.push(`/tenant/${tenantId}/dashboard`);
-          return;
-        }
-      }
 
       // User needs onboarding, show the flow
       setLoading(false);

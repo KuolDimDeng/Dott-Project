@@ -39,28 +39,36 @@ class SessionManagerV2Enhanced {
    * Priority: Local Cache → Redis → Database
    */
   async getSession() {
+    console.log('[SessionManager] getSession called');
     const startTime = performance.now();
     const sessionId = this.getSessionIdFromCookie();
     
+    console.log('[SessionManager] Session ID from cookie:', sessionId);
+    
     if (!sessionId) {
       this.recordMetric('cache_miss', startTime);
+      console.log('[SessionManager] No session ID, returning unauthenticated');
       return { authenticated: false, user: null };
     }
 
     try {
       // Check for duplicate requests
       if (this.pendingRequests.has(sessionId)) {
+        console.log('[SessionManager] Duplicate request detected, waiting...');
         return await this.pendingRequests.get(sessionId);
       }
 
+      console.log('[SessionManager] Starting session fetch...');
       const sessionPromise = this._getSessionWithCaching(sessionId, startTime);
       this.pendingRequests.set(sessionId, sessionPromise);
       
       const result = await sessionPromise;
       this.pendingRequests.delete(sessionId);
       
+      console.log('[SessionManager] Session result:', result);
       return result || { authenticated: false, user: null };
     } catch (error) {
+      console.error('[SessionManager] Error in getSession:', error);
       this.pendingRequests.delete(sessionId);
       this.handleError(error, startTime);
       return { authenticated: false, user: null };
@@ -68,9 +76,12 @@ class SessionManagerV2Enhanced {
   }
 
   async _getSessionWithCaching(sessionId, startTime) {
+    console.log('[SessionManager] _getSessionWithCaching called for:', sessionId);
+    
     // 1. Check local cache first
     const localCached = this.getFromLocalCache(sessionId);
     if (localCached) {
+      console.log('[SessionManager] Found in local cache');
       this.recordMetric('local_cache_hit', startTime);
       return localCached;
     }
@@ -78,6 +89,7 @@ class SessionManagerV2Enhanced {
     // 2. Check if circuit breaker is open
     if (this.circuitBreaker.state === 'OPEN') {
       if (Date.now() - this.circuitBreaker.lastFailure < this.circuitBreaker.timeout) {
+        console.log('[SessionManager] Circuit breaker is OPEN');
         throw new Error('Circuit breaker is open');
       } else {
         this.circuitBreaker.state = 'HALF_OPEN';
@@ -85,9 +97,11 @@ class SessionManagerV2Enhanced {
     }
 
     // 3. Try Redis cache
+    console.log('[SessionManager] Checking Redis cache...');
     try {
       const redisCached = await this.getFromRedisCache(sessionId);
       if (redisCached) {
+        console.log('[SessionManager] Found in Redis cache');
         this.setLocalCache(sessionId, redisCached);
         this.recordMetric('redis_cache_hit', startTime);
         this.circuitBreaker.failures = 0; // Reset on success
@@ -102,8 +116,10 @@ class SessionManagerV2Enhanced {
     }
 
     // 4. Fallback to database
+    console.log('[SessionManager] Fetching from database...');
     const dbSession = await this.getFromDatabase(sessionId);
     if (dbSession) {
+      console.log('[SessionManager] Found in database');
       // Cache in both Redis and local
       this.setLocalCache(sessionId, dbSession);
       this.setRedisCache(sessionId, dbSession).catch(console.warn);
@@ -111,6 +127,7 @@ class SessionManagerV2Enhanced {
       return dbSession;
     }
 
+    console.log('[SessionManager] Session not found anywhere');
     this.recordMetric('cache_miss', startTime);
     return null;
   }
@@ -372,15 +389,21 @@ class SessionManagerV2Enhanced {
    * Utility methods
    */
   getSessionIdFromCookie() {
-    if (typeof document === 'undefined') return null;
+    if (typeof document === 'undefined') {
+      console.log('[SessionManager] Running on server, no access to cookies');
+      return null;
+    }
     
+    console.log('[SessionManager] Looking for session_token in cookies:', document.cookie);
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
       const [name, value] = cookie.trim().split('=');
       if (name === 'session_token') {
+        console.log('[SessionManager] Found session_token:', value);
         return value;
       }
     }
+    console.log('[SessionManager] No session_token found in cookies');
     return null;
   }
 
@@ -462,6 +485,44 @@ class SessionManagerV2Enhanced {
       onboardingCompleted: session.user?.onboardingCompleted || false,
       currentStep: session.user?.currentOnboardingStep || 'not_started'
     };
+  }
+
+  /**
+   * Update session data
+   */
+  async updateSession(updates) {
+    console.log('[SessionManager] updateSession called with:', updates);
+    const sessionId = this.getSessionIdFromCookie();
+    
+    if (!sessionId) {
+      throw new Error('No session to update');
+    }
+
+    try {
+      const response = await fetch('/api/session', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updates)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to update session: ${response.status}`);
+      }
+
+      const updatedSession = await response.json();
+      
+      // Update caches
+      if (updatedSession) {
+        this.setLocalCache(sessionId, updatedSession);
+        this.setRedisCache(sessionId, updatedSession).catch(console.warn);
+      }
+
+      return updatedSession;
+    } catch (error) {
+      console.error('[SessionManager] Update session error:', error);
+      throw error;
+    }
   }
 }
 

@@ -5,7 +5,7 @@
  */
 
 import { logger } from '@/utils/logger';
-import { sessionManagerEnhanced as sessionManager } from '@/utils/sessionManager-v2-enhanced';
+import { getClientSession, updateClientSession } from '@/utils/clientSessionHelper';
 
 // Define all possible states
 const ONBOARDING_STATES = {
@@ -49,8 +49,7 @@ class OnboardingStateMachine {
    */
   async initialize() {
     try {
-      const session = await sessionManager.getSession();
-      const progress = await sessionManager.getOnboardingProgress();
+      const session = await getClientSession();
       
       // Determine current state from session data
       if (!session?.authenticated) {
@@ -58,19 +57,21 @@ class OnboardingStateMachine {
         return;
       }
 
-      if (progress?.onboardingCompleted || session.user?.onboardingCompleted) {
+      // For now, use session data directly since backend should be authoritative
+      const user = session.user;
+      
+      if (user?.onboardingCompleted || user?.tenantId) {
         this.currentState = ONBOARDING_STATES.COMPLETED;
-      } else if (progress?.paymentPending) {
-        this.currentState = ONBOARDING_STATES.PAYMENT_PENDING;
-      } else if (progress?.selectedPlan) {
-        this.currentState = ONBOARDING_STATES.SUBSCRIPTION_SELECTION;
-      } else if (progress?.businessName) {
-        this.currentState = ONBOARDING_STATES.BUSINESS_INFO;
       } else {
+        // Since user needs onboarding, start from the beginning
         this.currentState = ONBOARDING_STATES.NOT_STARTED;
       }
 
-      this.stateData = progress;
+      this.stateData = {
+        businessName: user?.businessName || null,
+        selectedPlan: user?.subscriptionPlan || null,
+        onboardingCompleted: user?.onboardingCompleted || false
+      };
       
       logger.info('[OnboardingStateMachine] Initialized', {
         currentState: this.currentState,
@@ -139,7 +140,7 @@ class OnboardingStateMachine {
       lastUpdated: new Date().toISOString()
     };
 
-    await sessionManager.updateSession({
+    await updateClientSession({
       onboardingProgress: progressData,
       currentStep: this.currentState
     });
