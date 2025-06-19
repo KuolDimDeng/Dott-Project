@@ -225,6 +225,21 @@ NEVER proactively create documentation files (*.md) or README files. Only create
   - `/backend/pyfactor/custom_auth/enhanced_rls_middleware.py`
   - `/frontend/pyfactor_next/src/app/api/auth/clear-cache/route.js`
 
+## Critical Security Fixes (2025-01-19)
+- **Tenant Verification Fix**: Prevents orphaned tenants and data loss
+  - Fixed user-sync endpoint returning new tenant IDs on verification failure
+  - Now returns 403 error with support information
+  - Prevents users from losing access to financial data
+  - Files: `/frontend/pyfactor_next/src/app/api/auth0/user-sync/route.js`
+- **Session Monitoring System**: Real-time security anomaly detection
+  - Detects impossible travel (>500km/hr), IP changes, concurrent sessions
+  - Auto-terminates sessions for critical threats
+  - Email alerts for high/critical events
+  - Frontend: `/src/utils/sessionMonitor.js`
+  - Backend: `/api/sessions/active/`, `/api/security/session-alert/`
+  - Runs every 5 minutes with visibility-based checks
+- **Documentation**: `/frontend/pyfactor_next/docs/SECURITY_FIXES_2025.md`
+
 ## Onboarding Redirect Loop Fix (2025-01-16)
 - **Issue**: Users redirected back to onboarding after clearing browser cache even though they completed onboarding
 - **Root Cause**: Backend returns `needs_onboarding: true` even after onboarding completion
