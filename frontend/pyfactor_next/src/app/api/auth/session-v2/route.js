@@ -43,21 +43,27 @@ export async function GET(request) {
     }
     
     const sessionData = await response.json();
+    console.log('[Session-V2] Full backend response:', sessionData);
     console.log('[Session-V2] Backend session valid:', {
-      email: sessionData.email,
-      tenantId: sessionData.tenant_id,
+      email: sessionData.email || sessionData.user?.email,
+      tenantId: sessionData.tenant_id || sessionData.tenant?.id,
       needsOnboarding: sessionData.needs_onboarding
     });
     
     // Return session data from backend
+    // Check if data is nested in a 'user' object
+    const userData = sessionData.user || sessionData;
+    const tenantData = sessionData.tenant || {};
+    
     return NextResponse.json({
       authenticated: true,
       user: {
-        email: sessionData.email,
-        needsOnboarding: sessionData.needs_onboarding,
-        onboardingCompleted: sessionData.onboarding_completed,
-        tenantId: sessionData.tenant_id,
-        permissions: sessionData.permissions
+        email: userData.email || sessionData.email,
+        needsOnboarding: userData.needs_onboarding ?? sessionData.needs_onboarding ?? true,
+        onboardingCompleted: userData.onboarding_completed ?? sessionData.onboarding_completed ?? false,
+        tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id,
+        tenant_id: userData.tenant_id || sessionData.tenant_id || tenantData.id,
+        permissions: userData.permissions || sessionData.permissions || []
       }
     });
     

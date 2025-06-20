@@ -42,24 +42,43 @@ export async function GET(request) {
         
         if (response.ok) {
           const sessionData = await response.json();
+          console.log('🚨 [PROFILE API] Full backend response:', sessionData);
+          
+          // Handle nested data structures from backend
+          const userData = sessionData.user || sessionData;
+          const tenantData = sessionData.tenant || {};
+          
           console.log('🚨 [PROFILE API] Backend session data:', {
-            email: sessionData.email,
-            tenantId: sessionData.tenant_id,
+            email: userData.email || sessionData.email,
+            tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id,
             needsOnboarding: sessionData.needs_onboarding,
             onboardingCompleted: sessionData.onboarding_completed
           });
           
+          // Check cookies for additional onboarding status
+          const onboardingCompletedCookie = cookieStore.get('onboardingCompleted');
+          const onboardingJustCompletedCookie = cookieStore.get('onboarding_just_completed');
+          const userTenantIdCookie = cookieStore.get('user_tenant_id');
+          
+          // Determine final onboarding status
+          const hasCompletedOnboarding = (
+            onboardingCompletedCookie?.value === 'true' ||
+            onboardingJustCompletedCookie?.value === 'true' ||
+            sessionData.onboarding_completed === true ||
+            sessionData.needs_onboarding === false
+          );
+          
           // Return profile data from backend
           return NextResponse.json({
             authenticated: true,
-            email: sessionData.email,
-            needsOnboarding: sessionData.needs_onboarding,
-            onboardingCompleted: sessionData.onboarding_completed,
+            email: userData.email || sessionData.email || 'unknown',
+            needsOnboarding: hasCompletedOnboarding ? false : (sessionData.needs_onboarding ?? true),
+            onboardingCompleted: hasCompletedOnboarding || (sessionData.onboarding_completed ?? false),
             currentStep: sessionData.current_onboarding_step || 'business_info',
-            tenantId: sessionData.tenant_id,
-            tenant_id: sessionData.tenant_id,
-            businessName: sessionData.business_name,
-            subscriptionPlan: sessionData.subscription_plan || 'free',
+            tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
+            tenant_id: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
+            businessName: sessionData.business_name || userData.business_name,
+            subscriptionPlan: sessionData.subscription_plan || userData.subscription_plan || 'free',
             sessionSource: 'backend-v2'
           }, {
             headers: {
