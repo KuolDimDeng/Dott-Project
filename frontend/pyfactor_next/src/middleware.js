@@ -6,6 +6,33 @@ export async function middleware(request) {
   const url = new URL(request.url);
   const pathname = url.pathname;
   
+  // Detailed session tracking logs
+  console.log('[Middleware] ========== REQUEST START ==========');
+  console.log('[Middleware] Path:', pathname);
+  console.log('[Middleware] Method:', request.method);
+  
+  // Log all cookies for debugging
+  const cookies = request.cookies;
+  const cookieList = cookies.getAll();
+  console.log('[Middleware] All cookies:', cookieList.map(c => ({
+    name: c.name,
+    value: c.value ? `${c.value.substring(0, 8)}...` : 'empty',
+    length: c.value ? c.value.length : 0
+  })));
+  
+  // Check specific session cookies
+  const sid = cookies.get('sid');
+  const sessionToken = cookies.get('session_token');
+  const onboardingJustCompleted = cookies.get('onboarding_just_completed');
+  const userTenantId = cookies.get('user_tenant_id');
+  
+  console.log('[Middleware] Session cookie status:', {
+    sid: sid ? { exists: true, length: sid.value.length } : { exists: false },
+    sessionToken: sessionToken ? { exists: true, length: sessionToken.value.length } : { exists: false },
+    onboardingJustCompleted: onboardingJustCompleted ? onboardingJustCompleted.value : null,
+    userTenantId: userTenantId ? userTenantId.value : null
+  });
+  
   // Debug logging for double tenant ID issue
   if (pathname.includes('/dashboard') || pathname.includes('tenant')) {
     console.log('[Middleware] URL Debug:', {
@@ -41,19 +68,46 @@ export async function middleware(request) {
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path)) ||
                          pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//);
   
+  console.log('[Middleware] Protected path check:', {
+    isProtectedPath,
+    matchedPattern: protectedPaths.find(path => pathname.startsWith(path)) || 
+                   (pathname.match(/^\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\//) ? 'tenant-uuid' : null)
+  });
+  
   // Skip protection for API routes (they handle auth themselves)
   if (isProtectedPath && !pathname.startsWith('/api/')) {
-    const sessionId = request.cookies.get('sid');
+    console.log('[Middleware] Checking auth for protected route');
     
-    if (!sessionId) {
+    if (!sid && !sessionToken) {
+      console.log('[Middleware] No session cookies found!');
+      
+      // Check if user just completed onboarding
+      if (onboardingJustCompleted) {
+        console.log('[Middleware] User just completed onboarding, allowing temporary access');
+        console.log('[Middleware] onboarding_just_completed cookie value:', onboardingJustCompleted.value);
+        const response = NextResponse.next();
+        return addSecurityHeaders(response);
+      }
+      
       // No session, redirect to login
-      const response = NextResponse.redirect(new URL('/auth/signin', request.url));
+      console.log('[Middleware] REDIRECTING TO LOGIN - No valid session found');
+      console.log('[Middleware] Redirect URL:', `/auth/signin?returnTo=${encodeURIComponent(pathname)}`);
+      const response = NextResponse.redirect(new URL(`/auth/signin?returnTo=${encodeURIComponent(pathname)}`, request.url));
       return addSecurityHeaders(response);
+    } else {
+      console.log('[Middleware] Session found, allowing access');
+      console.log('[Middleware] Session details:', {
+        sid: sid ? { present: true, value: sid.value.substring(0, 8) + '...' } : null,
+        sessionToken: sessionToken ? { present: true, value: sessionToken.value.substring(0, 8) + '...' } : null
+      });
     }
+  } else if (!isProtectedPath) {
+    console.log('[Middleware] Not a protected path, allowing access');
   }
   
   // For all other routes, apply security headers and continue normally
   const response = NextResponse.next();
+  console.log('[Middleware] ========== REQUEST END ==========');
   return addSecurityHeaders(response);
 }
 

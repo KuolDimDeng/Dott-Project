@@ -200,20 +200,15 @@ export default function OnboardingFlowV2() {
         // Force session refresh to get updated data
         sessionManager.clearCache();
         
-        // CRITICAL: Ensure session cookies are properly set after onboarding
-        // The complete-all endpoint should have preserved the sid cookie
-        // We need to verify it's still there
-        const verifySession = await sessionManager.getSession();
-        if (!verifySession.authenticated) {
-          console.error('[OnboardingFlow] Session lost after onboarding completion');
-          // Try to refresh the session
-          window.location.href = `/${tenantId}/dashboard`;
-          return;
-        }
+        console.log('🎯 [OnboardingFlow] Onboarding completed successfully');
+        console.log('🎯 [OnboardingFlow] Using window.location for redirect to ensure cookies are preserved');
         
-        console.log('🎯 [OnboardingFlow] Session verified, redirecting to dashboard:', `/${tenantId}/dashboard`);
-        // Redirect to dashboard
-        router.push(`/${tenantId}/dashboard`);
+        // Use window.location.href instead of router.push to ensure cookies are properly set
+        // This forces a full page navigation which allows the cookies to be properly established
+        window.location.href = `/${tenantId}/dashboard`;
+        
+        // Don't use router.push here as it may not properly handle the cookie setup
+        return;
       } else {
         logger.error('[OnboardingFlow] Missing tenant ID in response:', response);
         throw new Error('Unable to complete onboarding: missing tenant ID');

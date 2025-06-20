@@ -603,40 +603,45 @@ export async function POST(request) {
     const currentSid = currentCookies.get('sid');
     const currentSessionToken = currentCookies.get('session_token');
     
-    console.log('[CompleteOnboarding] 🍪 Current sid cookie:', currentSid ? 'present' : 'missing');
-    console.log('[CompleteOnboarding] 🍪 Current session_token cookie:', currentSessionToken ? 'present' : 'missing');
+    console.log('[CompleteOnboarding] 🍪 Current cookies state:');
+    console.log('[CompleteOnboarding] 🍪 - sid:', currentSid ? { exists: true, value: currentSid.value, length: currentSid.value.length } : { exists: false });
+    console.log('[CompleteOnboarding] 🍪 - session_token:', currentSessionToken ? { exists: true, value: currentSessionToken.value, length: currentSessionToken.value.length } : { exists: false });
+    console.log('[CompleteOnboarding] 🍪 - sessionData.sessionToken:', sessionData.sessionToken ? { exists: true, length: sessionData.sessionToken.length } : { exists: false });
     
     // CRITICAL: Preserve the sid and session_token cookies
-    if (currentSid || currentSessionToken) {
+    if (currentSid || currentSessionToken || sessionData.sessionToken) {
       const sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData.sessionToken;
       
       if (sessionTokenValue) {
-        console.log('[CompleteOnboarding] 🍪 Preserving session ID cookie');
+        console.log('[CompleteOnboarding] 🍪 Preserving session with token:', sessionTokenValue);
+        
+        const cookieOptions = {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60, // 7 days
+          path: '/',
+          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+        };
+        
+        console.log('[CompleteOnboarding] 🍪 Cookie options:', cookieOptions);
         
         // Re-set the sid cookie to ensure it's not lost
-        response.cookies.set('sid', sessionTokenValue, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
-          path: '/',
-          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-        });
+        response.cookies.set('sid', sessionTokenValue, cookieOptions);
+        console.log('[CompleteOnboarding] 🍪 Set sid cookie');
         
         // Also set session_token for compatibility
-        response.cookies.set('session_token', sessionTokenValue, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
-          path: '/',
-          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-        });
+        response.cookies.set('session_token', sessionTokenValue, cookieOptions);
+        console.log('[CompleteOnboarding] 🍪 Set session_token cookie');
         
-        console.log('[CompleteOnboarding] 🍪 Session cookies preserved');
+        console.log('[CompleteOnboarding] 🍪 Session cookies preserved with value:', sessionTokenValue);
       } else {
         console.error('[CompleteOnboarding] ❌ No session token found to preserve!');
+        console.error('[CompleteOnboarding] ❌ This will cause authentication issues!');
       }
+    } else {
+      console.error('[CompleteOnboarding] ❌ CRITICAL: No session information available at all!');
+      console.error('[CompleteOnboarding] ❌ User will be logged out after redirect!');
     }
     
     // Remove old session cookies that are no longer used
