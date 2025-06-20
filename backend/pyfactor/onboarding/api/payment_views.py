@@ -74,11 +74,50 @@ def payment_pending_view(request):
         
         logger.info(f"[PaymentPending] Marked payment pending for user {user.email}, plan: {selected_plan}")
         
+        # Update session to reflect payment pending status
+        try:
+            from session_manager.models import UserSession
+            from django.utils import timezone as dj_timezone
+            
+            # Update all active sessions for the user
+            active_sessions = UserSession.objects.filter(
+                user=user,
+                is_active=True,
+                expires_at__gt=dj_timezone.now()
+            )
+            
+            sessions_updated = 0
+            for session in active_sessions:
+                # Update session fields to show payment is pending
+                session.onboarding_step = 'payment'
+                session.subscription_plan = selected_plan
+                
+                # Store payment pending status in session_data
+                if not session.session_data:
+                    session.session_data = {}
+                session.session_data['payment_pending'] = True
+                session.session_data['selected_plan'] = selected_plan
+                session.session_data['billing_cycle'] = billing_cycle
+                
+                # If tenant_id is available, update it
+                if tenant_id:
+                    session.tenant_id = tenant_id
+                    
+                session.save(update_fields=['onboarding_step', 'subscription_plan', 'session_data', 'tenant_id', 'updated_at'])
+                sessions_updated += 1
+                
+            logger.info(f"[PaymentPending] Updated {sessions_updated} active session(s) with payment pending status")
+            
+        except Exception as session_error:
+            logger.warning(f"[PaymentPending] Session update error: {str(session_error)}")
+            # Don't fail the request just because session update failed
+        
         return Response({
             'status': 'success',
             'message': 'Payment marked as pending',
             'data': {
                 'user_id': str(user.id),
+                'tenant_id': str(tenant_id) if tenant_id else None,
                 'selected_plan': selected_plan,
                 'billing_cycle': billing_cycle,
                 'current_step': 'payment',
@@ -181,54 +220,70 @@ def complete_payment_view(request):
         try:
             from session_manager.models import UserSession
             from session_manager.services import session_service
+            from django.utils import timezone
             
-            # Get current session from headers or cookies
-            session_token = request.headers.get('X-Session-Token')
-            if not session_token:
-                # Try to get from cookies
-                session_token = request.COOKIES.get('session_token')
+            # Update all active sessions for the user
+            active_sessions = UserSession.objects.filter(
+                user=user,
+                is_active=True,
+                expires_at__gt=timezone.now()
+            )
             
-            if session_token:
-                # Update session via service
+            sessions_updated = 0
+            for session in active_sessions:
+                # Update session fields
+                session.needs_onboarding = False
+                session.onboarding_completed = True
+                session.onboarding_step = 'completed'
+                session.subscription_plan = onboarding_progress.subscription_plan
+                session.subscription_status = 'active'
+                
+                # If tenant_id is available, update it
+                if onboarding_progress.tenant_id:
+                    session.tenant_id = onboarding_progress.tenant_id
+                    
+                session.save(update_fields=[
+                    'needs_onboarding', 'onboarding_completed', 'onboarding_step',
+                    'subscription_plan', 'subscription_status', 'tenant_id', 'updated_at'
+                ])
+                sessions_updated += 1
+                
+            logger.info(f"[CompletePayment] Updated {sessions_updated} active session(s) for user {user.email}")
+            
+            # Also try to get the current session ID from the request
+            session_id = None
+            
+            # Check if we have session info in the request
+            if hasattr(request, 'session') and hasattr(request.session, 'session_id'):
+                session_id = str(request.session.session_id)
+            elif hasattr(request, 'auth') and hasattr(request.auth, 'session_id'):
+                session_id = str(request.auth.session_id)
+                
+            # If we don't have a session ID, try to get from cookies
+            if not session_id:
+                session_cookie = request.COOKIES.get('sid')
+                if session_cookie:
+                    session_id = session_cookie
+                    
+            if session_id:
+                # Update the specific session via service
                 updated_session = session_service.update_session(
-                    session_token,
+                    session_id=session_id,
                     needs_onboarding=False,
                     onboarding_completed=True,
                     onboarding_step='completed',
                     subscription_plan=onboarding_progress.subscription_plan,
-                    subscription_status='active'
+                    subscription_status='active',
+                    tenant_id=str(onboarding_progress.tenant_id) if onboarding_progress.tenant_id else None
                 )
                 if updated_session:
-                    logger.info(f"[CompletePayment] Updated session manager for user {user.email}")
+                    logger.info(f"[CompletePayment] Updated specific session {session_id} for user {user.email}")
                 else:
-                    logger.warning(f"[CompletePayment] Failed to update session manager for user {user.email}")
-            else:
-                logger.info(f"[CompletePayment] No session token found, skipping session manager update")
-                
-            # Also try to update via session API directly
-            # This handles cases where the session token might be in a different format
-            try:
-                from django.db import connection
-                with connection.cursor() as cursor:
-                    cursor.execute("""
-                        UPDATE session_manager_usersession 
-                        SET needs_onboarding = false,
-                            onboarding_completed = true,
-                            onboarding_step = 'completed',
-                            subscription_plan = %s,
-                            subscription_status = 'active',
-                            updated_at = NOW()
-                        WHERE user_id = %s
-                        AND expires_at > NOW()
-                    """, [onboarding_progress.subscription_plan, user.id])
+                    logger.warning(f"[CompletePayment] Failed to update specific session {session_id}")
                     
-                    if cursor.rowcount > 0:
-                        logger.info(f"[CompletePayment] Updated {cursor.rowcount} session(s) directly for user {user.email}")
-            except Exception as db_error:
-                logger.warning(f"[CompletePayment] Direct session update error: {str(db_error)}")
-                
         except Exception as session_error:
             logger.warning(f"[CompletePayment] Session manager update error: {str(session_error)}")
+            # Don't fail the payment completion just because session update failed
         
         logger.info(f"[CompletePayment] Payment verified and onboarding completed for user {user.email}")
         

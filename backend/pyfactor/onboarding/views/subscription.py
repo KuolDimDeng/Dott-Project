@@ -401,7 +401,45 @@ class SubscriptionSaveView(APIView):
                 }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
             # Update onboarding progress
-            self.update_onboarding_progress_sync(request, business, selected_plan, billing_cycle)
+            progress = self.update_onboarding_progress_sync(request, business, selected_plan, billing_cycle)
+            
+            # Update session with subscription information
+            try:
+                from session_manager.models import UserSession
+                from django.utils import timezone as dj_timezone
+                
+                # Update all active sessions for the user
+                active_sessions = UserSession.objects.filter(
+                    user=request.user,
+                    is_active=True,
+                    expires_at__gt=dj_timezone.now()
+                )
+                
+                sessions_updated = 0
+                for session in active_sessions:
+                    # Update session fields
+                    session.subscription_plan = selected_plan
+                    session.onboarding_step = 'subscription'
+                    
+                    # Store subscription details in session_data
+                    if not session.session_data:
+                        session.session_data = {}
+                    session.session_data['selected_plan'] = selected_plan
+                    session.session_data['billing_cycle'] = billing_cycle
+                    session.session_data['subscription_selected_at'] = dj_timezone.now().isoformat()
+                    
+                    # If tenant_id is available from progress, update it
+                    if progress and progress.tenant_id:
+                        session.tenant_id = progress.tenant_id
+                        
+                    session.save(update_fields=['subscription_plan', 'onboarding_step', 'session_data', 'tenant_id', 'updated_at'])
+                    sessions_updated += 1
+                    
+                logger.info(f"[SubscriptionSave] Updated {sessions_updated} active session(s) with subscription plan: {selected_plan}")
+                
+            except Exception as session_error:
+                logger.warning(f"[SubscriptionSave] Session update error: {str(session_error)}")
+                # Don't fail the request just because session update failed
             
             # Process based on plan type
             if selected_plan == 'free':
@@ -452,6 +490,28 @@ class SubscriptionSaveView(APIView):
                     
                     if not rls_setup:
                         logger.warning(f"RLS setup not completed for free plan user {request.user.id}")
+                    
+                    # Update session with tenant ID for free plan
+                    try:
+                        from session_manager.models import UserSession
+                        from django.utils import timezone as dj_timezone
+                        
+                        # Update all active sessions with tenant ID
+                        active_sessions = UserSession.objects.filter(
+                            user=request.user,
+                            is_active=True,
+                            expires_at__gt=dj_timezone.now()
+                        )
+                        
+                        for session in active_sessions:
+                            session.tenant_id = tenant_id
+                            session.onboarding_step = 'complete' if selected_plan == 'free' else 'payment'
+                            session.save(update_fields=['tenant_id', 'onboarding_step', 'updated_at'])
+                            
+                        logger.info(f"[SubscriptionSave] Updated sessions with tenant_id: {tenant_id} for free plan")
+                        
+                    except Exception as session_error:
+                        logger.warning(f"[SubscriptionSave] Free plan session update error: {str(session_error)}")
                     
                     # Return successful response with redirection
                     return Response({
