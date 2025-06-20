@@ -199,7 +199,7 @@ async function updateAuth0Session(sessionData, onboardingData, tenantId) {
       businessName: updatedSession.user?.businessName
     });
     
-    const cookieStore = await cookies();
+    const authCookieStore = await cookies();
     // Use encryption instead of base64
     const updatedCookie = encrypt(JSON.stringify(updatedSession));
     
@@ -296,7 +296,7 @@ export async function POST(request) {
     console.log('[CompleteOnboarding] Starting backend onboarding process');
     
     // CRITICAL: Store the session token early to ensure it's not lost
-    const cookieStore = await cookies();
+    // Note: cookieStore was already declared earlier
     const earlyCheckSid = cookieStore.get('sid');
     const earlyCheckSessionToken = cookieStore.get('session_token');
     const originalSessionToken = sessionData?.sessionToken || earlyCheckSid?.value || earlyCheckSessionToken?.value;
@@ -622,9 +622,9 @@ export async function POST(request) {
     
     // CRITICAL: Preserve the sid cookie from the current session BEFORE creating response
     console.log('[CompleteOnboarding] 🍪 COOKIE UPDATE PROCESS STARTING');
-    const currentCookies = await cookies();
-    const currentSid = currentCookies.get('sid');
-    const currentSessionToken = currentCookies.get('session_token');
+    // Note: cookieStore was already declared earlier in the function
+    const currentSid = cookieStore.get('sid');
+    const currentSessionToken = cookieStore.get('session_token');
     
     console.log('[CompleteOnboarding] 🍪 Current cookies state:');
     console.log('[CompleteOnboarding] 🍪 - sid:', currentSid ? { exists: true, value: currentSid.value, length: currentSid.value.length } : { exists: false });
