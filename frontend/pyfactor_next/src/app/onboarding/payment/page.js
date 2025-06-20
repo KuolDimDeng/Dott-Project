@@ -80,7 +80,7 @@ function PaymentForm({ plan, billingCycle }) {
   const getPrice = () => {
     const prices = {
       professional: { monthly: 15, yearly: 144 },
-      enterprise: { monthly: 35, yearly: 336 }
+      enterprise: { monthly: 45, yearly: 432 }
     };
     return prices[plan.toLowerCase()]?.[billingCycle] || 0;
   };

@@ -37,8 +37,8 @@ def create_payment_intent(request):
                 'annual': 16200   # $162.00 (10% discount)
             },
             'enterprise': {
-                'monthly': 3500,  # $35.00 in cents
-                'annual': 37800   # $378.00 (10% discount)
+                'monthly': 4500,  # $45.00 in cents
+                'annual': 43200   # $432.00 (20% discount)
             }
         }
         

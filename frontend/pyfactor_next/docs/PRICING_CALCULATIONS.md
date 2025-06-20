@@ -15,12 +15,12 @@
   - Monthly equivalent when paid yearly: $144 ÷ 12 = $12/month
 
 ### Enterprise
-- Monthly: $35/month
+- Monthly: $45/month
 - Yearly calculation:
-  - Full price: $35 × 12 = $420/year
-  - 20% discount: $420 × 0.20 = $84
-  - **Final yearly price: $420 - $84 = $336/year**
-  - Monthly equivalent when paid yearly: $336 ÷ 12 = $28/month
+  - Full price: $45 × 12 = $540/year
+  - 20% discount: $540 × 0.20 = $108
+  - **Final yearly price: $540 - $108 = $432/year**
+  - Monthly equivalent when paid yearly: $432 ÷ 12 = $36/month
 
 ## Regional Pricing (50% discount for developing countries)
 
@@ -29,8 +29,8 @@
 - Yearly: $72/year (20% off from $90)
 
 ### Enterprise (Developing Countries)
-- Monthly: $17.50/month
-- Yearly: $168/year (20% off from $210)
+- Monthly: $22.50/month
+- Yearly: $216/year (20% off from $270)
 
 ## Implementation Notes
 

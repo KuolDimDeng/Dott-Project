@@ -71,7 +71,7 @@ async function setupProducts() {
     // Create Enterprise prices
     const enterpriseMonthly = await stripe.prices.create({
       product: enterpriseProduct.id,
-      unit_amount: 3500, // $35.00
+      unit_amount: 4500, // $45.00
       currency: 'usd',
       recurring: {
         interval: 'month',
@@ -85,7 +85,7 @@ async function setupProducts() {
 
     const enterpriseYearly = await stripe.prices.create({
       product: enterpriseProduct.id,
-      unit_amount: 99000, // $990.00
+      unit_amount: 43200, // $432.00 (20% discount)
       currency: 'usd',
       recurring: {
         interval: 'year',

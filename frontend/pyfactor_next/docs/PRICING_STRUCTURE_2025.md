@@ -41,7 +41,7 @@ This document outlines the updated subscription pricing structure implemented in
 
 ### 3. Enterprise
 **Target**: Large organizations needing unlimited scale
-**Price**: $35/month or $336/year (20% discount on annual)
+**Price**: $45/month or $432/year (20% discount on annual)
 **User Limit**: Unlimited users
 **Storage**: Unlimited everything
 **Support**: Priority support + Custom onboarding

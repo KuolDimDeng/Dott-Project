@@ -219,7 +219,7 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 ## Subscription Pricing (January 2025)
 - **Basic** (Free): 1 user, 3GB storage, basic support, all core features
 - **Professional**: $15/mo or $144/year (20% discount), 3 users, unlimited storage, priority support
-- **Enterprise**: $35/mo or $336/year (20% discount), unlimited users, custom onboarding, dedicated support
+- **Enterprise**: $45/mo or $432/year (20% discount), unlimited users, custom onboarding, dedicated support
 - All tiers include: income/expense tracking, invoicing, payments (Stripe/PayPal/Mobile Money), inventory management
 - Regional pricing: 50% discount for developing countries (automatically detected)
 - Files: /src/app/components/Pricing.js, /src/components/Onboarding/SubscriptionForm.jsx

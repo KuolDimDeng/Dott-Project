@@ -702,7 +702,7 @@ export async function POST(request) {
             current_step: 'subscription',
               tenant_id: backendData?.tenant_id,
               tenantId: backendData?.tenant_id,
-              data: backendData
+              data: backendData,
             redirect_url: '/onboarding/subscription'
             });
         }

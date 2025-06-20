@@ -67,9 +67,9 @@ const PLANS = [
     id: 'enterprise',
     name: 'Enterprise',
     description: 'Unlimited scale for ambitious organizations',
-    price: '$35/mo',
-    monthlyPrice: 35,
-    yearlyPrice: 336, // 20% discount
+    price: '$45/mo',
+    monthlyPrice: 45,
+    yearlyPrice: 432, // 20% discount
     features: [
       'Everything in Professional',
       'Unlimited users',

@@ -13,8 +13,8 @@ const BASE_PRICES = {
     yearly: 29000,  // $290.00
   },
   enterprise: {
-    monthly: 3500,  // $35.00
-    yearly: 99000,  // $990.00
+    monthly: 4500,  // $45.00
+    yearly: 43200,  // $432.00 (20% discount)
   },
 };
 

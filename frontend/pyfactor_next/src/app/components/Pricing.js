@@ -66,7 +66,7 @@ export default function Pricing() {
     professionalPrice: hasDiscount && userCountry !== 'US' ? 
       (dynamicPricing?.professional?.monthly?.formatted || '$7.50') : '$15',
     enterprisePrice: hasDiscount && userCountry !== 'US' ? 
-      (dynamicPricing?.enterprise?.monthly?.formatted || '$17.50') : '$35'
+      (dynamicPricing?.enterprise?.monthly?.formatted || '$22.50') : '$45'
   });
 
   const plans = [
@@ -161,12 +161,12 @@ export default function Pricing() {
       price: { 
         monthly: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.monthly?.formatted ? 
-            `${dynamicPricing.enterprise.monthly.formatted}/mo` : '$17.50/mo') :
-          '$35/mo',
+            `${dynamicPricing.enterprise.monthly.formatted}/mo` : '$22.50/mo') :
+          '$45/mo',
         annual: hasDiscount && userCountry !== 'US' ? 
           (dynamicPricing?.enterprise?.annual?.formatted ? 
             `${dynamicPricing.enterprise.annual.formatted}/year` : '$168/year') :
-          '$336/year'
+          '$432/year'
       },
       savings: 'save 20%',
       features: [

@@ -57,7 +57,7 @@ const PLANS = [
     id: 'enterprise',
     name: 'Enterprise',
     description: 'Unlimited scale for ambitious organizations',
-    price: { monthly: '35', annual: '336' },
+    price: { monthly: '45', annual: '432' },
     features: [
       'All Professional features',
       'Unlimited users',

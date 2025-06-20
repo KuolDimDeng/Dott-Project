@@ -11,7 +11,7 @@ import { getCacheValue } from '@/utils/appCache';
 export const BASE_PRICING_USD = {
   basic: { monthly: 0, annual: 0 },
   professional: { monthly: 15, annual: 15 },
-  enterprise: { monthly: 35, annual: 35 }
+  enterprise: { monthly: 45, annual: 45 }
 };
 
 /**
@@ -76,8 +76,8 @@ export async function calculatePricingForCountry(countryCode, isDeveloping = fal
         annual: { amount: 15, formatted: '$15' }
       },
       enterprise: {
-        monthly: { amount: 35, formatted: '$35' },
-        annual: { amount: 35, formatted: '$35' }
+        monthly: { amount: 45, formatted: '$45' },
+        annual: { amount: 45, formatted: '$45' }
       }
     };
   }
