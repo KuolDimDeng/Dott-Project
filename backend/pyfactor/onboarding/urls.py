@@ -33,6 +33,7 @@ from .api.payment_views import payment_pending_view, complete_payment_view
 from .views.subscription import SubscriptionSaveView
 from .views.onboarding_api import OnboardingStatusAPI, CompleteOnboardingAPI, ResumeOnboardingAPI
 from .api.status_views import OnboardingStatusView, ForceCompleteOnboardingView
+from .api.data_views import OnboardingDataView
 from rest_framework.routers import DefaultRouter
 
 
@@ -103,6 +104,7 @@ urlpatterns = [
     path('api/status/', OnboardingStatusAPI.as_view(), name='api-onboarding-status'),
     path('api/complete/', CompleteOnboardingAPI.as_view(), name='api-complete-onboarding'),
     path('api/resume/', ResumeOnboardingAPI.as_view(), name='api-resume-onboarding'),
+    path('api/data/', OnboardingDataView.as_view(), name='api-onboarding-data'),
     
     # Payment verification endpoints
     path('payment-pending/', payment_pending_view, name='payment-pending'),
