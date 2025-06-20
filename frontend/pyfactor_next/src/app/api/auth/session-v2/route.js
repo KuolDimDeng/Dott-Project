@@ -50,6 +50,42 @@ export async function GET(request) {
       needsOnboarding: sessionData.needs_onboarding
     });
     
+    // WORKAROUND: If session says needs_onboarding but user has tenant_id,
+    // double-check with the user profile endpoint which checks OnboardingProgress
+    let finalNeedsOnboarding = sessionData.needs_onboarding;
+    let finalOnboardingCompleted = sessionData.onboarding_completed;
+    
+    if (sessionData.needs_onboarding === true && sessionData.tenant_id) {
+      console.log('[Session-V2] Session has tenant_id but needs_onboarding=true, checking user profile...');
+      
+      try {
+        const profileResponse = await fetch(`${API_URL}/api/users/me/session/`, {
+          headers: {
+            'Authorization': `Session ${sessionId.value}`,
+            'Cookie': `session_token=${sessionId.value}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          console.log('[Session-V2] User profile check:', {
+            needs_onboarding: profileData.needs_onboarding,
+            onboarding_completed: profileData.onboarding_completed
+          });
+          
+          // Trust the user profile data over session data
+          if (profileData.needs_onboarding === false) {
+            finalNeedsOnboarding = false;
+            finalOnboardingCompleted = true;
+            console.log('[Session-V2] ✅ User has completed onboarding (per OnboardingProgress), overriding session default');
+          }
+        }
+      } catch (error) {
+        console.warn('[Session-V2] Failed to check user profile, using session data:', error);
+      }
+    }
+    
     // Return session data from backend
     // Check if data is nested in a 'user' object
     const userData = sessionData.user || sessionData;
@@ -59,9 +95,9 @@ export async function GET(request) {
       authenticated: true,
       user: {
         email: userData.email || sessionData.email,
-        // Use the backend's onboarding fields directly from sessionData
-        needsOnboarding: sessionData.needs_onboarding ?? true,
-        onboardingCompleted: sessionData.onboarding_completed ?? false,
+        // Use the corrected onboarding status
+        needsOnboarding: finalNeedsOnboarding ?? true,
+        onboardingCompleted: finalOnboardingCompleted ?? false,
         tenantId: sessionData.tenant_id || tenantData.id || userData.tenant_id,
         tenant_id: sessionData.tenant_id || tenantData.id || userData.tenant_id,
         permissions: userData.permissions || sessionData.permissions || []

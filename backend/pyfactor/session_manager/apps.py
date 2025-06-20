@@ -8,4 +8,8 @@ class SessionManagerConfig(AppConfig):
     
     def ready(self):
         """Initialize app when Django starts"""
-        pass
+        # Import signals to register them
+        try:
+            import session_manager.signals
+        except ImportError:
+            pass
