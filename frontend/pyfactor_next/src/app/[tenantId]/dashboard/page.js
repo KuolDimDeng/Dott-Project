@@ -258,6 +258,13 @@ export default function TenantDashboard() {
           return;
         }
         
+        // Check if we just came from auth
+        const fromAuth = searchParams.get('fromAuth') === 'true';
+        if (fromAuth) {
+          logger.info('[TenantDashboard] Coming from auth, waiting for cookies to propagate...');
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
         // Use SessionManager to get authentication state
         const { sessionManagerEnhanced } = await import('@/utils/sessionManager-v2-enhanced');
         const getSession = () => sessionManagerEnhanced.getSession();

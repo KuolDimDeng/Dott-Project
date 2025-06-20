@@ -88,9 +88,18 @@ export async function POST(request) {
     }
     
     // Create response with redirect
-    const finalRedirectUrl = redirectUrl.startsWith('http') 
+    // Add fromAuth parameter to help pages know they just came from authentication
+    let finalRedirectUrl = redirectUrl.startsWith('http') 
       ? redirectUrl 
       : new URL(redirectUrl, baseUrl).toString();
+    
+    // Add fromAuth parameter if not already present
+    const redirectUrlObj = new URL(finalRedirectUrl);
+    if (!redirectUrlObj.searchParams.has('fromAuth')) {
+      redirectUrlObj.searchParams.set('fromAuth', 'true');
+      finalRedirectUrl = redirectUrlObj.toString();
+    }
+    
     const response = NextResponse.redirect(finalRedirectUrl);
     
     // Set session cookies

@@ -21,8 +21,30 @@ export default function OnboardingPageV2() {
     try {
       logger.info('[OnboardingPage.v2] Checking authentication...');
       
-      // Get session using client helper
-      const session = await getClientSession();
+      // Wait a moment for cookies to propagate if we just came from auth
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromAuth = urlParams.get('fromAuth') === 'true';
+      
+      if (fromAuth) {
+        logger.info('[OnboardingPage.v2] Coming from auth, waiting for cookies to propagate...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      
+      // Get session using client helper with retry
+      let session = await getClientSession();
+      
+      // If not authenticated and we just came from auth, retry a few times
+      if (!session.authenticated && fromAuth) {
+        logger.info('[OnboardingPage.v2] Session not found, retrying...');
+        for (let i = 0; i < 3; i++) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          session = await getClientSession();
+          if (session.authenticated) {
+            logger.info('[OnboardingPage.v2] Session found on retry', i + 1);
+            break;
+          }
+        }
+      }
       
       if (!session.authenticated) {
         logger.warn('[OnboardingPage.v2] Not authenticated, redirecting to login');
