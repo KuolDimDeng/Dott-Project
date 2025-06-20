@@ -822,7 +822,7 @@ SHARED_APPS = (
     'django_extensions',
     'custom_auth',
     'onboarding.apps.OnboardingConfig',
-    'session_manager',  # New session management app
+    'session_manager.apps.SessionManagerConfig',  # New session management app with signals
 )
 
 TENANT_APPS = (
