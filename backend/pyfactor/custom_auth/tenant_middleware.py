@@ -70,7 +70,7 @@ class EnhancedTenantMiddleware:
             '/api/onboarding/setup/'
             # Removed '/api/onboarding/business-info/' from no_tenant_paths to ensure it uses tenant schema
         ]
-    def set_schema_with_transaction_handling(tenant_id: uuid.UUID:
+    def set_schema_with_transaction_handling(tenant_id: uuid.UUID):
         """Set the schema with proper transaction handling"""
         from django.db import connection
         

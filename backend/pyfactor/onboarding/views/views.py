@@ -2080,7 +2080,7 @@ class SaveStep1View(APIView):
                     # Get connection parameters from Django's connection
                     conn_params = connection.get_connection_params()
                     # Add explicit isolation level to connection parameters
-                    conn_params['options'] = f'{conn_params.get("options", "")} -c default_transaction_isolation="read committed"'
+                    conn_params['options'] = f'{conn_params.get("options", "")} -c default_transaction_isolation=\'read committed\''
                     tenant_conn = None
                     
                     logger.debug(f"Creating tenant connection with params: {conn_params}")
