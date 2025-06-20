@@ -73,6 +73,34 @@ export async function GET(request) {
             isBackendComplete
           );
           
+          // Get actual business name from onboarding data
+          let actualBusinessName = sessionData.business_name || userData.business_name || tenantData.name;
+          const finalTenantId = userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value;
+          
+          // Try to get actual business name from onboarding progress
+          if (finalTenantId) {
+            try {
+              const onboardingResponse = await fetch(`${API_URL}/api/onboarding/data/?tenant_id=${finalTenantId}`, {
+                headers: {
+                  'Authorization': `SessionID ${token}`,
+                  'Cookie': `session_token=${token}`,
+                  'Content-Type': 'application/json'
+                },
+                cache: 'no-store'
+              });
+              
+              if (onboardingResponse.ok) {
+                const onboardingData = await onboardingResponse.json();
+                if (onboardingData.business_name) {
+                  actualBusinessName = onboardingData.business_name;
+                  console.log('[Profile API] Found actual business name from onboarding:', actualBusinessName);
+                }
+              }
+            } catch (error) {
+              console.warn('[Profile API] Could not fetch business name from onboarding:', error);
+            }
+          }
+          
           // Return profile data from backend
           return NextResponse.json({
             authenticated: true,
@@ -80,11 +108,13 @@ export async function GET(request) {
             needsOnboarding: hasCompletedOnboarding ? false : (sessionData.needs_onboarding ?? true),
             onboardingCompleted: hasCompletedOnboarding || (sessionData.onboarding_completed ?? false),
             currentStep: sessionData.current_onboarding_step || 'business_info',
-            tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
-            tenant_id: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
-            businessName: sessionData.business_name || userData.business_name || tenantData.name,
+            tenantId: finalTenantId,
+            tenant_id: finalTenantId,
+            businessName: actualBusinessName,
             subscriptionPlan: sessionData.subscription_plan || userData.subscription_plan || 'free',
-            sessionSource: 'backend-v2'
+            sessionSource: 'backend-v2',
+            name: userData.name || sessionData.name || userData.email,
+            initials: (userData.name || sessionData.name || userData.email || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2)
           }, {
             headers: {
               'Cache-Control': 'no-store, no-cache, must-revalidate',
@@ -507,6 +537,10 @@ export async function GET(request) {
       backendCompleted: profileData.backendCompleted,
       dataSource: accessToken ? 'session+backend' : 'session-only'
     });
+    
+    // Add user name and initials to profile data
+    profileData.name = profileData.name || user.name || user.email;
+    profileData.initials = (profileData.name || user.name || user.email || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     
     return NextResponse.json(profileData, {
         headers: {
