@@ -245,6 +245,15 @@ export async function POST(request) {
     
     const { user, sessionData } = authResult;
     console.log('[CompleteOnboarding] Authenticated user:', user.email);
+    
+    // CRITICAL: Preserve session token early before any operations
+    const cookieStore = await cookies();
+    const earlySessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value || sessionData.sessionToken;
+    console.log('[CompleteOnboarding] 🔑 Early session token preservation:', {
+      hasToken: !!earlySessionToken,
+      tokenLength: earlySessionToken?.length,
+      source: cookieStore.get('session_token') ? 'session_token' : cookieStore.get('sid') ? 'sid' : 'sessionData'
+    });
     console.log('[CompleteOnboarding] Session data received:', {
       hasSessionToken: !!sessionData?.sessionToken,
       sessionTokenLength: sessionData?.sessionToken?.length,
@@ -624,7 +633,7 @@ export async function POST(request) {
     
     // CRITICAL: Preserve the sid and session_token cookies
     // Get the session token value from the existing cookies or session data
-    let sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData?.sessionToken;
+    let sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData?.sessionToken || earlySessionToken;
     
     // Additional check: If sessionData has a sessionToken but it's not in cookies, it might be the raw token
     if (!sessionTokenValue && sessionData && typeof sessionData === 'object') {
@@ -641,7 +650,11 @@ export async function POST(request) {
     
     if (!sessionTokenValue) {
       console.error('[CompleteOnboarding] ❌ CRITICAL: No session token available!');
-      console.error('[CompleteOnboarding] ❌ User will be logged out after redirect!');
+      console.error('[CompleteOnboarding] ❌ All sources checked:');
+      console.error('[CompleteOnboarding] ❌ - currentSid:', !!currentSid);
+      console.error('[CompleteOnboarding] ❌ - currentSessionToken:', !!currentSessionToken);
+      console.error('[CompleteOnboarding] ❌ - sessionData.sessionToken:', !!sessionData?.sessionToken);
+      console.error('[CompleteOnboarding] ❌ - earlySessionToken:', !!earlySessionToken);
       console.error('[CompleteOnboarding] ❌ Debug - sessionData structure:', JSON.stringify(sessionData, null, 2));
       
       // Last resort: Get the token that was used for the backend API calls
@@ -696,6 +709,14 @@ export async function POST(request) {
     } else {
       console.error('[CompleteOnboarding] ❌ CRITICAL: Could not recover session token!');
       console.error('[CompleteOnboarding] ❌ User will need to sign in again!');
+      
+      // Return error response instead of continuing without session
+      return NextResponse.json({
+        success: false,
+        error: 'Session lost during onboarding',
+        message: 'Your session has expired. Please sign in again to continue.',
+        requiresAuth: true
+      }, { status: 401 });
     }
     
     // Remove old session cookies that are no longer used

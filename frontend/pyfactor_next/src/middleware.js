@@ -25,12 +25,14 @@ export async function middleware(request) {
   const sessionToken = cookies.get('session_token');
   const onboardingJustCompleted = cookies.get('onboarding_just_completed');
   const userTenantId = cookies.get('user_tenant_id');
+  const onboardingCompleted = cookies.get('onboardingCompleted');
   
   console.log('[Middleware] Session cookie status:', {
-    sid: sid ? { exists: true, length: sid.value.length } : { exists: false },
-    sessionToken: sessionToken ? { exists: true, length: sessionToken.value.length } : { exists: false },
+    sid: sid ? { exists: true, length: sid.value.length, value: sid.value.substring(0, 8) + '...' } : { exists: false },
+    sessionToken: sessionToken ? { exists: true, length: sessionToken.value.length, value: sessionToken.value.substring(0, 8) + '...' } : { exists: false },
     onboardingJustCompleted: onboardingJustCompleted ? onboardingJustCompleted.value : null,
-    userTenantId: userTenantId ? userTenantId.value : null
+    userTenantId: userTenantId ? userTenantId.value : null,
+    onboardingCompleted: onboardingCompleted ? onboardingCompleted.value : null
   });
   
   // Debug logging for double tenant ID issue
@@ -76,26 +78,31 @@ export async function middleware(request) {
   
   // Skip protection for API routes (they handle auth themselves)
   if (isProtectedPath && !pathname.startsWith('/api/')) {
-    console.log('[Middleware] Checking auth for protected route');
+    console.log('[Middleware] Checking auth for protected route:', pathname);
+    console.log('[Middleware] Session check - sid:', !!sid, 'sessionToken:', !!sessionToken);
     
     if (!sid && !sessionToken) {
-      console.log('[Middleware] No session cookies found!');
+      console.log('[Middleware] ❌ NO SESSION COOKIES FOUND!');
+      console.log('[Middleware] Debug - All cookies:', cookieList.map(c => c.name));
       
       // Check if user just completed onboarding
-      if (onboardingJustCompleted) {
-        console.log('[Middleware] User just completed onboarding, allowing temporary access');
-        console.log('[Middleware] onboarding_just_completed cookie value:', onboardingJustCompleted.value);
+      if (onboardingJustCompleted === 'true' || onboardingCompleted === 'true') {
+        console.log('[Middleware] ✅ User just completed onboarding, allowing temporary access');
+        console.log('[Middleware] - onboarding_just_completed:', onboardingJustCompleted);
+        console.log('[Middleware] - onboardingCompleted:', onboardingCompleted);
+        console.log('[Middleware] - userTenantId:', userTenantId);
         const response = NextResponse.next();
         return addSecurityHeaders(response);
       }
       
       // No session, redirect to login
-      console.log('[Middleware] REDIRECTING TO LOGIN - No valid session found');
-      console.log('[Middleware] Redirect URL:', `/auth/signin?returnTo=${encodeURIComponent(pathname)}`);
+      console.log('[Middleware] 🚫 REDIRECTING TO LOGIN - No valid session found');
+      console.log('[Middleware] - From path:', pathname);
+      console.log('[Middleware] - Redirect URL:', `/auth/signin?returnTo=${encodeURIComponent(pathname)}`);
       const response = NextResponse.redirect(new URL(`/auth/signin?returnTo=${encodeURIComponent(pathname)}`, request.url));
       return addSecurityHeaders(response);
     } else {
-      console.log('[Middleware] Session found, allowing access');
+      console.log('[Middleware] ✅ Session found, allowing access');
       console.log('[Middleware] Session details:', {
         sid: sid ? { present: true, value: sid.value.substring(0, 8) + '...' } : null,
         sessionToken: sessionToken ? { present: true, value: sessionToken.value.substring(0, 8) + '...' } : null

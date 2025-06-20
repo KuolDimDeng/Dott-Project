@@ -243,6 +243,11 @@ export default function OnboardingFlowV2() {
         logger.error('[OnboardingFlow] Session lost during onboarding');
         window.location.href = response.redirect_url;
         return;
+      } else if (response.requiresAuth) {
+        logger.error('[OnboardingFlow] Session lost during onboarding:', response);
+        // Session was lost, redirect to login
+        window.location.href = '/auth/signin?message=session_expired&returnTo=/onboarding';
+        return;
       } else {
         logger.error('[OnboardingFlow] Missing tenant ID in response:', response);
         throw new Error('Unable to complete onboarding: missing tenant ID');

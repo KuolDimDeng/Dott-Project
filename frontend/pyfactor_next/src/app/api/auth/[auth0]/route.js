@@ -226,18 +226,19 @@ async function handleCallback(request, { params }) {
         oldCookies.forEach(cookieName => {
           headers.append('Set-Cookie', `${cookieName}=; ${clearCookieOptions}`);
         });
-        // Redirect based on backend session data
-        let redirectUrl = '/dashboard';
+        // Redirect to the callback page to handle the session
+        // Pass the session info as URL parameters so the callback page knows what to do
+        const callbackParams = new URLSearchParams({
+          session_token: session_id,
+          tenant_id: tenant_id || '',
+          onboarding_completed: (!needs_onboarding).toString()
+        });
         
-        if (needs_onboarding) {
-          redirectUrl = '/onboarding';
-        } else if (tenant_id) {
-          redirectUrl = `/${tenant_id}/dashboard`;
-        }
+        const callbackUrl = `${AUTH0_BASE_URL}/auth/callback?${callbackParams.toString()}`;
         
-        logger.info('[Auth0] Redirecting to:', redirectUrl);
+        logger.info('[Auth0] Redirecting to callback page:', callbackUrl);
         
-        return NextResponse.redirect(`${AUTH0_BASE_URL}${redirectUrl}`, { headers });
+        return NextResponse.redirect(callbackUrl, { headers });
         
       } catch (error) {
         logger.error('[Auth0] Session creation error:', error);

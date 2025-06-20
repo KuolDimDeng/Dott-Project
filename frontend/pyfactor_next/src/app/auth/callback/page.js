@@ -34,9 +34,37 @@ export default function Auth0CallbackPage() {
             tenantId: backendTenantId,
             onboardingCompleted: onboardingCompleted
           });
+          
+          // If we have a session token, establish the session immediately
+          setStatus('Establishing session...');
+          
+          // Create a form to submit to establish-session endpoint
+          const form = document.createElement('form');
+          form.method = 'POST';
+          form.action = '/api/auth/establish-session';
+          form.style.display = 'none';
+          
+          const tokenInput = document.createElement('input');
+          tokenInput.type = 'hidden';
+          tokenInput.name = 'token';
+          tokenInput.value = sessionToken;
+          
+          const redirectInput = document.createElement('input');
+          redirectInput.type = 'hidden';
+          redirectInput.name = 'redirectUrl';
+          redirectInput.value = onboardingCompleted ? `/${backendTenantId}/dashboard` : '/onboarding';
+          
+          form.appendChild(tokenInput);
+          form.appendChild(redirectInput);
+          document.body.appendChild(form);
+          
+          console.log('[Auth0Callback] Submitting form to establish session with redirect:', redirectInput.value);
+          form.submit();
+          return;
         }
         
-        // Get session from our session API route - this will use either the new session token or legacy cookies
+        // Only try to get session if we don't have a session token from URL
+        console.log('[Auth0Callback] No session token in URL, checking for existing session');
         const sessionResponse = await fetch('/api/auth/session-v2', {
           credentials: 'include'
         });
@@ -118,9 +146,8 @@ export default function Auth0CallbackPage() {
         // Mark redirect as handled to prevent loops
         setRedirectHandled(true);
         
-        // CRITICAL: Ensure session is properly set before redirecting
-        // Always create a session, not just when we have sessionToken
-        console.log('[Auth0Callback] Creating session for user');
+        // Only create a session if we don't have one from the backend
+        console.log('[Auth0Callback] No session token from backend, creating session');
         
         try {
           const sessionCreateResponse = await fetch('/api/auth/session-v2', {
@@ -149,7 +176,8 @@ export default function Auth0CallbackPage() {
             const sessionResult = await sessionCreateResponse.json();
             console.log('[Auth0Callback] Session creation result:', {
               success: sessionResult.success,
-              hasUser: !!sessionResult.user
+              hasUser: !!sessionResult.user,
+              sessionToken: sessionResult.session_token
             });
             
             // Wait a bit for cookies to propagate
