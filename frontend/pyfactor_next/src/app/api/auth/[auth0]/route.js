@@ -196,18 +196,26 @@ async function handleCallback(request, { params }) {
           return NextResponse.redirect(`${AUTH0_BASE_URL}/login?error=session_creation_failed`);
         }
         
-        const { session_id, expires_at, needs_onboarding, tenant_id } = await sessionResponse.json();
+        const sessionData = await sessionResponse.json();
+        
+        logger.info('[Auth0] Backend session response:', sessionData);
+        
+        // Extract session token from backend response
+        const sessionToken = sessionData.session_token || sessionData.session_id;
+        const expiresAt = sessionData.expires_at;
+        const needsOnboarding = sessionData.needs_onboarding;
+        const tenantId = sessionData.tenant_id;
         
         logger.info('[Auth0] Backend session created:', {
-          sessionId: session_id,
-          needsOnboarding: needs_onboarding,
-          tenantId: tenant_id
+          sessionId: sessionToken,
+          needsOnboarding: needsOnboarding,
+          tenantId: tenantId
         });
         
         // Set only the session ID cookie
-        const sessionCookie = `sid=${session_id}; ` +
+        const sessionCookie = `sid=${sessionToken}; ` +
           `HttpOnly; Secure; SameSite=Lax; Path=/; ` +
-          `Expires=${new Date(expires_at).toUTCString()}`;
+          `Expires=${new Date(expiresAt).toUTCString()}`;
         headers.append('Set-Cookie', sessionCookie);
         
         // Clear ALL old cookies that might interfere
@@ -229,9 +237,9 @@ async function handleCallback(request, { params }) {
         // Redirect to the callback page to handle the session
         // Pass the session info as URL parameters so the callback page knows what to do
         const callbackParams = new URLSearchParams({
-          session_token: session_id,
-          tenant_id: tenant_id || '',
-          onboarding_completed: (!needs_onboarding).toString()
+          session_token: sessionToken,
+          tenant_id: tenantId || '',
+          onboarding_completed: (!needsOnboarding).toString()
         });
         
         const callbackUrl = `${AUTH0_BASE_URL}/auth/callback?${callbackParams.toString()}`;
