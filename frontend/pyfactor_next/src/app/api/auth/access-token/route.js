@@ -5,9 +5,47 @@ export async function GET(request) {
   try {
     console.log('[Auth Access Token] Getting access token');
     
-    // Try to get session from custom cookie first - try new name first, then old
     const cookieStore = await cookies();
+    // Check new session system first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    // If we have new session cookies, use the backend session API
+    if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        console.log('[Auth Access Token] Using new session system');
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          // Backend doesn't return access tokens directly for security
+          // Return a success indicator instead
+          return NextResponse.json({
+            access_token: 'session-v2-active',
+            accessToken: 'session-v2-active',
+            token: 'session-v2-active',
+            session_type: 'backend-v2',
+            authenticated: true
+          });
+        } else {
+          console.log('[Auth Access Token] Backend session invalid:', response.status);
+          return NextResponse.json({ error: 'Session invalid' }, { status: 401 });
+        }
+      } catch (error) {
+        console.error('[Auth Access Token] Error fetching backend session:', error);
+        // Fall through to legacy check
+      }
+    }
     
     if (sessionCookie) {
       try {

@@ -7,7 +7,9 @@ import { decrypt } from '@/utils/sessionEncryption';
  */
 export async function GET(request) {
   try {
-    // Get session cookie to get user info - try new name first, then old
+    // Check new session system first
+    const sidCookie = request.cookies.get('sid');
+    const sessionTokenCookie = request.cookies.get('session_token');
     let sessionCookie = request.cookies.get('dott_auth_session') || request.cookies.get('appSession');
     
     // Check for session token in query params as fallback for immediate verification
@@ -27,6 +29,46 @@ export async function GET(request) {
           sessionCookie = { name, value };
           console.log('[Auth Me] Found session cookie in header');
         }
+      }
+    }
+    
+    // If we have new session cookies, use the backend session API
+    if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        console.log('[Auth Me] Using new session system');
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          return NextResponse.json({
+            authenticated: true,
+            user: {
+              email: sessionData.email,
+              sub: sessionData.auth0_sub || sessionData.user_id,
+              name: sessionData.name || sessionData.email,
+              picture: sessionData.picture,
+              email_verified: sessionData.email_verified !== false
+            },
+            accessToken: sessionData.access_token,
+            idToken: sessionData.id_token,
+            sessionSource: 'backend-v2'
+          });
+        } else {
+          console.log('[Auth Me] Backend session invalid:', response.status);
+          return NextResponse.json({ error: 'Session invalid', authenticated: false }, { status: 401 });
+        }
+      } catch (error) {
+        console.error('[Auth Me] Error fetching backend session:', error);
+        return NextResponse.json({ error: 'Session error', authenticated: false }, { status: 500 });
       }
     }
     

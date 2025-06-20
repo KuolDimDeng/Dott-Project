@@ -25,43 +25,80 @@ export async function POST(request) {
   }
 
   try {
-    // Get session from secure cookie
     const cookieStore = await cookies();
+    // Check new session system first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
-    if (!sessionCookie) {
+    let sessionData;
+    let accessToken;
+    
+    // If we have new session cookies, use the backend session API
+    if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        logger.info('[CreateSubscription] Using new session system');
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          sessionData = await response.json();
+          // For new session system, we use the session ID as the auth token
+          accessToken = sessionId;
+        } else {
+          logger.error('[CreateSubscription] Backend session invalid:', response.status);
+          return NextResponse.json({ 
+            error: 'Session invalid' 
+          }, { status: 401 });
+        }
+      } catch (error) {
+        logger.error('[CreateSubscription] Error fetching backend session:', error);
+        return NextResponse.json({ 
+          error: 'Session error' 
+        }, { status: 500 });
+      }
+    } else if (sessionCookie) {
+      // Fallback to old session system
+      try {
+        // Try to decrypt first (new format)
+        try {
+          const decrypted = decrypt(sessionCookie.value);
+          sessionData = JSON.parse(decrypted);
+        } catch (decryptError) {
+          // Fallback to old base64 format for backward compatibility
+          logger.warn('[CreateSubscription] Using legacy session format');
+          sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        }
+        accessToken = sessionData.accessToken;
+      } catch (error) {
+        logger.error('[CreateSubscription] Invalid session:', error);
+        return NextResponse.json({ 
+          error: 'Invalid session' 
+        }, { status: 401 });
+      }
+      
+      // Validate old session
+      if (!sessionData.accessToken || !sessionData.user) {
+        return NextResponse.json({ 
+          error: 'Invalid session data' 
+        }, { status: 401 });
+      }
+    } else {
+      // No session found
       return NextResponse.json({ 
         error: 'Authentication required' 
       }, { status: 401 });
     }
     
-    // Parse and decrypt secure session
-    let sessionData;
-    try {
-      // Try to decrypt first (new format)
-      try {
-        const decrypted = decrypt(sessionCookie.value);
-        sessionData = JSON.parse(decrypted);
-      } catch (decryptError) {
-        // Fallback to old base64 format for backward compatibility
-        logger.warn('[CreateSubscription] Using legacy session format');
-        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      }
-    } catch (error) {
-      logger.error('[CreateSubscription] Invalid session:', error);
-      return NextResponse.json({ 
-        error: 'Invalid session' 
-      }, { status: 401 });
-    }
-    
-    // Validate session
-    if (!sessionData.accessToken || !sessionData.user) {
-      return NextResponse.json({ 
-        error: 'Invalid session data' 
-      }, { status: 401 });
-    }
-    
-    // Check expiration
+    // Check expiration (only for old session system)
     if (sessionData.expiresAt && Date.now() > sessionData.expiresAt) {
       return NextResponse.json({ 
         error: 'Session expired' 
@@ -96,21 +133,33 @@ export async function POST(request) {
     }
     
     logger.info('[CreateSubscription] Processing subscription:', {
-      user: sessionData.user.email,
+      user: sessionData.email || sessionData.user?.email,
       plan: plan,
       billing_cycle: billing_cycle
     });
     
     // Forward to backend API with authentication
     const backendUrl = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Request-ID': crypto.randomUUID()
+    };
+    
+    // Add appropriate auth header based on session type
+    if (sidCookie || sessionTokenCookie) {
+      // New session system
+      headers['Authorization'] = `SessionID ${accessToken}`;
+      headers['Cookie'] = `session_token=${accessToken}`;
+      headers['X-User-Email'] = sessionData.email;
+    } else {
+      // Legacy session system
+      headers['Authorization'] = `Bearer ${accessToken}`;
+      headers['X-User-Email'] = sessionData.user.email;
+    }
+    
     const response = await fetch(`${backendUrl}/api/payments/create-subscription/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${sessionData.accessToken}`,
-        'X-User-Email': sessionData.user.email,
-        'X-Request-ID': crypto.randomUUID()
-      },
+      headers,
       body: JSON.stringify({
         payment_method_id,
         plan: plan.toLowerCase(),

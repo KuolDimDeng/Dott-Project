@@ -13,9 +13,63 @@ export async function GET(request) {
   try {
     logger.debug(`[UserProfile API] Fetching profile with Auth0 session, request ${requestId}`);
     
-    // Get Auth0 session from cookies - try new name first, then old
     const cookieStore = await cookies();
+    // Check new session system first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    // If we have new session cookies, use the backend session API
+    if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        logger.debug(`[UserProfile API] Using new session system, request ${requestId}`);
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          // Transform backend session data to profile format
+          const profile = {
+            tenantId: sessionData.tenant_id,
+            email: sessionData.email,
+            name: sessionData.name || sessionData.email,
+            picture: sessionData.picture,
+            emailVerified: sessionData.email_verified !== false,
+            subscriptionPlan: sessionData.subscription_plan || 'free',
+            businessName: sessionData.business_name,
+            needsOnboarding: sessionData.needs_onboarding,
+            onboardingCompleted: sessionData.onboarding_completed,
+            currentStep: sessionData.current_onboarding_step || 'business_info',
+            requestId,
+            sessionSource: 'backend-v2'
+          };
+          
+          logger.debug(`[UserProfile API] New session profile data retrieved, request ${requestId}`);
+          return NextResponse.json(profile);
+        } else {
+          logger.warn(`[UserProfile API] Backend session invalid: ${response.status}, request ${requestId}`);
+          return NextResponse.json(
+            { 
+              error: 'Session invalid',
+              message: 'Session is no longer valid - please sign in again',
+              requestId 
+            },
+            { status: 401 }
+          );
+        }
+      } catch (error) {
+        logger.error(`[UserProfile API] Error fetching backend session: ${error.message}, request ${requestId}`);
+        // Fall through to legacy check
+      }
+    }
     
     if (!sessionCookie) {
       logger.warn(`[UserProfile API] No Auth0 session found, request ${requestId}`);
@@ -29,7 +83,7 @@ export async function GET(request) {
       );
     }
     
-    // Parse Auth0 session data
+    // Parse Auth0 session data (legacy)
     let sessionData;
     try {
       sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());

@@ -37,7 +37,9 @@ async function proxyRequest(request, { params }, method) {
     
     // Get cookies from the request
     const cookieStore = await cookies();
-    // Try new secure cookie first, fallback to old one
+    // Check new session system first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     // Build headers
@@ -58,11 +60,19 @@ async function proxyRequest(request, { params }, method) {
       }
     }
     
-    // Add authorization header if we have a session
-    if (sessionCookie) {
+    // Add authorization header based on session type
+    if (sidCookie || sessionTokenCookie) {
+      // New session system - use session ID
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      console.log('[Backend Proxy] Using new session system');
+      headers.set('Authorization', `SessionID ${sessionId}`);
+      headers.set('Cookie', `session_token=${sessionId}`);
+    } else if (sessionCookie) {
+      // Fallback to old session system
       try {
         const sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
         if (sessionData.accessToken) {
+          console.log('[Backend Proxy] Using legacy session system');
           headers.set('Authorization', `Bearer ${sessionData.accessToken}`);
         }
       } catch (e) {

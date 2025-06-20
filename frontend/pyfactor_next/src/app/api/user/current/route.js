@@ -7,16 +7,62 @@ export async function GET(request) {
   console.log('🔥 [USER_CURRENT] === STARTING USER CURRENT API ===');
   
   try {
-    // Get session cookie
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('appSession');
+    // Check new session system first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
+    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    // If we have new session cookies, use the backend session API
+    if (sidCookie || sessionTokenCookie) {
+      const sessionId = sidCookie?.value || sessionTokenCookie?.value;
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      
+      try {
+        console.log('🔥 [USER_CURRENT] Using new session system');
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${sessionId}`,
+            'Cookie': `session_token=${sessionId}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          // Transform backend session data to user format
+          const user = {
+            email: sessionData.email,
+            name: sessionData.name || sessionData.email,
+            picture: sessionData.picture,
+            needsOnboarding: sessionData.needs_onboarding,
+            onboardingCompleted: sessionData.onboarding_completed,
+            currentStep: sessionData.current_onboarding_step || 'business_info',
+            tenantId: sessionData.tenant_id,
+            debug: {
+              session_type: 'backend-v2',
+              session_id: sessionId.substring(0, 8) + '...'
+            }
+          };
+          
+          console.log('🔥 [USER_CURRENT] New session user data:', user);
+          return NextResponse.json({ user });
+        } else {
+          console.log('🔥 [USER_CURRENT] Backend session invalid:', response.status);
+          return NextResponse.json({ user: null }, { status: 401 });
+        }
+      } catch (error) {
+        console.error('🔥 [USER_CURRENT] Error fetching backend session:', error);
+        // Fall through to legacy check
+      }
+    }
     
     if (!sessionCookie) {
       console.log('🔥 [USER_CURRENT] No session cookie found, returning null user');
       return NextResponse.json({ user: null }, { status: 401 });
     }
     
-    // Parse session data
+    // Parse session data (legacy)
     let session;
     try {
       session = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());

@@ -21,14 +21,57 @@ export async function POST(request) {
       }
     }
     
-    // Get session from cookie - try new name first, then old
+    // Get session from cookie - check new session system first
     const cookieStore = await cookies();
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
     
     let sessionData;
-    if (sessionCookie) {
+    
+    // If we have new session cookies, use those
+    if (sidCookie || sessionTokenCookie) {
+      console.log('[Create Auth0 User] Found new session cookies (sid/session_token)');
+      
+      // For new session system, construct session data from request body
+      // The auth flow sends user data directly, not wrapped in sessionData
+      if (requestData.auth0_sub && requestData.email) {
+        console.log('[Create Auth0 User] Using user data from request body with new session');
+        
+        // Get the access token from Authorization header
+        const authHeader = request.headers.get('Authorization');
+        const accessToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+        
+        sessionData = {
+          user: {
+            sub: requestData.auth0_sub,
+            email: requestData.email,
+            name: requestData.name,
+            given_name: requestData.given_name,
+            family_name: requestData.family_name,
+            picture: requestData.picture,
+            email_verified: requestData.email_verified
+          },
+          accessToken: accessToken || requestData.access_token,
+          // Session already exists, so this is valid
+          authenticated: true
+        };
+        console.log('[Create Auth0 User] Constructed session data for new session system');
+      } else {
+        // If no user data in body but we have session cookies, user is already authenticated
+        console.log('[Create Auth0 User] New session exists, user already authenticated');
+        return NextResponse.json({
+          success: true,
+          message: 'User already authenticated with new session system',
+          isExistingUser: true,
+          sessionSource: 'new-session-v2'
+        });
+      }
+    } else if (sessionCookie) {
+      // Fallback to old session format
       try {
         sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
+        console.log('[Create Auth0 User] Using old session format');
       } catch (e) {
         console.error('[Create Auth0 User] Failed to parse session cookie');
       }
