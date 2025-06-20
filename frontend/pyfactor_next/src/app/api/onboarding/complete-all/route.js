@@ -502,6 +502,53 @@ export async function POST(request) {
             }
           }
           
+          // CRITICAL FIX for Google OAuth: Ensure session is properly updated in backend
+          // This prevents the redirect loop issue after clearing browser cache
+          console.log('[CompleteOnboarding] 🔥 ENSURING SESSION UPDATE for Google OAuth users...');
+          
+          try {
+            // Method 1: Direct session update endpoint
+            const sessionUpdateResponse = await fetch(`${apiBaseUrl}/api/sessions/update/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Session ${sessionData.sessionToken}`
+              },
+              body: JSON.stringify({
+                needs_onboarding: false,
+                onboarding_completed: true,
+                tenant_id: tenantId,
+                subscription_plan: onboardingData.selectedPlan,
+                business_name: onboardingData.businessName
+              })
+            });
+            
+            if (sessionUpdateResponse.ok) {
+              console.log('[CompleteOnboarding] ✅ Session update successful');
+            } else {
+              console.error('[CompleteOnboarding] ❌ Session update failed:', sessionUpdateResponse.status);
+            }
+            
+            // Method 2: Force refresh session data
+            const refreshResponse = await fetch(`${apiBaseUrl}/api/sessions/refresh/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Session ${sessionData.sessionToken}`
+              },
+              body: JSON.stringify({
+                force_refresh: true
+              })
+            });
+            
+            if (refreshResponse.ok) {
+              console.log('[CompleteOnboarding] ✅ Session refresh successful');
+            }
+          } catch (error) {
+            console.error('[CompleteOnboarding] Session update error:', error);
+            // Don't fail the process, just log
+          }
+          
           // CRITICAL: Force complete onboarding in backend to ensure it's saved
           console.log('[CompleteOnboarding] 🚨 FORCING backend completion to ensure proper save...');
           try {

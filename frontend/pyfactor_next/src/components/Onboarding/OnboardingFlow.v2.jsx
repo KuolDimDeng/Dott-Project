@@ -202,6 +202,30 @@ export default function OnboardingFlowV2() {
         
         console.log('🎯 [OnboardingFlow] Onboarding completed successfully');
         
+        // CRITICAL FIX: Ensure onboarding completion is properly saved for Google OAuth users
+        console.log('🔥 [OnboardingFlow] Ensuring onboarding completion is saved...');
+        try {
+          const ensureResponse = await fetch('/api/onboarding/ensure-complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              tenantId: tenantId,
+              businessName: data.businessName,
+              selectedPlan: data.selectedPlan
+            })
+          });
+          
+          if (ensureResponse.ok) {
+            console.log('✅ [OnboardingFlow] Onboarding completion enforced');
+          } else {
+            console.error('❌ [OnboardingFlow] Failed to ensure completion:', ensureResponse.status);
+          }
+        } catch (ensureError) {
+          console.error('❌ [OnboardingFlow] Error ensuring completion:', ensureError);
+          // Don't fail the whole process
+        }
+        
         // CRITICAL: Verify session is properly established before redirecting
         console.log('🔍 [OnboardingFlow] Verifying session before redirect...');
         

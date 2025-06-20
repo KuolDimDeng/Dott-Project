@@ -232,7 +232,9 @@ async function handleCallback(request, { params }) {
         // Extract session token from backend response
         const sessionToken = sessionData.session_token || sessionData.session_id;
         const expiresAt = sessionData.expires_at;
-        const needsOnboarding = sessionData.needs_onboarding;
+        // CRITICAL: Respect backend's needs_onboarding flag
+        // This ensures Google OAuth users who completed onboarding don't get redirected back
+        const needsOnboarding = sessionData.needs_onboarding === true || sessionData.needs_onboarding === 'true';
         const tenantId = sessionData.tenant_id;
         
         logger.info('[Auth0] Backend session created:', {
