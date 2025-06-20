@@ -356,9 +356,12 @@ export async function POST(request) {
             // Extract from schema name: tenant_5e6ab306_8cbf_43b9_9778_f1abbe7b6ed1
             const schemaName = businessResult.data.schemaSetup.schema_name;
             console.log('[CompleteOnboarding] Trying to extract from schema name:', schemaName);
-            const schemaMatch = schemaName.match(/tenant_([a-f0-9-]+)/);
+            // Match tenant ID with underscores (backend uses underscores instead of hyphens)
+            // Pattern: tenant_75ec28c2_697c_4b55_99ab_d86ad70e382c
+            const schemaMatch = schemaName.match(/tenant_([a-f0-9_]+)/);
             if (schemaMatch) {
-              tenantId = schemaMatch[1];
+              // Convert underscores back to hyphens for the tenant ID
+              tenantId = schemaMatch[1].replace(/_/g, '-');
               console.log('[CompleteOnboarding] Extracted tenant ID from schema name:', tenantId);
             }
           }
