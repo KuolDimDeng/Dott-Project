@@ -146,7 +146,29 @@ function PaymentForm({ plan, billingCycle }) {
           logger.info('Got CSRF token from session');
         }
       } catch (error) {
-        logger.error('Failed to get CSRF token:', error);
+        logger.error('Failed to get CSRF token from session:', error);
+      }
+      
+      // Fallback to dedicated CSRF endpoint if session doesn't provide one
+      if (!csrfToken) {
+        try {
+          const csrfResponse = await fetch('/api/auth/csrf-token', {
+            credentials: 'include'
+          });
+          
+          if (csrfResponse.ok) {
+            const csrfData = await csrfResponse.json();
+            csrfToken = csrfData.csrfToken;
+            logger.info('Got CSRF token from dedicated endpoint');
+          }
+        } catch (error) {
+          logger.error('Failed to get CSRF token from dedicated endpoint:', error);
+        }
+      }
+
+      // Warn if no CSRF token is available
+      if (!csrfToken) {
+        logger.warn('No CSRF token available - payment may fail');
       }
 
       // Create subscription through secure backend proxy
@@ -160,9 +182,8 @@ function PaymentForm({ plan, billingCycle }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken || '',
-        
-        credentials: 'include',},
+          ...(csrfToken && { 'x-csrf-token': csrfToken }),
+        },
         credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           payment_method_id: paymentMethod.id,
@@ -225,6 +246,7 @@ function PaymentForm({ plan, billingCycle }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(csrfToken && { 'x-csrf-token': csrfToken }),
           },
           credentials: 'include',
           body: JSON.stringify({

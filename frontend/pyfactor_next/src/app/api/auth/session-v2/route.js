@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { generateCSRFToken } from '@/utils/csrf';
 
 /**
  * Server-Side Session Management - Version 2
@@ -93,6 +94,7 @@ export async function GET(request) {
     
     return NextResponse.json({
       authenticated: true,
+      csrfToken: generateCSRFToken(),
       user: {
         email: userData.email || sessionData.email,
         // Use the corrected onboarding status
@@ -153,6 +155,7 @@ export async function POST(request) {
     // Set session cookie with the session token from Django
     const response = NextResponse.json({ 
       success: true,
+      csrfToken: generateCSRFToken(),
       user: sessionData.user,
       tenant: sessionData.tenant,
       needs_onboarding: sessionData.needs_onboarding,

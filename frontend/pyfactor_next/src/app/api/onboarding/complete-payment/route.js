@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { decrypt, encrypt } from '@/utils/sessionEncryption';
 import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
+import { csrfProtection } from '@/utils/csrf';
 
 /**
  * Complete onboarding after successful payment verification
@@ -61,6 +62,14 @@ async function getSession() {
 
 export async function POST(request) {
   console.log('[CompletePayment] Starting payment completion process');
+  
+  // Validate CSRF token for payment completion
+  const csrfResult = csrfProtection(request);
+  if (!csrfResult.valid) {
+    return NextResponse.json({ 
+      error: csrfResult.error 
+    }, { status: 403 });
+  }
   
   try {
     // 1. Get session
