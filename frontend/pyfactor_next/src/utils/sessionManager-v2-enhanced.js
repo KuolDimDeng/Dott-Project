@@ -41,37 +41,77 @@ class SessionManagerV2Enhanced {
   async getSession() {
     console.log('[SessionManager] getSession called');
     const startTime = performance.now();
-    const sessionId = this.getSessionIdFromCookie();
     
-    console.debug('[SessionManager] Session ID from cookie:', sessionId);
-    
-    if (!sessionId) {
-      this.recordMetric('cache_miss', startTime);
-      console.debug('[SessionManager] No session ID, returning unauthenticated (expected - session managed server-side)');
-      return { authenticated: false, user: null };
-    }
-
     try {
-      // Check for duplicate requests
-      if (this.pendingRequests.has(sessionId)) {
+      // In the session-v2 system, we don't read cookies directly
+      // Instead, we call the session API which will read the httpOnly cookies
+      console.log('[SessionManager] Fetching session from API...');
+      
+      // Check for duplicate requests using a fixed key since we can't read the session ID
+      const requestKey = 'session-fetch';
+      if (this.pendingRequests.has(requestKey)) {
         console.log('[SessionManager] Duplicate request detected, waiting...');
-        return await this.pendingRequests.get(sessionId);
+        return await this.pendingRequests.get(requestKey);
       }
 
-      console.log('[SessionManager] Starting session fetch...');
-      const sessionPromise = this._getSessionWithCaching(sessionId, startTime);
-      this.pendingRequests.set(sessionId, sessionPromise);
+      const sessionPromise = this._fetchSessionFromAPI(startTime);
+      this.pendingRequests.set(requestKey, sessionPromise);
       
       const result = await sessionPromise;
-      this.pendingRequests.delete(sessionId);
+      this.pendingRequests.delete(requestKey);
       
       console.log('[SessionManager] Session result:', result);
       return result || { authenticated: false, user: null };
     } catch (error) {
       console.error('[SessionManager] Error in getSession:', error);
-      this.pendingRequests.delete(sessionId);
+      this.pendingRequests.delete('session-fetch');
       this.handleError(error, startTime);
       return { authenticated: false, user: null };
+    }
+  }
+  
+  async _fetchSessionFromAPI(startTime) {
+    try {
+      // Check local cache first
+      const cached = this.getFromLocalCache('current-session');
+      if (cached) {
+        console.log('[SessionManager] Found in local cache');
+        this.recordMetric('local_cache_hit', startTime);
+        return cached;
+      }
+      
+      // Call the session-v2 API endpoint
+      const response = await fetch('/api/auth/session-v2', {
+        method: 'GET',
+        credentials: 'include', // Important: include cookies
+        cache: 'no-store'
+      });
+      
+      if (!response.ok) {
+        console.log('[SessionManager] Session API returned:', response.status);
+        return { authenticated: false, user: null };
+      }
+      
+      const data = await response.json();
+      
+      if (data.authenticated) {
+        const sessionData = {
+          authenticated: true,
+          user: data.user,
+          sessionId: 'server-managed' // We don't expose the actual session ID
+        };
+        
+        // Cache the result locally
+        this.setLocalCache('current-session', sessionData);
+        this.recordMetric('api_hit', startTime);
+        
+        return sessionData;
+      }
+      
+      return { authenticated: false, user: null };
+    } catch (error) {
+      console.error('[SessionManager] Error fetching session:', error);
+      throw error;
     }
   }
 
@@ -214,9 +254,9 @@ class SessionManagerV2Enhanced {
   /**
    * Local cache operations
    */
-  getFromLocalCache(sessionId) {
-    const cached = this.cache.get(sessionId);
-    const expiry = this.cacheTTL.get(sessionId);
+  getFromLocalCache(cacheKey) {
+    const cached = this.cache.get(cacheKey);
+    const expiry = this.cacheTTL.get(cacheKey);
     
     if (cached && expiry && Date.now() < expiry) {
       return cached;
@@ -224,16 +264,16 @@ class SessionManagerV2Enhanced {
     
     // Clean up expired cache
     if (cached) {
-      this.cache.delete(sessionId);
-      this.cacheTTL.delete(sessionId);
+      this.cache.delete(cacheKey);
+      this.cacheTTL.delete(cacheKey);
     }
     
     return null;
   }
 
-  setLocalCache(sessionId, sessionData) {
-    this.cache.set(sessionId, sessionData);
-    this.cacheTTL.set(sessionId, Date.now() + this.cacheExpiry);
+  setLocalCache(cacheKey, sessionData) {
+    this.cache.set(cacheKey, sessionData);
+    this.cacheTTL.set(cacheKey, Date.now() + this.cacheExpiry);
     
     // Limit cache size
     if (this.cache.size > 100) {
@@ -259,12 +299,24 @@ class SessionManagerV2Enhanced {
 
       if (response.ok) {
         const sessionData = await response.json();
-        const sessionId = this.getSessionIdFromCookie();
         
-        if (sessionId && sessionData) {
-          // Cache the new session
-          this.setLocalCache(sessionId, sessionData);
-          this.setRedisCache(sessionId, sessionData).catch(console.warn);
+        // Clear any existing cache
+        this.clearCache();
+        
+        // Cache the new session with a fixed key
+        if (sessionData.success) {
+          const cacheData = {
+            authenticated: true,
+            user: {
+              email: sessionData.user?.email,
+              needsOnboarding: sessionData.needs_onboarding,
+              onboardingCompleted: !sessionData.needs_onboarding,
+              tenantId: sessionData.tenant?.id || sessionData.tenant_id,
+              permissions: sessionData.permissions || []
+            },
+            sessionId: 'server-managed'
+          };
+          this.setLocalCache('current-session', cacheData);
         }
         
         this.recordMetric('session_created', startTime);
@@ -283,15 +335,10 @@ class SessionManagerV2Enhanced {
    */
   async logout() {
     const startTime = performance.now();
-    const sessionId = this.getSessionIdFromCookie();
     
     try {
       // Clear all caches first
-      if (sessionId) {
-        this.cache.delete(sessionId);
-        this.cacheTTL.delete(sessionId);
-        this.setRedisCache(sessionId, null, 0).catch(console.warn); // Delete from Redis
-      }
+      this.clearCache();
 
       const response = await fetch('/api/auth/session-v2', {
         method: 'DELETE',
@@ -491,13 +538,16 @@ class SessionManagerV2Enhanced {
   /**
    * Clear all caches to force fresh data fetch
    */
-  clearCache(sessionId = null) {
-    if (sessionId) {
-      // Clear specific session
-      this.cache.delete(sessionId);
-      this.cacheTTL.delete(sessionId);
+  clearCache(cacheKey = null) {
+    if (cacheKey) {
+      // Clear specific cache entry
+      this.cache.delete(cacheKey);
+      this.cacheTTL.delete(cacheKey);
     } else {
-      // Clear all caches
+      // Clear all caches - especially the current session
+      this.cache.delete('current-session');
+      this.cacheTTL.delete('current-session');
+      // Also clear everything else
       this.cache.clear();
       this.cacheTTL.clear();
     }

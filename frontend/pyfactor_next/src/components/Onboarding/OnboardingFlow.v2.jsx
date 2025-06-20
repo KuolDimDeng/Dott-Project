@@ -200,7 +200,18 @@ export default function OnboardingFlowV2() {
         // Force session refresh to get updated data
         sessionManager.clearCache();
         
-        console.log('🎯 [OnboardingFlow] Redirecting to dashboard:', `/${tenantId}/dashboard`);
+        // CRITICAL: Ensure session cookies are properly set after onboarding
+        // The complete-all endpoint should have preserved the sid cookie
+        // We need to verify it's still there
+        const verifySession = await sessionManager.getSession();
+        if (!verifySession.authenticated) {
+          console.error('[OnboardingFlow] Session lost after onboarding completion');
+          // Try to refresh the session
+          window.location.href = `/${tenantId}/dashboard`;
+          return;
+        }
+        
+        console.log('🎯 [OnboardingFlow] Session verified, redirecting to dashboard:', `/${tenantId}/dashboard`);
         // Redirect to dashboard
         router.push(`/${tenantId}/dashboard`);
       } else {

@@ -597,47 +597,63 @@ export async function POST(request) {
     // 8. Create response with updated session cookie
     const response = NextResponse.json(responseData);
     
-    // CRITICAL: Log the current cookies before changes
+    // CRITICAL: Preserve the sid cookie from the current session
     console.log('[CompleteOnboarding] 🍪 COOKIE UPDATE PROCESS STARTING');
     const currentCookies = await cookies();
-    const currentDottAuth = currentCookies.get('dott_auth_session');
-    const currentAppSession = currentCookies.get('appSession');
-    console.log('[CompleteOnboarding] 🍪 Current dott_auth_session size:', currentDottAuth?.value?.length || 0);
-    console.log('[CompleteOnboarding] 🍪 Current appSession size:', currentAppSession?.value?.length || 0);
+    const currentSid = currentCookies.get('sid');
+    const currentSessionToken = currentCookies.get('session_token');
     
-    // CRITICAL: First delete old cookies to ensure clean state
-    console.log('[CompleteOnboarding] 🍪 Deleting old session cookies to ensure clean update');
-    response.cookies.delete('dott_auth_session');
-    response.cookies.delete('appSession');
+    console.log('[CompleteOnboarding] 🍪 Current sid cookie:', currentSid ? 'present' : 'missing');
+    console.log('[CompleteOnboarding] 🍪 Current session_token cookie:', currentSessionToken ? 'present' : 'missing');
     
-    // Small delay to ensure deletion
-    await new Promise(resolve => setTimeout(resolve, 10));
+    // CRITICAL: Preserve the sid and session_token cookies
+    if (currentSid || currentSessionToken) {
+      const sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData.sessionToken;
+      
+      if (sessionTokenValue) {
+        console.log('[CompleteOnboarding] 🍪 Preserving session ID cookie');
+        
+        // Re-set the sid cookie to ensure it's not lost
+        response.cookies.set('sid', sessionTokenValue, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60, // 7 days
+          path: '/',
+          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+        });
+        
+        // Also set session_token for compatibility
+        response.cookies.set('session_token', sessionTokenValue, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 7 * 24 * 60 * 60, // 7 days
+          path: '/',
+          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+        });
+        
+        console.log('[CompleteOnboarding] 🍪 Session cookies preserved');
+      } else {
+        console.error('[CompleteOnboarding] ❌ No session token found to preserve!');
+      }
+    }
     
-    console.log('[CompleteOnboarding] 🍪 Setting updated session cookie with onboarding complete status');
-    console.log('[CompleteOnboarding] 🍪 New cookie size:', sessionUpdateResult.updatedCookie.length, 'bytes');
-    console.log('[CompleteOnboarding] 🍪 New cookie preview:', sessionUpdateResult.updatedCookie.substring(0, 50) + '...');
+    // Remove old session cookies that are no longer used
+    const oldCookies = [
+      'dott_auth_session',
+      'appSession',
+      'session_pending',
+      'businessInfoCompleted',
+      'onboardingStep',
+      'onboardedStatus'
+    ];
     
-    // Set the new cookies with proper domain for production
-    const enhancedCookieOptions = {
-      ...sessionUpdateResult.cookieOptions,
-      // Ensure domain is set correctly for production
-      domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined,
-      // Force overwrite with priority
-      priority: 'high'
-    };
+    oldCookies.forEach(cookieName => {
+      response.cookies.delete(cookieName);
+    });
     
-    console.log('[CompleteOnboarding] 🍪 Cookie options:', JSON.stringify(enhancedCookieOptions, null, 2));
-    
-    response.cookies.set('dott_auth_session', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
-    response.cookies.set('appSession', sessionUpdateResult.updatedCookie, enhancedCookieOptions);
-    
-    // CRITICAL: Also use Set-Cookie header directly as a fallback
-    const cookieString = `dott_auth_session=${sessionUpdateResult.updatedCookie}; Path=/; HttpOnly; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''} SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}${process.env.NODE_ENV === 'production' ? '; Domain=.dottapps.com' : ''}`;
-    response.headers.append('Set-Cookie', cookieString);
-    console.log('[CompleteOnboarding] 🍪 Added Set-Cookie header directly');
-    
-    console.log('[CompleteOnboarding] 🍪 Cookies set on response');
-    console.log('[CompleteOnboarding] 🍪 All Set-Cookie headers:', response.headers.getSetCookie());
+    console.log('[CompleteOnboarding] 🍪 Old cookies cleaned up');
     
     // CRITICAL: Also return the session data in the response so client can update localStorage
     responseData.sessionData = {
