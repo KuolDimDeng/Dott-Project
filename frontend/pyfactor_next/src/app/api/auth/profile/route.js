@@ -61,11 +61,16 @@ export async function GET(request) {
           const userTenantIdCookie = cookieStore.get('user_tenant_id');
           
           // Determine final onboarding status
+          // Special check: if backend says onboarding_step is 'complete', trust that
+          const isBackendComplete = sessionData.onboarding_step === 'complete' || 
+                                  sessionData.current_onboarding_step === 'complete';
+          
           const hasCompletedOnboarding = (
             onboardingCompletedCookie?.value === 'true' ||
             onboardingJustCompletedCookie?.value === 'true' ||
             sessionData.onboarding_completed === true ||
-            sessionData.needs_onboarding === false
+            sessionData.needs_onboarding === false ||
+            isBackendComplete
           );
           
           // Return profile data from backend

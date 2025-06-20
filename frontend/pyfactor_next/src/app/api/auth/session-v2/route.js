@@ -59,10 +59,11 @@ export async function GET(request) {
       authenticated: true,
       user: {
         email: userData.email || sessionData.email,
-        needsOnboarding: userData.needs_onboarding ?? sessionData.needs_onboarding ?? true,
-        onboardingCompleted: userData.onboarding_completed ?? sessionData.onboarding_completed ?? false,
-        tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id,
-        tenant_id: userData.tenant_id || sessionData.tenant_id || tenantData.id,
+        // Use the backend's onboarding fields directly from sessionData
+        needsOnboarding: sessionData.needs_onboarding ?? true,
+        onboardingCompleted: sessionData.onboarding_completed ?? false,
+        tenantId: sessionData.tenant_id || tenantData.id || userData.tenant_id,
+        tenant_id: sessionData.tenant_id || tenantData.id || userData.tenant_id,
         permissions: userData.permissions || sessionData.permissions || []
       }
     });
