@@ -229,16 +229,35 @@ const DashAppBar = ({
       hasProfileData: !!propProfileData,
     });
     
-    // Immediately try to fetch business name on mount
+    // Immediately try to fetch business name and user data on mount
     const fetchInitialBusinessName = async () => {
       try {
         const profileResponse = await fetch('/api/auth/profile');
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
-          if (profileData?.businessName && isMounted.current) {
-            logger.info('[DashAppBar] Initial business name from profile:', profileData.businessName);
-            setBusinessName(profileData.businessName);
-            setFetchedBusinessName(profileData.businessName);
+          if (isMounted.current) {
+            // Set business name if available - check multiple possible fields
+            const businessNameFromProfile = profileData?.businessName || 
+                                          profileData?.business_name || 
+                                          profileData?.tenantName ||
+                                          profileData?.tenant_name;
+            if (businessNameFromProfile) {
+              logger.info('[DashAppBar] Initial business name from profile:', businessNameFromProfile);
+              setBusinessName(businessNameFromProfile);
+              setFetchedBusinessName(businessNameFromProfile);
+            }
+            
+            // Generate and set user initials from profile data
+            if (profileData?.name || profileData?.email) {
+              const initials = generateInitialsFromNames(
+                profileData.given_name || profileData.givenName,
+                profileData.family_name || profileData.familyName,
+                profileData.email,
+                profileData.name
+              );
+              logger.info('[DashAppBar] Generated user initials from profile:', initials);
+              setUserInitials(initials);
+            }
           }
         }
       } catch (error) {

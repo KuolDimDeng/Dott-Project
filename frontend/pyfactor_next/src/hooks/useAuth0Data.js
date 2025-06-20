@@ -22,8 +22,8 @@ export const useAuth0Data = () => {
         return cachedSession.user;
       }
 
-      // Fetch from Auth0 session API
-      const response = await fetch('/api/auth/session');
+      // Fetch from Auth0 session API - use session-v2 endpoint
+      const response = await fetch('/api/auth/session-v2');
       if (response.ok) {
         const sessionData = await response.json();
         

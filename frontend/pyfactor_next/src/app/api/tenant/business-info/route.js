@@ -1,49 +1,52 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { decrypt, encrypt } from '@/utils/sessionEncryption';
 
 /**
  * GET /api/tenant/business-info
  * Fetches business information for the authenticated user's tenant
+ * Updated to use Session V2 architecture
  */
 export async function GET(request) {
   try {
     console.log('[Business Info API] Fetching business information');
     
-    // Get Auth0 session
+    // Get session ID from cookie (Session V2 uses 'sid')
     const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    const sessionId = cookieStore.get('sid');
     
-    if (!sessionCookie) {
+    if (!sessionId) {
       console.log('[Business Info API] No session found');
       return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
     
-    let sessionData;
-    try {
-      // Try to decrypt first (new format)
-      try {
-        const decrypted = decrypt(sessionCookie.value);
-        sessionData = JSON.parse(decrypted);
-      } catch (decryptError) {
-        // Fallback to old base64 format for backward compatibility
-        console.warn('[Business Info API] Using legacy base64 format');
-        sessionData = JSON.parse(Buffer.from(sessionCookie.value, 'base64').toString());
-      }
-    } catch (error) {
-      console.error('[Business Info API] Error parsing session:', error);
-      return NextResponse.json({ error: 'Invalid session' }, { status: 400 });
+    console.log('[Business Info API] Found session ID, fetching session data...');
+    
+    // Backend API URL
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    
+    // First, get the current session from backend to get user details
+    const sessionResponse = await fetch(`${apiBaseUrl}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `SessionID ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!sessionResponse.ok) {
+      console.log('[Business Info API] Session validation failed:', sessionResponse.status);
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
     
-    const { user, accessToken } = sessionData;
+    const sessionData = await sessionResponse.json();
+    const user = sessionData.user || sessionData;
+    const tenantData = sessionData.tenant || {};
     
-    if (!user) {
-      return NextResponse.json({ error: 'No user in session' }, { status: 401 });
-    }
+    console.log('[Business Info API] Session validated, user:', user.email);
     
     // Get tenant ID from session or query params
     const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get('tenantId') || user.tenantId || user.tenant_id;
+    const tenantId = searchParams.get('tenantId') || user.tenant_id || tenantData.id;
     
     if (!tenantId) {
       console.log('[Business Info API] No tenant ID found');
@@ -52,15 +55,13 @@ export async function GET(request) {
     
     console.log('[Business Info API] Fetching business info for tenant:', tenantId);
     
-    // Try to fetch from backend
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://127.0.0.1:8000';
-    
     try {
       // First try to get onboarding data which includes business info
       const onboardingResponse = await fetch(`${apiBaseUrl}/api/onboarding/data/?tenant_id=${tenantId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `SessionID ${sessionId.value}`,
+          'Cookie': `session_token=${sessionId.value}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         }
@@ -82,7 +83,8 @@ export async function GET(request) {
             const profileResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
               method: 'GET',
               headers: {
-                'Authorization': `Bearer ${accessToken}`,
+                'Authorization': `SessionID ${sessionId.value}`,
+                'Cookie': `session_token=${sessionId.value}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
               }
@@ -123,39 +125,8 @@ export async function GET(request) {
           subscriptionPlan: businessInfo.subscriptionPlan
         });
         
-        // Update session with business info
-        if (businessInfo.businessName || businessInfo.subscriptionPlan !== 'free') {
-          sessionData.user.businessName = businessInfo.businessName;
-          sessionData.user.businessType = businessInfo.businessType;
-          sessionData.user.subscriptionPlan = businessInfo.subscriptionPlan;
-          sessionData.user.subscription_plan = businessInfo.subscriptionPlan;
-          sessionData.user.selected_plan = businessInfo.subscriptionPlan;
-          sessionData.user.selectedPlan = businessInfo.subscriptionPlan;
-          sessionData.user.subscription_type = businessInfo.subscriptionPlan;
-          sessionData.user.subscriptionType = businessInfo.subscriptionPlan;
-          
-          // Encrypt the updated session
-          const encryptedSession = encrypt(JSON.stringify(sessionData));
-          
-          const response = NextResponse.json(businessInfo);
-          
-          // Cookie options
-          const cookieOptions = {
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60, // 7 days
-            domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-          };
-          
-          // Set both cookie names for compatibility
-          response.cookies.set('dott_auth_session', encryptedSession, cookieOptions);
-          response.cookies.set('appSession', encryptedSession, cookieOptions);
-          
-          return response;
-        }
-        
+        // In Session V2, we don't update client-side cookies
+        // All session data is managed server-side
         return NextResponse.json(businessInfo);
       }
     } catch (error) {
