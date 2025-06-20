@@ -37,6 +37,15 @@ export default function EmailPasswordSignIn() {
       setError('Please verify your email address before signing in. Check your inbox for the verification email.');
       setShowResendVerification(true);
       setFormData(prev => ({ ...prev, email: emailParam }));
+    } else if (errorParam === 'backend_unavailable') {
+      setError('Our servers are temporarily unavailable. Please try again in a few moments.');
+      setErrorType('error');
+    } else if (errorParam === 'session_creation_failed') {
+      setError('Unable to sign in at this time. Please try again or use email/password login.');
+      setErrorType('error');
+    } else if (errorParam === 'invalid_session') {
+      setError('Your session has expired. Please sign in again.');
+      setErrorType('error');
     }
   }, [searchParams]);
 

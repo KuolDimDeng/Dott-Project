@@ -192,7 +192,36 @@ async function handleCallback(request, { params }) {
         });
         
         if (!sessionResponse.ok) {
-          logger.error('[Auth0] Backend session creation failed:', sessionResponse.status);
+          let errorDetails = '';
+          try {
+            const errorText = await sessionResponse.text();
+            // Check if it's JSON
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorDetails = errorJson.error || errorJson.detail || 'Unknown error';
+            } catch {
+              // If not JSON, check if it's an HTML error page (common with 502)
+              if (errorText.includes('<!DOCTYPE') || errorText.includes('<html')) {
+                errorDetails = 'Backend server error (HTML response)';
+              } else {
+                errorDetails = errorText.substring(0, 200); // First 200 chars
+              }
+            }
+          } catch (e) {
+            errorDetails = 'Could not read error response';
+          }
+          
+          logger.error('[Auth0] Backend session creation failed:', {
+            status: sessionResponse.status,
+            statusText: sessionResponse.statusText,
+            error: errorDetails
+          });
+          
+          // If it's a 502/503/504, it's likely a temporary backend issue
+          if ([502, 503, 504].includes(sessionResponse.status)) {
+            return NextResponse.redirect(`${AUTH0_BASE_URL}/login?error=backend_unavailable`);
+          }
+          
           return NextResponse.redirect(`${AUTH0_BASE_URL}/login?error=session_creation_failed`);
         }
         
