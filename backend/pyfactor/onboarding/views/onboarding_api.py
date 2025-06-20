@@ -396,6 +396,33 @@ class CompleteOnboardingAPI(APIView):
                 except Exception as e:
                     logger.error(f"[CompleteOnboarding] Failed to update tenant name: {str(e)}")
             
+            # Update the session with tenant information and mark onboarding complete
+            try:
+                from session_manager.services import session_service
+                from session_manager.models import UserSession
+                
+                # Update all active sessions for the user
+                active_sessions = UserSession.objects.filter(
+                    user=request.user,
+                    is_active=True,
+                    expires_at__gt=timezone.now()
+                )
+                
+                sessions_updated = 0
+                for session in active_sessions:
+                    session.tenant_id = tenant_id
+                    session.needs_onboarding = False
+                    session.onboarding_completed = True
+                    session.onboarding_step = 'completed'
+                    session.save(update_fields=['tenant_id', 'needs_onboarding', 'onboarding_completed', 'onboarding_step'])
+                    sessions_updated += 1
+                    
+                logger.info(f"[CompleteOnboarding] Updated {sessions_updated} active session(s) with tenant_id: {tenant_id} and marked onboarding complete")
+                
+            except Exception as session_error:
+                logger.error(f"[CompleteOnboarding] Error updating session: {str(session_error)}")
+                # Don't fail the request just because session update failed
+            
             return Response({
                 'status': 'success',
                 'message': 'Onboarding completed successfully',

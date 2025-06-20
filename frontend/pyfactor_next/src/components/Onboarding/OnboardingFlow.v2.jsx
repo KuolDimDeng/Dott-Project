@@ -180,7 +180,20 @@ export default function OnboardingFlowV2() {
       console.log('🎯 [OnboardingFlow] Response tenant_id:', response.tenant_id);
       
       // Check for tenant ID in multiple locations
-      const tenantId = response.tenantId || response.tenant_id || response.data?.tenantId || response.data?.tenant_id;
+      let tenantId = response.tenantId || response.tenant_id || response.data?.tenantId || response.data?.tenant_id;
+      
+      // If still no tenant ID, check schema name
+      if (!tenantId && response.data?.schemaSetup?.schema_name) {
+        const schemaName = response.data.schemaSetup.schema_name;
+        console.log('[OnboardingFlow] Extracting tenant ID from schema name:', schemaName);
+        // Match the full UUID pattern with underscores
+        const schemaMatch = schemaName.match(/tenant_([a-f0-9]{8}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{12})/);
+        if (schemaMatch) {
+          // Convert underscores back to hyphens for the tenant ID
+          tenantId = schemaMatch[1].replace(/_/g, '-');
+          console.log('[OnboardingFlow] Extracted full tenant ID from schema:', tenantId);
+        }
+      }
       
       if (response.success && tenantId) {
         // Session updates are handled automatically by backend in session-v2 system

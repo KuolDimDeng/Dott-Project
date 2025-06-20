@@ -358,11 +358,19 @@ export async function POST(request) {
             console.log('[CompleteOnboarding] Trying to extract from schema name:', schemaName);
             // Match tenant ID with underscores (backend uses underscores instead of hyphens)
             // Pattern: tenant_75ec28c2_697c_4b55_99ab_d86ad70e382c
-            const schemaMatch = schemaName.match(/tenant_([a-f0-9_]+)/);
+            // Match the full UUID pattern with underscores
+            const schemaMatch = schemaName.match(/tenant_([a-f0-9]{8}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{4}_[a-f0-9]{12})/);
             if (schemaMatch) {
               // Convert underscores back to hyphens for the tenant ID
               tenantId = schemaMatch[1].replace(/_/g, '-');
-              console.log('[CompleteOnboarding] Extracted tenant ID from schema name:', tenantId);
+              console.log('[CompleteOnboarding] Extracted full tenant ID from schema:', tenantId);
+            } else {
+              // Fallback to simpler pattern if full UUID match fails
+              const simpleMatch = schemaName.match(/tenant_([a-f0-9_]+)/);
+              if (simpleMatch) {
+                tenantId = simpleMatch[1].replace(/_/g, '-');
+                console.log('[CompleteOnboarding] Extracted tenant ID with simple pattern:', tenantId);
+              }
             }
           }
           

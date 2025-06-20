@@ -2465,14 +2465,76 @@ class SaveStep1View(APIView):
             except Exception as meta_error:
                 logger.warning(f"Failed to store schema info in profile metadata: {str(meta_error)}")
             
+            # Update the session with tenant information
+            try:
+                from session_manager.services import session_service
+                
+                # Get the current session ID from the request
+                session_id = None
+                
+                # Check if user has auth tokens or session cookies
+                if hasattr(request, 'session') and hasattr(request.session, 'session_id'):
+                    session_id = str(request.session.session_id)
+                elif hasattr(request, 'auth') and hasattr(request.auth, 'session_id'):
+                    session_id = str(request.auth.session_id)
+                    
+                # If we don't have a session ID, try to get from cookies
+                if not session_id:
+                    session_cookie = request.COOKIES.get('sid')
+                    if session_cookie:
+                        session_id = session_cookie
+                
+                if session_id:
+                    # Update the session with tenant information
+                    updated_session = session_service.update_session(
+                        session_id=session_id,
+                        tenant_id=tenant_id,
+                        needs_onboarding=True,  # Still in onboarding
+                        onboarding_step='subscription',  # Next step
+                        onboarding_completed=False
+                    )
+                    
+                    if updated_session:
+                        logger.info(f"Updated session {session_id} with tenant_id: {tenant_id}")
+                    else:
+                        logger.warning(f"Failed to update session {session_id} with tenant_id")
+                else:
+                    logger.warning(f"No session ID found to update with tenant_id")
+                    
+                # Also update all active sessions for the user
+                from session_manager.models import UserSession
+                active_sessions = UserSession.objects.filter(
+                    user=request.user,
+                    is_active=True,
+                    expires_at__gt=timezone.now()
+                )
+                
+                sessions_updated = 0
+                for session in active_sessions:
+                    session.tenant_id = tenant_id
+                    session.save(update_fields=['tenant_id'])
+                    sessions_updated += 1
+                    
+                if sessions_updated > 0:
+                    logger.info(f"Updated {sessions_updated} active session(s) with tenant_id: {tenant_id}")
+                    
+            except Exception as session_error:
+                logger.error(f"Error updating session with tenant ID: {str(session_error)}")
+                # Don't fail the request just because session update failed
+            
             # Log that we're setting up with minimal schema
             logger.info(f"Created minimal schema and business data for user {request.user.id}", extra={
                 'user_id': str(request.user.id),
                 'business_id': str(business_id),
                 'schema_name': schema_name,
                 'minimal': True,
-                'next_step': 'subscription'
+                'next_step': 'subscription',
+                'tenant_id': tenant_id
             })
+            
+            # Add tenant_id to response data
+            response_data['data']['tenant_id'] = tenant_id
+            response_data['data']['tenantId'] = tenant_id  # Include both formats
             
             return response
 
