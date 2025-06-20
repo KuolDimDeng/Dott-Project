@@ -82,7 +82,7 @@ export async function GET(request) {
             currentStep: sessionData.current_onboarding_step || 'business_info',
             tenantId: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
             tenant_id: userData.tenant_id || sessionData.tenant_id || tenantData.id || userTenantIdCookie?.value,
-            businessName: sessionData.business_name || userData.business_name,
+            businessName: sessionData.business_name || userData.business_name || tenantData.name,
             subscriptionPlan: sessionData.subscription_plan || userData.subscription_plan || 'free',
             sessionSource: 'backend-v2'
           }, {

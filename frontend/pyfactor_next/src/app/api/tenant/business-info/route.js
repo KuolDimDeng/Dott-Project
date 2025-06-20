@@ -24,36 +24,53 @@ export async function GET(request) {
     // Backend API URL
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
     
-    // First, get the current session from backend to get user details
-    const sessionResponse = await fetch(`${apiBaseUrl}/api/sessions/current/`, {
+    // Use the profile API to get session data (same as other APIs)
+    const profileResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://dottapps.com'}/api/auth/profile`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
-        'Cookie': `session_token=${sessionId.value}`
+        'Cookie': `sid=${sessionId.value}; session_token=${sessionId.value}`
       },
       cache: 'no-store'
     });
     
-    if (!sessionResponse.ok) {
-      console.log('[Business Info API] Session validation failed:', sessionResponse.status);
+    if (!profileResponse.ok) {
+      console.log('[Business Info API] Session validation failed:', profileResponse.status);
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
     
-    const sessionData = await sessionResponse.json();
-    const user = sessionData.user || sessionData;
-    const tenantData = sessionData.tenant || {};
+    const profileData = await profileResponse.json();
+    const user = profileData.user || profileData;
+    const tenantData = { id: profileData.tenantId, name: profileData.businessName };
     
-    console.log('[Business Info API] Session validated, user:', user.email);
+    console.log('[Business Info API] Session validated, user:', profileData.email);
+    console.log('[Business Info API] Profile data:', {
+      tenantId: profileData.tenantId,
+      businessName: profileData.businessName,
+      subscriptionPlan: profileData.subscriptionPlan,
+      hasBusinessName: !!profileData.businessName
+    });
     
     // Get tenant ID from session or query params
     const { searchParams } = new URL(request.url);
-    const tenantId = searchParams.get('tenantId') || user.tenant_id || tenantData.id;
+    const tenantId = searchParams.get('tenantId') || profileData.tenantId;
     
     if (!tenantId) {
       console.log('[Business Info API] No tenant ID found');
       return NextResponse.json({ error: 'No tenant ID found' }, { status: 400 });
     }
     
-    console.log('[Business Info API] Fetching business info for tenant:', tenantId);
+    console.log('[Business Info API] Using tenant ID:', tenantId);
+    
+    // If we already have business name from profile, use it as fallback
+    if (profileData.businessName) {
+      console.log('[Business Info API] Found business name in profile:', profileData.businessName);
+      return NextResponse.json({
+        businessName: profileData.businessName,
+        businessType: '',
+        subscriptionPlan: profileData.subscriptionPlan || 'free',
+        tenantId: tenantId,
+        source: 'profile'
+      });
+    }
     
     try {
       // First try to get onboarding data which includes business info
@@ -105,7 +122,7 @@ export async function GET(request) {
         }
         
         const businessInfo = {
-          businessName: onboardingData.business_name || onboardingData.legal_name || '',
+          businessName: onboardingData.business_name || onboardingData.legal_name || tenantData.name || '',
           businessType: onboardingData.business_type || '',
           legalStructure: onboardingData.legal_structure || '',
           country: onboardingData.country || '',
@@ -134,12 +151,12 @@ export async function GET(request) {
     }
     
     // If backend fetch failed, return session data if available
-    if (user.businessName) {
+    if (user.businessName || tenantData.name) {
       console.log('[Business Info API] Returning business info from session');
       return NextResponse.json({
-        businessName: user.businessName,
+        businessName: user.businessName || tenantData.name || '',
         businessType: user.businessType || '',
-        subscriptionPlan: user.subscriptionPlan || 'free',
+        subscriptionPlan: user.subscriptionPlan || sessionData.subscription_plan || 'free',
         tenantId: tenantId,
         source: 'session'
       });
@@ -147,9 +164,9 @@ export async function GET(request) {
     
     console.log('[Business Info API] No business info found');
     return NextResponse.json({
-      businessName: '',
+      businessName: tenantData.name || '',
       businessType: '',
-      subscriptionPlan: 'free',
+      subscriptionPlan: sessionData.subscription_plan || 'free',
       tenantId: tenantId,
       source: 'none'
     });
