@@ -179,15 +179,15 @@ async function handleCallback(request, { params }) {
       
       try {
         // Create session via backend API - this is the ONLY session now
-        const sessionResponse = await fetch(`${API_URL}/api/auth/login/`, {
+        const sessionResponse = await fetch(`${API_URL}/api/sessions/create/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${tokens.access_token}`
           },
           body: JSON.stringify({
-            access_token: tokens.access_token,
-            email: userInfo.email
+            session_type: 'web'
+            // The backend will extract user info from the access token
           })
         });
         
