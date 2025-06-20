@@ -245,6 +245,12 @@ export async function POST(request) {
     
     const { user, sessionData } = authResult;
     console.log('[CompleteOnboarding] Authenticated user:', user.email);
+    console.log('[CompleteOnboarding] Session data received:', {
+      hasSessionToken: !!sessionData?.sessionToken,
+      sessionTokenLength: sessionData?.sessionToken?.length,
+      hasUser: !!sessionData?.user,
+      userEmail: sessionData?.user?.email
+    });
     
     // 2. Parse and validate onboarding data
     let onboardingData;
@@ -279,6 +285,17 @@ export async function POST(request) {
     // 4. Backend API URL
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     console.log('[CompleteOnboarding] Starting backend onboarding process');
+    
+    // CRITICAL: Store the session token early to ensure it's not lost
+    const cookieStore = await cookies();
+    const earlyCheckSid = cookieStore.get('sid');
+    const earlyCheckSessionToken = cookieStore.get('session_token');
+    const originalSessionToken = sessionData?.sessionToken || earlyCheckSid?.value || earlyCheckSessionToken?.value;
+    console.log('[CompleteOnboarding] Original session token preserved:', {
+      hasToken: !!originalSessionToken,
+      tokenLength: originalSessionToken?.length,
+      source: sessionData?.sessionToken ? 'sessionData' : (earlyCheckSid?.value ? 'sid cookie' : 'session_token cookie')
+    });
     
     // 5. First, submit business information to create/update tenant with correct name
     // Get tenant ID from user or session data
@@ -594,10 +611,7 @@ export async function POST(request) {
         : ['Complete payment setup', 'Access premium features', 'Contact support if needed']
     };
     
-    // 8. Create response with updated session cookie
-    const response = NextResponse.json(responseData);
-    
-    // CRITICAL: Preserve the sid cookie from the current session
+    // CRITICAL: Preserve the sid cookie from the current session BEFORE creating response
     console.log('[CompleteOnboarding] 🍪 COOKIE UPDATE PROCESS STARTING');
     const currentCookies = await cookies();
     const currentSid = currentCookies.get('sid');
@@ -609,39 +623,79 @@ export async function POST(request) {
     console.log('[CompleteOnboarding] 🍪 - sessionData.sessionToken:', sessionData.sessionToken ? { exists: true, length: sessionData.sessionToken.length } : { exists: false });
     
     // CRITICAL: Preserve the sid and session_token cookies
-    if (currentSid || currentSessionToken || sessionData.sessionToken) {
-      const sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData.sessionToken;
+    // Get the session token value from the existing cookies or session data
+    let sessionTokenValue = currentSid?.value || currentSessionToken?.value || sessionData?.sessionToken;
+    
+    // Additional check: If sessionData has a sessionToken but it's not in cookies, it might be the raw token
+    if (!sessionTokenValue && sessionData && typeof sessionData === 'object') {
+      // Check various possible locations where the token might be stored
+      sessionTokenValue = sessionData.sessionToken || 
+                         sessionData.session_token || 
+                         sessionData.token ||
+                         sessionData.sid;
       
       if (sessionTokenValue) {
-        console.log('[CompleteOnboarding] 🍪 Preserving session with token:', sessionTokenValue);
-        
-        const cookieOptions = {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
-          path: '/',
-          domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
-        };
-        
-        console.log('[CompleteOnboarding] 🍪 Cookie options:', cookieOptions);
-        
-        // Re-set the sid cookie to ensure it's not lost
-        response.cookies.set('sid', sessionTokenValue, cookieOptions);
-        console.log('[CompleteOnboarding] 🍪 Set sid cookie');
-        
-        // Also set session_token for compatibility
-        response.cookies.set('session_token', sessionTokenValue, cookieOptions);
-        console.log('[CompleteOnboarding] 🍪 Set session_token cookie');
-        
-        console.log('[CompleteOnboarding] 🍪 Session cookies preserved with value:', sessionTokenValue);
-      } else {
-        console.error('[CompleteOnboarding] ❌ No session token found to preserve!');
-        console.error('[CompleteOnboarding] ❌ This will cause authentication issues!');
+        console.log('[CompleteOnboarding] 🔄 Found session token in sessionData');
       }
-    } else {
-      console.error('[CompleteOnboarding] ❌ CRITICAL: No session information available at all!');
+    }
+    
+    if (!sessionTokenValue) {
+      console.error('[CompleteOnboarding] ❌ CRITICAL: No session token available!');
       console.error('[CompleteOnboarding] ❌ User will be logged out after redirect!');
+      console.error('[CompleteOnboarding] ❌ Debug - sessionData structure:', JSON.stringify(sessionData, null, 2));
+      
+      // Last resort: Get the token that was used for the backend API calls
+      // This is the token that was successfully used to communicate with the backend
+      if (authResult?.sessionData?.sessionToken) {
+        console.log('[CompleteOnboarding] 🔄 Using token from initial auth result');
+        sessionTokenValue = authResult.sessionData.sessionToken;
+      } else if (originalSessionToken) {
+        console.log('[CompleteOnboarding] 🔄 Using original session token preserved at start');
+        sessionTokenValue = originalSessionToken;
+      }
+    }
+    
+    // CRITICAL: If we still don't have a session token, we must fail gracefully
+    if (!sessionTokenValue) {
+      console.error('[CompleteOnboarding] ❌ FATAL: Cannot proceed without session token');
+      return NextResponse.json({
+        success: false,
+        error: 'Session lost during onboarding',
+        message: 'Your session has expired. Please sign in again to complete onboarding.',
+        redirect_url: '/auth/signin?reason=session_lost'
+      }, { status: 401 });
+    }
+    
+    // 8. Create response with updated session cookie
+    const response = NextResponse.json(responseData);
+    
+    if (sessionTokenValue) {
+      console.log('[CompleteOnboarding] 🍪 Preserving session with token:', sessionTokenValue);
+      
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        path: '/',
+        domain: process.env.NODE_ENV === 'production' ? '.dottapps.com' : undefined
+      };
+      
+      console.log('[CompleteOnboarding] 🍪 Cookie options:', cookieOptions);
+      
+      // IMPORTANT: Set cookies BEFORE creating the response to ensure they're included
+      // Re-set the sid cookie to ensure it's not lost
+      response.cookies.set('sid', sessionTokenValue, cookieOptions);
+      console.log('[CompleteOnboarding] 🍪 Set sid cookie');
+      
+      // Also set session_token for compatibility
+      response.cookies.set('session_token', sessionTokenValue, cookieOptions);
+      console.log('[CompleteOnboarding] 🍪 Set session_token cookie');
+      
+      console.log('[CompleteOnboarding] 🍪 Session cookies preserved with value:', sessionTokenValue);
+    } else {
+      console.error('[CompleteOnboarding] ❌ CRITICAL: Could not recover session token!');
+      console.error('[CompleteOnboarding] ❌ User will need to sign in again!');
     }
     
     // Remove old session cookies that are no longer used

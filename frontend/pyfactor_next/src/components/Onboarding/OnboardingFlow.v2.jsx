@@ -201,6 +201,35 @@ export default function OnboardingFlowV2() {
         sessionManager.clearCache();
         
         console.log('🎯 [OnboardingFlow] Onboarding completed successfully');
+        
+        // CRITICAL: Verify session is properly established before redirecting
+        console.log('🔍 [OnboardingFlow] Verifying session before redirect...');
+        
+        // Wait a moment for cookies to propagate
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        try {
+          const verifyResponse = await fetch('/api/auth/session-verify', {
+            credentials: 'include',
+            cache: 'no-store'
+          });
+          
+          if (verifyResponse.ok) {
+            const verifyData = await verifyResponse.json();
+            console.log('✅ [OnboardingFlow] Session verified:', verifyData);
+            
+            if (!verifyData.valid) {
+              console.error('❌ [OnboardingFlow] Session invalid after completion:', verifyData.reason);
+              throw new Error('Session not properly established');
+            }
+          } else {
+            console.error('❌ [OnboardingFlow] Session verification failed');
+          }
+        } catch (verifyError) {
+          console.error('❌ [OnboardingFlow] Session verification error:', verifyError);
+          // Continue anyway as the redirect might still work
+        }
+        
         console.log('🎯 [OnboardingFlow] Using window.location for redirect to ensure cookies are preserved');
         
         // Use window.location.href instead of router.push to ensure cookies are properly set
@@ -208,6 +237,11 @@ export default function OnboardingFlowV2() {
         window.location.href = `/${tenantId}/dashboard`;
         
         // Don't use router.push here as it may not properly handle the cookie setup
+        return;
+      } else if (response.redirect_url && response.redirect_url.includes('session_lost')) {
+        // Handle session lost error
+        logger.error('[OnboardingFlow] Session lost during onboarding');
+        window.location.href = response.redirect_url;
         return;
       } else {
         logger.error('[OnboardingFlow] Missing tenant ID in response:', response);

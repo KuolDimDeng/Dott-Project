@@ -182,6 +182,45 @@ export default function TenantDashboard() {
           window.history.replaceState(null, '', correctUrl);
         }
         
+        // CRITICAL: Check if user just completed onboarding
+        const onboardingJustCompleted = Cookies.get('onboarding_just_completed');
+        if (onboardingJustCompleted === 'true') {
+          logger.info('[TenantDashboard] 🎯 User just completed onboarding, verifying session...');
+          
+          // Wait for session cookies to fully propagate
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Verify session is properly established
+          try {
+            const sessionVerifyResponse = await fetch('/api/auth/session-verify', {
+              credentials: 'include',
+              cache: 'no-store'
+            });
+            
+            if (sessionVerifyResponse.ok) {
+              const sessionVerifyData = await sessionVerifyResponse.json();
+              logger.info('[TenantDashboard] Session verification after onboarding:', sessionVerifyData);
+              
+              if (sessionVerifyData.valid) {
+                logger.info('[TenantDashboard] ✅ Session is valid, proceeding with dashboard load');
+                // Remove the temporary cookie
+                Cookies.remove('onboarding_just_completed');
+              } else {
+                logger.error('[TenantDashboard] ❌ Session invalid after onboarding:', sessionVerifyData.reason);
+                // Try to recover the session
+                if (sessionVerifyData.reason === 'No session token found') {
+                  logger.info('[TenantDashboard] Attempting session recovery...');
+                  // Redirect back to auth callback to re-establish session
+                  router.push(`/auth/callback?returnTo=/${tenantId}/dashboard`);
+                  return;
+                }
+              }
+            }
+          } catch (error) {
+            logger.error('[TenantDashboard] Session verification error:', error);
+          }
+        }
+        
         // CRITICAL: Verify onboarding is marked as complete in backend
         if (tenantId) {
           try {
