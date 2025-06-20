@@ -294,7 +294,7 @@ export default function EmailPasswordSignIn() {
       }
 
       // Use unified auth flow handler
-      const { handlePostAuthFlow } = await import('@/utils/authFlowHandler');
+      const { handlePostAuthFlow } = await import('@/utils/authFlowHandler.v3');
       const finalUserData = await handlePostAuthFlow({
         user: authResult.user,
         accessToken: authResult.access_token,
