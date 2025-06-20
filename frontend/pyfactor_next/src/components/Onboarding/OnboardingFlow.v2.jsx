@@ -156,6 +156,15 @@ export default function OnboardingFlowV2() {
   // Complete onboarding (for free plan)
   const completeOnboarding = async (data) => {
     try {
+      logger.info('[OnboardingFlow] Completing onboarding with data:', {
+        businessName: data.businessName,
+        businessType: data.businessType,
+        selectedPlan: data.selectedPlan,
+        country: data.country,
+        legalStructure: data.legalStructure,
+        dateFounded: data.dateFounded
+      });
+      
       const response = await apiClient.completeOnboarding({
         businessName: data.businessName,
         businessType: data.businessType,
@@ -166,13 +175,24 @@ export default function OnboardingFlowV2() {
         dateFounded: data.dateFounded || ''
       });
       
-      if (response.success && response.tenantId) {
+      logger.info('[OnboardingFlow] Complete onboarding response:', response);
+      console.log('🎯 [OnboardingFlow] Response tenantId:', response.tenantId);
+      console.log('🎯 [OnboardingFlow] Response tenant_id:', response.tenant_id);
+      
+      // Check for tenant ID in multiple locations
+      const tenantId = response.tenantId || response.tenant_id || response.data?.tenantId || response.data?.tenant_id;
+      
+      if (response.success && tenantId) {
         // Session updates are handled automatically by backend in session-v2 system
         // Force session refresh to get updated data
         sessionManager.clearCache();
         
+        console.log('🎯 [OnboardingFlow] Redirecting to dashboard:', `/${tenantId}/dashboard`);
         // Redirect to dashboard
-        router.push(`/${response.tenantId}/dashboard`);
+        router.push(`/${tenantId}/dashboard`);
+      } else {
+        logger.error('[OnboardingFlow] Missing tenant ID in response:', response);
+        throw new Error('Unable to complete onboarding: missing tenant ID');
       }
       
     } catch (err) {

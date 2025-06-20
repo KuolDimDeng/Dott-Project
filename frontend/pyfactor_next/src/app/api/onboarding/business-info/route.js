@@ -672,7 +672,10 @@ export async function POST(request) {
               message: 'Business information saved successfully',
               next_step: 'subscription',
               current_step: 'subscription',
-              redirect_url: '/onboarding/subscription'
+              redirect_url: '/onboarding/subscription',
+              tenant_id: backendData?.tenant_id,
+              tenantId: backendData?.tenant_id,
+              data: backendData
             });
             
               response.cookies.set('appSession', cookieString, {
@@ -697,6 +700,9 @@ export async function POST(request) {
             message: 'Business information saved successfully',
               next_step: 'subscription',
             current_step: 'subscription',
+              tenant_id: backendData?.tenant_id,
+              tenantId: backendData?.tenant_id,
+              data: backendData
             redirect_url: '/onboarding/subscription'
             });
         }

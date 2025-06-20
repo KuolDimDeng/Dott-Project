@@ -88,9 +88,18 @@ async function validateAuth0Session(request) {
     }
     
     const sessionData = await response.json();
+    console.log('[CompleteOnboarding] Full session data structure:', JSON.stringify(sessionData, null, 2));
+    
+    // Extract tenant ID from various possible locations
+    const extractedTenantId = sessionData.tenant?.id || 
+                            sessionData.tenant_id || 
+                            sessionData.tenantId ||
+                            sessionData.user?.tenant_id ||
+                            sessionData.user?.tenantId;
+    
     console.log('[CompleteOnboarding] Session validated successfully:', {
       email: sessionData.user?.email,
-      tenantId: sessionData.tenant?.id,
+      tenantId: extractedTenantId,
       needsOnboarding: sessionData.needs_onboarding
     });
     
@@ -98,7 +107,8 @@ async function validateAuth0Session(request) {
       email: sessionData.user?.email,
       sub: sessionData.user?.id || sessionData.session_token,
       name: sessionData.user?.name || sessionData.user?.email,
-      tenantId: sessionData.tenant?.id,
+      tenantId: extractedTenantId,
+      tenant_id: extractedTenantId,
       needsOnboarding: sessionData.needs_onboarding,
       onboardingCompleted: sessionData.onboarding_completed
     };
@@ -271,8 +281,26 @@ export async function POST(request) {
     console.log('[CompleteOnboarding] Starting backend onboarding process');
     
     // 5. First, submit business information to create/update tenant with correct name
-    // Generate tenant ID upfront if user doesn't have one
-    let tenantId = user.tenantId || user.tenant_id || uuidv4();
+    // Get tenant ID from user or session data
+    let tenantId = user.tenantId || user.tenant_id || sessionData.tenantId || sessionData.tenant_id;
+    
+    // Extract from sessionData.user if available
+    if (!tenantId && sessionData.user) {
+      tenantId = sessionData.user.tenantId || sessionData.user.tenant_id;
+    }
+    
+    // If still no tenant ID, generate one (but this should rarely happen)
+    if (!tenantId) {
+      console.warn('[CompleteOnboarding] No tenant ID found in user or session, generating new one');
+      tenantId = uuidv4();
+    }
+    
+    console.log('[CompleteOnboarding] Initial tenant ID check:', {
+      fromUser: user.tenantId || user.tenant_id,
+      fromSession: sessionData.tenantId || sessionData.tenant_id,
+      fromSessionUser: sessionData.user?.tenantId || sessionData.user?.tenant_id,
+      finalTenantId: tenantId
+    });
     
     if (sessionData.sessionToken) {
       try {
@@ -300,7 +328,43 @@ export async function POST(request) {
         if (businessResponse.ok) {
           const businessResult = await businessResponse.json();
           console.log('[CompleteOnboarding] Business info submitted successfully:', businessResult);
-          tenantId = businessResult.tenant_id || businessResult.tenantId;
+          
+          // Extract tenant ID from various possible locations in the response
+          console.log('[CompleteOnboarding] Business info response structure:', {
+            hasData: !!businessResult.data,
+            hasSchemaSetup: !!businessResult.data?.schemaSetup,
+            hasSchemaName: !!businessResult.data?.schemaSetup?.schema_name,
+            hasTenantId: !!businessResult.tenant_id,
+            hasTenantIdCamel: !!businessResult.tenantId,
+            responseKeys: Object.keys(businessResult)
+          });
+          
+          // Try to extract tenant ID from multiple locations
+          if (businessResult.tenant_id) {
+            tenantId = businessResult.tenant_id;
+            console.log('[CompleteOnboarding] Got tenant ID from response.tenant_id:', tenantId);
+          } else if (businessResult.tenantId) {
+            tenantId = businessResult.tenantId;
+            console.log('[CompleteOnboarding] Got tenant ID from response.tenantId:', tenantId);
+          } else if (businessResult.data?.tenant_id) {
+            tenantId = businessResult.data.tenant_id;
+            console.log('[CompleteOnboarding] Got tenant ID from response.data.tenant_id:', tenantId);
+          } else if (businessResult.data?.tenantId) {
+            tenantId = businessResult.data.tenantId;
+            console.log('[CompleteOnboarding] Got tenant ID from response.data.tenantId:', tenantId);
+          } else if (businessResult.data?.schemaSetup?.schema_name) {
+            // Extract from schema name: tenant_5e6ab306_8cbf_43b9_9778_f1abbe7b6ed1
+            const schemaName = businessResult.data.schemaSetup.schema_name;
+            console.log('[CompleteOnboarding] Trying to extract from schema name:', schemaName);
+            const schemaMatch = schemaName.match(/tenant_([a-f0-9-]+)/);
+            if (schemaMatch) {
+              tenantId = schemaMatch[1];
+              console.log('[CompleteOnboarding] Extracted tenant ID from schema name:', tenantId);
+            }
+          }
+          
+          // Log the tenant ID for debugging
+          console.log('[CompleteOnboarding] Final tenant ID after business info:', tenantId);
           
           // Step 2: Submit subscription selection
           console.log('[CompleteOnboarding] Step 2: Submitting subscription selection');
@@ -353,8 +417,22 @@ export async function POST(request) {
           if (completeResponse.ok) {
             const completeResult = await completeResponse.json();
             console.log('[CompleteOnboarding] ✅ Backend marked onboarding complete:', completeResult);
-            if (!tenantId && completeResult.data) {
-              tenantId = completeResult.data.tenantId || completeResult.data.tenant_id;
+            
+            // Try to get tenant ID from complete response if we don't have it
+            if (!tenantId) {
+              if (completeResult.tenant_id) {
+                tenantId = completeResult.tenant_id;
+                console.log('[CompleteOnboarding] Got tenant ID from complete response.tenant_id:', tenantId);
+              } else if (completeResult.tenantId) {
+                tenantId = completeResult.tenantId;
+                console.log('[CompleteOnboarding] Got tenant ID from complete response.tenantId:', tenantId);
+              } else if (completeResult.data?.tenant_id) {
+                tenantId = completeResult.data.tenant_id;
+                console.log('[CompleteOnboarding] Got tenant ID from complete response.data.tenant_id:', tenantId);
+              } else if (completeResult.data?.tenantId) {
+                tenantId = completeResult.data.tenantId;
+                console.log('[CompleteOnboarding] Got tenant ID from complete response.data.tenantId:', tenantId);
+              }
             }
           } else {
             console.error('[CompleteOnboarding] ❌ Failed to mark onboarding complete, status:', completeResponse.status);
@@ -470,6 +548,19 @@ export async function POST(request) {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     // 7. Prepare success response
+    console.log('[CompleteOnboarding] 🎯 Final tenant ID before response:', tenantId);
+    
+    // Validate tenant ID format
+    if (!tenantId || tenantId === 'undefined' || tenantId === 'null') {
+      console.error('[CompleteOnboarding] ❌ Invalid tenant ID detected:', tenantId);
+      // Try one more time to get from session
+      const sessionCheck = await validateAuth0Session(request);
+      if (sessionCheck.user?.tenantId) {
+        tenantId = sessionCheck.user.tenantId;
+        console.log('[CompleteOnboarding] Retrieved tenant ID from session recheck:', tenantId);
+      }
+    }
+    
     const responseData = {
       success: true,
       message: 'Onboarding completed successfully!',
