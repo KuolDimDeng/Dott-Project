@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
 import { v4 as uuidv4 } from 'uuid';
+import { countries } from 'countries-list';
 
 // Increased cookie expiration for onboarding (7 days)
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
@@ -14,6 +15,40 @@ const COOKIE_OPTIONS = {
   httpOnly: false,
   sameSite: 'lax'
 };
+
+/**
+ * Helper function to convert country name to 2-letter code
+ */
+function getCountryCode(countryName) {
+  // Handle common cases first
+  if (!countryName) return 'US';
+  if (countryName.length === 2) return countryName.toUpperCase();
+  
+  // Special cases
+  const specialCases = {
+    'United States': 'US',
+    'United States of America': 'US',
+    'USA': 'US',
+    'United Kingdom': 'GB',
+    'UK': 'GB',
+    'Great Britain': 'GB'
+  };
+  
+  if (specialCases[countryName]) {
+    return specialCases[countryName];
+  }
+  
+  // Search through countries list
+  for (const [code, country] of Object.entries(countries)) {
+    if (country.name === countryName || country.native === countryName) {
+      return code;
+    }
+  }
+  
+  // Default to US if not found
+  console.warn(`[api/onboarding/business-info] Country not found: ${countryName}, defaulting to US`);
+  return 'US';
+}
 
 /**
  * Validate user authentication using our custom session management
@@ -370,7 +405,8 @@ export async function POST(request) {
       const djangoData = {
         business_name: businessData.businessName,
         business_type: businessData.businessType,
-        country: businessData.country === 'United States' ? 'US' : businessData.country, // Fix country code
+        // Convert country name to 2-letter code
+        country: getCountryCode(businessData.country),
         legal_structure: businessData.legalStructure,
         date_founded: businessData.dateFounded,
         first_name: businessData.firstName || '',
@@ -380,6 +416,17 @@ export async function POST(request) {
         phone_number: businessData.phoneNumber || '',
         tax_id: businessData.taxId || ''
       };
+      
+      // Filter out empty required fields that backend might reject
+      if (!djangoData.legal_structure) {
+        console.warn('[api/onboarding/business-info] Legal structure is empty, using default');
+        djangoData.legal_structure = 'Other'; // Default value
+      }
+      
+      if (!djangoData.date_founded) {
+        console.warn('[api/onboarding/business-info] Date founded is empty, using today');
+        djangoData.date_founded = new Date().toISOString().split('T')[0];
+      }
 
       console.log('[api/onboarding/business-info] Sending to Django:', djangoData);
       console.log('🚨 [BUSINESS-INFO API] Django data being sent:', JSON.stringify(djangoData, null, 2));

@@ -161,7 +161,9 @@ export default function OnboardingFlowV2() {
         businessType: data.businessType,
         selectedPlan: data.selectedPlan,
         billingCycle: data.billingCycle || 'monthly',
-        country: data.country || 'US'
+        country: data.country || 'US',
+        legalStructure: data.legalStructure || '',
+        dateFounded: data.dateFounded || ''
       });
       
       if (response.success && response.tenantId) {

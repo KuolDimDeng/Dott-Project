@@ -2,6 +2,41 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
 import { decrypt, encrypt } from '@/utils/sessionEncryption';
+import { countries } from 'countries-list';
+
+/**
+ * Helper function to convert country name to 2-letter code
+ */
+function getCountryCode(countryName) {
+  // Handle common cases first
+  if (!countryName) return 'US';
+  if (countryName.length === 2) return countryName.toUpperCase();
+  
+  // Special cases
+  const specialCases = {
+    'United States': 'US',
+    'United States of America': 'US',
+    'USA': 'US',
+    'United Kingdom': 'GB',
+    'UK': 'GB',
+    'Great Britain': 'GB'
+  };
+  
+  if (specialCases[countryName]) {
+    return specialCases[countryName];
+  }
+  
+  // Search through countries list
+  for (const [code, country] of Object.entries(countries)) {
+    if (country.name === countryName || country.native === countryName) {
+      return code;
+    }
+  }
+  
+  // Default to US if not found
+  console.warn(`[CompleteOnboarding] Country not found: ${countryName}, defaulting to US`);
+  return 'US';
+}
 
 /**
  * Consolidated Onboarding API - Simplified Auth0-only approach
@@ -256,9 +291,9 @@ export async function POST(request) {
             businessName: onboardingData.businessName,
             business_type: onboardingData.businessType,
             businessType: onboardingData.businessType,
-            country: onboardingData.country || 'US',
-            legal_structure: onboardingData.legalStructure,
-            date_founded: onboardingData.dateFounded
+            country: getCountryCode(onboardingData.country) || 'US',
+            legal_structure: onboardingData.legalStructure || 'Other',
+            date_founded: onboardingData.dateFounded || new Date().toISOString().split('T')[0]
           })
         });
         
