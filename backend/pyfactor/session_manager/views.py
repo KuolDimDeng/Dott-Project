@@ -191,6 +191,32 @@ class SessionDetailView(APIView):
                     status=status.HTTP_401_UNAUTHORIZED
                 )
             
+            # Check if session needs syncing with OnboardingProgress
+            if session.needs_onboarding:
+                try:
+                    from onboarding.models import OnboardingProgress
+                    progress = OnboardingProgress.objects.get(user=session.user)
+                    
+                    # If OnboardingProgress shows complete but session doesn't, sync it
+                    if progress.onboarding_status == 'complete' and session.needs_onboarding:
+                        logger.info(
+                            f"Syncing session {session.session_id} with OnboardingProgress "
+                            f"for user {session.user.email}"
+                        )
+                        
+                        # Update session
+                        session.needs_onboarding = False
+                        session.onboarding_completed = True
+                        session.onboarding_step = progress.current_step or 'complete'
+                        session.save(update_fields=[
+                            'needs_onboarding', 
+                            'onboarding_completed', 
+                            'onboarding_step',
+                            'updated_at'
+                        ])
+                except Exception as e:
+                    logger.debug(f"Could not check OnboardingProgress: {e}")
+            
             serializer = SessionSerializer(session)
             return Response(serializer.data)
             

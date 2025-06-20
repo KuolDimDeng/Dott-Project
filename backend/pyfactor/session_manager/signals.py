@@ -10,13 +10,13 @@ from django.dispatch import receiver
 from django.db import transaction
 import logging
 
-from .models import Session
+from .models import UserSession
 from onboarding.models import OnboardingProgress
 
 logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender=Session)
+@receiver(post_save, sender=UserSession)
 def sync_session_onboarding_status(sender, instance, created, **kwargs):
     """
     When a new session is created, sync its onboarding status with
@@ -42,14 +42,14 @@ def sync_session_onboarding_status(sender, instance, created, **kwargs):
                     instance.onboarding_step != onboarding_step):
                     
                     # Update without triggering the signal again
-                    Session.objects.filter(pk=instance.pk).update(
+                    UserSession.objects.filter(pk=instance.pk).update(
                         needs_onboarding=needs_onboarding,
                         onboarding_completed=onboarding_completed,
                         onboarding_step=onboarding_step
                     )
                     
                     logger.info(
-                        f"Synced session {instance.session_token[:8]}... with OnboardingProgress. "
+                        f"Synced session {instance.session_id}... with OnboardingProgress. "
                         f"User: {instance.user.email}, Status: {progress.status}, "
                         f"Needs Onboarding: {needs_onboarding}"
                     )
@@ -62,7 +62,7 @@ def sync_session_onboarding_status(sender, instance, created, **kwargs):
             logger.error(f"Error syncing session onboarding status: {e}")
 
 
-@receiver(post_save, sender=Session)
+@receiver(post_save, sender=UserSession)
 def update_session_activity(sender, instance, created, **kwargs):
     """
     Update last_activity timestamp when session is saved.
