@@ -9,9 +9,72 @@ export async function GET(request) {
   try {
     console.log('[Profile API] Getting user profile data');
     
-    // Get Auth0 session cookie - try new name first, then old
+    // Get session cookie - check new session system first
     const cookieStore = await cookies();
+    // Check for new session management system cookies first
+    const sidCookie = cookieStore.get('sid');
+    const sessionTokenCookie = cookieStore.get('session_token');
     const sessionCookie = cookieStore.get('dott_auth_session') || cookieStore.get('appSession');
+    
+    console.log('🚨 [PROFILE API] Cookie check:', {
+      hasSid: !!sidCookie,
+      hasSessionToken: !!sessionTokenCookie,
+      hasDottAuth: !!sessionCookie,
+      sidValue: sidCookie?.value?.substring(0, 8) + '...',
+      sessionTokenValue: sessionTokenCookie?.value?.substring(0, 8) + '...'
+    });
+    
+    // If we have sid or session_token, use the new session system
+    if (sidCookie || sessionTokenCookie) {
+      console.log('🚨 [PROFILE API] Found new session system cookies, fetching from backend');
+      
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+      const token = sidCookie?.value || sessionTokenCookie?.value;
+      
+      try {
+        const response = await fetch(`${API_URL}/api/sessions/current/`, {
+          headers: {
+            'Authorization': `SessionID ${token}`,
+            'Cookie': `session_token=${token}`
+          },
+          cache: 'no-store'
+        });
+        
+        if (response.ok) {
+          const sessionData = await response.json();
+          console.log('🚨 [PROFILE API] Backend session data:', {
+            email: sessionData.email,
+            tenantId: sessionData.tenant_id,
+            needsOnboarding: sessionData.needs_onboarding,
+            onboardingCompleted: sessionData.onboarding_completed
+          });
+          
+          // Return profile data from backend
+          return NextResponse.json({
+            authenticated: true,
+            email: sessionData.email,
+            needsOnboarding: sessionData.needs_onboarding,
+            onboardingCompleted: sessionData.onboarding_completed,
+            currentStep: sessionData.current_onboarding_step || 'business_info',
+            tenantId: sessionData.tenant_id,
+            tenant_id: sessionData.tenant_id,
+            businessName: sessionData.business_name,
+            subscriptionPlan: sessionData.subscription_plan || 'free',
+            sessionSource: 'backend-v2'
+          }, {
+            headers: {
+              'Cache-Control': 'no-store, no-cache, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0'
+            }
+          });
+        } else {
+          console.log('🚨 [PROFILE API] Backend session invalid:', response.status);
+        }
+      } catch (error) {
+        console.error('🚨 [PROFILE API] Error fetching backend session:', error);
+      }
+    }
     
     console.log('🚨 [PROFILE API] Session cookie exists:', !!sessionCookie);
     console.log('🚨 [PROFILE API] Session cookie size:', sessionCookie?.value?.length || 0, 'bytes');
@@ -168,15 +231,29 @@ export async function GET(request) {
     
     // CRITICAL: Check if we have a recent onboarding completion indicator
     const onboardingCompletedCookie = cookieStore.get('onboardingCompleted');
+    const onboardingJustCompletedCookie = cookieStore.get('onboarding_just_completed');
     const userTenantIdCookie = cookieStore.get('user_tenant_id');
-    if (onboardingCompletedCookie && onboardingCompletedCookie.value === 'true') {
-      console.log('🚨 [PROFILE API] Found onboardingCompleted cookie, overriding initial session data');
+    
+    if (onboardingCompletedCookie?.value === 'true' || onboardingJustCompletedCookie?.value === 'true') {
+      console.log('🚨 [PROFILE API] Found onboarding completion cookie, user just completed onboarding');
+      console.log('🚨 [PROFILE API] - onboardingCompleted:', onboardingCompletedCookie?.value);
+      console.log('🚨 [PROFILE API] - onboarding_just_completed:', onboardingJustCompletedCookie?.value);
+      console.log('🚨 [PROFILE API] - user_tenant_id:', userTenantIdCookie?.value);
+      
+      // Override session data with completion status
       profileData.needsOnboarding = false;
       profileData.onboardingCompleted = true;
       profileData.currentStep = 'complete';
+      
       if (userTenantIdCookie) {
         profileData.tenantId = userTenantIdCookie.value;
         profileData.tenant_id = userTenantIdCookie.value;
+      }
+      
+      // Also get subscription plan from cookies if available
+      const subscriptionPlanCookie = cookieStore.get('subscriptionPlan');
+      if (subscriptionPlanCookie) {
+        profileData.subscriptionPlan = subscriptionPlanCookie.value;
       }
     }
     

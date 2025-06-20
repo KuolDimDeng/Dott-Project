@@ -350,7 +350,44 @@ export default function TenantDashboard() {
         });
         
         if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
+          let profileData = await profileResponse.json();
+          
+          // CRITICAL: Check if profile data is null (no session found)
+          if (!profileData) {
+            logger.warn('[TenantDashboard] Profile API returned null - no session found');
+            
+            // Check if user just completed onboarding (special case)
+            const onboardingJustCompleted = Cookies.get('onboarding_just_completed');
+            const onboardingCompleted = Cookies.get('onboardingCompleted');
+            const userTenantIdCookie = Cookies.get('user_tenant_id');
+            
+            if ((onboardingJustCompleted === 'true' || onboardingCompleted === 'true') && userTenantIdCookie) {
+              logger.info('[TenantDashboard] User just completed onboarding, waiting for session to establish...');
+              
+              // Wait for session to propagate
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // Retry profile fetch
+              const retryProfileResponse = await fetch('/api/auth/profile', {
+                cache: 'no-store',
+                credentials: 'include'
+              });
+              
+              if (retryProfileResponse.ok) {
+                const retryProfileData = await retryProfileResponse.json();
+                if (retryProfileData) {
+                  logger.info('[TenantDashboard] Profile found on retry after onboarding');
+                  profileData = retryProfileData;
+                } else {
+                  throw new Error('Session not established after onboarding');
+                }
+              } else {
+                throw new Error('Failed to fetch profile after onboarding');
+              }
+            } else {
+              throw new Error('No authenticated session found');
+            }
+          }
           
           // Check if user has access to this tenant
           const userTenantId = profileData.tenantId || profileData.tenant_id;
