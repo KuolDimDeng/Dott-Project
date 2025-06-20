@@ -422,6 +422,11 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 logger.debug(f"🔍 Session token detected (not JWT), skipping Auth0 authentication")
                 return None
                 
+            # Also skip Bearer tokens that are UUIDs (session tokens, not JWTs)
+            if auth_type.lower() == 'bearer' and '.' not in token:
+                logger.debug(f"🔍 Bearer token is UUID (session token, not JWT), skipping Auth0 authentication")
+                return None
+                
             return token
         except ValueError as e:
             logger.error(f"❌ Error parsing Authorization header: {e}")
