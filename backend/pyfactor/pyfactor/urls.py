@@ -67,6 +67,9 @@ urlpatterns = [
     # Analytics API routes
     path('api/analytics/', include('analysis.urls')),
     
+    # Users API routes
+    path('api/users/', include('users.api.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     
