@@ -44,7 +44,8 @@ export async function GET(request) {
         console.log('[Onboarding Status API] PERMANENT FIX - Using unified profile endpoint');
         
         // Call our unified profile endpoint that implements business logic
-        const unifiedResponse = await fetch(`http://localhost:3000/api/auth/unified-profile`, {
+        const baseUrl = process.env.NODE_ENV === 'production' ? 'https://dottapps.com' : 'http://localhost:3000';
+        const unifiedResponse = await fetch(`${baseUrl}/api/auth/unified-profile`, {
           headers: {
             'Cookie': `sid=${sessionToken.value}; session_token=${sessionToken.value}`
           },

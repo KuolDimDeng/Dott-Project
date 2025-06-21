@@ -38,19 +38,18 @@ async function fetchConsolidatedUserData(sessionToken) {
       
     fetch(`${API_URL}/api/users/me/session/`, { headers, cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
-      .catch(() => null),
-      
-    fetch(`${API_URL}/api/users/me/`, { headers, cache: 'no-store' })
-      .then(r => r.ok ? r.json() : null)
       .catch(() => null)
+      
+    // Skip /api/users/me/ as it requires Auth0 JWT, not session token
   ];
 
-  const [sessionData, profileData, userMeData] = await Promise.all(requests);
+  const [sessionData, profileData] = await Promise.all(requests);
+  const userMeData = null; // Skip since it requires Auth0 JWT
 
   console.log('[UnifiedProfile] Raw backend responses:', {
     sessionData: sessionData ? 'OK' : 'FAILED',
     profileData: profileData ? 'OK' : 'FAILED', 
-    userMeData: userMeData ? 'OK' : 'FAILED'
+    userMeData: 'SKIPPED (requires Auth0 JWT)'
   });
 
   return { sessionData, profileData, userMeData };
