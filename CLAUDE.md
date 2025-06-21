@@ -172,6 +172,44 @@
 
 **REMEMBER**: The backend knows best. Trust it. Always.
 
+## DashAppBar User Data Display (2025-01-22) - FIXED
+- **Issue**: Business name, subscription plan, and user initials not showing in dashboard header
+- **Root Cause**: Session data wasn't properly extracting user/tenant information from backend
+- **Symptoms**: User initials showing "?", business name showing "Loading...", subscription plan not visible
+
+### Data Flow Architecture
+1. **Signup**: User enters email/password → stored in Django User model
+2. **Onboarding**: 
+   - Business info → stored in Django Tenant model (business_name field)
+   - User name → stored in Django User model (given_name, family_name)
+   - Subscription plan → stored in Django User model (subscription_plan field)
+3. **Backend Session**: Returns consolidated data:
+   - `sessionData.user` - User information
+   - `sessionData.tenant` - Tenant/business information
+   - `sessionData.needs_onboarding` - Onboarding status
+4. **Frontend Display**: DashAppBar extracts and displays data
+
+### Files Updated (2025-01-22)
+- **session-v2/route.js**: Enhanced to check multiple data sources
+  - Checks `tenantData.name` for business name (primary source)
+  - Falls back to `userData.business_name` or `sessionData.business_name`
+  - Checks both user and tenant for subscription_plan
+  - Added detailed logging of backend data structure
+- **profile/route.js**: Simplified to use session-v2 directly
+  - Removed dependency on unified-profile endpoint
+  - Returns complete session user data
+- **DashAppBar.js**: Enhanced session data handling
+  - Properly extracts user initials from given_name/family_name or email
+  - Displays business name from session.user.businessName
+  - Shows subscription plan with appropriate styling (Free/Professional/Enterprise)
+
+### Result
+- ✅ User initials properly generated from name or email
+- ✅ Business name displayed from tenant data
+- ✅ Subscription plan shown with color coding
+- ✅ All data sourced from backend session (single source of truth)
+- ✅ No local storage or cookie dependencies
+
 ## Onboarding Redirect Loop Bug Fix (2025-06-21) - CRITICAL FIX
 - **Issue**: New users getting stuck in redirect loop between dashboard and onboarding pages
 - **Root Cause**: Frontend components were setting local onboarding completion status without calling backend API
