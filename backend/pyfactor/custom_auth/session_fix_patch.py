@@ -66,7 +66,7 @@ def create_session_with_proper_status(user, session_type='web', **kwargs):
     Create a session with the CORRECT onboarding status by checking
     the OnboardingProgress model instead of defaulting to True
     """
-    from custom_auth.models import Session
+    from session_manager.models import UserSession as Session
     
     try:
         with transaction.atomic():
