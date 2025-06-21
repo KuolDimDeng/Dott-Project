@@ -83,8 +83,8 @@ class EnhancedTenantMiddleware:
         # Now set the schema
         with connection.cursor() as cursor:
             # RLS: Use tenant context instead of schema
-        # cursor.execute(f'SET search_path TO {schema_name}')
-        set_current_tenant_id(tenant_id)
+            # cursor.execute(f'SET search_path TO {schema_name}')
+            set_current_tenant_id(tenant_id)
 
     def __call__(self, request):
         # Skip for public paths and onboarding paths

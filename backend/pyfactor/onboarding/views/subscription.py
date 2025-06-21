@@ -229,7 +229,7 @@ class SubscriptionSaveView(APIView):
         with connection.cursor() as cursor:
             cursor.execute("""
                 INSERT INTO custom_auth_tenant (
-                    id, name, created_on, owner_id, setup_status, 
+                    id, name, created_at, owner_id, setup_status, 
                     is_active, rls_enabled, rls_setup_date
                 ) VALUES (
                     %s, %s, %s, %s, %s, 
@@ -474,7 +474,7 @@ class SubscriptionSaveView(APIView):
                         with connection.cursor() as cursor:
                             cursor.execute("""
                                 INSERT INTO custom_auth_tenant (
-                                    id, name, created_on, owner_id, setup_status, 
+                                    id, name, created_at, owner_id, setup_status, 
                                     is_active, rls_enabled, rls_setup_date
                                 ) VALUES (
                                     %s, %s, %s, %s, %s, 
