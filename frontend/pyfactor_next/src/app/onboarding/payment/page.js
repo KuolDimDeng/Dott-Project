@@ -28,64 +28,70 @@ function PaymentForm({ plan, billingCycle }) {
   const [tenantId, setTenantId] = useState(null);
   const [businessInfo, setBusinessInfo] = useState(null);
 
-  // Fetch profile data to get tenant ID and business info on mount
+  // Fetch session data to get tenant ID and business info from onboarding progress
   useEffect(() => {
-    const fetchProfileAndBusinessInfo = async () => {
+    const fetchSessionAndBusinessInfo = async () => {
       try {
-        logger.info('[PaymentForm] Fetching profile and business info...');
+        logger.info('[PaymentForm] Fetching session data and onboarding progress...');
         
-        // Fetch profile data
-        const profileResponse = await fetch('/api/auth/profile');
+        // Fetch session data which includes onboarding progress
+        const sessionResponse = await fetch('/api/auth/session-v2', {
+          credentials: 'include'
+        });
         
-        if (profileResponse.ok) {
-          const profileData = await profileResponse.json();
-          logger.info('[PaymentForm] Profile data received:', {
-            tenantId: profileData.tenantId,
-            email: profileData.email,
-            businessName: profileData.businessName,
-            onboardingCompleted: profileData.onboardingCompleted
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          logger.info('[PaymentForm] Session data received:', {
+            authenticated: sessionData.authenticated,
+            tenantId: sessionData.user?.tenantId,
+            email: sessionData.user?.email,
+            onboardingProgress: sessionData.user?.onboardingProgress
           });
           
-          if (profileData.tenantId) {
-            setTenantId(profileData.tenantId);
-            logger.info('[PaymentForm] Set tenant ID:', profileData.tenantId);
+          // Extract tenant ID
+          if (sessionData.user?.tenantId) {
+            setTenantId(sessionData.user.tenantId);
+            logger.info('[PaymentForm] Set tenant ID:', sessionData.user.tenantId);
           } else {
-            logger.warn('[PaymentForm] No tenant ID in profile data');
+            logger.warn('[PaymentForm] No tenant ID in session data');
           }
           
-          // Store business info from profile if available
-          if (profileData.businessName) {
+          // Extract business info from onboarding progress
+          const onboardingProgress = sessionData.user?.onboardingProgress;
+          logger.info('[PaymentForm] Onboarding progress:', onboardingProgress);
+          
+          if (onboardingProgress?.businessName) {
             setBusinessInfo({
-              businessName: profileData.businessName,
-              businessType: profileData.businessType || 'Other'
+              businessName: onboardingProgress.businessName,
+              businessType: onboardingProgress.businessType || 'Other'
             });
-          }
-        } else {
-          logger.error('[PaymentForm] Profile fetch failed with status:', profileResponse.status);
-        }
-        
-        // Also try to fetch business info directly
-        try {
-          const businessResponse = await fetch('/api/tenant/business-info');
-          if (businessResponse.ok) {
-            const businessData = await businessResponse.json();
-            logger.info('[PaymentForm] Business info fetched:', businessData);
-            
-            if (businessData.businessName) {
+            logger.info('[PaymentForm] Business info extracted from onboarding progress:', {
+              businessName: onboardingProgress.businessName,
+              businessType: onboardingProgress.businessType
+            });
+          } else {
+            // Also check direct user fields as fallback
+            if (sessionData.user?.businessName) {
               setBusinessInfo({
-                businessName: businessData.businessName,
-                businessType: businessData.businessType || 'Other'
+                businessName: sessionData.user.businessName,
+                businessType: sessionData.user.businessType || 'Other'
               });
+              logger.info('[PaymentForm] Business info from user fields:', {
+                businessName: sessionData.user.businessName,
+                businessType: sessionData.user.businessType
+              });
+            } else {
+              logger.error('[PaymentForm] No business info found in session or onboarding progress');
             }
           }
-        } catch (businessError) {
-          logger.warn('[PaymentForm] Could not fetch business info:', businessError);
+        } else {
+          logger.error('[PaymentForm] Session fetch failed with status:', sessionResponse.status);
         }
       } catch (error) {
-        logger.error('[PaymentForm] Error fetching data:', error);
+        logger.error('[PaymentForm] Error fetching session data:', error);
       }
     };
-    fetchProfileAndBusinessInfo();
+    fetchSessionAndBusinessInfo();
   }, []);
 
   // Card element styling - modern design
@@ -278,6 +284,28 @@ function PaymentForm({ plan, billingCycle }) {
       // Use same backend completion API as subscription form for consistency
       try {
         logger.info('[PaymentForm] Completing payment and onboarding via unified API...');
+        
+        // Prepare the payload
+        const completionPayload = {
+          // Include business information (required by complete-all endpoint)
+          businessName: businessInfo?.businessName || user?.businessName || 'Unnamed Business',
+          businessType: businessInfo?.businessType || user?.businessType || 'Other',
+          // Use same data structure as subscription form
+          subscriptionPlan: plan.toLowerCase(),
+          selectedPlan: plan.toLowerCase(),
+          billingCycle: billingCycle,
+          planType: 'paid',
+          // Payment verification data
+          paymentVerified: true,
+          paymentIntentId: result.paymentIntentId || result.clientSecret,
+          subscriptionId: result.subscription?.id || result.subscriptionId,
+          tenantId: tenantId,
+          requestId: `payment_${Date.now()}`,
+          timestamp: new Date().toISOString()
+        };
+        
+        logger.info('[PaymentForm] Sending completion payload:', completionPayload);
+        
         const completePaymentResponse = await fetch('/api/onboarding/complete-all', {
           method: 'POST',
           headers: {
@@ -285,23 +313,7 @@ function PaymentForm({ plan, billingCycle }) {
             ...(csrfToken && { 'x-csrf-token': csrfToken }),
           },
           credentials: 'include',
-          body: JSON.stringify({
-            // Include business information (required by complete-all endpoint)
-            businessName: businessInfo?.businessName || user?.businessName || 'Unnamed Business',
-            businessType: businessInfo?.businessType || user?.businessType || 'Other',
-            // Use same data structure as subscription form
-            subscriptionPlan: plan.toLowerCase(),
-            selectedPlan: plan.toLowerCase(),
-            billingCycle: billingCycle,
-            planType: 'paid',
-            // Payment verification data
-            paymentVerified: true,
-            paymentIntentId: result.paymentIntentId || result.clientSecret,
-            subscriptionId: result.subscription?.id || result.subscriptionId,
-            tenantId: tenantId,
-            requestId: `payment_${Date.now()}`,
-            timestamp: new Date().toISOString()
-          }),
+          body: JSON.stringify(completionPayload),
         });
         
         if (!completePaymentResponse.ok) {
