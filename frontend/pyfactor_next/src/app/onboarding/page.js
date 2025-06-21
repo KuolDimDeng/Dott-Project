@@ -59,8 +59,9 @@ export default function OnboardingPageV2() {
         tenantId: session.user?.tenantId
       });
 
-      // CRITICAL: Only check backend's onboarding status, not tenant ID
+      // CRITICAL: Only check backend's onboarding status
       // Backend's needsOnboarding is the single source of truth
+      // If needsOnboarding is FALSE (they don't need onboarding), redirect to dashboard
       if (session.user?.needsOnboarding === false || session.user?.onboardingCompleted === true) {
         const tenantId = session.user?.tenantId;
         if (tenantId) {
@@ -72,6 +73,9 @@ export default function OnboardingPageV2() {
           // Let them continue with onboarding to fix this state
         }
       }
+      
+      // If needsOnboarding is TRUE, they should stay on this page
+      logger.info('[OnboardingPage.v2] User needs onboarding, showing onboarding flow');
 
       // Initialize onboarding state machine
       await onboardingStateMachine.initialize();

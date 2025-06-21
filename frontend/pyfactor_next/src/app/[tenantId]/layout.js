@@ -100,11 +100,10 @@ export default async function TenantLayout({ children, params, searchParams }) {
       tenantId: session.user?.tenantId
     });
     
-    // Redirect to onboarding if needed (session is the only source of truth)
-    if (needsOnboarding && !onboardingCompleted) {
-      console.log('[TenantLayout] User needs onboarding, redirecting');
-      redirect('/onboarding');
-    }
+    // REMOVED: Onboarding redirect from layout
+    // Each page (like dashboard) should handle its own onboarding checks
+    // This prevents redirect loops when onboarding tries to redirect back to dashboard
+    // The dashboard page already has proper onboarding checks
     
     // Verify user has access to this tenant
     const userTenantId = session.tenantId || session.user?.tenantId || session.user?.tenant_id;
