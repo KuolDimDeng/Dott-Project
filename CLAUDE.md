@@ -134,6 +134,44 @@
   - Documentation: /docs/SESSION_MANAGER_CLEANUP_2025.md
   - Pattern: Backend API updates session → Frontend clearCache() → Fresh data fetch
   - Result: No confusion, clean architecture, server-side session management
+
+## Backend Single Source of Truth (2025-06-21) - CRITICAL PATTERN
+- **Purpose**: Eliminate redirect loops and data conflicts in onboarding status
+- **Core Principle**: Backend's `user.onboarding_completed` field is the ONLY source of truth
+- **Documentation**: `/frontend/pyfactor_next/docs/BACKEND_SINGLE_SOURCE_OF_TRUTH.md`
+
+### Implementation Rules (NEVER VIOLATE THESE)
+1. ✅ **ONLY** check backend API responses for onboarding status
+2. ✅ **TRUST** backend's `needsOnboarding` and `onboardingCompleted` fields
+3. ❌ **NEVER** override backend status with local data (cookies, localStorage, etc.)
+4. ❌ **NEVER** assume tenant existence means onboarding is complete
+5. ❌ **NEVER** use localStorage, cookies, sessionStorage for onboarding status
+
+### Files Simplified (2025-06-21)
+- **Middleware**: Removed override logic that bypassed session checks
+- **Profile API**: Reduced from 568 to 158 lines, only fetches from backend
+- **Dashboard**: Removed emergency access and complex multi-source checking
+- **Auth Components**: Simplified to only trust backend responses
+- **Utilities**: Removed localStorage storage and complex session syncing
+- **Deleted**: useOnboardingProgress.js (complex AppCache logic no longer needed)
+
+### Anti-Patterns to Watch For
+- `localStorage.getItem('onboarding*')` - ❌ FORBIDDEN
+- `cookies.get('onboarding*')` - ❌ FORBIDDEN  
+- `if (tenantId && !needsOnboarding)` - ❌ FORBIDDEN
+- Complex boolean logic: `condition1 || condition2 || condition3` - ❌ FORBIDDEN
+- Emergency access or fallback patterns - ❌ FORBIDDEN
+- Local session overrides - ❌ FORBIDDEN
+
+### Result
+- ✅ Eliminated redirect loops between dashboard and onboarding
+- ✅ Consistent user state across all components
+- ✅ Simplified debugging with single data source
+- ✅ Better performance with fewer redundant checks
+- ✅ Reliable onboarding flow that works after cache clears
+
+**REMEMBER**: The backend knows best. Trust it. Always.
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
