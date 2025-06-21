@@ -45,11 +45,20 @@ export async function GET(request) {
     }
     
     const sessionData = await response.json();
-    console.log('[Session-V2] Full backend response:', sessionData);
+    console.log('[Session-V2] Full backend response:', JSON.stringify(sessionData, null, 2));
     console.log('[Session-V2] Backend session valid:', {
       email: sessionData.email || sessionData.user?.email,
       tenantId: sessionData.tenant_id || sessionData.tenant?.id,
-      needsOnboarding: sessionData.needs_onboarding
+      needsOnboarding: sessionData.needs_onboarding,
+      onboardingCompleted: sessionData.onboarding_completed
+    });
+    
+    // CRITICAL DEBUG: Log the exact values being returned
+    console.log('[Session-V2] CRITICAL - Onboarding status from backend:', {
+      needs_onboarding: sessionData.needs_onboarding,
+      onboarding_completed: sessionData.onboarding_completed,
+      typeof_needs_onboarding: typeof sessionData.needs_onboarding,
+      typeof_onboarding_completed: typeof sessionData.onboarding_completed
     });
     
     // SIMPLIFIED: Direct backend data without internal HTTP calls
