@@ -4,8 +4,8 @@ services:
     env: python
     region: oregon
     plan: starter
-    buildCommand: "pip install -r requirements-render.txt && python manage.py migrate"
-    startCommand: "gunicorn --bind 0.0.0.0:$PORT pyfactor.wsgi:application"
+    buildCommand: "pip install -r requirements-render.txt && echo '=== Running Django Migrations ===' && python manage.py migrate --verbosity 2"
+    startCommand: "./scripts/start.sh"
     healthCheckPath: /health/
     envVars:
       - key: DJANGO_SETTINGS_MODULE
