@@ -56,32 +56,72 @@ function PaymentForm({ plan, billingCycle }) {
             logger.warn('[PaymentForm] No tenant ID in session data');
           }
           
-          // Extract business info from onboarding progress
-          const onboardingProgress = sessionData.user?.onboardingProgress;
-          logger.info('[PaymentForm] Onboarding progress:', onboardingProgress);
+          // Extract business info from session data - check multiple locations
+          const user = sessionData.user;
+          logger.info('[PaymentForm] Looking for business info in session data');
           
-          if (onboardingProgress?.businessName) {
+          // Check multiple possible locations for business info
+          const businessName = user?.businessName || 
+                             user?.business_name || 
+                             user?.onboardingProgress?.businessName ||
+                             sessionData.businessName ||
+                             sessionData.business_name;
+                             
+          const businessType = user?.businessType || 
+                             user?.business_type || 
+                             user?.onboardingProgress?.businessType ||
+                             sessionData.businessType ||
+                             sessionData.business_type ||
+                             'Other';
+          
+          if (businessName) {
             setBusinessInfo({
-              businessName: onboardingProgress.businessName,
-              businessType: onboardingProgress.businessType || 'Other'
+              businessName: businessName,
+              businessType: businessType
             });
-            logger.info('[PaymentForm] Business info extracted from onboarding progress:', {
-              businessName: onboardingProgress.businessName,
-              businessType: onboardingProgress.businessType
+            logger.info('[PaymentForm] Business info found:', {
+              businessName: businessName,
+              businessType: businessType,
+              source: user?.businessName ? 'user.businessName' : 
+                      user?.business_name ? 'user.business_name' :
+                      user?.onboardingProgress?.businessName ? 'onboardingProgress' :
+                      'sessionData'
             });
           } else {
-            // Also check direct user fields as fallback
-            if (sessionData.user?.businessName) {
+            logger.warn('[PaymentForm] No business info found in session, checking cookies');
+            
+            // Fallback: Check cookies for business info
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+              const [key, value] = cookie.trim().split('=');
+              acc[key] = decodeURIComponent(value || '');
+              return acc;
+            }, {});
+            
+            const cookieBusinessName = cookies.businessName || '';
+            const cookieBusinessType = cookies.businessType || 'Other';
+            
+            if (cookieBusinessName) {
               setBusinessInfo({
-                businessName: sessionData.user.businessName,
-                businessType: sessionData.user.businessType || 'Other'
+                businessName: cookieBusinessName,
+                businessType: cookieBusinessType
               });
-              logger.info('[PaymentForm] Business info from user fields:', {
-                businessName: sessionData.user.businessName,
-                businessType: sessionData.user.businessType
+              logger.info('[PaymentForm] Business info found in cookies:', {
+                businessName: cookieBusinessName,
+                businessType: cookieBusinessType
               });
             } else {
-              logger.error('[PaymentForm] No business info found in session or onboarding progress');
+              logger.error('[PaymentForm] No business info found in any location', {
+                checkedLocations: [
+                  'user.businessName',
+                  'user.business_name',
+                  'user.onboardingProgress.businessName',
+                  'sessionData.businessName',
+                  'sessionData.business_name',
+                  'cookies.businessName'
+                ],
+                userData: user ? Object.keys(user) : 'no user data',
+                cookieNames: Object.keys(cookies)
+              });
             }
           }
         } else {
