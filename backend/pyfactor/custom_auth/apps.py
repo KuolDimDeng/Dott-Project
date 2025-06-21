@@ -30,3 +30,13 @@ class CustomAuthConfig(AppConfig):
             
         # Note: Removed AWS Cognito client initialization since using Auth0
         logger.info("Auth0 authentication configured - no AWS Cognito client needed")
+        
+        # Apply session creation fix for Google OAuth users
+        try:
+            from .session_fix_patch import apply_session_fix
+            if apply_session_fix():
+                logger.info("✅ Session creation fix applied - Google OAuth users will get correct onboarding status")
+            else:
+                logger.error("❌ Failed to apply session creation fix")
+        except Exception as e:
+            logger.error(f"Error applying session fix: {e}")
