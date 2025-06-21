@@ -56,27 +56,6 @@ class Business(models.Model):
     @business_name.setter
     def business_name(self, value):
         self.name = value
-        
-    @property
-    def owner(self):
-        # Get the owner via UserProfile (since there's no direct owner_id)
-        from django.db import connection
-        with connection.cursor() as cursor:
-            cursor.execute("""
-                SELECT user_id 
-                FROM users_userprofile 
-                WHERE business_id = %s 
-                LIMIT 1
-            """, [str(self.id)])
-            row = cursor.fetchone()
-            
-        if row and row[0]:
-            from custom_auth.models import User
-            try:
-                return User.objects.get(id=row[0])
-            except User.DoesNotExist:
-                return None
-        return None
 
     @property
     def business_type(self):
@@ -113,14 +92,6 @@ class Business(models.Model):
                 import logging
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error setting business_type: {str(e)}")
-            
-    @owner.setter
-    def owner(self, value):
-        if value:
-            self._owner = value
-            # Store the owner ID for later use in save method
-            if hasattr(value, 'id'):
-                self._owner_id = value.id
 
 
     def save(self, *args, **kwargs):
@@ -129,7 +100,7 @@ class Business(models.Model):
             self.business_num = self.generate_business_number()
             
         # Handle the case where we're linked to an owner
-        owner_id = getattr(self, '_owner_id', None)
+        owner_id = self.owner_id
         
         # Temporarily store business_type if set via property
         business_type_value = getattr(self, '_business_type_value', None)
@@ -159,45 +130,10 @@ class Business(models.Model):
         
         # If we have an owner_id, update the UserProfile safely
         if owner_id:
-            try:
-                from users.models import UserProfile
-                # Check if profile exists using ORM
-                try:
-                    # Get existing profile
-                    profile = UserProfile.objects.get(user_id=owner_id)
-                    
-                    # Update existing profile using ORM
-                    now = timezone.now()
-                    profile.business = self
-                    profile.modified_at = now
-                    profile.updated_at = now
-                    profile.save(update_fields=['business', 'modified_at', 'updated_at'])
-                    
-                except UserProfile.DoesNotExist:
-                    # Create new profile using ORM
-                    now = timezone.now()
-                    UserProfile.objects.create(
-                        user_id=owner_id,
-                        business=self,
-                        created_at=now,
-                        modified_at=now,
-                        updated_at=now
-                    )
-                
-                # Always ensure BusinessDetails exists for this business
-                from users.models import BusinessDetails
-                BusinessDetails.objects.get_or_create(
-                    business=self,
-                    defaults={
-                        'business_type': 'default',
-                        'legal_structure': 'SOLE_PROPRIETORSHIP',
-                        'country': 'US'
-                    }
-                )
-            except Exception as e:
-                import logging
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error updating UserProfile: {str(e)}")
+            # For now, skip UserProfile update if we have owner_id
+            # The issue is a database schema mismatch that needs to be fixed
+            # by running: python manage.py shell < scripts/fix_userprofile_field_type.py
+            print(f"[Business.save] Skipping UserProfile update - schema fix needed")
 
     def generate_business_number(self):
         """Generate a unique 6-digit business number"""
