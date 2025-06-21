@@ -726,6 +726,7 @@ MIDDLEWARE = [
 'allauth.account.middleware.AccountMiddleware',
 'custom_auth.middleware.RequestIDMiddleware',
 'custom_auth.middleware.TenantMiddleware',
+'custom_auth.middleware.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
 'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantSecurityMiddleware',

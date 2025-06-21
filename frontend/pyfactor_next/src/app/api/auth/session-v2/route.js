@@ -51,13 +51,9 @@ export async function GET(request) {
       needsOnboarding: sessionData.needs_onboarding
     });
     
-    // WORKAROUND: If session says needs_onboarding but user has tenant_id,
-    // double-check with the user profile endpoint which checks OnboardingProgress
-    let finalNeedsOnboarding = sessionData.needs_onboarding;
-    let finalOnboardingCompleted = sessionData.onboarding_completed;
+    // Always fetch profile data to get complete user information including business name
     let profileData = null;
     
-    // Always fetch profile data to get complete user information
     try {
       const profileResponse = await fetch(`${API_URL}/api/users/me/session/`, {
         headers: {
@@ -75,16 +71,9 @@ export async function GET(request) {
           tenant_name: profileData.tenant_name,
           subscription_plan: profileData.subscription_plan
         });
-        
-        // Trust the user profile data over session data for onboarding status
-        if (sessionData.needs_onboarding === true && sessionData.tenant_id && profileData.needs_onboarding === false) {
-          finalNeedsOnboarding = false;
-          finalOnboardingCompleted = true;
-          console.log('[Session-V2] ✅ User has completed onboarding (per OnboardingProgress), overriding session default');
-        }
       }
     } catch (error) {
-      console.warn('[Session-V2] Failed to check user profile, using session data:', error);
+      console.warn('[Session-V2] Failed to fetch user profile:', error);
     }
     
     // Return session data from backend
@@ -107,9 +96,9 @@ export async function GET(request) {
         // Subscription information - prioritize profile data
         subscriptionPlan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
         subscription_plan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
-        // Use the corrected onboarding status
-        needsOnboarding: finalNeedsOnboarding ?? true,
-        onboardingCompleted: finalOnboardingCompleted ?? false,
+        // Use onboarding status from backend (single source of truth)
+        needsOnboarding: profileData?.needs_onboarding ?? sessionData.needs_onboarding ?? true,
+        onboardingCompleted: profileData?.onboarding_completed ?? sessionData.onboarding_completed ?? false,
         tenantId: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
         tenant_id: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
         permissions: userData.permissions || sessionData.permissions || []

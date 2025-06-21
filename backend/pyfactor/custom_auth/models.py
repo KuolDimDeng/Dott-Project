@@ -106,6 +106,10 @@ class User(AbstractUser):
     # Add role field with default value
     role = models.CharField(max_length=50, default='owner')
     
+    # Onboarding status - single source of truth
+    onboarding_completed = models.BooleanField(default=False, help_text='Whether user has completed onboarding')
+    onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text='When onboarding was completed')
+    
     # Account closure fields
     is_deleted = models.BooleanField(default=False, help_text='Soft delete flag - user account is closed')
     deleted_at = models.DateTimeField(null=True, blank=True, help_text='When the account was closed')

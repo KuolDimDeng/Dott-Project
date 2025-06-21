@@ -126,6 +126,11 @@ class Auth0UserCreateView(APIView):
                 user.email_verified = data.get('email_verified', user.email_verified)
                 user.save()
                 logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated successfully")
+            else:
+                # New user - ensure onboarding_completed is False
+                logger.info(f"🔥 [AUTH0_CREATE_USER] New user created - setting onboarding_completed=False")
+                user.onboarding_completed = False
+                user.save(update_fields=['onboarding_completed'])
             
             # Check for existing tenant
             # Convert user.id to string for proper CharField comparison
@@ -178,6 +183,7 @@ class Auth0UserCreateView(APIView):
 
             # Check for existing onboarding progress
             logger.info(f"🔥 [AUTH0_CREATE_USER] Checking for onboarding progress for user: {user.id}")
+            
             progress, progress_created = OnboardingProgress.objects.get_or_create(
                 user=user,
                 defaults={
@@ -185,7 +191,9 @@ class Auth0UserCreateView(APIView):
                     'onboarding_status': 'business_info',
                     'current_step': 'business_info',
                     'next_step': 'business_info',
-                    'completed_steps': []
+                    'completed_steps': [],
+                    'setup_completed': False,
+                    'payment_completed': False
                 }
             )
             
@@ -207,14 +215,27 @@ class Auth0UserCreateView(APIView):
             logger.info(f"🔥 [AUTH0_CREATE_USER] Setup completed: {progress.setup_completed}")
             logger.info(f"🔥 [AUTH0_CREATE_USER] Completed steps: {progress.completed_steps}")
             
-            # Check if onboarding is complete
-            onboarding_complete = (
+            # Check if onboarding is complete from OnboardingProgress
+            progress_onboarding_complete = (
                 progress.onboarding_status == 'complete' or 
                 progress.setup_completed or
                 (progress.completed_steps and 'complete' in progress.completed_steps)
             )
             
-            logger.info(f"🔥 [AUTH0_CREATE_USER] Onboarding complete check: {onboarding_complete}")
+            logger.info(f"🔥 [AUTH0_CREATE_USER] OnboardingProgress complete check: {progress_onboarding_complete}")
+            logger.info(f"🔥 [AUTH0_CREATE_USER] User.onboarding_completed: {user.onboarding_completed}")
+            
+            # Sync with User.onboarding_completed if there's a mismatch
+            if progress_onboarding_complete and not user.onboarding_completed:
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Syncing user.onboarding_completed to True")
+                user.onboarding_completed = True
+                user.onboarding_completed_at = timezone.now()
+                user.save(update_fields=['onboarding_completed', 'onboarding_completed_at'])
+            elif not progress_onboarding_complete and user.onboarding_completed:
+                logger.warning(f"🔥 [AUTH0_CREATE_USER] User.onboarding_completed is True but OnboardingProgress says incomplete")
+            
+            # Use User.onboarding_completed as the single source of truth
+            onboarding_complete = user.onboarding_completed
                             
             current_step = progress.current_step or 'business_info'
             if onboarding_complete:
@@ -841,6 +862,12 @@ class Auth0OnboardingCompleteView(APIView):
             # Fix any corrupted boolean fields before saving
             progress = fix_boolean_fields(progress)
             progress.save()
+            
+            # CRITICAL: Update user's onboarding_completed field (single source of truth)
+            logger.info(f"🎯 [ONBOARDING_COMPLETE] Updating user.onboarding_completed to True")
+            user.onboarding_completed = True
+            user.onboarding_completed_at = timezone.now()
+            user.save(update_fields=['onboarding_completed', 'onboarding_completed_at'])
             
             logger.info(f"🎯 [ONBOARDING_COMPLETE] ✅ Progress updated successfully:")
             logger.info(f"  - New onboarding_status: '{progress.onboarding_status}'")

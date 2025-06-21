@@ -176,64 +176,29 @@ class SessionService:
                 ip_address = request_meta.get('ip_address')
                 user_agent = request_meta.get('user_agent')
             
-            # Check onboarding status from OnboardingProgress model
-            from onboarding.models import OnboardingProgress
-            onboarding_progress = None
-            needs_onboarding = True
-            onboarding_completed = False
-            onboarding_step = 'business_info'
+            # SIMPLIFIED: Get onboarding status from user model (single source of truth)
+            needs_onboarding = not user.onboarding_completed
+            onboarding_completed = user.onboarding_completed
+            onboarding_step = 'complete' if onboarding_completed else 'business_info'
             
+            print(f"[SessionService] Onboarding status from user model:")
+            print(f"  - user.onboarding_completed: {user.onboarding_completed}")
+            print(f"  - needs_onboarding: {needs_onboarding}")
+            
+            # Get current step from OnboardingProgress for UI display only
+            from onboarding.models import OnboardingProgress
             try:
                 onboarding_progress = OnboardingProgress.objects.filter(user=user).first()
-                if onboarding_progress:
-                    print(f"[SessionService] Found OnboardingProgress: status={onboarding_progress.onboarding_status}, setup_completed={onboarding_progress.setup_completed}")
-                    
-                    # Determine onboarding status based on OnboardingProgress
-                    # Check multiple indicators of completion
-                    is_complete = (
-                        onboarding_progress.onboarding_status == 'complete' or 
-                        onboarding_progress.setup_completed or
-                        onboarding_progress.current_step == 'complete' or
-                        (onboarding_progress.completed_steps and 'payment' in onboarding_progress.completed_steps)
-                    )
-                    
-                    if is_complete:
-                        needs_onboarding = False
-                        onboarding_completed = True
-                        onboarding_step = 'complete'
-                    else:
-                        needs_onboarding = True
-                        onboarding_completed = False
-                        onboarding_step = onboarding_progress.current_step or 'business_info'
-                    
-                    # Override with values from kwargs if explicitly provided
-                    # Pop these values to avoid duplicate keyword arguments
-                    if 'needs_onboarding' in kwargs:
-                        needs_onboarding = kwargs.pop('needs_onboarding')
-                    if 'onboarding_completed' in kwargs:
-                        onboarding_completed = kwargs.pop('onboarding_completed')
-                    if 'onboarding_step' in kwargs:
-                        onboarding_step = kwargs.pop('onboarding_step')
-                else:
-                    print(f"[SessionService] No OnboardingProgress found for user")
-                    
-                    # Check if user has a tenant and subscription plan as indicators of completion
-                    if tenant and kwargs.get('subscription_plan', 'free') != 'free':
-                        print(f"[SessionService] User has tenant and paid subscription - marking onboarding complete")
-                        needs_onboarding = False
-                        onboarding_completed = True
-                        onboarding_step = 'complete'
-                    
-                    # Still need to pop these from kwargs if they exist to avoid duplicates
-                    kwargs.pop('needs_onboarding', None)
-                    kwargs.pop('onboarding_completed', None)
-                    kwargs.pop('onboarding_step', None)
+                if onboarding_progress and not onboarding_completed:
+                    onboarding_step = onboarding_progress.current_step or 'business_info'
+                    print(f"[SessionService] Current step from OnboardingProgress: {onboarding_step}")
             except Exception as e:
-                print(f"[SessionService] Error checking OnboardingProgress: {e}")
-                # Pop these values to avoid duplicate keyword arguments in error case
-                kwargs.pop('needs_onboarding', None)
-                kwargs.pop('onboarding_completed', None)
-                kwargs.pop('onboarding_step', None)
+                print(f"[SessionService] Error getting OnboardingProgress (non-critical): {e}")
+            
+            # Remove any onboarding-related kwargs to avoid duplicates
+            kwargs.pop('needs_onboarding', None)
+            kwargs.pop('onboarding_completed', None)
+            kwargs.pop('onboarding_step', None)
             
             # Create session
             with transaction.atomic():

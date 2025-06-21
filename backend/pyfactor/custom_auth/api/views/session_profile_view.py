@@ -74,37 +74,23 @@ class SessionUserProfileView(APIView):
             except Exception as e:
                 logger.warning(f"🔥 [SESSION_USER_PROFILE] Error getting onboarding progress: {str(e)}")
 
-            # Determine onboarding status
-            needs_onboarding = True
-            onboarding_completed = False
+            # SIMPLIFIED: Single source of truth for onboarding status
+            needs_onboarding = not user.onboarding_completed
+            onboarding_completed = user.onboarding_completed
+            
+            logger.info(f"🔥 [SESSION_USER_PROFILE] Onboarding status from user model:")
+            logger.info(f"  - onboarding_completed: {user.onboarding_completed}")
+            logger.info(f"  - needs_onboarding: {needs_onboarding}")
+            
+            # Get current step from OnboardingProgress if it exists (for UI display only)
             current_step = 'business_info'
-            setup_done = False
-
             if onboarding_progress:
-                logger.info(f"🔥 [SESSION_USER_PROFILE] Computing onboarding status...")
-                
-                # Check various indicators of completion
-                setup_done = onboarding_progress.setup_completed
-                is_complete = onboarding_progress.onboarding_status == 'complete'
-                has_complete_step = 'complete' in (onboarding_progress.completed_steps or [])
-                
-                logger.info(f"  - setup_done: {setup_done}")
-                logger.info(f"  - is_complete: {is_complete}")
-                logger.info(f"  - has_complete_step: {has_complete_step}")
-                
-                # User needs onboarding if none of the completion indicators are true
-                needs_onboarding = not (setup_done or is_complete or has_complete_step)
-                onboarding_completed = not needs_onboarding
-                
-                # Set current step
+                current_step = onboarding_progress.current_step or 'business_info'
+                # If user completed onboarding, ensure step reflects that
                 if onboarding_completed:
                     current_step = 'complete'
-                else:
-                    current_step = onboarding_progress.current_step or 'business_info'
-                
-                logger.info(f"🔥 [SESSION_USER_PROFILE] Final status: needs_onboarding={needs_onboarding}, completed={onboarding_completed}, step={current_step}")
-            else:
-                logger.info(f"🔥 [SESSION_USER_PROFILE] No onboarding progress found, user needs onboarding")
+            
+            logger.info(f"🔥 [SESSION_USER_PROFILE] Final status: needs_onboarding={needs_onboarding}, completed={onboarding_completed}, step={current_step}")
             
             # Get user's subscription plan
             user_subscription = 'free'
