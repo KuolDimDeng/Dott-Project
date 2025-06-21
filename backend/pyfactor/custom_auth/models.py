@@ -110,6 +110,18 @@ class User(AbstractUser):
     onboarding_completed = models.BooleanField(default=False, help_text='Whether user has completed onboarding')
     onboarding_completed_at = models.DateTimeField(null=True, blank=True, help_text='When onboarding was completed')
     
+    # Subscription plan
+    subscription_plan = models.CharField(
+        max_length=20,
+        choices=[
+            ('free', 'Free'),
+            ('professional', 'Professional'),
+            ('enterprise', 'Enterprise')
+        ],
+        default='free',
+        help_text='User subscription plan'
+    )
+    
     # Account closure fields
     is_deleted = models.BooleanField(default=False, help_text='Soft delete flag - user account is closed')
     deleted_at = models.DateTimeField(null=True, blank=True, help_text='When the account was closed')

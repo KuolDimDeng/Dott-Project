@@ -80,12 +80,17 @@ class SessionCreateView(APIView):
             if user_tenant:
                 logger.info(f"[SessionCreate] User tenant ID: {user_tenant.id}, Name: {user_tenant.name}")
             
-            # Log subscription information
-            user_subscription = None
+            # Log subscription information - check user model first (single source of truth)
+            user_subscription = getattr(user, 'subscription_plan', 'free')
+            logger.info(f"[SessionCreate] User subscription from user model: {user_subscription}")
+            
+            # Also check OnboardingProgress as fallback
             if hasattr(user, 'onboardingprogress'):
                 onboarding = user.onboardingprogress
-                user_subscription = getattr(onboarding, 'subscription_plan', 'free')
-                logger.info(f"[SessionCreate] User subscription from onboarding: {user_subscription}")
+                progress_subscription = getattr(onboarding, 'subscription_plan', None)
+                if progress_subscription:
+                    user_subscription = progress_subscription
+                    logger.info(f"[SessionCreate] User subscription from onboarding: {user_subscription}")
                 logger.info(f"[SessionCreate] Onboarding status: {onboarding.onboarding_status}")
                 logger.info(f"[SessionCreate] Setup completed: {onboarding.setup_completed}")
             

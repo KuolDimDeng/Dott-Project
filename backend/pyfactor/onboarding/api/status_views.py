@@ -91,13 +91,38 @@ class ForceCompleteOnboardingView(APIView):
             user = request.user
             logger.info(f"[ForceComplete] Force completing onboarding for user: {user.email}")
             
+            # Get subscription plan from request data
+            data = request.data or {}
+            selected_plan = data.get('selected_plan', 'free')
+            billing_cycle = data.get('billing_cycle', 'monthly')
+            
+            # Get tenant_id - either from user.tenant or create a new one
+            if user.tenant:
+                tenant_id = user.tenant.id
+            else:
+                # Create a tenant for the user if they don't have one
+                from custom_auth.models import Tenant
+                import uuid
+                tenant_id = uuid.uuid4()
+                tenant = Tenant.objects.create(
+                    id=tenant_id,
+                    name=f"{user.email}'s Business",
+                    owner_id=str(user.id),
+                    is_active=True,
+                    rls_enabled=True
+                )
+                user.tenant = tenant
+                user.save(update_fields=['tenant'])
+                logger.info(f"[ForceComplete] Created tenant {tenant_id} for user {user.email}")
+            
             # Get or create OnboardingProgress
             progress, created = OnboardingProgress.objects.get_or_create(
                 user=user,
                 defaults={
-                    'tenant_id': user.tenant.id if user.tenant else None,
+                    'tenant_id': tenant_id,
                     'onboarding_status': 'complete',
-                    'setup_completed': True
+                    'setup_completed': True,
+                    'subscription_plan': selected_plan
                 }
             )
             
@@ -107,6 +132,10 @@ class ForceCompleteOnboardingView(APIView):
                 progress.current_step = 'complete'
                 progress.setup_completed = True
                 progress.completed_at = timezone.now()
+                progress.subscription_plan = selected_plan
+                # Update tenant_id if it was missing
+                if not progress.tenant_id:
+                    progress.tenant_id = tenant_id
                 
                 # Update completed steps
                 if not progress.completed_steps:
@@ -121,10 +150,11 @@ class ForceCompleteOnboardingView(APIView):
                 
             logger.info(f"[ForceComplete] Successfully updated onboarding status to complete for {user.email}")
             
-            # Also update user.needs_onboarding if it exists
-            if hasattr(user, 'needs_onboarding'):
-                user.needs_onboarding = False
-                user.save(update_fields=['needs_onboarding'])
+            # Also update user.onboarding_completed and subscription_plan on the User model
+            user.onboarding_completed = True
+            user.onboarding_completed_at = timezone.now()
+            user.subscription_plan = selected_plan
+            user.save(update_fields=['onboarding_completed', 'onboarding_completed_at', 'subscription_plan'])
                 
             # Update all active sessions
             from session_manager.models import UserSession
@@ -144,7 +174,9 @@ class ForceCompleteOnboardingView(APIView):
                 'success': True,
                 'message': 'Onboarding marked as complete',
                 'needs_onboarding': False,
-                'status': 'complete'
+                'status': 'complete',
+                'subscription_plan': selected_plan,
+                'tenant_id': str(tenant_id)
             })
             
         except Exception as e:
