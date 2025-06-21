@@ -50,7 +50,7 @@ export async function GET(request) {
           const userData = sessionData.user || sessionData;
           const tenantData = sessionData.tenant || {};
           
-          // Also fetch user profile for complete data
+          // SINGLE SOURCE OF TRUTH: Only use /api/users/me/session/ for onboarding status
           let profileData = null;
           try {
             const profileResponse = await fetch(`${API_URL}/api/users/me/session/`, {
@@ -63,31 +63,42 @@ export async function GET(request) {
             
             if (profileResponse.ok) {
               profileData = await profileResponse.json();
-              console.log('[Profile API] User profile data:', {
+              console.log('[Profile API] AUTHORITATIVE onboarding status from /api/users/me/session/:', {
                 needs_onboarding: profileData.needs_onboarding,
                 onboarding_completed: profileData.onboarding_completed,
-                tenant_name: profileData.tenant_name
+                tenant_name: profileData.tenant_name,
+                source: 'users_me_session_endpoint'
               });
+            } else {
+              console.error('[Profile API] CRITICAL: Authoritative endpoint failed:', profileResponse.status);
+              return NextResponse.json({ 
+                error: 'Unable to fetch user profile',
+                authenticated: false 
+              }, { status: 500 });
             }
           } catch (error) {
-            console.warn('[Profile API] Failed to fetch user profile:', error);
+            console.error('[Profile API] CRITICAL: Authoritative endpoint error:', error);
+            return NextResponse.json({ 
+              error: 'Profile service unavailable',
+              authenticated: false 
+            }, { status: 500 });
           }
           
-          // Return profile data ONLY from backend - no local overrides
+          // Return profile data using SINGLE SOURCE OF TRUTH: /api/users/me/session/
           return NextResponse.json({
             authenticated: true,
-            email: userData.email || sessionData.email || profileData?.email,
-            // CRITICAL: Only trust backend's onboarding status
-            needsOnboarding: profileData?.needs_onboarding ?? sessionData.needs_onboarding ?? true,
-            onboardingCompleted: profileData?.onboarding_completed ?? sessionData.onboarding_completed ?? false,
-            currentStep: sessionData.current_onboarding_step || 'business_info',
-            tenantId: sessionData.tenant_id || tenantData.id || profileData?.tenant_id,
-            tenant_id: sessionData.tenant_id || tenantData.id || profileData?.tenant_id,
-            businessName: profileData?.tenant_name || tenantData.name || sessionData.business_name,
-            subscriptionPlan: profileData?.subscription_plan || sessionData.subscription_plan || 'free',
-            name: userData.name || sessionData.name || userData.email || profileData?.name,
-            initials: (userData.name || sessionData.name || userData.email || profileData?.name || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
-            sessionSource: 'backend-v2-only'
+            email: profileData.email || userData.email || sessionData.email,
+            // SINGLE SOURCE OF TRUTH: Only use profileData from /api/users/me/session/
+            needsOnboarding: profileData.needs_onboarding ?? true,
+            onboardingCompleted: profileData.onboarding_completed ?? false,
+            currentStep: profileData.current_onboarding_step || sessionData.current_onboarding_step || 'business_info',
+            tenantId: profileData.tenant_id || sessionData.tenant_id || tenantData.id,
+            tenant_id: profileData.tenant_id || sessionData.tenant_id || tenantData.id,
+            businessName: profileData.tenant_name || tenantData.name || sessionData.business_name,
+            subscriptionPlan: profileData.subscription_plan || sessionData.subscription_plan || 'free',
+            name: profileData.name || userData.name || sessionData.name || userData.email,
+            initials: (profileData.name || userData.name || sessionData.name || userData.email || '').split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
+            sessionSource: 'single-source-of-truth-users-me-session'
           }, {
             headers: {
               'Cache-Control': 'no-store, no-cache, must-revalidate',

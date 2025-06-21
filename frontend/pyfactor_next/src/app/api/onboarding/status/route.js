@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 
 /**
  * Frontend API route to check onboarding status
- * This avoids SSL errors by making the backend call server-side
+ * SINGLE SOURCE OF TRUTH: Only uses /api/users/me/session/ for consistency
+ * This ensures all APIs return the same onboarding status
  */
 export async function GET(request) {
   try {
@@ -37,10 +38,10 @@ export async function GET(request) {
     // We need to get the user's Auth0 token from the session
     let backendHeaders = { ...headers };
     
-    // If we have a session token, we need to exchange it for user info first
+    // SINGLE SOURCE OF TRUTH: Only use /api/users/me/session/ for onboarding status
     if (sessionToken) {
       try {
-        // First try the session-based user profile endpoint that accepts session tokens
+        // Use ONLY the authoritative endpoint for consistency
         const statusResponse = await fetch(`${apiUrl}/api/users/me/session/`, {
           headers: {
             'Authorization': `Session ${sessionToken.value}`,
@@ -50,49 +51,41 @@ export async function GET(request) {
         
         if (statusResponse.ok) {
           const userData = await statusResponse.json();
+          console.log('[Onboarding Status API] AUTHORITATIVE data from /api/users/me/session/:', {
+            needs_onboarding: userData.needs_onboarding,
+            onboarding_completed: userData.onboarding_completed,
+            source: 'users_me_session_endpoint'
+          });
+          
+          // Return data using ONLY the authoritative source
           return NextResponse.json({
-            onboarding_status: userData.onboarding_status || 'complete',
-            setup_completed: userData.onboarding_completed || true,
-            needs_onboarding: userData.needs_onboarding || false,
-            current_step: userData.current_onboarding_step || 'complete'
+            onboarding_status: userData.onboarding_completed ? 'complete' : 'incomplete',
+            setup_completed: userData.onboarding_completed ?? false,
+            needs_onboarding: userData.needs_onboarding ?? true,
+            current_step: userData.onboarding_completed ? 'completed' : (userData.current_onboarding_step || 'business_info')
           });
         } else {
-          console.error('[Onboarding Status API] Session profile endpoint failed:', statusResponse.status, await statusResponse.text());
-          
-          // Fallback: Try to get session data directly
-          const sessionResponse = await fetch(`${apiUrl}/api/sessions/current/`, {
-            headers: {
-              'Authorization': `Session ${sessionToken.value}`,
-              'Content-Type': 'application/json',
-            }
-          });
-          
-          if (sessionResponse.ok) {
-            const sessionData = await sessionResponse.json();
-            return NextResponse.json({
-              onboarding_status: sessionData.onboarding_status || 'complete',
-              setup_completed: sessionData.onboarding_completed || true,
-              needs_onboarding: sessionData.needs_onboarding || false,
-              current_step: sessionData.onboarding_step || 'complete'
-            });
-          } else {
-            console.error('[Onboarding Status API] Sessions current endpoint failed:', sessionResponse.status, await sessionResponse.text());
-          }
+          console.error('[Onboarding Status API] CRITICAL: Authoritative endpoint failed:', statusResponse.status, await statusResponse.text());
+          // Don't use fallback endpoints - return error for consistency
+          return NextResponse.json({ 
+            error: 'Unable to fetch onboarding status',
+            message: 'Authoritative endpoint unavailable'
+          }, { status: 500 });
         }
       } catch (error) {
-        console.error('[Onboarding Status API] Session lookup error:', error);
+        console.error('[Onboarding Status API] CRITICAL: Authoritative endpoint error:', error);
+        return NextResponse.json({ 
+          error: 'Profile service unavailable',
+          message: error.message
+        }, { status: 500 });
       }
     }
     
-    // If we couldn't get status from session/user endpoints, return a default
-    // The backend /api/onboarding/status/ expects Bearer tokens, not Session tokens
-    // So we'll return a sensible default for authenticated users
-    return NextResponse.json({
-      onboarding_status: 'complete',
-      setup_completed: true,
-      needs_onboarding: false,
-      current_step: 'complete'
-    });
+    // No session token found - user must authenticate
+    return NextResponse.json({ 
+      error: 'Authentication required',
+      message: 'No valid session token found'
+    }, { status: 401 });
     
   } catch (error) {
     console.error('[Onboarding Status API] Error:', error);

@@ -51,7 +51,7 @@ export async function GET(request) {
       needsOnboarding: sessionData.needs_onboarding
     });
     
-    // Always fetch profile data to get complete user information including business name
+    // SINGLE SOURCE OF TRUTH: Use /api/users/me/session/ as authoritative source
     let profileData = null;
     
     try {
@@ -65,15 +65,27 @@ export async function GET(request) {
       
       if (profileResponse.ok) {
         profileData = await profileResponse.json();
-        console.log('[Session-V2] User profile data:', {
+        console.log('[Session-V2] AUTHORITATIVE onboarding status from /api/users/me/session/:', {
           needs_onboarding: profileData.needs_onboarding,
           onboarding_completed: profileData.onboarding_completed,
           tenant_name: profileData.tenant_name,
-          subscription_plan: profileData.subscription_plan
+          subscription_plan: profileData.subscription_plan,
+          source: 'users_me_session_endpoint'
         });
+      } else {
+        console.error('[Session-V2] CRITICAL: Authoritative endpoint failed:', profileResponse.status);
+        // Return error instead of continuing with inconsistent data
+        return NextResponse.json({ 
+          authenticated: false,
+          error: 'Unable to fetch user profile' 
+        }, { status: 500 });
       }
     } catch (error) {
-      console.warn('[Session-V2] Failed to fetch user profile:', error);
+      console.error('[Session-V2] CRITICAL: Authoritative endpoint error:', error);
+      return NextResponse.json({ 
+        authenticated: false,
+        error: 'Profile service unavailable' 
+      }, { status: 500 });
     }
     
     // Return session data from backend
@@ -96,9 +108,9 @@ export async function GET(request) {
         // Subscription information - prioritize profile data
         subscriptionPlan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
         subscription_plan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
-        // Use onboarding status from backend (single source of truth)
-        needsOnboarding: profileData?.needs_onboarding ?? sessionData.needs_onboarding ?? true,
-        onboardingCompleted: profileData?.onboarding_completed ?? sessionData.onboarding_completed ?? false,
+        // SINGLE SOURCE OF TRUTH: Only use profileData from /api/users/me/session/
+        needsOnboarding: profileData.needs_onboarding ?? true,
+        onboardingCompleted: profileData.onboarding_completed ?? false,
         tenantId: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
         tenant_id: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
         permissions: userData.permissions || sessionData.permissions || []
