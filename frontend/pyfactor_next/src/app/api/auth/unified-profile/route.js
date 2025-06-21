@@ -8,10 +8,10 @@ import { cookies } from 'next/headers';
  * by creating a single, authoritative source that consolidates all backend data
  * and applies business logic to resolve conflicts.
  * 
- * BUSINESS LOGIC FOR ONBOARDING STATUS:
- * 1. If user has a tenant_id AND tenant exists, onboarding is COMPLETE
- * 2. If user has no tenant_id, onboarding is INCOMPLETE
- * 3. Backend fields are secondary to this primary business rule
+ * CORRECTED BUSINESS LOGIC FOR ONBOARDING STATUS:
+ * 1. Backend session/profile data is the authoritative source
+ * 2. Tenant existence doesn't determine onboarding completion (tenant created early)
+ * 3. Onboarding is complete only when backend explicitly marks it complete
  * 
  * This ensures 100% consistency across all frontend components.
  */
@@ -80,9 +80,6 @@ function resolveOnboardingStatus(consolidatedData) {
     hasTenant: !!tenantId
   });
 
-  // BUSINESS RULE: If user has tenant, onboarding is complete
-  const hasValidTenant = !!tenantId;
-  
   // Extract onboarding flags from all sources for logging
   const onboardingFlags = {
     sessionData_needs_onboarding: sessionData?.needs_onboarding,
@@ -95,11 +92,17 @@ function resolveOnboardingStatus(consolidatedData) {
 
   console.log('[UnifiedProfile] Onboarding flags from all sources:', onboardingFlags);
 
-  // AUTHORITATIVE BUSINESS LOGIC
+  // CORRECTED BUSINESS LOGIC: Use backend's authoritative onboarding status
+  // Having a tenant doesn't mean onboarding is complete - tenant is created early
+  // Onboarding is complete when backend explicitly says so
+  const backendNeedsOnboarding = sessionData?.needs_onboarding ?? profileData?.needs_onboarding ?? true;
+  const backendOnboardingCompleted = sessionData?.onboarding_completed ?? profileData?.onboarding_completed ?? false;
+  
   const authoritativeStatus = {
-    needsOnboarding: !hasValidTenant,
-    onboardingCompleted: hasValidTenant,
-    businessRule: hasValidTenant ? 'HAS_TENANT_COMPLETE' : 'NO_TENANT_INCOMPLETE'
+    needsOnboarding: backendNeedsOnboarding,
+    onboardingCompleted: backendOnboardingCompleted,
+    businessRule: backendOnboardingCompleted ? 'BACKEND_COMPLETE' : 'BACKEND_INCOMPLETE',
+    tenantExists: !!tenantId
   };
 
   console.log('[UnifiedProfile] AUTHORITATIVE onboarding status:', authoritativeStatus);
