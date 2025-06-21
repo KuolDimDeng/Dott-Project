@@ -3,10 +3,14 @@
 // Dashboard page (Client Component)
 
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  useEffect(() => {
+    // Set page title
+    document.title = 'Dott: Small Business Software';
+  }, []);
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">

@@ -8,6 +8,8 @@ export default function SignInPage() {
   const [showManualLink, setShowManualLink] = useState(false);
 
   useEffect(() => {
+    // Set page title
+    document.title = 'Dott: Sign In';
     // Show manual link after 3 seconds if auto-redirect doesn't work
     const timer = setTimeout(() => {
       setShowManualLink(true);

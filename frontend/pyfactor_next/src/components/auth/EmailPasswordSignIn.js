@@ -30,6 +30,9 @@ export default function EmailPasswordSignIn() {
 
   // Check for error from URL params (e.g., from Google OAuth)
   useEffect(() => {
+    // Set initial page title based on mode
+    document.title = isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
+    
     const errorParam = searchParams.get('error');
     const emailParam = searchParams.get('email');
     
@@ -58,6 +61,8 @@ export default function EmailPasswordSignIn() {
     setFormData(prev => ({ ...prev, confirmPassword: '' }));
     setShowPassword(false);
     setShowConfirmPassword(false);
+    // Update page title based on mode
+    document.title = !isSignup ? 'Dott: Sign Up' : 'Dott: Sign In';
   };
 
   const showError = (message, type = 'error') => {

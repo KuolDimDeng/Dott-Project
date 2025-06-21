@@ -10,6 +10,8 @@ export default function EmailSignInPage() {
   
   // Check for debug mode
   useEffect(() => {
+    // Set page title
+    document.title = 'Dott: Sign In';
     const debug = searchParams.get('debug') === 'true';
     setShowDebug(debug);
   }, [searchParams]);

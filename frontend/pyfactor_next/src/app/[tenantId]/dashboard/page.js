@@ -112,6 +112,9 @@ export default function TenantDashboard() {
 
   // Initialize dashboard
   useEffect(() => {
+    // Set page title
+    document.title = 'Dott: Small Business Software';
+    
     const initializeDashboard = async () => {
       // Declare idToken at function scope so it's accessible in both try and catch blocks
       const idToken = Cookies.get('idToken') || sessionStorage.getItem('idToken');
