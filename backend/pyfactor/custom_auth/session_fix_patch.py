@@ -20,6 +20,12 @@ def get_user_onboarding_status(user):
     from users.models import UserProfile
     from custom_auth.models import Tenant
     
+    # CRITICAL FIX: Check if user has a tenant FIRST
+    # If they have a tenant, they MUST have completed onboarding
+    if hasattr(user, 'tenant') and user.tenant:
+        logger.info(f"[SessionFix] User {user.email} has tenant {user.tenant.name} - onboarding MUST be complete")
+        return False, True, user.tenant
+    
     needs_onboarding = True
     onboarding_completed = False
     tenant = None
@@ -29,22 +35,38 @@ def get_user_onboarding_status(user):
         # Fix: OnboardingProgress has 'business' relation, not 'tenant'
         progress = OnboardingProgress.objects.select_related('business').get(user=user)
         
-        # Check setup_completed field
-        needs_onboarding = not progress.setup_completed
-        onboarding_completed = progress.setup_completed
+        # Check multiple conditions for completed onboarding
+        if progress.setup_completed:
+            needs_onboarding = False
+            onboarding_completed = True
+        elif progress.payment_completed or progress.selected_plan == 'free':
+            # Payment completed or free plan = onboarding done
+            needs_onboarding = False
+            onboarding_completed = True
+        elif (progress.business_info_completed and 
+              progress.subscription_selected and 
+              progress.business is not None):
+            # All steps complete and has business = onboarding done
+            needs_onboarding = False
+            onboarding_completed = True
+        else:
+            # Still in progress
+            needs_onboarding = not progress.setup_completed
+            onboarding_completed = progress.setup_completed
         
         # Get tenant from business if available
         if hasattr(progress, 'business') and progress.business:
-            # Get tenant through UserProfile
-            try:
-                profile = UserProfile.objects.select_related('tenant').get(user_id=user.id)
-                if profile.tenant:
-                    tenant = profile.tenant
-            except UserProfile.DoesNotExist:
-                pass
+            tenant = progress.business
+            # If we have a business/tenant, onboarding should be complete
+            if tenant and needs_onboarding:
+                logger.warning(f"[SessionFix] User {user.email} has business but needs_onboarding=True - fixing")
+                needs_onboarding = False
+                onboarding_completed = True
             
         logger.info(f"[SessionFix] OnboardingProgress for {user.email}: "
                    f"setup_completed={progress.setup_completed}, "
+                   f"payment_completed={progress.payment_completed}, "
+                   f"selected_plan={progress.selected_plan}, "
                    f"needs_onboarding={needs_onboarding}, "
                    f"tenant={tenant.id if tenant else None}")
         
@@ -57,11 +79,11 @@ def get_user_onboarding_status(user):
             profile = UserProfile.objects.select_related('tenant').get(user_id=user.id)
             if profile.tenant:
                 tenant = profile.tenant
-                # If user has tenant, they've likely completed onboarding
+                # If user has tenant, they've completed onboarding
                 needs_onboarding = False
                 onboarding_completed = True
                 logger.info(f"[SessionFix] UserProfile has tenant for {user.email}, "
-                           f"setting needs_onboarding=False")
+                           f"onboarding is complete")
         except UserProfile.DoesNotExist:
             logger.info(f"[SessionFix] No UserProfile for {user.email}, needs_onboarding=True")
         except Exception as e:
