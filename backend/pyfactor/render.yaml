@@ -4,7 +4,7 @@ services:
     env: python
     region: oregon
     plan: starter
-    buildCommand: "pip install -r requirements-render.txt"
+    buildCommand: "pip install -r requirements-render.txt && python manage.py migrate"
     startCommand: "gunicorn --bind 0.0.0.0:$PORT pyfactor.wsgi:application"
     healthCheckPath: /health/
     envVars:
