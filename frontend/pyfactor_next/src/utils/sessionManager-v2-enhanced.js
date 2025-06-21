@@ -1,12 +1,12 @@
 /**
- * Enhanced Session Manager V2 with Redis Caching and Performance Monitoring
+ * Enhanced Session Manager V2 with Local Caching and Performance Monitoring
  * 
  * Features:
- * - Redis caching for reduced database load
+ * - Local memory caching for improved performance
  * - Performance monitoring and metrics
- * - Load balancing support
  * - Circuit breaker pattern for resilience
- * - Automatic fallback mechanisms
+ * - Server-side session management
+ * - Automatic session refresh
  */
 
 class SessionManagerV2Enhanced {
@@ -19,7 +19,7 @@ class SessionManagerV2Enhanced {
       cacheHits: 0,
       cacheMisses: 0,
       dbHits: 0,
-      redisHits: 0,
+      localHits: 0,
       errors: 0,
       avgResponseTime: 0,
       lastError: null
@@ -35,8 +35,8 @@ class SessionManagerV2Enhanced {
   }
 
   /**
-   * Get session with multi-tier caching
-   * Priority: Local Cache → Redis → Database
+   * Get session with local caching
+   * Priority: Local Cache → Backend API
    */
   async getSession() {
     console.log('[SessionManager] getSession called');
@@ -136,33 +136,13 @@ class SessionManagerV2Enhanced {
       }
     }
 
-    // 3. Try Redis cache
-    console.log('[SessionManager] Checking Redis cache...');
-    try {
-      const redisCached = await this.getFromRedisCache(sessionId);
-      if (redisCached) {
-        console.log('[SessionManager] Found in Redis cache');
-        this.setLocalCache(sessionId, redisCached);
-        this.recordMetric('redis_cache_hit', startTime);
-        this.circuitBreaker.failures = 0; // Reset on success
-        if (this.circuitBreaker.state === 'HALF_OPEN') {
-          this.circuitBreaker.state = 'CLOSED';
-        }
-        return redisCached;
-      }
-    } catch (redisError) {
-      console.warn('[SessionManager] Redis cache failed:', redisError);
-      this.handleCircuitBreaker();
-    }
-
-    // 4. Fallback to database
+    // 3. Fallback to backend API
     console.log('[SessionManager] Fetching from database...');
     const dbSession = await this.getFromDatabase(sessionId);
     if (dbSession) {
       console.log('[SessionManager] Found in database');
-      // Cache in both Redis and local
+      // Cache locally
       this.setLocalCache(sessionId, dbSession);
-      this.setRedisCache(sessionId, dbSession).catch(console.warn);
       this.recordMetric('db_hit', startTime);
       return dbSession;
     }
@@ -173,54 +153,7 @@ class SessionManagerV2Enhanced {
   }
 
   /**
-   * Redis cache operations
-   */
-  async getFromRedisCache(sessionId) {
-    try {
-      const response = await fetch('/api/cache/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ 
-          action: 'get',
-          sessionId: sessionId 
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data.session || null;
-      }
-      return null;
-    } catch (error) {
-      console.warn('[SessionManager] Redis get failed:', error);
-      throw error;
-    }
-  }
-
-  async setRedisCache(sessionId, sessionData, ttl = 300) {
-    try {
-      const response = await fetch('/api/cache/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          action: 'set',
-          sessionId: sessionId,
-          sessionData: sessionData,
-          ttl: ttl
-        })
-      });
-
-      return response.ok;
-    } catch (error) {
-      console.warn('[SessionManager] Redis set failed:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Database operations
+   * Backend API operations
    */
   async getFromDatabase(sessionId) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
@@ -377,8 +310,8 @@ class SessionManagerV2Enhanced {
       case 'local_cache_hit':
         this.metrics.cacheHits++;
         break;
-      case 'redis_cache_hit':
-        this.metrics.redisHits++;
+      case 'api_hit':
+        this.metrics.localHits++;
         break;
       case 'db_hit':
         this.metrics.dbHits++;
@@ -419,7 +352,7 @@ class SessionManagerV2Enhanced {
     return {
       ...this.metrics,
       cacheHitRate: this.metrics.requests > 0 ? 
-        (this.metrics.cacheHits + this.metrics.redisHits) / this.metrics.requests : 0,
+        this.metrics.cacheHits / this.metrics.requests : 0,
       circuitBreakerState: this.circuitBreaker.state,
       localCacheSize: this.cache.size
     };
@@ -469,14 +402,8 @@ class SessionManagerV2Enhanced {
       }
     };
 
-    // Test Redis connectivity
-    try {
-      await this.getFromRedisCache('health-check');
-      health.redisStatus = 'connected';
-    } catch (error) {
-      health.redisStatus = 'disconnected';
-      health.redisError = error.message;
-    }
+    // Backend connectivity status based on circuit breaker
+    health.backendStatus = this.circuitBreaker.state === 'OPEN' ? 'degraded' : 'healthy';
 
     return health;
   }
@@ -498,7 +425,6 @@ class SessionManagerV2Enhanced {
         const session = await this.getFromDatabase(sessionId);
         if (session) {
           this.setLocalCache(sessionId, session);
-          await this.setRedisCache(sessionId, session);
         }
       } catch (error) {
         console.warn(`Failed to warm cache for session ${sessionId}:`, error);

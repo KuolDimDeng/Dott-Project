@@ -120,6 +120,9 @@ const DashAppBar = ({
     getUserInitials: getAuth0UserInitials
   } = useAuth0Data();
   
+  // Use session hook to get session data
+  const { session, loading: sessionLoading, refreshSession } = useSession();
+  
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
     
@@ -324,9 +327,20 @@ const DashAppBar = ({
     }
   }, [cachedProfileData, profileData]);
 
-  // Process business name updates - prioritize Auth0 business name
+  // Process business name updates - prioritize session data, then Auth0 business name
   useEffect(() => {
-    // Prioritize auth0BusinessName from the hook
+    // First priority: session data
+    if (session?.user?.businessName || session?.user?.business_name) {
+      const sessionBusinessName = session.user.businessName || session.user.business_name;
+      if (sessionBusinessName && sessionBusinessName !== businessName) {
+        logger.debug('[DashAppBar] Setting business name from session:', sessionBusinessName);
+        setBusinessName(sessionBusinessName);
+        setFetchedBusinessName(sessionBusinessName);
+        return;
+      }
+    }
+    
+    // Second priority: auth0BusinessName from the hook
     if (auth0BusinessName && auth0BusinessName !== businessName) {
       logger.debug('[DashAppBar] Setting business name from Auth0 hook:', auth0BusinessName);
       setBusinessName(auth0BusinessName);
@@ -354,19 +368,19 @@ const DashAppBar = ({
     hasSetBusinessNameRef.current = true;
     
     // Update business name from all potential sources
-    const cognitoName = userAttributes?.['custom:businessname'] || user?.['custom:businessname'];
+    const auth0AttributeName = userAttributes?.['custom:businessname'] || user?.['custom:businessname'];
     const userDataName = userData?.businessName || userData?.['custom:businessname'];
     const profileDataName = profileData?.businessName;
     const cachedName = cachedProfileData?.businessName;
     
     // Check if we have a valid business name from any source
-    const newBusinessName = auth0BusinessName || cognitoName || userDataName || profileDataName || cachedName || '';
+    const newBusinessName = auth0BusinessName || auth0AttributeName || userDataName || profileDataName || cachedName || '';
     
     // Reduced logging for production
     if (process.env.NODE_ENV !== 'production') {
       logger.debug('[DashAppBar] Business name sources:', {
         auth0BusinessName,
-        cognitoName,
+        auth0AttributeName,
         userDataName,
         profileDataName,
         cachedName,
@@ -379,7 +393,7 @@ const DashAppBar = ({
         logger.debug('[DashAppBar] Setting business name from data source:', {
           name: newBusinessName,
           source: auth0BusinessName ? 'auth0' :
-                  cognitoName ? 'cognito' : 
+                  auth0AttributeName ? 'auth0-attributes' : 
                   userDataName ? 'userData' : 
                   profileDataName ? 'profileData' : 
                   'cachedData'
@@ -431,7 +445,7 @@ const DashAppBar = ({
     
     setHasAttemptedFetch(true);
     
-    logger.debug('[DashAppBar] Fetching user profile using Cognito & AppCache only');
+    logger.debug('[DashAppBar] Fetching user profile using Auth0 & AppCache only');
     // Check if we have a valid cached profile first
     if (isCacheValid(tenantId)) {
       logger.debug('[DashAppBar] Using valid cached profile data');
@@ -539,7 +553,7 @@ const DashAppBar = ({
         return;
       }
 
-      // Skip Cognito validation entirely - Auth0 handles authentication
+      // Skip custom attribute validation - Auth0 handles authentication
       logger.debug('[AppBar] Using Auth0 for user authentication and data');
       
       // Get business name from Auth0 cache
@@ -589,7 +603,7 @@ const DashAppBar = ({
   // Update the component initialization effect to ensure tenant isolation
   useEffect(() => {
     if (tenantId && !auth0Loading) {
-      // Auth0 handles all authentication - no need for Cognito validation
+      // Auth0 handles all authentication
       logger.debug('[AppBar] Initializing with Auth0 authentication for tenant:', tenantId);
       
       // Proceed with fetching Auth0-based user details
@@ -611,14 +625,14 @@ const DashAppBar = ({
       return key ? obj[key] : null;
     };
     
-    // Try to get from cognito attributes first
+    // Try to get from auth0 attributes first
     if (userAttributes) {
-      const cognitoName = findAttr(userAttributes, 'custom:businessname') || 
+      const auth0AttributeName = findAttr(userAttributes, 'custom:businessname') || 
                          findAttr(userAttributes, 'custom:tenant_name');
       
-      if (cognitoName) {
-        logger.debug('[AppBar] Using business name from Cognito:', cognitoName);
-        return cognitoName;
+      if (auth0AttributeName) {
+        logger.debug('[AppBar] Using business name from Auth0 attributes:', auth0AttributeName);
+        return auth0AttributeName;
       }
     }
     
@@ -661,7 +675,15 @@ const DashAppBar = ({
 
   // Update subscription display logic to correctly use tenant-specific subscription data
   const getSubscriptionType = useCallback(() => {
-    // First check Cognito attributes
+    // First check session data (most reliable source)
+    if (session?.user?.subscriptionPlan || session?.user?.subscription_plan) {
+      const sessionPlan = session.user.subscriptionPlan || session.user.subscription_plan;
+      if (sessionPlan && sessionPlan !== 'free') {
+        return sessionPlan;
+      }
+    }
+    
+    // Then check Auth0 attributes
     if (userAttributes && userAttributes['custom:subplan']) {
       return userAttributes['custom:subplan'];
     }
@@ -710,7 +732,7 @@ const DashAppBar = ({
     
     // Default to free
     return 'free';
-  }, [userAttributes, userData, profileData, getTenantCacheData]);
+  }, [session, userAttributes, userData, profileData, getTenantCacheData]);
 
   const getSubscriptionLabel = useCallback((type) => {
     switch (type?.toLowerCase()) {
@@ -806,7 +828,16 @@ const DashAppBar = ({
   const effectiveBusinessName = useMemo(() => {
     // For Auth0, prioritize backend/profile data over attributes
     
-    // First check state variables that are actively updated
+    // First priority: session data
+    if (session?.user?.businessName && session.user.businessName !== 'undefined' && session.user.businessName !== 'null' && session.user.businessName !== '') {
+      return session.user.businessName;
+    }
+    
+    if (session?.user?.business_name && session.user.business_name !== 'undefined' && session.user.business_name !== 'null' && session.user.business_name !== '') {
+      return session.user.business_name;
+    }
+    
+    // Then check state variables that are actively updated
     if (businessName && businessName !== 'undefined' && businessName !== 'null' && businessName !== '') {
       return businessName;
     }
@@ -852,7 +883,7 @@ const DashAppBar = ({
       }
     }
     
-    // Only check Cognito/Auth0 attributes as a last resort
+    // Only check Auth0 attributes as a last resort
     if (userAttributes) {
       if (userAttributes['custom:businessname'] && 
           userAttributes['custom:businessname'] !== 'undefined' && 
@@ -871,6 +902,8 @@ const DashAppBar = ({
     // Return empty string if no business name found
     return '';
   }, [
+    session?.user?.businessName,
+    session?.user?.business_name,
     businessName, 
     fetchedBusinessName, 
     auth0BusinessName, 
@@ -966,7 +999,7 @@ const DashAppBar = ({
   // Flag to track email processing
   const hasEmailBeenProcessed = useRef(false);
 
-  // Fetch user attributes for initials (REMOVE COGNITO - Auth0 handles this now)
+  // Fetch user attributes for initials (Auth0 handles this now)
   useEffect(() => {
     // Skip this entirely - Auth0 hook handles user initials
     if (auth0Loading) {
@@ -974,10 +1007,10 @@ const DashAppBar = ({
     }
     
     // All user data now comes from Auth0 hook
-    logger.debug('[DashAppBar] Skipping Cognito attribute fetch - using Auth0 data');
+    logger.debug('[DashAppBar] Using Auth0 data for user attributes');
   }, [auth0Loading]);
 
-  // Remove Cognito debugging - Enhanced debugging for user initials issue  
+  // Enhanced debugging for user initials issue  
   useEffect(() => {
     if (!auth0Loading && auth0User) {
       logger.debug('[DashAppBar] Auth0 User Initials Debug:', {
@@ -1005,9 +1038,59 @@ const DashAppBar = ({
   // Declare the subscription type for display purposes
   const subscriptionTypeForDisplay = effectiveSubscriptionType || 'free';
 
-  // Update user initials when Auth0 user data is available
+  // Update user data from session when available
   useEffect(() => {
-    if (auth0User && !auth0Loading && getAuth0UserInitials) {
+    if (session && session.authenticated && session.user && !sessionLoading) {
+      // Set business name from session
+      const sessionBusinessName = session.user.businessName || session.user.business_name;
+      if (sessionBusinessName && sessionBusinessName !== 'undefined' && sessionBusinessName !== 'null') {
+        logger.debug('[DashAppBar] Setting business name from session:', sessionBusinessName);
+        setBusinessName(sessionBusinessName);
+        setFetchedBusinessName(sessionBusinessName);
+      }
+      
+      // Set user initials from session
+      if (session.user.email) {
+        let initials = '';
+        
+        // Try to generate from name fields
+        if (session.user.given_name && session.user.family_name) {
+          initials = `${session.user.given_name.charAt(0)}${session.user.family_name.charAt(0)}`.toUpperCase();
+        } else if (session.user.name) {
+          const nameParts = session.user.name.split(' ');
+          if (nameParts.length >= 2) {
+            initials = `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();
+          } else {
+            initials = nameParts[0].substring(0, 2).toUpperCase();
+          }
+        } else {
+          // Generate from email
+          const emailName = session.user.email.split('@')[0];
+          initials = emailName.substring(0, 2).toUpperCase();
+        }
+        
+        if (initials) {
+          logger.debug('[DashAppBar] Setting user initials from session:', initials);
+          setUserInitials(initials);
+        }
+      }
+      
+      // Update profile data with subscription info from session
+      if (session.user.subscriptionPlan || session.user.subscription_plan) {
+        const plan = session.user.subscriptionPlan || session.user.subscription_plan;
+        setProfileData(prev => ({
+          ...prev,
+          subscriptionPlan: plan,
+          subscriptionType: plan,
+          selected_plan: plan
+        }));
+      }
+    }
+  }, [session, sessionLoading]);
+
+  // Update user initials when Auth0 user data is available (as fallback)
+  useEffect(() => {
+    if (auth0User && !auth0Loading && getAuth0UserInitials && !userInitials) {
       const initials = getAuth0UserInitials(auth0User);
       logger.debug('[DashAppBar] Setting user initials from Auth0:', { 
         initials, 
@@ -1018,7 +1101,7 @@ const DashAppBar = ({
       });
       setUserInitials(initials);
     }
-  }, [auth0User, auth0Loading, getAuth0UserInitials]);
+  }, [auth0User, auth0Loading, getAuth0UserInitials, userInitials]);
 
   // Fetch business name from session and profile
   useEffect(() => {

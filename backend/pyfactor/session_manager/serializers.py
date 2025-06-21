@@ -53,6 +53,8 @@ class SessionSerializer(serializers.ModelSerializer):
             'id': obj.user.id,
             'email': obj.user.email,
             'name': getattr(obj.user, 'name', ''),
+            'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
+            'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', '')
         }
     
