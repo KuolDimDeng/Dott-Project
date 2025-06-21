@@ -172,6 +172,52 @@
 
 **REMEMBER**: The backend knows best. Trust it. Always.
 
+## Onboarding Redirect Loop Bug Fix (2025-06-21) - CRITICAL FIX
+- **Issue**: New users getting stuck in redirect loop between dashboard and onboarding pages
+- **Root Cause**: Frontend components were setting local onboarding completion status without calling backend API
+- **Symptoms**: User has tenant ID but backend shows `user.onboarding_completed = False` causing `needs_onboarding: true`
+- **Files Fixed**: 
+  - `SubscriptionForm.jsx`: Removed 243 lines of AppCache/localStorage logic, now calls backend for ALL plans
+  - `payment/page.js`: Changed to use unified `/api/onboarding/complete-all` endpoint instead of separate payment endpoint
+  - `complete-payment/route.js`: Deprecated in favor of unified completion API
+
+### What Was Broken
+- **Free Plans**: Set cookies/localStorage locally but never called backend completion API
+- **Paid Plans**: Used different completion endpoint causing inconsistent behavior  
+- **Local Storage**: Components assumed having tenant meant onboarding complete (violation of backend single source of truth)
+- **AppCache**: Complex local state management that could conflict with backend
+
+### Fix Implementation
+```javascript
+// OLD (BROKEN) - Free plan flow
+if (plan.id === 'free') {
+  document.cookie = `onboarding_status=complete`;
+  appCache.set('onboarding.completed', true);
+  window.location.href = `/${tenantId}/dashboard`; // No backend call!
+}
+
+// NEW (FIXED) - All plans use same backend API
+if (plan.id === 'free') {
+  const response = await fetch('/api/onboarding/complete-all', {
+    method: 'POST',
+    body: JSON.stringify({
+      subscriptionPlan: plan.id,
+      planType: 'free'
+    })
+  });
+  // Backend properly sets user.onboarding_completed = True
+}
+```
+
+### Result
+- ✅ All plans (free and paid) now call `/api/onboarding/complete-all` 
+- ✅ Backend properly updates `user.onboarding_completed = True`
+- ✅ Eliminates redirect loops permanently
+- ✅ Works after browser cache clears
+- ✅ Consistent behavior across all plan types
+- ✅ Single source of truth maintained
+- **Deployment**: Committed as `6b0c0ee8` and auto-deployed to `dott-front`
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.

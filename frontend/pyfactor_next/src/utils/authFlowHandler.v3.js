@@ -129,10 +129,10 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Store user data in session storage for other components to use
     sessionStorage.setItem('currentUser', JSON.stringify(userData));
     
-    // Step 3: Get profile to check onboarding status
-    console.log('[AuthFlowHandler.v3] Fetching user profile...');
+    // Step 3: Get UNIFIED profile with business logic (PERMANENT FIX)
+    console.log('[AuthFlowHandler.v3] PERMANENT FIX - Fetching unified profile...');
     
-    const profileResponse = await fetch('/api/auth/profile', {
+    const profileResponse = await fetch('/api/auth/unified-profile', {
       headers: {
         'Authorization': `Bearer ${authData.accessToken}`,
       },
@@ -142,16 +142,20 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     let profileData = {};
     if (profileResponse.ok) {
       profileData = await profileResponse.json();
-      console.log('[AuthFlowHandler.v3] Profile data retrieved', {
-        needsOnboarding: profileData.needs_onboarding,
-        onboardingCompleted: profileData.onboarding_completed
+      console.log('[AuthFlowHandler.v3] PERMANENT FIX - Unified profile retrieved', {
+        needsOnboarding: profileData.needsOnboarding,
+        onboardingCompleted: profileData.onboardingCompleted,
+        tenantId: profileData.tenantId,
+        businessRule: profileData.businessRule
       });
+    } else {
+      console.error('[AuthFlowHandler.v3] PERMANENT FIX - Unified profile failed:', profileResponse.status);
     }
     
-    // Step 4: Determine redirect based ONLY on backend's single source of truth
-    // Backend tells us if user needs onboarding, regardless of tenant status
-    const needsOnboarding = data.needs_onboarding ?? true; // Default to true if not specified
-    const tenantId = data.tenant_id;
+    // Step 4: Determine redirect based on UNIFIED PROFILE data (PERMANENT FIX)
+    // Use the authoritative business logic result from unified profile
+    const needsOnboarding = profileData?.needsOnboarding ?? data.needs_onboarding ?? true;
+    const tenantId = profileData?.tenantId ?? data.tenant_id;
     
     let redirectUrl;
     // CRITICAL: Only check needs_onboarding from backend, ignore tenant status
@@ -165,10 +169,12 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       redirectUrl = '/onboarding';
     }
     
-    console.log('[AuthFlowHandler.v3] Redirect decision:', {
+    console.log('[AuthFlowHandler.v3] PERMANENT FIX - Redirect decision:', {
       tenantId,
       needsOnboarding,
       redirectUrl,
+      unifiedProfileData: !!profileData,
+      businessRule: profileData?.businessRule,
       currentURL: window.location.href,
       currentPath: window.location.pathname
     });

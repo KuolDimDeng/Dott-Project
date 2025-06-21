@@ -3,9 +3,10 @@ import { cookies } from 'next/headers';
 import { generateCSRFToken } from '@/utils/csrf';
 
 /**
- * Server-Side Session Management - Version 2
- * Following Wave/Stripe pattern: Only session ID in cookies
- * All session data lives in Django backend
+ * PERMANENT FIX: Server-Side Session Management - Version 2
+ * 
+ * Now uses unified profile endpoint that applies business logic
+ * to resolve onboarding status conflicts permanently.
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
@@ -51,40 +52,38 @@ export async function GET(request) {
       needsOnboarding: sessionData.needs_onboarding
     });
     
-    // SINGLE SOURCE OF TRUTH: Use /api/users/me/session/ as authoritative source
-    let profileData = null;
+    // PERMANENT FIX: Use unified profile endpoint for authoritative data
+    let unifiedData = null;
     
     try {
-      const profileResponse = await fetch(`${API_URL}/api/users/me/session/`, {
+      // Create a fake request object to pass cookies
+      const unifiedResponse = await fetch(`http://localhost:3000/api/auth/unified-profile`, {
         headers: {
-          'Authorization': `Session ${sessionId.value}`,
-          'Cookie': `session_token=${sessionId.value}`
+          'Cookie': `sid=${sessionId.value}; session_token=${sessionId.value}`
         },
         cache: 'no-store'
       });
       
-      if (profileResponse.ok) {
-        profileData = await profileResponse.json();
-        console.log('[Session-V2] AUTHORITATIVE onboarding status from /api/users/me/session/:', {
-          needs_onboarding: profileData.needs_onboarding,
-          onboarding_completed: profileData.onboarding_completed,
-          tenant_name: profileData.tenant_name,
-          subscription_plan: profileData.subscription_plan,
-          source: 'users_me_session_endpoint'
+      if (unifiedResponse.ok) {
+        unifiedData = await unifiedResponse.json();
+        console.log('[Session-V2] PERMANENT FIX - Unified data received:', {
+          needsOnboarding: unifiedData.needsOnboarding,
+          onboardingCompleted: unifiedData.onboardingCompleted,
+          tenantId: unifiedData.tenantId,
+          businessRule: unifiedData.businessRule
         });
       } else {
-        console.error('[Session-V2] CRITICAL: Authoritative endpoint failed:', profileResponse.status);
-        // Return error instead of continuing with inconsistent data
+        console.error('[Session-V2] Unified endpoint failed:', unifiedResponse.status);
         return NextResponse.json({ 
           authenticated: false,
-          error: 'Unable to fetch user profile' 
+          error: 'Unable to fetch unified profile' 
         }, { status: 500 });
       }
     } catch (error) {
-      console.error('[Session-V2] CRITICAL: Authoritative endpoint error:', error);
+      console.error('[Session-V2] Unified endpoint error:', error);
       return NextResponse.json({ 
         authenticated: false,
-        error: 'Profile service unavailable' 
+        error: 'Unified profile service unavailable' 
       }, { status: 500 });
     }
     
@@ -97,23 +96,26 @@ export async function GET(request) {
       authenticated: true,
       csrfToken: generateCSRFToken(),
       user: {
-        email: userData.email || sessionData.email || profileData?.email,
-        // User name fields - prioritize profile data
-        name: profileData?.name || userData.name || sessionData.name,
-        given_name: profileData?.given_name || userData.given_name || userData.givenName || sessionData.given_name,
-        family_name: profileData?.family_name || userData.family_name || userData.familyName || sessionData.family_name,
-        // Business information - use tenant_name from profile data
-        businessName: profileData?.tenant_name || tenantData.name || userData.businessName || userData.business_name || sessionData.business_name,
-        business_name: profileData?.tenant_name || tenantData.name || userData.businessName || userData.business_name || sessionData.business_name,
-        // Subscription information - prioritize profile data
-        subscriptionPlan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
-        subscription_plan: profileData?.subscription_plan || sessionData.subscription_plan || userData.subscription_plan || sessionData.subscriptionPlan || 'free',
-        // SINGLE SOURCE OF TRUTH: Only use profileData from /api/users/me/session/
-        needsOnboarding: profileData.needs_onboarding ?? true,
-        onboardingCompleted: profileData.onboarding_completed ?? false,
-        tenantId: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
-        tenant_id: sessionData.tenant_id || tenantData.id || userData.tenant_id || profileData?.tenant_id,
-        permissions: userData.permissions || sessionData.permissions || []
+        // Use unified data which has applied business logic
+        email: unifiedData.email,
+        name: unifiedData.name,
+        given_name: unifiedData.given_name,
+        family_name: unifiedData.family_name,
+        // Business information from unified source
+        businessName: unifiedData.businessName,
+        business_name: unifiedData.business_name,
+        // Subscription information from unified source
+        subscriptionPlan: unifiedData.subscriptionPlan,
+        subscription_plan: unifiedData.subscription_plan,
+        // PERMANENT FIX: Authoritative onboarding status from business logic
+        needsOnboarding: unifiedData.needsOnboarding,
+        onboardingCompleted: unifiedData.onboardingCompleted,
+        tenantId: unifiedData.tenantId,
+        tenant_id: unifiedData.tenant_id,
+        // Additional metadata
+        businessRule: unifiedData.businessRule,
+        sessionSource: 'unified-permanent-fix',
+        permissions: sessionData.permissions || []
       }
     });
     

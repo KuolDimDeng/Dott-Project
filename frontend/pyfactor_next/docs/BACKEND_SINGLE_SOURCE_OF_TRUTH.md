@@ -1,8 +1,10 @@
 # Backend Single Source of Truth - Implementation Guide
 
 **Date**: 2025-06-21  
-**Status**: IMPLEMENTED  
-**Priority**: CRITICAL for system stability
+**Status**: IMPLEMENTED & BUG FIXED  
+**Priority**: CRITICAL for system stability  
+**Last Updated**: 2025-06-21 (Onboarding redirect loop bug fix)
+**Git Commit**: 6b0c0ee8
 
 ## Overview
 
@@ -125,6 +127,22 @@ return NextResponse.json({
    - Complex hook with AppCache logic
    - No longer needed with backend-only approach
 
+### Fixed Files (2025-06-21)
+1. **`/src/components/Onboarding/SubscriptionForm.jsx`**
+   - Removed 243 lines of AppCache/localStorage logic
+   - Now calls `/api/onboarding/complete-all` for all plans
+   - Eliminated Cognito attribute updates
+   - Fixed free plan flow to properly call backend
+
+2. **`/src/app/onboarding/payment/page.js`**
+   - Unified to use `/api/onboarding/complete-all` endpoint
+   - Added payment verification flags
+   - Consistent with subscription form behavior
+
+3. **`/src/app/api/onboarding/complete-payment/route.js`**
+   - Marked as deprecated
+   - All completion flows now use unified endpoint
+
 ## Backend Requirements
 
 For this pattern to work, the backend MUST:
@@ -187,6 +205,67 @@ Watch for these antipatterns in code reviews:
 - Complex boolean logic: `condition1 || condition2 || condition3`
 - Emergency access or fallback patterns
 - Local session overrides
+
+## Onboarding Redirect Loop Bug Fix (2025-06-21)
+
+### Critical Bug Fixed
+- **Issue**: New users getting stuck in redirect loop between dashboard and onboarding
+- **Root Cause**: `SubscriptionForm.jsx` and payment flow were setting local completion status without calling backend
+- **Symptom**: Users had tenant ID but `user.onboarding_completed = False` in database
+
+### Files Fixed
+1. **SubscriptionForm.jsx** - Complete overhaul:
+   - Removed 243 lines of AppCache/localStorage logic
+   - Now calls `/api/onboarding/complete-all` for ALL plans (free and paid)
+   - Eliminated local onboarding status tracking
+
+2. **payment/page.js** - Unified endpoint:
+   - Changed from `/api/onboarding/complete-payment` to `/api/onboarding/complete-all`
+   - Added `paymentVerified: true` flag for paid plans
+   - Consistent data structure with subscription form
+
+3. **complete-payment/route.js** - Deprecated:
+   - Marked as deprecated with warning comments
+   - All flows now use unified completion endpoint
+
+### Code Example - What Was Fixed
+```javascript
+// OLD (BROKEN) - Free plan flow in SubscriptionForm.jsx
+if (plan.id === 'free') {
+  // Set local indicators without backend call
+  document.cookie = `onboarding_status=complete`;
+  appCache.set('onboarding.completed', true);
+  localStorage.setItem('onboardingCompleted', 'true');
+  
+  // Redirect without updating backend database
+  window.location.href = `/${tenantId}/dashboard`;
+}
+
+// NEW (FIXED) - All plans call backend
+if (plan.id === 'free') {
+  // Call backend to properly update user.onboarding_completed = True
+  const response = await fetch('/api/onboarding/complete-all', {
+    method: 'POST',
+    body: JSON.stringify({
+      subscriptionPlan: plan.id,
+      planType: 'free',
+      billingCycle: billingCycle
+    })
+  });
+  
+  // Backend handles all session updates
+  if (response.ok) {
+    const result = await response.json();
+    window.location.href = `/${result.tenant_id}/dashboard`;
+  }
+}
+```
+
+### Deployment
+- **Git Commit**: `6b0c0ee8`
+- **Branch**: `Dott_Main_Dev_Deploy`
+- **Auto-deployed**: `dott-front` service on Render
+- **Status**: Live and fixing the redirect loop issue
 
 ## Contact
 

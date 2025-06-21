@@ -38,42 +38,46 @@ export async function GET(request) {
     // We need to get the user's Auth0 token from the session
     let backendHeaders = { ...headers };
     
-    // SINGLE SOURCE OF TRUTH: Only use /api/users/me/session/ for onboarding status
+    // PERMANENT FIX: Use unified profile endpoint for consistent onboarding status
     if (sessionToken) {
       try {
-        // Use ONLY the authoritative endpoint for consistency
-        const statusResponse = await fetch(`${apiUrl}/api/users/me/session/`, {
+        console.log('[Onboarding Status API] PERMANENT FIX - Using unified profile endpoint');
+        
+        // Call our unified profile endpoint that implements business logic
+        const unifiedResponse = await fetch(`http://localhost:3000/api/auth/unified-profile`, {
           headers: {
-            'Authorization': `Session ${sessionToken.value}`,
-            'Content-Type': 'application/json',
-          }
+            'Cookie': `sid=${sessionToken.value}; session_token=${sessionToken.value}`
+          },
+          cache: 'no-store'
         });
         
-        if (statusResponse.ok) {
-          const userData = await statusResponse.json();
-          console.log('[Onboarding Status API] AUTHORITATIVE data from /api/users/me/session/:', {
-            needs_onboarding: userData.needs_onboarding,
-            onboarding_completed: userData.onboarding_completed,
-            source: 'users_me_session_endpoint'
+        if (unifiedResponse.ok) {
+          const unifiedData = await unifiedResponse.json();
+          console.log('[Onboarding Status API] PERMANENT FIX - Unified data received:', {
+            needsOnboarding: unifiedData.needsOnboarding,
+            onboardingCompleted: unifiedData.onboardingCompleted,
+            tenantId: unifiedData.tenantId,
+            businessRule: unifiedData.businessRule
           });
           
-          // Return data using ONLY the authoritative source
+          // Return data using the authoritative unified source
           return NextResponse.json({
-            onboarding_status: userData.onboarding_completed ? 'complete' : 'incomplete',
-            setup_completed: userData.onboarding_completed ?? false,
-            needs_onboarding: userData.needs_onboarding ?? true,
-            current_step: userData.onboarding_completed ? 'completed' : (userData.current_onboarding_step || 'business_info')
+            onboarding_status: unifiedData.onboardingCompleted ? 'complete' : 'incomplete',
+            setup_completed: unifiedData.onboardingCompleted,
+            needs_onboarding: unifiedData.needsOnboarding,
+            current_step: unifiedData.onboardingCompleted ? 'completed' : (unifiedData.currentStep || 'business_info'),
+            source: 'unified-profile-permanent-fix',
+            businessRule: unifiedData.businessRule
           });
         } else {
-          console.error('[Onboarding Status API] CRITICAL: Authoritative endpoint failed:', statusResponse.status, await statusResponse.text());
-          // Don't use fallback endpoints - return error for consistency
+          console.error('[Onboarding Status API] Unified endpoint failed:', unifiedResponse.status);
           return NextResponse.json({ 
             error: 'Unable to fetch onboarding status',
-            message: 'Authoritative endpoint unavailable'
+            message: 'Unified profile endpoint unavailable'
           }, { status: 500 });
         }
       } catch (error) {
-        console.error('[Onboarding Status API] CRITICAL: Authoritative endpoint error:', error);
+        console.error('[Onboarding Status API] Unified endpoint error:', error);
         return NextResponse.json({ 
           error: 'Profile service unavailable',
           message: error.message
