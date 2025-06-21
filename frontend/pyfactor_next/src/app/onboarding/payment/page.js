@@ -26,19 +26,23 @@ function PaymentForm({ plan, billingCycle }) {
   const [cardholderName, setCardholderName] = useState('');
   const [postalCode, setPostalCode] = useState('');
   const [tenantId, setTenantId] = useState(null);
+  const [businessInfo, setBusinessInfo] = useState(null);
 
-  // Fetch profile data to get tenant ID on mount
+  // Fetch profile data to get tenant ID and business info on mount
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndBusinessInfo = async () => {
       try {
-        logger.info('[PaymentForm] Fetching profile to get tenant ID...');
-        const response = await fetch('/api/auth/profile');
+        logger.info('[PaymentForm] Fetching profile and business info...');
         
-        if (response.ok) {
-          const profileData = await response.json();
+        // Fetch profile data
+        const profileResponse = await fetch('/api/auth/profile');
+        
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
           logger.info('[PaymentForm] Profile data received:', {
             tenantId: profileData.tenantId,
             email: profileData.email,
+            businessName: profileData.businessName,
             onboardingCompleted: profileData.onboardingCompleted
           });
           
@@ -48,14 +52,40 @@ function PaymentForm({ plan, billingCycle }) {
           } else {
             logger.warn('[PaymentForm] No tenant ID in profile data');
           }
+          
+          // Store business info from profile if available
+          if (profileData.businessName) {
+            setBusinessInfo({
+              businessName: profileData.businessName,
+              businessType: profileData.businessType || 'Other'
+            });
+          }
         } else {
-          logger.error('[PaymentForm] Profile fetch failed with status:', response.status);
+          logger.error('[PaymentForm] Profile fetch failed with status:', profileResponse.status);
+        }
+        
+        // Also try to fetch business info directly
+        try {
+          const businessResponse = await fetch('/api/tenant/business-info');
+          if (businessResponse.ok) {
+            const businessData = await businessResponse.json();
+            logger.info('[PaymentForm] Business info fetched:', businessData);
+            
+            if (businessData.businessName) {
+              setBusinessInfo({
+                businessName: businessData.businessName,
+                businessType: businessData.businessType || 'Other'
+              });
+            }
+          }
+        } catch (businessError) {
+          logger.warn('[PaymentForm] Could not fetch business info:', businessError);
         }
       } catch (error) {
-        logger.error('[PaymentForm] Error fetching profile:', error);
+        logger.error('[PaymentForm] Error fetching data:', error);
       }
     };
-    fetchProfile();
+    fetchProfileAndBusinessInfo();
   }, []);
 
   // Card element styling - modern design
@@ -103,6 +133,12 @@ function PaymentForm({ plan, billingCycle }) {
       }
       if (!postalCode.trim()) {
         throw new Error('Please enter your postal code');
+      }
+      
+      // Check if we have business info (required for completion)
+      if (!businessInfo?.businessName && !user?.businessName) {
+        logger.error('[PaymentForm] No business information available');
+        throw new Error('Business information is missing. Please complete the business setup step first.');
       }
 
       // Get card elements
@@ -250,6 +286,9 @@ function PaymentForm({ plan, billingCycle }) {
           },
           credentials: 'include',
           body: JSON.stringify({
+            // Include business information (required by complete-all endpoint)
+            businessName: businessInfo?.businessName || user?.businessName || 'Unnamed Business',
+            businessType: businessInfo?.businessType || user?.businessType || 'Other',
             // Use same data structure as subscription form
             subscriptionPlan: plan.toLowerCase(),
             selectedPlan: plan.toLowerCase(),
