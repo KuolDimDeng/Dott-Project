@@ -204,8 +204,13 @@ export default function OnboardingFlowV2() {
         
         // CRITICAL FIX: Ensure onboarding completion is properly saved for Google OAuth users
         console.log('🔥 [OnboardingFlow] Ensuring onboarding completion is saved...');
-        try {
-          const ensureResponse = await fetch('/api/onboarding/ensure-complete', {
+        
+        // Multiple attempts to ensure backend properly saves the status
+        const backendUpdates = [];
+        
+        // 1. Use ensure-complete endpoint
+        backendUpdates.push(
+          fetch('/api/onboarding/ensure-complete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -214,13 +219,54 @@ export default function OnboardingFlowV2() {
               businessName: data.businessName,
               selectedPlan: data.selectedPlan
             })
-          });
+          })
+        );
+        
+        // 2. Force backend onboarding status update
+        const cookieStore = document.cookie;
+        const sessionToken = cookieStore.match(/(?:^|; )sid=([^;]*)/)?.[1] || 
+                           cookieStore.match(/(?:^|; )session_token=([^;]*)/)?.[1];
+        
+        if (sessionToken) {
+          const API_URL = 'https://api.dottapps.com';
           
-          if (ensureResponse.ok) {
-            console.log('✅ [OnboardingFlow] Onboarding completion enforced');
-          } else {
-            console.error('❌ [OnboardingFlow] Failed to ensure completion:', ensureResponse.status);
-          }
+          // Update onboarding progress directly
+          backendUpdates.push(
+            fetch(`${API_URL}/api/onboarding/progress/update/`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Session ${sessionToken}`
+              },
+              body: JSON.stringify({
+                setup_completed: true,
+                needs_onboarding: false,
+                tenant_id: tenantId
+              })
+            })
+          );
+          
+          // Force session refresh
+          backendUpdates.push(
+            fetch(`${API_URL}/api/sessions/refresh/`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Session ${sessionToken}`
+              }
+            })
+          );
+        }
+        
+        // Execute all updates
+        try {
+          const results = await Promise.allSettled(backendUpdates);
+          results.forEach((result, index) => {
+            if (result.status === 'fulfilled' && result.value.ok) {
+              console.log(`✅ [OnboardingFlow] Backend update ${index + 1} succeeded`);
+            } else {
+              console.error(`❌ [OnboardingFlow] Backend update ${index + 1} failed`);
+            }
+          });
         } catch (ensureError) {
           console.error('❌ [OnboardingFlow] Error ensuring completion:', ensureError);
           // Don't fail the whole process

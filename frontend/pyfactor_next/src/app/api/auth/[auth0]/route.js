@@ -178,16 +178,17 @@ async function handleCallback(request, { params }) {
       headers.append('Set-Cookie', `auth0_verifier=; ${clearCookieOptions}`);
       
       try {
-        // Create session via backend API - this is the ONLY session now
-        const sessionResponse = await fetch(`${API_URL}/api/sessions/create/`, {
+        // CRITICAL FIX: Use Google session fix endpoint for Google OAuth users
+        // This fixes the issue where backend always sets needs_onboarding=true
+        console.log('[Auth0] Using Google session fix for proper onboarding status');
+        
+        const sessionResponse = await fetch('/api/auth/google-session-fix', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${tokens.access_token}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            session_type: 'web'
-            // The backend will extract user info from the access token
+            accessToken: tokens.access_token
           })
         });
         

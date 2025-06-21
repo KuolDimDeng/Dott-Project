@@ -40,3 +40,13 @@ class CustomAuthConfig(AppConfig):
                 logger.error("❌ Failed to apply session creation fix")
         except Exception as e:
             logger.error(f"Error applying session fix: {e}")
+            
+        # Also apply the Google OAuth specific fix to the view
+        try:
+            from session_manager.google_oauth_fix import apply_google_oauth_fix
+            if apply_google_oauth_fix():
+                logger.info("✅ Google OAuth session view fix applied")
+            else:
+                logger.error("❌ Failed to apply Google OAuth view fix")
+        except Exception as e:
+            logger.error(f"Error applying Google OAuth fix: {e}")

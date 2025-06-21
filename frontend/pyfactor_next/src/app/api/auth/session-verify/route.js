@@ -3,76 +3,76 @@ import { cookies } from 'next/headers';
 
 /**
  * Session Verification Endpoint
- * Quickly checks if user has a valid session
+ * 
+ * Verifies that a session is properly established and returns
+ * the current session state including onboarding status.
  */
 export async function GET(request) {
+  console.log('[SessionVerify] Verifying session state');
+  
   try {
+    // Get session token
     const cookieStore = await cookies();
+    const sessionToken = cookieStore.get('sid')?.value || cookieStore.get('session_token')?.value;
     
-    // Check for session cookies
-    const sessionId = cookieStore.get('sid');
-    const sessionToken = cookieStore.get('session_token');
-    const dottAuthSession = cookieStore.get('dott_auth_session');
-    const appSession = cookieStore.get('appSession');
-    
-    console.log('[Session-Verify] Cookie check:', {
-      hasSessionId: !!sessionId,
-      hasSessionToken: !!sessionToken,
-      hasDottAuth: !!dottAuthSession,
-      hasAppSession: !!appSession
-    });
-    
-    // If we have a session ID, verify it's valid
-    if (sessionId || sessionToken) {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-      const token = sessionId?.value || sessionToken?.value;
-      
-      try {
-        const response = await fetch(`${API_URL}/api/sessions/current/`, {
-          headers: {
-            'Authorization': `SessionID ${token}`,
-            'Cookie': `session_token=${token}`
-          },
-          cache: 'no-store'
-        });
-        
-        if (response.ok) {
-          const sessionData = await response.json();
-          return NextResponse.json({
-            valid: true,
-            hasSession: true,
-            email: sessionData.email,
-            needsOnboarding: sessionData.needs_onboarding
-          });
-        }
-      } catch (error) {
-        console.error('[Session-Verify] Backend check failed:', error);
-      }
-    }
-    
-    // Check for old-style session cookies
-    if (dottAuthSession || appSession) {
+    if (!sessionToken) {
       return NextResponse.json({
-        valid: true,
-        hasSession: true,
-        legacy: true,
-        reason: 'Legacy session format detected'
+        valid: false,
+        reason: 'No session token found'
       });
     }
     
+    // Verify with backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const response = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `Session ${sessionToken}`
+      }
+    });
+    
+    if (!response.ok) {
+      return NextResponse.json({
+        valid: false,
+        reason: `Backend validation failed: ${response.status}`
+      });
+    }
+    
+    const sessionData = await response.json();
+    
+    // Check onboarding status from backend
+    const onboardingResponse = await fetch(`${API_URL}/api/onboarding/status/`, {
+      headers: {
+        'Authorization': `Session ${sessionToken}`
+      }
+    });
+    
+    let actualNeedsOnboarding = sessionData.needs_onboarding;
+    let actualTenantId = sessionData.tenant_id;
+    
+    if (onboardingResponse.ok) {
+      const onboardingData = await onboardingResponse.json();
+      actualNeedsOnboarding = !onboardingData.setup_completed && !onboardingData.onboarding_completed;
+      if (onboardingData.tenant_id || onboardingData.tenant?.id) {
+        actualTenantId = onboardingData.tenant_id || onboardingData.tenant?.id;
+      }
+    }
+    
     return NextResponse.json({
-      valid: false,
-      hasSession: false,
-      reason: 'No session token found'
+      valid: true,
+      session: {
+        user_id: sessionData.user_id,
+        email: sessionData.email,
+        tenant_id: actualTenantId,
+        needs_onboarding: actualNeedsOnboarding,
+        expires_at: sessionData.expires_at
+      }
     });
     
   } catch (error) {
-    console.error('[Session-Verify] Error:', error);
+    console.error('[SessionVerify] Error:', error);
     return NextResponse.json({
       valid: false,
-      hasSession: false,
-      reason: 'Verification error',
-      error: error.message
-    }, { status: 500 });
+      reason: error.message
+    });
   }
 }

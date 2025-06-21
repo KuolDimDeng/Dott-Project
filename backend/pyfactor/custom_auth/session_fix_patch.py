@@ -14,29 +14,39 @@ logger = logging.getLogger(__name__)
 def get_user_onboarding_status(user):
     """
     Get the actual onboarding status for a user.
-    Returns tuple: (needs_onboarding, tenant_id)
+    Returns tuple: (needs_onboarding, onboarding_completed, tenant)
     """
     from onboarding.models import OnboardingProgress
     from users.models import UserProfile
+    from custom_auth.models import Tenant
     
     needs_onboarding = True
-    tenant_id = None
+    onboarding_completed = False
+    tenant = None
     
     try:
         # Check OnboardingProgress first - this is the source of truth
-        progress = OnboardingProgress.objects.select_related('tenant').get(user=user)
+        # Fix: OnboardingProgress has 'business' relation, not 'tenant'
+        progress = OnboardingProgress.objects.select_related('business').get(user=user)
         
         # Check setup_completed field
         needs_onboarding = not progress.setup_completed
+        onboarding_completed = progress.setup_completed
         
-        # Get tenant if available
-        if hasattr(progress, 'tenant') and progress.tenant:
-            tenant_id = str(progress.tenant.id)
+        # Get tenant from business if available
+        if hasattr(progress, 'business') and progress.business:
+            # Get tenant through UserProfile
+            try:
+                profile = UserProfile.objects.select_related('tenant').get(user_id=user.id)
+                if profile.tenant:
+                    tenant = profile.tenant
+            except UserProfile.DoesNotExist:
+                pass
             
         logger.info(f"[SessionFix] OnboardingProgress for {user.email}: "
                    f"setup_completed={progress.setup_completed}, "
                    f"needs_onboarding={needs_onboarding}, "
-                   f"tenant_id={tenant_id}")
+                   f"tenant={tenant.id if tenant else None}")
         
     except OnboardingProgress.DoesNotExist:
         logger.info(f"[SessionFix] No OnboardingProgress for {user.email}, checking UserProfile")
@@ -45,10 +55,11 @@ def get_user_onboarding_status(user):
         try:
             # Fix the type mismatch - use user.id not user object
             profile = UserProfile.objects.select_related('tenant').get(user_id=user.id)
-            if hasattr(profile, 'tenant') and profile.tenant:
-                tenant_id = str(profile.tenant.id)
+            if profile.tenant:
+                tenant = profile.tenant
                 # If user has tenant, they've likely completed onboarding
                 needs_onboarding = False
+                onboarding_completed = True
                 logger.info(f"[SessionFix] UserProfile has tenant for {user.email}, "
                            f"setting needs_onboarding=False")
         except UserProfile.DoesNotExist:
@@ -58,134 +69,97 @@ def get_user_onboarding_status(user):
     except Exception as e:
         logger.error(f"[SessionFix] Error checking OnboardingProgress: {str(e)}")
     
-    return needs_onboarding, tenant_id
+    return needs_onboarding, onboarding_completed, tenant
 
 
-def create_session_with_proper_status(user, session_type='web', **kwargs):
+def create_session_with_proper_status(user, access_token, request_meta=None, **kwargs):
     """
     Create a session with the CORRECT onboarding status by checking
     the OnboardingProgress model instead of defaulting to True
     """
-    from session_manager.models import UserSession as Session
+    from session_manager.services import session_service
+    import hashlib
     
     try:
-        with transaction.atomic():
-            # Generate session ID
-            session_id = str(uuid.uuid4())
-            
-            # Set expiration (24 hours)
-            expires_at = timezone.now() + timedelta(hours=24)
-            
-            # Get ACTUAL onboarding status
-            needs_onboarding, tenant_id = get_user_onboarding_status(user)
-            
-            # Build session data with CORRECT status
-            session_data = {
-                'user_id': user.id,
-                'email': user.email,
-                'session_type': session_type,
-                'needs_onboarding': needs_onboarding,  # Use actual status!
-                'onboarding_completed': not needs_onboarding,
-                'created_at': timezone.now().isoformat(),
-            }
-            
-            # Add tenant_id if available
-            if tenant_id:
-                session_data['tenant_id'] = tenant_id
-            
-            # Override with any kwargs but log if we're overriding our detected values
-            for key, value in kwargs.items():
-                if key in ['needs_onboarding', 'tenant_id'] and key in session_data:
-                    if session_data[key] != value:
-                        logger.warning(f"[SessionFix] Overriding {key}: "
-                                     f"detected={session_data[key]}, "
-                                     f"provided={value}")
-                session_data[key] = value
-            
-            # Create session
-            session = Session.objects.create(
-                session_id=session_id,
-                user=user,
-                expires_at=expires_at,
-                data=session_data,
-                is_active=True
-            )
-            
-            logger.info(f"[SessionFix] Created session for {user.email}: "
-                       f"needs_onboarding={needs_onboarding}, "
-                       f"tenant_id={tenant_id}")
-            
-            return {
-                'session_id': session_id,
-                'session_token': session_id,
-                'expires_at': expires_at.isoformat(),
-                'needs_onboarding': needs_onboarding,
-                'onboarding_completed': not needs_onboarding,
-                'tenant_id': tenant_id,
-                'user_id': user.id,
-                'email': user.email,
-            }
+        # Get ACTUAL onboarding status
+        needs_onboarding, onboarding_completed, tenant = get_user_onboarding_status(user)
+        
+        # Log what we're going to do
+        logger.info(f"[SessionFix] Creating session for {user.email} with: "
+                   f"needs_onboarding={needs_onboarding}, "
+                   f"onboarding_completed={onboarding_completed}, "
+                   f"tenant={tenant.id if tenant else None}")
+        
+        # Override kwargs with our detected values
+        kwargs['needs_onboarding'] = needs_onboarding
+        kwargs['onboarding_completed'] = onboarding_completed
+        if tenant:
+            kwargs['tenant'] = tenant
+        
+        # Call the original service to create session
+        # This now uses the correct UserSession model structure
+        session = session_service.create_session(
+            user=user,
+            access_token=access_token,
+            request_meta=request_meta,
+            **kwargs
+        )
+        
+        logger.info(f"[SessionFix] Session created successfully for {user.email}: "
+                   f"session_id={session.session_id}, "
+                   f"needs_onboarding={session.needs_onboarding}")
+        
+        return session
             
     except Exception as e:
         logger.error(f"[SessionFix] Error creating session: {str(e)}")
+        import traceback
+        logger.error(f"[SessionFix] Traceback: {traceback.format_exc()}")
         raise
 
 
 def apply_session_fix():
     """
-    Apply the fix to SessionService by monkey patching the create_session method
+    Apply the fix to SessionService by intercepting the create_session method
+    to ensure it checks actual onboarding status
     """
     try:
-        from session_manager.services import SessionService
+        from session_manager.services import session_service
         
         # Store original method for fallback
-        if not hasattr(SessionService, '_original_create_session'):
-            SessionService._original_create_session = SessionService.create_session
+        if not hasattr(session_service, '_original_create_session'):
+            session_service._original_create_session = session_service.create_session
         
-        # Replace with our fixed version
-        SessionService.create_session = staticmethod(create_session_with_proper_status)
+        # Create a wrapper that fixes the onboarding status
+        def create_session_wrapper(self, user, access_token, request_meta=None, **kwargs):
+            """Wrapper that ensures correct onboarding status is used"""
+            # Get ACTUAL onboarding status
+            needs_onboarding, onboarding_completed, tenant = get_user_onboarding_status(user)
+            
+            # Override with our detected values
+            kwargs['needs_onboarding'] = needs_onboarding
+            kwargs['onboarding_completed'] = onboarding_completed
+            if tenant:
+                kwargs['tenant'] = tenant
+                
+            logger.info(f"[SessionFix] Intercepted create_session for {user.email}: "
+                       f"setting needs_onboarding={needs_onboarding}")
+            
+            # Call original method with corrected values
+            return self._original_create_session(user, access_token, request_meta, **kwargs)
         
-        logger.info("✅ [SessionFix] SessionService.create_session patched successfully")
+        # Bind the wrapper to the instance
+        import types
+        session_service.create_session = types.MethodType(create_session_wrapper, session_service)
         
-        # Also try to fix the session sync if it exists
-        try:
-            if hasattr(SessionService, 'sync_session_onboarding_status'):
-                original_sync = SessionService.sync_session_onboarding_status
-                
-                @staticmethod
-                def sync_with_fix(session):
-                    """Fixed sync that doesn't error on missing attributes"""
-                    try:
-                        from onboarding.models import OnboardingProgress
-                        
-                        user = session.user
-                        progress = OnboardingProgress.objects.get(user=user)
-                        
-                        # Use setup_completed, not status
-                        session.data['needs_onboarding'] = not progress.setup_completed
-                        session.data['onboarding_completed'] = progress.setup_completed
-                        
-                        if hasattr(progress, 'tenant') and progress.tenant:
-                            session.data['tenant_id'] = str(progress.tenant.id)
-                        
-                        session.save()
-                        logger.info(f"[SessionFix] Synced session for {user.email}")
-                        
-                    except OnboardingProgress.DoesNotExist:
-                        logger.info(f"[SessionFix] No OnboardingProgress to sync for session {session.session_id}")
-                    except Exception as e:
-                        logger.error(f"[SessionFix] Error syncing session: {str(e)}")
-                
-                SessionService.sync_session_onboarding_status = sync_with_fix
-                logger.info("✅ [SessionFix] SessionService.sync_session_onboarding_status also patched")
-                
-        except Exception as e:
-            logger.info(f"[SessionFix] Could not patch sync method: {str(e)}")
+        logger.info("✅ [SessionFix] session_service.create_session wrapped successfully")
         
         return True
         
     except Exception as e:
-        logger.error(f"❌ [SessionFix] Failed to patch SessionService: {str(e)}")
+        logger.error(f"❌ [SessionFix] Failed to wrap session_service: {str(e)}")
+        import traceback
+        logger.error(f"[SessionFix] Traceback: {traceback.format_exc()}")
         return False
 
 
