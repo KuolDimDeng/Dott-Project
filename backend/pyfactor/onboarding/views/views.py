@@ -2037,7 +2037,7 @@ class SaveStep1View(APIView):
                                 # Create tenant record
                                 tenant_uuid = uuid.UUID(tenant_id)
                                 cursor.execute("""
-                                    INSERT INTO auth_tenant (id, schema_name, name, owner_id, created_on, is_active, setup_status)
+                                    INSERT INTO auth_tenant (id, schema_name, name, owner_id, created_at, is_active, setup_status)
                                     VALUES (%s, %s, %s, %s, NOW(), TRUE, 'minimal');
                                 """, [tenant_id, schema_name, f"Tenant for {request.user.email}", str(request.user.id)])
                                 logger.info(f"Created tenant record for user {request.user.id}")

@@ -2,6 +2,7 @@ import logging
 import time
 import psycopg2
 import threading
+import uuid
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from django.db import connection
 from django.http import JsonResponse
@@ -9,6 +10,8 @@ from onboarding.utils import create_tenant_schema
 from custom_auth.models import Tenant
 from custom_auth.connection_utils import get_connection_for_schema, set_current_schema, get_current_schema
 from custom_auth.middleware import verify_auth_tables_in_schema
+# RLS: Import tenant context functions at the top
+from custom_auth.rls import set_current_tenant_id, tenant_context
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +73,7 @@ class EnhancedTenantMiddleware:
             '/api/onboarding/setup/'
             # Removed '/api/onboarding/business-info/' from no_tenant_paths to ensure it uses tenant schema
         ]
-    def set_schema_with_transaction_handling(tenant_id: uuid.UUID):
+    def set_schema_with_transaction_handling(self, tenant_id):
         """Set the schema with proper transaction handling"""
         from django.db import connection
         
@@ -246,9 +249,6 @@ class EnhancedTenantMiddleware:
             # Add timing information for performance monitoring
             elapsed_time = time.time() - start_time
             logger.info(f"[TENANT-{request_id}] Request processed in {elapsed_time:.4f}s (Schema: {schema_name}, Source: {schema_from})")
-
-# RLS: Importing tenant context functions
-from custom_auth.rls import set_current_tenant_id, tenant_context
             
             return response
         finally:
