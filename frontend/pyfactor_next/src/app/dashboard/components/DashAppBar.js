@@ -1041,10 +1041,19 @@ const DashAppBar = ({
   // Update user data from session when available
   useEffect(() => {
     if (session && session.authenticated && session.user && !sessionLoading) {
+      logger.info('[DashAppBar] Session data available:', {
+        email: session.user.email,
+        businessName: session.user.businessName || session.user.business_name,
+        subscriptionPlan: session.user.subscriptionPlan || session.user.subscription_plan,
+        given_name: session.user.given_name,
+        family_name: session.user.family_name,
+        name: session.user.name
+      });
+      
       // Set business name from session
       const sessionBusinessName = session.user.businessName || session.user.business_name;
       if (sessionBusinessName && sessionBusinessName !== 'undefined' && sessionBusinessName !== 'null') {
-        logger.debug('[DashAppBar] Setting business name from session:', sessionBusinessName);
+        logger.info('[DashAppBar] Setting business name from session:', sessionBusinessName);
         setBusinessName(sessionBusinessName);
         setFetchedBusinessName(sessionBusinessName);
       }
@@ -1070,7 +1079,7 @@ const DashAppBar = ({
         }
         
         if (initials) {
-          logger.debug('[DashAppBar] Setting user initials from session:', initials);
+          logger.info('[DashAppBar] Setting user initials from session:', initials);
           setUserInitials(initials);
         }
       }
@@ -1078,6 +1087,7 @@ const DashAppBar = ({
       // Update profile data with subscription info from session
       if (session.user.subscriptionPlan || session.user.subscription_plan) {
         const plan = session.user.subscriptionPlan || session.user.subscription_plan;
+        logger.info('[DashAppBar] Setting subscription plan from session:', plan);
         setProfileData(prev => ({
           ...prev,
           subscriptionPlan: plan,

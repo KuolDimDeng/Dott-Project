@@ -69,6 +69,27 @@ export async function GET(request) {
     const userData = sessionData.user || sessionData;
     const tenantData = sessionData.tenant || {};
     
+    // CRITICAL DEBUG: Log exact backend structure for DashAppBar
+    console.log('[Session-V2] Backend data structure:', {
+      hasUser: !!sessionData.user,
+      hasTenant: !!sessionData.tenant,
+      userFields: userData ? Object.keys(userData) : [],
+      tenantFields: tenantData ? Object.keys(tenantData) : [],
+      userData: {
+        email: userData.email,
+        name: userData.name,
+        given_name: userData.given_name,
+        family_name: userData.family_name,
+        business_name: userData.business_name,
+        subscription_plan: userData.subscription_plan
+      },
+      tenantData: {
+        id: tenantData.id,
+        name: tenantData.name,
+        subscription_plan: tenantData.subscription_plan
+      }
+    });
+    
     return NextResponse.json({
       authenticated: true,
       csrfToken: generateCSRFToken(),
@@ -78,12 +99,12 @@ export async function GET(request) {
         name: userData.name,
         given_name: userData.given_name,
         family_name: userData.family_name,
-        // Business information
-        businessName: tenantData.name || userData.business_name,
-        business_name: tenantData.name || userData.business_name,
-        // Subscription information
-        subscriptionPlan: userData.subscription_plan || 'free',
-        subscription_plan: userData.subscription_plan || 'free',
+        // Business information - check multiple sources
+        businessName: tenantData.name || userData.business_name || sessionData.business_name,
+        business_name: tenantData.name || userData.business_name || sessionData.business_name,
+        // Subscription information - check multiple sources
+        subscriptionPlan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || 'free',
+        subscription_plan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || 'free',
         // CRITICAL: Backend's authoritative onboarding status
         needsOnboarding: sessionData.needs_onboarding,
         onboardingCompleted: sessionData.onboarding_completed || false,

@@ -27,44 +27,50 @@ export async function GET(request) {
       console.log('[Profile API] Using unified profile endpoint for permanent fix');
       
       try {
-        // Call our own unified profile endpoint
-        const unifiedResponse = await fetch(`${request.url.replace('/profile', '/unified-profile')}`, {
+        // Call session-v2 endpoint directly for complete user data
+        const sessionResponse = await fetch(`${request.url.replace('/profile', '/session-v2')}`, {
           headers: {
             'Cookie': request.headers.get('cookie') || ''
           },
           cache: 'no-store'
         });
         
-        if (unifiedResponse.ok) {
-          const unifiedData = await unifiedResponse.json();
-          console.log('[Profile API] PERMANENT FIX - Unified data received:', {
-            needsOnboarding: unifiedData.needsOnboarding,
-            onboardingCompleted: unifiedData.onboardingCompleted,
-            tenantId: unifiedData.tenantId,
-            businessRule: unifiedData.businessRule
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          console.log('[Profile API] Session data received:', {
+            authenticated: sessionData.authenticated,
+            hasUser: !!sessionData.user,
+            email: sessionData.user?.email,
+            businessName: sessionData.user?.businessName,
+            subscriptionPlan: sessionData.user?.subscriptionPlan
           });
           
-          // Return the authoritative response
-          return NextResponse.json(unifiedData, {
-            headers: {
-              'Cache-Control': 'no-store, no-cache, must-revalidate',
-              'Pragma': 'no-cache',
-              'Expires': '0'
-            }
-          });
+          // If authenticated, return the user data
+          if (sessionData.authenticated && sessionData.user) {
+            return NextResponse.json({
+              ...sessionData.user,
+              authenticated: true,
+              sessionSource: 'session-v2'
+            }, {
+              headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+          }
         } else {
-          console.error('[Profile API] Unified endpoint failed:', unifiedResponse.status);
-          throw new Error('Unified profile endpoint failed');
+          console.error('[Profile API] Session endpoint failed:', sessionResponse.status);
         }
       } catch (error) {
-        console.error('[Profile API] Error calling unified endpoint:', error);
-        // Return error instead of inconsistent fallback
-        return NextResponse.json({
-          authenticated: false,
-          error: 'Profile service unavailable',
-          message: error.message
-        }, { status: 500 });
+        console.error('[Profile API] Error calling session endpoint:', error);
       }
+      
+      // If session-v2 fails, return minimal response
+      return NextResponse.json({
+        authenticated: false,
+        error: 'Session not found'
+      }, { status: 401 });
     }
     
     // Check for authorization header as fallback
