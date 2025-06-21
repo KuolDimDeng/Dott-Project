@@ -239,10 +239,10 @@ function PaymentForm({ plan, billingCycle }) {
       logger.info('Subscription created successfully');
       logger.info('[PaymentForm] Tenant ID for redirect:', tenantId);
       
-      // Single API call to complete payment and mark onboarding as complete
+      // Use same backend completion API as subscription form for consistency
       try {
-        logger.info('[PaymentForm] Completing payment and onboarding...');
-        const completePaymentResponse = await fetch('/api/onboarding/complete-payment', {
+        logger.info('[PaymentForm] Completing payment and onboarding via unified API...');
+        const completePaymentResponse = await fetch('/api/onboarding/complete-all', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -250,11 +250,18 @@ function PaymentForm({ plan, billingCycle }) {
           },
           credentials: 'include',
           body: JSON.stringify({
-            subscriptionId: result.subscription?.id || result.subscriptionId,
-            plan: plan.toLowerCase(),
+            // Use same data structure as subscription form
+            subscriptionPlan: plan.toLowerCase(),
+            selectedPlan: plan.toLowerCase(),
             billingCycle: billingCycle,
+            planType: 'paid',
+            // Payment verification data
+            paymentVerified: true,
             paymentIntentId: result.paymentIntentId || result.clientSecret,
-            tenantId: tenantId
+            subscriptionId: result.subscription?.id || result.subscriptionId,
+            tenantId: tenantId,
+            requestId: `payment_${Date.now()}`,
+            timestamp: new Date().toISOString()
           }),
         });
         
@@ -267,9 +274,10 @@ function PaymentForm({ plan, billingCycle }) {
         logger.info('[PaymentForm] Payment completion successful:', completeResult);
         
         // Update tenantId if received from backend
-        if (!tenantId && completeResult.tenant_id) {
-          setTenantId(completeResult.tenant_id);
-          tenantId = completeResult.tenant_id;
+        if (!tenantId && (completeResult.tenant_id || completeResult.tenantId)) {
+          const backendTenantId = completeResult.tenant_id || completeResult.tenantId;
+          setTenantId(backendTenantId);
+          tenantId = backendTenantId;
         }
         
       } catch (error) {

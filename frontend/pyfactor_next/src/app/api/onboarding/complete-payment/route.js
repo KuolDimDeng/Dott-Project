@@ -5,8 +5,15 @@ import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 import { csrfProtection } from '@/utils/csrf';
 
 /**
- * Complete onboarding after successful payment verification
- * This endpoint is called after a successful Stripe payment for paid tiers
+ * DEPRECATED: Complete onboarding after successful payment verification
+ * 
+ * ⚠️  This endpoint is deprecated in favor of using /api/onboarding/complete-all
+ * for all plan types (free and paid) to ensure consistent backend behavior.
+ * 
+ * All payment completions should now call /api/onboarding/complete-all with
+ * paymentVerified: true instead of this endpoint.
+ * 
+ * This endpoint remains for backward compatibility but should not be used.
  */
 
 async function getSession() {

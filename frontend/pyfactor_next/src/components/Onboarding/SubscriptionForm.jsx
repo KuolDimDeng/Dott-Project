@@ -1,6 +1,6 @@
 'use client';
 
-import { appCache } from '../utils/appCache';
+// Removed appCache import - using backend single source of truth
 
 
 import { useEffect, useState } from 'react';
@@ -257,78 +257,25 @@ export default function SubscriptionForm() {
         throw new Error('Selected plan not found');
       }
       
-      // Set up the AppCache for the subscription
+      // Store subscription selection for payment flow (no onboarding status)
       if (typeof window !== 'undefined') {
-        if (!appCache.getAll()) appCache.init();
-        if (!appCache.get('subscription')) appCache.set('subscription', {});
-        if (!appCache.get('onboarding')) appCache.set('onboarding', {});
-        
-        // Store subscription details
-        appCache.set('subscription.plan', plan.id);
-        appCache.set('subscription.billingCycle', billingCycle);
-        appCache.set('subscription.isComplete', true);
-        appCache.set('subscription.timestamp', new Date().toISOString());
-        
-        // Update onboarding status
-        if (plan.id === 'free' || plan.id === 'basic') {
-          appCache.set('onboarding.status', 'complete');
-          appCache.set('onboarding.step', 'complete');
-          appCache.set('onboarding.completed', true);
-        } else {
-          appCache.set('onboarding.status', 'subscription');
-          appCache.set('onboarding.step', 'subscription');
-        }
+        sessionStorage.setItem('selectedPlan', JSON.stringify({
+          plan: plan.id,
+          name: plan.name,
+          price: plan.price[billingCycle],
+          billingCycle,
+          timestamp: Date.now()
+        }));
       }
       
-      // Check for development mode
-      const devMode = process.env.NODE_ENV === 'development';
-      const bypassAuth = typeof window !== 'undefined' && 
-                         appCache.getAll()
+      // Remove development mode bypass - all plans use backend completion
       
       // Update Cognito attributes FIRST before redirecting
       try {
         setProcessingStatus('Updating your account...');
         
-        if (devMode && bypassAuth) {
-          logger.debug('[SubscriptionForm] Development mode: skipping Cognito update');
-          
-          // Store in AppCache
-          if (typeof window !== 'undefined') {
-            if (!appCache.get('cognito')) appCache.set('cognito', {});
-            appCache.set('cognito.subplan', plan.id);
-            appCache.set('cognito.subscriptioninterval', billingCycle);
-            appCache.set('cognito.onboarding', plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription');
-            appCache.set('cognito.updated_at', new Date().toISOString());
-          }
-        } else {
-          // Safe attributes that won't cause permission issues
-          const safeAttributes = {
-            'custom:onboarding': plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription',
-            'custom:subplan': plan.id,
-            'custom:subscriptioninterval': billingCycle,
-            'custom:updated_at': new Date().toISOString()
-          };
-          
-          // For free plans, also set setup as done
-          if (plan.id === 'free' || plan.id === 'basic') {
-            safeAttributes['custom:setupdone'] = 'true';
-          }
-          
-          // Make sure we're not trying to update any restricted attributes
-          const restrictedPrefixes = ['custom:tenant', 'custom:business'];
-          Object.keys(safeAttributes).forEach(key => {
-            if (restrictedPrefixes.some(prefix => key.startsWith(prefix))) {
-              logger.warn(`[SubscriptionForm] Removing restricted attribute from direct update: ${key}`);
-              delete safeAttributes[key];
-            }
-          });
-          
-          const { updateUserAttributes } = await import('aws-amplify/auth');
-          await updateUserAttributes({
-            userAttributes: safeAttributes
-          });
-          logger.debug('[SubscriptionForm] Successfully updated Cognito attributes for subscription');
-        }
+        // Backend handles all user attribute updates - no local Cognito updates needed
+        logger.debug('[SubscriptionForm] Skipping local attribute updates - backend will handle');
       } catch (attrError) {
         logger.warn('[SubscriptionForm] Failed to update Cognito attributes:', attrError);
         // Continue anyway - AppCache will serve as backup
@@ -337,19 +284,9 @@ export default function SubscriptionForm() {
       // Backend handles onboarding progress updates automatically
       logger.info(`[SubscriptionForm] Subscription selected: ${plan.id}, backend will handle progress`);
       
-      // Store in sessionStorage for transitions
-      try {
-        // Store basic selection info
-        sessionStorage.setItem('selectedPlan', JSON.stringify({
-          plan: plan.id,
-          name: plan.name,
-          price: plan.price[billingCycle],
-          billingCycle,
-          timestamp: Date.now()
-        }));
-        
-        // For paid plans, also store pendingSubscription format
-        if (plan.id !== 'free' && plan.id !== 'basic') {
+      // Store minimal selection info for payment flow (paid plans only)
+      if (plan.id !== 'free' && plan.id !== 'basic') {
+        try {
           sessionStorage.setItem('pendingSubscription', JSON.stringify({
             plan: plan.id,
             billing_interval: billingCycle,
@@ -358,55 +295,57 @@ export default function SubscriptionForm() {
             timestamp: Date.now(),
             requestId
           }));
+        } catch (storageError) {
+          logger.warn('[SubscriptionForm] SessionStorage error:', storageError);
         }
-      } catch (storageError) {
-        logger.warn('[SubscriptionForm] SessionStorage error:', storageError);
-        // Continue despite error - AppCache is more important
       }
       
-      // Route based on plan type
+      // ALL plans must complete onboarding through backend API
       if (plan.id === 'free' || plan.id === 'basic') {
-        // Handle free plan selection
-        setProcessingStatus('Setting up your free account...');
+        // Handle free plan - call backend completion API
+        setProcessingStatus('Completing your free account setup...');
         
-        // Set cookies for free plan
-        const expiresDate = new Date();
-        expiresDate.setFullYear(expiresDate.getFullYear() + 1);
-        document.cookie = `${COOKIE_NAMES.FREE_PLAN_SELECTED}=true; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STATUS}=${ONBOARDING_STATUS.COMPLETE}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        
-        // Redirect directly to dashboard for free plans - avoid intermediate subscription page
-        const tenantId = localStorage.getItem('tenantId') || '';
-        if (tenantId) {
-          window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
-        } else {
-          window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&requestId=${requestId}`;
+        try {
+          // Call backend to complete onboarding for free plan
+          const completionResponse = await fetch('/api/onboarding/complete-all', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              subscriptionPlan: plan.id,
+              billingCycle: billingCycle,
+              planType: 'free',
+              requestId,
+              timestamp: new Date().toISOString()
+            })
+          });
+          
+          const completionResult = await completionResponse.json();
+          
+          if (completionResponse.ok && completionResult.success) {
+            logger.info('[SubscriptionForm] Free plan onboarding completed via backend');
+            // Backend handles all session updates - redirect to dashboard
+            const tenantId = completionResult.tenant_id || completionResult.tenantId;
+            if (tenantId) {
+              window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&requestId=${requestId}`;
+            } else {
+              window.location.href = `/dashboard?newAccount=true&plan=free&requestId=${requestId}`;
+            }
+          } else {
+            throw new Error(completionResult.error || 'Failed to complete free plan setup');
+          }
+        } catch (completionError) {
+          logger.error('[SubscriptionForm] Error completing free plan onboarding:', completionError);
+          setError('Failed to complete account setup. Please try again.');
+          setSubmitting(false);
+          return;
         }
       } else {
-        // For paid plans
+        // For paid plans - go to payment page (completion happens after payment)
         setProcessingStatus('Preparing payment options...');
-        
-        // Update cookies for payment step
-        document.cookie = `${COOKIE_NAMES.ONBOARDING_STEP}=${ONBOARDING_STEPS.PAYMENT}; path=/; expires=${expiresDate.toUTCString()}; samesite=lax`;
-        
-        // Handle dev mode for paid plans
-        if (devMode && bypassAuth) {
-          logger.debug('[SubscriptionForm] Development mode: bypassing payment');
-          
-          // Set complete status in AppCache
-          if (typeof window !== 'undefined') {
-            appCache.set('onboarding.status', 'complete');
-            appCache.set('onboarding.step', 'complete');
-            appCache.set('onboarding.completed', true);
-          }
-          
-          // Redirect directly to dashboard
-          window.location.href = `/dashboard?newAccount=true&plan=${plan.id}&dev=true&requestId=${requestId}`;
-        } else {
-          // Go to payment page
-          router.push(`/onboarding/payment?plan=${plan.id}&cycle=${billingCycle}&requestId=${requestId}`);
-        }
+        router.push(`/onboarding/payment?plan=${plan.id}&cycle=${billingCycle}&requestId=${requestId}`);
       }
     } catch (e) {
       logger.error('[SubscriptionForm] Error during plan selection:', e);
@@ -416,10 +355,9 @@ export default function SubscriptionForm() {
     }
   };
   
+  // Simplified free plan selection - uses same backend completion flow
   const handleFreePlanSelection = async () => {
-    logger.debug('[SubscriptionForm] Free plan selected');
-    logger.info('[SubscriptionForm] Starting free plan selection process');
-    logger.info('[SubscriptionForm] Starting free plan selection process');
+    logger.debug('[SubscriptionForm] Free plan selected via card click');
     setSelectedPlan('free');
     setBillingCycle('monthly');
     setPlanData({
@@ -428,116 +366,8 @@ export default function SubscriptionForm() {
       price: '0'
     });
     
-    // Show loading state
-    setSubmitting(true);
-    
-    // Store free plan selection in AppCache
-    if (typeof window !== 'undefined') {
-      if (!appCache.getAll()) appCache.init();
-      if (!appCache.get('subscription')) appCache.set('subscription', {});
-      if (!appCache.get('onboarding')) appCache.set('onboarding', {});
-      
-      // Set subscription details
-      appCache.set('subscription.plan', 'free');
-      appCache.set('subscription.billingCycle', 'monthly');
-      appCache.set('subscription.isComplete', true);
-      appCache.set('subscription.timestamp', new Date().toISOString());
-      
-      // Set onboarding as complete
-      appCache.set('onboarding.status', 'complete');
-      appCache.set('onboarding.step', 'complete');
-      appCache.set('onboarding.completed', true);
-      appCache.set('onboarding.freePlanSelected', true);
-    }
-    
-    // First check for Cognito tenant ID by fetching user attributes
-    let tenantId = null;
-    try {
-      // Try to get user attributes from Cognito first
-      const { fetchUserAttributes } = await import('aws-amplify/auth');
-      const userAttributes = await fetchUserAttributes();
-      
-      // Check for tenant ID in Cognito attributes - highest priority
-      if (userAttributes['custom:tenant_ID'] && isValidUUID(userAttributes['custom:tenant_ID'])) {
-        tenantId = userAttributes['custom:tenant_ID'];
-        logger.debug('[SubscriptionForm] Using tenant ID from Cognito attributes:', tenantId);
-      } else if (userAttributes['custom:tenantId'] && isValidUUID(userAttributes['custom:tenantId'])) {
-        tenantId = userAttributes['custom:tenantId'];
-        logger.debug('[SubscriptionForm] Using tenantId from Cognito attributes:', tenantId);
-      }
-      
-      // Update Cognito attributes for free plan
-      try {
-        const { updateUserAttributes } = await import('aws-amplify/auth');
-        await updateUserAttributes({
-          userAttributes: {
-            'custom:onboarding': 'complete',
-            'custom:setupdone': 'true',
-            'custom:subplan': 'free',
-            'custom:subscriptioninterval': 'monthly',
-            'custom:updated_at': new Date().toISOString()
-          }
-        });
-        logger.debug('[SubscriptionForm] Updated Cognito attributes for free plan');
-      } catch (updateError) {
-        logger.warn('[SubscriptionForm] Failed to update Cognito attributes for free plan:', updateError);
-        // Continue anyway as we have the AppCache backup
-      }
-    } catch (attributeError) {
-      logger.warn('[SubscriptionForm] Failed to fetch Cognito attributes:', attributeError);
-      // Continue with fallback methods
-    }
-    
-    // If we couldn't get tenant ID from Cognito, try AppCache
-    if (!tenantId || !isValidUUID(tenantId)) {
-      // Try to get tenant ID from AppCache
-      const appCache = typeof window !== 'undefined' ? (appCache.getAll() || {}) : {};
-      const tenant = appCache.tenant || {};
-      
-      if (tenant.id && isValidUUID(tenant.id)) {
-        tenantId = tenant.id;
-        logger.debug('[SubscriptionForm] Using tenant ID from AppCache:', tenantId);
-      } else {
-        // Try localStorage as last resort
-        try {
-          const localTenantId = localStorage.getItem('tenantId');
-          if (localTenantId && isValidUUID(localTenantId)) {
-            tenantId = localTenantId;
-            logger.debug('[SubscriptionForm] Using tenant ID from localStorage:', tenantId);
-          }
-        } catch (storageError) {
-          logger.warn('[SubscriptionForm] Error accessing localStorage:', storageError);
-        }
-      }
-      
-      // If we still don't have a valid tenant ID, log and redirect without it
-      if (!tenantId || !isValidUUID(tenantId)) {
-        logger.warn('[SubscriptionForm] No valid tenant ID found, redirecting to dashboard without tenant path');
-        window.location.href = `/dashboard?newAccount=true&plan=free&freePlan=true&missingTenant=true`;
-        return;
-      }
-    }
-    
-    // Log the final destination for debugging
-    logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
-    
-    // Redirect with tenant ID if we have it
-    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
-        return;
-      }
-    }
-    
-    // Log the final destination for debugging
-    logger.debug('[SubscriptionForm] Redirecting to dashboard with tenant ID:', tenantId);
-    
-    // Redirect with tenant ID if we have it
-    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
-        return;
-      }
-    }
-    
-    // Redirect with tenant ID if we have it
-    window.location.href = `/${tenantId}/dashboard?newAccount=true&plan=free&freePlan=true`;
+    // Trigger the main continue handler which now calls backend for all plans
+    await handleContinue();
   };
   
   // Handle plan card click
