@@ -56,9 +56,10 @@ def get_user_onboarding_status(user):
         
         # Get tenant from business if available
         if hasattr(progress, 'business') and progress.business:
-            tenant = progress.business
-            # If we have a business/tenant, onboarding should be complete
-            if tenant and needs_onboarding:
+            # Business is not a Tenant - need to get the actual tenant from user
+            tenant = user.tenant if hasattr(user, 'tenant') and user.tenant else None
+            # If we have a business, onboarding should be complete
+            if progress.business and needs_onboarding:
                 logger.warning(f"[SessionFix] User {user.email} has business but needs_onboarding=True - fixing")
                 needs_onboarding = False
                 onboarding_completed = True
@@ -163,6 +164,12 @@ def apply_session_fix():
             kwargs['onboarding_completed'] = onboarding_completed
             if tenant:
                 kwargs['tenant'] = tenant
+            elif 'tenant' in kwargs:
+                # If a Business object was passed as tenant, remove it
+                # The service will handle getting the proper tenant from the user
+                if hasattr(kwargs.get('tenant'), 'owner_id'):
+                    logger.warning(f"[SessionFix] Removing invalid tenant (Business object) from kwargs")
+                    kwargs.pop('tenant', None)
                 
             logger.info(f"[SessionFix] Intercepted create_session for {user.email}: "
                        f"setting needs_onboarding={needs_onboarding}")
