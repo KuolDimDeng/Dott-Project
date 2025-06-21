@@ -136,7 +136,7 @@ def apply_session_fix():
     Apply the fix to SessionService by monkey patching the create_session method
     """
     try:
-        from custom_auth.services import SessionService
+        from session_manager.services import SessionService
         
         # Store original method for fallback
         if not hasattr(SessionService, '_original_create_session'):
