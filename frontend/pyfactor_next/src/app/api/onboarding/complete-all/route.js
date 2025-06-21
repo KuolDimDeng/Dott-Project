@@ -427,10 +427,12 @@ export async function POST(request) {
           // Step 3: Mark onboarding as complete for ALL plans
           // CRITICAL FIX: Always mark onboarding as complete, regardless of payment status
           // The backend should set needs_onboarding = false for all users who complete onboarding
-          console.log('[CompleteOnboarding] Step 3: FORCE marking onboarding as complete for plan:', onboardingData.selectedPlan);
+          console.log('[CompleteOnboarding] Step 3: Using force-complete endpoint to ensure OnboardingProgress exists for plan:', onboardingData.selectedPlan);
           
-          // Call complete endpoint with force_complete flag to ensure backend updates needs_onboarding
-          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+          // FIXED: Call force-complete first to ensure OnboardingProgress exists
+          // The force-complete endpoint uses get_or_create which prevents 404 errors
+          // Original issue: /api/onboarding/complete/ expects OnboardingProgress to exist but SaveStep1View doesn't create it
+          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/force-complete/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -549,34 +551,8 @@ export async function POST(request) {
             // Don't fail the process, just log
           }
           
-          // CRITICAL: Force complete onboarding in backend to ensure it's saved
-          console.log('[CompleteOnboarding] 🚨 FORCING backend completion to ensure proper save...');
-          try {
-            const forceCompleteResponse = await fetch(`${apiBaseUrl}/api/onboarding/force-complete/`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Session ${sessionData.sessionToken}`,
-                'X-User-Email': user.email,
-                'X-User-Sub': user.sub
-              },
-              body: JSON.stringify({
-                selected_plan: onboardingData.selectedPlan,
-                payment_verified: onboardingData.selectedPlan === 'free' || onboardingData.paymentCompleted,
-                payment_id: onboardingData.paymentIntentId || onboardingData.subscriptionId,
-                tenant_id: tenantId
-              })
-            });
-            
-            if (forceCompleteResponse.ok) {
-              const forceResult = await forceCompleteResponse.json();
-              console.log('[CompleteOnboarding] ✅ Force complete successful:', forceResult);
-            } else {
-              console.error('[CompleteOnboarding] ❌ Force complete failed, status:', forceCompleteResponse.status);
-            }
-          } catch (error) {
-            console.error('[CompleteOnboarding] ❌ Force complete error:', error);
-          }
+          // Force-complete already called above, no need to call again
+          console.log('[CompleteOnboarding] ✅ Force-complete already called with OnboardingProgress creation');
         } else {
           console.error('[CompleteOnboarding] Business info submission failed, status:', businessResponse.status);
           return NextResponse.json({

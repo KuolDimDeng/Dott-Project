@@ -670,3 +670,19 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - bash scripts/quick_fix_django_sessions.sh
   - python manage.py migrate sessions --run-syncdb
   - python scripts/fix_django_session_table.py
+
+### Version0001_fix_onboarding_progress_creation_complete-all.js
+- **Version**: 0001
+- **Purpose**: Fix OnboardingProgress record not being created when users complete onboarding
+- **Status**: ✅ EXECUTED SUCCESSFULLY (2025-06-21)
+- **Issue**: CompleteOnboardingView expects OnboardingProgress to exist but SaveStep1View doesn't create it
+- **Solution**: 
+  - Modified complete-all to call force-complete endpoint instead of regular complete
+  - force-complete endpoint uses get_or_create to ensure OnboardingProgress exists
+  - Prevents 404 errors when completing onboarding
+- **Files Modified**: 
+  - src/app/api/onboarding/complete-all/route.js
+- **Backend Context**:
+  - /api/onboarding/complete/ requires existing OnboardingProgress record
+  - /api/onboarding/force-complete/ uses get_or_create to handle missing records
+  - SaveStep1View (business info save) does NOT create OnboardingProgress

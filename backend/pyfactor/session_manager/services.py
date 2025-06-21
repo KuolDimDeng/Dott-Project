@@ -189,7 +189,15 @@ class SessionService:
                     print(f"[SessionService] Found OnboardingProgress: status={onboarding_progress.onboarding_status}, setup_completed={onboarding_progress.setup_completed}")
                     
                     # Determine onboarding status based on OnboardingProgress
-                    if onboarding_progress.onboarding_status == 'complete' or onboarding_progress.setup_completed:
+                    # Check multiple indicators of completion
+                    is_complete = (
+                        onboarding_progress.onboarding_status == 'complete' or 
+                        onboarding_progress.setup_completed or
+                        onboarding_progress.current_step == 'complete' or
+                        (onboarding_progress.completed_steps and 'payment' in onboarding_progress.completed_steps)
+                    )
+                    
+                    if is_complete:
                         needs_onboarding = False
                         onboarding_completed = True
                         onboarding_step = 'complete'
@@ -208,6 +216,14 @@ class SessionService:
                         onboarding_step = kwargs.pop('onboarding_step')
                 else:
                     print(f"[SessionService] No OnboardingProgress found for user")
+                    
+                    # Check if user has a tenant and subscription plan as indicators of completion
+                    if tenant and kwargs.get('subscription_plan', 'free') != 'free':
+                        print(f"[SessionService] User has tenant and paid subscription - marking onboarding complete")
+                        needs_onboarding = False
+                        onboarding_completed = True
+                        onboarding_step = 'complete'
+                    
                     # Still need to pop these from kwargs if they exist to avoid duplicates
                     kwargs.pop('needs_onboarding', None)
                     kwargs.pop('onboarding_completed', None)
