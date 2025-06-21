@@ -129,6 +129,15 @@ export async function POST(request) {
     const { accessToken, idToken, user } = await request.json();
     
     console.log('[Session-V2] Creating new session for:', user?.email);
+    console.log('[Session-V2] Access token received:', accessToken ? `${accessToken.substring(0, 20)}...` : 'MISSING');
+    console.log('[Session-V2] Request payload:', { hasAccessToken: !!accessToken, hasIdToken: !!idToken, hasUser: !!user });
+    
+    if (!accessToken) {
+      console.error('[Session-V2] No access token provided in request');
+      return NextResponse.json({ 
+        error: 'Access token is required' 
+      }, { status: 400 });
+    }
     
     // Create session with Django backend using Auth0 token
     const authResponse = await fetch(`${API_URL}/api/sessions/create/`, {
