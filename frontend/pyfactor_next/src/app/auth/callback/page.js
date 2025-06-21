@@ -204,25 +204,8 @@ export default function Auth0CallbackPage() {
           
           console.log('[Auth0Callback] Redirecting to:', backendUser.redirectUrl);
           
-          // Use secure session bridge for non-onboarding flows
-          const token = sessionToken || sessionData.accessToken || sessionResult?.session_token;
-          
-          if (!backendUser.needsOnboarding && token) {
-            // Store session data in sessionStorage for bridge
-            const bridgeData = {
-              token: token,
-              redirectUrl: backendUser.redirectUrl,
-              timestamp: Date.now()
-            };
-            
-            sessionStorage.setItem('session_bridge', JSON.stringify(bridgeData));
-            
-            // Redirect to session bridge
-            router.replace('/auth/session-bridge');
-          } else {
-            // Direct redirect for onboarding
-            router.replace(backendUser.redirectUrl);
-          }
+          // Always use the session-loading page to ensure backend session is ready
+          router.replace(backendUser.redirectUrl);
           return;
         }
         

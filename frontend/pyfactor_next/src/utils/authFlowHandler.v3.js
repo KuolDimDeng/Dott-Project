@@ -129,54 +129,22 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Store user data in session storage for other components to use
     sessionStorage.setItem('currentUser', JSON.stringify(userData));
     
-    // Step 3: Get UNIFIED profile with business logic (PERMANENT FIX)
-    console.log('[AuthFlowHandler.v3] PERMANENT FIX - Fetching unified profile...');
+    // Step 3: Instead of fetching unified profile here, redirect to session-loading
+    // This prevents race conditions by ensuring backend session is fully established
+    console.log('[AuthFlowHandler.v3] RACE CONDITION FIX - Redirecting to session-loading...');
     
-    const profileResponse = await fetch('/api/auth/unified-profile', {
-      headers: {
-        'Authorization': `Bearer ${authData.accessToken}`,
-      },
-      credentials: 'include'
-    });
+    // The session-loading page will:
+    // 1. Wait for backend session to be fully created
+    // 2. Fetch complete session data including onboarding status
+    // 3. Make the correct routing decision with all data available
     
-    let profileData = {};
-    if (profileResponse.ok) {
-      profileData = await profileResponse.json();
-      console.log('[AuthFlowHandler.v3] PERMANENT FIX - Unified profile retrieved', {
-        needsOnboarding: profileData.needsOnboarding,
-        onboardingCompleted: profileData.onboardingCompleted,
-        tenantId: profileData.tenantId,
-        businessRule: profileData.businessRule
-      });
-    } else {
-      console.error('[AuthFlowHandler.v3] PERMANENT FIX - Unified profile failed:', profileResponse.status);
-    }
+    const redirectUrl = '/auth/session-loading';
     
-    // Step 4: Determine redirect based on UNIFIED PROFILE data (PERMANENT FIX)
-    // Use the authoritative business logic result from unified profile
-    const needsOnboarding = profileData?.needsOnboarding ?? data.needs_onboarding ?? true;
-    const tenantId = profileData?.tenantId ?? data.tenant_id;
-    
-    let redirectUrl;
-    // CRITICAL: Only check needs_onboarding from backend, ignore tenant status
-    if (needsOnboarding) {
-      redirectUrl = '/onboarding';
-    } else if (tenantId) {
-      redirectUrl = `/${tenantId}/dashboard`;
-    } else {
-      // This shouldn't happen - if onboarding is complete, user should have tenant
-      console.error('[AuthFlowHandler.v3] User completed onboarding but has no tenant!');
-      redirectUrl = '/onboarding';
-    }
-    
-    console.log('[AuthFlowHandler.v3] PERMANENT FIX - Redirect decision:', {
-      tenantId,
-      needsOnboarding,
+    console.log('[AuthFlowHandler.v3] Using session-loading page to prevent race conditions', {
+      provisionalTenantId: data.tenant_id,
+      provisionalNeedsOnboarding: data.needs_onboarding,
       redirectUrl,
-      unifiedProfileData: !!profileData,
-      businessRule: profileData?.businessRule,
-      currentURL: window.location.href,
-      currentPath: window.location.pathname
+      reason: 'Ensuring backend session is fully established before routing'
     });
     
     // Session updates are handled automatically by the backend in session-v2 system
@@ -185,10 +153,6 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
     // Return complete user data with redirect URL
     return {
       ...userData,
-      ...profileData,
-      tenantId,
-      needsOnboarding,
-      onboardingCompleted: !needsOnboarding, // Derived from needsOnboarding
       redirectUrl
     };
     
