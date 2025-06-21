@@ -31,7 +31,7 @@ try:
     user = User.objects.get(email=email)
     print(f"\n✅ Found user: {email}")
     print(f"   - Current tenant: {user.tenant}")
-    print(f"   - needs_onboarding: {user.needs_onboarding}")
+    print(f"   - User ID: {user.id}")
     
     # Check OnboardingProgress
     try:
@@ -66,9 +66,7 @@ try:
                 # Assign tenant to user
                 user.tenant = tenant
                 user.business_id = business_id
-                user.needs_onboarding = False
-                user.onboarding_completed = True
-                user.save(update_fields=['tenant', 'business_id', 'needs_onboarding', 'onboarding_completed'])
+                user.save(update_fields=['tenant', 'business_id'])
                 
                 # Update progress
                 progress.setup_completed = True
@@ -77,22 +75,29 @@ try:
                 print(f"\n✅ Fixed user tenant assignment:")
                 print(f"   - Tenant: {user.tenant.name}")
                 print(f"   - Tenant ID: {user.tenant.id}")
-                print(f"   - needs_onboarding: {user.needs_onboarding}")
                 
-                # Clear sessions
+                # Clear sessions and update their onboarding status
                 if hasattr(user, 'sessions'):
-                    user.sessions.all().delete()
-                    print(f"   ✅ Cleared active sessions")
+                    from session_manager.models import UserSession
+                    # Update all sessions to reflect onboarding complete
+                    user.sessions.all().update(
+                        needs_onboarding=False,
+                        onboarding_completed=True
+                    )
+                    print(f"   ✅ Updated all sessions to onboarding_completed=True")
         
         elif user.tenant:
             print(f"\n✅ User already has tenant: {user.tenant.name}")
             
-            # Just ensure flags are correct
-            if user.needs_onboarding:
-                user.needs_onboarding = False
-                user.onboarding_completed = True
-                user.save(update_fields=['needs_onboarding', 'onboarding_completed'])
-                print(f"   ✅ Fixed onboarding flags")
+            # Update sessions to ensure onboarding is marked complete
+            if hasattr(user, 'sessions'):
+                from session_manager.models import UserSession
+                updated = user.sessions.filter(needs_onboarding=True).update(
+                    needs_onboarding=False,
+                    onboarding_completed=True
+                )
+                if updated > 0:
+                    print(f"   ✅ Fixed {updated} sessions with incorrect onboarding status")
         
     except OnboardingProgress.DoesNotExist:
         print(f"\n❌ No OnboardingProgress found for user")
