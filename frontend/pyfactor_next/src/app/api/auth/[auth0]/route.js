@@ -182,7 +182,9 @@ async function handleCallback(request, { params }) {
         // This fixes the issue where backend always sets needs_onboarding=true
         console.log('[Auth0] Using Google session fix for proper onboarding status');
         
-        const sessionResponse = await fetch('/api/auth/google-session-fix', {
+        // Use full URL for server-side fetch
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://dottapps.com';
+        const sessionResponse = await fetch(`${baseUrl}/api/auth/google-session-fix`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
