@@ -405,153 +405,23 @@ export default function TenantDashboard() {
             }
           }
           
-          // Check if user needs onboarding
-          // Special case: if coming from payment completion, trust that onboarding is done
-          const paymentCompleted = searchParams.get('payment_completed') === 'true';
-          const fromOnboarding = searchParams.get('from_onboarding') === 'true';
-          
-          // If coming from onboarding completion, force a session refresh first
-          if (fromOnboarding) {
-            logger.info('[TenantDashboard] Coming from onboarding, forcing session sync');
-            try {
-              const syncResponse = await fetch('/api/auth/sync-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-                credentials: 'include',
-                body: JSON.stringify({
-                  tenantId: tenantId,
-                  needsOnboarding: false,
-                  onboardingCompleted: true,
-                  subscriptionPlan: profileData.subscriptionPlan || 'free'
-                })
-              });
-              
-              if (syncResponse.ok) {
-                logger.info('[TenantDashboard] Session synced after onboarding');
-                // Re-fetch the profile to get updated data
-                const updatedProfileResponse = await fetch('/api/auth/profile', {
-                  cache: 'no-store',
-                  headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                  ,
-        credentials: 'include'}
-                });
-                
-                if (updatedProfileResponse.ok) {
-                  profileData = await updatedProfileResponse.json();
-                  logger.info('[TenantDashboard] Updated profile data after sync:', {
-                    needsOnboarding: profileData.needsOnboarding,
-                    onboardingCompleted: profileData.onboardingCompleted
-                  });
-                }
-              }
-            } catch (syncError) {
-              logger.error('[TenantDashboard] Error syncing session after onboarding:', syncError);
-            }
-          }
-          
-          // Check if we have onboarding completion indicators
-          // Check the secure session cookie first (more reliable)
-          let sessionOnboardingCompleted = false;
-          try {
-            // Try to get completion status from the encrypted session
-            const sessionResponse = await fetch('/api/auth/sync-session', { 
-              method: 'GET',
-              credentials: 'include'
-            });
-            if (sessionResponse.ok) {
-              const sessionData = await sessionResponse.json();
-              sessionOnboardingCompleted = sessionData.onboardingCompleted === true;
-              logger.info('[TenantDashboard] Onboarding status from secure session:', {
-                onboardingCompleted: sessionData.onboardingCompleted,
-                needsOnboarding: sessionData.needsOnboarding
-              });
-            }
-          } catch (e) {
-            logger.warn('[TenantDashboard] Failed to check secure session status');
-          }
-          
-          // Check for immediate onboarding completion indicator
-          const justCompletedCookie = Cookies.get('onboarding_just_completed');
-          const justCompleted = justCompletedCookie === 'true';
-          
-          if (justCompleted) {
-            logger.info('[TenantDashboard] Found immediate onboarding completion indicator');
-          }
-          
-          // Fallback: Check the client-side cookie (less secure but faster)
-          const onboardingStatusCookie = Cookies.get('onboarding_status');
-          let cookieOnboardingCompleted = false;
-          if (onboardingStatusCookie) {
-            try {
-              const statusData = JSON.parse(onboardingStatusCookie);
-              cookieOnboardingCompleted = statusData.completed === true;
-              logger.info('[TenantDashboard] Onboarding status from client cookie:', statusData);
-            } catch (e) {
-              logger.warn('[TenantDashboard] Failed to parse onboarding_status cookie');
-            }
-          }
-          
-          logger.info('[TenantDashboard] Onboarding check:', {
+          // CRITICAL: Only trust backend's single source of truth for onboarding status
+          // Backend's profileData.needsOnboarding is the ONLY source we trust
+          logger.info('[TenantDashboard] Backend onboarding status:', {
             needsOnboarding: profileData.needsOnboarding,
             onboardingCompleted: profileData.onboardingCompleted,
-            cookieOnboardingCompleted: cookieOnboardingCompleted,
-            paymentCompleted: paymentCompleted,
-            searchParams: Object.fromEntries(searchParams.entries())
+            tenantId: profileData.tenantId || profileData.tenant_id
           });
           
-          // Trust secure session first, then other indicators
-          const shouldSkipOnboarding = justCompleted || fromOnboarding || sessionOnboardingCompleted || profileData.onboardingCompleted || paymentCompleted || cookieOnboardingCompleted;
-          
-          if (profileData.needsOnboarding && !shouldSkipOnboarding) {
-            logger.info('[TenantDashboard] User needs onboarding, redirecting');
+          // If backend says user needs onboarding, redirect them
+          if (profileData.needsOnboarding === true) {
+            logger.info('[TenantDashboard] Backend says user needs onboarding, redirecting');
             router.push('/onboarding');
             return;
           }
-          
-          // If payment was just completed, force sync the session
-          if (paymentCompleted) {
-            logger.info('[TenantDashboard] Payment completed, forcing session sync');
-            try {
-              // Use sync-session endpoint (force-sync doesn't exist)
-              const syncResponse = await fetch('/api/auth/sync-session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' ,
-        credentials: 'include'},
-                credentials: 'include',
-                body: JSON.stringify({
-                  tenantId: tenantId,
-                  needsOnboarding: false,
-                  onboardingCompleted: true,
-                  subscriptionPlan: profileData.subscriptionPlan || 'free'
-                })
-              });
-              
-              if (syncResponse.ok) {
-                logger.info('[TenantDashboard] Session synced after payment');
-                
-                // Clean up URL parameters
-                const newUrl = new URL(window.location.href);
-                newUrl.searchParams.delete('payment_completed');
-                newUrl.searchParams.delete('from_onboarding');
-                
-                // Use replaceState to update URL without adding to history
-                window.history.replaceState({}, '', newUrl.toString());
-                
-                logger.info('[TenantDashboard] Cleaned URL parameters');
-                
-                // Override the profile data to skip onboarding check
-                profileData.needsOnboarding = false;
-                profileData.onboardingCompleted = true;
-                
-                // Continue with normal flow instead of reloading
-              }
-            } catch (syncError) {
-              logger.error('[TenantDashboard] Error syncing session:', syncError);
-            }
-          }
+          // Dashboard page should NOT check onboarding status - that's already been checked
+          // If user made it here, they should have access to the dashboard
+          logger.info('[TenantDashboard] User has access to dashboard');
           
           setUserAttributes(profileData);
           

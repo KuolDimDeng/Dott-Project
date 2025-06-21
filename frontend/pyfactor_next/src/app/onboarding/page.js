@@ -59,13 +59,17 @@ export default function OnboardingPageV2() {
         tenantId: session.user?.tenantId
       });
 
-      // If already completed, redirect to dashboard
-      if (session.user?.onboardingCompleted || session.user?.tenantId) {
+      // CRITICAL: Only check backend's onboarding status, not tenant ID
+      // Backend's needsOnboarding is the single source of truth
+      if (session.user?.needsOnboarding === false || session.user?.onboardingCompleted === true) {
         const tenantId = session.user?.tenantId;
         if (tenantId) {
-          logger.info('[OnboardingPage.v2] Onboarding already completed, redirecting to dashboard');
-          router.push(`/tenant/${tenantId}/dashboard`);
+          logger.info('[OnboardingPage.v2] Backend says onboarding completed, redirecting to dashboard');
+          router.push(`/${tenantId}/dashboard`);
           return;
+        } else {
+          logger.error('[OnboardingPage.v2] Onboarding completed but no tenant ID!');
+          // Let them continue with onboarding to fix this state
         }
       }
 

@@ -53,14 +53,17 @@ export default function Auth0CallbackPage() {
           redirectInput.type = 'hidden';
           redirectInput.name = 'redirectUrl';
           
-          // Handle case where backendTenantId is empty - fetch it from session
-          if (onboardingCompleted && !backendTenantId) {
-            console.log('[Auth0Callback] No tenant ID from backend, will fetch from session');
-            redirectInput.value = '/dashboard'; // Use generic dashboard, middleware will redirect to correct tenant
-          } else if (onboardingCompleted && backendTenantId) {
+          // Always trust backend's onboarding status
+          if (!onboardingCompleted) {
+            // Backend says onboarding is not complete - go to onboarding
+            redirectInput.value = '/onboarding';
+          } else if (backendTenantId) {
+            // Onboarding is complete and we have a tenant
             redirectInput.value = `/${backendTenantId}/dashboard`;
           } else {
-            redirectInput.value = '/onboarding';
+            // Onboarding complete but no tenant ID - shouldn't happen
+            console.error('[Auth0Callback] Onboarding complete but no tenant ID!');
+            redirectInput.value = '/dashboard'; // Let middleware handle redirect
           }
           
           form.appendChild(tokenInput);
@@ -88,17 +91,12 @@ export default function Auth0CallbackPage() {
           throw new Error('No user session found');
         }
         
-        // Merge backend session data with local session data
+        // Only update tenant ID from backend if provided
         if (backendTenantId) {
           sessionData.user.tenantId = backendTenantId;
           sessionData.user.tenant_id = backendTenantId;
         }
-        if (onboardingCompleted !== undefined) {
-          sessionData.user.onboardingCompleted = onboardingCompleted;
-          sessionData.user.onboarding_completed = onboardingCompleted;
-          sessionData.user.needsOnboarding = !onboardingCompleted;
-          sessionData.user.needs_onboarding = !onboardingCompleted;
-        }
+        // Trust backend session data for onboarding status - don't override
         
         setUser(sessionData);
         

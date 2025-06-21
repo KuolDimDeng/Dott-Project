@@ -148,22 +148,26 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       });
     }
     
-    // Step 4: Determine redirect based on comprehensive status
-    const needsOnboarding = data.needs_onboarding || profileData.needs_onboarding || !data.onboarding_completed;
-    const hasCompletedOnboarding = data.onboarding_completed || profileData.onboarding_completed;
+    // Step 4: Determine redirect based ONLY on backend's single source of truth
+    // Backend tells us if user needs onboarding, regardless of tenant status
+    const needsOnboarding = data.needs_onboarding ?? true; // Default to true if not specified
     const tenantId = data.tenant_id;
     
     let redirectUrl;
-    if (!tenantId || needsOnboarding || !hasCompletedOnboarding) {
+    // CRITICAL: Only check needs_onboarding from backend, ignore tenant status
+    if (needsOnboarding) {
       redirectUrl = '/onboarding';
-    } else {
+    } else if (tenantId) {
       redirectUrl = `/${tenantId}/dashboard`;
+    } else {
+      // This shouldn't happen - if onboarding is complete, user should have tenant
+      console.error('[AuthFlowHandler.v3] User completed onboarding but has no tenant!');
+      redirectUrl = '/onboarding';
     }
     
     console.log('[AuthFlowHandler.v3] Redirect decision:', {
       tenantId,
       needsOnboarding,
-      hasCompletedOnboarding,
       redirectUrl,
       currentURL: window.location.href,
       currentPath: window.location.pathname
@@ -178,7 +182,7 @@ export async function handlePostAuthFlow(authData, authMethod = 'oauth') {
       ...profileData,
       tenantId,
       needsOnboarding,
-      onboardingCompleted: hasCompletedOnboarding,
+      onboardingCompleted: !needsOnboarding, // Derived from needsOnboarding
       redirectUrl
     };
     
