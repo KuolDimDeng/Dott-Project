@@ -19,7 +19,8 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from custom_auth.models import CustomUser, OnboardingProgress
+from custom_auth.models import User
+from onboarding.models import OnboardingProgress
 from tenant.models import Tenant
 
 
@@ -27,7 +28,7 @@ def fix_user_onboarding(email):
     """Fix onboarding status for a specific user"""
     
     try:
-        user = CustomUser.objects.get(email=email)
+        user = User.objects.get(email=email)
         print(f"\n🔍 Checking user: {email}")
         print(f"   - Current needs_onboarding: {user.needs_onboarding}")
         print(f"   - Current onboarding_completed: {user.onboarding_completed}")
@@ -97,7 +98,7 @@ def fix_user_onboarding(email):
             print(f"\n✅ User onboarding status is already correct")
             return True
             
-    except CustomUser.DoesNotExist:
+    except User.DoesNotExist:
         print(f"\n❌ User {email} not found")
         return False
     except Exception as e:

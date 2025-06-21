@@ -17,7 +17,7 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from custom_auth.models import CustomUser, Tenant
+from custom_auth.models import User, Tenant
 from onboarding.models import OnboardingProgress
 from users.models import Business
 
@@ -28,7 +28,7 @@ print("=" * 70)
 email = "jubacargovillage@gmail.com"
 
 try:
-    user = CustomUser.objects.get(email=email)
+    user = User.objects.get(email=email)
     print(f"\n✅ Found user: {email}")
     print(f"   - Current tenant: {user.tenant}")
     print(f"   - needs_onboarding: {user.needs_onboarding}")
@@ -97,7 +97,7 @@ try:
     except OnboardingProgress.DoesNotExist:
         print(f"\n❌ No OnboardingProgress found for user")
         
-except CustomUser.DoesNotExist:
+except User.DoesNotExist:
     print(f"\n❌ User {email} not found")
 except Exception as e:
     print(f"\n❌ Error: {str(e)}")

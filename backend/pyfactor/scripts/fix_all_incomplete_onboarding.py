@@ -18,7 +18,8 @@ sys.path.append('/app')  # Render deployment path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dott_project.settings')
 django.setup()
 
-from custom_auth.models import CustomUser, OnboardingProgress
+from custom_auth.models import User
+from onboarding.models import OnboardingProgress
 from tenant.models import Tenant
 
 
@@ -28,7 +29,7 @@ def fix_all_incomplete_onboarding():
     print("\n🔍 Searching for users with incomplete onboarding status...\n")
     
     # Find all users who have completed onboarding but still marked as needs_onboarding
-    affected_users = CustomUser.objects.filter(
+    affected_users = User.objects.filter(
         needs_onboarding=True,
         tenant__isnull=False  # Has a tenant assigned
     ).select_related('tenant', 'onboardingprogress')
@@ -113,7 +114,7 @@ def fix_all_incomplete_onboarding():
     print("="*60 + "\n")
     
     # Also check for users without onboarding progress but with tenants
-    orphaned_users = CustomUser.objects.filter(
+    orphaned_users = User.objects.filter(
         tenant__isnull=False,
         onboardingprogress__isnull=True,
         needs_onboarding=True
