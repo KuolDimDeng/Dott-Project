@@ -14,7 +14,7 @@ import {
   ONBOARDING_STATUS,
   ONBOARDING_STEPS
 } from '@/constants/onboarding';
-import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+// Removed useOnboardingProgress - backend handles all progress updates
 import { useNotification } from '@/context/NotificationContext';
 
 // Subscription plans
@@ -118,7 +118,7 @@ const isValidUUID = (uuid) => {
 export default function SubscriptionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { updateOnboardingStep, STEPS } = useOnboardingProgress();
+  // Removed useOnboardingProgress - backend handles progress updates
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [submitting, setSubmitting] = useState(false);
@@ -334,19 +334,8 @@ export default function SubscriptionForm() {
         // Continue anyway - AppCache will serve as backup
       }
       
-      // Use the onboarding service to update progress
-      try {
-        // For free plans, mark as complete immediately
-        const stepStatus = plan.id === 'free' || plan.id === 'basic' ? 'complete' : 'subscription';
-        await updateOnboardingStep(stepStatus, {
-          'custom:subplan': plan.id,
-          'custom:subscriptioninterval': billingCycle
-        });
-        logger.info(`[SubscriptionForm] Updated onboarding progress to ${stepStatus} via API`);
-      } catch (progressError) {
-        logger.warn('[SubscriptionForm] API progress update error:', progressError);
-        // Continue despite error - we have fallbacks
-      }
+      // Backend handles onboarding progress updates automatically
+      logger.info(`[SubscriptionForm] Subscription selected: ${plan.id}, backend will handle progress`);
       
       // Store in sessionStorage for transitions
       try {

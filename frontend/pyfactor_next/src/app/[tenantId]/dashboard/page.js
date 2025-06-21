@@ -22,48 +22,7 @@ import { signIn } from '@/config/amplifyUnified';
 import Cookies from 'js-cookie';
 import SessionInitializer from '@/components/SessionInitializer';
 
-// Emergency recovery functions
-const checkEmergencyAccess = () => {
-  // Check for emergency tokens in cookies or localStorage
-  const hasEmergencyTokens = 
-    Cookies.get('tenant_id') || 
-    Cookies.get('subscription_plan') || 
-    localStorage.getItem('subscription_completed') === 'true';
-  
-  // If coming from subscription page, we should have these markers
-  const fromSubscription = window.location.search.includes('fromSubscription=true');
-  
-  logger.debug('[TenantDashboard] Emergency access check:', {
-    hasEmergencyTokens,
-    fromSubscription,
-    cookies: {
-      tenant_id: Cookies.get('tenant_id'),
-      subscription_plan: Cookies.get('subscription_plan')
-    }
-  });
-  
-  return hasEmergencyTokens && fromSubscription;
-};
-
-const recoverSession = async (tenantId) => {
-  try {
-    // Store the tenant ID as reliable for recovery
-    if (tenantId) {
-      storeReliableTenantId(tenantId);
-      localStorage.setItem('tenant_id', tenantId);
-      Cookies.set('tenant_id', tenantId, { path: '/', expires: 30 });
-    }
-    
-    // Set session recovery marker
-    sessionStorage.setItem('recovery_attempted', 'true');
-    sessionStorage.setItem('recovery_timestamp', new Date().toISOString());
-    
-    return true;
-  } catch (error) {
-    logger.error('[TenantDashboard] Session recovery failed:', error);
-    return false;
-  }
-};
+// Removed emergency access and recovery logic - only trust backend session
 
 // Enhanced authentication check with retry logic
 const checkAuthWithRetry = async (maxRetries = 3, delayMs = 1000) => {
@@ -139,7 +98,7 @@ export default function TenantDashboard() {
   const fromSubscription = searchParams.get('fromSubscription') === 'true';
   const sessionToken = searchParams.get('token');
   const bridgeToken = searchParams.get('bridge');
-  const emergencyAccess = fromSubscription && checkEmergencyAccess();
+  // Removed emergency access logic - only trust backend session
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -244,19 +203,7 @@ export default function TenantDashboard() {
           }
         }
         
-        // If this is from subscription page and we have emergency tokens
-        if (emergencyAccess) {
-          logger.info('[TenantDashboard] Using emergency access mode from subscription');
-          
-          // Recover the session using fallback data
-          await recoverSession(tenantId);
-          
-          // Set tenant status to active to allow access
-          setTenantStatus('active');
-          setAuthChecked(true);
-          setIsLoading(false);
-          return;
-        }
+        // Removed emergency access logic - only trust backend session
         
         // Check if we just came from auth
         const fromAuth = searchParams.get('fromAuth') === 'true';
@@ -433,7 +380,7 @@ export default function TenantDashboard() {
           }
           
           // SECURITY: Ensure user has completed onboarding and has a valid tenant
-          if (!userTenantId && !emergencyAccess) {
+          if (!userTenantId) {
             logger.error('[TenantDashboard] Security: No valid tenant ID for user');
             setError('No valid tenant found. Please complete onboarding.');
             router.push('/onboarding');
@@ -483,22 +430,12 @@ export default function TenantDashboard() {
           }
         }
         
-        // If we have idToken in cookies/storage but auth check failed,
-        // try emergency fallback
-        if (idToken || emergencyAccess) {
-          logger.info('[TenantDashboard] Using emergency token fallback');
-          
-          // Attempt to recover session
-          const recovered = await recoverSession(tenantId);
-          
-          if (recovered) {
-            setTenantStatus('active');
-            setAuthChecked(true);
-          } else {
-            // If recovery failed, redirect to sign in
-            setError('Your session has expired. Please sign in again.');
-            router.push('/auth/signin');
-          }
+        // If we have idToken but auth check failed, redirect to sign in
+        if (idToken) {
+          logger.info('[TenantDashboard] IdToken found but auth failed, redirecting to sign in');
+          setError('Your session has expired. Please sign in again.');
+          router.push('/auth/signin');
+          return;
         } else {
           // No tokens at all, redirect to sign in
           logger.error('[TenantDashboard] No valid authentication found');
@@ -511,7 +448,7 @@ export default function TenantDashboard() {
     };
     
     initializeDashboard();
-  }, [tenantId, router, fromSignIn, emergencyAccess, searchParams]);
+  }, [tenantId, router, fromSignIn, searchParams]);
 
   // If still initializing, show loader
   if (isLoading) {

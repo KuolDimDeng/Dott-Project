@@ -20,19 +20,13 @@ export async function middleware(request) {
     length: c.value ? c.value.length : 0
   })));
   
-  // Check specific session cookies
+  // Check only session cookies - ignore onboarding cookies
   const sid = cookies.get('sid');
   const sessionToken = cookies.get('session_token');
-  const onboardingJustCompleted = cookies.get('onboarding_just_completed');
-  const userTenantId = cookies.get('user_tenant_id');
-  const onboardingCompleted = cookies.get('onboardingCompleted');
   
   console.log('[Middleware] Session cookie status:', {
     sid: sid ? { exists: true, length: sid.value.length, value: sid.value.substring(0, 8) + '...' } : { exists: false },
-    sessionToken: sessionToken ? { exists: true, length: sessionToken.value.length, value: sessionToken.value.substring(0, 8) + '...' } : { exists: false },
-    onboardingJustCompleted: onboardingJustCompleted ? onboardingJustCompleted.value : null,
-    userTenantId: userTenantId ? userTenantId.value : null,
-    onboardingCompleted: onboardingCompleted ? onboardingCompleted.value : null
+    sessionToken: sessionToken ? { exists: true, length: sessionToken.value.length, value: sessionToken.value.substring(0, 8) + '...' } : { exists: false }
   });
   
   // Debug logging for double tenant ID issue
@@ -85,17 +79,7 @@ export async function middleware(request) {
       console.log('[Middleware] ❌ NO SESSION COOKIES FOUND!');
       console.log('[Middleware] Debug - All cookies:', cookieList.map(c => c.name));
       
-      // Check if user just completed onboarding
-      if (onboardingJustCompleted === 'true' || onboardingCompleted === 'true') {
-        console.log('[Middleware] ✅ User just completed onboarding, allowing temporary access');
-        console.log('[Middleware] - onboarding_just_completed:', onboardingJustCompleted);
-        console.log('[Middleware] - onboardingCompleted:', onboardingCompleted);
-        console.log('[Middleware] - userTenantId:', userTenantId);
-        const response = NextResponse.next();
-        return addSecurityHeaders(response);
-      }
-      
-      // No session, redirect to login
+      // No session, redirect to login - no exceptions
       console.log('[Middleware] 🚫 REDIRECTING TO LOGIN - No valid session found');
       console.log('[Middleware] - From path:', pathname);
       console.log('[Middleware] - Redirect URL:', `/auth/signin?returnTo=${encodeURIComponent(pathname)}`);
