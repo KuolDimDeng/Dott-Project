@@ -48,8 +48,8 @@ class SessionSerializer(serializers.ModelSerializer):
         return str(obj.session_id)
     
     def get_user(self, obj):
-        """Return user information"""
-        return {
+        """Return user information including business details"""
+        user_data = {
             'id': obj.user.id,
             'email': obj.user.email,
             'name': getattr(obj.user, 'name', ''),
@@ -57,13 +57,37 @@ class SessionSerializer(serializers.ModelSerializer):
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', '')
         }
+        
+        # Include business information from OnboardingProgress if available
+        try:
+            from onboarding.models import OnboardingProgress
+            onboarding = OnboardingProgress.objects.filter(user=obj.user).first()
+            if onboarding:
+                user_data['business_name'] = onboarding.business_name
+                user_data['businessName'] = onboarding.business_name  # Both formats for compatibility
+                user_data['business_type'] = onboarding.business_type
+                user_data['businessType'] = onboarding.business_type
+                user_data['onboardingProgress'] = {
+                    'businessName': onboarding.business_name,
+                    'businessType': onboarding.business_type,
+                    'country': onboarding.country,
+                    'legalStructure': onboarding.legal_structure,
+                    'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None
+                }
+        except Exception as e:
+            # Don't fail if onboarding info is not available
+            pass
+            
+        return user_data
     
     def get_tenant(self, obj):
         """Return tenant information"""
         if obj.tenant:
             return {
                 'id': str(obj.tenant.id),
-                'name': obj.tenant.name
+                'name': obj.tenant.name,
+                'business_name': obj.tenant.name,  # Tenant name is the business name
+                'subscription_plan': getattr(obj.tenant, 'subscription_plan', obj.subscription_plan)
             }
         return None
 
