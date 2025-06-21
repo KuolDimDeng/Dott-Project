@@ -95,7 +95,9 @@
       "Bash(true)",
       "Bash(./scripts/update_signin_form.sh:*)",
       "Bash(timeout 30 pnpm run build:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(git revert:*)",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }
