@@ -161,7 +161,7 @@ function consolidateProfileData(consolidatedData, onboardingStatus) {
 }
 
 export async function GET(request) {
-  console.log('[UnifiedProfile] === PERMANENT FIX ENDPOINT CALLED ===');
+  console.log('[UnifiedProfile] === PERMANENT FIX ENDPOINT CALLED v2 ===');
   
   try {
     const cookieStore = await cookies();
@@ -190,7 +190,7 @@ export async function GET(request) {
     // Step 3: Consolidate profile data using authoritative onboarding status
     const profileResponse = consolidateProfileData(consolidatedData, onboardingStatus);
     
-    console.log('[UnifiedProfile] === FINAL UNIFIED RESPONSE ===');
+    console.log('[UnifiedProfile] === FINAL UNIFIED RESPONSE v2 ===');
     console.log('[UnifiedProfile] needsOnboarding:', profileResponse.needsOnboarding);
     console.log('[UnifiedProfile] onboardingCompleted:', profileResponse.onboardingCompleted);
     console.log('[UnifiedProfile] tenantId:', profileResponse.tenantId);
