@@ -52,7 +52,16 @@ export default function Auth0CallbackPage() {
           const redirectInput = document.createElement('input');
           redirectInput.type = 'hidden';
           redirectInput.name = 'redirectUrl';
-          redirectInput.value = onboardingCompleted ? `/${backendTenantId}/dashboard` : '/onboarding';
+          
+          // Handle case where backendTenantId is empty - fetch it from session
+          if (onboardingCompleted && !backendTenantId) {
+            console.log('[Auth0Callback] No tenant ID from backend, will fetch from session');
+            redirectInput.value = '/dashboard'; // Use generic dashboard, middleware will redirect to correct tenant
+          } else if (onboardingCompleted && backendTenantId) {
+            redirectInput.value = `/${backendTenantId}/dashboard`;
+          } else {
+            redirectInput.value = '/onboarding';
+          }
           
           form.appendChild(tokenInput);
           form.appendChild(redirectInput);

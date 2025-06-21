@@ -75,8 +75,8 @@ export async function POST(request) {
     
     const sessionData = await sessionResponse.json();
     console.log('[EstablishSession] Session validated:', {
-      email: sessionData.email,
-      tenantId: sessionData.tenant_id,
+      email: sessionData.email || sessionData.user?.email,
+      tenantId: sessionData.tenant_id || sessionData.tenant?.id,
       needsOnboarding: sessionData.needs_onboarding,
       securityInfo: sessionData.security
     });
@@ -85,6 +85,15 @@ export async function POST(request) {
     if (sessionData.security?.requires_verification) {
       console.warn('[EstablishSession] Session requires additional verification');
       // Could redirect to verification page
+    }
+    
+    // Handle generic /dashboard redirect by including tenant ID
+    if (redirectUrl === '/dashboard') {
+      const tenantId = sessionData.tenant_id || sessionData.tenant?.id;
+      if (tenantId) {
+        console.log('[EstablishSession] Updating /dashboard redirect to include tenant ID:', tenantId);
+        redirectUrl = `/${tenantId}/dashboard`;
+      }
     }
     
     // Create response with redirect

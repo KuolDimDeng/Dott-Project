@@ -230,7 +230,15 @@ async function handleCallback(request, { params }) {
         
         const sessionData = await sessionResponse.json();
         
-        logger.info('[Auth0] Backend session response:', sessionData);
+        logger.info('[Auth0] Backend session response:', {
+          session_token: sessionData.session_token,
+          expires_at: sessionData.expires_at,
+          user: sessionData.user,
+          tenant: sessionData.tenant,
+          needs_onboarding: sessionData.needs_onboarding,
+          onboarding_completed: sessionData.onboarding_completed,
+          subscription_plan: sessionData.subscription_plan
+        });
         
         // Extract session token from backend response
         const sessionToken = sessionData.session_token || sessionData.session_id;
@@ -238,7 +246,8 @@ async function handleCallback(request, { params }) {
         // CRITICAL: Respect backend's needs_onboarding flag
         // This ensures Google OAuth users who completed onboarding don't get redirected back
         const needsOnboarding = sessionData.needs_onboarding === true || sessionData.needs_onboarding === 'true';
-        const tenantId = sessionData.tenant_id;
+        // Backend returns tenant as nested object for Google OAuth
+        const tenantId = sessionData.tenant_id || sessionData.tenant?.id;
         
         logger.info('[Auth0] Backend session created:', {
           sessionId: sessionToken,
