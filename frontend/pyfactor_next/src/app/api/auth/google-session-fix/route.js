@@ -57,15 +57,31 @@ export async function POST(request) {
     
     if (statusResponse.ok) {
       const statusData = await statusResponse.json();
-      actualNeedsOnboarding = !statusData.setup_completed && !statusData.onboarding_completed;
+      
+      // Check multiple indicators of onboarding completion
+      const hasCompletedOnboarding = 
+        statusData.setup_completed === true ||
+        statusData.onboarding_completed === true ||
+        statusData.status === 'complete' ||
+        statusData.current_step === 'complete';
+      
+      actualNeedsOnboarding = !hasCompletedOnboarding;
       actualTenantId = statusData.tenant_id || statusData.tenant?.id;
       
       console.log('[GoogleSessionFix] Actual onboarding status:', {
         setup_completed: statusData.setup_completed,
         onboarding_completed: statusData.onboarding_completed,
+        status: statusData.status,
+        current_step: statusData.current_step,
         needs_onboarding: actualNeedsOnboarding,
         tenant_id: actualTenantId
       });
+    } else {
+      // If no onboarding status exists, check if user has any sessions marked as complete
+      console.log('[GoogleSessionFix] No onboarding status found, checking session history');
+      
+      // Default to true unless we find evidence of completion
+      actualNeedsOnboarding = sessionData.needs_onboarding !== false;
     }
     
     // Step 3: If user has completed onboarding but session says they haven't, fix it
