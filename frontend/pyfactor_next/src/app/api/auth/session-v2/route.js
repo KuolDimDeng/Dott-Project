@@ -6,9 +6,77 @@ import { generateCSRFToken } from '@/utils/csrf';
  * Server-Side Session Management - Version 2
  * Following Wave/Stripe pattern: Only session ID in cookies
  * All session data lives in Django backend
+ * WITH REDIS CACHING for performance
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+const CACHE_TTL = 300; // 5 minutes
+
+// Import Redis functionality
+async function getCachedSession(sessionId) {
+  try {
+    const cacheUrl = process.env.NODE_ENV === 'production' 
+      ? '/api/cache/session'
+      : 'http://localhost:3000/api/cache/session';
+      
+    const response = await fetch(cacheUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'get', sessionId })
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.session) {
+        console.log('[Session-V2] ✅ Redis cache HIT');
+        return data.session;
+      }
+    }
+  } catch (error) {
+    console.warn('[Session-V2] Redis cache check failed:', error);
+  }
+  console.log('[Session-V2] ❌ Redis cache MISS');
+  return null;
+}
+
+async function setCachedSession(sessionId, sessionData) {
+  try {
+    const cacheUrl = process.env.NODE_ENV === 'production' 
+      ? '/api/cache/session'
+      : 'http://localhost:3000/api/cache/session';
+      
+    await fetch(cacheUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        action: 'set', 
+        sessionId, 
+        sessionData, 
+        ttl: CACHE_TTL 
+      })
+    });
+    console.log('[Session-V2] ✅ Session cached in Redis');
+  } catch (error) {
+    console.warn('[Session-V2] Redis cache set failed:', error);
+  }
+}
+
+async function deleteCachedSession(sessionId) {
+  try {
+    const cacheUrl = process.env.NODE_ENV === 'production' 
+      ? '/api/cache/session'
+      : 'http://localhost:3000/api/cache/session';
+      
+    await fetch(cacheUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', sessionId })
+    });
+    console.log('[Session-V2] ✅ Session deleted from Redis');
+  } catch (error) {
+    console.warn('[Session-V2] Redis cache delete failed:', error);
+  }
+}
 
 export async function GET(request) {
   try {
@@ -22,29 +90,44 @@ export async function GET(request) {
       }, { status: 401 });
     }
     
-    console.log('[Session-V2] Found session ID, validating with backend...');
+    console.log('[Session-V2] Found session ID, checking Redis cache first...');
     
-    // Fetch session from backend - single source of truth
-    const response = await fetch(`${API_URL}/api/sessions/current/`, {
-      headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
-        'Cookie': `session_token=${sessionId.value}`
-      },
-      cache: 'no-store' // Never cache session data
-    });
+    // Check Redis cache first
+    const cachedSession = await getCachedSession(sessionId.value);
     
-    if (!response.ok) {
-      console.log('[Session-V2] Backend validation failed:', response.status);
-      // Clear invalid session
-      const res = NextResponse.json({ 
-        authenticated: false
-      }, { status: 401 });
-      res.cookies.delete('sid');
-      return res;
+    let sessionData;
+    if (cachedSession) {
+      // Use cached data
+      sessionData = cachedSession;
+      console.log('[Session-V2] Using cached session data');
+    } else {
+      // Fetch from backend if not cached
+      console.log('[Session-V2] Cache miss, fetching from backend...');
+      const response = await fetch(`${API_URL}/api/sessions/current/`, {
+        headers: {
+          'Authorization': `SessionID ${sessionId.value}`,
+          'Cookie': `session_token=${sessionId.value}`
+        },
+        cache: 'no-store' // Never cache session data
+      });
+      
+      if (!response.ok) {
+        console.log('[Session-V2] Backend validation failed:', response.status);
+        // Clear invalid session from cache too
+        await deleteCachedSession(sessionId.value);
+        const res = NextResponse.json({ 
+          authenticated: false
+        }, { status: 401 });
+        res.cookies.delete('sid');
+        return res;
+      }
+      
+      sessionData = await response.json();
+      console.log('[Session-V2] Full backend response:', sessionData);
+      
+      // Cache the session data
+      await setCachedSession(sessionId.value, sessionData);
     }
-    
-    const sessionData = await response.json();
-    console.log('[Session-V2] Full backend response:', sessionData);
     console.log('[Session-V2] Backend session valid:', {
       email: sessionData.email || sessionData.user?.email,
       tenantId: sessionData.tenant_id || sessionData.tenant?.id,
@@ -221,6 +304,10 @@ export async function DELETE() {
           'Authorization': `SessionID ${sessionId.value}`,
         }
       });
+      
+      // Clear from Redis cache
+      await deleteCachedSession(sessionId.value);
+      console.log('[Session-V2] Session cleared from Redis cache');
     }
     
     const response = NextResponse.json({ success: true });
