@@ -396,12 +396,46 @@ class CompleteOnboardingAPI(APIView):
                 'business_id': str(progress.business.id) if progress.business else None
             })
             
-            # Get tenant ID from user or progress
+            # Get tenant ID from user or progress, create if missing
             tenant_id = None
             if hasattr(request.user, 'tenant') and request.user.tenant:
                 tenant_id = str(request.user.tenant.id)
             elif progress.tenant_id:
                 tenant_id = str(progress.tenant_id)
+            
+            # Create tenant if missing (for users who signed in via Google OAuth)
+            if not tenant_id:
+                logger.warning(f"[CompleteOnboarding] User {request.user.email} has no tenant, creating one")
+                from custom_auth.models import Tenant
+                import uuid
+                
+                # Get business name from progress or use default
+                business_name = None
+                if progress.business and hasattr(progress.business, 'name'):
+                    business_name = progress.business.name
+                
+                if not business_name:
+                    business_name = f"{request.user.email}'s Business"
+                
+                # Create tenant
+                new_tenant = Tenant.objects.create(
+                    id=uuid.uuid4(),
+                    name=business_name,
+                    owner_id=str(request.user.id),
+                    is_active=True,
+                    rls_enabled=True
+                )
+                
+                # Update user's tenant relationship
+                request.user.tenant = new_tenant
+                request.user.save(update_fields=['tenant'])
+                
+                # Update progress tenant_id
+                progress.tenant_id = new_tenant.id
+                progress.save(update_fields=['tenant_id'])
+                
+                tenant_id = str(new_tenant.id)
+                logger.info(f"[CompleteOnboarding] Created tenant {tenant_id} for user {request.user.email}")
             
             # Update tenant name with the actual business name if available
             if tenant_id and progress.business:

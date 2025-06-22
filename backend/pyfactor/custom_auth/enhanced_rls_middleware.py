@@ -71,6 +71,10 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/diagnostic/restore/',  # Temporary restore endpoint for account restoration
             '/api/check-user/',  # User lookup endpoint for debugging
             '/api/onboarding/webhooks/stripe/',  # Stripe webhook doesn't have auth
+            '/api/onboarding/complete/',  # Allow onboarding completion without tenant
+            '/api/onboarding/api/complete/',  # Allow alternate URL pattern
+            '/api/onboarding/force-complete/',  # Force complete endpoint
+            '/force-complete/',  # Legacy force complete endpoint
         ]
         
         # Auth0 tenant management endpoints - require Auth0 authentication but can lookup/create tenant IDs
@@ -81,7 +85,6 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/onboarding/business-info/',  # Needs to work without tenant during initial onboarding
             '/api/onboarding/save-business-info/',  # Backend endpoint
             '/api/onboarding/subscription/save/',  # Subscription endpoint
-            '/api/onboarding/complete/',
             # Don't use catch-all for onboarding - be specific about which endpoints need special handling
             '/api/users/close-account/',  # Close account needs Auth0 authentication
             '/api/payments/create-subscription/',  # Stripe subscription creation during onboarding

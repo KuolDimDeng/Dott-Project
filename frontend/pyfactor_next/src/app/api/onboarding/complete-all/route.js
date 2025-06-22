@@ -66,11 +66,11 @@ export async function POST(request) {
     
     try {
       // Call backend complete endpoint with force flag
-      const completeResponse = await fetch(`${backendUrl}/api/onboarding/complete/`, {
+      const completeResponse = await fetch(`${backendUrl}/api/onboarding/api/complete/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.accessToken}`,
+          'Authorization': `Session ${session.sessionToken}`,
           'X-Session-Token': session.sessionToken || 'no-token'
         },
         body: JSON.stringify({
@@ -130,14 +130,19 @@ export async function POST(request) {
       
       // Session cache cleared automatically when backend updates
       
+      // Parse the response to get the tenant ID
+      const completeData = await completeResponse.json();
+      const finalTenantId = completeData.tenant_id || completeData.tenantId || tenantId || session.user.tenantId;
+      
       console.log('[OnboardingComplete] ✓ Onboarding completed successfully');
       console.log('[OnboardingComplete] User.onboarding_completed should now be True');
+      console.log('[OnboardingComplete] Final tenant ID:', finalTenantId);
       
       return NextResponse.json({
         success: true,
         message: 'Onboarding completed successfully',
-        tenantId: session.user.tenantId,
-        redirectUrl: `/${session.user.tenantId}/dashboard`,
+        tenantId: finalTenantId,
+        redirectUrl: `/${finalTenantId}/dashboard`,
         onboarding_completed: true,
         needs_onboarding: false
       });
@@ -146,11 +151,12 @@ export async function POST(request) {
       console.error('[OnboardingComplete] Backend error:', backendError);
       
       // Even if backend fails, we should update the session to prevent loops
+      const fallbackTenantId = tenantId || session.user.tenantId || session.user.tenant_id;
       return NextResponse.json({
         success: true,
         message: 'Onboarding marked complete (backend sync pending)',
-        tenantId: session.user.tenantId,
-        redirectUrl: `/${session.user.tenantId}/dashboard`,
+        tenantId: fallbackTenantId,
+        redirectUrl: fallbackTenantId ? `/${fallbackTenantId}/dashboard` : '/dashboard',
         warning: 'Backend sync failed but onboarding marked complete'
       });
     }
