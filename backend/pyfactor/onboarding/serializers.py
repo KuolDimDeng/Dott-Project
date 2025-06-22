@@ -94,7 +94,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             # Create/update business
             business, _ = Business.objects.update_or_create(
-                owner=user,
+                owner_id=str(user.id),
                 defaults={
                     'name': validated_data['name'],
                     'business_type': validated_data['business_type'],
@@ -110,7 +110,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
             if not user.tenant:
                 schema_name = f"tenant_{user.id}_{uuid.uuid4().hex[:8]}"
                 tenant = Tenant.objects.create(
-                    owner=user,
+                    owner_id=str(user.id),
                     name=validated_data['name'],
                     schema_name=schema_name,
                     is_active=True
@@ -157,7 +157,7 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
             else:
                 # Create new business if none exists
                 business = Business.objects.create(
-                    owner=instance.user,
+                    owner_id=str(instance.user.id),
                     name=validated_data['name'],
                     business_type=validated_data['business_type'],
                     country=validated_data['country'],

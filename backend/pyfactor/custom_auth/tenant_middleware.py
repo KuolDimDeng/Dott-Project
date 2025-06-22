@@ -204,7 +204,7 @@ class EnhancedTenantMiddleware:
                         # Check for potential multiple schemas for the same user
                         if request.user.is_authenticated:
                             try:
-                                user_tenants = list(Tenant.objects.filter(owner=request.user))
+                                user_tenants = list(Tenant.objects.filter(owner_id=str(request.user.id)))
                                 if len(user_tenants) > 1:
                                     logger.warning(f"[TENANT-{request_id}] User {request.user.email} has {len(user_tenants)} tenants: {', '.join([ t.id for t in user_tenants])}")
                             except Exception as e:

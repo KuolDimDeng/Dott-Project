@@ -323,14 +323,14 @@ class SocialLoginView(APIView):
                         logger.info(f"[SOCIAL_LOGIN] Checking for tenant for user {user.email}")
                         if user.tenant_id is None:
                             # Check if the user already has an owned tenant that's not properly linked
-                            owned_tenant = Tenant.objects.filter(owner=user).first()
+                            owned_tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
                             if owned_tenant:
                                 logger.info(f"[SOCIAL_LOGIN] Found owned tenant {owned_tenant.id} for user {user.email}")
                                 user.tenant = owned_tenant
                                 user.save(update_fields=['tenant'])
                             else:
                                 # Check for any tenant where user is the owner
-                                tenant = Tenant.objects.filter(owner=user).first()
+                                tenant = Tenant.objects.filter(owner_id=str(user.id)).first()
                                 if tenant:
                                     logger.info(f"[SOCIAL_LOGIN] Found existing tenant { tenant.id} for user {user.email}")
                                     user.tenant = tenant
@@ -613,7 +613,7 @@ class ActivateAccountView(APIView):
                         tenant = owned_tenant
                     else:
                         # Check for any tenant where user is the owner
-                        tenant_by_owner = Tenant.objects.filter(owner=user).first()
+                        tenant_by_owner = Tenant.objects.filter(owner_id=str(user.id)).first()
                         if tenant_by_owner:
                             logger.info(f"[ACTIVATION] Found tenant by owner relationship: {tenant_by_owner.schema_name}")
                             user.tenant = tenant_by_owner

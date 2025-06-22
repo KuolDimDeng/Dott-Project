@@ -1860,7 +1860,7 @@ class SaveStep1View(APIView):
                         id=tenant_id,
                         defaults={
                             'name': serializer.validated_data['name'],
-                            'owner': request.user,
+                            'owner_id': str(request.user.id),
                             'created_at': timezone.now(),
                             'is_active': True,
                             'setup_status': 'pending'
@@ -1877,7 +1877,9 @@ class SaveStep1View(APIView):
             # Step 1: Create or ensure schema exists with minimal structure - without foreign keys
             try:
                 # Import schema_creation_lock here if it's not accessible in the current scope
-                from custom_auth.tenant_middleware import schema_creation_lock
+                # Note: schema_creation_lock is imported at the module level from tenant_middleware
+                import threading
+                schema_creation_lock = threading.RLock()
                 
                 # Create a new connection with autocommit=True specifically for schema operations
                 schema_conn = None

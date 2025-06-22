@@ -475,7 +475,7 @@ def update_storage_quota(business_id, selected_plan):
         
         # Get the user's tenant
         from custom_auth.models import Tenant
-        tenant = Tenant.objects.get(owner=user)
+        tenant = Tenant.objects.get(owner_id=str(user.id))
         
         # Set quota based on plan
         if selected_plan == 'professional':

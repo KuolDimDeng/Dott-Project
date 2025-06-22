@@ -372,7 +372,7 @@ class VerifyTenantView(APIView):
             logger.info(f"Tenant verification request for user {request.user.id} with tenantId: {tenant_id}")
             
             # CRITICAL: Always check if the user has ANY existing tenant first
-            existing_tenant = Tenant.objects.filter(owner=request.user).first()
+            existing_tenant = Tenant.objects.filter(owner_id=str(request.user.id)).first()
             
             if existing_tenant:
                 # User has a tenant - check if the ID matches
