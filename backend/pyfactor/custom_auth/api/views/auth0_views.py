@@ -169,8 +169,10 @@ class Auth0UserCreateView(APIView):
                 # Create new tenant
                 # Convert user.id to string for proper CharField storage
                 user_id_str = str(user.id)
+                # Use a neutral default name instead of exposing email
+                default_name = user.name if user.name else "My Business"
                 tenant = Tenant.objects.create(
-                    name=f"{user.name or user.email.split('@')[0]}'s Business",
+                    name=default_name,
                     owner_id=user_id_str
                 )
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
