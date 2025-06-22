@@ -16,10 +16,10 @@ app_name = 'sessions'
 
 urlpatterns = [
     # Session management
-    # Re-enabled session creation for Google OAuth flow
+    # Re-enabled session endpoints for Google OAuth flow
     path('create/', SessionCreateView.as_view(), name='session-create'),
-    # REMOVED - Use /api/auth/session-v2
-    # path('current/', SessionDetailView.as_view(), name='session-current'),
+    path('current/', SessionDetailView.as_view(), name='session-current'),
+    path('<uuid:session_id>/', SessionDetailView.as_view(), name='session-detail'),
     # REMOVED - Use /api/auth/session-v2
     # path('refresh/', SessionRefreshView.as_view(), name='session-refresh'),
     # REMOVED - Use /api/auth/session-v2
