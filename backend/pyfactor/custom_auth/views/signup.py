@@ -90,11 +90,19 @@ class SignupView(APIView):
                     return Response(response_data)
 
             with transaction.atomic():
+                # Extract user profile information
+                first_name = request.data.get('given_name', '') or request.data.get('firstName', '')
+                last_name = request.data.get('family_name', '') or request.data.get('lastName', '')
+                full_name = request.data.get('name', '')
+                
                 # Create or update user
                 user, created = User.objects.get_or_create(
                     email=email,
                     defaults={
-                        'is_active': True
+                        'is_active': True,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'name': full_name if hasattr(User, 'name') else None
                     }
                 )
 
@@ -107,6 +115,19 @@ class SignupView(APIView):
                     if hasattr(user, 'auth0_sub') and auth0_sub:
                         user.auth0_sub = auth0_sub
                         update_fields.append('auth0_sub')
+                    
+                    # Update name fields if provided
+                    if first_name and user.first_name != first_name:
+                        user.first_name = first_name
+                        update_fields.append('first_name')
+                    
+                    if last_name and user.last_name != last_name:
+                        user.last_name = last_name
+                        update_fields.append('last_name')
+                    
+                    if full_name and hasattr(user, 'name') and user.name != full_name:
+                        user.name = full_name
+                        update_fields.append('name')
                         
                     user.save(update_fields=update_fields)
 

@@ -15,6 +15,7 @@ from .views.close_account_view import CloseAccountView
 from .views.onboarding_status_view import UpdateOnboardingStatusView
 from .views.update_session_view import UpdateSessionView
 from .views.session_profile_view import SessionUserProfileView
+from .views.register_view import EmailPasswordRegisterView
 
 # Import new Auth0 views
 try:
@@ -31,6 +32,7 @@ urlpatterns = [
     # Authentication endpoints
     path('auth/verify-credentials/', auth_views.VerifyCredentialsView.as_view(), name='verify-credentials'),
     path('auth/signup/', auth_views.SignUpView.as_view(), name='signup'),
+    path('auth/register/', EmailPasswordRegisterView.as_view(), name='email-password-register'),
     path('auth/user-profile/', auth_views.UserProfileView.as_view(), name='user-profile'),
     path('auth/verify-session/', auth_views.VerifySessionView.as_view(), name='verify-session'),
     path('auth/check-user-attributes/', auth_views.CheckUserAttributesView.as_view(), name='check-user-attributes'),
