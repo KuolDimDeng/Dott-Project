@@ -20,6 +20,7 @@ urlpatterns = [
     path('create/', SessionCreateView.as_view(), name='session-create'),
     path('current/', SessionDetailView.as_view(), name='session-current'),
     path('<uuid:session_id>/', SessionDetailView.as_view(), name='session-detail'),
+    path('<uuid:session_id>', SessionDetailView.as_view(), name='session-detail-no-slash'),
     # REMOVED - Use /api/auth/session-v2
     # path('refresh/', SessionRefreshView.as_view(), name='session-refresh'),
     # REMOVED - Use /api/auth/session-v2
