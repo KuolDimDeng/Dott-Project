@@ -16,8 +16,8 @@ app_name = 'sessions'
 
 urlpatterns = [
     # Session management
-    # REMOVED - Use /api/auth/session-v2
-    # path('create/', SessionCreateView.as_view(), name='session-create'),
+    # Re-enabled session creation for Google OAuth flow
+    path('create/', SessionCreateView.as_view(), name='session-create'),
     # REMOVED - Use /api/auth/session-v2
     # path('current/', SessionDetailView.as_view(), name='session-current'),
     # REMOVED - Use /api/auth/session-v2
