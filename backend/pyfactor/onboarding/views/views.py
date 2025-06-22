@@ -1855,7 +1855,8 @@ class SaveStep1View(APIView):
                 
                 # Create the Tenant record
                 try:
-                    tenant, created = Tenant.objects.get_or_create(
+                    from custom_auth.models import Tenant as TenantModel
+                    tenant, created = TenantModel.objects.get_or_create(
                         id=tenant_id,
                         defaults={
                             'name': serializer.validated_data['name'],
@@ -1976,7 +1977,8 @@ class SaveStep1View(APIView):
                                         "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
                                         "legal_structure" varchar(50) NOT NULL DEFAULT 'SOLE_PROPRIETORSHIP',
                                         "date_founded" date NULL,
-                                        "owner_id" uuid NOT NULL
+                                        "owner_id" uuid NOT NULL,
+                                        "tenant_id" uuid NOT NULL
                                     );
                                 """)
                                 
@@ -2003,7 +2005,8 @@ class SaveStep1View(APIView):
                                         "country" varchar(2) NOT NULL DEFAULT 'US',
                                         "date_founded" date NULL,
                                         "created_at" timestamp with time zone NOT NULL DEFAULT now(),
-                                        "updated_at" timestamp with time zone NOT NULL DEFAULT now()
+                                        "updated_at" timestamp with time zone NOT NULL DEFAULT now(),
+                                        "tenant_id" uuid NOT NULL
                                     );
                                 """)
                             
@@ -2127,9 +2130,14 @@ class SaveStep1View(APIView):
                         
                         # Create a cursor from this dedicated connection
                         with tenant_conn.cursor() as tenant_cursor:
-                            # Set search path to the tenant schema
-                            logger.debug(f"Setting search path to schema {schema_name}")
-                            tenant_cursor.execute(f"SET search_path TO {schema_name}")
+                            # Set search path to public schema (using RLS instead of tenant schemas)
+                            logger.debug(f"Setting search path to public schema for RLS-based access")
+                            tenant_cursor.execute("SET search_path TO public")
+                            
+                            # Set the current tenant ID for RLS
+                            from custom_auth.rls import set_current_tenant_id
+                            set_current_tenant_id(tenant_id)
+                            tenant_cursor.execute(f"SET app.current_tenant_id = '{tenant_id}'")
                             
                             # Defer all constraints to avoid transaction issues
                             logger.debug("Deferring all constraints")
@@ -2161,10 +2169,10 @@ class SaveStep1View(APIView):
                                     tenant_cursor.execute("""
                                         INSERT INTO users_business (
                                             id, business_num, name, business_type,
-                                            created_at, updated_at, owner_id, legal_structure
+                                            created_at, updated_at, owner_id, legal_structure, tenant_id
                                         ) VALUES (
                                             %s, %s, %s, %s,
-                                            %s, %s, %s, %s
+                                            %s, %s, %s, %s, %s
                                         ) RETURNING id;
                                     """, [
                                         str(business_id),
@@ -2174,7 +2182,8 @@ class SaveStep1View(APIView):
                                         now,
                                         now,
                                         str(request.user.id),
-                                        serializer.validated_data.get('legal_structure', 'SOLE_PROPRIETORSHIP')
+                                        serializer.validated_data.get('legal_structure', 'SOLE_PROPRIETORSHIP'),
+                                        tenant_id
                                     ])
                                     # Explicitly commit after successful insertion
                                     tenant_conn.commit()
@@ -2204,9 +2213,9 @@ class SaveStep1View(APIView):
                                 tenant_cursor.execute("""
                                     INSERT INTO users_business_details (
                                         business_id, business_type, legal_structure, country, date_founded,
-                                        created_at, updated_at
+                                        created_at, updated_at, tenant_id
                                     ) VALUES (
-                                        %s, %s, %s, %s, %s, %s, %s
+                                        %s, %s, %s, %s, %s, %s, %s, %s
                                     );
                                 """, [
                                     str(business_id),
@@ -2215,7 +2224,8 @@ class SaveStep1View(APIView):
                                     str(serializer.validated_data['country']),
                                     date_founded_str,
                                     now,
-                                    now
+                                    now,
+                                    tenant_id
                                 ])
                                 
                                 # Commit after business details insertion
@@ -2378,8 +2388,6 @@ class SaveStep1View(APIView):
             
             # Update OnboardingProgress with business reference and tenant info
             try:
-                from custom_auth.models import Tenant
-                
                 # Update or create OnboardingProgress with business reference
                 onboarding_progress, created = OnboardingProgress.objects.update_or_create(
                     user=request.user,
@@ -2397,15 +2405,15 @@ class SaveStep1View(APIView):
                 
                 # Update tenant name to match business name
                 try:
-                    tenant = Tenant.objects.get(id=tenant_id)
+                    tenant = TenantModel.objects.get(id=tenant_id)
                     old_name = tenant.name
                     tenant.name = serializer.validated_data['name']
                     tenant.save()
                     logger.info(f"Updated tenant name from '{old_name}' to '{tenant.name}'")
-                except Tenant.DoesNotExist:
+                except TenantModel.DoesNotExist:
                     logger.warning(f"Tenant {tenant_id} not found, creating new tenant")
                     # Create tenant if it doesn't exist
-                    Tenant.objects.create(
+                    TenantModel.objects.create(
                         id=tenant_id,
                         name=serializer.validated_data['name'],
                         owner=request.user,

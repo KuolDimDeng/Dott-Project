@@ -76,13 +76,16 @@ async function validateAuthentication(request) {
     const sessionCookie = cookieStore.get('appSession');
     const dottSessionCookie = cookieStore.get('dott_auth_session');
     const sessionTokenCookie = cookieStore.get('session_token') || cookieStore.get('sid'); // Check both cookie names
+    const sidCookie = cookieStore.get('sid'); // Check for 'sid' directly
     
     console.log('🚨 [BUSINESS-INFO API] Cookie debug:', {
       hasDottAuthSession: !!dottSessionCookie,
       hasAppSession: !!sessionCookie,
       hasSessionToken: !!sessionTokenCookie,
+      hasSid: !!sidCookie,
       dottAuthSessionSize: dottSessionCookie?.value?.length || 0,
       sessionTokenSize: sessionTokenCookie?.value?.length || 0,
+      sidSize: sidCookie?.value?.length || 0,
       allCookieNames: cookieStore.getAll().map(c => c.name)
     });
     
