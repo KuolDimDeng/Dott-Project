@@ -559,11 +559,38 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     user.tenant = tenant
                     user.save(update_fields=['tenant'])
                 
+                # Create or get Business record
+                from users.models import Business
+                business, business_created = Business.objects.get_or_create(
+                    tenant_id=tenant.id,
+                    created_by=user,
+                    defaults={
+                        'name': business_name,
+                        'business_type': business_type or '',
+                        'country': country,
+                        'legal_structure': data.get('legal_structure', ''),
+                        'created_at': timezone.now(),
+                        'updated_at': timezone.now()
+                    }
+                )
+                
+                if not business_created:
+                    # Update existing business
+                    business.name = business_name
+                    business.business_type = business_type or business.business_type
+                    business.country = country
+                    business.legal_structure = data.get('legal_structure', business.legal_structure)
+                    business.updated_at = timezone.now()
+                    business.save()
+                
+                logger.info(f"Created/updated business {business.id} with name: {business_name}")
+                
                 # Create or update onboarding progress
                 progress, created = OnboardingProgress.objects.get_or_create(
                     user=user,
                     defaults={
                         'tenant_id': tenant.id,
+                        'business': business,  # Link to the Business record
                         'onboarding_status': 'subscription',
                         'current_step': 'subscription',
                         'next_step': 'subscription',
@@ -573,6 +600,7 @@ class Auth0OnboardingBusinessInfoView(APIView):
                 
                 if not created:
                     progress.tenant_id = tenant.id
+                    progress.business = business  # Link to the Business record
                     
                     # IMPORTANT: Don't overwrite completed onboarding status
                     if progress.onboarding_status != 'complete':
@@ -592,6 +620,27 @@ class Auth0OnboardingBusinessInfoView(APIView):
                     progress.save()
                 
                 logger.info(f"Created/updated tenant {tenant.id} for user {user.email}")
+                
+                # Update the session to reflect the new business name
+                try:
+                    from session_manager.models import UserSession
+                    # Update all active sessions for the user with the new business name
+                    active_sessions = UserSession.objects.filter(
+                        user=user,
+                        is_active=True,
+                        expires_at__gt=timezone.now()
+                    )
+                    
+                    for session in active_sessions:
+                        logger.info(f"[BusinessInfo] Updating session {session.session_id} with new business name: {business_name}")
+                        # Force session refresh by updating timestamp
+                        session.last_activity = timezone.now()
+                        session.save(update_fields=['last_activity'])
+                    
+                    logger.info(f"[BusinessInfo] Updated {active_sessions.count()} active sessions")
+                except Exception as session_error:
+                    logger.error(f"[BusinessInfo] Error updating sessions: {str(session_error)}")
+                    # Don't fail the request just because session update failed
                 
                 return Response({
                     'success': True,
