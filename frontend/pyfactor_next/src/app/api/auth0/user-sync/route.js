@@ -23,7 +23,7 @@ export async function POST(request) {
     
     // Parse request body
     const body = await request.json();
-    const { auth0_sub, email, name, picture, email_verified } = body;
+    const { auth0_sub, email, name, picture, email_verified, given_name, family_name } = body;
     
     if (!auth0_sub || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -125,6 +125,8 @@ export async function POST(request) {
           auth0_sub,
           email,
           name,
+          given_name: given_name || '',
+          family_name: family_name || '',
           picture,
           email_verified,
           tenant_id: null, // Backend assigns this during onboarding

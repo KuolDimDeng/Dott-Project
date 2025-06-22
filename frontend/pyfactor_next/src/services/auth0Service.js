@@ -58,6 +58,8 @@ class Auth0Service {
           auth0_sub: user.sub,
           email: user.email,
           name: user.name || '',
+          given_name: user.given_name || '',
+          family_name: user.family_name || '',
           picture: user.picture || '',
           email_verified: user.email_verified || false,
           // Include session ID to ensure request isolation
