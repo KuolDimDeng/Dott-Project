@@ -39,9 +39,9 @@ class SessionValidateView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Check if session is still valid
-            if not session.is_valid():
-                logger.warning(f"[SessionValidate] Session expired: {session_id}")
+            # Check if session is still valid (active and not expired)
+            if not session.is_active or session.is_expired():
+                logger.warning(f"[SessionValidate] Session expired or inactive: {session_id}")
                 return Response(
                     {'error': 'Session expired'},
                     status=status.HTTP_401_UNAUTHORIZED
