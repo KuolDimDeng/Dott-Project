@@ -70,19 +70,17 @@ def complete_all_onboarding(request):
             
             # 4. Update user session
             try:
-                session = UserSession.objects.get(user=user)
-                session.needs_onboarding = False
-                session.onboarding_completed = True
-                session.tenant_id = str(tenant_id)
-                session.save()
-            except UserSession.DoesNotExist:
-                # Create session if it doesn't exist
-                UserSession.objects.create(
-                    user=user,
-                    needs_onboarding=False,
-                    onboarding_completed=True,
-                    tenant_id=str(tenant_id)
-                )
+                # Get all active sessions for the user
+                sessions = UserSession.objects.filter(user=user, is_active=True)
+                for session in sessions:
+                    session.needs_onboarding = False
+                    session.onboarding_completed = True
+                    session.tenant = user.tenant  # Set the tenant foreign key relationship
+                    session.save()
+                logger.info(f"Updated {sessions.count()} active sessions for user {user.email}")
+            except Exception as e:
+                logger.warning(f"Error updating sessions: {e}")
+                # Don't fail the whole operation if session update fails
             
             logger.info(f"Successfully completed onboarding for user {user.email} with tenant {tenant_id}")
             

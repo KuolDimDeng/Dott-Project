@@ -73,3 +73,35 @@ def update_session_activity(sender, instance, created, **kwargs):
         # Session was updated (not created)
         # Could log activity, send metrics, etc.
         pass
+
+
+from django.contrib.auth import get_user_model
+User = get_user_model()
+
+@receiver(post_save, sender=User)
+def sync_user_sessions_with_tenant(sender, instance, **kwargs):
+    """
+    When a user is updated, sync their tenant to all active sessions.
+    This ensures that when a tenant is assigned during onboarding,
+    all existing sessions get updated with the tenant information.
+    """
+    try:
+        # Only proceed if user has a tenant
+        if hasattr(instance, 'tenant') and instance.tenant:
+            # Update all active sessions for this user
+            updated_count = UserSession.objects.filter(
+                user=instance,
+                is_active=True,
+                tenant__isnull=True  # Only update sessions without a tenant
+            ).update(
+                tenant=instance.tenant
+            )
+            
+            if updated_count > 0:
+                logger.info(
+                    f"Updated {updated_count} sessions with tenant {instance.tenant.id} "
+                    f"for user {instance.email}"
+                )
+    except Exception as e:
+        # Don't let signal errors break user saves
+        logger.error(f"Error syncing user sessions with tenant: {e}")

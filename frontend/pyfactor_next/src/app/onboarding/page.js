@@ -63,14 +63,40 @@ export default function OnboardingPageV2() {
       // Backend's needsOnboarding is the single source of truth
       // If needsOnboarding is FALSE (they don't need onboarding), redirect to dashboard
       if (session.user?.needsOnboarding === false || session.user?.onboardingCompleted === true) {
-        const tenantId = session.user?.tenantId;
+        const tenantId = session.user?.tenantId || session.user?.tenant_id;
         if (tenantId) {
           logger.info('[OnboardingPage.v2] Backend says onboarding completed, redirecting to dashboard');
           router.push(`/${tenantId}/dashboard`);
           return;
         } else {
-          logger.error('[OnboardingPage.v2] Onboarding completed but no tenant ID!');
-          // Let them continue with onboarding to fix this state
+          logger.warn('[OnboardingPage.v2] Onboarding completed but no tenant ID yet, checking for updates...');
+          
+          // If we just completed payment, tenant creation might be in progress
+          // Refresh session data and retry
+          let retries = 0;
+          const maxRetries = 5;
+          
+          while (retries < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+            
+            // Refresh session data
+            const refreshedSession = await getClientSession();
+            const refreshedTenantId = refreshedSession.user?.tenantId || refreshedSession.user?.tenant_id;
+            
+            if (refreshedTenantId) {
+              logger.info('[OnboardingPage.v2] Tenant ID found after refresh:', refreshedTenantId);
+              router.push(`/${refreshedTenantId}/dashboard`);
+              return;
+            }
+            
+            retries++;
+            logger.info('[OnboardingPage.v2] Still no tenant ID, retry', retries, 'of', maxRetries);
+          }
+          
+          // If still no tenant ID after retries, redirect to general dashboard
+          logger.error('[OnboardingPage.v2] No tenant ID after retries, redirecting to general dashboard');
+          router.push('/dashboard');
+          return;
         }
       }
       

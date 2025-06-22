@@ -323,6 +323,16 @@ export default function OnboardingFlowV2() {
         logger.warn('[OnboardingFlow] Onboarding completed but no tenant ID yet, redirecting to:', response.redirectUrl);
         window.location.href = response.redirectUrl;
         return;
+      } else if (response.success && !tenantId) {
+        // Success but no tenant ID yet - wait for backend to create it
+        logger.warn('[OnboardingFlow] Onboarding completed but tenant ID not immediately available, redirecting to dashboard');
+        
+        // Clear session cache to force refresh
+        sessionManager.clearCache();
+        
+        // Redirect to dashboard which will handle the tenant ID resolution
+        window.location.href = '/dashboard';
+        return;
       } else {
         logger.error('[OnboardingFlow] Missing tenant ID in response:', response);
         throw new Error('Unable to complete onboarding: missing tenant ID');
