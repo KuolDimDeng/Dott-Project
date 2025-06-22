@@ -65,7 +65,7 @@ export async function POST(request) {
     }
     
     try {
-      // Call backend complete endpoint with force flag
+      // Call backend complete endpoint with force flag (using the API version that creates tenants)
       const completeResponse = await fetch(`${backendUrl}/api/onboarding/api/complete/`, {
         method: 'POST',
         headers: {
