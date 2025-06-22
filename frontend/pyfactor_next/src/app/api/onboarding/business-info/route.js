@@ -4,7 +4,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { getServerUser } from '@/utils/getServerUser';
-import { v4 as uuidv4 } from 'uuid';
 import { countries } from 'countries-list';
 
 // Increased cookie expiration for onboarding (7 days)
@@ -444,11 +443,9 @@ export async function POST(request) {
       console.log('[api/onboarding/business-info] Sending to Django:', djangoData);
       console.log('🚨 [BUSINESS-INFO API] Django data being sent:', JSON.stringify(djangoData, null, 2));
       
-      // During initial onboarding, we don't have a tenant ID yet
-      // Generate a temporary one or use a placeholder
-      const tempTenantId = uuidv4();
-      headers['X-Tenant-ID'] = tempTenantId;
-      console.log('[api/onboarding/business-info] Using temporary tenant ID:', tempTenantId);
+      // CRITICAL: Never generate tenant IDs in frontend!
+      // Backend will create and assign tenant ID
+      console.log('[api/onboarding/business-info] No tenant ID - backend will create one');
 
       const backendResponse = await fetch(`${apiBaseUrl}/api/onboarding/save-business-info/`, {
         method: 'POST',
@@ -580,8 +577,7 @@ export async function POST(request) {
               next_step: 'subscription',
               current_step: 'subscription',
               redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || uuidv4(),
-              generatedFallback: !backendData.tenant_id,
+              tenant_id: backendData.tenant_id || null,  // Never generate tenant IDs in frontend!
               debug: {
                 sessionUpdated: true,
                 cookieSize: cookieString.length,
@@ -648,8 +644,7 @@ export async function POST(request) {
               next_step: 'subscription',
               current_step: 'subscription',
               redirect_url: '/onboarding/subscription',
-              tenant_id: backendData.tenant_id || uuidv4(),
-              generatedFallback: !backendData.tenant_id,
+              tenant_id: backendData.tenant_id || null,  // Never generate tenant IDs in frontend!
               warning: 'Session update failed - you may need to refresh the page',
               error: sessionUpdateError.message,
               debug: {
@@ -1003,7 +998,7 @@ export async function POST(request) {
           legalStructure: businessData.legalStructure
         },
         backendStatus: backendSuccess ? 'saved' : 'failed',
-        tenant_id: backendData.tenant_id || uuidv4(),
+        tenant_id: backendData.tenant_id || null,  // Never generate tenant IDs in frontend!
         generatedFallback: !backendData.tenant_id
       };
       

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSession } from '@/utils/sessionManager-v2-enhanced';
+import sessionManagerEnhanced from '@/utils/sessionManager-v2-enhanced';
 
 /**
  * Complete all onboarding steps
@@ -11,7 +11,7 @@ export async function POST(request) {
     console.log('[OnboardingComplete] Starting onboarding completion');
     
     // Get current session
-    const session = await getSession();
+    const session = await sessionManagerEnhanced.getSession();
     
     if (!session || !session.authenticated) {
       console.error('[OnboardingComplete] No authenticated session');
@@ -34,13 +34,11 @@ export async function POST(request) {
       paymentCompleted
     });
     
-    // Validate required data
-    if (!session.user?.tenantId) {
-      console.error('[OnboardingComplete] User has no tenant ID');
-      return NextResponse.json({ 
-        error: 'User has no tenant assigned',
-        details: 'Tenant must be created during onboarding'
-      }, { status: 400 });
+    // Check if user has tenant ID
+    let tenantId = session.user?.tenantId || session.user?.tenant_id;
+    
+    if (!tenantId) {
+      console.warn('[OnboardingComplete] User has no tenant ID, will be created by backend');
     }
     
     const backendUrl = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
@@ -55,13 +53,15 @@ export async function POST(request) {
           'X-Session-Token': session.sessionToken || 'no-token'
         },
         body: JSON.stringify({
-          tenant_id: session.user.tenantId,
-          business_name: businessName,
+          tenant_id: tenantId,
+          business_name: businessName || session.user?.businessName || session.user?.business_name,
           subscription_plan: subscriptionPlan,
           payment_completed: paymentCompleted,
           // CRITICAL: Force backend to update User.onboarding_completed
           force_complete: true,
-          update_user_model: true
+          update_user_model: true,
+          // If no tenant, backend should create one
+          create_tenant_if_missing: !tenantId
         })
       });
       
