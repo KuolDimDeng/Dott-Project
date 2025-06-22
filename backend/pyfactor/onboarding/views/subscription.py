@@ -392,6 +392,12 @@ class SubscriptionSaveView(APIView):
             # Update onboarding progress
             progress = self.update_onboarding_progress_sync(request, business, selected_plan, billing_cycle)
             
+            # CRITICAL: Update user's subscription_plan field
+            logger.info(f"🔍 [SubscriptionSave] Updating user.subscription_plan from '{request.user.subscription_plan}' to '{selected_plan}'")
+            request.user.subscription_plan = selected_plan
+            request.user.save(update_fields=['subscription_plan'])
+            logger.info(f"🔍 [SubscriptionSave] User subscription_plan saved: {request.user.subscription_plan}")
+            
             # Update session with subscription information
             try:
                 from session_manager.models import UserSession

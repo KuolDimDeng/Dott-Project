@@ -1898,6 +1898,7 @@ class SaveStep1View(APIView):
                             # Set search path to the schema
                             # RLS: Use tenant context instead of schema
                             # cursor.execute(f'SET search_path TO {schema_name}')
+                            from custom_auth.rls import set_current_tenant_id
                             set_current_tenant_id(tenant_id)
                             cursor.execute('SET search_path TO public')
                             
@@ -2588,6 +2589,9 @@ class SaveStep1View(APIView):
             return response
 
         except Exception as e:
+            logger.error(f"🔍 [SaveStep1View] CRITICAL ERROR saving business info: {str(e)}")
+            logger.error(f"🔍 [SaveStep1View] Error type: {type(e).__name__}")
+            logger.error(f"🔍 [SaveStep1View] Full traceback: {traceback.format_exc()}")
             logger.error("Error saving business info:", {
                 'request_id': request_id,
                 'error': str(e),
