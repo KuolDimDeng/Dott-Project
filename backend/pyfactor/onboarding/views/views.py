@@ -2171,10 +2171,10 @@ class SaveStep1View(APIView):
                                     tenant_cursor.execute("""
                                         INSERT INTO users_business (
                                             id, business_num, name,
-                                            created_at, updated_at, owner_id, tenant_id
+                                            created_at, updated_at, owner_id
                                         ) VALUES (
                                             %s, %s, %s,
-                                            %s, %s, %s, %s
+                                            %s, %s, %s
                                         ) RETURNING id;
                                     """, [
                                         str(business_id),
@@ -2182,8 +2182,7 @@ class SaveStep1View(APIView):
                                         serializer.validated_data['name'],
                                         now,
                                         now,
-                                        str(request.user.id),
-                                        tenant_id
+                                        str(request.user.id)
                                     ])
                                     # Explicitly commit after successful insertion
                                     tenant_conn.commit()
@@ -2212,20 +2211,16 @@ class SaveStep1View(APIView):
                                 
                                 tenant_cursor.execute("""
                                     INSERT INTO users_business_details (
-                                        business_id, business_type, legal_structure, country, date_founded,
-                                        created_at, updated_at, tenant_id
+                                        business_id, business_type, legal_structure, country, date_founded
                                     ) VALUES (
-                                        %s, %s, %s, %s, %s, %s, %s, %s
+                                        %s, %s, %s, %s, %s
                                     );
                                 """, [
                                     str(business_id),
                                     serializer.validated_data['business_type'],
                                     serializer.validated_data['legal_structure'],
                                     str(serializer.validated_data['country']),
-                                    date_founded_str,
-                                    now,
-                                    now,
-                                    tenant_id
+                                    date_founded_str
                                 ])
                                 
                                 # Commit after business details insertion

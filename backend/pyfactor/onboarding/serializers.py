@@ -51,21 +51,34 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         try:
             if hasattr(instance, 'business') and instance.business:
                 business = instance.business
+                # Get details from BusinessDetails model
+                details = business.details
                 data = {
                     'business_name': business.name,
-                    'business_type': business.business_type,
-                    'country': business.country,
-                    'legal_structure': business.legal_structure,
-                    'date_founded': business.date_founded,
+                    'business_type': details.business_type if details else None,
+                    'country': str(details.country) if details else None,
+                    'legal_structure': details.legal_structure if details else None,
+                    'date_founded': details.date_founded if details else None,
                 }
             else:
-                data = {
-                    'business_name': getattr(instance, 'name', None),
-                    'business_type': getattr(instance, 'business_type', None),
-                    'country': getattr(instance, 'country', None),
-                    'legal_structure': getattr(instance, 'legal_structure', None),
-                    'date_founded': getattr(instance, 'date_founded', None),
-                }
+                # Fallback for direct Business instance
+                if hasattr(instance, 'name'):
+                    details = instance.details
+                    data = {
+                        'business_name': instance.name,
+                        'business_type': details.business_type if details else None,
+                        'country': str(details.country) if details else None,
+                        'legal_structure': details.legal_structure if details else None,
+                        'date_founded': details.date_founded if details else None,
+                    }
+                else:
+                    data = {
+                        'business_name': None,
+                        'business_type': None,
+                        'country': None,
+                        'legal_structure': None,
+                        'date_founded': None,
+                    }
             return data
         except Exception as e:
             logger.error(f"Error in to_representation: {str(e)}")
@@ -92,11 +105,19 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         auth0_data = validated_data.pop('auth0_attributes', {})
         
         with transaction.atomic():
-            # Create/update business
-            business, _ = Business.objects.update_or_create(
+            # Create/update business with only the fields it actually has
+            business, created = Business.objects.update_or_create(
                 owner_id=str(user.id),
                 defaults={
-                    'name': validated_data['name'],
+                    'name': validated_data['name']
+                }
+            )
+            
+            # Create/update BusinessDetails with the detail fields
+            from users.models import BusinessDetails
+            BusinessDetails.objects.update_or_create(
+                business=business,
+                defaults={
                     'business_type': validated_data['business_type'],
                     'country': validated_data['country'],
                     'legal_structure': validated_data['legal_structure'],
@@ -149,22 +170,33 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
             if hasattr(instance, 'business') and instance.business:
                 business = instance.business
                 business.name = validated_data.get('name', business.name)
-                business.business_type = validated_data.get('business_type', business.business_type)
-                business.country = validated_data.get('country', business.country)
-                business.legal_structure = validated_data.get('legal_structure', business.legal_structure)
-                business.date_founded = validated_data.get('date_founded', business.date_founded)
                 business.save()
+                
+                # Update BusinessDetails
+                from users.models import BusinessDetails
+                details, _ = BusinessDetails.objects.get_or_create(business=business)
+                details.business_type = validated_data.get('business_type', details.business_type)
+                details.country = validated_data.get('country', details.country)
+                details.legal_structure = validated_data.get('legal_structure', details.legal_structure)
+                details.date_founded = validated_data.get('date_founded', details.date_founded)
+                details.save()
             else:
                 # Create new business if none exists
                 business = Business.objects.create(
                     owner_id=str(instance.user.id),
-                    name=validated_data['name'],
+                    name=validated_data['name']
+                )
+                instance.business = business
+                
+                # Create BusinessDetails
+                from users.models import BusinessDetails
+                BusinessDetails.objects.create(
+                    business=business,
                     business_type=validated_data['business_type'],
                     country=validated_data['country'],
                     legal_structure=validated_data['legal_structure'],
                     date_founded=validated_data['date_founded']
                 )
-                instance.business = business
 
             # Update progress with Auth0 attributes if provided
             if auth0_data:
