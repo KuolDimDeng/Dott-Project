@@ -1129,11 +1129,13 @@ class StartOnboardingView(BaseOnboardingView):
                             connection.close()
                             connection.connect()
                         
-                        business = Business.objects.create(
-                            owner=user,
-                            name=None  # Business name must be provided explicitly during onboarding,
-                            business_type='default'
-                        )
+                        # Don't create business without explicit name
+                        # This should be handled during proper onboarding flow
+                        logger.error(f"Attempted to create business without name for user {user.email}")
+                        return Response({
+                            'error': 'Business creation requires explicit name during onboarding',
+                            'needsOnboarding': True
+                        }, status=400)
                         profile = UserProfile.objects.create(
                             user=user,
                             business=business,
@@ -1228,11 +1230,13 @@ class StartOnboardingView(BaseOnboardingView):
                             connection.close()
                             connection.connect()
                         
-                        business = Business.objects.create(
-                            owner=request.user,
-                            name=None  # Business name must be provided explicitly during onboarding,
-                            business_type='default'
-                        )
+                        # Don't create business without explicit name
+                        # This should be handled during proper onboarding flow
+                        logger.error(f"Attempted to create business without name for user {request.user.email}")
+                        return Response({
+                            'error': 'Business creation requires explicit name during onboarding',
+                            'needsOnboarding': True
+                        }, status=400)
                         # Update profile in a separate query to avoid deadlocks
                         if profile:
                             UserProfile.objects.filter(id=profile.id).update(business=business)
@@ -2621,13 +2625,10 @@ class SaveStep1View(APIView):
                 return business
                 
             # If we reach here, no business exists yet
-            # Create a new basic business
-            from users.models import Business, BusinessDetails
-            
-            # Create the base business with valid fields only
-            business = Business.objects.create(
-                name=None  # Business name must be provided explicitly during onboarding
-            )
+            # Don't create business without explicit name
+            # This should be handled during proper onboarding flow
+            logger.error(f"Attempted to create business without name for user {request.user.email}")
+            raise ValueError('Business creation requires explicit name during onboarding')
             
             # Set owner
             business._owner = request.user
@@ -2704,13 +2705,10 @@ class SaveStep2View(APIView):
                 return business
                 
             # If we reach here, no business exists yet
-            # Create a new basic business
-            from users.models import Business, BusinessDetails
-            
-            # Create the base business with valid fields only
-            business = Business.objects.create(
-                name=None  # Business name must be provided explicitly during onboarding
-            )
+            # Don't create business without explicit name
+            # This should be handled during proper onboarding flow
+            logger.error(f"Attempted to create business without name for user {request.user.email}")
+            raise ValueError('Business creation requires explicit name during onboarding')
             
             # Set owner
             business._owner = request.user
@@ -4591,9 +4589,13 @@ class SaveStep4View(BaseOnboardingView):
                     business = get_business_for_user(user)
                     if not business:
                         # Create a new business if none exists
-                        business = Business.objects.create(
-                            name=None  # Business name must be provided explicitly during onboarding if user.first_name else None  # Business name must be provided explicitly during onboarding
-                        )
+                        # Don't create business without explicit name
+                        # This should be handled during proper onboarding flow
+                        logger.error(f"Attempted to create business without name for user {user.email}")
+                        return Response({
+                            'error': 'Business creation requires explicit name during onboarding',
+                            'needsOnboarding': True
+                        }, status=400)
                         
                         # Ensure business details exist
                         from users.models import BusinessDetails
