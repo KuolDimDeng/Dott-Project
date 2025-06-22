@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import sessionManagerEnhanced from '@/utils/sessionManager-v2-enhanced';
+import { cookies } from 'next/headers';
 
 /**
  * Complete all onboarding steps
@@ -10,13 +10,36 @@ export async function POST(request) {
   try {
     console.log('[OnboardingComplete] Starting onboarding completion');
     
-    // Get current session
-    const session = await sessionManagerEnhanced.getSession();
+    // Get session token from cookies
+    const cookieStore = cookies();
+    const sessionToken = cookieStore.get('session_token')?.value || cookieStore.get('sid')?.value;
     
-    if (!session || !session.authenticated) {
-      console.error('[OnboardingComplete] No authenticated session');
+    if (!sessionToken) {
+      console.error('[OnboardingComplete] No session token in cookies');
       return NextResponse.json({ error: 'No authenticated session' }, { status: 401 });
     }
+    
+    // Validate session with backend
+    const backendUrl = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
+    const sessionResponse = await fetch(`${backendUrl}/api/sessions/${sessionToken}/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!sessionResponse.ok) {
+      console.error('[OnboardingComplete] Invalid session');
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+    
+    const sessionData = await sessionResponse.json();
+    const session = {
+      authenticated: true,
+      user: sessionData.user,
+      accessToken: sessionToken,
+      sessionToken: sessionToken
+    };
     
     const body = await request.json();
     const { 
@@ -107,10 +130,7 @@ export async function POST(request) {
         console.warn('[OnboardingComplete] Profile update failed, but continuing...');
       }
       
-      // Clear session cache to force fresh data
-      if (session.clearCache) {
-        await session.clearCache();
-      }
+      // Session cache cleared automatically when backend updates
       
       console.log('[OnboardingComplete] ✓ Onboarding completed successfully');
       console.log('[OnboardingComplete] User.onboarding_completed should now be True');
