@@ -71,8 +71,7 @@ class EnhancedRowLevelSecurityMiddleware:
             '/api/diagnostic/restore/',  # Temporary restore endpoint for account restoration
             '/api/check-user/',  # User lookup endpoint for debugging
             '/api/onboarding/webhooks/stripe/',  # Stripe webhook doesn't have auth
-            '/api/onboarding/complete/',  # Allow onboarding completion without tenant
-            '/api/onboarding/api/complete/',  # Allow API version that creates tenants
+            '/api/onboarding/api/complete/',  # Allow onboarding completion without tenant (creates tenants)
             '/api/onboarding/force-complete/',  # Force complete endpoint
             '/force-complete/',  # Legacy force complete endpoint
         ]

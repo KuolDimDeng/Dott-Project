@@ -194,7 +194,7 @@ function PaymentForm({ plan, billingCycle }) {
           setSucceeded(true);
           
           // Complete the onboarding
-          await fetch('/api/onboarding/complete-payment', {
+          await fetch('/api/onboarding/complete-all', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
