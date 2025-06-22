@@ -2170,17 +2170,16 @@ class SaveStep1View(APIView):
                                     logger.debug(f"Attempting to insert business data (attempt {attempt+1}/{max_retries})")
                                     tenant_cursor.execute("""
                                         INSERT INTO users_business (
-                                            id, business_num, name, business_type,
+                                            id, business_num, name,
                                             created_at, updated_at, owner_id, legal_structure, tenant_id
                                         ) VALUES (
-                                            %s, %s, %s, %s,
+                                            %s, %s, %s,
                                             %s, %s, %s, %s, %s
                                         ) RETURNING id;
                                     """, [
                                         str(business_id),
                                         business_num,
                                         serializer.validated_data['name'],
-                                        serializer.validated_data['business_type'],
                                         now,
                                         now,
                                         str(request.user.id),
