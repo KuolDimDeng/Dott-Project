@@ -534,3 +534,51 @@ Watch for these log patterns:
 - `[SECURITY_CRITICAL]` - Critical security alerts
 - `[SessionFingerprint]` - Hijacking attempts
 - `[AnomalyDetector]` - Suspicious patterns
+
+## Authentication Endpoint Consolidation (2025-01-23) - MAJOR CLEANUP
+- **Purpose**: Remove redundancy, improve security, simplify maintenance
+- **Result**: 80% reduction in auth endpoints (from ~45 to 9)
+- **Documentation**: `/projectx/AUTHENTICATION_CONSOLIDATION_2025.md`
+
+### Consolidated Core Endpoints
+1. **Session**: `/api/auth/session-v2` (GET/POST/DELETE)
+2. **Profile**: `/api/auth/profile` (unified user/tenant/subscription data)
+3. **Login**: `/api/auth/login` (Auth0 callback)
+4. **Signup**: `/api/auth/signup` (new user registration)
+5. **Token**: `/api/auth/token/refresh/` (JWT refresh)
+6. **Onboarding**: `/api/onboarding/complete-all` (all plans)
+7. **Tenant Current**: `/api/tenants/current` (active tenant)
+8. **Tenant Details**: `/api/tenants/{id}` (specific tenant)
+9. **Tenant Verify**: `/api/tenants/verify` (ownership check)
+
+### Critical Security Findings
+- **RLS Gap**: Most auth endpoints missing tenant isolation
+- **High Risk**: Potential cross-tenant data access
+- **Fixed**: Payment endpoints properly implement RLS
+- **Action Required**: Implement RLS context in all tenant-aware endpoints
+
+### Backend Changes
+- Removed 35+ redundant endpoints
+- Created unified profile endpoint
+- Added deprecation decorator for migrations
+- Fixed tenant ID generation (backend-only now)
+- Updated CompleteOnboardingAPI to set User.onboarding_completed
+
+### Frontend Updates
+- Updated 36 files to use consolidated endpoints
+- Removed unused `/auth/signup` page
+- Fixed session authentication in payment flow
+- No more frontend UUID generation
+
+### Key Fixes
+1. **Tenant ID Mismatch**: Frontend was generating UUIDs, now backend-only
+2. **Onboarding Loop**: CompleteOnboardingAPI now updates User.onboarding_completed
+3. **Session Errors**: Fixed "No authenticated session" in payment flow
+4. **URL Duplicates**: Removed redundant endpoint confusion
+
+### RLS Implementation Priority
+- **Phase 1**: Auth profile, tenant management, sessions (this week)
+- **Phase 2**: RLS decorator, validation checks (next week)
+- **Phase 3**: Audit logging, monitoring dashboard (this month)
+
+**CRITICAL**: Always use consolidated endpoints. Never create duplicate auth endpoints.

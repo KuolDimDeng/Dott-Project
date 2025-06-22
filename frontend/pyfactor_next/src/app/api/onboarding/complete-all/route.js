@@ -64,8 +64,6 @@ export async function POST(request) {
       console.warn('[OnboardingComplete] User has no tenant ID, will be created by backend');
     }
     
-    const backendUrl = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
-    
     try {
       // Call backend complete endpoint with force flag
       const completeResponse = await fetch(`${backendUrl}/api/onboarding/complete/`, {
