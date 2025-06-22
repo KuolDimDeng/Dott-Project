@@ -64,9 +64,10 @@ urlpatterns = [
     # path('auth/profile/', OAuthUserProfileView.as_view(), name='oauth_profile'),
     
     # Registration and Signup
-     name='register'),
-     name='signup'),
-     name='auth_signup'),
+    # Commented out redundant signup endpoints as part of consolidation
+    # path('register/', RegisterView.as_view(), name='register'),
+    # path('signup/', SignupView.as_view(), name='signup'),
+    # path('auth/signup/', AuthSignupView.as_view(), name='auth_signup'),
 
     # Token Management
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
