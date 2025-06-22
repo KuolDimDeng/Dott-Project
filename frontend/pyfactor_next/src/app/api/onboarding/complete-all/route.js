@@ -144,6 +144,36 @@ export async function POST(request) {
       console.log('[OnboardingComplete] Final tenant ID:', finalTenantId);
       console.log('[OnboardingComplete] Complete data:', completeData);
       
+      // CRITICAL: Force backend to refresh session data
+      try {
+        console.log('[OnboardingComplete] Forcing backend session refresh...');
+        
+        // Call the session refresh endpoint to update cached session data
+        const sessionRefreshResponse = await fetch(`${backendUrl}/api/sessions/refresh/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Session ${session.sessionToken}`,
+            'X-Session-Token': session.sessionToken || 'no-token'
+          },
+          body: JSON.stringify({
+            force_refresh: true,
+            needs_onboarding: false,
+            onboarding_completed: true,
+            tenant_id: finalTenantId,
+            subscription_plan: subscriptionPlan
+          })
+        });
+        
+        if (!sessionRefreshResponse.ok) {
+          console.warn('[OnboardingComplete] Session refresh failed, but continuing');
+        } else {
+          console.log('[OnboardingComplete] Session refreshed successfully');
+        }
+      } catch (refreshError) {
+        console.error('[OnboardingComplete] Error refreshing session:', refreshError);
+      }
+      
       // If no tenant ID yet, we need to wait for the backend to provide one
       if (!finalTenantId) {
         console.warn('[OnboardingComplete] No tenant ID received yet, redirecting to dashboard');
@@ -154,7 +184,8 @@ export async function POST(request) {
           redirectUrl: '/dashboard',
           onboarding_completed: true,
           needs_onboarding: false,
-          warning: 'Tenant creation pending'
+          warning: 'Tenant creation pending',
+          sessionRefreshRequired: true
         });
       }
       
@@ -164,7 +195,8 @@ export async function POST(request) {
         tenantId: finalTenantId,
         redirectUrl: `/${finalTenantId}/dashboard`,
         onboarding_completed: true,
-        needs_onboarding: false
+        needs_onboarding: false,
+        sessionRefreshRequired: true
       });
       
     } catch (backendError) {

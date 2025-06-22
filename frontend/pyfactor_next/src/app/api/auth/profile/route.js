@@ -28,7 +28,9 @@ export async function GET(request) {
       
       try {
         // Call session-v2 endpoint directly for complete user data
-        const sessionResponse = await fetch(`${request.url.replace('/profile', '/session-v2')}`, {
+        // Use absolute URL to avoid SSL issues
+        const baseUrl = process.env.NEXTAUTH_URL || 'https://dottapps.com';
+        const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
           headers: {
             'Cookie': request.headers.get('cookie') || ''
           },

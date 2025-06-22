@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { logger } from '@/utils/logger';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { refreshSessionData } from '@/utils/sessionRefresh';
 import { 
   COGNITO_ATTRIBUTES,
   COOKIE_NAMES, 
@@ -326,6 +327,13 @@ export default function SubscriptionForm() {
           
           if (completionResponse.ok && completionResult.success) {
             logger.info('[SubscriptionForm] Free plan onboarding completed via backend');
+            
+            // Refresh session data if required
+            if (completionResult.sessionRefreshRequired) {
+              logger.info('[SubscriptionForm] Refreshing session data...');
+              await refreshSessionData();
+            }
+            
             // Backend handles all session updates - redirect to dashboard
             const tenantId = completionResult.tenant_id || completionResult.tenantId;
             if (tenantId) {

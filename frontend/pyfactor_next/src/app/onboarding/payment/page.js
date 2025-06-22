@@ -12,6 +12,7 @@ import {
 import { DynamicStripeProvider } from '@/components/payment/DynamicStripeProvider';
 import { useAuth } from '@/hooks/auth';
 import { logger } from '@/utils/logger';
+import { refreshSessionData, waitForSessionUpdate } from '@/utils/sessionRefresh';
 // Removed sessionStatus import - using session-v2 system
 
 // PaymentForm component that uses Stripe hooks
@@ -374,6 +375,24 @@ function PaymentForm({ plan, billingCycle }) {
           const backendTenantId = completeResult.tenant_id || completeResult.tenantId;
           setTenantId(backendTenantId);
           tenantId = backendTenantId;
+        }
+        
+        // CRITICAL: Refresh session data to ensure DashAppBar shows correct info
+        if (completeResult.sessionRefreshRequired) {
+          logger.info('[PaymentForm] Refreshing session data after payment completion...');
+          
+          // Wait for session to be updated in backend
+          const updatedSession = await waitForSessionUpdate(5, 1000);
+          
+          if (updatedSession) {
+            logger.info('[PaymentForm] Session refreshed successfully:', {
+              businessName: updatedSession.user?.businessName,
+              subscriptionPlan: updatedSession.user?.subscriptionPlan,
+              needsOnboarding: updatedSession.user?.needsOnboarding
+            });
+          } else {
+            logger.warn('[PaymentForm] Session refresh timeout, proceeding anyway');
+          }
         }
         
       } catch (error) {
