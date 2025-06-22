@@ -121,7 +121,8 @@ urlpatterns = [
     path('health-check/', health_check.as_view(), name='health-check'),
     
     # User Signup API
-     name='signup_api'),
+    # Commented out redundant signup endpoint as part of consolidation
+    # path('signup/', SignupAPIView.as_view(), name='signup_api'),
 
     # Tenant endpoints (legacy)
     path('tenant/verify/', OldTenantVerifyView.as_view(), name='tenant-verify-old'),
