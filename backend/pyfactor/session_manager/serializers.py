@@ -101,10 +101,21 @@ class SessionSerializer(serializers.ModelSerializer):
     def get_tenant(self, obj):
         """Return tenant information"""
         if obj.tenant:
+            # Try to get the actual business name from OnboardingProgress
+            business_name = obj.tenant.name  # Default to tenant name
+            try:
+                from onboarding.models import OnboardingProgress
+                onboarding = OnboardingProgress.objects.filter(user=obj.user).first()
+                if onboarding and onboarding.business and onboarding.business.name:
+                    business_name = onboarding.business.name
+                    logger.debug(f"[SessionSerializer] Using business name from OnboardingProgress: {business_name}")
+            except Exception as e:
+                logger.debug(f"[SessionSerializer] Could not fetch business name from OnboardingProgress: {e}")
+            
             return {
                 'id': str(obj.tenant.id),
-                'name': obj.tenant.name,
-                'business_name': obj.tenant.name,  # Tenant name is the business name
+                'name': business_name,  # Use the actual business name
+                'business_name': business_name,  # Use the actual business name
                 'subscription_plan': getattr(obj.tenant, 'subscription_plan', obj.subscription_plan)
             }
         return None

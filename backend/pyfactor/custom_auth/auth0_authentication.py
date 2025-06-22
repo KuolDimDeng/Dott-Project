@@ -1138,6 +1138,16 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                     'is_active': True,
                 }
                 
+                # Add name field if the model has it
+                full_name = user_info.get('name', '')
+                if full_name and hasattr(User, 'name'):
+                    user_data['name'] = full_name
+                
+                # Add picture field if the model has it
+                picture = user_info.get('picture', '')
+                if picture and hasattr(User, 'picture'):
+                    user_data['picture'] = picture
+                
                 # Don't add username field since our User model doesn't use it
                 # The User model has username = None to indicate no username field
                 

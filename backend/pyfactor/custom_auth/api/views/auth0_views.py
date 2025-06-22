@@ -101,6 +101,8 @@ class Auth0UserCreateView(APIView):
                     defaults={
                         'auth0_sub': auth0_sub,
                         'name': data.get('name', ''),
+                        'first_name': data.get('given_name', ''),
+                        'last_name': data.get('family_name', ''),
                         'picture': data.get('picture', ''),
                         'email_verified': data.get('email_verified', False)
                     }
@@ -122,6 +124,8 @@ class Auth0UserCreateView(APIView):
                 if not user.auth0_sub:
                     user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
+                user.first_name = data.get('given_name', user.first_name)
+                user.last_name = data.get('family_name', user.last_name)
                 user.picture = data.get('picture', user.picture)
                 user.email_verified = data.get('email_verified', user.email_verified)
                 user.save()
@@ -175,6 +179,7 @@ class Auth0UserCreateView(APIView):
                     name=default_name,
                     owner_id=user_id_str
                 )
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Created tenant with default name: {default_name}")
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
             
             # Ensure user.tenant relationship is set

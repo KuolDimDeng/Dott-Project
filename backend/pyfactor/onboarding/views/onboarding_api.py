@@ -235,6 +235,15 @@ class OnboardingStatusAPI(APIView):
                         business.country = business_info.get('country', business.country)
                         business.legal_structure = business_info.get('legal_structure', business.legal_structure)
                         business.save()
+                    
+                    # CRITICAL: Update tenant name to match business name
+                    if business.name and user_tenant:
+                        try:
+                            logger.info(f"[OnboardingAPI] Updating tenant name from '{user_tenant.name}' to '{business.name}'")
+                            user_tenant.name = business.name
+                            user_tenant.save()
+                        except Exception as e:
+                            logger.error(f"[OnboardingAPI] Failed to update tenant name: {str(e)}")
                 
                 # Update progress metadata
                 metadata = progress.metadata or {}
@@ -250,7 +259,7 @@ class OnboardingStatusAPI(APIView):
                 progress.save()
                 
                 # Log Auth0 attributes update (replaces Cognito update)
-                logger.info(f"Auth0 user attributes logged for {request.user.email}: status={step}, plan={selected_plan}")
+                logger.info(f"Auth0 user attributes logged for {request.user.email}: status={step}")
             
             # Sync to database immediately
             onboarding_session_service.sync_to_db(session_id, OnboardingProgress)
