@@ -415,7 +415,12 @@ class CompleteOnboardingAPI(APIView):
                     business_name = progress.business.name
                 
                 if not business_name:
-                    business_name = f"{request.user.email}'s Business"
+                    logger.error(f"[CompleteOnboarding] No business name provided for user {request.user.email}")
+                    return Response({
+                        'status': 'error',
+                        'error': 'Business name is required to complete onboarding',
+                        'request_id': request_id
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 
                 # Create tenant
                 new_tenant = Tenant.objects.create(

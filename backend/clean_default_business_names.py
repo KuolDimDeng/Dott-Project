@@ -221,15 +221,11 @@ def clean_tenant_names(conn, dry_run=True, mark_only=False):
                                 print(f"      Found business name in Cognito: {business_name}")
                                 break
                 
-                # Create a business name from user's name if still not found
-                if not business_name and (first_name or last_name):
-                    if first_name and last_name:
-                        business_name = f"{first_name} {last_name}'s Business"
-                    elif first_name:
-                        business_name = f"{first_name}'s Business"
-                    elif last_name:
-                        business_name = f"{last_name}'s Business"
-                    print(f"      Created business name from user's name: {business_name}")
+                # Do NOT create default business names - require explicit names from users
+                # if not business_name and (first_name or last_name):
+                #     # REMOVED: Default business name creation
+                #     # Business names must be explicitly provided during onboarding
+                #     pass
                 
                 # Update tenant name if we found a business name
                 if business_name:

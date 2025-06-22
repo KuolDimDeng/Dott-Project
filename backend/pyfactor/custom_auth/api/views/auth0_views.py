@@ -174,17 +174,12 @@ class Auth0UserCreateView(APIView):
                 # Create new tenant
                 # Convert user.id to string for proper CharField storage
                 user_id_str = str(user.id)
-                # Use a neutral default name instead of exposing email
-                default_name = user.name if user.name else "My Business"
-                tenant = Tenant.objects.create(
-                    name=default_name,
-                    owner_id=user_id_str
-                )
-                logger.info(f"🔥 [AUTH0_CREATE_USER] Created tenant with default name: {default_name}")
-                logger.info(f"🔥 [AUTH0_CREATE_USER] Created new tenant: {tenant.id} (name: {tenant.name})")
+                # Don't create tenant here - let onboarding handle it with proper business name
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Skipping tenant creation - will be created during onboarding with proper business name")
+                tenant = None
             
-            # Ensure user.tenant relationship is set
-            if not user.tenant or user.tenant.id != tenant.id:
+            # Ensure user.tenant relationship is set (only if we have a tenant)
+            if tenant and (not user.tenant or user.tenant.id != tenant.id):
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Updating user.tenant relationship to {tenant.id}")
                 user.tenant = tenant
                 user.save(update_fields=['tenant'])
@@ -195,7 +190,7 @@ class Auth0UserCreateView(APIView):
             progress, progress_created = OnboardingProgress.objects.get_or_create(
                 user=user,
                 defaults={
-                    'tenant_id': tenant.id,
+                    'tenant_id': tenant.id if tenant else None,
                     'onboarding_status': 'business_info',
                     'current_step': 'business_info',
                     'next_step': 'business_info',
@@ -210,8 +205,8 @@ class Auth0UserCreateView(APIView):
                             
             if not progress_created:
                 logger.info(f"🔥 [AUTH0_CREATE_USER] Found existing progress record {progress.id}")
-                # Update tenant_id if it's None or different
-                if progress.tenant_id != tenant.id:
+                # Update tenant_id only if we have a tenant and progress doesn't
+                if tenant and progress.tenant_id != tenant.id:
                     logger.warning(f"🔥 [AUTH0_CREATE_USER] Progress tenant_id mismatch! Progress: {progress.tenant_id}, Tenant: {tenant.id}")
                     progress.tenant_id = tenant.id
                     progress.save()

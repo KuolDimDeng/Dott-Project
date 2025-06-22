@@ -118,9 +118,9 @@ class TenantManagementService:
             if not tenant_id:
                 tenant_id = uuid.uuid4()
                 
-            # Use provided business name or generate a default one
+            # Business name is required
             if not business_name:
-                business_name = f"{user.first_name}'s Business" if user.first_name else f"Business for {user.email}"
+                raise ValueError("Business name is required to create a tenant")
                 
             # Create the tenant record
             tenant = Tenant.objects.create(

@@ -105,9 +105,23 @@ class ForceCompleteOnboardingView(APIView):
                 from custom_auth.models import Tenant
                 import uuid
                 tenant_id = uuid.uuid4()
+                # Get business name from request or onboarding progress
+                business_name = data.get('business_name')
+                if not business_name:
+                    # Try to get from existing onboarding progress
+                    existing_progress = OnboardingProgress.objects.filter(user=user).first()
+                    if existing_progress and existing_progress.business:
+                        business_name = existing_progress.business.name
+                
+                if not business_name:
+                    return Response({
+                        'error': 'Business name is required to complete onboarding',
+                        'detail': 'No business name found in request or onboarding progress'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
                 tenant = Tenant.objects.create(
                     id=tenant_id,
-                    name=f"{user.email}'s Business",
+                    name=business_name,
                     owner_id=str(user.id),
                     is_active=True,
                     rls_enabled=True

@@ -271,7 +271,13 @@ def create_tenant_for_user(user, business_name=None):
         try:
             # Generate tenant ID and name
             tenant_id = uuid.uuid4()
-            tenant_name = business_name or f"{user.first_name}'s Business"
+            
+            # Business name is required
+            if not business_name:
+                logger.error(f"[TENANT-CREATION-{process_id}] No business name provided for user {user.email}")
+                raise ValueError("Business name is required to create a tenant")
+            
+            tenant_name = business_name
             
             # Use a transaction to ensure the tenant record is created atomically
             try:
