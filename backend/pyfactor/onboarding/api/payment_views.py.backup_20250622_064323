@@ -3,7 +3,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.utils import timezone
-from custom_auth.rls import set_tenant_context
 from onboarding.models import OnboardingProgress
 from custom_auth.models import Tenant
 import logging
@@ -150,25 +149,6 @@ def complete_payment_view(request):
         subscription_id = request.data.get('subscription_id')
         tenant_id = request.data.get('tenant_id')
         
-        # CRITICAL: Set tenant context for RLS
-        if tenant_id:
-            try:
-                set_tenant_context(tenant_id)
-                logger.info(f"[CompletePayment] Set tenant context: {tenant_id}")
-            except Exception as e:
-                logger.error(f"[CompletePayment] Failed to set tenant context: {str(e)}")
-        else:
-            # Try to get tenant from user
-            if hasattr(user, 'tenant') and user.tenant:
-                tenant_id = str(user.tenant.id)
-                try:
-                    set_tenant_context(tenant_id)
-                    logger.info(f"[CompletePayment] Set tenant context from user: {tenant_id}")
-                except Exception as e:
-                    logger.error(f"[CompletePayment] Failed to set tenant context: {str(e)}")
-            else:
-                logger.warning("[CompletePayment] No tenant_id available - data isolation may be compromised")
-        
         if not payment_intent_id and not subscription_id:
             return Response({
                 'status': 'error',
@@ -240,6 +220,7 @@ def complete_payment_view(request):
         try:
             from session_manager.models import UserSession
             from session_manager.services import session_service
+            from django.utils import timezone
             
             # Update all active sessions for the user
             active_sessions = UserSession.objects.filter(

@@ -8,7 +8,6 @@ import logging
 import uuid
 import json
 from django.utils import timezone
-from custom_auth.rls import set_tenant_context
 from django.conf import settings
 from django.db import transaction
 from rest_framework import status
