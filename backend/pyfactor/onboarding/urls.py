@@ -85,7 +85,7 @@ urlpatterns = [
     path('setup/status/<uuid:tenant_id>/', SetupStatusView.as_view(), name='setup-status-with-tenant'),
     path('setup/start/', StartOnboardingView.as_view(), name='start-setup'),
     path('setup/cancel/', StartOnboardingView.as_view(), name='cancel-setup'),
-    path('setup/complete/', CompleteOnboardingView.as_view(), name='complete-setup'),
+    # REMOVED: path('setup/complete/', CompleteOnboardingView.as_view(), name='complete-setup') - Use api/complete/ instead
     
     # Database routes 
     path('database/health/', DatabaseHealthCheckView.as_view(), name='database-health'),
