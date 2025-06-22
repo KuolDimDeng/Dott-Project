@@ -106,6 +106,7 @@ logger = get_logger()
 
 
 from custom_auth.permissions import SetupEndpointPermission
+from custom_auth.models import Tenant
 
 @api_view(['GET', 'OPTIONS'])
 @permission_classes([SetupEndpointPermission])
@@ -1827,10 +1828,13 @@ class SaveStep1View(APIView):
             # Generate business number
             business_num = ''.join(random.choices(string.digits, k=6))
             
-            # Get tenant ID from headers
+            # Get tenant ID from headers or generate one for new users
             tenant_id = request.headers.get('X-Tenant-ID')
             if not tenant_id:
-                raise ValidationError("X-Tenant-ID header is required")
+                # For new users during onboarding, generate a tenant ID
+                logger.info(f"🔍 [SaveStep1View] No X-Tenant-ID provided, generating new tenant ID for user {request.user.email}")
+                tenant_id = str(uuid.uuid4())
+                logger.info(f"🔍 [SaveStep1View] Generated new tenant ID: {tenant_id}")
             
             # Generate schema name for this tenant
             schema_name = f"tenant_{tenant_id.replace('-', '_')}"
@@ -1841,6 +1845,33 @@ class SaveStep1View(APIView):
             # Get user's name
             first_name = request.user.first_name or ''
             last_name = request.user.last_name or ''
+            
+            # CRITICAL: Update user with tenant_id if it's newly generated
+            if not request.user.tenant_id:
+                logger.info(f"🔍 [SaveStep1View] Updating user {request.user.email} with tenant_id: {tenant_id}")
+                request.user.tenant_id = tenant_id
+                request.user.save(update_fields=['tenant_id'])
+                logger.info(f"🔍 [SaveStep1View] User tenant_id updated successfully")
+                
+                # Create the Tenant record
+                try:
+                    tenant, created = Tenant.objects.get_or_create(
+                        id=tenant_id,
+                        defaults={
+                            'name': serializer.validated_data['name'],
+                            'owner': request.user,
+                            'created_at': timezone.now(),
+                            'is_active': True,
+                            'setup_status': 'pending'
+                        }
+                    )
+                    if created:
+                        logger.info(f"🔍 [SaveStep1View] Created new Tenant record: {tenant_id}")
+                    else:
+                        logger.info(f"🔍 [SaveStep1View] Tenant record already exists: {tenant_id}")
+                except Exception as tenant_error:
+                    logger.error(f"🔍 [SaveStep1View] Error creating Tenant record: {str(tenant_error)}")
+                    # Continue anyway - don't fail the whole request
             
             # Step 1: Create or ensure schema exists with minimal structure - without foreign keys
             try:
