@@ -21,7 +21,7 @@ export const APP_CONFIG = {
     baseURL: process.env.NEXT_PUBLIC_BACKEND_URL || 'https://127.0.0.1:8000',
     endpoints: {
       auth: {
-        profile: '/api/profile/',
+        profile: '/api/auth/profile',
         google: '/api/onboarding/token-exchange/',
         refresh: '/api/onboarding/token/refresh/',
         verify: '/api/onboarding/token/verify/',
@@ -37,7 +37,7 @@ export const APP_CONFIG = {
           status: '/api/onboarding/setup/status/',
           cancel: '/api/onboarding/setup/cancel/',
         },
-        complete: '/api/onboarding/complete/',
+        complete: '/api/onboarding/complete-all-all',
         taskStatus: (taskId) => `/api/onboarding/tasks/${taskId}/status/`,
       },
       database: {

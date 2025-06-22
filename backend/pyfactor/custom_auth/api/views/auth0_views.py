@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from custom_auth.rls import set_tenant_context, clear_tenant_context
 from rest_framework import status
 from custom_auth.models import Tenant
 from onboarding.models import OnboardingProgress

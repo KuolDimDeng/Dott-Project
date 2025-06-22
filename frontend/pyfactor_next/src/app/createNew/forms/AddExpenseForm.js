@@ -32,7 +32,7 @@ const AddExpenseForm = ({ onClose }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await axiosInstance.get('/api/auth/profile');
       setUserDatabase(response.data.database_name);
       logger.info('User profile:', response.data);
       logger.info('User database:', response.data.database_name);

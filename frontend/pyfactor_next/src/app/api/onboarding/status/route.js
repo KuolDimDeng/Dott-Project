@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 /**
  * Frontend API route to check onboarding status
- * SINGLE SOURCE OF TRUTH: Only uses /api/users/me/session/ for consistency
+ * SINGLE SOURCE OF TRUTH: Only uses /api/auth/profilesession/ for consistency
  * This ensures all APIs return the same onboarding status
  */
 export async function GET(request) {

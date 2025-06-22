@@ -50,7 +50,7 @@ export async function POST(request) {
     
     // 2. Mark onboarding complete
     updatePromises.push(
-      fetch(`${API_URL}/api/onboarding/complete/`, {
+      fetch(`${API_URL}/api/onboarding/complete-all-all`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -46,9 +46,9 @@ export async function GET(request) {
     // Test multiple backend endpoints
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const endpoints = [
-      '/api/users/me/',
+      '/api/auth/profile',
       '/api/users/close-account/',
-      '/api/auth/verify-session/'
+      '/api/auth/session-v2'
     ];
     
     const results = {};

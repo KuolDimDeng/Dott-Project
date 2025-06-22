@@ -112,7 +112,7 @@ export async function GET(request) {
     if (bestToken) {
       try {
         const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-        const response = await fetch(`${backendUrl}/api/users/me/`, {
+        const response = await fetch(`${backendUrl}/api/auth/profile`, {
           headers: {
             'Authorization': `Bearer ${Object.values(tokenResults).find(r => r.success)?.tokenPreview?.replace('...', '')}`, // This won't work, just for demo
             'Content-Type': 'application/json'

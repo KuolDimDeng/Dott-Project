@@ -24,9 +24,9 @@ const TIMESTAMP = new Date().toISOString();
 // Files to update
 const FILES_TO_UPDATE = [
   {
-    path: '/src/app/api/onboarding/complete-all/route.js',
+    path: '/src/app/api/onboarding/complete-all-all/route.js',
     description: 'Onboarding complete-all API route',
-    backupPath: '/src/app/api/onboarding/complete-all/route.js.v10.backup'
+    backupPath: '/src/app/api/onboarding/complete-all-all/route.js.v10.backup'
   }
 ];
 
@@ -47,7 +47,7 @@ async function backupFile(filePath, backupPath) {
 }
 
 async function updateCompleteAllRoute() {
-  const filePath = path.join(process.cwd(), '/src/app/api/onboarding/complete-all/route.js');
+  const filePath = path.join(process.cwd(), '/src/app/api/onboarding/complete-all-all/route.js');
   
   const newContent = `import { NextResponse } from 'next/server';
 import { getSession } from '@/utils/sessionManager-v2-enhanced';
@@ -98,7 +98,7 @@ export async function POST(request) {
     
     try {
       // Call backend complete endpoint with force flag
-      const completeResponse = await fetch(\`\${backendUrl}/api/onboarding/complete/\`, {
+      const completeResponse = await fetch(\`\${backendUrl}/api/onboarding/complete-all-all\`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ export async function POST(request) {
       }
       
       // CRITICAL: Also update the user profile to ensure consistency
-      const profileUpdateResponse = await fetch(\`\${backendUrl}/api/users/me/\`, {
+      const profileUpdateResponse = await fetch(\`\${backendUrl}/api/auth/profile\`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -219,7 +219,7 @@ async function updateScriptRegistry() {
   - Added user profile PATCH to ensure consistency
   - Clear session cache after completion
 - **Files Modified**:
-  - /src/app/api/onboarding/complete-all/route.js
+  - /src/app/api/onboarding/complete-all-all/route.js
 `;
     
     content += entry;

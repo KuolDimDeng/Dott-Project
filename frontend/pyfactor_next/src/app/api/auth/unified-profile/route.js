@@ -36,11 +36,11 @@ async function fetchConsolidatedUserData(sessionToken) {
       .then(r => r.ok ? r.json() : null)
       .catch(() => null),
       
-    fetch(`${API_URL}/api/users/me/session/`, { headers, cache: 'no-store' })
+    fetch(`${API_URL}/api/auth/profilesession/`, { headers, cache: 'no-store' })
       .then(r => r.ok ? r.json() : null)
       .catch(() => null)
       
-    // Skip /api/users/me/ as it requires Auth0 JWT, not session token
+    // Skip /api/auth/profile as it requires Auth0 JWT, not session token
   ];
 
   const [sessionData, profileData] = await Promise.all(requests);

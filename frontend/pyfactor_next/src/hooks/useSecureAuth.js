@@ -28,7 +28,7 @@ export const useSecureAuth = () => {
       
       // Create session with fingerprint
       console.log('[SecureAuth] Creating secure session...');
-      const response = await fetch('/api/sessions/create/', {
+      const response = await fetch('/api/auth/session-v2', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

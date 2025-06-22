@@ -59,7 +59,7 @@ const InvoiceForm = ({ mode = 'create' }) => {
   const fetchUserProfile = async () => {
     try {
       logger.info('[InvoiceForm] Fetching user profile');
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await axiosInstance.get('/api/auth/profile');
       setUserDatabase(response.data.database_name);
       logger.info('[InvoiceForm] User profile fetched:', response.data);
       logger.debug('[InvoiceForm] User database:', response.data.database_name);

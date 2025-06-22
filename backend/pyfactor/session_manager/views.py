@@ -17,21 +17,26 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from .services import session_service
 from .models import UserSession
+from custom_auth.rls import set_tenant_context, clear_tenant_context
 from .serializers import (
     SessionSerializer,
     SessionCreateSerializer,
     SessionUpdateSerializer
 )
 from custom_auth.auth0_authentication import Auth0JWTAuthentication
+from core.decorators import deprecated_class_view
 
 logger = logging.getLogger(__name__)
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+@deprecated_class_view('/api/auth/session-v2', removal_date='2025-02-01')
 class SessionCreateView(APIView):
     """
     Create a new session after Auth0 authentication
     POST /api/sessions/create/
+    
+    DEPRECATED: Use POST /api/auth/session-v2 instead
     """
     authentication_classes = [Auth0JWTAuthentication]
     permission_classes = [IsAuthenticated]

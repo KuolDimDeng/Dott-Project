@@ -41,7 +41,7 @@ async function checkUserStatus(email) {
     console.log('✅ Authentication successful');
     
     // Get user details
-    const userResponse = await fetch(`${API_URL}/api/users/me/`, {
+    const userResponse = await fetch(`${API_URL}/api/auth/profile`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       }

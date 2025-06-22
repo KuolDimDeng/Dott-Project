@@ -33,9 +33,7 @@ urlpatterns = [
     path('healthz', health_check, name='health_check_render'),  # Render health check endpoint
     path('health/detailed/', detailed_health_check, name='detailed_health_check'),
     
-    # Temporary diagnostic endpoint
-    path('api/diagnostic/', DiagnosticView.as_view(), name='diagnostic'),
-    path('api/diagnostic/restore/', RestoreAccountView.as_view(), name='restore_account'),
+    # Diagnostic endpoints removed from production
     
     # API routes - ALWAYS include these (don't wrap in try-catch)
     path('api/', include('custom_auth.api.urls')),

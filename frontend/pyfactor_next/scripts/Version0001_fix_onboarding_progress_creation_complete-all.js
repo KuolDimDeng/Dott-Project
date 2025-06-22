@@ -5,7 +5,7 @@
  * Purpose: Fix the issue where OnboardingProgress records are not created when users complete onboarding
  * 
  * Problem:
- * - The frontend calls /api/onboarding/complete/ which expects an OnboardingProgress record to exist
+ * - The frontend calls /api/onboarding/complete-all-all which expects an OnboardingProgress record to exist
  * - However, SaveStep1View (business info save) does NOT create an OnboardingProgress record
  * - This causes a 404 error when trying to complete onboarding
  * - The force-complete endpoint is called later but the initial error might cause issues
@@ -19,7 +19,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 
-const COMPLETE_ALL_PATH = path.join(__dirname, '../src/app/api/onboarding/complete-all/route.js');
+const COMPLETE_ALL_PATH = path.join(__dirname, '../src/app/api/onboarding/complete-all-all/route.js');
 
 async function fixOnboardingProgressCreation() {
   try {
@@ -47,7 +47,7 @@ async function fixOnboardingProgressCreation() {
       completeCallPattern,
       `// FIXED: Call force-complete first to ensure OnboardingProgress exists
           // The force-complete endpoint uses get_or_create which prevents 404 errors
-          // Original issue: /api/onboarding/complete/ expects OnboardingProgress to exist but SaveStep1View doesn't create it
+          // Original issue: /api/onboarding/complete-all-all expects OnboardingProgress to exist but SaveStep1View doesn't create it
           const completeResponse = await fetch(\`\${apiBaseUrl}/api/onboarding/force-complete/\``
     );
     

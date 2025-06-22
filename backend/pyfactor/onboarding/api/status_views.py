@@ -12,6 +12,7 @@ from custom_auth.auth0_authentication import Auth0JWTAuthentication
 from core.authentication.session_token_auth import SessionTokenAuthentication
 from onboarding.models import OnboardingProgress
 from django.utils import timezone
+from custom_auth.rls import set_tenant_context, clear_tenant_context
 
 logger = logging.getLogger(__name__)
 

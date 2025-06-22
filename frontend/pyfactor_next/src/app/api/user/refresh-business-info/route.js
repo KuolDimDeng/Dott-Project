@@ -17,7 +17,7 @@ export async function GET(request) {
     console.log('[RefreshBusinessInfo] Fetching fresh business info from backend...');
     
     // Call the backend user profile endpoint to get fresh data
-    const response = await fetch(`${API_URL}/api/users/me/`, {
+    const response = await fetch(`${API_URL}/api/auth/profile`, {
       headers: {
         'Authorization': `SessionID ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`

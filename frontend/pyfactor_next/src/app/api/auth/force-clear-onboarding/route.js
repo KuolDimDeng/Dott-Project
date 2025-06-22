@@ -52,7 +52,7 @@ export async function POST(request) {
         const updatedData = await updateResponse.json();
         
         // Also update the user's onboarding status directly
-        const userUpdateResponse = await fetch(`${API_URL}/api/users/me/`, {
+        const userUpdateResponse = await fetch(`${API_URL}/api/auth/profile`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Session ${sessionToken.value}`,

@@ -97,7 +97,7 @@ export async function GET(request) {
         // If no subscription plan in onboarding data, try to get from user profile
         if (!subscriptionPlan || subscriptionPlan === 'free') {
           try {
-            const profileResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+            const profileResponse = await fetch(`${apiBaseUrl}/api/auth/profile`, {
               method: 'GET',
               headers: {
                 'Authorization': `SessionID ${sessionId.value}`,

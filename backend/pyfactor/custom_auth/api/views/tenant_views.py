@@ -15,6 +15,22 @@ from rest_framework.viewsets import ModelViewSet
 
 logger = logging.getLogger('Pyfactor')
 
+def with_tenant_context(tenant_id):
+    """Decorator to set tenant context for a code block"""
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            if tenant_id:
+                set_tenant_context(str(tenant_id))
+            try:
+                return func(*args, **kwargs)
+            finally:
+                if tenant_id:
+                    clear_tenant_context()
+        return wrapper
+    return decorator
+
+
+
 class TenantDetailView(APIView):
     permission_classes = [IsAuthenticated]
 

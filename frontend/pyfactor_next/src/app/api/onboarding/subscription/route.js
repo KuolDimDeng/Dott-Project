@@ -301,7 +301,7 @@ export async function POST(request) {
         
         try {
           // Call the onboarding complete API to ensure backend and session are updated
-          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete/`, {
+          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete-all-all`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

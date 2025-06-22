@@ -412,7 +412,7 @@ export async function completeSetup() {
   try {
     logger.debug('[OnboardingAPI] Completing setup');
 
-    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/complete/`, {
+    const response = await makeRequest(`${API_BASE_URL}/api/onboarding/complete-all-all`, {
       method: 'POST',
       body: JSON.stringify({
         tenant_id: localStorage.getItem('tenantId')

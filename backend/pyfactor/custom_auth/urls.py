@@ -64,9 +64,9 @@ urlpatterns = [
     # path('auth/profile/', OAuthUserProfileView.as_view(), name='oauth_profile'),
     
     # Registration and Signup
-    path('register/', RegisterView.as_view(), name='register'),
-    path('signup/', SignUpView.as_view(), name='signup'),
-    path('signup/', SignUpView.as_view(), name='auth_signup'),
+     name='register'),
+     name='signup'),
+     name='auth_signup'),
 
     # Token Management
     path('token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -120,7 +120,7 @@ urlpatterns = [
     path('health-check/', health_check.as_view(), name='health-check'),
     
     # User Signup API
-    path('signup/', APISignupView.as_view(), name='signup_api'),
+     name='signup_api'),
 
     # Tenant endpoints (legacy)
     path('tenant/verify/', OldTenantVerifyView.as_view(), name='tenant-verify-old'),

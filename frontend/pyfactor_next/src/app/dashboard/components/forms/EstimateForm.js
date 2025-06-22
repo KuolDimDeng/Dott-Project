@@ -45,7 +45,7 @@ const EstimateForm = ({ onSave, onPreview, initialData }) => {
 
   const fetchUserProfile = async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await axiosInstance.get('/api/auth/profile');
       setUserDatabase(response.data.database_name);
       console.log('User profile:', response.data);
       console.log('User database:', response.data.database_name);

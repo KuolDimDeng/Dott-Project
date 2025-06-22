@@ -34,7 +34,7 @@ export async function GET(request) {
     
     // Call backend to get detailed user info
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const response = await fetch(`${apiUrl}/api/users/me/`, {
+    const response = await fetch(`${apiUrl}/api/auth/profile`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'

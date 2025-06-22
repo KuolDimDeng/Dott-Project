@@ -47,7 +47,7 @@ export const getCurrentUser = async (isDashboardRoute = false) => {
     }
     
     // Fetch complete user profile from backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/users/me/`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/profile`, {
       credentials: 'include', // Include Auth0 session cookies
       headers: {
         'Content-Type': 'application/json'
@@ -238,8 +238,8 @@ export const getUserProfile = async (tenantId) => {
     try {
       // Build URL with tenant ID if provided
       const url = tenantId 
-        ? `/api/user/profile?tenantId=${encodeURIComponent(tenantId)}`
-        : '/api/user/profile';
+        ? `/api/auth/profile?tenantId=${encodeURIComponent(tenantId)}`
+        : '/api/auth/profile';
       
       // Add a cache buster with reduced frequency (changes only every minute)
       const cacheBuster = Math.floor(now / (60 * 1000));
@@ -309,7 +309,7 @@ export const getUserProfile = async (tenantId) => {
  */
 export const updateUserProfile = async (profileData) => {
   try {
-    const result = await fetch.put('/api/user/profile/', profileData);
+    const result = await fetch.put('/api/auth/profile', profileData);
     
     // Clear cache to force refresh with new data
     clearUserCache();
@@ -382,7 +382,7 @@ export const getUserTenantContext = async () => {
       'X-Business-ID': tenantId
     };
     
-    const response = await axiosInstance.get('/api/users/me/tenant-context/', {
+    const response = await axiosInstance.get('/api/auth/profiletenant-context/', {
       headers
     });
     

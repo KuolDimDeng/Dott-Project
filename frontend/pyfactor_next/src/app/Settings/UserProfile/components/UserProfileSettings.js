@@ -38,7 +38,7 @@ const UserProfileSettings = ({ userData, onUpdate }) => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      const response = await axiosInstance.put('/api/profile/update/', formData);
+      const response = await axiosInstance.put('/api/auth/profileupdate/', formData);
       if (response.status === 200) {
         onUpdate(response.data);
       }

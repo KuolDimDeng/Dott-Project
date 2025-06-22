@@ -89,11 +89,11 @@ export async function GET(request) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
 
-    console.log('🔥 [USER_CURRENT] Making backend API call to /api/users/me/');
+    console.log('🔥 [USER_CURRENT] Making backend API call to /api/auth/profile');
     
     try {
       // Call backend to get user profile
-      const backendResponse = await fetch(`${apiBaseUrl}/api/users/me/`, {
+      const backendResponse = await fetch(`${apiBaseUrl}/api/auth/profile`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${accessToken}`,

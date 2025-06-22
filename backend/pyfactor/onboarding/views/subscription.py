@@ -2,6 +2,7 @@ import uuid
 import logging
 import traceback
 from django.utils import timezone
+from custom_auth.rls import set_tenant_context, clear_tenant_context
 from django.db import connection, transaction
 from rest_framework import status
 from rest_framework.views import APIView

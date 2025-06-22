@@ -20,7 +20,7 @@ export async function POST(request) {
     
     // Step 1: Create session (backend will incorrectly set needs_onboarding=true)
     console.log('[GoogleSessionFix] Creating session with backend');
-    const createResponse = await fetch(`${API_URL}/api/sessions/create/`, {
+    const createResponse = await fetch(`${API_URL}/api/auth/session-v2`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

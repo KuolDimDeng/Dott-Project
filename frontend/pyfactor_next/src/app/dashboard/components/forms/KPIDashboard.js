@@ -28,7 +28,7 @@ const KPIDashboard = () => {
     try {
       setLoading(true);
       // Fetch user profile
-      const profileResponse = await axiosInstance.get('/api/profile/');
+      const profileResponse = await axiosInstance.get('/api/auth/profile');
       const userProfile = profileResponse.data;
 
       // Always try to fetch KPI data regardless of onboarding status

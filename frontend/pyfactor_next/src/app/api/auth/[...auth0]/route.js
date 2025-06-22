@@ -256,7 +256,7 @@ export async function GET(request, { params }) {
         
         try {
           // Call backend session creation endpoint
-          const sessionResponse = await fetch(`${apiUrl}/api/sessions/create/`, {
+          const sessionResponse = await fetch(`${apiUrl}/api/auth/session-v2`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${tokens.access_token}`,

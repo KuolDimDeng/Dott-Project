@@ -49,7 +49,7 @@ export async function GET(request) {
     if (accessToken) {
       try {
         const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-        const response = await fetch(`${backendUrl}/api/users/me/`, {
+        const response = await fetch(`${backendUrl}/api/auth/profile`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'

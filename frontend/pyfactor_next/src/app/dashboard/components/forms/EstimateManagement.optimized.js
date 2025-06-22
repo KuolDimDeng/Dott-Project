@@ -176,7 +176,7 @@ const [state, dispatch] = useReducer(reducer, initialState);
   // Memoize the fetchUserProfile function
   const fetchUserProfile = useCallback(async () => {
     try {
-      const response = await axiosInstance.get('/api/profile/');
+      const response = await axiosInstance.get('/api/auth/profile');
       console.log('User profile:', response.data);
       
       // Check if schema_name exists, use a fallback if not
