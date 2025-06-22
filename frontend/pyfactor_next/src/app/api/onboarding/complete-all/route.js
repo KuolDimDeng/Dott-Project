@@ -65,8 +65,8 @@ export async function POST(request) {
     }
     
     try {
-      // Call backend complete endpoint with force flag (using the API version that creates tenants)
-      const completeResponse = await fetch(`${backendUrl}/api/onboarding/api/complete/`, {
+      // Call backend complete endpoint with force flag (using the NEW fixed endpoint)
+      const completeResponse = await fetch(`${backendUrl}/api/onboarding/complete-all/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,14 +74,21 @@ export async function POST(request) {
           'X-Session-Token': session.sessionToken || 'no-token'
         },
         body: JSON.stringify({
+          // Use the field names that my NEW complete-all endpoint expects
+          subscriptionPlan: subscriptionPlan,
+          selectedPlan: subscriptionPlan,
+          planType: planType,
+          businessName: businessName || session.user?.businessName || session.user?.business_name,
+          // Include user name fields for the fix
+          given_name: session.user?.given_name || '',
+          family_name: session.user?.family_name || '',
+          first_name: session.user?.first_name || '',
+          last_name: session.user?.last_name || '',
+          // Legacy fields for backward compatibility
           tenant_id: tenantId,
-          business_name: businessName || session.user?.businessName || session.user?.business_name,
-          subscription_plan: subscriptionPlan,
           payment_completed: paymentCompleted,
-          // CRITICAL: Force backend to update User.onboarding_completed
           force_complete: true,
           update_user_model: true,
-          // If no tenant, backend should create one
           create_tenant_if_missing: !tenantId
         })
       });
