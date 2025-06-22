@@ -11,6 +11,7 @@ from .views import (
 )
 from .views_fixed import SessionCreateViewFixed as SessionCreateView
 from .security_views import get_active_sessions
+from .views_validation import SessionValidateView
 
 app_name = 'sessions'
 
@@ -19,6 +20,10 @@ urlpatterns = [
     # Re-enabled session endpoints for Google OAuth flow
     path('create/', SessionCreateView.as_view(), name='session-create'),
     path('current/', SessionDetailView.as_view(), name='session-current'),
+    # Session validation without authentication
+    path('validate/<uuid:session_id>/', SessionValidateView.as_view(), name='session-validate'),
+    path('validate/<uuid:session_id>', SessionValidateView.as_view(), name='session-validate-no-slash'),
+    # Authenticated session detail (keeping for backward compatibility)
     path('<uuid:session_id>/', SessionDetailView.as_view(), name='session-detail'),
     path('<uuid:session_id>', SessionDetailView.as_view(), name='session-detail-no-slash'),
     # REMOVED - Use /api/auth/session-v2

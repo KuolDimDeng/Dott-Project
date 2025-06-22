@@ -58,12 +58,11 @@ export async function POST(request) {
       // Additional fingerprint data would come from client-side
     };
     
-    // Get session details from Django using the token
+    // Get session details from Django using the validation endpoint
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
-    const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
+    const sessionResponse = await fetch(`${API_URL}/api/sessions/validate/${token}/`, {
       headers: {
-        'Authorization': `SessionID ${token}`,
-        'Cookie': `session_token=${token}`,
+        'Content-Type': 'application/json',
         'X-Device-Fingerprint': JSON.stringify(fingerprintData)
       }
     });

@@ -19,9 +19,9 @@ export async function POST(request) {
       return NextResponse.json({ error: 'No authenticated session' }, { status: 401 });
     }
     
-    // Validate session with backend
+    // Validate session with backend using the new validate endpoint
     const backendUrl = process.env.BACKEND_API_URL || 'https://api.dottapps.com';
-    const sessionResponse = await fetch(`${backendUrl}/api/sessions/${sessionToken}/`, {
+    const sessionResponse = await fetch(`${backendUrl}/api/sessions/validate/${sessionToken}/`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
