@@ -93,14 +93,16 @@ export async function POST(request) {
         // If the regular endpoint fails, try the force-complete endpoint
         console.log('[OnboardingComplete] Trying force-complete endpoint...');
         
-        const forceResponse = await fetch(`${backendUrl}/force-complete/`, {
+        const forceResponse = await fetch(`${backendUrl}/api/onboarding/force-complete/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.accessToken}`
+            'Authorization': `Session ${session.sessionToken}`,
+            'X-Session-Token': session.sessionToken || 'no-token'
           },
           body: JSON.stringify({
-            email: session.user.email
+            email: session.user.email,
+            business_name: businessName || session.user?.businessName || session.user?.business_name
           })
         });
         

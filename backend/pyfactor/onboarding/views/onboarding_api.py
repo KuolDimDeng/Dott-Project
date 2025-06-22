@@ -407,7 +407,6 @@ class CompleteOnboardingAPI(APIView):
             if not tenant_id:
                 logger.warning(f"[CompleteOnboarding] User {request.user.email} has no tenant, creating one")
                 from custom_auth.models import Tenant
-                import uuid
                 
                 # Get business name from progress or use default
                 business_name = None
@@ -422,7 +421,7 @@ class CompleteOnboardingAPI(APIView):
                         'request_id': request_id
                     }, status=status.HTTP_400_BAD_REQUEST)
                 
-                # Create tenant
+                # Create tenant (uuid is already imported at module level)
                 new_tenant = Tenant.objects.create(
                     id=uuid.uuid4(),
                     name=business_name,
