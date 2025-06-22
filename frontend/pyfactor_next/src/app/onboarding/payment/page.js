@@ -331,6 +331,18 @@ function PaymentForm({ plan, billingCycle }) {
       try {
         logger.info('[PaymentForm] Completing payment and onboarding via unified API...');
         
+        // Log current session data before completion
+        console.log('🔍 [PaymentForm] Current session data BEFORE payment completion:', {
+          email: user?.email,
+          tenantId: tenantId,
+          subscription_plan: user?.subscription_plan,
+          given_name: user?.given_name,
+          family_name: user?.family_name,
+          first_name: user?.first_name,
+          last_name: user?.last_name,
+          name: user?.name
+        });
+        
         // Prepare the payload
         const completionPayload = {
           // Include business information (required by complete-all endpoint)
@@ -341,6 +353,11 @@ function PaymentForm({ plan, billingCycle }) {
           selectedPlan: plan.toLowerCase(),
           billingCycle: billingCycle,
           planType: 'paid',
+          // Include user name fields from session
+          given_name: user?.given_name || '',
+          family_name: user?.family_name || '',
+          first_name: user?.first_name || '',
+          last_name: user?.last_name || '',
           // Payment verification data
           paymentVerified: true,
           paymentIntentId: result.paymentIntentId || result.clientSecret,
@@ -350,6 +367,7 @@ function PaymentForm({ plan, billingCycle }) {
           timestamp: new Date().toISOString()
         };
         
+        console.log('🔍 [PaymentForm] PAYMENT COMPLETION - Sending to complete-all:', completionPayload);
         logger.info('[PaymentForm] Sending completion payload:', completionPayload);
         
         const completePaymentResponse = await fetch('/api/onboarding/complete-all', {
@@ -368,6 +386,13 @@ function PaymentForm({ plan, billingCycle }) {
         }
         
         const completeResult = await completePaymentResponse.json();
+        console.log('🔍 [PaymentForm] Complete-all API response:', {
+          success: completeResult.success,
+          tenantId: completeResult.tenantId || completeResult.tenant_id,
+          onboarding_completed: completeResult.onboarding_completed,
+          needs_onboarding: completeResult.needs_onboarding,
+          sessionRefreshRequired: completeResult.sessionRefreshRequired
+        });
         logger.info('[PaymentForm] Payment completion successful:', completeResult);
         
         // Update tenantId if received from backend
@@ -385,6 +410,17 @@ function PaymentForm({ plan, billingCycle }) {
           const updatedSession = await waitForSessionUpdate(5, 1000);
           
           if (updatedSession) {
+            console.log('🔍 [PaymentForm] Session data AFTER refresh:', {
+              email: updatedSession.user?.email,
+              businessName: updatedSession.user?.businessName,
+              subscriptionPlan: updatedSession.user?.subscriptionPlan,
+              given_name: updatedSession.user?.given_name,
+              family_name: updatedSession.user?.family_name,
+              first_name: updatedSession.user?.first_name,
+              last_name: updatedSession.user?.last_name,
+              name: updatedSession.user?.name,
+              needsOnboarding: updatedSession.user?.needsOnboarding
+            });
             logger.info('[PaymentForm] Session refreshed successfully:', {
               businessName: updatedSession.user?.businessName,
               subscriptionPlan: updatedSession.user?.subscriptionPlan,

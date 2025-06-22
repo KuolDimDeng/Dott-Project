@@ -67,19 +67,30 @@ def complete_all_onboarding(request):
             user.onboarding_completed = True
             user.onboarding_completed_at = timezone.now()
             
+            # Log all incoming request data for debugging
+            logger.info(f"[Complete-All] Incoming request data: {request.data}")
+            logger.info(f"[Complete-All] User email: {user.email}")
+            logger.info(f"[Complete-All] Current user data - subscription_plan: {user.subscription_plan}, first_name: '{user.first_name}', last_name: '{user.last_name}'")
+            
             # Extract subscription plan from request data
             subscription_plan = request.data.get('subscriptionPlan') or request.data.get('selectedPlan') or 'free'
             if subscription_plan == 'basic':
                 subscription_plan = 'free'  # Normalize 'basic' to 'free'
             
+            logger.info(f"[Complete-All] Extracted subscription plan: {subscription_plan}")
+            
             # Update subscription plan on User model
             if subscription_plan in ['free', 'professional', 'enterprise']:
                 user.subscription_plan = subscription_plan
-                logger.info(f"Setting user subscription plan to: {subscription_plan}")
+                logger.info(f"[Complete-All] Setting user subscription plan to: {subscription_plan}")
+            else:
+                logger.warning(f"[Complete-All] Invalid subscription plan: {subscription_plan}")
             
             # Extract user name from request data (for Auth0 users who might not have it set)
             first_name = request.data.get('given_name', '').strip() or request.data.get('first_name', '').strip()
             last_name = request.data.get('family_name', '').strip() or request.data.get('last_name', '').strip()
+            
+            logger.info(f"[Complete-All] Extracted names - first_name: '{first_name}', last_name: '{last_name}'")
             
             # If names are not provided in request, try to extract from user's name field
             if not first_name and not last_name and user.name:
@@ -92,8 +103,10 @@ def complete_all_onboarding(request):
             # Update name fields if we have them
             if first_name:
                 user.first_name = first_name
+                logger.info(f"[Complete-All] Setting user.first_name to: '{first_name}'")
             if last_name:
                 user.last_name = last_name
+                logger.info(f"[Complete-All] Setting user.last_name to: '{last_name}'")
             
             # Save all user updates
             update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan']
@@ -102,7 +115,11 @@ def complete_all_onboarding(request):
             if last_name:
                 update_fields.append('last_name')
                 
+            logger.info(f"[Complete-All] Saving user with update_fields: {update_fields}")
             user.save(update_fields=update_fields)
+            
+            # Log user data after save
+            logger.info(f"[Complete-All] After save - subscription_plan: {user.subscription_plan}, first_name: '{user.first_name}', last_name: '{user.last_name}'")
             
             # 4. Update user session
             try:

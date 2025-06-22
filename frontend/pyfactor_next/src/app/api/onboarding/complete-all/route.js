@@ -65,6 +65,29 @@ export async function POST(request) {
     }
     
     try {
+      // Log the payload we're sending to backend
+      const backendPayload = {
+        // Use the field names that my NEW complete-all endpoint expects
+        subscriptionPlan: subscriptionPlan,
+        selectedPlan: subscriptionPlan,
+        planType: planType,
+        businessName: businessName || session.user?.businessName || session.user?.business_name,
+        // Include user name fields for the fix
+        given_name: session.user?.given_name || '',
+        family_name: session.user?.family_name || '',
+        first_name: session.user?.first_name || '',
+        last_name: session.user?.last_name || '',
+        // Legacy fields for backward compatibility
+        tenant_id: tenantId,
+        payment_completed: paymentCompleted,
+        force_complete: true,
+        update_user_model: true,
+        create_tenant_if_missing: !tenantId
+      };
+      
+      console.log('🔍 [OnboardingComplete API] Sending to backend complete-all:', backendPayload);
+      console.log('🔍 [OnboardingComplete API] Backend URL:', `${backendUrl}/api/onboarding/complete-all/`);
+      
       // Call backend complete endpoint with force flag (using the NEW fixed endpoint)
       const completeResponse = await fetch(`${backendUrl}/api/onboarding/complete-all/`, {
         method: 'POST',
@@ -73,24 +96,7 @@ export async function POST(request) {
           'Authorization': `Session ${session.sessionToken}`,
           'X-Session-Token': session.sessionToken || 'no-token'
         },
-        body: JSON.stringify({
-          // Use the field names that my NEW complete-all endpoint expects
-          subscriptionPlan: subscriptionPlan,
-          selectedPlan: subscriptionPlan,
-          planType: planType,
-          businessName: businessName || session.user?.businessName || session.user?.business_name,
-          // Include user name fields for the fix
-          given_name: session.user?.given_name || '',
-          family_name: session.user?.family_name || '',
-          first_name: session.user?.first_name || '',
-          last_name: session.user?.last_name || '',
-          // Legacy fields for backward compatibility
-          tenant_id: tenantId,
-          payment_completed: paymentCompleted,
-          force_complete: true,
-          update_user_model: true,
-          create_tenant_if_missing: !tenantId
-        })
+        body: JSON.stringify(backendPayload)
       });
       
       let completeData = {};

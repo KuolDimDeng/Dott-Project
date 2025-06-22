@@ -123,6 +123,27 @@ const DashAppBar = ({
   // Use session hook to get session data
   const { session, loading: sessionLoading, refreshSession } = useSession();
   
+  // Log session data for debugging
+  useEffect(() => {
+    if (session && !sessionLoading) {
+      console.log('🔍 [DashAppBar] Session data received:', {
+        authenticated: session.authenticated,
+        email: session.user?.email,
+        subscription_plan: session.user?.subscription_plan,
+        subscriptionPlan: session.user?.subscriptionPlan,
+        given_name: session.user?.given_name,
+        family_name: session.user?.family_name,
+        first_name: session.user?.first_name,
+        last_name: session.user?.last_name,
+        name: session.user?.name,
+        businessName: session.user?.businessName,
+        business_name: session.user?.business_name,
+        tenantId: session.user?.tenantId,
+        allUserKeys: session.user ? Object.keys(session.user) : 'no user'
+      });
+    }
+  }, [session, sessionLoading]);
+  
   const { notifySuccess, notifyError, notifyInfo, notifyWarning } =
     useNotification();
     
@@ -750,8 +771,17 @@ const DashAppBar = ({
   // Updated subscription display
   // Memoize subscription type to prevent recalculation on every render
   const effectiveSubscriptionType = useMemo(() => {
-    return getSubscriptionType();
-  }, [getSubscriptionType]);
+    const subscriptionType = getSubscriptionType();
+    console.log('🔍 [DashAppBar] Calculating effectiveSubscriptionType:', {
+      result: subscriptionType,
+      sessionPlan: session?.user?.subscriptionPlan || session?.user?.subscription_plan,
+      auth0Attrs: userAttributes?.['custom:subplan'],
+      userData: userData?.selected_plan || userData?.selectedPlan || userData?.subscription_type || userData?.subscriptionType,
+      profileData: profileData?.selected_plan || profileData?.selectedPlan || profileData?.subscriptionType || profileData?.subscriptionPlan || profileData?.subscription_plan || profileData?.subscription_type,
+      allProfileKeys: profileData ? Object.keys(profileData) : 'no profile data'
+    });
+    return subscriptionType;
+  }, [getSubscriptionType, session, userAttributes, userData, profileData]);
   
   // Subscription debug removed for performance
   

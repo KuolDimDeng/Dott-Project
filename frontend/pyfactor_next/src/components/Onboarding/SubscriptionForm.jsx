@@ -308,6 +308,32 @@ export default function SubscriptionForm() {
         
         try {
           // Call backend to complete onboarding for free plan
+          console.log('🔍 [SubscriptionForm] FREE PLAN - Sending to complete-all:', {
+            subscriptionPlan: plan.id,
+            billingCycle: billingCycle,
+            planType: 'free',
+            planName: plan.name,
+            timestamp: new Date().toISOString()
+          });
+          
+          // Log current session data before API call
+          try {
+            const currentSession = await fetch('/api/auth/session-v2', { 
+              credentials: 'include' 
+            }).then(r => r.json());
+            console.log('🔍 [SubscriptionForm] Current session data before completion:', {
+              email: currentSession.user?.email,
+              given_name: currentSession.user?.given_name,
+              family_name: currentSession.user?.family_name,
+              first_name: currentSession.user?.first_name,
+              last_name: currentSession.user?.last_name,
+              name: currentSession.user?.name,
+              subscription_plan: currentSession.user?.subscription_plan
+            });
+          } catch (e) {
+            console.error('🔍 [SubscriptionForm] Could not fetch current session:', e);
+          }
+          
           const completionResponse = await fetch('/api/onboarding/complete-all', {
             method: 'POST',
             headers: {
@@ -325,6 +351,14 @@ export default function SubscriptionForm() {
           
           const completionResult = await completionResponse.json();
           
+          console.log('🔍 [SubscriptionForm] Complete-all API response:', {
+            success: completionResult.success,
+            tenantId: completionResult.tenantId || completionResult.tenant_id,
+            onboarding_completed: completionResult.onboarding_completed,
+            needs_onboarding: completionResult.needs_onboarding,
+            sessionRefreshRequired: completionResult.sessionRefreshRequired
+          });
+          
           if (completionResponse.ok && completionResult.success) {
             logger.info('[SubscriptionForm] Free plan onboarding completed via backend');
             
@@ -332,6 +366,25 @@ export default function SubscriptionForm() {
             if (completionResult.sessionRefreshRequired) {
               logger.info('[SubscriptionForm] Refreshing session data...');
               await refreshSessionData();
+              
+              // Log session data after refresh
+              try {
+                const refreshedSession = await fetch('/api/auth/session-v2', { 
+                  credentials: 'include' 
+                }).then(r => r.json());
+                console.log('🔍 [SubscriptionForm] Session data AFTER refresh:', {
+                  email: refreshedSession.user?.email,
+                  subscription_plan: refreshedSession.user?.subscription_plan,
+                  given_name: refreshedSession.user?.given_name,
+                  family_name: refreshedSession.user?.family_name,
+                  first_name: refreshedSession.user?.first_name,
+                  last_name: refreshedSession.user?.last_name,
+                  name: refreshedSession.user?.name,
+                  tenantId: refreshedSession.user?.tenantId
+                });
+              } catch (e) {
+                console.error('🔍 [SubscriptionForm] Could not fetch refreshed session:', e);
+              }
             }
             
             // Backend handles all session updates - redirect to dashboard
@@ -352,6 +405,29 @@ export default function SubscriptionForm() {
         }
       } else {
         // For paid plans - go to payment page (completion happens after payment)
+        console.log('🔍 [SubscriptionForm] PAID PLAN - Redirecting to payment:', {
+          subscriptionPlan: plan.id,
+          planName: plan.name,
+          billingCycle: billingCycle,
+          planType: 'paid',
+          price: plan.price[billingCycle],
+          timestamp: new Date().toISOString()
+        });
+        
+        // Log what we're storing in sessionStorage for payment flow
+        console.log('🔍 [SubscriptionForm] Storing in sessionStorage for payment:', {
+          selectedPlan: {
+            plan: plan.id,
+            name: plan.name,
+            price: plan.price[billingCycle],
+            billingCycle
+          },
+          pendingSubscription: {
+            plan: plan.id,
+            billing_interval: billingCycle,
+            payment_method: 'credit_card'
+          }
+        });
         setProcessingStatus('Preparing payment options...');
         router.push(`/onboarding/payment?plan=${plan.id}&cycle=${billingCycle}&requestId=${requestId}`);
       }
