@@ -1087,11 +1087,9 @@ class StartOnboardingView(BaseOnboardingView):
                         connection.connect()
                     
                     # Create a default business first
-                    business = Business.objects.create(
-                        owner=user,
-                        name=None  # Business name must be provided explicitly during onboarding,
-                        business_type='default'
-                    )
+                    # Business must be created during onboarding with explicit name
+                    logger.error(f"No business found for user {user.email} - cannot create default business")
+                    raise Exception("Business must be created during onboarding with user-provided name")
                     
                     # Now update the profile in a separate operation
                     # This reduces the chance of deadlocks
