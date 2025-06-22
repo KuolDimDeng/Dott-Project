@@ -86,6 +86,8 @@ export async function POST(request) {
         })
       });
       
+      let completeData = {};
+      
       if (!completeResponse.ok) {
         const errorData = await completeResponse.text();
         console.error('[OnboardingComplete] Backend complete failed:', errorData);
@@ -111,6 +113,10 @@ export async function POST(request) {
         }
         
         console.log('[OnboardingComplete] Force-complete successful');
+        completeData = await forceResponse.json();
+      } else {
+        // Parse the successful response
+        completeData = await completeResponse.json();
       }
       
       // CRITICAL: Also update the user profile to ensure consistency
@@ -130,15 +136,27 @@ export async function POST(request) {
         console.warn('[OnboardingComplete] Profile update failed, but continuing...');
       }
       
-      // Session cache cleared automatically when backend updates
-      
-      // Parse the response to get the tenant ID
-      const completeData = await completeResponse.json();
-      const finalTenantId = completeData.tenant_id || completeData.tenantId || tenantId || session.user.tenantId;
+      // Get the tenant ID from the response
+      const finalTenantId = completeData.tenant_id || completeData.tenantId || completeData.tenant || tenantId || session.user.tenantId;
       
       console.log('[OnboardingComplete] ✓ Onboarding completed successfully');
       console.log('[OnboardingComplete] User.onboarding_completed should now be True');
       console.log('[OnboardingComplete] Final tenant ID:', finalTenantId);
+      console.log('[OnboardingComplete] Complete data:', completeData);
+      
+      // If no tenant ID yet, we need to wait for the backend to provide one
+      if (!finalTenantId) {
+        console.warn('[OnboardingComplete] No tenant ID received yet, redirecting to dashboard');
+        return NextResponse.json({
+          success: true,
+          message: 'Onboarding completed successfully',
+          tenantId: null,
+          redirectUrl: '/dashboard',
+          onboarding_completed: true,
+          needs_onboarding: false,
+          warning: 'Tenant creation pending'
+        });
+      }
       
       return NextResponse.json({
         success: true,

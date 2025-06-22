@@ -301,18 +301,18 @@ export async function POST(request) {
         
         try {
           // Call the onboarding complete API to ensure backend and session are updated
-          const completeResponse = await fetch(`${apiBaseUrl}/api/onboarding/complete-all-all`, {
+          const completeResponse = await fetch(`${process.env.NEXTAUTH_URL || 'https://dottapps.com'}/api/onboarding/complete-all`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Session ${sessionTokenCookie.value}`,
-              'X-User-Email': authenticatedUser.email,
-              'X-Request-ID': `onboarding-complete-${Date.now()}`,
-              'X-Source': 'free-plan-auto-complete'
+              'Cookie': `session_token=${sessionTokenCookie.value}; sid=${sessionTokenCookie.value}`
             },
             body: JSON.stringify({
-              plan: 'free',
-              auto_complete: true,
+              businessName: cookieStore.get('businessName')?.value || 'My Business',
+              businessType: cookieStore.get('businessType')?.value || '',
+              selectedPlan: 'free',
+              billingCycle: 'monthly',
+              planType: 'free',
               source: 'subscription_selection'
             }),
             timeout: 10000
