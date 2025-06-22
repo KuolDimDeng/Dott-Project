@@ -1089,7 +1089,7 @@ class StartOnboardingView(BaseOnboardingView):
                     # Create a default business first
                     business = Business.objects.create(
                         owner=user,
-                        name=f"{user.first_name}'s Business",
+                        name=None  # Business name must be provided explicitly during onboarding,
                         business_type='default'
                     )
                     
@@ -1133,7 +1133,7 @@ class StartOnboardingView(BaseOnboardingView):
                         
                         business = Business.objects.create(
                             owner=user,
-                            name=f"{user.first_name}'s Business",
+                            name=None  # Business name must be provided explicitly during onboarding,
                             business_type='default'
                         )
                         profile = UserProfile.objects.create(
@@ -1232,7 +1232,7 @@ class StartOnboardingView(BaseOnboardingView):
                         
                         business = Business.objects.create(
                             owner=request.user,
-                            name=f"{request.user.first_name}'s Business",
+                            name=None  # Business name must be provided explicitly during onboarding,
                             business_type='default'
                         )
                         # Update profile in a separate query to avoid deadlocks
@@ -2628,7 +2628,7 @@ class SaveStep1View(APIView):
             
             # Create the base business with valid fields only
             business = Business.objects.create(
-                name=f"{request.user.first_name}'s Business"
+                name=None  # Business name must be provided explicitly during onboarding
             )
             
             # Set owner
@@ -2711,7 +2711,7 @@ class SaveStep2View(APIView):
             
             # Create the base business with valid fields only
             business = Business.objects.create(
-                name=f"{request.user.first_name}'s Business"
+                name=None  # Business name must be provided explicitly during onboarding
             )
             
             # Set owner
@@ -4014,7 +4014,7 @@ class ResetOnboardingView(BaseOnboardingView):
                 return False
                 
             logger.info(f"Resetting business data for user {user.email}")
-            business.name = f"{user.first_name}'s Business" if user.first_name else "My Business"
+            business.name = None  # Business name must be provided explicitly during onboarding if user.first_name else None  # Business name must be provided explicitly during onboarding
             business.save()
             
             # Ensure business details exist
@@ -4594,7 +4594,7 @@ class SaveStep4View(BaseOnboardingView):
                     if not business:
                         # Create a new business if none exists
                         business = Business.objects.create(
-                            name=f"{user.first_name}'s Business" if user.first_name else "My Business"
+                            name=None  # Business name must be provided explicitly during onboarding if user.first_name else None  # Business name must be provided explicitly during onboarding
                         )
                         
                         # Ensure business details exist

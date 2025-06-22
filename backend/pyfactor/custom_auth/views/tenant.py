@@ -132,18 +132,26 @@ class TenantCreateView(APIView):
                                 'message': 'Tenant schema already exists'
                             }, status=status.HTTP_200_OK)
             
-            # Create new tenant record if needed
+            # If no tenant exists, require business name
             if not tenant:
+                # CRITICAL: Business name MUST be provided explicitly
+                business_name = request.data.get('business_name', '').strip()
+                
+                if not business_name:
+                    return Response({
+                        'error': 'Business name is required',
+                        'message': 'Please provide your business name to create a tenant'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+                
                 # Generate tenant ID and schema name
                 tenant_id = uuid.uuid4()
                 schema_name = f"tenant_{str(tenant_id).replace('-', '_')}"
-                tenant_name = f"{user.first_name}'s Business" if user.first_name else f"Business for {user.email}"
                 
                 with transaction.atomic():
                     tenant = Tenant.objects.create(
                         id=tenant_id,
                         schema_name=schema_name,
-                        name=tenant_name,
+                        name=business_name,  # Use provided business name only
                         owner_id=user.id,
                         created_on=timezone.now(),
                         is_active=True,

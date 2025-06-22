@@ -82,15 +82,9 @@ class SubscriptionSaveView(APIView):
             if business:
                 return business
                 
-            # Create a basic business if none exists
-            business_name = f"{request.user.first_name or request.user.email.split('@')[0]}'s Business"
-            business = Business.objects.create(
-                owner_id=request.user.id,
-                name=business_name
-            )
-            
-            logger.info(f"Created new business for user {request.user.email}")
-            return business
+            # Business must be created during onboarding with explicit name
+            logger.error(f"No business found for user {request.user.email} - onboarding incomplete")
+            return None
             
         except Exception as e:
             logger.error(f"Error retrieving/creating business: {str(e)}")
@@ -115,15 +109,9 @@ class SubscriptionSaveView(APIView):
             if business:
                 return business
                 
-            # Create a basic business if none exists
-            business_name = f"{request.user.first_name or request.user.email.split('@')[0]}'s Business"
-            business = Business.objects.create(
-                owner_id=request.user.id,
-                name=business_name
-            )
-            
-            logger.info(f"Created new business for user {request.user.email}")
-            return business
+            # Business must be created during onboarding with explicit name
+            logger.error(f"No business found for user {request.user.email} - onboarding incomplete")
+            return None
             
         except Exception as e:
             logger.error(f"Error retrieving/creating business: {str(e)}")
