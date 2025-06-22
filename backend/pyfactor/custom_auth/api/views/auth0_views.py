@@ -97,13 +97,34 @@ class Auth0UserCreateView(APIView):
             except User.DoesNotExist:
                 # Fallback to email lookup
                 logger.info(f"🔥 [AUTH0_CREATE_USER] No user found by auth0_sub, checking by email: {email}")
+                # Enhanced name extraction for new users
+                given_name = data.get('given_name', '').strip()
+                family_name = data.get('family_name', '').strip()
+                full_name = data.get('name', '').strip()
+                
+                # If Google didn't provide given_name/family_name, extract from 'name'
+                if (not given_name or not family_name) and full_name:
+                    name_parts = full_name.split(' ', 1)
+                    if not given_name and len(name_parts) >= 1:
+                        given_name = name_parts[0]
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted given_name from name: {given_name}")
+                    if not family_name and len(name_parts) >= 2:
+                        family_name = name_parts[1]
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted family_name from name: {family_name}")
+                
+                # If still no first name, use email prefix as fallback
+                if not given_name:
+                    email_prefix = email.split('@')[0]
+                    given_name = email_prefix.capitalize()
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] New user - using email prefix as first_name: {given_name}")
+                
                 user, created = User.objects.get_or_create(
                     email=email,
                     defaults={
                         'auth0_sub': auth0_sub,
-                        'name': data.get('name', ''),
-                        'first_name': data.get('given_name', ''),
-                        'last_name': data.get('family_name', ''),
+                        'name': full_name,
+                        'first_name': given_name,
+                        'last_name': family_name,
                         'picture': data.get('picture', ''),
                         'email_verified': data.get('email_verified', False)
                     }
@@ -125,12 +146,31 @@ class Auth0UserCreateView(APIView):
                 if not user.auth0_sub:
                     user.auth0_sub = auth0_sub
                 user.name = data.get('name', user.name)
-                user.first_name = data.get('given_name', user.first_name)
-                user.last_name = data.get('family_name', user.last_name)
+                
+                # Enhanced name extraction logic for Google OAuth
+                given_name = data.get('given_name', '').strip()
+                family_name = data.get('family_name', '').strip()
+                
+                # If Google didn't provide given_name/family_name, try to extract from 'name'
+                if (not given_name or not family_name) and data.get('name'):
+                    name_parts = data.get('name', '').strip().split(' ', 1)
+                    if not given_name and len(name_parts) >= 1:
+                        given_name = name_parts[0]
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] Extracted given_name from name field: {given_name}")
+                    if not family_name and len(name_parts) >= 2:
+                        family_name = name_parts[1]
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] Extracted family_name from name field: {family_name}")
+                
+                # Update names only if we have better data
+                if given_name and (not user.first_name or user.first_name != given_name):
+                    user.first_name = given_name
+                if family_name and (not user.last_name or user.last_name != family_name):
+                    user.last_name = family_name
+                
                 user.picture = data.get('picture', user.picture)
                 user.email_verified = data.get('email_verified', user.email_verified)
                 user.save()
-                logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated successfully")
+                logger.info(f"🔥 [AUTH0_CREATE_USER] User {user.id} updated - first_name: '{user.first_name}', last_name: '{user.last_name}'")
             else:
                 # New user - ensure onboarding_completed is False
                 logger.info(f"🔥 [AUTH0_CREATE_USER] New user created - setting onboarding_completed=False")

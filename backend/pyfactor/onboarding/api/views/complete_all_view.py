@@ -90,21 +90,34 @@ def complete_all_onboarding(request):
             first_name = request.data.get('given_name', '').strip() or request.data.get('first_name', '').strip()
             last_name = request.data.get('family_name', '').strip() or request.data.get('last_name', '').strip()
             
-            logger.info(f"[Complete-All] Extracted names - first_name: '{first_name}', last_name: '{last_name}'")
+            logger.info(f"[Complete-All] Extracted names from request - first_name: '{first_name}', last_name: '{last_name}'")
             
             # If names are not provided in request, try to extract from user's name field
             if not first_name and not last_name and user.name:
                 name_parts = user.name.strip().split(' ', 1)
                 if len(name_parts) >= 1:
                     first_name = name_parts[0]
+                    logger.info(f"[Complete-All] Extracted first_name from user.name: '{first_name}'")
                 if len(name_parts) >= 2:
                     last_name = name_parts[1]
+                    logger.info(f"[Complete-All] Extracted last_name from user.name: '{last_name}'")
             
-            # Update name fields if we have them
-            if first_name:
+            # If STILL no first name and user already has data, keep existing
+            if not first_name and user.first_name:
+                first_name = user.first_name
+                logger.info(f"[Complete-All] Keeping existing first_name: '{first_name}'")
+            
+            # Final fallback - use email prefix
+            if not first_name:
+                email_prefix = user.email.split('@')[0]
+                first_name = email_prefix.capitalize()
+                logger.info(f"[Complete-All] Using email prefix as first_name: '{first_name}'")
+            
+            # Update name fields if we have them or if they're different
+            if first_name and user.first_name != first_name:
                 user.first_name = first_name
                 logger.info(f"[Complete-All] Setting user.first_name to: '{first_name}'")
-            if last_name:
+            if last_name and user.last_name != last_name:
                 user.last_name = last_name
                 logger.info(f"[Complete-All] Setting user.last_name to: '{last_name}'")
             
