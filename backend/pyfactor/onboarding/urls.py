@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from . import views
 from .views import (
     StartOnboardingView,
-    # CompleteOnboardingView,  # REMOVED - Use CompleteOnboardingAPI instead
+    CompleteOnboardingView,  # Import but don't use in URL patterns
     CleanupOnboardingView,
     CheckOnboardingStatusView,
     GoogleTokenExchangeView,
@@ -85,7 +85,7 @@ urlpatterns = [
     path('setup/status/<uuid:tenant_id>/', SetupStatusView.as_view(), name='setup-status-with-tenant'),
     path('setup/start/', StartOnboardingView.as_view(), name='start-setup'),
     path('setup/cancel/', StartOnboardingView.as_view(), name='cancel-setup'),
-    # REMOVED: path('setup/complete/', CompleteOnboardingView.as_view(), name='complete-setup') - Use api/complete/ instead
+    # REMOVED: setup/complete endpoint - Use api/complete/ instead
     
     # Database routes 
     path('database/health/', DatabaseHealthCheckView.as_view(), name='database-health'),
@@ -100,7 +100,7 @@ urlpatterns = [
     
     # Success/Complete routes
     path('success/', OnboardingSuccessView.as_view(), name='success'),
-    # REMOVED: path('complete/', CompleteOnboardingView.as_view(), name='complete') - Use api/complete/ instead
+    # REMOVED: complete endpoint - Use api/complete/ instead
     
     # Dashboard routes
     path('setup/trigger/', DashboardSchemaSetupView.as_view(), name='trigger_schema_setup'),

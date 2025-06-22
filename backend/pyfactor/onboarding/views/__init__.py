@@ -11,7 +11,7 @@ from onboarding.views.views import (
     # Core views needed for URLs
     DatabaseHealthCheckView,
     StartOnboardingView,
-    # CompleteOnboardingView,  # REMOVED - Use CompleteOnboardingAPI instead
+    CompleteOnboardingView,  # Still needed for imports but not used in URLs
     CleanupOnboardingView,
     CheckOnboardingStatusView,
     GoogleTokenExchangeView,
@@ -49,7 +49,7 @@ __all__ = [
     # Core views
     'DatabaseHealthCheckView',
     'StartOnboardingView',
-    # 'CompleteOnboardingView',  # REMOVED - Use CompleteOnboardingAPI instead
+    'CompleteOnboardingView',  # Still needed for imports but not used in URLs
     'CleanupOnboardingView',
     'CheckOnboardingStatusView',
     'GoogleTokenExchangeView',
