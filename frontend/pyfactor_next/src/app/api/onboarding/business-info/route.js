@@ -384,6 +384,19 @@ export async function POST(request) {
       console.log('🚨 [BUSINESS-INFO API] Access token exists:', !!accessToken);
       console.log('🚨 [BUSINESS-INFO API] Backend URL:', `${apiBaseUrl}/api/onboarding/save-business-info/`);
       
+      // Clear any cached session data to force fresh data on next request
+      console.log('🚨 [BUSINESS-INFO API] Clearing session cache before backend call');
+      try {
+        const sessionManagerPath = '@/utils/sessionManager-v2-enhanced';
+        const { sessionManagerEnhanced } = await import(sessionManagerPath);
+        if (sessionManagerEnhanced && typeof sessionManagerEnhanced.clearCache === 'function') {
+          sessionManagerEnhanced.clearCache();
+          console.log('🚨 [BUSINESS-INFO API] Session cache cleared successfully');
+        }
+      } catch (cacheError) {
+        console.warn('🚨 [BUSINESS-INFO API] Could not clear session cache:', cacheError.message);
+      }
+      
       // Forward authenticated request to Django backend
       const headers = {
         'Content-Type': 'application/json',
@@ -606,6 +619,18 @@ export async function POST(request) {
               domain: cookieOptions.domain,
               production: process.env.NODE_ENV === 'production'
             });
+            
+            // Clear session cache after successful save to force refresh of business name
+            try {
+              const sessionManagerPath = '@/utils/sessionManager-v2-enhanced';
+              const { sessionManagerEnhanced } = await import(sessionManagerPath);
+              if (sessionManagerEnhanced && typeof sessionManagerEnhanced.clearCache === 'function') {
+                sessionManagerEnhanced.clearCache();
+                console.log('🚨 [BUSINESS-INFO API] Session cache cleared after successful save');
+              }
+            } catch (cacheError) {
+              console.warn('🚨 [BUSINESS-INFO API] Could not clear session cache after save:', cacheError.message);
+            }
             
             return response;
             

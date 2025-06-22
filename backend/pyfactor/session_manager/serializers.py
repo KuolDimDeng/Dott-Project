@@ -101,16 +101,42 @@ class SessionSerializer(serializers.ModelSerializer):
     def get_tenant(self, obj):
         """Return tenant information"""
         if obj.tenant:
-            # Try to get the actual business name from OnboardingProgress
-            business_name = obj.tenant.name  # Default to tenant name
-            try:
-                from onboarding.models import OnboardingProgress
-                onboarding = OnboardingProgress.objects.filter(user=obj.user).first()
-                if onboarding and onboarding.business and onboarding.business.name:
-                    business_name = onboarding.business.name
-                    logger.debug(f"[SessionSerializer] Using business name from OnboardingProgress: {business_name}")
-            except Exception as e:
-                logger.debug(f"[SessionSerializer] Could not fetch business name from OnboardingProgress: {e}")
+            from django.core.cache import cache
+            
+            # Try cache first
+            cache_key = f"business_name_{obj.user.id}"
+            business_name = cache.get(cache_key)
+            
+            if business_name is None:
+                # Try to get the actual business name from multiple sources
+                business_name = obj.tenant.name  # Default to tenant name
+                try:
+                    from onboarding.models import OnboardingProgress
+                    from users.models import Business
+                    
+                    # First try OnboardingProgress
+                    onboarding = OnboardingProgress.objects.filter(user=obj.user).first()
+                    if onboarding and onboarding.business and onboarding.business.name:
+                        business_name = onboarding.business.name
+                        logger.debug(f"[SessionSerializer] Using business name from OnboardingProgress: {business_name}")
+                    else:
+                        # Try direct Business lookup
+                        business = Business.objects.filter(owner=obj.user).first()
+                        if business and business.name:
+                            business_name = business.name
+                            logger.debug(f"[SessionSerializer] Using business name from Business model: {business_name}")
+                        else:
+                            # Check if tenant name has been updated from default
+                            if obj.tenant.name and not obj.tenant.name.startswith("Tenant for"):
+                                business_name = obj.tenant.name
+                                logger.debug(f"[SessionSerializer] Using updated tenant name: {business_name}")
+                    
+                    # Cache the business name for 5 minutes
+                    cache.set(cache_key, business_name, 300)
+                except Exception as e:
+                    logger.debug(f"[SessionSerializer] Could not fetch business name: {e}")
+            else:
+                logger.debug(f"[SessionSerializer] Using cached business name: {business_name}")
             
             return {
                 'id': str(obj.tenant.id),

@@ -2342,6 +2342,53 @@ class SaveStep1View(APIView):
                 logger.error(f"Error creating business record: {str(db_error)}", exc_info=True)
                 # We'll continue with the deferred setup approach
             
+            # Update OnboardingProgress with business reference and tenant info
+            try:
+                from custom_auth.models import Tenant
+                
+                # Update or create OnboardingProgress with business reference
+                onboarding_progress, created = OnboardingProgress.objects.update_or_create(
+                    user=request.user,
+                    defaults={
+                        'tenant_id': tenant_id,
+                        'business_id': business_id,
+                        'current_step': 'subscription',
+                        'next_step': 'subscription',
+                        'setup_progress': 25,
+                        'business_info_completed': True,
+                        'onboarding_status': 'business_info'
+                    }
+                )
+                logger.info(f"{'Created' if created else 'Updated'} OnboardingProgress with business_id: {business_id}")
+                
+                # Update tenant name to match business name
+                try:
+                    tenant = Tenant.objects.get(id=tenant_id)
+                    old_name = tenant.name
+                    tenant.name = serializer.validated_data['name']
+                    tenant.save()
+                    logger.info(f"Updated tenant name from '{old_name}' to '{tenant.name}'")
+                except Tenant.DoesNotExist:
+                    logger.warning(f"Tenant {tenant_id} not found, creating new tenant")
+                    # Create tenant if it doesn't exist
+                    Tenant.objects.create(
+                        id=tenant_id,
+                        name=serializer.validated_data['name'],
+                        owner=request.user,
+                        schema_name=schema_name,
+                        is_active=True
+                    )
+                    logger.info(f"Created new tenant with name: {serializer.validated_data['name']}")
+                    
+                # Invalidate any cached session data to force refresh
+                cache_key = f"session_data_{request.user.id}"
+                cache.delete(cache_key)
+                logger.info(f"Cleared session cache for user {request.user.id}")
+                
+            except Exception as progress_error:
+                logger.error(f"Error updating OnboardingProgress: {str(progress_error)}")
+                # Don't fail the request, just log the error
+            
             # Store setup info in response data 
             pending_setup = {
                 'user_id': str(request.user.id),
