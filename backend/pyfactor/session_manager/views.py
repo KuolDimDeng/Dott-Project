@@ -223,6 +223,33 @@ class SessionDetailView(APIView):
                     logger.debug(f"Could not check OnboardingProgress: {e}")
             
             serializer = SessionSerializer(session)
+            
+            # Debug logging for missing user data
+            logger.info(f"[SessionDetail] Session data for {session.user.email}:")
+            logger.info(f"  - User ID: {session.user.id}")
+            logger.info(f"  - First name: '{session.user.first_name}'")
+            logger.info(f"  - Last name: '{session.user.last_name}'")
+            logger.info(f"  - Full name: '{getattr(session.user, 'name', 'N/A')}'")
+            logger.info(f"  - Subscription plan: '{session.user.subscription_plan}'")
+            logger.info(f"  - Has tenant: {session.tenant is not None}")
+            if session.tenant:
+                logger.info(f"  - Tenant name: '{session.tenant.name}'")
+            
+            # Check onboarding progress
+            try:
+                from onboarding.models import OnboardingProgress
+                progress = OnboardingProgress.objects.filter(user=session.user).first()
+                if progress:
+                    logger.info(f"  - Has OnboardingProgress: Yes")
+                    logger.info(f"  - Has Business: {progress.business is not None}")
+                    if progress.business:
+                        logger.info(f"  - Business name: '{progress.business.name}'")
+                        logger.info(f"  - Business type: '{progress.business.business_type}'")
+                else:
+                    logger.info(f"  - Has OnboardingProgress: No")
+            except Exception as e:
+                logger.error(f"  - Error checking OnboardingProgress: {e}")
+            
             return Response(serializer.data)
             
         except Exception as e:

@@ -41,11 +41,16 @@ function PaymentForm({ plan, billingCycle }) {
         
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json();
+          
+          // Enhanced debug logging
+          console.log('🚨 [PaymentForm] Full session data:', JSON.stringify(sessionData, null, 2));
+          
           logger.info('[PaymentForm] Session data received:', {
             authenticated: sessionData.authenticated,
             tenantId: sessionData.user?.tenantId,
             email: sessionData.user?.email,
-            onboardingProgress: sessionData.user?.onboardingProgress
+            onboardingProgress: sessionData.user?.onboardingProgress,
+            allUserKeys: sessionData.user ? Object.keys(sessionData.user) : 'no user'
           });
           
           // Extract tenant ID

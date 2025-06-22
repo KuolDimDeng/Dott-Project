@@ -5,6 +5,9 @@ DRF serializers for session data
 
 from rest_framework import serializers
 from .models import UserSession, SessionEvent
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class SessionSerializer(serializers.ModelSerializer):
@@ -55,7 +58,10 @@ class SessionSerializer(serializers.ModelSerializer):
             'name': getattr(obj.user, 'name', ''),
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
-            'picture': getattr(obj.user, 'picture', '')
+            'picture': getattr(obj.user, 'picture', ''),
+            'subscription_plan': getattr(obj.user, 'subscription_plan', 'free'),
+            'tenantId': str(obj.tenant.id) if obj.tenant else None,
+            'tenant_id': str(obj.tenant.id) if obj.tenant else None
         }
         
         # Include business information from OnboardingProgress if available
@@ -63,19 +69,31 @@ class SessionSerializer(serializers.ModelSerializer):
             from onboarding.models import OnboardingProgress
             onboarding = OnboardingProgress.objects.filter(user=obj.user).first()
             if onboarding:
-                user_data['business_name'] = onboarding.business_name
-                user_data['businessName'] = onboarding.business_name  # Both formats for compatibility
-                user_data['business_type'] = onboarding.business_type
-                user_data['businessType'] = onboarding.business_type
+                # Get business name from the related Business object
+                if onboarding.business and onboarding.business.name:
+                    user_data['business_name'] = onboarding.business.name
+                    user_data['businessName'] = onboarding.business.name  # Both formats for compatibility
+                
+                # Get business type from BusinessDetails
+                if onboarding.business:
+                    business_type = onboarding.business.business_type
+                    if business_type:
+                        user_data['business_type'] = business_type
+                        user_data['businessType'] = business_type
+                
+                # Include full onboarding progress data
                 user_data['onboardingProgress'] = {
-                    'businessName': onboarding.business_name,
-                    'businessType': onboarding.business_type,
+                    'businessName': onboarding.business.name if onboarding.business else None,
+                    'businessType': onboarding.business.business_type if onboarding.business else None,
                     'country': onboarding.country,
                     'legalStructure': onboarding.legal_structure,
-                    'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None
+                    'dateFounded': onboarding.date_founded.isoformat() if onboarding.date_founded else None,
+                    'currentStep': onboarding.current_step,
+                    'onboardingStatus': onboarding.onboarding_status
                 }
         except Exception as e:
             # Don't fail if onboarding info is not available
+            logger.debug(f"Could not fetch onboarding info: {e}")
             pass
             
         return user_data

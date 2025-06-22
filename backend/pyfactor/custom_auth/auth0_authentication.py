@@ -1032,12 +1032,46 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 logger.error(f"❌ User {user.email} has a deleted/closed account")
                 raise exceptions.AuthenticationFailed('This account has been closed. Please contact support if you need assistance.')
             
+            # Update user profile data from Auth0 on every login
+            update_fields = []
+            
             # Update email if it changed
             current_email = getattr(user, 'email', None)
             if current_email != email:
                 logger.info(f"📧 Updating user email from {current_email} to {email}")
                 setattr(user, 'email', email)
-                user.save(update_fields=['email'])
+                update_fields.append('email')
+            
+            # Update name fields from Auth0
+            first_name = user_info.get('given_name', '')
+            last_name = user_info.get('family_name', '')
+            full_name = user_info.get('name', '')
+            picture = user_info.get('picture', '')
+            
+            if first_name and user.first_name != first_name:
+                user.first_name = first_name
+                update_fields.append('first_name')
+                logger.info(f"👤 Updated first_name to: {first_name}")
+            
+            if last_name and user.last_name != last_name:
+                user.last_name = last_name
+                update_fields.append('last_name')
+                logger.info(f"👤 Updated last_name to: {last_name}")
+            
+            if full_name and hasattr(user, 'name') and user.name != full_name:
+                user.name = full_name
+                update_fields.append('name')
+                logger.info(f"👤 Updated name to: {full_name}")
+            
+            if picture and hasattr(user, 'picture') and user.picture != picture:
+                user.picture = picture
+                update_fields.append('picture')
+                logger.info(f"🖼️ Updated picture URL")
+            
+            # Save all updates at once
+            if update_fields:
+                user.save(update_fields=update_fields)
+                logger.info(f"✅ Updated user profile fields: {update_fields}")
                 
             return user
             
@@ -1057,9 +1091,40 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
                 if hasattr(user, '_cached_is_authenticated'):
                     user._cached_is_authenticated = True
                 
-                # Link this user to Auth0
+                # Link this user to Auth0 and update profile data
                 setattr(user, 'auth0_sub', auth0_id)
-                user.save(update_fields=['auth0_sub'])
+                update_fields = ['auth0_sub']
+                
+                # Update name fields from Auth0
+                first_name = user_info.get('given_name', '')
+                last_name = user_info.get('family_name', '')
+                full_name = user_info.get('name', '')
+                picture = user_info.get('picture', '')
+                
+                if first_name and user.first_name != first_name:
+                    user.first_name = first_name
+                    update_fields.append('first_name')
+                    logger.info(f"👤 Updated first_name to: {first_name}")
+                
+                if last_name and user.last_name != last_name:
+                    user.last_name = last_name
+                    update_fields.append('last_name')
+                    logger.info(f"👤 Updated last_name to: {last_name}")
+                
+                if full_name and hasattr(user, 'name') and user.name != full_name:
+                    user.name = full_name
+                    update_fields.append('name')
+                    logger.info(f"👤 Updated name to: {full_name}")
+                
+                if picture and hasattr(user, 'picture') and user.picture != picture:
+                    user.picture = picture
+                    update_fields.append('picture')
+                    logger.info(f"🖼️ Updated picture URL")
+                
+                # Save all updates at once
+                user.save(update_fields=update_fields)
+                logger.info(f"✅ Linked to Auth0 and updated profile fields: {update_fields}")
+                
                 return user
                 
             except User.DoesNotExist:
