@@ -66,7 +66,43 @@ def complete_all_onboarding(request):
             # 3. CRITICAL: Update User.onboarding_completed (single source of truth)
             user.onboarding_completed = True
             user.onboarding_completed_at = timezone.now()
-            user.save(update_fields=['onboarding_completed', 'onboarding_completed_at'])
+            
+            # Extract subscription plan from request data
+            subscription_plan = request.data.get('subscriptionPlan') or request.data.get('selectedPlan') or 'free'
+            if subscription_plan == 'basic':
+                subscription_plan = 'free'  # Normalize 'basic' to 'free'
+            
+            # Update subscription plan on User model
+            if subscription_plan in ['free', 'professional', 'enterprise']:
+                user.subscription_plan = subscription_plan
+                logger.info(f"Setting user subscription plan to: {subscription_plan}")
+            
+            # Extract user name from request data (for Auth0 users who might not have it set)
+            first_name = request.data.get('given_name', '').strip() or request.data.get('first_name', '').strip()
+            last_name = request.data.get('family_name', '').strip() or request.data.get('last_name', '').strip()
+            
+            # If names are not provided in request, try to extract from user's name field
+            if not first_name and not last_name and user.name:
+                name_parts = user.name.strip().split(' ', 1)
+                if len(name_parts) >= 1:
+                    first_name = name_parts[0]
+                if len(name_parts) >= 2:
+                    last_name = name_parts[1]
+            
+            # Update name fields if we have them
+            if first_name:
+                user.first_name = first_name
+            if last_name:
+                user.last_name = last_name
+            
+            # Save all user updates
+            update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan']
+            if first_name:
+                update_fields.append('first_name')
+            if last_name:
+                update_fields.append('last_name')
+                
+            user.save(update_fields=update_fields)
             
             # 4. Update user session
             try:
