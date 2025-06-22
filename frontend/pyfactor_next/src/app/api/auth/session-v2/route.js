@@ -87,7 +87,11 @@ export async function GET(request) {
         id: tenantData.id,
         name: tenantData.name,
         subscription_plan: tenantData.subscription_plan
-      }
+      },
+      // Additional fields that might contain business info
+      directBusinessName: sessionData.business_name,
+      directTenantName: sessionData.tenant_name,
+      directSubscriptionPlan: sessionData.subscription_plan || sessionData.selected_plan
     });
     
     return NextResponse.json({
@@ -97,14 +101,15 @@ export async function GET(request) {
         // Direct backend data - single source of truth
         email: userData.email,
         name: userData.name,
-        given_name: userData.given_name,
-        family_name: userData.family_name,
+        given_name: userData.given_name || userData.first_name,
+        family_name: userData.family_name || userData.last_name,
         // Business information - check multiple sources
-        businessName: tenantData.name || userData.business_name || sessionData.business_name,
-        business_name: tenantData.name || userData.business_name || sessionData.business_name,
+        businessName: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
+        business_name: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
         // Subscription information - check multiple sources
-        subscriptionPlan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || 'free',
-        subscription_plan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || 'free',
+        subscriptionPlan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || sessionData.selected_plan || 'free',
+        subscription_plan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || sessionData.selected_plan || 'free',
+        selected_plan: sessionData.selected_plan || userData.selected_plan || tenantData.selected_plan,
         // CRITICAL: Backend's authoritative onboarding status
         needsOnboarding: sessionData.needs_onboarding,
         onboardingCompleted: sessionData.onboarding_completed || false,
