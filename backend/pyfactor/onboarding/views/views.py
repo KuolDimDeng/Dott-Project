@@ -2171,10 +2171,10 @@ class SaveStep1View(APIView):
                                     tenant_cursor.execute("""
                                         INSERT INTO users_business (
                                             id, business_num, name,
-                                            created_at, updated_at, owner_id, legal_structure, tenant_id
+                                            created_at, updated_at, owner_id, tenant_id
                                         ) VALUES (
                                             %s, %s, %s,
-                                            %s, %s, %s, %s, %s
+                                            %s, %s, %s, %s
                                         ) RETURNING id;
                                     """, [
                                         str(business_id),
@@ -2183,7 +2183,6 @@ class SaveStep1View(APIView):
                                         now,
                                         now,
                                         str(request.user.id),
-                                        serializer.validated_data.get('legal_structure', 'SOLE_PROPRIETORSHIP'),
                                         tenant_id
                                     ])
                                     # Explicitly commit after successful insertion
