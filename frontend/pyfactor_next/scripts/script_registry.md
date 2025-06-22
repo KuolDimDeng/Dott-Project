@@ -686,3 +686,16 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - /api/onboarding/complete/ requires existing OnboardingProgress record
   - /api/onboarding/force-complete/ uses get_or_create to handle missing records
   - SaveStep1View (business info save) does NOT create OnboardingProgress
+
+## Version 0010 - Fix Onboarding Redirect Loop
+- **File**: Version0010_fix_onboarding_redirect_loop.js
+- **Date**: 2025-06-22T12:12:14.863Z
+- **Description**: Fixes redirect loop where users return to onboarding after cache clear
+- **Issue**: Backend User.onboarding_completed not being updated
+- **Changes**:
+  - Updated complete-all route to force User.onboarding_completed = True
+  - Added fallback to force-complete endpoint
+  - Added user profile PATCH to ensure consistency
+  - Clear session cache after completion
+- **Files Modified**:
+  - /src/app/api/onboarding/complete-all/route.js

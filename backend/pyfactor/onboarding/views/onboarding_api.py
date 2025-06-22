@@ -375,6 +375,15 @@ class CompleteOnboardingAPI(APIView):
                 
                 # Save progress
                 progress.save()
+                
+                # CRITICAL FIX: Update User.onboarding_completed to prevent redirect loops
+                # This ensures the single source of truth (User model) is properly updated
+                user = request.user
+                if not user.onboarding_completed:
+                    user.onboarding_completed = True
+                    user.onboarding_completed_at = timezone.now()
+                    user.save(update_fields=['onboarding_completed', 'onboarding_completed_at'])
+                    logger.info(f"[CompleteOnboarding] Updated User.onboarding_completed=True for {user.email}")
             
             # Invalidate Redis session to clean up
             if session_id:
