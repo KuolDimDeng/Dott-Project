@@ -2442,8 +2442,7 @@ const PersonalInformationTab = () => {
             headers: { 
               'Cache-Control': 'no-cache',
               'X-Dashboard-Route': 'true',
-              'Authorization': 'Bearer ' + (localStorage.getItem('idToken') || sessionStorage.getItem('idToken') || ''),
-              || ''
+              'Authorization': 'Bearer ' + (localStorage.getItem('idToken') || sessionStorage.getItem('idToken') || '')
             },
             credentials: 'include'
           });
