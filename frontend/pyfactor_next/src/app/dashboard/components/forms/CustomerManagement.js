@@ -62,9 +62,25 @@ const CustomerManagement = () => {
       
       try {
         const data = await customerApi.getAll();
-        console.log('[CustomerManagement] Fetched customers:', data?.length || 0);
+        console.log('[CustomerManagement] Raw API response:', data);
+        
+        // Handle paginated response from Django REST framework
+        let customerList = [];
+        if (data?.results && Array.isArray(data.results)) {
+          // Paginated response
+          customerList = data.results;
+          console.log('[CustomerManagement] Fetched customers (paginated):', customerList.length);
+          console.log('[CustomerManagement] Pagination info:', { count: data.count, next: data.next, previous: data.previous });
+        } else if (Array.isArray(data)) {
+          // Direct array response
+          customerList = data;
+          console.log('[CustomerManagement] Fetched customers (array):', customerList.length);
+        } else {
+          console.log('[CustomerManagement] Unexpected data format:', data);
+        }
+        
         if (isMounted.current) {
-          setCustomers(Array.isArray(data) ? data : []);
+          setCustomers(customerList);
         }
       } catch (apiError) {
         console.error('[CustomerManagement] API error:', apiError);
