@@ -1061,7 +1061,7 @@ if (!appCache.getAll() || Object.keys(appCache.getAll()).length === 0) {
             logger.warn('[EmployeeManagement] Got 403 Forbidden, trying proxy route instead');
             try {
               // Try using the proxy route
-              const proxyResponse = await fetch(`/api/hr-proxy?tenantId=${tenantId}`, {
+              const proxyResponse = await fetch(`/api/hr-proxy`, {
                 method: 'GET',
                 headers: {
                   'Authorization': `Bearer ${authToken}`,
@@ -2443,7 +2443,7 @@ const PersonalInformationTab = () => {
               'Cache-Control': 'no-cache',
               'X-Dashboard-Route': 'true',
               'Authorization': 'Bearer ' + (localStorage.getItem('idToken') || sessionStorage.getItem('idToken') || ''),
-              'X-Tenant-ID': tenantId || ''
+              || ''
             },
             credentials: 'include'
           });

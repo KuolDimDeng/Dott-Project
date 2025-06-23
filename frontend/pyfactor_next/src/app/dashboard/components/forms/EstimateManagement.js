@@ -57,7 +57,6 @@ const EstimateManagement = () => {
       setIsLoading(true);
       console.log('[EstimateManagement] Fetching estimates...');
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[EstimateManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -95,7 +94,6 @@ const EstimateManagement = () => {
 
   const fetchCustomers = async () => {
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/crm/customers', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -110,7 +108,6 @@ const EstimateManagement = () => {
 
   const fetchProducts = async () => {
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/products', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -125,7 +122,6 @@ const EstimateManagement = () => {
 
   const fetchServices = async () => {
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/services', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -213,7 +209,6 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       const { subtotal, total } = calculateTotals();
       
       const estimateData = {
@@ -271,7 +266,6 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       const { subtotal, total } = calculateTotals();
       
       const estimateData = {
@@ -317,7 +311,6 @@ const EstimateManagement = () => {
     console.log('[EstimateManagement] Deleting estimate:', estimateToDelete.id);
     
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/sales/estimates/${estimateToDelete.id}`, {
         method: 'DELETE',
         headers: {

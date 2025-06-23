@@ -52,7 +52,6 @@ const ServiceManagement = () => {
       console.log('[ServiceManagement] Fetching services...');
       
       // Get secure tenant ID
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[ServiceManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -113,7 +112,6 @@ const ServiceManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required.');
         return;
@@ -173,7 +171,6 @@ const ServiceManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/services/${selectedService.id}`, {
         method: 'PUT',
         headers: {
@@ -215,7 +212,6 @@ const ServiceManagement = () => {
     console.log('[ServiceManagement] Deleting service:', serviceToDelete.id);
     
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/services/${serviceToDelete.id}`, {
         method: 'DELETE',
         headers: {

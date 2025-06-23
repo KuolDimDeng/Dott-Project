@@ -20,17 +20,8 @@ export async function GET(request) {
   // Special handling for schema parameter
   const schema = url.searchParams.get('schema');
   if (schema === 'default_schema') {
-    // Get tenant ID from request
-    const tenantId = url.searchParams.get('tenantId') || 
-                     request.headers.get('x-tenant-id') ||
-                     request.cookies.get('tenantId')?.value;
-    
-    if (tenantId) {
-      // Convert default_schema to tenant_xxx schema format
-      const tenantSchema = `tenant_${tenantId.replace(/-/g, '_')}`;
-      console.log(`Converted default_schema to ${tenantSchema}`);
-      forwardUrl.searchParams.set('schema', tenantSchema);
-    }
+    // Remove default_schema as backend will handle tenant context
+    forwardUrl.searchParams.delete('schema');
   }
   
   console.log(`API /products GET - Forwarding to /api/inventory/products`);
@@ -133,17 +124,8 @@ export async function POST(request) {
   // Special handling for schema parameter
   const schema = url.searchParams.get('schema');
   if (schema === 'default_schema') {
-    // Get tenant ID from request
-    const tenantId = url.searchParams.get('tenantId') || 
-                     request.headers.get('x-tenant-id') ||
-                     request.cookies.get('tenantId')?.value;
-    
-    if (tenantId) {
-      // Convert default_schema to tenant_xxx schema format
-      const tenantSchema = `tenant_${tenantId.replace(/-/g, '_')}`;
-      console.log(`Converted default_schema to ${tenantSchema}`);
-      forwardUrl.searchParams.set('schema', tenantSchema);
-    }
+    // Remove default_schema as backend will handle tenant context
+    forwardUrl.searchParams.delete('schema');
   }
   
   console.log(`API /products POST - Forwarding to /api/inventory/products`);

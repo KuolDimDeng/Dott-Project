@@ -19,6 +19,7 @@
 - Database: render database "dott-db" with Row-Level Security and tenant isolation
   - PostgreSQL with psycopg2-binary
   - Tenant isolation via tenant_id (not schema-based)
+  - Backend-only tenant isolation (never trust frontend tenant IDs)
 - Language: JavaScript/TypeScript hybrid (Next.js 15 with TypeScript support)
 - Package Manager: PNPM (v8.10.0 for frontend, v8.15.3 for root)
 - Environment: Production mode only
@@ -60,6 +61,14 @@
   - Strict CSP without unsafe-inline/unsafe-eval
   - Backend proxy pattern for API calls (no token exposure)
   - 24-hour session duration
+  - Tenant Isolation (2025-06-23):
+    - Backend-only tenant determination from authenticated user
+    - Frontend NEVER sends tenant IDs to backend
+    - Automatic queryset filtering by user.tenant_id
+    - SecureCustomerViewSet pattern for all tenant-aware models
+    - Audit logging for all data access
+    - Returns 404 (not 403) for cross-tenant access attempts
+    - See TENANT_ISOLATION_SECURITY.md for implementation
   - See SECURITY.md for detailed implementation
 - Development Approach:
   - Read existing documentation

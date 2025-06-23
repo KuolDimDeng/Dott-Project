@@ -55,7 +55,6 @@ const SuppliersManagement = () => {
       setIsLoading(true);
       console.log('[SuppliersManagement] Fetching suppliers...');
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[SuppliersManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -108,7 +107,6 @@ const SuppliersManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required.');
         return;
@@ -168,7 +166,6 @@ const SuppliersManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/suppliers/${selectedSupplier.id}`, {
         method: 'PUT',
         headers: {
@@ -205,7 +202,6 @@ const SuppliersManagement = () => {
     console.log('[SuppliersManagement] Deleting supplier:', supplierToDelete.id);
     
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/suppliers/${supplierToDelete.id}`, {
         method: 'DELETE',
         headers: {

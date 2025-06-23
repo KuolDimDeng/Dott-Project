@@ -50,7 +50,6 @@ const StockAdjustmentsManagement = () => {
       setIsLoading(true);
       console.log('[StockAdjustmentsManagement] Fetching adjustments...');
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[StockAdjustmentsManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -88,7 +87,6 @@ const StockAdjustmentsManagement = () => {
 
   const fetchProducts = async () => {
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/products', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -103,7 +101,6 @@ const StockAdjustmentsManagement = () => {
 
   const fetchLocations = async () => {
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch('/api/inventory/locations', {
         headers: { 'x-tenant-id': tenantId }
       });
@@ -187,8 +184,6 @@ const StockAdjustmentsManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
-      
       const response = await fetch('/api/inventory/stock-adjustments', {
         method: 'POST',
         headers: {
@@ -232,7 +227,6 @@ const StockAdjustmentsManagement = () => {
     console.log('[StockAdjustmentsManagement] Deleting adjustment:', adjustmentToDelete.id);
     
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/stock-adjustments/${adjustmentToDelete.id}`, {
         method: 'DELETE',
         headers: {

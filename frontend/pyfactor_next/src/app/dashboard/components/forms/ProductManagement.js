@@ -536,7 +536,6 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         
         try {
           // Get tenant ID securely from Cognito only
-          const tenantId = await getSecureTenantId();
           console.log('[ProductManagement] Fetching products with secure Cognito tenant ID:', tenantId);
           
           if (!tenantId) {
@@ -2232,8 +2231,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant-ID': tenantId
-        },
+          },
         body: JSON.stringify(apiData)
       });
       

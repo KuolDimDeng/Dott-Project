@@ -198,7 +198,6 @@ const ProductForm = () => {
       logger.info('Session refreshed successfully before submission');
       
       // Get the tenant ID from AppCache
-      const tenantId = getCacheValue('tenantId');
       if (!tenantId) {
         throw new Error('No valid tenant information available');
       }
@@ -216,7 +215,6 @@ const ProductForm = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
         'X-Id-Token': idToken,
-        'X-Tenant-ID': tenantId,
         'X-Schema-Name': schemaName
       };
       
@@ -323,8 +321,6 @@ const ProductForm = () => {
       }
       
       // Get tenant info
-      const tenantId = getCacheValue('tenantId');
-      
       if (!tenantId) {
         setSnackbarSeverity('error');
         setSnackbarMessage('No tenant ID found in AppCache');
@@ -369,8 +365,7 @@ const ProductForm = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken || ''}`,
         'X-Id-Token': idToken || '',
-        'X-Tenant-ID': tenantId
-      };
+        };
       
       logger.info('Making diagnostic API call with headers:', {
         hasAuth: !!headers.Authorization,

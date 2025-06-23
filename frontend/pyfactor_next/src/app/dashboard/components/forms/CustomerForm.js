@@ -138,8 +138,7 @@ const CustomerForm = ({ mode = 'create', customerId, onBackToList, onCustomerCre
           // Format object_name to match database field if needed
           customer_name: formData.customerName || `${formData.first_name} ${formData.last_name}`,
           // Add tenant_id explicitly to ensure it's available in the request
-          tenant_id: tenantId
-        };
+          };
         
         logger.info(`Creating customer with tenant ID: ${tenantId}`);
         

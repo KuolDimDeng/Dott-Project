@@ -66,14 +66,12 @@ export default function InventoryReports() {
       const headers = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
-        'X-Tenant-ID': tenantId
-      };
+        };
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com'}/api/reports/inventory`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          tenant_id: tenantId,
           report_type: reportType,
           start_date: startDate,
           end_date: endDate

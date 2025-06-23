@@ -53,7 +53,6 @@ const LocationsManagement = () => {
       setIsLoading(true);
       console.log('[LocationsManagement] Fetching locations...');
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         console.error('[LocationsManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -106,7 +105,6 @@ const LocationsManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       if (!tenantId) {
         toast.error('Authentication required.');
         return;
@@ -164,7 +162,6 @@ const LocationsManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/locations/${selectedLocation.id}`, {
         method: 'PUT',
         headers: {
@@ -201,7 +198,6 @@ const LocationsManagement = () => {
     console.log('[LocationsManagement] Deleting location:', locationToDelete.id);
     
     try {
-      const tenantId = await getSecureTenantId();
       const response = await fetch(`/api/inventory/locations/${locationToDelete.id}`, {
         method: 'DELETE',
         headers: {

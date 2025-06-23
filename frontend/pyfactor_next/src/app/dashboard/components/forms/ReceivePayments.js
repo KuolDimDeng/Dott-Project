@@ -112,9 +112,7 @@ const PaymentForm = ({ invoices, customers }) => {
         currency: 'usd',
         customerId: formData.customerId,
         invoiceId: formData.invoiceId,
-        tenantId: tenantId,
         metadata: {
-          tenantId: tenantId,
           customerId: formData.customerId,
           invoiceId: formData.invoiceId || '',
           reference: formData.reference || '',
@@ -188,8 +186,7 @@ const PaymentForm = ({ invoices, customers }) => {
         body: JSON.stringify({
           ...formData,
           stripePaymentIntentId: paymentResult?.id,
-          tenantId: tenantId
-        })
+          })
       });
 
       if (!recordResponse.ok) {

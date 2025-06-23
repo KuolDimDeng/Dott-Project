@@ -29,22 +29,15 @@ const SalesDashboard = () => {
       setIsLoading(true);
       console.log('[SalesDashboard] Fetching dashboard data for period:', selectedPeriod);
       
-      const tenantId = getCacheValue('tenantId');
-      const schema = `tenant_${tenantId?.replace(/-/g, '_')}`;
-      
-      // Fetch dashboard metrics
+      // Fetch dashboard metrics - backend handles tenant context
       const [ordersRes, customersRes, productsRes, revenueRes] = await Promise.all([
         axiosInstance.get('/sales/orders/', {
-          params: { tenantId, schema, limit: 10 }
+          params: { limit: 10 }
         }),
-        axiosInstance.get('/customers/', {
-          params: { tenantId, schema }
-        }),
-        axiosInstance.get('/inventory/products/', {
-          params: { tenantId, schema }
-        }),
+        axiosInstance.get('/customers/'),
+        axiosInstance.get('/inventory/products/'),
         axiosInstance.get('/sales/revenue/', {
-          params: { tenantId, schema, period: selectedPeriod }
+          params: { period: selectedPeriod }
         })
       ]);
 

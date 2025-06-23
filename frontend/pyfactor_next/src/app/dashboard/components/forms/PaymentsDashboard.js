@@ -24,7 +24,7 @@ const PaymentsDashboard = () => {
 
     try {
       // TODO: Replace with actual API endpoint when backend is ready
-      // const response = await fetch(`/api/payments/dashboard?tenantId=${tenantId}`);
+      // const response = await fetch(`/api/payments/dashboard`);
       // const data = await response.json();
       
       // Mock data for now
