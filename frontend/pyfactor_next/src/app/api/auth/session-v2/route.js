@@ -148,7 +148,7 @@ export async function POST(request) {
     }
     
     // Create session with Django backend using Auth0 token
-    const authResponse = await fetch(`${API_URL}/api/auth/session-v2`, {
+    const authResponse = await fetch(`${API_URL}/api/sessions/create/`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
