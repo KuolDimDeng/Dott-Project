@@ -103,6 +103,9 @@ export async function GET(request) {
         name: userData.name,
         given_name: userData.given_name || userData.first_name,
         family_name: userData.family_name || userData.last_name,
+        // Also include Django's standard fields for compatibility
+        first_name: userData.first_name || userData.given_name,
+        last_name: userData.last_name || userData.family_name,
         // Business information - check multiple sources
         businessName: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
         business_name: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,

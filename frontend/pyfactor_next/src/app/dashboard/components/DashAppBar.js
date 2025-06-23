@@ -1106,27 +1106,17 @@ const DashAppBar = ({
         setFetchedBusinessName(sessionBusinessName);
       }
       
-      // Set user initials from session
+      // Set user initials from session using the comprehensive function
       if (session.user.email) {
-        let initials = '';
+        // Use the existing generateInitialsFromNames function which handles all edge cases
+        const initials = generateInitialsFromNames(
+          session.user.given_name || session.user.first_name,
+          session.user.family_name || session.user.last_name,
+          session.user.email,
+          session.user.name
+        );
         
-        // Try to generate from name fields
-        if (session.user.given_name && session.user.family_name) {
-          initials = `${session.user.given_name.charAt(0)}${session.user.family_name.charAt(0)}`.toUpperCase();
-        } else if (session.user.name) {
-          const nameParts = session.user.name.split(' ');
-          if (nameParts.length >= 2) {
-            initials = `${nameParts[0].charAt(0)}${nameParts[nameParts.length - 1].charAt(0)}`.toUpperCase();
-          } else {
-            initials = nameParts[0].substring(0, 2).toUpperCase();
-          }
-        } else {
-          // Generate from email
-          const emailName = session.user.email.split('@')[0];
-          initials = emailName.substring(0, 2).toUpperCase();
-        }
-        
-        if (initials) {
+        if (initials && initials !== 'U') {
           logger.info('[DashAppBar] Setting user initials from session:', initials);
           setUserInitials(initials);
         }
