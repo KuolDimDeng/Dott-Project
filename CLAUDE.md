@@ -346,6 +346,20 @@ NEVER proactively create documentation files (*.md) or README files. Only create
 - Regional pricing: 50% discount for developing countries (automatically detected)
 - Files: /src/app/components/Pricing.js, /src/components/Onboarding/SubscriptionForm.jsx
 
+## Authentication Architecture (January 2025)
+- **Frontend Session Middleware**: `/api/auth/session-v2` handles all session operations
+  - GET: Validates sessions via backend `/api/sessions/current/`
+  - POST: Creates sessions via backend `/api/sessions/create/`
+  - Used by BOTH Google OAuth and Email/Password authentication
+- **Backend Session Endpoints**:
+  - `/api/sessions/create/` - Creates new sessions (requires Auth0 token)
+  - `/api/sessions/current/` - Validates and returns session data
+- **Authentication Flows**:
+  - Email/Password: `/api/auth/authenticate` → `/api/auth/session-v2` → Backend
+  - Google OAuth: Auth0 → `/api/auth/callback` → `/api/auth/google-session-fix` → Backend
+- **Key Fix (Jan 2025)**: Email/password login was failing because frontend session-v2 was calling non-existent backend endpoint. Fixed to call `/api/sessions/create/`
+- **Documentation**: See `/frontend/pyfactor_next/docs/AUTHENTICATION_FLOW.md`
+
 ## Recent Authentication Fixes (January 2025)
 - **Session Creation 403 Error**: Fixed by adding `/api/sessions/` to RLS middleware public paths
 - **Onboarding Status Persistence**: Fixed backend not updating status to 'complete' after payment
