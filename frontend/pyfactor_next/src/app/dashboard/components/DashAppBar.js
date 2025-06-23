@@ -317,13 +317,25 @@ const DashAppBar = ({
       }
     }
     
-    // If we only have firstName or lastName
+    // If we only have firstName, check if it's actually a full name
     if (firstName) {
+      const firstNameParts = firstName.trim().split(' ');
+      if (firstNameParts.length >= 2) {
+        // firstName contains full name like "Kuol Deng"
+        return `${firstNameParts[0].charAt(0).toUpperCase()}${firstNameParts[firstNameParts.length - 1].charAt(0).toUpperCase()}`;
+      }
       return firstName.length >= 2 
         ? `${firstName.charAt(0).toUpperCase()}${firstName.charAt(1).toUpperCase()}`
         : firstName.charAt(0).toUpperCase();
     }
+    
+    // If we only have lastName, check if it's actually a full name
     if (lastName) {
+      const lastNameParts = lastName.trim().split(' ');
+      if (lastNameParts.length >= 2) {
+        // lastName contains full name
+        return `${lastNameParts[0].charAt(0).toUpperCase()}${lastNameParts[lastNameParts.length - 1].charAt(0).toUpperCase()}`;
+      }
       return lastName.length >= 2 
         ? `${lastName.charAt(0).toUpperCase()}${lastName.charAt(1).toUpperCase()}`
         : lastName.charAt(0).toUpperCase();
@@ -707,9 +719,7 @@ const DashAppBar = ({
                        session?.user?.subscription_plan;
     
     if (sessionPlan) {
-      if (sessionPlan && sessionPlan !== 'free') {
-        return sessionPlan;
-      }
+      return sessionPlan;
     }
     
     // Then check Auth0 attributes
