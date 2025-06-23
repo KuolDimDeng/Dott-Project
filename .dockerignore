@@ -1,55 +1,134 @@
+# CRITICAL: Exclude node_modules (1.1GB!)
+**/node_modules
+frontend/pyfactor_next/node_modules/
+node_modules/
+
 # Git files
 .git
 .gitignore
+.gitattributes
+.github
 
-# Dependencies
-node_modules
-frontend/pyfactor_next/node_modules
-
-# Next.js build output
+# Next.js build outputs
 frontend/pyfactor_next/.next
 frontend/pyfactor_next/out
+frontend/pyfactor_next/dist
+frontend/pyfactor_next/build
+frontend/pyfactor_next/.turbo
+frontend/pyfactor_next/.vercel
+**/.next
+**/out
+**/dist
+**/build
 
 # Logs
 *.log
+**/*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
 # Environment files
 .env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+!.env.example
 
 # IDE files
 .idea
 .vscode
 *.swp
 *.swo
+*.swn
 *~
+*.sublime-*
 
 # OS files
 .DS_Store
 Thumbs.db
+Desktop.ini
+.Spotlight-V100
+.Trashes
 
 # Test files
-frontend/pyfactor_next/coverage
-frontend/pyfactor_next/.nyc_output
+**/coverage
+**/.nyc_output
+**/*.test.*
+**/*.spec.*
+**/test
+**/tests
+**/__tests__
+cypress
+cypress.json
+.cypress
+jest.config.*
 
-# Temporary files
+# Temporary and backup files
 tmp
 temp
+*.tmp
+*.temp
+*.cache
+.cache
+**/backups
+**/frontend_file_backups
+**/component-backups
+**/temp_excluded
 
 # Backend files (not needed for frontend build)
 backend/
-scripts/
-docs/
-*.md
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.egg-info
+*.egg
 
-# Other unnecessary files
+# Documentation
+docs/
+documentation/
+*.md
+README*
+CHANGELOG*
+LICENSE*
+
+# Scripts
+scripts/
+*.sh
+*.py
+!frontend/pyfactor_next/next.config.js
+
+# Package manager files (we use pnpm)
+yarn.lock
+package-lock.json
+yarn-error.log
+npm-debug.log
+
+# Archives and large files
+*.zip
+*.tar
+*.gz
+*.rar
+*.7z
+*.dmg
+*.iso
+*.jar
+*.war
+*.ear
+
+# Docker files
 .dockerignore
-Dockerfile
-docker-compose.yml
+Dockerfile*
+docker-compose*
+
+# Other
+*.sqlite
+*.sqlite3
+*.db
+storybook-static
+.turbo

@@ -1,3 +1,7 @@
+// Force dynamic rendering for all tenant-specific routes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import TenantInitializer from './TenantInitializer';
