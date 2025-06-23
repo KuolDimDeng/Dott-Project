@@ -21,6 +21,7 @@ class OnboardingMiddleware(MiddlewareMixin):
         '/api/onboarding/',
         '/api/users/me',
         '/api/auth0/',
+        '/api/crm/',  # Allow CRM access before onboarding completion
         '/admin/',
         '/health/',
         '/static/',
@@ -42,23 +43,46 @@ class OnboardingMiddleware(MiddlewareMixin):
         if any(request.path.startswith(path) for path in self.EXEMPT_PATHS):
             return None
             
-        # Only check authenticated users
-        if not hasattr(request, 'user') or not request.user.is_authenticated:
+        # Check if request has user attribute
+        if not hasattr(request, 'user'):
+            logger.debug(f"[OnboardingMiddleware] No user attribute on request for path: {request.path}")
+            return None
+            
+        # Check if user is None
+        if request.user is None:
+            logger.debug(f"[OnboardingMiddleware] request.user is None for path: {request.path}")
+            return None
+            
+        # Check if user is anonymous (not authenticated)
+        try:
+            if not request.user.is_authenticated:
+                logger.debug(f"[OnboardingMiddleware] User not authenticated for path: {request.path}")
+                return None
+        except AttributeError as e:
+            logger.error(f"[OnboardingMiddleware] Error checking authentication: {e}, user type: {type(request.user)}")
             return None
             
         # Check onboarding status from user model (single source of truth)
-        if not request.user.onboarding_completed:
-            logger.info(f"[OnboardingMiddleware] User {request.user.email} needs onboarding")
-            
-            # If trying to access protected paths, return 403 with specific error
-            if any(request.path.startswith(path) for path in self.PROTECTED_PATHS):
-                from rest_framework.response import Response
-                from rest_framework import status
+        try:
+            if not hasattr(request.user, 'onboarding_completed'):
+                logger.debug(f"[OnboardingMiddleware] User has no onboarding_completed attribute")
+                return None
                 
-                return Response({
-                    'error': 'onboarding_required',
-                    'message': 'Please complete onboarding to access this feature',
-                    'needs_onboarding': True
-                }, status=status.HTTP_403_FORBIDDEN)
+            if not request.user.onboarding_completed:
+                logger.info(f"[OnboardingMiddleware] User {request.user.email} needs onboarding")
+                
+                # If trying to access protected paths, return 403 with specific error
+                if any(request.path.startswith(path) for path in self.PROTECTED_PATHS):
+                    from rest_framework.response import Response
+                    from rest_framework import status
+                    
+                    return Response({
+                        'error': 'onboarding_required',
+                        'message': 'Please complete onboarding to access this feature',
+                        'needs_onboarding': True
+                    }, status=status.HTTP_403_FORBIDDEN)
+        except Exception as e:
+            logger.error(f"[OnboardingMiddleware] Error checking onboarding status: {e}")
+            return None
         
         return None
