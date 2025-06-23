@@ -22,6 +22,7 @@ class OnboardingMiddleware(MiddlewareMixin):
         '/api/users/me',
         '/api/auth0/',
         '/api/crm/',  # Allow CRM access before onboarding completion
+        '/api/inventory/',  # Allow inventory access - same as CRM
         '/admin/',
         '/health/',
         '/static/',
@@ -31,7 +32,6 @@ class OnboardingMiddleware(MiddlewareMixin):
     # Paths that require completed onboarding
     PROTECTED_PATHS = [
         '/api/accounting/',
-        '/api/inventory/',
         '/api/dashboard/',
         '/api/reports/',
     ]

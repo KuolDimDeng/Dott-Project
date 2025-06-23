@@ -265,6 +265,40 @@ if (plan.id === 'free') {
 - ✅ Single source of truth maintained
 - **Deployment**: Committed as `6b0c0ee8` and auto-deployed to `dott-front`
 
+## Industry-Standard API Pattern (2025-06-23) - MANDATORY FOR ALL MODULES
+- **Documentation**: `/frontend/pyfactor_next/docs/INDUSTRY_STANDARD_API_PATTERN.md`
+- **Purpose**: Bank-grade security, tenant isolation, and industry compliance for all API endpoints
+- **Pattern**: `Frontend Component → Local Proxy Route → Django Backend → PostgreSQL with RLS`
+
+### ✅ REQUIRED Architecture
+1. **Frontend API Client**: Use `[module]Api` from `/src/utils/apiClient.js`
+   - Pattern: `fetch('/api/[module]/[resource]', { credentials: 'include' })`
+   - NO direct backend calls, NO tenant IDs from frontend
+2. **Local Proxy Routes**: `/src/app/api/[module]/[resource]/route.js`
+   - Extract `sid` cookie, forward with `Authorization: Session ${sidCookie.value}`
+   - Backend determines tenant from session and sets RLS context
+3. **Django Backend**: Model extends `TenantAwareModel`, uses `TenantManager()`
+   - ViewSet: `permission_classes = [IsAuthenticated]`
+   - Simple `get_queryset()`: returns `YourModel.objects.all()`
+
+### 🔒 Security Benefits
+- **Database-enforced isolation** via PostgreSQL Row-Level Security (RLS)
+- **Session-based authentication** (no token exposure to frontend)
+- **Backend-only tenant management** (zero frontend tenant ID handling)
+- **Compliance ready**: SOC2, GDPR, PCI-DSS, HIPAA
+
+### 📋 Working Examples
+- **Customer Management**: `customerApi` → `/api/crm/customers/route.js` → `crm.models.Customer`
+- **Supplier Management**: `supplierApi` → `/api/inventory/suppliers/route.js` → `inventory.models.Supplier`
+
+### ❌ FORBIDDEN Patterns
+- Direct backend calls: `fetch('https://api.dottapps.com/api/...')` 
+- Tenant IDs from frontend: `headers: { 'X-Tenant-ID': tenantId }`
+- Manual tenant filtering: `queryset.filter(tenant_id=request.user.tenant_id)`
+- Local storage for tenant data: `localStorage.getItem('tenantId')`
+
+**CRITICAL**: All new modules MUST follow this pattern exactly. No exceptions.
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
