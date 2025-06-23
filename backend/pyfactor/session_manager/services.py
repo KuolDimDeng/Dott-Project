@@ -200,6 +200,12 @@ class SessionService:
             kwargs.pop('onboarding_completed', None)
             kwargs.pop('onboarding_step', None)
             
+            # Get subscription plan from user model
+            subscription_plan = user.subscription_plan or 'free'
+            kwargs.pop('subscription_plan', None)  # Remove from kwargs to avoid override
+            
+            print(f"[SessionService] User subscription plan: {subscription_plan}")
+            
             # Create session
             with transaction.atomic():
                 session = UserSession.objects.create(
@@ -212,6 +218,7 @@ class SessionService:
                     needs_onboarding=needs_onboarding,
                     onboarding_completed=onboarding_completed,
                     onboarding_step=onboarding_step,
+                    subscription_plan=subscription_plan,
                     **kwargs
                 )
                 

@@ -31,7 +31,6 @@ const CustomerManagement = () => {
     business_name: '',
     email: '',
     phone: '',
-    company: '',
     address: '',
     city: '',
     state: '',
@@ -124,7 +123,6 @@ const CustomerManagement = () => {
         business_name: '',
         email: '',
         phone: '',
-        company: '',
         address: '',
         city: '',
         state: '',
@@ -210,7 +208,6 @@ const CustomerManagement = () => {
       business_name: customer.business_name || '',
       email: customer.email || '',
       phone: customer.phone || '',
-      company: customer.company || '',
       address: customer.address || '',
       city: customer.city || '',
       state: customer.state || '',
@@ -231,8 +228,7 @@ const CustomerManagement = () => {
            customer.last_name?.toLowerCase().includes(searchLower) ||
            customer.business_name?.toLowerCase().includes(searchLower) ||
            fullName.includes(searchLower) ||
-           customer.email?.toLowerCase().includes(searchLower) ||
-           customer.company?.toLowerCase().includes(searchLower);
+           customer.email?.toLowerCase().includes(searchLower);
   });
 
   // Render customer form
@@ -310,20 +306,6 @@ const CustomerManagement = () => {
               onChange={handleFormChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="+1 (555) 123-4567"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company
-            </label>
-            <input
-              type="text"
-              name="company"
-              value={formData.company}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Company name"
             />
           </div>
         </div>
@@ -429,7 +411,6 @@ const CustomerManagement = () => {
                 business_name: '',
                 email: '',
                 phone: '',
-                company: '',
                 address: '',
                 city: '',
                 state: '',
@@ -496,10 +477,6 @@ const CustomerManagement = () => {
             <p className="mt-1 text-sm text-gray-900">{selectedCustomer.phone || 'Not provided'}</p>
           </div>
           
-          <div>
-            <h3 className="text-sm font-medium text-gray-500">Company</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedCustomer.company || 'Not provided'}</p>
-          </div>
         </div>
         
         {(selectedCustomer.address || selectedCustomer.city || selectedCustomer.state || selectedCustomer.zip_code || selectedCustomer.country) && (
@@ -578,7 +555,7 @@ const CustomerManagement = () => {
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Email</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Phone</th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Company</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Location</th>
             <th className="px-6 py-3 text-right text-xs font-medium text-black uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -597,7 +574,7 @@ const CustomerManagement = () => {
                 <div className="text-sm text-black">{customer.phone || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{customer.company || '-'}</div>
+                <div className="text-sm text-black">{customer.city || customer.country || '-'}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
@@ -800,7 +777,6 @@ const CustomerManagement = () => {
                         business_name: '',
                         email: '',
                         phone: '',
-                        company: '',
                         address: '',
                         city: '',
                         state: '',

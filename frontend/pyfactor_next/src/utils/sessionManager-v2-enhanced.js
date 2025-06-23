@@ -98,6 +98,8 @@ class SessionManagerV2Enhanced {
         const sessionData = {
           authenticated: true,
           user: data.user,
+          // Include subscription_plan at session level for DashAppBar
+          subscription_plan: data.user?.subscriptionPlan || data.user?.subscription_plan || 'free',
           sessionId: 'server-managed' // We don't expose the actual session ID
         };
         
@@ -174,8 +176,12 @@ class SessionManagerV2Enhanced {
           needsOnboarding: backendSession.needs_onboarding,
           onboardingCompleted: backendSession.onboarding_completed,
           tenantId: backendSession.tenant_id,
-          permissions: backendSession.permissions || []
+          permissions: backendSession.permissions || [],
+          subscriptionPlan: backendSession.subscription_plan || 'free',
+          subscription_plan: backendSession.subscription_plan || 'free'
         },
+        // Also include subscription_plan at session level for DashAppBar
+        subscription_plan: backendSession.subscription_plan || 'free',
         authenticated: true,
         sessionId: sessionId
       };

@@ -142,7 +142,7 @@ class SessionSerializer(serializers.ModelSerializer):
                 'id': str(obj.tenant.id),
                 'name': business_name,  # Use the actual business name
                 'business_name': business_name,  # Use the actual business name
-                'subscription_plan': getattr(obj.tenant, 'subscription_plan', obj.subscription_plan)
+                'subscription_plan': obj.user.subscription_plan if hasattr(obj.user, 'subscription_plan') else obj.subscription_plan
             }
         return None
 
