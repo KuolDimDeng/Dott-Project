@@ -39,18 +39,34 @@ export async function GET(request) {
         
         if (sessionResponse.ok) {
           const sessionData = await sessionResponse.json();
+          // CRITICAL FIX: Prioritize correct subscription plan sources
+          // 1. sessionData.subscription_plan (top-level session field) 
+          // 2. sessionData.tenant.subscription_plan (tenant model field)
+          // 3. sessionData.user.subscription_plan (user model field - fallback only)
+          const correctSubscriptionPlan = sessionData.subscription_plan || 
+                                         sessionData.tenant?.subscription_plan || 
+                                         sessionData.user?.subscriptionPlan || 
+                                         sessionData.user?.subscription_plan;
+          
           console.log('[Profile API] Session data received:', {
             authenticated: sessionData.authenticated,
             hasUser: !!sessionData.user,
             email: sessionData.user?.email,
             businessName: sessionData.user?.businessName,
-            subscriptionPlan: sessionData.user?.subscriptionPlan
+            subscriptionPlan: correctSubscriptionPlan,
+            subscriptionSources: {
+              topLevel: sessionData.subscription_plan,
+              tenant: sessionData.tenant?.subscription_plan,
+              userModel: sessionData.user?.subscription_plan
+            }
           });
           
-          // If authenticated, return the user data
+          // If authenticated, return the user data with correct subscription plan
           if (sessionData.authenticated && sessionData.user) {
             return NextResponse.json({
               ...sessionData.user,
+              subscriptionPlan: correctSubscriptionPlan,
+              subscription_plan: correctSubscriptionPlan,
               authenticated: true,
               sessionSource: 'session-v2'
             }, {
