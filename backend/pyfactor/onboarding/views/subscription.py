@@ -78,7 +78,9 @@ class SubscriptionSaveView(APIView):
                 logger.warning(f"Error getting business from profile: {str(e)}")
             
             # Then try direct query for business owned by user
-            business = Business.objects.filter(owner_id=request.user.id).first()
+            # Generate the same UUID that would be used for this user
+            owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}'))
+            business = Business.objects.filter(owner_id=owner_uuid).first()
             if business:
                 return business
                 
@@ -105,7 +107,9 @@ class SubscriptionSaveView(APIView):
                 logger.warning(f"Error getting business from profile: {str(e)}")
             
             # Then try direct query for business owned by user
-            business = Business.objects.filter(owner_id=request.user.id).first()
+            # Generate the same UUID that would be used for this user
+            owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}'))
+            business = Business.objects.filter(owner_id=owner_uuid).first()
             if business:
                 return business
                 

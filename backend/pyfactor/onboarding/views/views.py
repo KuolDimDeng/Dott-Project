@@ -2168,6 +2168,9 @@ class SaveStep1View(APIView):
                                     tenant_cursor.execute("SET TRANSACTION ISOLATION LEVEL READ COMMITTED")
                                     
                                     logger.debug(f"Attempting to insert business data (attempt {attempt+1}/{max_retries})")
+                                    # Generate a UUID for owner_id based on user.id
+                                    owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{request.user.id}'))
+                                    
                                     tenant_cursor.execute("""
                                         INSERT INTO users_business (
                                             id, business_num, name,
@@ -2182,7 +2185,7 @@ class SaveStep1View(APIView):
                                         serializer.validated_data['name'],
                                         now,
                                         now,
-                                        str(request.user.id)
+                                        owner_uuid
                                     ])
                                     # Explicitly commit after successful insertion
                                     tenant_conn.commit()

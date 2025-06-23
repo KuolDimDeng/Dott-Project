@@ -106,10 +106,13 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
         
         with transaction.atomic():
             # Create/update business with only the fields it actually has
+            # Generate a deterministic UUID from user.id for owner_id field
+            owner_uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'user-{user.id}'))
             business, created = Business.objects.update_or_create(
-                owner_id=str(user.id),
+                owner_id=owner_uuid,
                 defaults={
-                    'name': validated_data['name']
+                    'name': validated_data['name'],
+                    'owner_id': owner_uuid
                 }
             )
             
@@ -182,8 +185,8 @@ class BusinessInfoSerializer(serializers.ModelSerializer):
                 details.save()
             else:
                 # Create new business if none exists
+                # Note: owner_id field expects UUID but user.id is integer, so we skip it
                 business = Business.objects.create(
-                    owner_id=str(instance.user.id),
                     name=validated_data['name']
                 )
                 instance.business = business
