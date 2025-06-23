@@ -300,14 +300,21 @@ if (plan.id === 'free') {
 **CRITICAL**: All new modules MUST follow this pattern exactly. No exceptions.
 
 ## Troubleshooting Reference (2025-06-23)
-- **Documentation**: `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
+- **Frontend Issues**: `/frontend/pyfactor_next/docs/TROUBLESHOOTING.md`
+- **Backend Issues**: `/backend/pyfactor/docs/TROUBLESHOOTING.md`
 - **Purpose**: Catalog of recurring issues and proven solutions to prevent re-debugging
 
-### 📚 **Documented Issue Categories:**
-- **Module Development**: Creates successful but fetching empty (OnboardingMiddleware)
-- **Authentication**: Session errors after middleware changes
-- **Database**: UUID/string type mismatches in queries
-- **API Patterns**: Inconsistent endpoint behaviors
+### 📚 **Frontend Issue Categories:**
+- **Module Development**: API integration and proxy patterns
+- **Authentication**: Session management and Auth0 flows
+- **UI Components**: React patterns and state management
+- **Build/Deploy**: Docker and Render deployment issues
+
+### 📚 **Backend Issue Categories:**
+- **Django Framework**: Middleware, ViewSets, URL routing
+- **PostgreSQL/RLS**: Tenant isolation and database queries
+- **Authentication**: Session backend and user context
+- **Multi-Tenant**: Cross-tenant security and data isolation
 
 ### 🔧 **Quick Reference - Most Common Issue:**
 **Problem**: Module creates successfully but GET returns empty array
