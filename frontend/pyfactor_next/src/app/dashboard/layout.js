@@ -1,3 +1,7 @@
+// Force dynamic rendering for all dashboard routes
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 // This file is a server component (no 'use client' directive) for metadata
 import React from 'react';
 import DashboardClientLayout from './DashboardClientLayout';
