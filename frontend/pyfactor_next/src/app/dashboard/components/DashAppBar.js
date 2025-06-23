@@ -129,8 +129,8 @@ const DashAppBar = ({
       console.log('🔍 [DashAppBar] Session data received:', {
         authenticated: session.authenticated,
         email: session.user?.email,
-        subscription_plan: session.user?.subscription_plan,
-        subscriptionPlan: session.user?.subscriptionPlan,
+        subscription_plan: session?.subscription_plan || session?.tenant?.subscription_plan || session?.user?.subscription_plan,
+        subscriptionPlan: session?.subscription_plan || session?.tenant?.subscription_plan || session?.user?.subscriptionPlan,
         given_name: session.user?.given_name,
         family_name: session.user?.family_name,
         first_name: session.user?.first_name,
@@ -697,8 +697,16 @@ const DashAppBar = ({
   // Update subscription display logic to correctly use tenant-specific subscription data
   const getSubscriptionType = useCallback(() => {
     // First check session data (most reliable source)
-    if (session?.user?.subscriptionPlan || session?.user?.subscription_plan) {
-      const sessionPlan = session.user.subscriptionPlan || session.user.subscription_plan;
+    // CRITICAL FIX: Prioritize correct subscription plan sources
+    // 1. session.subscription_plan (top-level session field)
+    // 2. session.tenant.subscription_plan (tenant model field)  
+    // 3. session.user.subscription_plan (user model field - fallback only)
+    const sessionPlan = session?.subscription_plan || 
+                       session?.tenant?.subscription_plan || 
+                       session?.user?.subscriptionPlan || 
+                       session?.user?.subscription_plan;
+    
+    if (sessionPlan) {
       if (sessionPlan && sessionPlan !== 'free') {
         return sessionPlan;
       }
@@ -774,7 +782,7 @@ const DashAppBar = ({
     const subscriptionType = getSubscriptionType();
     console.log('🔍 [DashAppBar] Calculating effectiveSubscriptionType:', {
       result: subscriptionType,
-      sessionPlan: session?.user?.subscriptionPlan || session?.user?.subscription_plan,
+      sessionPlan: session?.subscription_plan || session?.tenant?.subscription_plan || session?.user?.subscriptionPlan || session?.user?.subscription_plan,
       auth0Attrs: userAttributes?.['custom:subplan'],
       userData: userData?.selected_plan || userData?.selectedPlan || userData?.subscription_type || userData?.subscriptionType,
       profileData: profileData?.selected_plan || profileData?.selectedPlan || profileData?.subscriptionType || profileData?.subscriptionPlan || profileData?.subscription_plan || profileData?.subscription_type,
@@ -1074,7 +1082,7 @@ const DashAppBar = ({
       logger.info('[DashAppBar] Session data available:', {
         email: session.user.email,
         businessName: session.user.businessName || session.user.business_name,
-        subscriptionPlan: session.user.subscriptionPlan || session.user.subscription_plan,
+        subscriptionPlan: session.subscription_plan || session.tenant?.subscription_plan || session.user.subscriptionPlan || session.user.subscription_plan,
         given_name: session.user.given_name,
         family_name: session.user.family_name,
         name: session.user.name
@@ -1115,8 +1123,8 @@ const DashAppBar = ({
       }
       
       // Update profile data with subscription info from session
-      if (session.user.subscriptionPlan || session.user.subscription_plan) {
-        const plan = session.user.subscriptionPlan || session.user.subscription_plan;
+      const plan = session.subscription_plan || session.tenant?.subscription_plan || session.user.subscriptionPlan || session.user.subscription_plan;
+      if (plan) {
         logger.info('[DashAppBar] Setting subscription plan from session:', plan);
         setProfileData(prev => ({
           ...prev,
