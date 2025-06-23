@@ -63,7 +63,9 @@ class DashboardMigrationMiddleware:
             logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Incomplete schema setup detected for user {request.user.id}")
             
             # Get pending setup from session or profile
-            pending_setup = request.session.get('pending_schema_setup', {})
+            pending_setup = {}
+            if hasattr(request, 'session'):
+                pending_setup = request.session.get('pending_schema_setup', {})
             if not pending_setup:
                 # Try to get from profile metadata
                 try:
@@ -158,7 +160,9 @@ class DashboardMigrationMiddleware:
             logger.warning(f"[DASHBOARD-MIGRATION-{middleware_id}] User {request.user.id} is marked as onboarded but has no tenant")
             
             # Get pending setup from session
-            pending_setup = request.session.get('pending_schema_setup', {})
+            pending_setup = {}
+            if hasattr(request, 'session'):
+                pending_setup = request.session.get('pending_schema_setup', {})
             if pending_setup and pending_setup.get('business_id'):
                 # Trigger setup task
                 from onboarding.tasks import setup_user_schema_task

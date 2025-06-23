@@ -68,6 +68,15 @@ urlpatterns = [
     # CRM API routes
     path('api/crm/', include('crm.urls')),
     
+    # Inventory API routes
+    path('api/inventory/', include('inventory.urls')),
+    
+    # Sales API routes (if exists)
+    path('api/sales/', include('sales.urls')),
+    
+    # Purchases API routes (if exists)
+    path('api/purchases/', include('purchases.urls')),
+    
     # Users API routes
     path('api/users/', include('users.api.urls')),
     

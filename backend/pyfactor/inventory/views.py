@@ -42,22 +42,11 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
         
         try:
             # Log tenant information if available
-            tenant = getattr(self.request, 'tenant', None)
-            if tenant:
-                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
+            tenant_id = getattr(self.request, 'tenant_id', None)
+            if tenant_id:
+                logger.debug(f"Request has tenant_id: {tenant_id}")
             else:
-                logger.debug("No tenant found in request")
-            
-            # Get optimized connection for the current schema
-            from django.db import connection
-            from pyfactor.db_routers import TenantSchemaRouter
-            
-            # Clear connection cache to ensure clean state
-            TenantSchemaRouter.clear_connection_cache()
-            
-            # Get optimized connection for tenant schema
-            if tenant:
-                TenantSchemaRouter.get_connection_for_schema( tenant.id)
+                logger.debug("No tenant_id found in request")
             
             # Use select_related to optimize queries
             queryset = InventoryItem.objects.select_related(
@@ -82,9 +71,6 @@ class InventoryItemViewSet(viewsets.ModelViewSet):
             logger.error(f"Error getting inventory item queryset: {str(e)}", exc_info=True)
             # Return empty queryset on error
             return InventoryItem.objects.none()
-        finally:
-            # Reset connection cache
-            TenantSchemaRouter.clear_connection_cache()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -130,31 +116,15 @@ class SupplierViewSet(viewsets.ModelViewSet):
         
         try:
             # Log tenant information if available
-            tenant = getattr(self.request, 'tenant', None)
-            if tenant:
-                logger.debug(f"Request has tenant: {tenant.id} (Status: {tenant.database_status})")
+            tenant_id = getattr(self.request, 'tenant_id', None)
+            if tenant_id:
+                logger.debug(f"Request has tenant_id: {tenant_id}")
             else:
-                logger.debug("No tenant found in request")
+                logger.debug("No tenant_id found in request")
             
-            # Get optimized connection for the current schema
-            from django.db import connection
-            from pyfactor.db_routers import TenantSchemaRouter
-            
-            # Clear connection cache to ensure clean state
-            TenantSchemaRouter.clear_connection_cache()
-            
-            # Get optimized connection for tenant schema
-            if tenant:
-                TenantSchemaRouter.get_connection_for_schema(tenant.id)
-            
-            # Use the optimized manager to get suppliers for this tenant
-            if tenant:
-                queryset = Supplier.objects.filter(tenant_id=tenant.id)
-                logger.debug(f"Using optimized queryset for tenant: {tenant.id}")
-            else:
-                # Fall back to regular queryset
-                queryset = Supplier.objects.all()
-                logger.debug("Using regular queryset (no tenant)")
+            # Use the TenantManager which automatically filters by tenant
+            # The TenantManager uses the RLS context set by middleware
+            queryset = Supplier.objects.all()
             
             logger.debug(f"Supplier queryset fetched in {time.time() - start_time:.4f}s")
             return queryset
@@ -163,9 +133,6 @@ class SupplierViewSet(viewsets.ModelViewSet):
             logger.error(f"Error getting supplier queryset: {str(e)}", exc_info=True)
             # Return empty queryset on error
             return Supplier.objects.none()
-        finally:
-            # Reset connection cache
-            TenantSchemaRouter.clear_connection_cache()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -191,10 +158,11 @@ class SupplierViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Override to ensure tenant_id is set correctly"""
-        tenant = getattr(self.request, 'tenant', None)
-        if tenant:
-            serializer.save(tenant_id=tenant.id)
+        tenant_id = getattr(self.request, 'tenant_id', None)
+        if tenant_id:
+            serializer.save(tenant_id=tenant_id)
         else:
+            # The TenantManager should handle this automatically via RLS
             serializer.save()
 
 class LocationViewSet(viewsets.ModelViewSet):
@@ -223,21 +191,16 @@ class ProductViewSet(viewsets.ModelViewSet):
         
         try:
             # Log tenant information if available
-            tenant = getattr(self.request, 'tenant', None)
-            if tenant:
-                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
+            tenant_id = getattr(self.request, 'tenant_id', None)
+            if tenant_id:
+                logger.debug(f"Request has tenant_id: {tenant_id}")
             else:
-                logger.debug("No tenant found in request")
+                logger.debug("No tenant_id found in request")
             
-            # Use the optimized manager to get products for this tenant
-            if tenant:
-                # Use the optimized manager's for_tenant method
-                queryset = Product.optimized.for_tenant( tenant.id)
-                logger.debug(f"Using optimized manager for tenant: { tenant.id}")
-            else:
-                # Fall back to regular queryset
-                queryset = Product.objects.select_related('department').all()
-                logger.debug("Using regular queryset (no tenant)")
+            # Use the TenantManager which automatically filters by tenant
+            # The TenantManager uses the RLS context set by middleware
+            queryset = Product.objects.all()
+            logger.debug("Using TenantManager with RLS filtering")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('is_for_sale'):
@@ -298,24 +261,13 @@ class ServiceViewSet(viewsets.ModelViewSet):
         
         try:
             # Log tenant information if available
-            tenant = getattr(self.request, 'tenant', None)
-            if tenant:
-                logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
+            tenant_id = getattr(self.request, 'tenant_id', None)
+            if tenant_id:
+                logger.debug(f"Request has tenant_id: {tenant_id}")
             else:
-                logger.debug("No tenant found in request")
+                logger.debug("No tenant_id found in request")
             
-            # Get optimized connection for the current schema
-            from django.db import connection
-            from pyfactor.db_routers import TenantSchemaRouter
-            
-            # Clear connection cache to ensure clean state
-            TenantSchemaRouter.clear_connection_cache()
-            
-            # Get optimized connection for tenant schema
-            if tenant:
-                TenantSchemaRouter.get_connection_for_schema( tenant.id)
-            
-            # Use select_related to optimize queries
+            # Services don't have TenantManager, so they need regular filtering
             queryset = Service.objects.all()
             
             # Apply any filters from query parameters
@@ -331,9 +283,6 @@ class ServiceViewSet(viewsets.ModelViewSet):
             logger.error(f"Error getting service queryset: {str(e)}", exc_info=True)
             # Return empty queryset on error
             return Service.objects.none()
-        finally:
-            # Reset connection cache
-            TenantSchemaRouter.clear_connection_cache()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -472,17 +421,15 @@ def product_list(request):
     
     try:
         # Get tenant information if available
-        tenant = getattr(request, 'tenant', None)
-        if tenant:
-            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
-            
-            # Use the optimized manager's for_tenant method
-            products = Product.optimized.for_tenant( tenant.id)
-            logger.debug(f"Using optimized manager for tenant: { tenant.id}")
+        tenant_id = getattr(request, 'tenant_id', None)
+        if tenant_id:
+            logger.debug(f"Request has tenant_id: {tenant_id}")
         else:
-            logger.debug("No tenant found in request, using current schema")
-            # Fall back to regular queryset
-            products = Product.objects.select_related('department').all()
+            logger.debug("No tenant_id found in request")
+            
+        # Use the TenantManager which automatically filters by tenant
+        # The TenantManager uses the RLS context set by middleware
+        products = Product.objects.all()
         
         # Use a transaction with a timeout to prevent long-running queries
         from django.db import transaction, connection
@@ -531,9 +478,6 @@ def product_list(request):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    finally:
-        # Reset connection cache
-        TenantSchemaRouter.clear_connection_cache()
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -546,7 +490,6 @@ def service_list(request):
     
     # Log the current database connection and schema
     from django.db import connection
-    from pyfactor.db_routers import TenantSchemaRouter
     
     try:
         # Get optimized connection for the current schema
@@ -555,16 +498,12 @@ def service_list(request):
             current_schema = cursor.fetchone()[0]
             logger.debug(f"Fetching services from schema: {current_schema}, using connection: {connection.alias}")
         
-        # Ensure we're in the correct schema context
-        TenantSchemaRouter.clear_connection_cache()
-        
         # Get tenant information if available
-        tenant = getattr(request, 'tenant', None)
-        if tenant:
-            logger.debug(f"Request has tenant: { tenant.id} (Status: {tenant.database_status})")
-            TenantSchemaRouter.get_connection_for_schema( tenant.id)
+        tenant_id = getattr(request, 'tenant_id', None)
+        if tenant_id:
+            logger.debug(f"Request has tenant_id: {tenant_id}")
         else:
-            logger.debug("No tenant found in request, using current schema")
+            logger.debug("No tenant_id found in request")
         
         # Use a transaction with a timeout to prevent long-running queries
         from django.db import transaction
@@ -609,9 +548,6 @@ def service_list(request):
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-    finally:
-        # Reset connection cache
-        TenantSchemaRouter.clear_connection_cache()
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
