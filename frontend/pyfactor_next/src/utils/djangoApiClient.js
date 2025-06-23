@@ -16,17 +16,32 @@ class DjangoApiClient {
    * Get session token from cookies
    */
   getSessionToken() {
-    if (typeof document === 'undefined') {
-      return null; // Server-side rendering
+    // Check if we're in the browser
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      // Server-side rendering - try to get from Next.js cookies
+      if (typeof window !== 'undefined' && window.__NEXT_DATA__?.props?.pageProps?.sessionToken) {
+        return window.__NEXT_DATA__.props.pageProps.sessionToken;
+      }
+      return null;
     }
     
+    // Browser environment - read from cookies
     const sessionToken = document.cookie
       .split('; ')
       .find(row => row.startsWith('sid=') || row.startsWith('session_token='))
       ?.split('=')[1];
     
     if (!sessionToken) {
-      throw new Error('No session found. Please log in again.');
+      // Try alternate cookie names
+      const altToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('session_token=') || row.startsWith('dott_session='))
+        ?.split('=')[1];
+      
+      if (!altToken) {
+        throw new Error('No session found. Please log in again.');
+      }
+      return altToken;
     }
     
     return sessionToken;
