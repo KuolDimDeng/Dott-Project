@@ -117,8 +117,17 @@ class SupplierViewSet(viewsets.ModelViewSet):
         try:
             # Log tenant information if available
             tenant_id = getattr(self.request, 'tenant_id', None)
+            
+            # Also check user's tenant_id as fallback
+            if not tenant_id and hasattr(self.request.user, 'tenant_id'):
+                tenant_id = self.request.user.tenant_id
+            
             if tenant_id:
                 logger.debug(f"Request has tenant_id: {tenant_id}")
+                # Ensure RLS context is set (temporary fix until authentication deployment completes)
+                from custom_auth.rls import set_tenant_context
+                set_tenant_context(str(tenant_id))
+                logger.debug(f"[SupplierViewSet] Set RLS context to {tenant_id}")
             else:
                 logger.debug("No tenant_id found in request")
             
@@ -126,7 +135,7 @@ class SupplierViewSet(viewsets.ModelViewSet):
             # The TenantManager uses the RLS context set by middleware
             queryset = Supplier.objects.all()
             
-            logger.debug(f"Supplier queryset fetched in {time.time() - start_time:.4f}s")
+            logger.debug(f"Supplier queryset fetched in {time.time() - start_time:.4f}s, count: {queryset.count()}")
             return queryset
             
         except Exception as e:
@@ -192,8 +201,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         try:
             # Log tenant information if available
             tenant_id = getattr(self.request, 'tenant_id', None)
+            
+            # Also check user's tenant_id as fallback
+            if not tenant_id and hasattr(self.request.user, 'tenant_id'):
+                tenant_id = self.request.user.tenant_id
+            
             if tenant_id:
                 logger.debug(f"Request has tenant_id: {tenant_id}")
+                # Ensure RLS context is set (temporary fix until authentication deployment completes)
+                from custom_auth.rls import set_tenant_context
+                set_tenant_context(str(tenant_id))
+                logger.debug(f"[ProductViewSet] Set RLS context to {tenant_id}")
             else:
                 logger.debug("No tenant_id found in request")
             

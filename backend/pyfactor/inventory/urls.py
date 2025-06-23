@@ -5,6 +5,7 @@ from . import api_views
 from . import service_api_views
 from .optimized_service_views import optimized_create_service
 from . import service_api_views
+from .debug_views import debug_rls_context
 
 # Create a router for standard views
 router = DefaultRouter()
@@ -27,6 +28,9 @@ optimized_service_router = DefaultRouter()
 optimized_service_router.register(r'services', service_api_views.OptimizedServiceViewSet, basename='optimized-service')
 
 urlpatterns = [
+    # Debug endpoint
+    path('debug/rls/', debug_rls_context, name='debug-rls'),
+    
     # Standard API endpoints
     path('', include(router.urls)),
     
