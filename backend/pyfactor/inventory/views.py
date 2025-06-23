@@ -106,42 +106,10 @@ class SupplierViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Get queryset with proper tenant context and optimized queries
+        Get queryset - relies on TenantManager for automatic filtering
         """
-        import logging
-        import time
-        logger = logging.getLogger(__name__)
-        
-        start_time = time.time()
-        
-        try:
-            # Log tenant information if available
-            tenant_id = getattr(self.request, 'tenant_id', None)
-            
-            # Also check user's tenant_id as fallback
-            if not tenant_id and hasattr(self.request.user, 'tenant_id'):
-                tenant_id = self.request.user.tenant_id
-            
-            if tenant_id:
-                logger.debug(f"Request has tenant_id: {tenant_id}")
-                # Ensure RLS context is set (temporary fix until authentication deployment completes)
-                from custom_auth.rls import set_tenant_context
-                set_tenant_context(str(tenant_id))
-                logger.debug(f"[SupplierViewSet] Set RLS context to {tenant_id}")
-            else:
-                logger.debug("No tenant_id found in request")
-            
-            # Use the TenantManager which automatically filters by tenant
-            # The TenantManager uses the RLS context set by middleware
-            queryset = Supplier.objects.all()
-            
-            logger.debug(f"Supplier queryset fetched in {time.time() - start_time:.4f}s, count: {queryset.count()}")
-            return queryset
-            
-        except Exception as e:
-            logger.error(f"Error getting supplier queryset: {str(e)}", exc_info=True)
-            # Return empty queryset on error
-            return Supplier.objects.none()
+        # Simply return all suppliers - TenantManager handles filtering
+        return Supplier.objects.all()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -199,26 +167,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         start_time = time.time()
         
         try:
-            # Log tenant information if available
-            tenant_id = getattr(self.request, 'tenant_id', None)
-            
-            # Also check user's tenant_id as fallback
-            if not tenant_id and hasattr(self.request.user, 'tenant_id'):
-                tenant_id = self.request.user.tenant_id
-            
-            if tenant_id:
-                logger.debug(f"Request has tenant_id: {tenant_id}")
-                # Ensure RLS context is set (temporary fix until authentication deployment completes)
-                from custom_auth.rls import set_tenant_context
-                set_tenant_context(str(tenant_id))
-                logger.debug(f"[ProductViewSet] Set RLS context to {tenant_id}")
-            else:
-                logger.debug("No tenant_id found in request")
-            
             # Use the TenantManager which automatically filters by tenant
-            # The TenantManager uses the RLS context set by middleware
             queryset = Product.objects.all()
-            logger.debug("Using TenantManager with RLS filtering")
             
             # Apply any filters from query parameters
             if self.request.query_params.get('is_for_sale'):

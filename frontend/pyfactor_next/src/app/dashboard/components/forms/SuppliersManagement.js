@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
+import { supplierApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
 
 const SuppliersManagement = () => {
@@ -53,15 +54,8 @@ const SuppliersManagement = () => {
       setIsLoading(true);
       console.log('[SuppliersManagement] Fetching suppliers...');
       
-      // Backend handles tenant isolation automatically
-      // No need to send tenant ID from frontend
-      const response = await fetch('/api/inventory/suppliers');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch suppliers: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      // Use industry-standard proxy API that handles tenant isolation
+      const data = await supplierApi.getAll();
       console.log('[SuppliersManagement] Fetched suppliers:', data?.length || 0);
       
       if (isMounted.current) {
@@ -97,22 +91,8 @@ const SuppliersManagement = () => {
     try {
       setIsSubmitting(true);
       
-      // Backend handles tenant isolation automatically
-      // No need to check tenant ID in frontend
-      
-      const response = await fetch('/api/inventory/suppliers', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create supplier: ${response.status}`);
-      }
-      
-      const newSupplier = await response.json();
+      // Use industry-standard proxy API that handles tenant isolation
+      const newSupplier = await supplierApi.create(formData);
       console.log('[SuppliersManagement] Supplier created:', newSupplier);
       
       toast.success(`Supplier "${formData.name}" created successfully!`);
