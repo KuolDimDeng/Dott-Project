@@ -14,6 +14,9 @@ from rest_framework import authentication, exceptions
 from .services import session_service
 from .models import UserSession
 
+# Import RLS functions
+from custom_auth.rls import set_tenant_context, clear_tenant_context
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -99,6 +102,16 @@ class SessionAuthentication(authentication.BaseAuthentication):
         
         # Attach session to request for later use
         request.session_obj = session
+        
+        # Set RLS tenant context if user has a tenant
+        if hasattr(user, 'tenant_id') and user.tenant_id:
+            logger.debug(f"[SessionAuth] Setting RLS context for tenant: {user.tenant_id}")
+            set_tenant_context(str(user.tenant_id))
+            # Store tenant_id on request for middleware/views
+            request.tenant_id = user.tenant_id
+        else:
+            logger.debug(f"[SessionAuth] User {user.email} has no tenant_id")
+            clear_tenant_context()
         
         return (user, session)
     

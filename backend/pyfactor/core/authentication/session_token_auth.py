@@ -8,6 +8,9 @@ import logging
 from session_manager.models import UserSession
 from session_manager.services import session_service
 
+# Import RLS functions
+from custom_auth.rls import set_tenant_context, clear_tenant_context
+
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -88,6 +91,16 @@ class SessionTokenAuthentication(BaseAuthentication):
             
             # Attach session to request for later use
             request.session_obj = session
+            
+            # Set RLS tenant context if user has a tenant
+            if hasattr(user, 'tenant_id') and user.tenant_id:
+                logger.debug(f"[SessionTokenAuth] Setting RLS context for tenant: {user.tenant_id}")
+                set_tenant_context(str(user.tenant_id))
+                # Store tenant_id on request for middleware/views
+                request.tenant_id = user.tenant_id
+            else:
+                logger.debug(f"[SessionTokenAuth] User {user.email} has no tenant_id")
+                clear_tenant_context()
             
             logger.info(f"[SessionTokenAuth] ✅ Successfully authenticated user {user.email} with session token")
             return (user, session)

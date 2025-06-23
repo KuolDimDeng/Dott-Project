@@ -22,6 +22,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from jwt import PyJWKClient
 from urllib.parse import urljoin
 
+# Import RLS functions
+from custom_auth.rls import set_tenant_context, clear_tenant_context
+
 # Add JWE support with fallback
 try:
     from jwcrypto import jwe, jwk
@@ -373,6 +376,16 @@ class Auth0JWTAuthentication(authentication.BaseAuthentication):
             user = self.get_or_create_user(user_info)
             logger.info(f"✅ User authentication successful: {user.email}")
             logger.debug(f"✅ Final user object: id={user.pk}, email={user.email}, tenant={getattr(user, 'tenant_id', 'None')}")
+            
+            # Set RLS tenant context if user has a tenant
+            if hasattr(user, 'tenant_id') and user.tenant_id:
+                logger.debug(f"[Auth0Auth] Setting RLS context for tenant: {user.tenant_id}")
+                set_tenant_context(str(user.tenant_id))
+                # Store tenant_id on request for middleware/views
+                request.tenant_id = user.tenant_id
+            else:
+                logger.debug(f"[Auth0Auth] User {user.email} has no tenant_id")
+                clear_tenant_context()
             
             return (user, token)
             
