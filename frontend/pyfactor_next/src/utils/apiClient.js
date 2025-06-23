@@ -434,26 +434,95 @@ export const invoiceApi = {
 // Customer related API methods - Using Django REST API
 export const customerApi = {
   async getAll(params = {}) {
-    return djangoApi.get('/api/crm/customers/', params);
+    // Use local proxy endpoint that handles authentication server-side
+    const response = await fetch('/api/crm/customers', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async getById(id, params = {}) {
-    return djangoApi.get(`/api/crm/customers/${id}/`, params);
+    const response = await fetch(`/api/crm/customers/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async create(data, params = {}) {
     logger.info('[CustomerApi] Creating customer with data:', data);
-    const result = await djangoApi.post('/api/crm/customers/', data, params);
+    
+    const response = await fetch('/api/crm/customers', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
     logger.info('[CustomerApi] Customer created successfully:', result);
     return result;
   },
   
   async update(id, data, params = {}) {
-    return djangoApi.put(`/api/crm/customers/${id}/`, data, params);
+    const response = await fetch(`/api/crm/customers/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
   
   async delete(id, params = {}) {
-    return djangoApi.delete(`/api/crm/customers/${id}/`, params);
+    const response = await fetch(`/api/crm/customers/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
   }
 };
 

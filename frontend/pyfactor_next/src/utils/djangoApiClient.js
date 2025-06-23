@@ -26,22 +26,37 @@ class DjangoApiClient {
     }
     
     // Browser environment - read from cookies
+    // First check for the dott_auth_session cookie (encrypted session data)
+    const dottAuthSession = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('dott_auth_session='))
+      ?.split('=')[1];
+    
+    if (dottAuthSession) {
+      // The dott_auth_session contains encrypted session data
+      // We need to extract the session ID from it or use a different approach
+      // For now, let's check for the session ID cookie
+    }
+    
+    // Check for various session token cookie names
     const sessionToken = document.cookie
       .split('; ')
-      .find(row => row.startsWith('sid=') || row.startsWith('session_token='))
+      .find(row => 
+        row.startsWith('sid=') || 
+        row.startsWith('session_token=') ||
+        row.startsWith('dott_session_id=') ||
+        row.startsWith('sessionid=')
+      )
       ?.split('=')[1];
     
     if (!sessionToken) {
-      // Try alternate cookie names
-      const altToken = document.cookie
+      // Log available cookies for debugging (without values for security)
+      const availableCookies = document.cookie
         .split('; ')
-        .find(row => row.startsWith('session_token=') || row.startsWith('dott_session='))
-        ?.split('=')[1];
-      
-      if (!altToken) {
-        throw new Error('No session found. Please log in again.');
-      }
-      return altToken;
+        .map(cookie => cookie.split('=')[0]);
+      console.warn('[DjangoApiClient] Available cookies:', availableCookies);
+      console.warn('[DjangoApiClient] No session token found in cookies');
+      throw new Error('No session found. Please log in again.');
     }
     
     return sessionToken;
@@ -51,12 +66,17 @@ class DjangoApiClient {
    * Build headers for API requests
    */
   buildHeaders(sessionToken) {
-    return {
+    const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `SessionID ${sessionToken}`,
-      'Cookie': `session_token=${sessionToken}`,
       'X-Requested-With': 'XMLHttpRequest' // CSRF protection
     };
+    
+    if (sessionToken) {
+      headers['Authorization'] = `SessionID ${sessionToken}`;
+      headers['Cookie'] = `sid=${sessionToken}`;
+    }
+    
+    return headers;
   }
 
   /**
@@ -64,7 +84,15 @@ class DjangoApiClient {
    */
   async request(method, endpoint, data = null, params = {}) {
     try {
-      const sessionToken = this.getSessionToken();
+      let sessionToken = null;
+      try {
+        sessionToken = this.getSessionToken();
+      } catch (error) {
+        // If we can't get session token, log it but continue
+        // The request might still work with credentials: 'include'
+        logger.warn('[DjangoApiClient] Could not get session token:', error.message);
+      }
+      
       const url = new URL(`${this.baseURL}${endpoint}`);
       
       // Add query parameters
