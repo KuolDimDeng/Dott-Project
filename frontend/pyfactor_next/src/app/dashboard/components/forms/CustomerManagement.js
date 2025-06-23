@@ -5,7 +5,6 @@ import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { customerApi } from '@/utils/apiClient';
 import { getCacheValue } from '@/utils/appCache';
-import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
 const CustomerManagement = () => {
@@ -52,13 +51,8 @@ const CustomerManagement = () => {
       setIsLoading(true);
       console.log('[CustomerManagement] Fetching customers...');
       
-      // Get secure tenant ID
-      const tenantId = await getSecureTenantId();
-      if (!tenantId) {
-        console.error('[CustomerManagement] No tenant ID found');
-        toast.error('Authentication required. Please log in again.');
-        return;
-      }
+      // Backend handles tenant isolation automatically
+      // No need to send tenant ID from frontend
       
       try {
         const data = await customerApi.getAll();
@@ -128,14 +122,8 @@ const CustomerManagement = () => {
       setIsSubmitting(true);
       console.log('[CustomerManagement] DEBUG: Submitting state set to true');
       
-      const tenantId = await getSecureTenantId();
-      console.log('[CustomerManagement] DEBUG: Tenant ID retrieved:', tenantId);
-      
-      if (!tenantId) {
-        console.error('[CustomerManagement] DEBUG: No tenant ID found');
-        toast.error('Authentication required.');
-        return;
-      }
+      // Backend handles tenant isolation automatically
+      // No need to check tenant ID in frontend
       
       console.log('[CustomerManagement] DEBUG: Calling customerApi.create()...');
       const response = await customerApi.create(formData);
