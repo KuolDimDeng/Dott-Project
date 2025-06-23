@@ -43,7 +43,7 @@ export async function POST(request) {
         logger.info('[CreateSubscription] Using new session system');
         const response = await fetch(`${API_URL}/api/sessions/current/`, {
           headers: {
-            'Authorization': `SessionID ${sessionId}`,
+            'Authorization': `Session ${sessionId}`,
             'Cookie': `session_token=${sessionId}`
           },
           cache: 'no-store'

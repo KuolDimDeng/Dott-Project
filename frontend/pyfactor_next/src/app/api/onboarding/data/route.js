@@ -32,7 +32,7 @@ export async function GET(request) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const response = await fetch(`${API_URL}/api/onboarding/data/?tenant_id=${tenantId}`, {
       headers: {
-        'Authorization': `SessionID ${sessionToken}`,
+        'Authorization': `Session ${sessionToken}`,
         'Cookie': `session_token=${sessionToken}`,
         'Content-Type': 'application/json'
       },

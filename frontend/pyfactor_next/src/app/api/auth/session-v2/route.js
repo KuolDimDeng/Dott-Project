@@ -28,7 +28,7 @@ export async function GET(request) {
     // Fetch session from backend - single source of truth
     const response = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
+        'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store' // Never cache session data
@@ -245,7 +245,7 @@ export async function DELETE() {
       await fetch(`${API_URL}/api/sessions/${sessionId.value}/`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `SessionID ${sessionId.value}`,
+          'Authorization': `Session ${sessionId.value}`,
         }
       });
     }

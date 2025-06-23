@@ -65,7 +65,7 @@ async function proxyRequest(request, { params }, method) {
       // New session system - use session ID
       const sessionId = sidCookie?.value || sessionTokenCookie?.value;
       console.log('[Backend Proxy] Using new session system');
-      headers.set('Authorization', `SessionID ${sessionId}`);
+      headers.set('Authorization', `Session ${sessionId}`);
       headers.set('Cookie', `session_token=${sessionId}`);
     } else if (sessionCookie) {
       // Fallback to old session system

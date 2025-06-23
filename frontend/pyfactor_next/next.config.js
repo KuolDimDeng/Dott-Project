@@ -19,6 +19,7 @@ const nextConfig = {
   output: 'standalone',
   
   // SWC is now the default in Next.js 13+
+  swcMinify: true,
   
   // Optimize for Render's infrastructure
   experimental: {
@@ -29,11 +30,16 @@ const nextConfig = {
     },
     
     // Enable module/chunk optimizations
-    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react'],
+    optimizePackageImports: ['lodash', 'date-fns', '@heroicons/react', 'react-icons', '@stripe/stripe-js'],
     
     // Reduce memory usage during build
     workerThreads: false,
     cpus: 2, // Limit CPU usage for Render
+    
+    // Speed up builds
+    turbotrace: {
+      contextDirectory: process.cwd(),
+    },
   },
   
   // Environment variables (minimal set)
@@ -118,6 +124,17 @@ const nextConfig = {
       
       // Disable source maps for faster builds
       config.devtool = false;
+      
+      // Use faster hashing algorithm
+      config.output.hashFunction = 'xxhash64';
+      
+      // Optimize module IDs
+      config.optimization.moduleIds = 'deterministic';
+      config.optimization.chunkIds = 'deterministic';
+      
+      // Enable aggressive code splitting
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
     }
     
     // Handle stubs

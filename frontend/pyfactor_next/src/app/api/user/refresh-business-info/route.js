@@ -19,7 +19,7 @@ export async function GET(request) {
     // Call the backend user profile endpoint to get fresh data
     const response = await fetch(`${API_URL}/api/auth/profile`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
+        'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store' // Force fresh data

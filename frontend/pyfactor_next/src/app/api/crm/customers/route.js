@@ -20,7 +20,7 @@ export async function GET(request) {
     // Get tenant ID from current session
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Cookie': `session_token=${sidCookie.value}`
       },
       cache: 'no-store'
@@ -43,7 +43,7 @@ export async function GET(request) {
     const response = await fetch(`${API_URL}/api/crm/customers/?tenant_id=${tenantId}`, {
       method: 'GET',
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
         'X-Tenant-ID': tenantId,
       },
@@ -75,7 +75,7 @@ export async function POST(request) {
     // Get tenant ID from current session
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Cookie': `session_token=${sidCookie.value}`
       },
       cache: 'no-store'
@@ -105,7 +105,7 @@ export async function POST(request) {
     const response = await fetch(`${API_URL}/api/crm/customers/`, {
       method: 'POST',
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
         'X-Tenant-ID': tenantId,
       },

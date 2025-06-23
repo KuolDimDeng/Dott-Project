@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
     const response = await fetch(`${API_URL}/api/crm/customers/${id}/`, {
       method: 'GET',
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
     });
@@ -54,7 +54,7 @@ export async function PUT(request, { params }) {
     const response = await fetch(`${API_URL}/api/crm/customers/${id}/`, {
       method: 'PUT',
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -88,7 +88,7 @@ export async function DELETE(request, { params }) {
     const response = await fetch(`${API_URL}/api/crm/customers/${id}/`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `SessionID ${sidCookie.value}`,
+        'Authorization': `Session ${sidCookie.value}`,
         'Content-Type': 'application/json',
       },
     });

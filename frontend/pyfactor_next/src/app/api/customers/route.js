@@ -25,7 +25,7 @@ export async function GET(request) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
+        'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store'
@@ -225,7 +225,7 @@ export async function POST(request) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
+        'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store'

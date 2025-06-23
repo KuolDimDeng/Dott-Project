@@ -28,7 +28,7 @@ export async function GET(request) {
         logger.debug(`[UserProfile API] Using new session system, request ${requestId}`);
         const response = await fetch(`${API_URL}/api/sessions/current/`, {
           headers: {
-            'Authorization': `SessionID ${sessionId}`,
+            'Authorization': `Session ${sessionId}`,
             'Cookie': `session_token=${sessionId}`
           },
           cache: 'no-store'

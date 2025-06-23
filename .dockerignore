@@ -63,10 +63,12 @@ Desktop.ini
 **/test
 **/tests
 **/__tests__
+**/__mocks__
 cypress
 cypress.json
 .cypress
 jest.config.*
+jest.setup.*
 
 # Temporary and backup files
 tmp
@@ -79,6 +81,8 @@ temp
 **/frontend_file_backups
 **/component-backups
 **/temp_excluded
+**/*.backup.*
+**/*.old
 
 # Backend files (not needed for frontend build)
 backend/
@@ -88,26 +92,42 @@ backend/
 **/*.pyd
 *.egg-info
 *.egg
+venv/
+.venv/
 
-# Documentation
+# Documentation - aggressive exclusion
 docs/
 documentation/
 *.md
+!frontend/pyfactor_next/README.md
 README*
 CHANGELOG*
 LICENSE*
+CONTRIBUTING*
+CODE_OF_CONDUCT*
+SECURITY*
+CLAUDE.md
+**/*.mdx
 
-# Scripts
+# Scripts - exclude more aggressively
 scripts/
+bin/
+tools/
 *.sh
 *.py
+*.rb
+*.pl
 !frontend/pyfactor_next/next.config.js
+!frontend/pyfactor_next/postcss.config.js
+!frontend/pyfactor_next/tailwind.config.js
 
 # Package manager files (we use pnpm)
 yarn.lock
 package-lock.json
 yarn-error.log
 npm-debug.log
+.yarn/
+.npm/
 
 # Archives and large files
 *.zip
@@ -120,15 +140,54 @@ npm-debug.log
 *.jar
 *.war
 *.ear
+*.pdf
+*.docx
+*.xlsx
 
 # Docker files
 .dockerignore
 Dockerfile*
 docker-compose*
 
-# Other
+# Database files
 *.sqlite
 *.sqlite3
 *.db
-storybook-static
+*.sql
+
+# Other build tools
 .turbo
+.vercel
+.netlify
+.cache/
+.parcel-cache/
+.nuxt/
+.output/
+
+# Storybook
+storybook-static
+.storybook
+
+# Large assets that might not be needed
+public/videos/
+public/downloads/
+public/fonts/*.ttf
+public/fonts/*.otf
+**/*.mp4
+**/*.mov
+**/*.avi
+
+# Terraform and infrastructure
+*.tf
+*.tfstate
+*.tfvars
+.terraform/
+
+# Additional exclusions for faster builds
+**/.eslintcache
+**/.stylelintcache
+**/tsconfig.tsbuildinfo
+**/.next/cache
+**/pnpm-debug.log*
+.pnpm-store/
+.turbo/

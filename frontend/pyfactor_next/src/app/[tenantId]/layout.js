@@ -36,7 +36,7 @@ export default async function TenantLayout({ children, params, searchParams }) {
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_API_URL || 'https://api.dottapps.com';
           const sessionResponse = await fetch(`${apiUrl}/api/sessions/${sessionId.value}/`, {
             headers: {
-              'Authorization': `SessionID ${sessionId.value}`,
+              'Authorization': `Session ${sessionId.value}`,
               'Content-Type': 'application/json',
             },
             cache: 'no-store'

@@ -77,7 +77,7 @@ export async function GET(request) {
       const onboardingResponse = await fetch(`${apiBaseUrl}/api/onboarding/data/?tenant_id=${tenantId}`, {
         method: 'GET',
         headers: {
-          'Authorization': `SessionID ${sessionId.value}`,
+          'Authorization': `Session ${sessionId.value}`,
           'Cookie': `session_token=${sessionId.value}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -100,7 +100,7 @@ export async function GET(request) {
             const profileResponse = await fetch(`${apiBaseUrl}/api/auth/profile`, {
               method: 'GET',
               headers: {
-                'Authorization': `SessionID ${sessionId.value}`,
+                'Authorization': `Session ${sessionId.value}`,
                 'Cookie': `session_token=${sessionId.value}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',

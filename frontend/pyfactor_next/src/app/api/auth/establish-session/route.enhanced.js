@@ -38,7 +38,7 @@ export async function POST(request) {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
     const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${token}`,
+        'Authorization': `Session ${token}`,
         'Cookie': `session_token=${token}`,
         'X-Device-Fingerprint': JSON.stringify(fingerprintData)
       }

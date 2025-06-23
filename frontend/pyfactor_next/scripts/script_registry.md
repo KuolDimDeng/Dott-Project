@@ -699,3 +699,18 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Clear session cache after completion
 - **Files Modified**:
   - /src/app/api/onboarding/complete-all/route.js
+
+## fix-session-auth-headers.js
+- **Date**: 2025-06-23
+- **Purpose**: Fix authentication header format from SessionID to Session
+- **Status**: ✅ EXECUTED SUCCESSFULLY
+- **Issue**: Backend expects 'Session' auth type but frontend sending 'SessionID'
+- **Solution**: 
+  - Updated all authorization headers to use 'Session' instead of 'SessionID'
+  - Fixed djangoApiClient.js and all Next.js API proxy routes
+  - Comprehensive search and replace across entire codebase
+- **Files Modified**: 
+  - 15 files updated including API routes and utilities
+  - djangoApiClient.js
+  - All CRM customer routes
+  - Session management endpoints

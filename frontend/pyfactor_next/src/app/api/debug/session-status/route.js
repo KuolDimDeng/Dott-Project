@@ -20,7 +20,7 @@ export async function GET() {
     // Get raw session data from backend
     const response = await fetch(`${API_URL}/api/sessions/current/`, {
       headers: {
-        'Authorization': `SessionID ${sessionId.value}`,
+        'Authorization': `Session ${sessionId.value}`,
         'Cookie': `session_token=${sessionId.value}`
       },
       cache: 'no-store'
