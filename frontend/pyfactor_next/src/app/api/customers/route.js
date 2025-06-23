@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -13,9 +12,36 @@ export async function GET(request) {
   let client;
   
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.tenant_id) {
+    // Get session from cookies
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Customers API] No session ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    // Validate session with backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `SessionID ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!sessionResponse.ok) {
+      console.log('[Customers API] Session validation failed');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const sessionData = await sessionResponse.json();
+    const tenantId = sessionData.tenant_id || sessionData.tenant?.id;
+    
+    if (!tenantId) {
+      console.log('[Customers API] No tenant ID in session');
+      return NextResponse.json({ error: 'No tenant context' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -37,7 +63,7 @@ export async function GET(request) {
     
     // Build the WHERE clause
     let whereConditions = ['tenant_id = $1'];
-    let queryParams = [session.user.tenant_id];
+    let queryParams = [tenantId];
     let paramCount = 1;
 
     if (search) {
@@ -90,7 +116,7 @@ export async function GET(request) {
         COALESCE(c.business_name, CONCAT(c.first_name, ' ', c.last_name)) as customer_name,
         COUNT(DISTINCT i.id) as invoice_count,
         COALESCE(SUM(i.total), 0) as total_revenue
-      FROM sales_customer c
+      FROM crm_customer c
       LEFT JOIN sales_invoice i ON c.id = i.customer_id AND i.tenant_id = $1
       WHERE ${whereClause}
       GROUP BY c.id
@@ -123,7 +149,7 @@ export async function GET(request) {
     // Get total count for pagination
     let countQuery = `
       SELECT COUNT(DISTINCT c.id) as total
-      FROM sales_customer c
+      FROM crm_customer c
       LEFT JOIN sales_invoice i ON c.id = i.customer_id AND i.tenant_id = $1
       WHERE ${whereClause}
     `;
@@ -184,12 +210,44 @@ export async function POST(request) {
   let client;
   
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.tenant_id) {
+    console.log('[Customers API] POST request received');
+    
+    // Get session from cookies
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('sid');
+    
+    if (!sessionId) {
+      console.log('[Customers API] No session ID found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    
+    // Validate session with backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.com';
+    const sessionResponse = await fetch(`${API_URL}/api/sessions/current/`, {
+      headers: {
+        'Authorization': `SessionID ${sessionId.value}`,
+        'Cookie': `session_token=${sessionId.value}`
+      },
+      cache: 'no-store'
+    });
+    
+    if (!sessionResponse.ok) {
+      console.log('[Customers API] Session validation failed');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    
+    const sessionData = await sessionResponse.json();
+    const tenantId = sessionData.tenant_id || sessionData.tenant?.id;
+    
+    if (!tenantId) {
+      console.log('[Customers API] No tenant ID in session');
+      return NextResponse.json({ error: 'No tenant context' }, { status: 403 });
+    }
+    
+    console.log('[Customers API] Session validated, tenant ID:', tenantId);
 
     const data = await request.json();
+    console.log('[Customers API] Customer data received:', JSON.stringify(data, null, 2));
     
     client = await pool.connect();
     await client.query('SET search_path TO public');
@@ -197,50 +255,57 @@ export async function POST(request) {
     // Generate account number (you can customize this format)
     const accountNumber = `CUS${Date.now().toString().slice(-6)}`;
 
+    // First, check what columns exist in the table
+    const checkTableQuery = `
+      SELECT column_name, data_type 
+      FROM information_schema.columns 
+      WHERE table_name = 'crm_customer' 
+      AND table_schema = 'public'
+      ORDER BY ordinal_position`;
+    
+    const tableInfo = await client.query(checkTableQuery);
+    console.log('[Customers API] Table columns:', tableInfo.rows.map(r => r.column_name));
+    
+    // Build insert query with columns matching Django model
     const query = `
-      INSERT INTO sales_customer (
-        id, tenant_id, account_number, customer_name, company_name,
-        business_name, first_name, last_name, email, phone, website,
-        currency, street, city, billing_state, postcode, billing_country,
-        ship_to_name, shipping_phone, shipping_state, shipping_country,
-        delivery_instructions, notes, created_at, updated_at
+      INSERT INTO crm_customer (
+        id, tenant_id, account_number,
+        business_name, first_name, last_name, email, phone,
+        street, city, billing_state, postcode, billing_country,
+        notes, created_at, updated_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 
-        $16, $17, $18, $19, $20, $21, $22, $23, NOW(), NOW()
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW()
       ) RETURNING *`;
 
+    const customerId = uuidv4();
+    console.log('[Customers API] Generated customer ID:', customerId);
+    
     const values = [
-      uuidv4(),
-      session.user.tenant_id,
+      customerId,
+      tenantId,
       accountNumber,
-      data.customer_name,
-      data.company_name || data.business_name,
-      data.business_name,
-      data.first_name,
-      data.last_name,
-      data.email,
-      data.phone,
-      data.website,
-      data.currency || 'USD',
-      data.street,
-      data.city,
-      data.billing_state,
-      data.postcode,
-      data.billing_country,
-      data.ship_to_name,
-      data.shipping_phone,
-      data.shipping_state,
-      data.shipping_country,
-      data.delivery_instructions,
-      data.notes
+      data.business_name || '',
+      data.first_name || '',
+      data.last_name || '',
+      data.email || '',
+      data.phone || '',
+      data.address || data.street || '',  // street column
+      data.city || '',
+      data.state || data.billing_state || '',  // billing_state column
+      data.zip_code || data.postcode || '',  // postcode column
+      data.country || data.billing_country || '',  // billing_country column
+      data.notes || ''
     ];
 
+    console.log('[Customers API] Executing insert query...');
     const result = await client.query(query, values);
+    console.log('[Customers API] Customer created successfully:', result.rows[0]);
 
     return NextResponse.json(result.rows[0], { status: 201 });
 
   } catch (error) {
-    console.error('Error creating customer:', error);
+    console.error('[Customers API] Error creating customer:', error);
+    console.error('[Customers API] Error stack:', error.stack);
     return NextResponse.json(
       { error: 'Failed to create customer', details: error.message },
       { status: 500 }

@@ -99,19 +99,31 @@ const CustomerManagement = () => {
   // Handle create customer
   const handleCreateCustomer = async (e) => {
     e.preventDefault();
-    console.log('[CustomerManagement] Creating customer with data:', formData);
+    console.log('[CustomerManagement] DEBUG: Create button clicked');
+    console.log('[CustomerManagement] DEBUG: Form data:', JSON.stringify(formData, null, 2));
+    console.log('[CustomerManagement] DEBUG: Form validation:', {
+      hasFirstName: !!formData.first_name,
+      hasLastName: !!formData.last_name,
+      hasEmail: !!formData.email,
+      hasBusinessName: !!formData.business_name
+    });
     
     try {
       setIsSubmitting(true);
+      console.log('[CustomerManagement] DEBUG: Submitting state set to true');
       
       const tenantId = await getSecureTenantId();
+      console.log('[CustomerManagement] DEBUG: Tenant ID retrieved:', tenantId);
+      
       if (!tenantId) {
+        console.error('[CustomerManagement] DEBUG: No tenant ID found');
         toast.error('Authentication required.');
         return;
       }
       
+      console.log('[CustomerManagement] DEBUG: Calling customerApi.create()...');
       const response = await customerApi.create(formData);
-      console.log('[CustomerManagement] Customer created:', response);
+      console.log('[CustomerManagement] DEBUG: API response:', response);
       
       const displayName = formData.business_name || `${formData.first_name} ${formData.last_name}`.trim() || formData.email;
       toast.success(`Customer "${displayName}" created successfully!`);
@@ -133,9 +145,16 @@ const CustomerManagement = () => {
       setIsCreating(false);
       fetchCustomers();
     } catch (error) {
-      console.error('[CustomerManagement] Error creating customer:', error);
-      toast.error('Failed to create customer.');
+      console.error('[CustomerManagement] DEBUG: Error creating customer:', error);
+      console.error('[CustomerManagement] DEBUG: Error details:', {
+        message: error.message,
+        response: error.response,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      toast.error(`Failed to create customer: ${error.message || 'Unknown error'}`);
     } finally {
+      console.log('[CustomerManagement] DEBUG: Setting submitting to false');
       setIsSubmitting(false);
     }
   };

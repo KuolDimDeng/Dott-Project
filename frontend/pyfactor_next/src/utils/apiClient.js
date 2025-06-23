@@ -9,6 +9,7 @@ import { logger } from './logger';
 import axios from 'axios';
 import { getAppCacheItem, setAppCacheItem } from '@/utils/appCache';
 import { fetchWithAuth } from '@/utils/api';
+import { djangoApi } from './djangoApiClient';
 
 // Helper function to handle API errors
 const handleApiError = (error, message) => {
@@ -430,60 +431,29 @@ export const invoiceApi = {
   }
 };
 
-// Customer related API methods
+// Customer related API methods - Using Django REST API
 export const customerApi = {
   async getAll(params = {}) {
-    try {
-      const tenantId = await getTenantId();
-      if (!tenantId) {
-        logger.error('[CustomerApi] No tenant ID available for customer fetch');
-        throw new Error('No tenant ID available. Please refresh the page or log in again.');
-      }
-      
-      return await apiClient.get('/api/customers', {
-        ...params,
-        tenantId
-      });
-    } catch (error) {
-      logger.error('[CustomerApi] Error fetching customers:', error);
-      throw error;
-    }
+    return djangoApi.get('/api/crm/customers/', params);
   },
   
   async getById(id, params = {}) {
-    try {
-      return await apiClient.get(`/api/customers/${id}`, params);
-    } catch (error) {
-      logger.error(`[CustomerApi] Error fetching customer ${id}:`, error);
-      throw error;
-    }
+    return djangoApi.get(`/api/crm/customers/${id}/`, params);
   },
   
   async create(data, params = {}) {
-    try {
-      return await apiClient.post('/api/customers', data, params);
-    } catch (error) {
-      logger.error('[CustomerApi] Error creating customer:', error);
-      throw error;
-    }
+    logger.info('[CustomerApi] Creating customer with data:', data);
+    const result = await djangoApi.post('/api/crm/customers/', data, params);
+    logger.info('[CustomerApi] Customer created successfully:', result);
+    return result;
   },
   
   async update(id, data, params = {}) {
-    try {
-      return await apiClient.put(`/api/customers/${id}`, data, params);
-    } catch (error) {
-      logger.error(`[CustomerApi] Error updating customer ${id}:`, error);
-      throw error;
-    }
+    return djangoApi.put(`/api/crm/customers/${id}/`, data, params);
   },
   
   async delete(id, params = {}) {
-    try {
-      return await apiClient.delete(`/api/customers/${id}`, params);
-    } catch (error) {
-      logger.error(`[CustomerApi] Error deleting customer ${id}:`, error);
-      throw error;
-    }
+    return djangoApi.delete(`/api/crm/customers/${id}/`, params);
   }
 };
 

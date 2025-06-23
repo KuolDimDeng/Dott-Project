@@ -65,6 +65,9 @@ urlpatterns = [
     # Analytics API routes
     path('api/analytics/', include('analysis.urls')),
     
+    # CRM API routes
+    path('api/crm/', include('crm.urls')),
+    
     # Users API routes
     path('api/users/', include('users.api.urls')),
     
