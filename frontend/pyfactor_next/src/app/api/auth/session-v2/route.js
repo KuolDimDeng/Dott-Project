@@ -106,9 +106,9 @@ export async function GET(request) {
         // Business information - check multiple sources
         businessName: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
         business_name: tenantData.name || userData.business_name || sessionData.business_name || sessionData.tenant_name,
-        // Subscription information - check multiple sources
-        subscriptionPlan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || sessionData.selected_plan || 'free',
-        subscription_plan: userData.subscription_plan || tenantData.subscription_plan || sessionData.subscription_plan || sessionData.selected_plan || 'free',
+        // Subscription information - prioritize session/tenant data over user model (like business name)
+        subscriptionPlan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
+        subscription_plan: sessionData.subscription_plan || tenantData.subscription_plan || userData.subscription_plan || sessionData.selected_plan || 'free',
         selected_plan: sessionData.selected_plan || userData.selected_plan || tenantData.selected_plan,
         // CRITICAL: Backend's authoritative onboarding status
         needsOnboarding: sessionData.needs_onboarding,
