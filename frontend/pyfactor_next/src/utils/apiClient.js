@@ -621,6 +621,101 @@ export const supplierApi = {
   }
 };
 
+// Location related API methods - Using local proxy pattern (industry standard)
+export const locationApi = {
+  async getAll(params = {}) {
+    // Use local proxy endpoint that handles authentication server-side
+    const response = await fetch('/api/inventory/locations', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/inventory/locations/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async create(data, params = {}) {
+    logger.info('[LocationApi] Creating location with data:', data);
+    
+    const response = await fetch('/api/inventory/locations', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    logger.info('[LocationApi] Location created successfully:', result);
+    return result;
+  },
+  
+  async update(id, data, params = {}) {
+    const response = await fetch(`/api/inventory/locations/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async delete(id, params = {}) {
+    const response = await fetch(`/api/inventory/locations/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
 // Tax related API methods
 export const taxApi = {
   async getFormsByEmployee(employeeId, params = {}) {

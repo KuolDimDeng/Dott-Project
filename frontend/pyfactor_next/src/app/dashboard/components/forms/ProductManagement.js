@@ -423,7 +423,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forSale: true,
     forRent: false,
     search: '',
-    supplier_id: ''  // Add supplier_id field
+    supplier_id: '',  // Add supplier_id field
+    location_id: ''   // Add location_id field
   });
 
   // Initialize tenantId from AppCache
@@ -449,7 +450,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forRent: false,
     stockQuantity: '',
     reorderLevel: '',
-    supplier_id: ''  // Add supplier_id field
+    supplier_id: '',  // Add supplier_id field
+    location_id: ''   // Add location_id field
   }));
   
   // For edited product state - also use a single object
@@ -461,13 +463,19 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     forRent: false,
     stockQuantity: '',
     reorderLevel: '',
-    supplier_id: ''  // Add supplier_id field
+    supplier_id: '',  // Add supplier_id field
+    location_id: ''   // Add location_id field
   }));
 
   // State for supplier dropdown
   const [suppliers, setSuppliers] = useState([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
   const [supplierError, setSupplierError] = useState(null);
+
+  // State for location dropdown
+  const [locations, setLocations] = useState([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+  const [locationError, setLocationError] = useState(null);
 
   // Fetch suppliers for dropdown
   const fetchSuppliers = useCallback(async () => {
@@ -504,10 +512,56 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     }
   }, []);
 
-  // Fetch suppliers on component mount
+  // Fetch locations for dropdown
+  const fetchLocations = useCallback(async () => {
+    try {
+      setLoadingLocations(true);
+      setLocationError(null);
+      
+      // Get the tenant ID securely from Cognito
+      const tenantIdValue = await getSecureTenantId();
+      
+      // Check if we have a valid tenant ID
+      if (!tenantIdValue) {
+        throw new Error('Authentication required. Valid tenant ID is required.');
+      }
+      
+      // Make API call to get locations
+      const response = await fetch('/inventory/locations/', {
+        headers: {
+          'x-tenant-id': tenantIdValue
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch locations: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Handle Django pagination if present
+      let locationList = [];
+      if (Array.isArray(data)) {
+        locationList = data;
+      } else if (data && Array.isArray(data.results)) {
+        locationList = data.results;
+      }
+      
+      setLocations(locationList);
+    } catch (error) {
+      console.error('[ProductManagement] Error fetching locations:', error);
+      setLocationError(error.message || 'Failed to fetch locations');
+      setLocations([]);
+    } finally {
+      setLoadingLocations(false);
+    }
+  }, []);
+
+  // Fetch suppliers and locations on component mount
   useEffect(() => {
     fetchSuppliers();
-  }, [fetchSuppliers]);
+    fetchLocations();
+  }, [fetchSuppliers, fetchLocations]);
 
   // Modify the fetchProducts function to use getSecureTenantId
   const fetchProducts = useCallback(async (page = 0, shouldRetry = true, retryCount = 0) => {
@@ -674,6 +728,36 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   // State to store supplier name for selected product
   const [supplierName, setSupplierName] = useState('');
   
+  // State to store location name for selected product
+  const [locationName, setLocationName] = useState('');
+  
+  // Function to fetch location name based on location_id
+  const fetchLocationName = useCallback(async (locationId) => {
+    if (!locationId) return '';
+    
+    try {
+      // Get the tenant ID securely from Cognito
+      const tenantIdValue = await getSecureTenantId();
+      
+      // Make API call to get location details
+      const response = await fetch(`/inventory/locations/${locationId}/`, {
+        headers: {
+          'x-tenant-id': tenantIdValue
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch location: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return data?.name || 'Unknown Location';
+    } catch (error) {
+      console.error(`[ProductManagement] Error fetching location ${locationId}:`, error);
+      return 'Unknown Location';
+    }
+  }, []);
+  
   // Fetch supplier name when selected product changes
   useEffect(() => {
     if (selectedProduct?.supplier_id) {
@@ -684,6 +768,17 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       setSupplierName('');
     }
   }, [selectedProduct, fetchSupplierName]);
+  
+  // Fetch location name when selected product changes
+  useEffect(() => {
+    if (selectedProduct?.location_id) {
+      fetchLocationName(selectedProduct.location_id).then(name => {
+        setLocationName(name);
+      });
+    } else {
+      setLocationName('');
+    }
+  }, [selectedProduct, fetchLocationName]);
 
   // Handle edit product and view details with memoized functions
   const handleEditClick = useCallback((product) => {
@@ -956,6 +1051,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         for_sale: productData.forSale,
         for_rent: productData.forRent,
         supplier_id: productData.supplier_id || null,  // Add supplier_id to the API data
+        location_id: productData.location_id || null,  // Add location_id to the API data
         tenant_id: secureTenantId  // Use secure tenant ID explicitly
       };
       
@@ -994,7 +1090,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         forSale: true,
         forRent: false,
         search: '',
-        supplier_id: ''  // Add supplier_id field
+        supplier_id: '',  // Add supplier_id field
+        location_id: ''   // Add location_id field
       });
       
       setShowForm(false);
@@ -1216,6 +1313,32 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               </select>
             </div>
             
+            <div>
+              <label htmlFor="location_id" className="block text-sm font-medium text-black mb-1">
+                Location
+              </label>
+              <select
+                id="location_id"
+                name="location_id"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                value={productData.location_id || ''}
+                onChange={(e) => setProductData({...productData, location_id: e.target.value})}
+              >
+                <option value="">Select a location</option>
+                {loadingLocations ? (
+                  <option disabled>Loading locations...</option>
+                ) : locations.length > 0 ? (
+                  locations.map(location => (
+                    <option key={location.id} value={location.id}>
+                      {location.name}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>{locationError || 'No locations available'}</option>
+                )}
+              </select>
+            </div>
+            
           </div>
           
           <div className="mb-4">
@@ -1319,6 +1442,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               
               <div className="text-sm text-gray-500">Supplier:</div>
               <div className="text-sm text-black">{supplierName || 'None assigned'}</div>
+              
+              <div className="text-sm text-gray-500">Location:</div>
+              <div className="text-sm text-black">{locationName || 'None assigned'}</div>
             </div>
           </div>
           
@@ -1505,6 +1631,32 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 ))
               ) : (
                 <option disabled>{supplierError || 'No suppliers available'}</option>
+              )}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="edit-location_id" className="block text-sm font-medium text-black mb-1">
+              Location
+            </label>
+            <select
+              id="edit-location_id"
+              name="location_id"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              value={editedProduct.location_id || ''}
+              onChange={(e) => setEditedProduct({...editedProduct, location_id: e.target.value})}
+            >
+              <option value="">Select a location</option>
+              {loadingLocations ? (
+                <option disabled>Loading locations...</option>
+              ) : locations.length > 0 ? (
+                locations.map(location => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))
+              ) : (
+                <option disabled>{locationError || 'No locations available'}</option>
               )}
             </select>
           </div>
@@ -2222,7 +2374,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         reorder_level: parseInt(editedProduct.reorderLevel || editedProduct.reorder_level) || 0,
         for_sale: editedProduct.forSale || editedProduct.for_sale,
         for_rent: editedProduct.forRent || editedProduct.for_rent,
-        supplier_id: editedProduct.supplier_id || null
+        supplier_id: editedProduct.supplier_id || null,
+        location_id: editedProduct.location_id || null
       };
 
       console.log('Saving edited product:', apiData);
