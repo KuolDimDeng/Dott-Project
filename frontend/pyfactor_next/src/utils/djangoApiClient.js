@@ -72,7 +72,7 @@ class DjangoApiClient {
     };
     
     if (sessionToken) {
-      headers['Authorization'] = `SessionID ${sessionToken}`;
+      headers['Authorization'] = `Session ${sessionToken}`;
       headers['Cookie'] = `sid=${sessionToken}`;
     }
     
