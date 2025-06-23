@@ -56,10 +56,26 @@ const SuppliersManagement = () => {
       
       // Use industry-standard proxy API that handles tenant isolation
       const data = await supplierApi.getAll();
+      console.log('[SuppliersManagement] Raw API response:', data);
+      console.log('[SuppliersManagement] Response type:', typeof data);
+      console.log('[SuppliersManagement] Is array:', Array.isArray(data));
+      console.log('[SuppliersManagement] Data keys:', data ? Object.keys(data) : 'null');
       console.log('[SuppliersManagement] Fetched suppliers:', data?.length || 0);
       
       if (isMounted.current) {
-        setSuppliers(Array.isArray(data) ? data : []);
+        // Handle different response formats (direct array or paginated)
+        let suppliers = [];
+        if (Array.isArray(data)) {
+          suppliers = data;
+        } else if (data && Array.isArray(data.results)) {
+          // DRF paginated response
+          suppliers = data.results;
+        } else if (data && Array.isArray(data.data)) {
+          // Alternative format
+          suppliers = data.data;
+        }
+        console.log('[SuppliersManagement] Extracted suppliers array:', suppliers);
+        setSuppliers(suppliers);
       }
     } catch (error) {
       console.error('[SuppliersManagement] Error:', error);

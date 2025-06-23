@@ -238,6 +238,48 @@ def view_function(request):
 
 ---
 
+## 🔧 **Issue: ViewSet Overrides Preventing TenantManager Filtering**
+
+**Symptoms:**
+- Objects created successfully with correct tenant_id in database
+- GET requests return empty arrays despite data existing
+- Works in direct database queries but not through API
+- Authentication successful, RLS policies configured correctly
+
+**Root Cause Analysis:**
+- ViewSet overrides `get_queryset()` method unnecessarily
+- Custom implementations interfere with TenantManager automatic filtering
+- Complex ViewSet patterns prevent proper tenant context application
+- Working models (like CustomerViewSet) use simple declarative pattern
+
+**Solution:**
+```python
+# ❌ PROBLEMATIC - Custom get_queryset() override
+class SupplierViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        return Supplier.objects.all()  # This bypasses TenantManager
+
+# ✅ CORRECT - Simple declarative pattern
+class SupplierViewSet(viewsets.ModelViewSet):
+    queryset = Supplier.objects.all()  # TenantManager handles filtering
+    serializer_class = SupplierSerializer
+    permission_classes = [IsAuthenticated]
+```
+
+**Verification Steps:**
+1. Remove custom `get_queryset()` and `perform_create()` overrides
+2. Ensure model extends `TenantAwareModel` with `TenantManager`
+3. Test API endpoints return tenant-filtered data
+4. Compare pattern with working ViewSets (CustomerViewSet)
+
+**Prevention:**
+- Use simple declarative ViewSet pattern for tenant-aware models
+- Only override `get_queryset()` when additional filtering logic required
+- Follow working patterns established in CustomerViewSet
+- Avoid custom tenant assignment in `perform_create()`
+
+---
+
 ## 📋 **Backend Issue Reporting Template**
 
 ```markdown
