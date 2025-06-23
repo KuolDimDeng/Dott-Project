@@ -102,21 +102,28 @@ class Auth0UserCreateView(APIView):
                 family_name = data.get('family_name', '').strip()
                 full_name = data.get('name', '').strip()
                 
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Raw name data - given_name: '{given_name}', family_name: '{family_name}', name: '{full_name}'")
+                
                 # If Google didn't provide given_name/family_name, extract from 'name'
                 if (not given_name or not family_name) and full_name:
                     name_parts = full_name.split(' ', 1)
                     if not given_name and len(name_parts) >= 1:
-                        given_name = name_parts[0]
-                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted given_name from name: {given_name}")
+                        given_name = name_parts[0].strip()
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted given_name from name: '{given_name}'")
                     if not family_name and len(name_parts) >= 2:
-                        family_name = name_parts[1]
-                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted family_name from name: {family_name}")
+                        family_name = name_parts[1].strip()
+                        logger.info(f"🔥 [AUTH0_CREATE_USER] New user - extracted family_name from name: '{family_name}'")
                 
                 # If still no first name, use email prefix as fallback
                 if not given_name:
                     email_prefix = email.split('@')[0]
                     given_name = email_prefix.capitalize()
-                    logger.info(f"🔥 [AUTH0_CREATE_USER] New user - using email prefix as first_name: {given_name}")
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] New user - using email prefix as first_name: '{given_name}'")
+                
+                # Ensure we always have at least a first name
+                if not given_name:
+                    given_name = "User"
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] New user - using default first_name: '{given_name}'")
                 
                 user, created = User.objects.get_or_create(
                     email=email,
@@ -150,22 +157,33 @@ class Auth0UserCreateView(APIView):
                 # Enhanced name extraction logic for Google OAuth
                 given_name = data.get('given_name', '').strip()
                 family_name = data.get('family_name', '').strip()
+                full_name = data.get('name', '').strip()
+                
+                logger.info(f"🔥 [AUTH0_CREATE_USER] Existing user name data - given_name: '{given_name}', family_name: '{family_name}', name: '{full_name}'")
                 
                 # If Google didn't provide given_name/family_name, try to extract from 'name'
-                if (not given_name or not family_name) and data.get('name'):
-                    name_parts = data.get('name', '').strip().split(' ', 1)
+                if (not given_name or not family_name) and full_name:
+                    name_parts = full_name.split(' ', 1)
                     if not given_name and len(name_parts) >= 1:
-                        given_name = name_parts[0]
+                        given_name = name_parts[0].strip()
                         logger.info(f"🔥 [AUTH0_CREATE_USER] Extracted given_name from name field: {given_name}")
                     if not family_name and len(name_parts) >= 2:
-                        family_name = name_parts[1]
+                        family_name = name_parts[1].strip()
                         logger.info(f"🔥 [AUTH0_CREATE_USER] Extracted family_name from name field: {family_name}")
                 
-                # Update names only if we have better data
+                # If still no first name for existing user, use email prefix
+                if not given_name and not user.first_name:
+                    email_prefix = user.email.split('@')[0]
+                    given_name = email_prefix.capitalize()
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] Existing user - using email prefix as first_name: {given_name}")
+                
+                # Update names if we have better data or if fields are empty
                 if given_name and (not user.first_name or user.first_name != given_name):
                     user.first_name = given_name
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] Updated user.first_name to: '{given_name}'")
                 if family_name and (not user.last_name or user.last_name != family_name):
                     user.last_name = family_name
+                    logger.info(f"🔥 [AUTH0_CREATE_USER] Updated user.last_name to: '{family_name}'")
                 
                 user.picture = data.get('picture', user.picture)
                 user.email_verified = data.get('email_verified', user.email_verified)

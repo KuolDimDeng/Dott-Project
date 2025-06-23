@@ -93,33 +93,42 @@ def complete_all_onboarding(request):
             logger.info(f"[Complete-All] Extracted names from request - first_name: '{first_name}', last_name: '{last_name}'")
             
             # If names are not provided in request, try to extract from user's name field
-            if not first_name and not last_name and user.name:
+            if (not first_name or not last_name) and hasattr(user, 'name') and user.name:
                 name_parts = user.name.strip().split(' ', 1)
-                if len(name_parts) >= 1:
+                if not first_name and len(name_parts) >= 1:
                     first_name = name_parts[0]
                     logger.info(f"[Complete-All] Extracted first_name from user.name: '{first_name}'")
-                if len(name_parts) >= 2:
+                if not last_name and len(name_parts) >= 2:
                     last_name = name_parts[1]
                     logger.info(f"[Complete-All] Extracted last_name from user.name: '{last_name}'")
             
-            # If STILL no first name and user already has data, keep existing
+            # If STILL no names, check if user already has data and keep it
             if not first_name and user.first_name:
                 first_name = user.first_name
                 logger.info(f"[Complete-All] Keeping existing first_name: '{first_name}'")
+            if not last_name and user.last_name:
+                last_name = user.last_name
+                logger.info(f"[Complete-All] Keeping existing last_name: '{last_name}'")
             
-            # Final fallback - use email prefix
+            # Final fallback for first name - use email prefix
             if not first_name:
                 email_prefix = user.email.split('@')[0]
                 first_name = email_prefix.capitalize()
                 logger.info(f"[Complete-All] Using email prefix as first_name: '{first_name}'")
             
-            # Update name fields if we have them or if they're different
-            if first_name and user.first_name != first_name:
+            # Always update name fields to ensure they're set (even if empty strings become actual names)
+            needs_name_update = False
+            if first_name and (not user.first_name or user.first_name != first_name):
                 user.first_name = first_name
+                needs_name_update = True
                 logger.info(f"[Complete-All] Setting user.first_name to: '{first_name}'")
-            if last_name and user.last_name != last_name:
+            if last_name and (not user.last_name or user.last_name != last_name):
                 user.last_name = last_name
+                needs_name_update = True
                 logger.info(f"[Complete-All] Setting user.last_name to: '{last_name}'")
+            
+            if needs_name_update:
+                logger.info(f"[Complete-All] Name fields will be updated during save")
             
             # Save all user updates
             update_fields = ['onboarding_completed', 'onboarding_completed_at', 'subscription_plan']
