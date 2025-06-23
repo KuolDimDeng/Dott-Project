@@ -280,6 +280,66 @@ class SupplierViewSet(viewsets.ModelViewSet):
 
 ---
 
+## 🔧 **Issue: Django Pagination Causing Empty Frontend Lists**
+
+**Symptoms:**
+- ViewSet returns data successfully (verified in database)
+- API response is large (2000+ bytes) but frontend shows 0 items
+- Direct database queries show data exists with correct tenant_id
+- Frontend console shows `Fetched items: 0`
+
+**Root Cause Analysis:**
+- Django REST Framework applies pagination by default
+- Frontend expects array `[{}, {}]` but receives `{count: 2, results: [{}, {}]}`
+- ViewSet complexity interferes with proper response formatting
+- TenantManager filtering works but response structure mismatched
+
+**Solution - Backend Fix:**
+```python
+# ✅ SIMPLE - Let DRF handle everything with minimal ViewSet
+class SupplierViewSet(viewsets.ModelViewSet):
+    queryset = Supplier.objects.all()  # TenantManager handles filtering
+    serializer_class = SupplierSerializer
+    permission_classes = [IsAuthenticated]
+    # No custom get_queryset() override needed!
+
+# ❌ COMPLEX - Custom overrides can interfere
+class SupplierViewSet(viewsets.ModelViewSet):
+    def get_queryset(self):
+        return Supplier.objects.all()  # Unnecessary override
+    
+    def perform_create(self, serializer):
+        # Custom logic that TenantAwareModel already handles
+```
+
+**Alternative - Disable Pagination:**
+```python
+# For specific ViewSet
+class SupplierViewSet(viewsets.ModelViewSet):
+    queryset = Supplier.objects.all()
+    serializer_class = SupplierSerializer
+    pagination_class = None  # Returns direct array
+
+# Or in settings.py for all ViewSets
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': None,
+}
+```
+
+**Verification Steps:**
+1. Check ViewSet is using simple declarative pattern
+2. Verify model extends TenantAwareModel with TenantManager
+3. Test API returns expected format (array vs paginated object)
+4. Compare with working ViewSets like CustomerViewSet
+
+**Prevention:**
+- Use minimal ViewSet pattern for tenant-aware models
+- Let TenantManager and TenantAwareModel handle filtering
+- Only add custom logic when absolutely necessary
+- Document expected response format for frontend
+
+---
+
 ## 📋 **Backend Issue Reporting Template**
 
 ```markdown

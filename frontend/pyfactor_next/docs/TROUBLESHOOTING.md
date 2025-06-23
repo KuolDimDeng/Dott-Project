@@ -101,6 +101,65 @@ LINE 4: WHERE table_schema = 'cb86762b-3...'
 
 ---
 
+## 🔧 **Issue: Django REST Framework Paginated Response Not Displaying Data**
+
+**Symptoms:**
+- API returns successful response with data (large response size in bytes)
+- Frontend shows 0 items in list (e.g., "Fetched suppliers: 0")
+- Network tab shows 200 OK with substantial response body
+- Data creates successfully but list remains empty
+
+**Root Cause Analysis:**
+- Django REST Framework returns paginated responses by default
+- Frontend expects direct array but receives object with pagination metadata
+- Response structure mismatch: `{ count: X, results: [...] }` vs `[...]`
+- Frontend tries to use `.length` on object, gets undefined/0
+
+**Solution:**
+```javascript
+// ✅ CORRECT - Handle both paginated and direct array responses
+const data = await api.getAll();
+let items = [];
+if (Array.isArray(data)) {
+  items = data;  // Direct array response
+} else if (data && Array.isArray(data.results)) {
+  items = data.results;  // DRF paginated response
+} else if (data && Array.isArray(data.data)) {
+  items = data.data;  // Alternative format
+}
+setItems(items);
+
+// ❌ INCORRECT - Assumes direct array
+const data = await api.getAll();
+setItems(data);  // Fails if data is paginated object
+```
+
+**Debugging Steps:**
+1. Add console logs to inspect API response structure
+2. Check for pagination keys: `count`, `next`, `previous`, `results`
+3. Verify backend ViewSet pagination settings
+4. Ensure frontend handles all possible response formats
+
+**Prevention:**
+- Always check API response structure before assuming format
+- Create reusable response parser for consistent handling
+- Document expected API response formats
+- Consider disabling pagination for small datasets in Django
+
+**Related Backend Configuration:**
+```python
+# To disable pagination for specific ViewSet
+class SupplierViewSet(viewsets.ModelViewSet):
+    pagination_class = None  # Returns direct array
+
+# Or configure globally in settings.py
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': None,  # Disable pagination
+}
+```
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:
