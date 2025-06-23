@@ -3,8 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
-import { getCacheValue } from '@/utils/appCache';
-import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
 const SuppliersManagement = () => {
@@ -55,17 +53,9 @@ const SuppliersManagement = () => {
       setIsLoading(true);
       console.log('[SuppliersManagement] Fetching suppliers...');
       
-      if (!tenantId) {
-        console.error('[SuppliersManagement] No tenant ID found');
-        toast.error('Authentication required. Please log in again.');
-        return;
-      }
-      
-      const response = await fetch('/api/inventory/suppliers', {
-        headers: {
-          'x-tenant-id': tenantId
-        }
-      });
+      // Backend handles tenant isolation automatically
+      // No need to send tenant ID from frontend
+      const response = await fetch('/api/inventory/suppliers');
       
       if (!response.ok) {
         throw new Error(`Failed to fetch suppliers: ${response.status}`);
@@ -107,16 +97,13 @@ const SuppliersManagement = () => {
     try {
       setIsSubmitting(true);
       
-      if (!tenantId) {
-        toast.error('Authentication required.');
-        return;
-      }
+      // Backend handles tenant isolation automatically
+      // No need to check tenant ID in frontend
       
       const response = await fetch('/api/inventory/suppliers', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
@@ -169,8 +156,7 @@ const SuppliersManagement = () => {
       const response = await fetch(`/api/inventory/suppliers/${selectedSupplier.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
       });
@@ -203,10 +189,7 @@ const SuppliersManagement = () => {
     
     try {
       const response = await fetch(`/api/inventory/suppliers/${supplierToDelete.id}`, {
-        method: 'DELETE',
-        headers: {
-          'x-tenant-id': tenantId
-        }
+        method: 'DELETE'
       });
       
       if (!response.ok) {
