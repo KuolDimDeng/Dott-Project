@@ -22,13 +22,7 @@ const payrollApiInstance = axios.create({
 payrollApiInstance.interceptors.request.use(
   async (config) => {
     try {
-      // Get tenant ID
-      const tenantId = getSecureTenantId();
-      if (tenantId) {
-        config.headers['X-Tenant-ID'] = tenantId;
-        if (!config.params) config.params = {};
-        config.params.tenantId = tenantId;
-      }
+      // Backend handles tenant isolation - no need to send tenant ID
 
       // Database settings
       config.headers['X-Data-Source'] = 'AWS_RDS';

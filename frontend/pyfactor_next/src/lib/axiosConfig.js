@@ -194,33 +194,11 @@ serverAxiosInstance.interceptors.request.use(async (config) => {
 // Add request interceptor to backendHrApiInstance for authentication and circuit breaking
 backendHrApiInstance.interceptors.request.use(async (config) => {
   try {
-    // Get tenant ID from APP_CACHE if available
-    let tenantId = null;
-    if (typeof window !== 'undefined' && appCache.getAll()) {
-      tenantId = (appCache && (appCache && appCache.get('tenant.id')));
-      logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for HR API: ${tenantId}`);
-    } else {
-      // Try to get tenant ID from Cognito if needed
-      try {
-        const { getTenantId } = await import('@/utils/tenantUtils');
-        tenantId = await getTenantId();
-      } catch (e) {
-        logger.warn('[AxiosConfig] Could not load tenant ID:', e?.message);
-      }
-    }
     
     // Initialize headers if not present
     config.headers = config.headers || {};
     
-    // Standardize tenant headers - use only backend-expected format
-    if (tenantId) {
-      // Only include the standard tenant header format to avoid CORS issues
-      config.headers['X-Tenant-ID'] = tenantId;
-      
-      // Add tenant ID as query parameter as fallback
-      if (!config.params) { config.params = {}; }
-      config.params.tenantId = tenantId;
-    }
+    // Backend handles tenant isolation - no need to send tenant ID from frontend
     
     // Ensure we're using AWS RDS
     config.headers['X-Data-Source'] = 'AWS_RDS';
@@ -246,33 +224,11 @@ backendHrApiInstance.interceptors.request.use(async (config) => {
 // Add similar interceptor to payroll instance
 payrollApiInstance.interceptors.request.use(async (config) => {
   try {
-    // Get tenant ID from APP_CACHE if available
-    let tenantId = null;
-    if (typeof window !== 'undefined' && appCache.getAll()) {
-      tenantId = (appCache && (appCache && appCache.get('tenant.id')));
-      logger.debug(`[AxiosConfig] Using tenant ID from APP_CACHE for Payroll API: ${tenantId}`);
-    } else {
-      // Try to get tenant ID from Cognito if needed
-      try {
-        const { getTenantId } = await import('@/utils/tenantUtils');
-        tenantId = await getTenantId();
-      } catch (e) {
-        logger.warn('[AxiosConfig] Could not load tenant ID:', e?.message);
-      }
-    }
     
     // Initialize headers if not present
     config.headers = config.headers || {};
     
-    // Standardize tenant headers - use only backend-expected format
-    if (tenantId) {
-      // Only include the standard tenant header format to avoid CORS issues
-      config.headers['X-Tenant-ID'] = tenantId;
-      
-      // Add tenant ID as query parameter as fallback
-      if (!config.params) { config.params = {}; }
-      config.params.tenantId = tenantId;
-    }
+    // Backend handles tenant isolation - no need to send tenant ID from frontend
     
     // Ensure we're using AWS RDS
     config.headers['X-Data-Source'] = 'AWS_RDS';
@@ -820,9 +776,7 @@ const verifyBackendConnection = async () => {
     // Get tenant ID from APP_CACHE or Cognito
     let tenantId = null;
     if (typeof window !== 'undefined') {
-      if (appCache.getAll()) {tenantId = (appCache && (appCache && appCache.get('tenant.id')));
-        logger.debug(`[BackendConnectionCheck] Using tenant ID from APP_CACHE: ${tenantId}`);
-      } else {
+      if (appCache.getAll()) {      } else {
         try {
           // Try to get tenant ID from Cognito
           const { getTenantIdFromCognito } = await import('@/utils/tenantUtils');
