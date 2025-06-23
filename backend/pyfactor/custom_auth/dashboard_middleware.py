@@ -104,7 +104,7 @@ class DashboardMigrationMiddleware:
                             SELECT COUNT(*) 
                             FROM information_schema.tables 
                             WHERE table_schema = %s
-                        """, [schema_name])
+                        """, [str(schema_name)])
                         table_count = cursor.fetchone()[0]
                     
                     logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Schema {schema_name} has {table_count} tables")
@@ -119,7 +119,7 @@ class DashboardMigrationMiddleware:
                                     SELECT 1 FROM information_schema.tables 
                                     WHERE table_schema = %s AND table_name = 'django_migrations'
                                 )
-                            """, [schema_name])
+                            """, [str(schema_name)])
                             
                             if cursor.fetchone()[0]:
                                 # Check for deferred migrations marker

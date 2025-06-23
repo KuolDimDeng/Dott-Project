@@ -100,16 +100,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 class SupplierViewSet(viewsets.ModelViewSet):
+    queryset = Supplier.objects.all()
     serializer_class = SupplierSerializer
     permission_classes = [IsAuthenticated]
-    queryset = Supplier.objects.all()
-    
-    def get_queryset(self):
-        """
-        Get queryset - relies on TenantManager for automatic filtering
-        """
-        # Simply return all suppliers - TenantManager handles filtering
-        return Supplier.objects.all()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
@@ -133,14 +126,6 @@ class SupplierViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
     
-    def perform_create(self, serializer):
-        """Override to ensure tenant_id is set correctly"""
-        tenant_id = getattr(self.request, 'tenant_id', None)
-        if tenant_id:
-            serializer.save(tenant_id=tenant_id)
-        else:
-            # The TenantManager should handle this automatically via RLS
-            serializer.save()
 
 class LocationViewSet(viewsets.ModelViewSet):
     queryset = Location.objects.all()
