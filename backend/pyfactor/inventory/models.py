@@ -12,6 +12,7 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 from .managers import OptimizedProductManager
 from custom_auth.models import TenantAwareModel, TenantManager
+from audit.mixins import AuditMixin
 
 class InventoryItem(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -43,7 +44,7 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-class Supplier(TenantAwareModel):
+class Supplier(AuditMixin, TenantAwareModel):
     """
     Supplier model for inventory suppliers.
     This model is tenant-aware and will be filtered by the current tenant.
@@ -71,7 +72,7 @@ class Supplier(TenantAwareModel):
             models.Index(fields=['tenant_id', 'name']),
         ]
 
-class Location(TenantAwareModel):
+class Location(AuditMixin, TenantAwareModel):
     """
     Location model for inventory locations.
     This model is tenant-aware and will be filtered by the current tenant.
@@ -197,7 +198,7 @@ class Item(models.Model):
         # Combine to create a unique code
         return f"{base}_{timestamp}_{random_str}"
 
-class Product(TenantAwareModel):
+class Product(AuditMixin, TenantAwareModel):
     """
     Product model for inventory items.
     This model is tenant-aware and will be filtered by the current tenant.

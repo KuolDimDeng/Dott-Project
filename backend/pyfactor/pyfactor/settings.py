@@ -726,6 +726,7 @@ MIDDLEWARE = [
 'allauth.account.middleware.AccountMiddleware',
 'custom_auth.middleware.RequestIDMiddleware',
 'custom_auth.middleware.TenantMiddleware',  # Tenant isolation middleware
+'audit.middleware.AuditMiddleware',  # Audit trail middleware
 'custom_auth.middleware_package.onboarding_middleware.OnboardingMiddleware',  # Onboarding check middleware
 'custom_auth.dashboard_middleware.DashboardMigrationMiddleware',
 'custom_auth.tenant_isolation_middleware.TenantIsolationMiddleware',
@@ -824,6 +825,7 @@ SHARED_APPS = (
     'custom_auth',
     'onboarding.apps.OnboardingConfig',
     'session_manager.apps.SessionManagerConfig',  # New session management app with signals
+    'audit.apps.AuditConfig',  # Audit trail system
 )
 
 TENANT_APPS = (

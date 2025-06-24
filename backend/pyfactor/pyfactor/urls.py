@@ -80,6 +80,9 @@ urlpatterns = [
     # Users API routes
     path('api/users/', include('users.api.urls')),
     
+    # Audit API routes
+    path('api/audit/', include('audit.urls')),
+    
     # Main app routes
     path('', include('users.urls')),
     

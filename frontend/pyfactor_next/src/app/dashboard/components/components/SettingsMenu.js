@@ -49,6 +49,7 @@ const SettingsMenu = ({
     'Payroll Settings',
     'Device Settings',
     'Subscriptions & Billing',
+    'Security',
   ];
 
   // Handle option click and call the onOptionSelect callback
