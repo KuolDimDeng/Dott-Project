@@ -506,7 +506,18 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       }
       
       const data = await response.json();
-      setSuppliers(Array.isArray(data) ? data : []);
+      
+      // Handle Django pagination if present
+      let supplierList = [];
+      if (Array.isArray(data)) {
+        supplierList = data;
+      } else if (data && Array.isArray(data.results)) {
+        supplierList = data.results;
+      } else if (data && Array.isArray(data.data)) {
+        supplierList = data.data;
+      }
+      
+      setSuppliers(supplierList);
     } catch (error) {
       console.error('[ProductManagement] Error fetching suppliers:', error);
       setSupplierError(error.message || 'Failed to load suppliers');
@@ -1076,7 +1087,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       console.log('Creating product with data:', apiData);
       
       // Send the API request
-      const response = await fetch('/inventory/products/', {
+      const response = await fetch('/api/inventory/products', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1442,6 +1453,14 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         </div>
       );
     }
+    
+    // Get supplier and location names
+    const supplierName = selectedProduct.supplier_id 
+      ? suppliers.find(s => s.id === selectedProduct.supplier_id)?.name 
+      : null;
+    const locationName = selectedProduct.location_id 
+      ? locations.find(l => l.id === selectedProduct.location_id)?.name 
+      : null;
     
     return (
           <div>
@@ -2398,7 +2417,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
       console.log('Saving edited product:', apiData);
 
-      const response = await fetch(`/inventory/products/${editedProduct.id}`, {
+      const response = await fetch(`/api/inventory/products/${editedProduct.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
