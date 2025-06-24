@@ -705,3 +705,62 @@ Watch for these log patterns:
 - **Result**: Customer creation now works properly
 - **Files Updated**: /src/utils/djangoApiClient.js
 - **Documentation**: /docs/CUSTOMER_MANAGEMENT_FIX.md
+
+## UI Design Standard for Management Pages (2025-06-24) - MANDATORY PATTERN
+- **Purpose**: Ensure consistent UI/UX across all pages with create, edit, view, and list functionality
+- **Reference**: ProductManagement and LocationsManagement components
+- **Documentation**: All management pages in ListMenu.js must follow this design pattern
+
+### Required UI Components for Management Pages:
+1. **Summary Cards Section** (Top of page)
+   - Display 3-4 key statistics in card format
+   - Cards with shadow, rounded corners, and metric-specific colors
+   - Examples: Total count, Active/Inactive counts, Category counts
+
+2. **Search and Action Toolbar**
+   - Search input with magnifying glass icon on left
+   - "Create New [Item]" button on right with blue background
+   - Responsive layout with proper spacing
+
+3. **Tab Navigation Pattern**
+   - Three main tabs: "Create/Edit", "Details", "List"
+   - Active tab highlighted with blue underline
+   - Smooth transitions between views
+
+4. **Table Design Standards**
+   - Gray header background (`bg-gray-50`)
+   - Hover effect on rows (`hover:bg-gray-50`)
+   - Status badges with consistent colors (green for active, gray for inactive)
+   - Action buttons: View (blue), Edit (purple), Delete (red)
+
+5. **Form Layout Standards**
+   - Grid layout for form fields (1-2 columns responsive)
+   - Consistent label styling and spacing
+   - Blue primary buttons, gray secondary buttons
+   - Proper validation and error states
+
+6. **Delete Confirmation Dialog**
+   - Headless UI Dialog component
+   - Warning icon and clear messaging
+   - Red delete button, gray cancel button
+
+### Color Palette:
+- Primary Blue: `bg-blue-600`, `hover:bg-blue-700`
+- Success Green: `bg-green-600`, `text-green-800`
+- Warning Yellow: `bg-yellow-600`, `text-yellow-800`
+- Error Red: `bg-red-600`, `hover:bg-red-700`
+- Neutral Gray: `bg-gray-50`, `bg-gray-100`, `text-gray-500`
+
+### Typography Classes:
+- Page Title: `text-2xl font-bold text-black`
+- Card Headers: `text-gray-500 text-sm font-medium uppercase tracking-wide`
+- Card Values: `text-3xl font-bold text-[color]-600`
+- Table Headers: `text-xs font-medium text-gray-500 uppercase tracking-wider`
+
+### Implementation Examples:
+- **Products**: `/src/app/dashboard/components/forms/ProductManagement.js`
+- **Locations**: `/src/app/dashboard/components/forms/LocationsManagement.js`
+- **Suppliers**: Follow same pattern when updating
+- **Customers**: Follow same pattern when updating
+
+**CRITICAL**: All new management pages MUST follow this exact pattern. No exceptions.

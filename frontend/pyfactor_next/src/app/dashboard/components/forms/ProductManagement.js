@@ -427,19 +427,19 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     location_id: ''   // Add location_id field
   });
 
-  // Initialize tenantId from AppCache
-  const getTenantId = () => {
-    try {
-      return typeof window !== 'undefined' ? 
-        getCacheValue('tenantId') || getCacheValue('businessid') || 'default' :
-        'default';
-    } catch (e) {
-      console.error('Error accessing AppCache for tenantId:', e);
-      return 'default';
-    }
-  };
+  // Initialize tenantId from session
+  const [tenantId, setTenantId] = useState(null);
   
-  const [tenantId, setTenantId] = useState(getTenantId());
+  // Get tenant ID on mount
+  useEffect(() => {
+    const fetchTenantId = async () => {
+      const secureTenantId = await getSecureTenantId();
+      if (secureTenantId) {
+        setTenantId(secureTenantId);
+      }
+    };
+    fetchTenantId();
+  }, []);
   
   // State for form fields - use a single object for better state preservation during hot reloading
   const [formState, setFormState] = useState(() => ({
@@ -491,8 +491,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         throw new Error('Authentication required. Valid tenant ID is required.');
       }
       
-      // Make API call to get suppliers
-      const response = await fetch('/inventory/suppliers/', {
+      // Make API call to get suppliers using the proxy route
+      const response = await fetch('/api/inventory/suppliers', {
         headers: {
           'x-tenant-id': tenantIdValue
         }
@@ -526,8 +526,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         throw new Error('Authentication required. Valid tenant ID is required.');
       }
       
-      // Make API call to get locations
-      const response = await fetch('/inventory/locations/', {
+      // Make API call to get locations using the proxy route
+      const response = await fetch('/api/inventory/locations', {
         headers: {
           'x-tenant-id': tenantIdValue
         }
@@ -608,12 +608,24 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             signal: controller.signal
           });
           
-          logger.info('[EmployeeManagement] Found employees in direct array:', response.data.length || 0);
+          // Handle the response data structure
+          let productsData = [];
+          if (response.data) {
+            if (Array.isArray(response.data)) {
+              productsData = response.data;
+            } else if (response.data.data && Array.isArray(response.data.data)) {
+              productsData = response.data.data;
+            } else if (response.data.results && Array.isArray(response.data.results)) {
+              productsData = response.data.results;
+            }
+          }
+          
+          logger.info('[ProductManagement] Found products:', productsData.length || 0);
           
           // Check if component is still mounted before updating state
           if (!isMounted.current) return;
           
-          setProducts(response.data || []);
+          setProducts(productsData);
           setFetchError(null);
         } catch (error) {
           // Only handle the error if it's not an abort error and component is mounted
@@ -640,7 +652,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Update useEffect cleanup to cancel pending requests
   useEffect(() => {
-    fetchProducts();
+    // Only fetch products if we have a valid tenant ID
+    if (tenantId) {
+      fetchProducts();
+    }
     
     return () => {
       // Clean up any pending requests or timeouts
@@ -652,7 +667,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         fetchRequestRef.current.abort();
       }
     };
-  }, [fetchProducts]);
+  }, [fetchProducts, tenantId]);
 
   // Ensure we always return the same number of hooks by keeping all hook calls unconditional
   const [mounted, setMounted] = useState(false);
@@ -669,11 +684,11 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   
   // Load products on mount
   useEffect(() => {
-    if (mounted) {
+    if (mounted && tenantId) {
       // Load products on component mount 
       fetchProducts();
     }
-  }, [mounted, fetchProducts]);
+  }, [mounted, fetchProducts, tenantId]);
   
   // Add an effect to reload products when needed - e.g., after creating a product
   useEffect(() => {
@@ -706,8 +721,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       // Get the tenant ID securely from Cognito
       const tenantIdValue = await getSecureTenantId();
       
-      // Make API call to get supplier details
-      const response = await fetch(`/inventory/suppliers/${supplierId}/`, {
+      // Make API call to get supplier details using the proxy route
+      const response = await fetch(`/api/inventory/suppliers/${supplierId}`, {
         headers: {
           'x-tenant-id': tenantIdValue
         }
@@ -739,8 +754,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       // Get the tenant ID securely from Cognito
       const tenantIdValue = await getSecureTenantId();
       
-      // Make API call to get location details
-      const response = await fetch(`/inventory/locations/${locationId}/`, {
+      // Make API call to get location details using the proxy route
+      const response = await fetch(`/api/inventory/locations/${locationId}`, {
         headers: {
           'x-tenant-id': tenantIdValue
         }
