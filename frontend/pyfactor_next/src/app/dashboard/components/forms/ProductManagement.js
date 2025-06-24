@@ -18,6 +18,43 @@ import { logger } from '@/utils/logger';
 import { extractTenantId, getSecureTenantId } from '@/utils/tenantUtils';
 import { getCacheValue } from '@/utils/appCache';
 
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)} // For mobile
+        className="cursor-help"
+      >
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Import UI components needed for the Tailwind version
 const Typography = ({ variant, component, className, color, children, gutterBottom, ...props }) => {
   let baseClasses = '';
@@ -1242,7 +1279,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-black mb-1">
-                Product Name *
+                <span className="flex items-center">
+                  Product Name *
+                  <FieldTooltip text="Enter the name of your product as you want it to appear in invoices and inventory lists. Be specific to avoid confusion." />
+                </span>
               </label>
               <input
                 id="name"
@@ -1257,7 +1297,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
             <div>
               <label htmlFor="sku" className="block text-sm font-medium text-black mb-1">
-                SKU / Product Code
+                <span className="flex items-center">
+                  SKU / Product Code
+                  <FieldTooltip text="Stock Keeping Unit - A unique code to identify this product. Leave blank to auto-generate (PROD-2025-0001) or enter your own code (e.g., SHIRT-RED-L)." />
+                </span>
               </label>
               <input
                 id="sku"
@@ -1275,7 +1318,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
               <label htmlFor="price" className="block text-sm font-medium text-black mb-1">
-                Price *
+                <span className="flex items-center">
+                  Price *
+                  <FieldTooltip text="The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts." />
+                </span>
               </label>
               <input
                 id="price"
@@ -1292,7 +1338,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
               <label htmlFor="cost" className="block text-sm font-medium text-black mb-1">
-                Cost
+                <span className="flex items-center">
+                  Cost
+                  <FieldTooltip text="Enter the total cost of acquiring this product from your supplier, including purchase price, delivery fees, taxes, and any other expenses. If buying in bulk, divide the total cost by quantity to get the unit cost." />
+                </span>
               </label>
               <input
                 id="cost"
@@ -1308,7 +1357,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             
             <div>
               <label htmlFor="stockQuantity" className="block text-sm font-medium text-black mb-1">
-                Stock Quantity
+                <span className="flex items-center">
+                  Stock Quantity
+                  <FieldTooltip text="The current number of units you have in stock. This will be automatically updated when you make sales or receive new inventory." />
+                </span>
               </label>
               <input
                 id="stockQuantity"
@@ -1323,7 +1375,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
               <label htmlFor="reorderLevel" className="block text-sm font-medium text-black mb-1">
-                Reorder Level
+                <span className="flex items-center">
+                  Reorder Level
+                  <FieldTooltip text="The minimum stock level at which you should reorder this product. When inventory drops to this level, you'll be notified to place a new order with your supplier." />
+                </span>
               </label>
               <input
                 id="reorderLevel"
@@ -1338,7 +1393,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             
             <div>
               <label htmlFor="supplier_id" className="block text-sm font-medium text-black mb-1">
-                Supplier
+                <span className="flex items-center">
+                  Supplier
+                  <FieldTooltip text="Select the supplier or vendor from whom you purchase this product. This helps track your purchasing history and manage supplier relationships." />
+                </span>
               </label>
               <select
                 id="supplier_id"
@@ -1389,7 +1447,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             
             <div>
               <label htmlFor="location_id" className="block text-sm font-medium text-black mb-1">
-                Location
+                <span className="flex items-center">
+                  Location
+                  <FieldTooltip text="Select the warehouse, store, or storage location where this product is kept. This helps you track inventory across multiple locations." />
+                </span>
               </label>
               <select
                 id="location_id"
@@ -1442,7 +1503,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div className="mb-4">
             <label htmlFor="description" className="block text-sm font-medium text-black mb-1">
-              Description
+              <span className="flex items-center">
+                Description
+                <FieldTooltip text="Add a detailed description of the product including specifications, features, dimensions, or any other relevant information that helps identify or sell the product." />
+              </span>
             </label>
             <textarea
               id="description"
@@ -1463,8 +1527,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               checked={productData.forSale}
               onChange={(e) => setProductData({...productData, forSale: e.target.checked})}
             />
-            <label htmlFor="forSale" className="ml-2 text-sm text-black">
+            <label htmlFor="forSale" className="ml-2 text-sm text-black flex items-center">
               Available for Sale
+              <FieldTooltip text="Check this if you want to sell this product to customers. Unchecked products won't appear in sales transactions." />
             </label>
           </div>
           
@@ -1477,8 +1542,9 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               checked={productData.forRent}
               onChange={(e) => setProductData({...productData, forRent: e.target.checked})}
             />
-            <label htmlFor="forRent" className="ml-2 text-sm text-black">
+            <label htmlFor="forRent" className="ml-2 text-sm text-black flex items-center">
               Available for Rent
+              <FieldTooltip text="Check this if you offer this product for rent or lease. This enables rental transactions with custom pricing and duration options." />
             </label>
           </div>
           
@@ -1626,7 +1692,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div>
             <label htmlFor="edit-name" className="block text-sm font-medium text-black mb-1">
-              Product Name *
+              <span className="flex items-center">
+                Product Name *
+                <FieldTooltip text="Enter the name of your product as you want it to appear in invoices and inventory lists. Be specific to avoid confusion." />
+              </span>
             </label>
             <input
               id="edit-name"
@@ -1641,7 +1710,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
             <label htmlFor="edit-sku" className="block text-sm font-medium text-black mb-1">
-              SKU / Product Code
+              <span className="flex items-center">
+                SKU / Product Code
+                <FieldTooltip text="Stock Keeping Unit - A unique code to identify this product. Leave blank to auto-generate (PROD-2025-0001) or enter your own code (e.g., SHIRT-RED-L)." />
+              </span>
             </label>
             <input
               id="edit-sku"
@@ -1659,7 +1731,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
             <label htmlFor="edit-price" className="block text-sm font-medium text-black mb-1">
-              Price *
+              <span className="flex items-center">
+                Price *
+                <FieldTooltip text="The selling price you'll charge customers for this product. This is the amount that will appear on invoices and sales receipts." />
+              </span>
             </label>
             <input
               id="edit-price"
@@ -1676,7 +1751,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
           
           <div>
             <label htmlFor="edit-cost" className="block text-sm font-medium text-black mb-1">
-              Cost
+              <span className="flex items-center">
+                Cost
+                <FieldTooltip text="Enter the total cost of acquiring this product from your supplier, including purchase price, delivery fees, taxes, and any other expenses. If buying in bulk, divide the total cost by quantity to get the unit cost." />
+              </span>
             </label>
             <input
               id="edit-cost"
