@@ -631,7 +631,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   }, [fetchSuppliers, fetchLocations]);
 
   // Modify the fetchProducts function to use getSecureTenantId
-  const fetchProducts = useCallback(async (page = 0, shouldRetry = true, retryCount = 0) => {
+  const fetchProducts = useCallback(async (page = 1, shouldRetry = true, retryCount = 0) => {
     try {
       // Clear any existing timeout
       if (fetchTimeoutRef.current) {
@@ -664,8 +664,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             console.warn('[ProductManagement] No tenant ID found, will let backend handle tenant context from session');
           }
           
+          // Django expects 1-based pagination, but react-table uses 0-based
+          // So we need to add 1 to the page number when calling the API
+          const apiPage = typeof page === 'number' && page === 0 ? 1 : page;
+          
           const response = await axios.get('/api/inventory/products', {
-            params: { page },
+            params: { page: apiPage },
             headers: { 'x-tenant-id': tenantId },
             signal: controller.signal
           });
