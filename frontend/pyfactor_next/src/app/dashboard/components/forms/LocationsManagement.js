@@ -1,391 +1,508 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  MapPin,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
 import { locationApi } from '@/utils/apiClient';
 import { logger } from '@/utils/logger';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 
 const LocationsManagement = () => {
+  // State management
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [formOpen, setFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showLocationDetails, setShowLocationDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [locationToDelete, setLocationToDelete] = useState(null);
-  const [editingLocation, setEditingLocation] = useState(null);
+  
+  // Refs
+  const isMounted = useRef(true);
+  
+  // Form state
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     address: '',
     is_active: true
   });
-  const { toast } = useToast();
 
   useEffect(() => {
+    isMounted.current = true;
     fetchLocations();
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  const fetchLocations = async () => {
+  const fetchLocations = useCallback(async () => {
     try {
-      setLoading(true);
-      logger.info('[LocationsManagement] Fetching locations...');
+      setIsLoading(true);
+      console.log('[LocationsManagement] Fetching locations...');
       
       const data = await locationApi.getAll();
-      logger.info('[LocationsManagement] Raw API response:', data);
+      console.log('[LocationsManagement] Raw API response:', data);
       
-      // Handle Django REST Framework pagination response
-      let locations = [];
-      if (Array.isArray(data)) {
-        locations = data;
-      } else if (data && Array.isArray(data.results)) {
-        // DRF paginated response
-        locations = data.results;
-        logger.info(`[LocationsManagement] Found ${data.count} total locations (paginated)`);
-      } else if (data && Array.isArray(data.data)) {
-        // Alternative format
-        locations = data.data;
-      } else {
-        logger.warn('[LocationsManagement] Unexpected response format:', data);
+      if (isMounted.current) {
+        // Handle different response formats (direct array or paginated)
+        let locations = [];
+        if (Array.isArray(data)) {
+          locations = data;
+        } else if (data && Array.isArray(data.results)) {
+          // DRF paginated response
+          locations = data.results;
+        } else if (data && Array.isArray(data.data)) {
+          // Alternative format
+          locations = data.data;
+        }
+        console.log('[LocationsManagement] Extracted locations array:', locations);
+        setLocations(locations);
       }
-      
-      logger.info(`[LocationsManagement] Fetched ${locations.length} locations`);
-      setLocations(locations);
     } catch (error) {
-      logger.error('[LocationsManagement] Error fetching locations:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load locations. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('[LocationsManagement] Error:', error);
+      if (isMounted.current) {
+        setLocations([]);
+        toast.error('Failed to load locations.');
+      }
     } finally {
-      setLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
 
-  const handleOpenForm = (location = null) => {
-    if (location) {
-      setEditingLocation(location);
-      setFormData({
-        name: location.name || '',
-        description: location.description || '',
-        address: location.address || '',
-        is_active: location.is_active !== undefined ? location.is_active : true
-      });
-    } else {
-      setEditingLocation(null);
+  // Handle form changes
+  const handleFormChange = useCallback((e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  }, []);
+
+  // Handle create location
+  const handleCreateLocation = useCallback(async (e) => {
+    e.preventDefault();
+    
+    if (!formData.name) {
+      toast.error('Location name is required');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const newLocation = await locationApi.create(formData);
+      toast.success('Location created successfully');
+      
+      setLocations(prev => [...prev, newLocation]);
+      setIsCreating(false);
       setFormData({
         name: '',
         description: '',
         address: '',
         is_active: true
       });
+    } catch (error) {
+      console.error('[LocationsManagement] Create error:', error);
+      toast.error(error.message || 'Failed to create location');
+    } finally {
+      setIsSubmitting(false);
     }
-    setFormOpen(true);
-  };
+  }, [formData]);
 
-  const handleCloseForm = () => {
-    setFormOpen(false);
-    setEditingLocation(null);
-    setFormData({
-      name: '',
-      description: '',
-      address: '',
-      is_active: true
-    });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
+  // Handle update location
+  const handleUpdateLocation = useCallback(async (e) => {
     e.preventDefault();
     
-    try {
-      if (editingLocation) {
-        logger.info('[LocationsManagement] Updating location:', editingLocation.id);
-        await locationApi.update(editingLocation.id, formData);
-        toast({
-          title: 'Success',
-          description: 'Location updated successfully',
-        });
-      } else {
-        logger.info('[LocationsManagement] Creating new location:', formData);
-        await locationApi.create(formData);
-        toast({
-          title: 'Success',
-          description: 'Location created successfully',
-        });
-      }
-      
-      handleCloseForm();
-      fetchLocations();
-    } catch (error) {
-      logger.error('[LocationsManagement] Error saving location:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to save location. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
+    if (!selectedLocation?.id) return;
 
-  const handleDelete = async () => {
-    if (!locationToDelete) return;
-    
     try {
-      logger.info('[LocationsManagement] Deleting location:', locationToDelete.id);
-      await locationApi.delete(locationToDelete.id);
-      toast({
-        title: 'Success',
-        description: 'Location deleted successfully',
-      });
-      fetchLocations();
+      setIsSubmitting(true);
+      const updatedLocation = await locationApi.update(selectedLocation.id, formData);
+      toast.success('Location updated successfully');
+      
+      setLocations(prev => prev.map(loc => 
+        loc.id === selectedLocation.id ? updatedLocation : loc
+      ));
+      setIsEditing(false);
+      setSelectedLocation(null);
     } catch (error) {
-      logger.error('[LocationsManagement] Error deleting location:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete location. Please try again.',
-        variant: 'destructive',
-      });
+      console.error('[LocationsManagement] Update error:', error);
+      toast.error(error.message || 'Failed to update location');
     } finally {
+      setIsSubmitting(false);
+    }
+  }, [selectedLocation, formData]);
+
+  // Handle delete location
+  const handleDeleteLocation = useCallback(async () => {
+    if (!locationToDelete?.id) return;
+
+    try {
+      setIsSubmitting(true);
+      await locationApi.delete(locationToDelete.id);
+      toast.success('Location deleted successfully');
+      
+      setLocations(prev => prev.filter(loc => loc.id !== locationToDelete.id));
       setDeleteDialogOpen(false);
       setLocationToDelete(null);
+    } catch (error) {
+      console.error('[LocationsManagement] Delete error:', error);
+      toast.error(error.message || 'Failed to delete location');
+    } finally {
+      setIsSubmitting(false);
     }
-  };
+  }, [locationToDelete]);
 
-  const openDeleteDialog = (location) => {
-    setLocationToDelete(location);
-    setDeleteDialogOpen(true);
-  };
+  // Prepare edit
+  const prepareEdit = useCallback((location) => {
+    setSelectedLocation(location);
+    setFormData({
+      name: location.name || '',
+      description: location.description || '',
+      address: location.address || '',
+      is_active: location.is_active !== false
+    });
+    setIsEditing(true);
+    setShowLocationDetails(false);
+  }, []);
+
+  // Filter locations based on search
+  const filteredLocations = locations.filter(location =>
+    location.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    location.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    location.address?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const renderForm = () => (
+    <form onSubmit={isEditing ? handleUpdateLocation : handleCreateLocation}>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Location Name *
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleFormChange}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Main Warehouse"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Description
+          </label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleFormChange}
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Brief description of the location..."
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Address
+          </label>
+          <textarea
+            name="address"
+            value={formData.address}
+            onChange={handleFormChange}
+            rows={2}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Full address of the location..."
+          />
+        </div>
+        
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            name="is_active"
+            id="is_active"
+            checked={formData.is_active}
+            onChange={handleFormChange}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="is_active" className="ml-2 block text-sm text-gray-900">
+            Active Location
+          </label>
+        </div>
+        
+        <div className="flex justify-end space-x-3 pt-6 border-t">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCreating(false);
+              setIsEditing(false);
+              setShowLocationDetails(false);
+              setFormData({
+                name: '',
+                description: '',
+                address: '',
+                is_active: true
+              });
+            }}
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+          >
+            {isSubmitting ? 'Saving...' : (isEditing ? 'Update' : 'Create')}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <MapPin className="h-5 w-5" />
-          Locations Management
-        </CardTitle>
-        <Dialog open={formOpen} onOpenChange={setFormOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenForm()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Location
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>
-                {editingLocation ? 'Edit Location' : 'Add New Location'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingLocation 
-                  ? 'Update the location details below.' 
-                  : 'Enter the details for the new location.'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Location Name *</Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  placeholder="e.g., Main Warehouse"
-                  required
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  placeholder="Additional details about this location"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="address">Address</Label>
-                <Textarea
-                  id="address"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleInputChange}
-                  placeholder="Full address of the location"
-                  rows={2}
-                />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  name="is_active"
-                  checked={formData.is_active}
-                  onChange={handleInputChange}
-                  className="rounded border-gray-300"
-                />
-                <Label htmlFor="is_active" className="text-sm font-normal">
-                  Active Location
-                </Label>
-              </div>
-              
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={handleCloseForm}>
-                  Cancel
-                </Button>
-                <Button type="submit">
-                  {editingLocation ? 'Update' : 'Create'} Location
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      
-      <CardContent>
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-              <p className="text-gray-500">Loading locations...</p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Locations Management</h2>
+        <button
+          onClick={() => setIsCreating(true)}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        >
+          <span className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Location
+          </span>
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center space-x-4">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Search locations..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <svg className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Locations Table */}
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Description
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Address
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  Loading locations...
+                </td>
+              </tr>
+            ) : filteredLocations.length === 0 ? (
+              <tr>
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  No locations found
+                </td>
+              </tr>
+            ) : (
+              filteredLocations.map((location) => (
+                <tr key={location.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{location.name}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-500">{location.description || '-'}</div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-500">{location.address || '-'}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      location.is_active 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {location.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <button
+                      onClick={() => prepareEdit(location)}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLocationToDelete(location);
+                        setDeleteDialogOpen(true);
+                      }}
+                      className="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Create/Edit Dialog */}
+      <Transition.Root show={isCreating || isEditing} as={Fragment}>
+        <Dialog 
+          as="div" 
+          className="relative z-50" 
+          onClose={() => {
+            setIsCreating(false);
+            setIsEditing(false);
+          }}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">
+                      {isEditing ? 'Edit Location' : 'Create New Location'}
+                    </h3>
+                    {renderForm()}
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
             </div>
           </div>
-        ) : locations.length === 0 ? (
-          <div className="text-center py-8">
-            <MapPin className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-500 mb-4">No locations found</p>
-            <Button onClick={() => handleOpenForm()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Your First Location
-            </Button>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-2 px-4">Name</th>
-                  <th className="text-left py-2 px-4">Description</th>
-                  <th className="text-left py-2 px-4">Address</th>
-                  <th className="text-left py-2 px-4">Status</th>
-                  <th className="text-right py-2 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {locations.map((location) => (
-                  <tr key={location.id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-4">{location.name}</td>
-                    <td className="py-2 px-4">
-                      {location.description || (
-                        <span className="text-gray-400">No description</span>
-                      )}
-                    </td>
-                    <td className="py-2 px-4">
-                      {location.address || (
-                        <span className="text-gray-400">No address</span>
-                      )}
-                    </td>
-                    <td className="py-2 px-4">
-                      {location.is_active ? (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-gray-400">
-                          <XCircle className="h-4 w-4" />
-                          Inactive
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 px-4">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenForm(location)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDeleteDialog(location)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+        </Dialog>
+      </Transition.Root>
+
+      {/* Delete Confirmation Dialog */}
+      <Transition.Root show={deleteDialogOpen} as={Fragment}>
+        <Dialog 
+          as="div" 
+          className="relative z-50" 
+          onClose={setDeleteDialogOpen}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 z-10 overflow-y-auto">
+            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                enterTo="opacity-100 translate-y-0 sm:scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
+                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              >
+                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                  <div className="sm:flex sm:items-start">
+                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                      <svg className="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                    </div>
+                    <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                      <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900">
+                        Delete Location
+                      </Dialog.Title>
+                      <div className="mt-2">
+                        <p className="text-sm text-gray-500">
+                          Are you sure you want to delete "{locationToDelete?.name}"? This action cannot be undone.
+                        </p>
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                    <button
+                      type="button"
+                      className="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                      onClick={handleDeleteLocation}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? 'Deleting...' : 'Delete'}
+                    </button>
+                    <button
+                      type="button"
+                      className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                      onClick={() => {
+                        setDeleteDialogOpen(false);
+                        setLocationToDelete(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
           </div>
-        )}
-      </CardContent>
-      
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the location "{locationToDelete?.name}". 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setLocationToDelete(null)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
+        </Dialog>
+      </Transition.Root>
+    </div>
   );
 };
 
