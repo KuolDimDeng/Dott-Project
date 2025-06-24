@@ -25,7 +25,7 @@ def convert_admin_back_to_admin(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0003_remove_admin_role'),
+        ('users', '0006_merge_20250624_0122'),
     ]
 
     operations = [
