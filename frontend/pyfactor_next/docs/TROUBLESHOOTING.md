@@ -160,6 +160,91 @@ REST_FRAMEWORK = {
 
 ---
 
+## 🔧 **Issue: Cognito References and Empty Supplier Dropdown in Product Management**
+
+**Symptoms:**
+- Console error: "No secure tenant ID found in Cognito" 
+- Supplier dropdown appears empty despite API returning data
+- Product creation/editing works but supplier selection unavailable
+- Locations dropdown works but suppliers doesn't
+
+**Root Cause Analysis:**
+1. **Legacy Cognito References**: `tenantUtils.js` still importing from Amplify/Cognito instead of Auth0
+2. **API Response Format**: Frontend expects direct array but Django returns paginated response:
+   ```json
+   {
+     "count": 2,
+     "results": [{"id": "...", "name": "Supplier Name"}]
+   }
+   ```
+3. **Missing API Prefix**: Some endpoints using `/inventory/products/` instead of `/api/inventory/products/`
+
+**Solution (Proven Fix):**
+
+1. **Update tenantUtils.js** to use Auth0:
+```javascript
+// ❌ OLD - Remove Cognito imports
+import { getCurrentUser } from '@/utils/amplifyUnified';
+
+// ✅ NEW - Use Auth0 session
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
+
+export const getTenantId = async () => {
+  try {
+    const session = await sessionManagerEnhanced.getSession();
+    if (session?.user?.tenantId) {
+      return session.user.tenantId;
+    }
+  } catch (error) {
+    console.error('[tenantUtils] Error getting tenant ID from Auth0 session:', error);
+  }
+  // Fallback logic...
+};
+```
+
+2. **Handle Django Pagination** in ProductManagement.js:
+```javascript
+// Handle paginated responses from Django
+const data = await response.json();
+let supplierList = [];
+if (Array.isArray(data)) {
+  supplierList = data;
+} else if (data && Array.isArray(data.results)) {
+  supplierList = data.results;  // Django pagination format
+} else if (data && Array.isArray(data.data)) {
+  supplierList = data.data;
+}
+setSuppliers(supplierList);
+```
+
+3. **Fix API Endpoints**:
+```javascript
+// ❌ OLD
+const response = await fetch('/inventory/products/', {...});
+
+// ✅ NEW
+const response = await fetch('/api/inventory/products', {...});
+```
+
+**Verification Steps:**
+1. Check console - no more Cognito errors
+2. Verify supplier dropdown populates with data
+3. Test creating product with supplier selection
+4. Confirm supplier name appears in product details
+
+**Prevention:**
+- Search for any remaining Cognito/Amplify imports and replace with Auth0
+- Always handle both direct array and paginated API responses
+- Use consistent `/api/` prefix for all backend calls
+- Test dropdowns with actual API data, not just mock data
+
+**Related Issues:**
+- Auth0 migration incomplete in some utilities
+- Django REST Framework pagination not handled in frontend
+- Inconsistent API endpoint patterns
+
+---
+
 ## 📋 **Issue Reporting Template**
 
 When documenting new issues, use this format:
@@ -218,5 +303,5 @@ When documenting new issues, use this format:
 
 ---
 
-*Last Updated: 2025-06-23*
+*Last Updated: 2025-06-24*
 *Next Review: When new patterns emerge*
