@@ -1,11 +1,10 @@
 import { appCache } from '../utils/appCache';
+import { sessionManagerEnhanced } from '@/utils/sessionManager-v2-enhanced';
 
 /**
  * Tenant Utilities
  * Handles tenant-related operations and storage
  */
-
-import { getCurrentUser } from '@/config/amplifyUnified';
 
 // Constants
 const TENANT_ID_KEY = 'tenantId';
@@ -62,23 +61,17 @@ export const getPersistedOnboardingStatus = (tenantId) => {
 
 export const getTenantId = async () => {
   try {
-    // With Auth0, check localStorage first
+    // Get tenant ID from Auth0 session via session manager
+    const session = await sessionManagerEnhanced.getSession();
+    
+    if (session?.user?.tenantId) {
+      return session.user.tenantId;
+    }
+
+    // Fallback to localStorage for backward compatibility
     const storedTenantId = localStorage.getItem(TENANT_ID_KEY);
     if (storedTenantId) {
       return storedTenantId;
-    }
-
-    // If not in localStorage, check user attributes
-    const storedAttributes = localStorage.getItem('userAttributes');
-    if (storedAttributes) {
-      const attributes = JSON.parse(storedAttributes);
-      const tenantId = attributes['custom:tenant_ID'] || attributes['custom:tenant_id'] || attributes['custom:tenantId'];
-      
-      if (tenantId) {
-        // Store it directly for faster access
-        localStorage.setItem(TENANT_ID_KEY, tenantId);
-        return tenantId;
-      }
     }
 
     // For new users, tenant ID might not exist yet
@@ -350,24 +343,18 @@ export const fixOnboardingStatusCase = (status) => {
 };
 
 /**
- * Update tenant ID in Cognito
+ * Update tenant ID in Auth0 session
  * @param {string} tenantId - The new tenant ID
  * @returns {Promise<void>}
  */
 export const updateTenantIdInCognito = async (tenantId) => {
   try {
-    // With Auth0, we update localStorage instead of Cognito
-    const { updateUserAttributes } = await import('@/config/amplifyUnified');
-    
-    // Call the compatibility function which updates localStorage
-    await updateUserAttributes({
-      userAttributes: {
-        'custom:tenant_ID': tenantId
-      }
-    });
-    
-    // Update local storage directly as well
+    // With Auth0, we need to update the session through the backend
+    // For now, just update local storage - the backend will sync on next session refresh
     await storeTenantId(tenantId);
+    
+    // Clear the session cache to force a refresh on next access
+    sessionManagerEnhanced.clearCache();
     
     console.debug(`[TenantUtils] Updated tenant ID: ${tenantId}`);
   } catch (error) {
@@ -379,7 +366,7 @@ export const updateTenantIdInCognito = async (tenantId) => {
 };
 
 /**
- * Get tenant ID from Cognito user attributes
+ * Get tenant ID from Auth0 session
  * @returns {Promise<string|null>} The tenant ID or null if not found
  */
 export const getTenantIdFromCognito = async () => {
@@ -525,7 +512,7 @@ export const extractTenantId = async (path) => {
     }
   }
   
-  // Fall back to getting from Cognito/cache
+  // Fall back to getting from Auth0 session/cache
   try {
     return await getTenantId();
   } catch (e) {

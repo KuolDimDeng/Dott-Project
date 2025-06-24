@@ -486,7 +486,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       setLoadingSuppliers(true);
       setSupplierError(null);
       
-      // Get the tenant ID securely from Cognito
+      // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
       // Check if we have a valid tenant ID
@@ -521,7 +521,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       setLoadingLocations(true);
       setLocationError(null);
       
-      // Get the tenant ID securely from Cognito
+      // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
       // Check if we have a valid tenant ID
@@ -592,11 +592,11 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         setFetchError(null);
         
         try {
-          // Get tenant ID securely from Cognito only
-          console.log('[ProductManagement] Fetching products with secure Cognito tenant ID:', tenantId);
+          // Get tenant ID securely from Auth0 session only
+          console.log('[ProductManagement] Fetching products with secure Auth0 tenant ID:', tenantId);
           
           if (!tenantId) {
-            console.error('[ProductManagement] No secure tenant ID found in Cognito, cannot fetch products');
+            console.error('[ProductManagement] No secure tenant ID found in Auth0 session, cannot fetch products');
             // Check if component is still mounted before updating state
             if (!isMounted.current) return;
             
@@ -704,15 +704,15 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
 
   // Update the getUserTenantId function
   const getUserTenantId = useCallback(async () => {
-    // Get tenant ID securely from Cognito only
+    // Get tenant ID securely from Auth0 session only
     const secureTenantId = await getSecureTenantId();
     
     if (secureTenantId) {
-      logger.info(`[ProductManagement] Using secure Cognito tenant ID for RLS: ${secureTenantId}`);
+      logger.info(`[ProductManagement] Using secure Auth0 tenant ID for RLS: ${secureTenantId}`);
       return secureTenantId;
     }
     
-    logger.error('[ProductManagement] No secure tenant ID found in Cognito');
+    logger.error('[ProductManagement] No secure tenant ID found in Auth0 session');
     return null;
   }, []);
 
@@ -721,7 +721,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     if (!supplierId) return '';
     
     try {
-      // Get the tenant ID securely from Cognito
+      // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
       // Make API call to get supplier details using the proxy route
@@ -754,7 +754,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     if (!locationId) return '';
     
     try {
-      // Get the tenant ID securely from Cognito
+      // Get the tenant ID securely from Auth0 session
       const tenantIdValue = await getSecureTenantId();
       
       // Make API call to get location details using the proxy route
@@ -1047,7 +1047,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         return;
       }
       
-      // Get secure tenant ID from Cognito
+      // Get secure tenant ID from Auth0 session
       const secureTenantId = await getSecureTenantId();
       
       // Validate tenant ID
