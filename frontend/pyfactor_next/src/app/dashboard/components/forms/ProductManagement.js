@@ -656,17 +656,12 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         setFetchError(null);
         
         try {
-          // Get tenant ID securely from Auth0 session only
+          // Get tenant ID securely from Auth0 session
+          const tenantId = await getSecureTenantId();
           console.log('[ProductManagement] Fetching products with secure Auth0 tenant ID:', tenantId);
           
           if (!tenantId) {
-            console.error('[ProductManagement] No secure tenant ID found in Auth0 session, cannot fetch products');
-            // Check if component is still mounted before updating state
-            if (!isMounted.current) return;
-            
-            setFetchError('Authentication error: Unable to verify your organization. Please log out and sign in again.');
-            setIsLoading(false);
-            return;
+            console.warn('[ProductManagement] No tenant ID found, will let backend handle tenant context from session');
           }
           
           const response = await axios.get('/api/inventory/products', {
@@ -1128,7 +1123,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
         sku: productData.sku || '',
         price: parseFloat(productData.price) || 0,
         cost: parseFloat(productData.cost) || 0,
-        stock_quantity: parseInt(productData.stockQuantity) || 0,
+        quantity: parseInt(productData.stockQuantity) || 0,
         reorder_level: parseInt(productData.reorderLevel) || 0,
         for_sale: productData.forSale,
         for_rent: productData.forRent,
@@ -2211,15 +2206,15 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <div className="text-sm text-black">${parseFloat(product.price || 0).toFixed(2)}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{product.stock_quantity || 0}</div>
+                <div className="text-sm text-black">{product.quantity || 0}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                  product.stock_quantity > 0 
+                  product.quantity > 0 
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {product.stock_quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                  {product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -2399,10 +2394,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                             <p className="text-xs text-gray-500">Price</p>
                             <p className="font-medium">${currentBarcodeProduct.price}</p>
                           </div>
-                          {currentBarcodeProduct.stock_quantity !== undefined && (
+                          {currentBarcodeProduct.quantity !== undefined && (
                             <div>
                               <p className="text-xs text-gray-500">Stock</p>
-                              <p className="font-medium">{currentBarcodeProduct.stock_quantity}</p>
+                              <p className="font-medium">{currentBarcodeProduct.quantity}</p>
                             </div>
                           )}
                         </div>

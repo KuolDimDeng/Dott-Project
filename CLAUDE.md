@@ -86,6 +86,12 @@
   - Webpack optimizations configured for memory management
   - Next.js doesn't support -c flag for custom config files  
   - Rate limiting requires lru-cache dependency (already installed)
+- UI/UX Standards:
+  - Include contextual help tooltips (?) on ALL user input fields
+  - Use FieldTooltip component for consistent tooltip implementation
+  - Tooltip text should explain: what data to enter, format requirements, how data is used
+  - Example: Cost field tooltip explains to include delivery, taxes, and divide by quantity if bulk
+  - Follow industry standards (QuickBooks, Shopify style tooltips)
 - Session Management V2 Enhanced System (2025-01-18):
   - COMPLETE OVERHAUL: Server-side session management with Redis caching
   - Enhanced Performance: Multi-tier caching (Local → Redis → Database)

@@ -9,6 +9,43 @@ import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import axios from 'axios';
 
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)} // For mobile
+        className="cursor-help"
+      >
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 /**
  * Enhanced SupplierManagement Component
  * 
@@ -464,7 +501,13 @@ function SupplierManagement() {
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Name <span className="text-red-500">*</span>
+                      <span className="flex items-center">
+                        Name <span className="text-red-500">*</span>
+                        <FieldTooltip 
+                          text="Enter the official business name of your supplier. This name will appear on purchase orders, invoices, and reports. Be consistent with the name to maintain accurate purchase history and vendor analytics."
+                          position="bottom"
+                        />
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -478,7 +521,13 @@ function SupplierManagement() {
                   </div>
                   <div>
                     <label htmlFor="contact_person" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Contact Person
+                      <span className="flex items-center">
+                        Contact Person
+                        <FieldTooltip 
+                          text="Enter the name of your primary contact at this supplier company. This helps personalize communication and ensures you reach the right person for orders, inquiries, or issues. Include their title if known (e.g., 'John Smith - Sales Manager')."
+                          position="bottom"
+                        />
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -491,7 +540,13 @@ function SupplierManagement() {
                   </div>
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Email
+                      <span className="flex items-center">
+                        Email
+                        <FieldTooltip 
+                          text="Enter the primary email address for business correspondence with this supplier. This email will be used for sending purchase orders, receiving invoices, and general communication. Ensure it's monitored regularly."
+                          position="bottom"
+                        />
+                      </span>
                     </label>
                     <input
                       type="email"
@@ -504,7 +559,13 @@ function SupplierManagement() {
                   </div>
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Phone
+                      <span className="flex items-center">
+                        Phone
+                        <FieldTooltip 
+                          text="Enter the main business phone number for this supplier. Include country code for international suppliers (e.g., +1-555-123-4567). This number is used for urgent orders, delivery issues, or when email communication isn't sufficient."
+                          position="bottom"
+                        />
+                      </span>
                     </label>
                     <input
                       type="text"
@@ -517,7 +578,13 @@ function SupplierManagement() {
                   </div>
                   <div>
                     <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Address
+                      <span className="flex items-center">
+                        Address
+                        <FieldTooltip 
+                          text="Enter the complete business address of your supplier. This information is important for shipping returns, visiting their facility, and tax documentation. Include street address, city, state/province, postal code, and country. This may differ from their billing address."
+                          position="bottom"
+                        />
+                      </span>
                     </label>
                     <textarea
                       name="address"
