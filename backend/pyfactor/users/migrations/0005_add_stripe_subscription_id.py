@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('users', '0004_convert_admin_to_owner'),
+        ('users', '0004_add_business_type_column'),
     ]
 
     operations = [
