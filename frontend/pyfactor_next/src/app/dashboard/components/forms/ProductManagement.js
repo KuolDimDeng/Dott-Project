@@ -6,6 +6,7 @@ import { Dialog, Transition } from '@headlessui/react';
 import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import BarcodeGenerator from '@/components/BarcodeGenerator';
+import ProductQRCode from '@/components/ProductQRCode';
 import { useTable, usePagination, useSortBy } from 'react-table';
 import PropTypes from 'prop-types';
 import { useNotification } from '@/context/NotificationContext';
@@ -400,6 +401,8 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   const [createdProductId, setCreatedProductId] = useState(null);
   const [isBarcodeDialogOpen, setBarcodeDialogOpen] = useState(false);
   const [currentBarcodeProduct, setCurrentBarcodeProduct] = useState(null);
+  const [isQRDialogOpen, setQRDialogOpen] = useState(false);
+  const [currentQRProduct, setCurrentQRProduct] = useState(null);
   const [apiHealthStatus, setApiHealthStatus] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -834,10 +837,10 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
     }
     
     // Set the product for which we're generating a QR code
-    setCurrentBarcodeProduct(product);
+    setCurrentQRProduct(product);
     
-    // Open the dialog
-    setBarcodeDialogOpen(true);
+    // Open the QR dialog
+    setQRDialogOpen(true);
   }, [notifyError]);
 
   // Add a handler for form field changes
@@ -2610,6 +2613,17 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       {/* Success Dialog and Barcode Dialog - keep these unchanged */}
       <SuccessDialog />
       {renderBarcodeDialog()}
+      
+      {/* QR Code Dialog */}
+      {isQRDialogOpen && currentQRProduct && (
+        <ProductQRCode
+          product={currentQRProduct}
+          onClose={() => {
+            setQRDialogOpen(false);
+            setCurrentQRProduct(null);
+          }}
+        />
+      )}
     </div>
   );
 };
