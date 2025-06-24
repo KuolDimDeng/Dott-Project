@@ -220,6 +220,28 @@ class Product(TenantAwareModel):
     # Add all_objects manager to access all products across tenants if needed
     all_objects = models.Manager()
     
+    def save(self, *args, **kwargs):
+        # Auto-generate SKU if not provided
+        if not self.sku:
+            # Get the current year
+            from datetime import datetime
+            year = datetime.now().year
+            
+            # Count existing products for this tenant to generate sequence
+            count = Product.objects.filter(tenant_id=self.tenant_id).count() + 1
+            
+            # Generate SKU in format: PROD-YYYY-NNNN
+            self.sku = f"PROD-{year}-{count:04d}"
+            
+            # Ensure uniqueness (in case of race conditions)
+            original_sku = self.sku
+            counter = 1
+            while Product.objects.filter(tenant_id=self.tenant_id, sku=self.sku).exists():
+                self.sku = f"{original_sku}-{counter}"
+                counter += 1
+        
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return self.name
         

@@ -363,6 +363,7 @@ const TailwindCheckbox = ({ checked, onChange, name, label }) => {
 
 // Component for tabbed product management
 const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null, onUpdate, onCancel, salesContext }) => {
+  const router = useRouter();
   const notifySuccess = (message) => toast.success(message);
   const notifyError = (message) => toast.error(message);
   const notifyInfo = (message) => toast.loading(message);
@@ -433,7 +434,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
   // Initialize tenantId from session
   const [tenantId, setTenantId] = useState(null);
   
-  // Get tenant ID on mount
+  // Get tenant ID on mount and check for pending product data
   useEffect(() => {
     const fetchTenantId = async () => {
       const secureTenantId = await getSecureTenantId();
@@ -442,6 +443,21 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       }
     };
     fetchTenantId();
+    
+    // Check if there's pending product data from before navigation
+    const pendingData = localStorage.getItem('pendingProductData');
+    if (pendingData) {
+      try {
+        const parsedData = JSON.parse(pendingData);
+        setProductData(parsedData);
+        // Clear the stored data
+        localStorage.removeItem('pendingProductData');
+        // Show a message to the user
+        toast.loading('Restored your product form data', { duration: 3000 });
+      } catch (error) {
+        console.error('Error restoring pending product data:', error);
+      }
+    }
   }, []);
   
   // State for form fields - use a single object for better state preservation during hot reloading
@@ -1247,10 +1263,14 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 id="sku"
                 name="sku"
                 type="text"
+                placeholder="Auto-generated if left blank"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 value={productData.sku || ''}
                 onChange={(e) => setProductData({...productData, sku: e.target.value})}
             />
+              <p className="mt-1 text-xs text-gray-500">
+                Leave blank to auto-generate (e.g., PROD-2025-0001)
+              </p>
           </div>
           
           <div>
@@ -1340,6 +1360,31 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   <option disabled>{supplierError || 'No suppliers available'}</option>
                 )}
               </select>
+              {!loadingSuppliers && suppliers.length === 0 && (
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    No suppliers found. 
+                    <button
+                      onClick={() => {
+                        // Navigate to suppliers management
+                        if (tenantId) {
+                          // Save current form data to localStorage to restore later
+                          localStorage.setItem('pendingProductData', JSON.stringify(productData));
+                          // Navigate to suppliers page
+                          window.location.href = `/${tenantId}/dashboard?view=inventory-suppliers`;
+                        }
+                      }}
+                      className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
+                    >
+                      Create a supplier
+                    </button>
+                    first to assign products to them.
+                  </p>
+                </div>
+              )}
             </div>
             
             <div>
@@ -1366,6 +1411,31 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                   <option disabled>{locationError || 'No locations available'}</option>
                 )}
               </select>
+              {!loadingLocations && locations.length === 0 && (
+                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    No locations/warehouses found. 
+                    <button
+                      onClick={() => {
+                        // Navigate to locations management
+                        if (tenantId) {
+                          // Save current form data to localStorage to restore later
+                          localStorage.setItem('pendingProductData', JSON.stringify(productData));
+                          // Navigate to locations page
+                          window.location.href = `/${tenantId}/dashboard?view=inventory-locations`;
+                        }
+                      }}
+                      className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
+                    >
+                      Create a location
+                    </button>
+                    first to track where products are stored.
+                  </p>
+                </div>
+              )}
             </div>
             
           </div>
@@ -1577,10 +1647,14 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
               id="edit-sku"
               name="sku"
               type="text"
+              placeholder="Auto-generated if left blank"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               value={editedProduct.sku || ''}
               onChange={(e) => setEditedProduct({...editedProduct, sku: e.target.value})}
             />
+            <p className="mt-1 text-xs text-gray-500">
+              Current: {editedProduct.sku || editedProduct.product_code || 'Auto-generated'}
+            </p>
           </div>
           
           <div>
@@ -1670,6 +1744,27 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <option disabled>{supplierError || 'No suppliers available'}</option>
               )}
             </select>
+            {!loadingSuppliers && suppliers.length === 0 && (
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  No suppliers found. 
+                  <button
+                    onClick={() => {
+                      if (tenantId) {
+                        window.location.href = `/${tenantId}/dashboard?view=inventory-suppliers`;
+                      }
+                    }}
+                    className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
+                  >
+                    Create a supplier
+                  </button>
+                  first.
+                </p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -1696,6 +1791,27 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                 <option disabled>{locationError || 'No locations available'}</option>
               )}
             </select>
+            {!loadingLocations && locations.length === 0 && (
+              <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <p className="text-sm text-yellow-800">
+                  <svg className="inline w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  No locations/warehouses found. 
+                  <button
+                    onClick={() => {
+                      if (tenantId) {
+                        window.location.href = `/${tenantId}/dashboard?view=inventory-locations`;
+                      }
+                    }}
+                    className="ml-1 text-yellow-900 underline hover:text-yellow-700 font-medium"
+                  >
+                    Create a location
+                  </button>
+                  first.
+                </p>
+              </div>
+            )}
           </div>
 
         </div>

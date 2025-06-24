@@ -59,11 +59,15 @@ class ServiceTypeFieldsSerializer(serializers.ModelSerializer):
 class ProductSerializer(serializers.ModelSerializer):
     department_name = serializers.ReadOnlyField(source='department.dept_name', allow_null=True)
     type_fields = ProductTypeFieldsSerializer(read_only=True)
+    # Add supplier and location names for display
+    supplier_name = serializers.ReadOnlyField(source='supplier.name', allow_null=True)
+    location_name = serializers.ReadOnlyField(source='location.name', allow_null=True)
 
     class Meta:
         model = Product
         fields = '__all__'
-        read_only_fields = ('product_code',)
+        # SKU is auto-generated if not provided, but can be overridden
+        read_only_fields = ('id', 'created_at', 'updated_at')
 
 class ServiceSerializer(serializers.ModelSerializer):
     type_fields = ServiceTypeFieldsSerializer(read_only=True)
