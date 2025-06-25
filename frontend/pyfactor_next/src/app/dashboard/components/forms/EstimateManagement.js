@@ -57,6 +57,8 @@ const EstimateManagement = () => {
       setIsLoading(true);
       console.log('[EstimateManagement] Fetching estimates...');
       
+      // Get secure tenant ID
+      const tenantId = getSecureTenantId();
       if (!tenantId) {
         console.error('[EstimateManagement] No tenant ID found');
         toast.error('Authentication required. Please log in again.');
@@ -74,10 +76,22 @@ const EstimateManagement = () => {
       }
       
       const data = await response.json();
-      console.log('[EstimateManagement] Fetched estimates:', data?.length || 0);
+      
+      // Handle both paginated and direct array responses
+      let estimatesList = [];
+      if (Array.isArray(data)) {
+        estimatesList = data;  // Direct array response
+      } else if (data && Array.isArray(data.results)) {
+        estimatesList = data.results;  // Django paginated response
+        console.log('[EstimateManagement] Paginated response - count:', data.count);
+      } else if (data && Array.isArray(data.data)) {
+        estimatesList = data.data;  // Alternative format
+      }
+      
+      console.log('[EstimateManagement] Fetched estimates:', estimatesList.length);
       
       if (isMounted.current) {
-        setEstimates(Array.isArray(data) ? data : []);
+        setEstimates(estimatesList);
       }
     } catch (error) {
       console.error('[EstimateManagement] Error:', error);
@@ -94,12 +108,20 @@ const EstimateManagement = () => {
 
   const fetchCustomers = async () => {
     try {
+      const tenantId = getSecureTenantId();
       const response = await fetch('/api/crm/customers', {
         headers: { 'x-tenant-id': tenantId }
       });
       if (response.ok) {
         const data = await response.json();
-        setCustomers(Array.isArray(data) ? data : []);
+        // Handle paginated response
+        let customersList = [];
+        if (Array.isArray(data)) {
+          customersList = data;
+        } else if (data && Array.isArray(data.results)) {
+          customersList = data.results;
+        }
+        setCustomers(customersList);
       }
     } catch (error) {
       console.error('[EstimateManagement] Error fetching customers:', error);
@@ -108,12 +130,20 @@ const EstimateManagement = () => {
 
   const fetchProducts = async () => {
     try {
+      const tenantId = getSecureTenantId();
       const response = await fetch('/api/inventory/products', {
         headers: { 'x-tenant-id': tenantId }
       });
       if (response.ok) {
         const data = await response.json();
-        setProducts(Array.isArray(data) ? data : []);
+        // Handle paginated response
+        let productsList = [];
+        if (Array.isArray(data)) {
+          productsList = data;
+        } else if (data && Array.isArray(data.results)) {
+          productsList = data.results;
+        }
+        setProducts(productsList);
       }
     } catch (error) {
       console.error('[EstimateManagement] Error fetching products:', error);
@@ -122,12 +152,20 @@ const EstimateManagement = () => {
 
   const fetchServices = async () => {
     try {
+      const tenantId = getSecureTenantId();
       const response = await fetch('/api/inventory/services', {
         headers: { 'x-tenant-id': tenantId }
       });
       if (response.ok) {
         const data = await response.json();
-        setServices(Array.isArray(data) ? data : []);
+        // Handle paginated response
+        let servicesList = [];
+        if (Array.isArray(data)) {
+          servicesList = data;
+        } else if (data && Array.isArray(data.results)) {
+          servicesList = data.results;
+        }
+        setServices(servicesList);
       }
     } catch (error) {
       console.error('[EstimateManagement] Error fetching services:', error);
@@ -209,6 +247,12 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
+      const tenantId = getSecureTenantId();
+      if (!tenantId) {
+        toast.error('Authentication required. Please log in again.');
+        return;
+      }
+      
       const { subtotal, total } = calculateTotals();
       
       const estimateData = {
@@ -266,6 +310,12 @@ const EstimateManagement = () => {
     try {
       setIsSubmitting(true);
       
+      const tenantId = getSecureTenantId();
+      if (!tenantId) {
+        toast.error('Authentication required. Please log in again.');
+        return;
+      }
+      
       const { subtotal, total } = calculateTotals();
       
       const estimateData = {
@@ -311,6 +361,12 @@ const EstimateManagement = () => {
     console.log('[EstimateManagement] Deleting estimate:', estimateToDelete.id);
     
     try {
+      const tenantId = getSecureTenantId();
+      if (!tenantId) {
+        toast.error('Authentication required. Please log in again.');
+        return;
+      }
+      
       const response = await fetch(`/api/sales/estimates/${estimateToDelete.id}`, {
         method: 'DELETE',
         headers: {
