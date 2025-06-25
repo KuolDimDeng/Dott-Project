@@ -716,6 +716,100 @@ export const locationApi = {
   }
 };
 
+// Invoice related API methods - Using local proxy pattern (industry standard)
+export const invoiceApi = {
+  async getAll(params = {}) {
+    const response = await fetch('/api/invoices', {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async getById(id, params = {}) {
+    const response = await fetch(`/api/invoices/${id}`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async create(data, params = {}) {
+    logger.info('[InvoiceApi] Creating invoice with data:', data);
+    
+    const response = await fetch('/api/invoices', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    const result = await response.json();
+    logger.info('[InvoiceApi] Invoice created successfully:', result);
+    return result;
+  },
+  
+  async update(id, data, params = {}) {
+    const response = await fetch(`/api/invoices/${id}`, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+  
+  async delete(id, params = {}) {
+    const response = await fetch(`/api/invoices/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  }
+};
+
 // Sales Order related API methods - Using local proxy pattern (industry standard)
 export const orderApi = {
   async getAll(params = {}) {
