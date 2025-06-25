@@ -2,9 +2,17 @@ import { useSession } from './useSession-v2';
 import { canPerformAction, getAccessibleRoutes } from '@/middleware/permissionChecker';
 
 export function usePermissions() {
-  const { data: session, isLoading } = useSession();
+  const { session, loading } = useSession();
   
   const user = session?.user;
+  
+  // Debug logging
+  console.log('[usePermissions] Hook data:', {
+    session: session,
+    user: user,
+    userRole: user?.role,
+    loading: loading
+  });
   
   // Check if user can access a specific route
   const canAccessRoute = (path) => {
@@ -57,7 +65,7 @@ export function usePermissions() {
   
   return {
     user,
-    isLoading,
+    isLoading: loading,
     canAccessRoute,
     canPerform,
     accessibleRoutes,

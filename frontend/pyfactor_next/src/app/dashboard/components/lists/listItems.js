@@ -175,6 +175,17 @@ const MainListItems = ({
   const [activeItem, setActiveItem] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(null);
   
+  // Debug logging for permissions hook
+  useEffect(() => {
+    console.log('[MainListItems] usePermissions hook data:', {
+      user: user,
+      userRole: user?.role,
+      isLoading: isLoading,
+      isOwnerOrAdmin: isOwnerOrAdmin(),
+      canAccessRoute: typeof canAccessRoute
+    });
+  }, [user, isLoading]);
+  
 
   // Check if we're on mobile/small screens
   useEffect(() => {
