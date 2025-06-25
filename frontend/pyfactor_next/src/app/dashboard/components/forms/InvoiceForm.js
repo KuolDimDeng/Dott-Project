@@ -413,7 +413,7 @@ const InvoiceForm = ({ mode = 'create' }) => {
                                   'Unknown Customer';
                   return (
                     <option key={customer.id} value={String(customer.id)}>
-                      {customerId}: {fullName}
+                      {fullName}: {customerId}
                     </option>
                   );
                 })}

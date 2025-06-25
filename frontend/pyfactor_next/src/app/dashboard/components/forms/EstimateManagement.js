@@ -461,7 +461,7 @@ const EstimateManagement = () => {
                                 'Unknown Customer';
                 return (
                   <option key={customer.id} value={customer.id}>
-                    {customerId}: {fullName}
+                    {fullName}: {customerId}
                   </option>
                 );
               })}
@@ -978,7 +978,7 @@ const EstimateManagement = () => {
                                     estimate.customer.customer_name || 
                                     estimate.customer.email || 
                                     'Unknown Customer';
-                    return `${customerId}: ${fullName}`;
+                    return `${fullName}: ${customerId}`;
                   })()}
                 </div>
               </td>

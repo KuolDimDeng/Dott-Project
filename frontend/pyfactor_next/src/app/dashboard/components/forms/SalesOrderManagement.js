@@ -425,7 +425,7 @@ const SalesOrderManagement = () => {
               
               return (
                 <option key={customer.id} value={customer.id}>
-                  {customerId}: {fullName}
+                  {fullName}: {customerId}
                 </option>
               );
             })}
@@ -791,7 +791,7 @@ const SalesOrderManagement = () => {
               <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Customer</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {customer ? `${customer.customer_id || customer.customer_number || customer.id}: ${customer.name || customer.full_name || (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') || customer.customerName || customer.customer_name || customer.email}` : 'Unknown'}
+                  {customer ? `${customer.name || customer.full_name || (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') || customer.customerName || customer.customer_name || customer.email}: ${customer.customer_id || customer.customer_number || customer.id}` : 'Unknown'}
                 </dd>
               </div>
               
@@ -965,7 +965,7 @@ const SalesOrderManagement = () => {
                       {order.order_number}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {customer ? `${customer.customer_id || customer.customer_number || customer.id}: ${customer.name || customer.full_name || (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') || customer.customerName || customer.customer_name || customer.email}` : 'Unknown'}
+                      {customer ? `${customer.name || customer.full_name || (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') || customer.customerName || customer.customer_name || customer.email}: ${customer.customer_id || customer.customer_number || customer.id}` : 'Unknown'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(order.order_date).toLocaleDateString()}

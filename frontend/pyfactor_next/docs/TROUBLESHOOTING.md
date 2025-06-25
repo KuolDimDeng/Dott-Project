@@ -6,7 +6,7 @@
 
 **Symptoms:**
 - Customer dropdown displays email addresses only
-- User wants format: "{customer_id}: Full Name" (e.g., "CUST-001: Kuol Deng")
+- User wants format: "Full Name: {customer_id}" (e.g., "Kuol Deng: CUST-001")
 - Affects Sales Orders, Invoices, Estimates modules
 - Customer names available in data but not displayed properly
 
@@ -31,7 +31,7 @@
                   'Unknown Customer';
   return (
     <option key={customer.id} value={customer.id}>
-      {customerId}: {fullName}
+      {fullName}: {customerId}
     </option>
   );
 })}
