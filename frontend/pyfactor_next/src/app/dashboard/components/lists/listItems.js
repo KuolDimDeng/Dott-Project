@@ -114,6 +114,12 @@ const NavIcons = {
     <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
     </svg>
+  ),
+  Settings: (props) => (
+    <svg className={props.className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
   )
 };
 
@@ -154,11 +160,12 @@ const MainListItems = ({
   handleShowCreateMenu,
   handleDrawerClose,
   handleBillingClick = () => console.log('Billing clicked (default handler)'),
+  handleSettingsClick = () => console.log('Settings clicked (default handler)'),
   isIconOnly = false,
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
 }) => {
-  const { canAccessRoute, isOwnerOrAdmin, user } = usePermissions();
+  const { canAccessRoute, isOwnerOrAdmin, user, isLoading } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');
   const [buttonWidth, setButtonWidth] = useState(0);
   const paperRef = useRef(null);
@@ -173,7 +180,14 @@ const MainListItems = ({
     console.log('[MainListItems] User data:', user);
     console.log('[MainListItems] User role:', user?.role);
     console.log('[MainListItems] Is owner or admin:', isOwnerOrAdmin());
-  }, [user]);
+    console.log('[MainListItems] Menu items count:', menuItems.length);
+    
+    // Log Sales menu sub-items
+    const salesMenu = menuItems.find(item => item.label === 'Sales');
+    if (salesMenu) {
+      console.log('[MainListItems] Sales menu sub-items:', salesMenu.subItems?.map(si => si.label));
+    }
+  }, [user, menuItems]);
 
   // Check if we're on mobile/small screens
   useEffect(() => {
@@ -779,6 +793,48 @@ const MainListItems = ({
     },
   ];
 
+  // Add Settings menu for OWNER and ADMIN users
+  if (isOwnerOrAdmin()) {
+    menuItems.push({
+      icon: <NavIcons.Settings className="w-5 h-5" />,
+      label: 'Settings',
+      subItems: [
+        { 
+          label: 'Users', 
+          path: '/settings/users',
+          onClick: () => {
+            if (typeof handleSettingsClick === 'function') {
+              handleSettingsClick('users');
+            }
+          }, 
+          value: 'users' 
+        },
+        ...(user?.role === 'OWNER' ? [
+          { 
+            label: 'Subscription', 
+            path: '/settings/subscription',
+            onClick: () => {
+              if (typeof handleSettingsClick === 'function') {
+                handleSettingsClick('subscription');
+              }
+            }, 
+            value: 'subscription' 
+          },
+          { 
+            label: 'Close Account', 
+            path: '/settings/close-account',
+            onClick: () => {
+              if (typeof handleSettingsClick === 'function') {
+                handleSettingsClick('close-account');
+              }
+            }, 
+            value: 'close-account' 
+          }
+        ] : [])
+      ],
+    });
+  }
+
   const createOptions = [
     {
       label: 'Create New',
@@ -985,6 +1041,11 @@ const MainListItems = ({
 
   // Function to check if user can see menu item
   const canSeeMenuItem = (item) => {
+    // If still loading or user is OWNER/ADMIN, show all items
+    if (isLoading || isOwnerOrAdmin()) {
+      return true;
+    }
+    
     // Always show create new and dashboard
     if (item.label === 'Create New' || item.label === 'Dashboard') {
       return true;
@@ -1011,9 +1072,17 @@ const MainListItems = ({
   const filterSubItems = (subItems) => {
     if (!subItems) return [];
     
+    // If still loading or user is OWNER/ADMIN, show all items
+    if (isLoading || isOwnerOrAdmin()) {
+      console.log('[filterSubItems] Showing all items - isLoading:', isLoading, 'isOwnerOrAdmin:', isOwnerOrAdmin());
+      return subItems;
+    }
+    
     return subItems.filter(subItem => {
       if (!subItem.path) return true; // If no path defined, show it
-      return canAccessRoute(subItem.path);
+      const canAccess = canAccessRoute(subItem.path);
+      console.log(`[filterSubItems] Checking ${subItem.label} with path ${subItem.path}: canAccess=${canAccess}`);
+      return canAccess;
     });
   };
   

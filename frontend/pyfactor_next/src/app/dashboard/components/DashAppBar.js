@@ -55,6 +55,7 @@ import { useToast } from '@/hooks/useToast';
 import { useSession } from '@/hooks/useSession-v2';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth0Data } from '@/hooks/useAuth0Data';
+import { usePermissions } from '@/hooks/usePermissions';
 import { APP_NAME, CREATE_NEW_ITEM_OPTIONS } from '@/config/constants';
 import { businessTypes, legalStructures } from '@/app/utils/businessData';
 
@@ -184,6 +185,10 @@ const DashAppBar = ({
   const [businessName, setBusinessName] = useState(null);
   const [fetchedBusinessName, setFetchedBusinessName] = useState(null);
   const [isDesktop, setIsDesktop] = useState(true);
+  const [showSettingsSubmenu, setShowSettingsSubmenu] = useState(false);
+  
+  // Get user permissions
+  const { isOwner, isAdmin, isOwnerOrAdmin } = usePermissions();
   
   // Add a flag to track if we've attempted to fetch profile data
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
@@ -1427,24 +1432,78 @@ const DashAppBar = ({
                 </svg>
                 <span>My Account</span>
               </div>
-              <div
-                className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
-                onClick={(e) => {
-                  console.log('[DashAppBar] Settings menu item clicked');
-                  if (typeof handleSettingsClick === 'function') {
-                    handleSettingsClick();
-                  } else {
-                    console.error('[DashAppBar] handleSettingsClick is not a function', handleSettingsClick);
-                    handleClose(); // Fallback to just closing the menu if handleSettingsClick is not available
-                  }
-                }}
-              >
-                <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                </svg>
-                <span>Settings</span>
-              </div>
+              {/* Settings menu item - only show for OWNER and ADMIN */}
+              {isOwnerOrAdmin() && (
+                <div className="relative">
+                  <div
+                    className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center justify-between"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowSettingsSubmenu(!showSettingsSubmenu);
+                    }}
+                  >
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      </svg>
+                      <span>Settings</span>
+                    </div>
+                    <svg 
+                      className={`w-4 h-4 transition-transform ${showSettingsSubmenu ? 'rotate-180' : ''}`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24" 
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                  </div>
+                  
+                  {/* Settings submenu */}
+                  {showSettingsSubmenu && (
+                    <div className="ml-8 border-l-2 border-gray-200">
+                      <div
+                        className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm"
+                        onClick={() => {
+                          if (typeof handleSettingsClick === 'function') {
+                            handleSettingsClick('users');
+                          }
+                          handleClose();
+                        }}
+                      >
+                        User Management
+                      </div>
+                      {isOwner() && (
+                        <>
+                          <div
+                            className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm"
+                            onClick={() => {
+                              if (typeof handleSettingsClick === 'function') {
+                                handleSettingsClick('subscription');
+                              }
+                              handleClose();
+                            }}
+                          >
+                            Subscription
+                          </div>
+                          <div
+                            className="py-2 px-4 hover:bg-blue-50 cursor-pointer text-sm text-red-600"
+                            onClick={() => {
+                              if (typeof handleSettingsClick === 'function') {
+                                handleSettingsClick('close-account');
+                              }
+                              handleClose();
+                            }}
+                          >
+                            Close Account
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <div
                 className="py-3 px-4 hover:bg-blue-50 cursor-pointer flex items-center"
                 onClick={handleHelpClick}

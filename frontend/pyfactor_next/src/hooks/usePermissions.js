@@ -8,7 +8,9 @@ export function usePermissions() {
   
   // Check if user can access a specific route
   const canAccessRoute = (path) => {
-    if (!user) return false;
+    if (!user) {
+      return false;
+    }
     
     // Owner/Admin can access all routes
     if (user.role === 'OWNER' || user.role === 'ADMIN') {
