@@ -16,7 +16,7 @@
  */
 
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
