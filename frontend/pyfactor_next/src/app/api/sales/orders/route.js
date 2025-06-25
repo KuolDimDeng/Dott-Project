@@ -9,8 +9,7 @@ async function getSessionCookie() {
   return sidCookie;
 }
 
-// In-memory storage for temporary orders (while backend is being fixed)
-const temporaryOrders = [];
+// Backend is now fixed with proper ViewSets
 
 export async function GET(request) {
   try {
@@ -42,10 +41,10 @@ export async function GET(request) {
     if (!response.ok) {
       const errorText = await response.text();
       logger.error('[Orders API] Backend error:', errorText);
-      logger.info('[Orders API] Returning temporary orders:', temporaryOrders);
-      
-      // Return temporary orders while backend is down
-      return NextResponse.json(temporaryOrders);
+      return NextResponse.json(
+        { error: 'Failed to fetch orders', details: errorText },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();
@@ -55,8 +54,10 @@ export async function GET(request) {
     
   } catch (error) {
     logger.error('[Orders API] Error:', error);
-    // Return temporary orders on error
-    return NextResponse.json(temporaryOrders);
+    return NextResponse.json(
+      { error: 'Internal server error', message: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -90,25 +91,10 @@ export async function POST(request) {
     if (!response.ok) {
       const errorText = await response.text();
       logger.error('[Orders API] Backend error:', errorText);
-      logger.info('[Orders API] Creating temporary order locally');
-      
-      // Generate order number if not provided
-      if (!body.order_number) {
-        body.order_number = `SO-${Date.now()}`;
-      }
-      
-      // Create temporary order
-      const tempOrder = {
-        id: `temp-${Date.now()}`,
-        ...body,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      temporaryOrders.push(tempOrder);
-      
-      logger.info('[Orders API] Temporary order created:', tempOrder);
-      return NextResponse.json(tempOrder, { status: 201 });
+      return NextResponse.json(
+        { error: 'Failed to create order', details: errorText },
+        { status: response.status }
+      );
     }
     
     const data = await response.json();

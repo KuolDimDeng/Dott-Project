@@ -2,6 +2,75 @@
 
 *This document contains backend-specific recurring issues and their proven solutions.*
 
+## 🔧 **Issue: Sales Order Creation Failing with Multi-Database Error**
+
+**Symptoms:**
+- Sales order creation returns 500 error
+- Error: "'UserProfile' object has no attribute 'database_name'"
+- Redis connection errors: "Error -2 connecting to your-redis-host:6379"
+- Backend using obsolete multi-database pattern
+
+**Root Cause Analysis:**
+- Old sales module using `get_user_database()` pattern
+- References non-existent `UserProfile.database_name` field
+- Serializers using `objects.using(database_name)` instead of tenant-aware pattern
+- ViewSets not following industry-standard declarative pattern
+
+**Solution (Proven Fix):**
+```python
+# ✅ CORRECT - Use simple declarative ViewSet pattern
+# File: /backend/pyfactor/sales/viewsets.py
+class SalesOrderViewSet(viewsets.ModelViewSet):
+    queryset = SalesOrder.objects.all()  # TenantManager handles filtering
+    serializer_class = SalesOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+# ✅ CORRECT - Serializer without database_name
+# File: /backend/pyfactor/sales/serializers_new.py
+class SalesOrderSerializer(serializers.ModelSerializer):
+    items = SalesOrderItemSerializer(many=True, required=False)
+    
+    class Meta:
+        model = SalesOrder
+        fields = '__all__'
+        read_only_fields = ['id', 'order_number']
+    
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        order = SalesOrder.objects.create(**validated_data)
+        
+        for item_data in items_data:
+            SalesOrderItem.objects.create(sales_order=order, **item_data)
+        
+        order.calculate_total_amount()
+        return order
+```
+
+**Files to Update:**
+1. Create `/sales/viewsets.py` with industry-standard ViewSets
+2. Create `/sales/serializers_new.py` without database_name context
+3. Update `/sales/urls.py` to use DRF routers and ViewSets
+4. Remove any `get_user_database()` usage
+
+**Redis Note:**
+- Redis errors are misleading - sales module doesn't require Redis
+- These are side effects of the old multi-database code
+- Proper tenant-aware pattern eliminates Redis dependency
+
+**Verification Steps:**
+1. Check models extend `TenantAwareModel`
+2. Verify `objects = TenantManager()` in models
+3. Test with: `python manage.py shell < test_sales_order.py`
+4. Confirm no `database_name` in serializer context
+
+**Prevention:**
+- Always use simple declarative ViewSets
+- Never override `get_queryset()` unless absolutely necessary
+- Follow patterns from CustomerViewSet
+- Use TenantManager for automatic filtering
+
+---
+
 ## 🔧 **Issue: OnboardingMiddleware Blocking Module Endpoints**
 
 **Symptoms:**

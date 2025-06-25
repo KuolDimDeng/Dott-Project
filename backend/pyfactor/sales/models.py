@@ -326,10 +326,16 @@ class SalesOrder(TenantAwareModel):
     totalAmount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     # Additional fields to match SQL schema
     order_date = models.DateTimeField(default=timezone.now)
+    due_date = models.DateField(default=default_due_datetime)
     status = models.CharField(max_length=50, default='pending')
+    payment_terms = models.CharField(max_length=50, default='net_30')
     subtotal = models.DecimalField(max_digits=19, decimal_places=4, default=0)
     tax_total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=19, decimal_places=4, default=0)
+    total_amount = models.DecimalField(max_digits=19, decimal_places=4, default=0)
     notes = models.TextField(blank=True, null=True)
     estimate = models.ForeignKey(Estimate, on_delete=models.SET_NULL, null=True, blank=True)
 
@@ -364,8 +370,20 @@ class SalesOrder(TenantAwareModel):
         super().save(*args, **kwargs)
 
     def calculate_total_amount(self):
-        total = sum(item.subtotal() for item in self.items.all())  # type: ignore
-        self.totalAmount = total - self.discount
+        # Calculate subtotal from items
+        self.subtotal = sum(item.subtotal() for item in self.items.all())  # type: ignore
+        
+        # Apply discount
+        discount_amount = (self.subtotal * self.discount_percentage / 100) if self.discount_percentage else 0
+        
+        # Calculate tax
+        self.tax_total = (self.subtotal - discount_amount) * self.tax_rate / 100 if self.tax_rate else 0
+        
+        # Calculate total
+        self.total = self.subtotal - discount_amount + self.tax_total + (self.shipping_cost or 0)
+        self.total_amount = self.total
+        self.totalAmount = self.total  # For backward compatibility
+        
         self.save()
 
     def clean(self):
@@ -377,10 +395,12 @@ class SalesOrder(TenantAwareModel):
         
 class SalesOrderItem(TenantAwareModel):
     sales_order = models.ForeignKey(SalesOrder, related_name='items', on_delete=models.CASCADE)
+    item_type = models.CharField(max_length=20, choices=[('product', 'Product'), ('service', 'Service')], default='product')
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     service = models.ForeignKey(Service, on_delete=models.SET_NULL, null=True, blank=True)
+    item_id = models.CharField(max_length=100, blank=True, null=True)  # For frontend reference
     description = models.CharField(max_length=200, null=True)
-    quantity = models.IntegerField(default=1)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     tax_amount = models.DecimalField(max_digits=19, decimal_places=4, blank=True, null=True)

@@ -1,27 +1,15 @@
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .viewsets import SalesOrderViewSet, InvoiceViewSet, EstimateViewSet
 from .views import (
-    create_invoice,
+    # Keep existing views that work
     create_customer,
     customer_list,
     customer_detail,
     customer_invoices,
     customer_transactions,
-    invoice_detail,
-    invoice_list,
     update_customer,
     delete_customer,
-    create_estimate,
-    list_estimates,
-    estimate_detail,
-    update_estimate,
-    delete_estimate,
-    estimate_pdf,
-    save_estimate,
-    email_estimate,
-    print_estimate,
-    sales_order_detail,
-    create_sales_order,
-    list_sales_orders,
     income_by_customer,
     customer_income_detail,
     create_sale,
@@ -29,13 +17,25 @@ from .views import (
     refund_list,
     refund_detail,
     create_custom_charge_plan,
-    list_custom_charge_plans
+    list_custom_charge_plans,
+    # PDF-related views
+    estimate_pdf,
+    save_estimate,
+    email_estimate,
+    print_estimate,
 )
 
+# Create router for ViewSets
+router = DefaultRouter()
+router.register(r'orders', SalesOrderViewSet, basename='salesorder')
+router.register(r'invoices', InvoiceViewSet, basename='invoice')
+router.register(r'estimates', EstimateViewSet, basename='estimate')
+
 urlpatterns = [
-    path('invoices/create/', create_invoice, name='invoice-create'),
-    path('invoices/', invoice_list, name='invoice-list'),
-    path('invoices/<uuid:pk>/', invoice_detail, name='invoice-detail'),    
+    # Include ViewSet routes
+    path('', include(router.urls)),
+    
+    # Keep existing customer endpoints (they work)
     path('customers/create/', create_customer, name='create_customer'),
     path('customers/', customer_list, name='customer_list'),
     path('customers/<uuid:pk>/', customer_detail, name='customer-detail'),
@@ -43,18 +43,14 @@ urlpatterns = [
     path('customers/<uuid:pk>/delete/', delete_customer, name='delete-customer'),
     path('customers/<uuid:customer_id>/invoices/', customer_invoices, name='customer-invoices'),
     path('customers/<uuid:customer_id>/transactions/', customer_transactions, name='customer-transactions'),
-    path('estimates/create/', create_estimate, name='create-estimate'),
-    path('estimates/', list_estimates, name='list-estimates'),
-    path('estimates/<uuid:pk>/', estimate_detail, name='estimate-detail'),
-    path('estimates/<uuid:pk>/update/', update_estimate, name='update-estimate'),
-    path('estimates/<uuid:pk>/delete/', delete_estimate, name='delete-estimate'),
+    
+    # PDF-related endpoints for estimates
     path('estimates/<uuid:estimate_id>/pdf/', estimate_pdf, name='estimate_pdf'),
     path('estimates/<uuid:estimate_id>/save/', save_estimate, name='save_estimate'),
     path('estimates/<uuid:estimate_id>/print/', print_estimate, name='print_estimate'),
     path('estimates/<uuid:estimate_id>/email/', email_estimate, name='email_estimate'),
-    path('orders/create/', create_sales_order, name='create-sales-order'),
-    path('orders/', list_sales_orders, name='list-sales-orders'),
-    path('orders/<uuid:pk>/', sales_order_detail, name='sales-order-detail'),
+    
+    # Other working endpoints
     path('income-by-customer/', income_by_customer, name='income-by-customer'),
     path('income-by-customer/<uuid:customer_id>/', customer_income_detail, name='customer-income-detail'),
     path('sales/create/', create_sale, name='create-sale'),
