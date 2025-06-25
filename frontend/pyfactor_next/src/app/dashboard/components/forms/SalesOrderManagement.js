@@ -1,931 +1,1132 @@
-import React, { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { axiosInstance } from '@/lib/axiosConfig';
+'use client';
+
+import React, { useState, useEffect, useCallback, useRef, Fragment } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { toast } from 'react-hot-toast';
+import { orderApi } from '@/utils/apiClient';
+import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
-import { useToast } from '@/components/Toast/ToastProvider';
+
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)} // For mobile
+        className="cursor-help"
+      >
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const SalesOrderManagement = () => {
-  const [activeTab, setActiveTab] = useState(0);
-  const [salesOrders, setSalesOrders] = useState([]);
-  const [selectedSalesOrder, setSelectedSalesOrder] = useState(null);
-  const [newSalesOrder, setNewSalesOrder] = useState({
-    customer: '',
-    date: new Date(),
-    items: [],
-    discount: 0,
-    currency: 'USD',
-    totalAmount: 0,
-  });
-  const toast = useToast();
+  // State management
+  const [orders, setOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedSalesOrder, setEditedSalesOrder] = useState(null);
+  const [showOrderDetails, setShowOrderDetails] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState(null);
+  const [activeTab, setActiveTab] = useState('list');
+  
+  // Dropdowns data
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  
+  // Refs
+  const isMounted = useRef(true);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    customer_id: '',
+    order_number: '',
+    order_date: new Date().toISOString().split('T')[0],
+    due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    status: 'pending',
+    discount_percentage: 0,
+    shipping_cost: 0,
+    tax_rate: 0,
+    notes: '',
+    payment_terms: 'net_30',
+    items: []
+  });
+
+  // Summary statistics
+  const summaryStats = {
+    total: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    completed: orders.filter(o => o.status === 'completed').length,
+    totalValue: orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0)
+  };
 
   useEffect(() => {
-    fetchSalesOrders();
+    isMounted.current = true;
+    fetchOrders();
     fetchCustomers();
     fetchProducts();
     fetchServices();
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
 
-  const fetchSalesOrders = async () => {
+  const fetchOrders = useCallback(async () => {
     try {
-      console.log('[DEBUG] Fetching sales orders from API');
-      const response = await axiosInstance.get('/salesorders/');
+      setIsLoading(true);
+      console.log('[SalesOrderManagement] Fetching orders...');
       
-      console.log('[DEBUG] Sales orders response:', response.data);
-      console.log('[DEBUG] Number of sales orders fetched:', response.data?.length || 0);
+      const response = await orderApi.getAll();
       
-      setSalesOrders(response.data || []);
-    } catch (error) {
-      console.error('[DEBUG] Error fetching sales orders:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Response status:', error.response.status);
-        console.error('[DEBUG] Response data:', error.response.data);
-      } else if (error.request) {
-        console.error('[DEBUG] Request made but no response received:', error.request);
-      } else {
-        console.error('[DEBUG] Error setting up request:', error.message);
+      // Handle both paginated and direct array responses
+      let ordersList = [];
+      if (Array.isArray(response)) {
+        ordersList = response;
+      } else if (response && Array.isArray(response.results)) {
+        ordersList = response.results;
+        console.log('[SalesOrderManagement] Paginated response - count:', response.count);
+      } else if (response && Array.isArray(response.data)) {
+        ordersList = response.data;
       }
       
-      toast.error('Failed to fetch sales orders');
-      setSalesOrders([]); // Set empty array to prevent rendering errors
+      console.log('[SalesOrderManagement] Fetched orders:', ordersList.length);
+      
+      if (isMounted.current) {
+        setOrders(ordersList);
+      }
+    } catch (error) {
+      console.error('[SalesOrderManagement] Error:', error);
+      if (isMounted.current) {
+        setOrders([]);
+        toast.error('Failed to load sales orders.');
+      }
+    } finally {
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
-  };
+  }, []);
 
   const fetchCustomers = async () => {
     try {
-      console.log('[DEBUG] Fetching customers from API');
-      const response = await axiosInstance.get('/customers/');
-      
-      console.log('[DEBUG] Customers response:', response.data);
-      console.log('[DEBUG] Customers response type:', typeof response.data);
-      
-      // Ensure customers is always an array
-      if (Array.isArray(response.data)) {
-        console.log('[DEBUG] Setting customers array with', response.data.length, 'items');
-        setCustomers(response.data);
-      } else {
-        console.error('[DEBUG] Customers data is not an array:', response.data);
-        setCustomers([]);
-        toast.error('Invalid customers data format');
+      const response = await fetch('/api/crm/customers', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Handle paginated response
+        let customersList = [];
+        if (Array.isArray(data)) {
+          customersList = data;
+        } else if (data && Array.isArray(data.results)) {
+          customersList = data.results;
+        }
+        setCustomers(customersList);
       }
     } catch (error) {
-      console.error('[DEBUG] Error fetching customers:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Customers fetch - Response status:', error.response.status);
-        console.error('[DEBUG] Customers fetch - Response data:', error.response.data);
-      } else if (error.request) {
-        console.error('[DEBUG] Customers fetch - Request made but no response:', error.request);
-      } else {
-        console.error('[DEBUG] Customers fetch - Error setting up request:', error.message);
-      }
-      
-      toast.error('Failed to fetch customers');
-      // Initialize with empty array on error
-      setCustomers([]);
+      console.error('[SalesOrderManagement] Error fetching customers:', error);
     }
   };
 
   const fetchProducts = async () => {
     try {
-      console.log('[DEBUG] Fetching products from API');
-      const response = await axiosInstance.get('/products/');
-      
-      console.log('[DEBUG] Products response:', response.data);
-      console.log('[DEBUG] Products response type:', typeof response.data);
-      
-      // Ensure products is always an array
-      if (Array.isArray(response.data)) {
-        console.log('[DEBUG] Setting products array with', response.data.length, 'items');
-        setProducts(response.data);
-      } else {
-        console.error('[DEBUG] Products data is not an array:', response.data);
-        setProducts([]);
-        toast.error('Invalid products data format');
+      const response = await fetch('/api/inventory/products', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Handle paginated response
+        let productsList = [];
+        if (Array.isArray(data)) {
+          productsList = data;
+        } else if (data && Array.isArray(data.results)) {
+          productsList = data.results;
+        }
+        setProducts(productsList);
       }
     } catch (error) {
-      console.error('[DEBUG] Error fetching products:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Products fetch - Response status:', error.response.status);
-        console.error('[DEBUG] Products fetch - Response data:', error.response.data);
-      } else if (error.request) {
-        console.error('[DEBUG] Products fetch - Request made but no response:', error.request);
-      } else {
-        console.error('[DEBUG] Products fetch - Error setting up request:', error.message);
-      }
-      
-      toast.error('Failed to fetch products');
-      // Initialize with empty array on error
-      setProducts([]);
+      console.error('[SalesOrderManagement] Error fetching products:', error);
     }
   };
 
   const fetchServices = async () => {
     try {
-      console.log('[DEBUG] Fetching services from API');
-      const response = await axiosInstance.get('/services/');
-      
-      console.log('[DEBUG] Services response:', response.data);
-      console.log('[DEBUG] Services response type:', typeof response.data);
-      
-      // Ensure services is always an array
-      if (Array.isArray(response.data)) {
-        console.log('[DEBUG] Setting services array with', response.data.length, 'items');
-        setServices(response.data);
-      } else {
-        console.error('[DEBUG] Services data is not an array:', response.data);
-        setServices([]);
-        toast.error('Invalid services data format');
+      const response = await fetch('/api/inventory/services', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Handle paginated response
+        let servicesList = [];
+        if (Array.isArray(data)) {
+          servicesList = data;
+        } else if (data && Array.isArray(data.results)) {
+          servicesList = data.results;
+        }
+        setServices(servicesList);
       }
     } catch (error) {
-      console.error('[DEBUG] Error fetching services:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Services fetch - Response status:', error.response.status);
-        console.error('[DEBUG] Services fetch - Response data:', error.response.data);
-      } else if (error.request) {
-        console.error('[DEBUG] Services fetch - Request made but no response:', error.request);
-      } else {
-        console.error('[DEBUG] Services fetch - Error setting up request:', error.message);
-      }
-      
-      toast.error('Failed to fetch services');
-      // Initialize with empty array on error
-      setServices([]);
+      console.error('[SalesOrderManagement] Error fetching services:', error);
     }
   };
 
-  const handleTabChange = (newValue) => {
-    setActiveTab(newValue);
-  };
-
-  const handleInputChange = (event) => {
-    const { name, value } = event.target;
-    setNewSalesOrder((prev) => ({
+  // Handle form changes
+  const handleFormChange = useCallback((e) => {
+    const { name, value, type } = e.target;
+    setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'number' ? parseFloat(value) || 0 : value
     }));
-  };
+  }, []);
 
-  const handleDateChange = (date) => {
-    setNewSalesOrder((prev) => ({
-      ...prev,
-      date: date,
-    }));
-  };
-
-  const handleItemAdd = () => {
-    setNewSalesOrder((prev) => ({
-      ...prev,
-      items: [...prev.items, { product: '', quantity: 1, unitPrice: 0 }],
-    }));
-  };
-
-  const calculateTotalAmount = (items, discount) => {
-    const total = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-    return total - discount;
-  };
-
+  // Handle item changes
   const handleItemChange = (index, field, value) => {
-    const newItems = [...newSalesOrder.items];
-    newItems[index][field] = value;
-
-    if (field === 'product') {
-      const selectedItem = [...products, ...services].find((item) => item.id === value);
-      if (selectedItem) {
-        newItems[index].unitPrice = parseFloat(selectedItem.price) || 0;
-      }
-    }
-
-    if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index][field] = parseFloat(value) || 0;
-    }
-
-    const updatedSalesOrder = {
-      ...newSalesOrder,
-      items: newItems,
-      totalAmount: calculateTotalAmount(newItems, newSalesOrder.discount),
-    };
-
-    setNewSalesOrder(updatedSalesOrder);
-  };
-
-  const handleDiscountChange = (event) => {
-    const discount = parseFloat(event.target.value) || 0;
-    setNewSalesOrder((prev) => ({
-      ...prev,
-      discount: discount,
-      totalAmount: calculateTotalAmount(prev.items, discount),
-    }));
-  };
-
-  const handleItemRemove = (index) => {
-    const newItems = newSalesOrder.items.filter((_, i) => i !== index);
-    setNewSalesOrder((prev) => ({
-      ...prev,
-      items: newItems,
-      totalAmount: calculateTotalAmount(newItems, prev.discount),
-    }));
-  };
-
-  const handleCreateSalesOrder = async (e) => {
-    e.preventDefault();
+    const newItems = [...formData.items];
+    newItems[index] = { ...newItems[index], [field]: value };
     
-    console.log('[DEBUG] Sales Order Creation Started');
-    console.log('[DEBUG] Form data:', newSalesOrder);
+    // Calculate total for item
+    if (field === 'quantity' || field === 'unit_price') {
+      const quantity = parseFloat(newItems[index].quantity) || 0;
+      const unitPrice = parseFloat(newItems[index].unit_price) || 0;
+      newItems[index].total = quantity * unitPrice;
+    }
+    
+    setFormData(prev => ({ ...prev, items: newItems }));
+  };
 
-    if (!newSalesOrder.customer) {
-      console.log('[DEBUG] Validation failed: No customer selected');
+  // Add item to order
+  const addItem = () => {
+    setFormData(prev => ({
+      ...prev,
+      items: [...prev.items, {
+        type: 'product',
+        item_id: '',
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        total: 0
+      }]
+    }));
+  };
+
+  // Remove item from order
+  const removeItem = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  };
+
+  // Calculate order totals
+  const calculateTotals = useCallback(() => {
+    const subtotal = formData.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+    const discountAmount = subtotal * (parseFloat(formData.discount_percentage) || 0) / 100;
+    const taxableAmount = subtotal - discountAmount;
+    const taxAmount = taxableAmount * (parseFloat(formData.tax_rate) || 0) / 100;
+    const total = taxableAmount + taxAmount + (parseFloat(formData.shipping_cost) || 0);
+    
+    return { subtotal, discountAmount, taxAmount, total };
+  }, [formData]);
+
+  // Handle create order
+  const handleCreateOrder = async (e) => {
+    e.preventDefault();
+    console.log('[SalesOrderManagement] Creating order...');
+    
+    if (!formData.customer_id) {
       toast.error('Please select a customer');
       return;
     }
-
-    if (!newSalesOrder.items || newSalesOrder.items.length === 0) {
-      console.log('[DEBUG] Validation failed: No items added');
-      toast.error('Please add at least one item to the sales order');
+    
+    if (formData.items.length === 0) {
+      toast.error('Please add at least one item');
       return;
     }
-
+    
     try {
-      console.log('[DEBUG] Preparing sales order data for API call');
+      setIsSubmitting(true);
       
-      const salesOrderData = {
-        customer: newSalesOrder.customer,
-        date: newSalesOrder.date.toISOString().split('T')[0],
-        items: newSalesOrder.items.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-          unit_price: item.unitPrice,
-        })),
-        discount: newSalesOrder.discount,
-        currency: newSalesOrder.currency,
-        total_amount: newSalesOrder.totalAmount,
+      const { subtotal, total } = calculateTotals();
+      
+      const orderData = {
+        ...formData,
+        subtotal,
+        total_amount: total
       };
-
-      console.log('[DEBUG] Sending sales order data to backend:', salesOrderData);
-
-      const response = await axiosInstance.post('/salesorders/create/', salesOrderData);
       
-      console.log('[DEBUG] Sales order creation response:', response.data);
-      toast.success('Sales order created successfully');
+      const newOrder = await orderApi.create(orderData);
+      console.log('[SalesOrderManagement] Order created:', newOrder);
       
-      console.log('[DEBUG] Resetting form after successful creation');
-      setNewSalesOrder({
-        customer: '',
-        date: new Date(),
-        items: [],
-        discount: 0,
-        currency: 'USD',
-        totalAmount: 0,
+      toast.success('Sales order created successfully!');
+      
+      // Reset form
+      setFormData({
+        customer_id: '',
+        order_number: '',
+        order_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        status: 'pending',
+        discount_percentage: 0,
+        shipping_cost: 0,
+        tax_rate: 0,
+        notes: '',
+        payment_terms: 'net_30',
+        items: []
       });
-      
-      console.log('[DEBUG] Refreshing sales orders list');
-      fetchSalesOrders();
+      setIsCreating(false);
+      setActiveTab('list');
+      fetchOrders();
     } catch (error) {
-      console.error('[DEBUG] Error creating sales order:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Response status:', error.response.status);
-        console.error('[DEBUG] Response data:', error.response.data);
-        console.error('[DEBUG] Response headers:', error.response.headers);
-        
-        if (error.response.data && error.response.data.detail) {
-          toast.error(`Failed to create sales order: ${error.response.data.detail}`);
-        } else if (error.response.data && error.response.data.message) {
-          toast.error(`Failed to create sales order: ${error.response.data.message}`);
-        } else {
-          toast.error(`Failed to create sales order. Status: ${error.response.status}`);
-        }
-      } else if (error.request) {
-        console.error('[DEBUG] Request made but no response received:', error.request);
-        toast.error('Failed to create sales order: No response from server');
-      } else {
-        console.error('[DEBUG] Error setting up request:', error.message);
-        toast.error(`Failed to create sales order: ${error.message}`);
-      }
+      console.error('[SalesOrderManagement] Error creating order:', error);
+      toast.error('Failed to create sales order.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  // Removed duplicate function - using the corrected handleCreateSalesOrder above
 
-  const handleSalesOrderSelect = (salesOrder) => {
-    setSelectedSalesOrder(salesOrder);
-    setActiveTab(1);
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    setEditedSalesOrder({ ...selectedSalesOrder });
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setEditedSalesOrder(null);
-  };
-
-  const handleSaveEdit = async () => {
+  // Handle update order
+  const handleUpdateOrder = async (e) => {
+    e.preventDefault();
+    console.log('[SalesOrderManagement] Updating order:', selectedOrder?.id);
+    
     try {
-      console.log('[DEBUG] Updating sales order with ID:', selectedSalesOrder.id);
-      console.log('[DEBUG] Updated data:', editedSalesOrder);
+      setIsSubmitting(true);
       
-      const response = await axiosInstance.put(
-        `/salesorders/${selectedSalesOrder.id}/`,
-        editedSalesOrder
-      );
+      const { subtotal, total } = calculateTotals();
       
-      console.log('[DEBUG] Sales order update response:', response.data);
+      const orderData = {
+        ...formData,
+        subtotal,
+        total_amount: total
+      };
       
-      setSelectedSalesOrder(response.data);
+      const updatedOrder = await orderApi.update(selectedOrder.id, orderData);
+      console.log('[SalesOrderManagement] Order updated:', updatedOrder);
+      
+      toast.success('Sales order updated successfully!');
+      
+      setOrders(orders.map(o => o.id === selectedOrder.id ? updatedOrder : o));
       setIsEditing(false);
-      fetchSalesOrders();
-      toast.success('Sales order updated successfully');
+      setSelectedOrder(updatedOrder);
     } catch (error) {
-      console.error('[DEBUG] Error updating sales order:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Update error - Response status:', error.response.status);
-        console.error('[DEBUG] Update error - Response data:', error.response.data);
-        toast.error(`Failed to update sales order: ${error.response.data?.detail || error.response.data?.message || 'Unknown error'}`);
-      } else if (error.request) {
-        console.error('[DEBUG] Update error - No response received:', error.request);
-        toast.error('Failed to update sales order: No response from server');
-      } else {
-        console.error('[DEBUG] Update error - Request setup:', error.message);
-        toast.error(`Failed to update sales order: ${error.message}`);
-      }
+      console.error('[SalesOrderManagement] Error updating order:', error);
+      toast.error('Failed to update sales order.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = () => {
-    setDeleteDialogOpen(true);
-  };
-
-  const handleConfirmDelete = async () => {
+  // Handle delete order
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    
+    console.log('[SalesOrderManagement] Deleting order:', orderToDelete.id);
+    
     try {
-      console.log('[DEBUG] Deleting sales order with ID:', selectedSalesOrder.id);
+      await orderApi.delete(orderToDelete.id);
       
-      await axiosInstance.delete(`/salesorders/${selectedSalesOrder.id}/`);
-      
-      console.log('[DEBUG] Sales order deleted successfully');
-      
-      toast.success('Sales order deleted successfully');
+      toast.success('Sales order deleted successfully!');
+      setOrders(orders.filter(o => o.id !== orderToDelete.id));
       setDeleteDialogOpen(false);
-      setSelectedSalesOrder(null);
-      fetchSalesOrders();
-      setActiveTab(2);
-    } catch (error) {
-      console.error('[DEBUG] Error deleting sales order:', error);
-      
-      if (error.response) {
-        console.error('[DEBUG] Delete error - Response status:', error.response.status);
-        console.error('[DEBUG] Delete error - Response data:', error.response.data);
-        toast.error(`Failed to delete sales order: ${error.response.data?.detail || error.response.data?.message || 'Unknown error'}`);
-      } else if (error.request) {
-        console.error('[DEBUG] Delete error - No response received:', error.request);
-        toast.error('Failed to delete sales order: No response from server');
-      } else {
-        console.error('[DEBUG] Delete error - Request setup:', error.message);
-        toast.error(`Failed to delete sales order: ${error.message}`);
+      setOrderToDelete(null);
+      if (selectedOrder?.id === orderToDelete.id) {
+        setSelectedOrder(null);
+        setShowOrderDetails(false);
       }
+    } catch (error) {
+      console.error('[SalesOrderManagement] Error deleting order:', error);
+      toast.error('Failed to delete sales order.');
     }
   };
 
-  const handleExportClick = () => {
-    setExportMenuOpen(!exportMenuOpen);
+  // Search filter
+  const filteredOrders = orders.filter(order => {
+    const searchLower = searchTerm.toLowerCase();
+    const customerName = customers.find(c => c.id === order.customer_id)?.name || '';
+    return (
+      order.order_number?.toLowerCase().includes(searchLower) ||
+      customerName.toLowerCase().includes(searchLower) ||
+      order.status?.toLowerCase().includes(searchLower)
+    );
+  });
+
+  // Render content based on active tab
+  const renderContent = () => {
+    if (activeTab === 'create' || isCreating) {
+      return renderCreateForm();
+    } else if (activeTab === 'details' && selectedOrder && !isEditing) {
+      return renderOrderDetails();
+    } else if (isEditing && selectedOrder) {
+      return renderEditForm();
+    } else {
+      return renderOrderList();
+    }
   };
 
-  const handleExportClose = () => {
-    setExportMenuOpen(false);
+  // Render create form
+  const renderCreateForm = () => (
+    <form onSubmit={handleCreateOrder} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Customer
+            <FieldTooltip text="Select the customer for this order. The customer's billing information will be used." />
+          </label>
+          <select
+            name="customer_id"
+            value={formData.customer_id}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            required
+          >
+            <option value="">Select a customer</option>
+            {customers.map(customer => (
+              <option key={customer.id} value={customer.id}>
+                {customer.name || customer.customerName}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Order Number
+            <FieldTooltip text="Unique identifier for this order. Leave blank to auto-generate." />
+          </label>
+          <input
+            type="text"
+            name="order_number"
+            value={formData.order_number}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            placeholder="Auto-generated if left blank"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Order Date
+            <FieldTooltip text="The date when this order was placed." />
+          </label>
+          <input
+            type="date"
+            name="order_date"
+            value={formData.order_date}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Due Date
+            <FieldTooltip text="The date by which payment is expected." />
+          </label>
+          <input
+            type="date"
+            name="due_date"
+            value={formData.due_date}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            required
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Status
+            <FieldTooltip text="Current status of the order in your fulfillment process." />
+          </label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Payment Terms
+            <FieldTooltip text="Payment terms agreed with the customer." />
+          </label>
+          <select
+            name="payment_terms"
+            value={formData.payment_terms}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          >
+            <option value="immediate">Due on Receipt</option>
+            <option value="net_15">Net 15</option>
+            <option value="net_30">Net 30</option>
+            <option value="net_60">Net 60</option>
+            <option value="net_90">Net 90</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* Order Items */}
+      <div className="border-t pt-6">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-medium text-gray-900">Order Items</h3>
+          <button
+            type="button"
+            onClick={addItem}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Add Item
+          </button>
+        </div>
+        
+        {formData.items.length === 0 ? (
+          <p className="text-gray-500 text-center py-4">No items added yet</p>
+        ) : (
+          <div className="space-y-4">
+            {formData.items.map((item, index) => (
+              <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 bg-gray-50 rounded">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700">Type</label>
+                  <select
+                    value={item.type}
+                    onChange={(e) => handleItemChange(index, 'type', e.target.value)}
+                    className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                  >
+                    <option value="product">Product</option>
+                    <option value="service">Service</option>
+                  </select>
+                </div>
+                
+                <div className="col-span-3">
+                  <label className="block text-xs font-medium text-gray-700">Item</label>
+                  <select
+                    value={item.item_id}
+                    onChange={(e) => {
+                      const selectedItem = item.type === 'product' 
+                        ? products.find(p => p.id === e.target.value)
+                        : services.find(s => s.id === e.target.value);
+                      
+                      handleItemChange(index, 'item_id', e.target.value);
+                      if (selectedItem) {
+                        handleItemChange(index, 'description', selectedItem.name);
+                        handleItemChange(index, 'unit_price', selectedItem.price || 0);
+                      }
+                    }}
+                    className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                  >
+                    <option value="">Select {item.type}</option>
+                    {(item.type === 'product' ? products : services).map(option => (
+                      <option key={option.id} value={option.id}>
+                        {option.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700">Quantity</label>
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
+                    className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    min="1"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700">Unit Price</label>
+                  <input
+                    type="number"
+                    value={item.unit_price}
+                    onChange={(e) => handleItemChange(index, 'unit_price', e.target.value)}
+                    className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700">Total</label>
+                  <input
+                    type="number"
+                    value={item.total}
+                    className="mt-1 block w-full px-2 py-1 text-sm border border-gray-300 rounded bg-gray-100"
+                    readOnly
+                  />
+                </div>
+                
+                <div className="col-span-1">
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index)}
+                    className="p-2 text-red-600 hover:text-red-800"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Pricing */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 border-t pt-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Discount (%)
+            <FieldTooltip text="Percentage discount applied to the subtotal." />
+          </label>
+          <input
+            type="number"
+            name="discount_percentage"
+            value={formData.discount_percentage}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            min="0"
+            max="100"
+            step="0.01"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Tax Rate (%)
+            <FieldTooltip text="Tax rate to apply to the order after discount." />
+          </label>
+          <input
+            type="number"
+            name="tax_rate"
+            value={formData.tax_rate}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            min="0"
+            step="0.01"
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Shipping Cost
+            <FieldTooltip text="Fixed shipping cost for this order." />
+          </label>
+          <input
+            type="number"
+            name="shipping_cost"
+            value={formData.shipping_cost}
+            onChange={handleFormChange}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+      
+      {/* Order Summary */}
+      <div className="bg-gray-50 p-4 rounded">
+        <div className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>Subtotal:</span>
+            <span className="font-medium">${calculateTotals().subtotal.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-red-600">
+            <span>Discount:</span>
+            <span>-${calculateTotals().discountAmount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Tax:</span>
+            <span>${calculateTotals().taxAmount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Shipping:</span>
+            <span>${(parseFloat(formData.shipping_cost) || 0).toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-lg font-bold border-t pt-2">
+            <span>Total:</span>
+            <span className="text-blue-600">${calculateTotals().total.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+      
+      {/* Notes */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Notes
+          <FieldTooltip text="Internal notes about this order. Not visible to customers." />
+        </label>
+        <textarea
+          name="notes"
+          value={formData.notes}
+          onChange={handleFormChange}
+          rows={3}
+          className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Add any internal notes..."
+        />
+      </div>
+      
+      {/* Form Actions */}
+      <div className="flex justify-end space-x-4">
+        <button
+          type="button"
+          onClick={() => {
+            setIsCreating(false);
+            setActiveTab('list');
+          }}
+          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+        >
+          {isSubmitting ? 'Creating...' : 'Create Sales Order'}
+        </button>
+      </div>
+    </form>
+  );
+
+  // Similar render methods for edit form and order details...
+  const renderEditForm = () => (
+    <form onSubmit={handleUpdateOrder} className="space-y-6">
+      {/* Same as create form but with update button */}
+      {renderCreateForm().props.children}
+    </form>
+  );
+
+  const renderOrderDetails = () => {
+    if (!selectedOrder) return null;
+    
+    const customer = customers.find(c => c.id === selectedOrder.customer_id);
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div className="px-4 py-5 sm:px-6 flex justify-between">
+            <div>
+              <h3 className="text-lg leading-6 font-medium text-gray-900">
+                Order #{selectedOrder.order_number}
+              </h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-500">
+                Order details and information
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setFormData(selectedOrder);
+                  setIsEditing(true);
+                }}
+                className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => {
+                  setOrderToDelete(selectedOrder);
+                  setDeleteDialogOpen(true);
+                }}
+                className="px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-200 px-4 py-5 sm:px-6">
+            <dl className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Customer</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {customer?.name || customer?.customerName || 'Unknown'}
+                </dd>
+              </div>
+              
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Status</dt>
+                <dd className="mt-1">
+                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    selectedOrder.status === 'completed' ? 'bg-green-100 text-green-800' :
+                    selectedOrder.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                    selectedOrder.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedOrder.status}
+                  </span>
+                </dd>
+              </div>
+              
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Order Date</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {new Date(selectedOrder.order_date).toLocaleDateString()}
+                </dd>
+              </div>
+              
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Due Date</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {new Date(selectedOrder.due_date).toLocaleDateString()}
+                </dd>
+              </div>
+              
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Total Amount</dt>
+                <dd className="mt-1 text-sm text-gray-900 font-bold">
+                  ${parseFloat(selectedOrder.total_amount || 0).toFixed(2)}
+                </dd>
+              </div>
+              
+              <div className="sm:col-span-1">
+                <dt className="text-sm font-medium text-gray-500">Payment Terms</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {selectedOrder.payment_terms?.replace('_', ' ').toUpperCase()}
+                </dd>
+              </div>
+              
+              {selectedOrder.notes && (
+                <div className="sm:col-span-2">
+                  <dt className="text-sm font-medium text-gray-500">Notes</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {selectedOrder.notes}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => {
+            setShowOrderDetails(false);
+            setSelectedOrder(null);
+            setActiveTab('list');
+          }}
+          className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+        >
+          Back to List
+        </button>
+      </div>
+    );
   };
 
-  const handleExport = (format) => {
-    // Implement export logic here
-    console.log(`Exporting to ${format}`);
-    handleExportClose();
-  };
+  const renderOrderList = () => (
+    <div className="space-y-6">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Orders</h3>
+          <p className="mt-2 text-3xl font-bold text-gray-900">{summaryStats.total}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Pending</h3>
+          <p className="mt-2 text-3xl font-bold text-yellow-600">{summaryStats.pending}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Completed</h3>
+          <p className="mt-2 text-3xl font-bold text-green-600">{summaryStats.completed}</p>
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wide">Total Value</h3>
+          <p className="mt-2 text-3xl font-bold text-blue-600">${summaryStats.totalValue.toFixed(2)}</p>
+        </div>
+      </div>
+      
+      {/* Search and Actions */}
+      <div className="flex justify-between items-center">
+        <div className="flex-1 max-w-md">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search orders..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => {
+            setIsCreating(true);
+            setActiveTab('create');
+          }}
+          className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Create New Order
+        </button>
+      </div>
+      
+      {/* Orders Table */}
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Order #
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Customer
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Total
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                  Loading orders...
+                </td>
+              </tr>
+            ) : filteredOrders.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                  No orders found
+                </td>
+              </tr>
+            ) : (
+              filteredOrders.map(order => {
+                const customer = customers.find(c => c.id === order.customer_id);
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {order.order_number}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {customer?.name || customer?.customerName || 'Unknown'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(order.order_date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      ${parseFloat(order.total_amount || 0).toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        order.status === 'completed' ? 'bg-green-100 text-green-800' :
+                        order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setShowOrderDetails(true);
+                          setActiveTab('details');
+                        }}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setFormData(order);
+                          setIsEditing(true);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900 mr-4"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setOrderToDelete(order);
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h1 className="text-2xl font-bold text-gray-800 mb-4">
-        Sales Order Management
-      </h1>
-      
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex -mb-px">
-          <button
-            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
-              activeTab === 0
-                ? 'text-blue-600 border-blue-600 bg-blue-50'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => handleTabChange(0)}
-          >
-            Create
-          </button>
-          <button
-            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
-              activeTab === 1
-                ? 'text-blue-600 border-blue-600 bg-blue-50'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => handleTabChange(1)}
-          >
-            Details
-          </button>
-          <button
-            className={`py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out focus:outline-none ${
-              activeTab === 2
-                ? 'text-blue-600 border-blue-600 bg-blue-50'
-                : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
-            }`}
-            onClick={() => handleTabChange(2)}
-          >
-            List
-          </button>
-        </nav>
-      </div>
-
-      {/* Create Tab */}
-      {activeTab === 0 && (
-        <div className="mt-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Create Sales Order
-          </h2>
-          <form onSubmit={handleCreateSalesOrder} className="space-y-4">
-            <div>
-              <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
-                Customer <span className="text-red-600">*</span>
-              </label>
-              <select
-                id="customer"
-                name="customer"
-                value={newSalesOrder.customer}
-                onChange={handleInputChange}
-                className={`block w-full px-3 py-2 border ${
-                  !newSalesOrder.customer ? 'border-red-300' : 'border-gray-300'
-                } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-              >
-                <option value="">Select a customer</option>
-                {Array.isArray(customers) ? customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.customerName}
-                  </option>
-                )) : null}
-              </select>
-              {!newSalesOrder.customer && (
-                <p className="mt-1 text-sm text-red-600">Please select a customer</p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={newSalesOrder.date instanceof Date ? newSalesOrder.date.toISOString().split('T')[0] : ''}
-                onChange={(e) => handleDateChange(new Date(e.target.value))}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-
-            <div className="mt-6">
-              <h3 className="text-md font-medium text-gray-800 mb-3">Items</h3>
-              
-              {newSalesOrder.items.map((item, index) => (
-                <div key={index} className="flex flex-col sm:flex-row gap-4 mb-4">
-                  <div className="flex-grow">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Product/Service
-                    </label>
-                    <select
-                      value={item.product}
-                      onChange={(e) => handleItemChange(index, 'product', e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    >
-                      <option value="">Select a product/service</option>
-                      <optgroup label="Products">
-                        {Array.isArray(products) ? products.map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
-                          </option>
-                        )) : null}
-                      </optgroup>
-                      <optgroup label="Services">
-                        {Array.isArray(services) ? services.map((service) => (
-                          <option key={service.id} value={service.id}>
-                            {service.name}
-                          </option>
-                        )) : null}
-                      </optgroup>
-                    </select>
-                  </div>
-                  
-                  <div className="w-full sm:w-32">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Quantity
-                    </label>
-                    <input
-                      type="number"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, 'quantity', e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
-                  </div>
-                  
-                  <div className="w-full sm:w-48">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Unit Price
-                    </label>
-                    <input
-                      type="number"
-                      value={item.unitPrice}
-                      onChange={(e) => handleItemChange(index, 'unitPrice', e.target.value)}
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                    />
-                  </div>
-                  
-                  <div className="flex items-end pb-2">
-                    <button 
-                      type="button"
-                      onClick={() => handleItemRemove(index)}
-                      className="p-2 text-red-600 hover:text-red-900 rounded-full hover:bg-red-50"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-              
-              <button
-                type="button"
-                onClick={handleItemAdd}
-                className="mt-2 flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Add Item
-              </button>
-            </div>
-
-            <div className="mt-4">
-              <label htmlFor="discount" className="block text-sm font-medium text-gray-700 mb-1">
-                Discount
-              </label>
-              <input
-                id="discount"
-                name="discount"
-                type="number"
-                value={newSalesOrder.discount}
-                onChange={handleDiscountChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="totalAmount" className="block text-sm font-medium text-gray-700 mb-1">
-                Total Amount
-              </label>
-              <input
-                id="totalAmount"
-                type="text"
-                value={newSalesOrder.totalAmount.toFixed(2)}
-                disabled
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="currency" className="block text-sm font-medium text-gray-700 mb-1">
-                Currency
-              </label>
-              <select
-                id="currency"
-                name="currency"
-                value={newSalesOrder.currency}
-                onChange={handleInputChange}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
-            </div>
-
-            <div className="pt-4">
-              <button
-                type="submit"
-                onClick={handleCreateSalesOrder}
-                className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Create Sales Order
-              </button>
-            </div>
-          </form>
+    <div className="max-w-7xl mx-auto">
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h1 className="text-2xl font-bold text-black mb-6">Sales Order Management</h1>
+        
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => {
+                setActiveTab('list');
+                setIsCreating(false);
+                setIsEditing(false);
+                setShowOrderDetails(false);
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'list' && !isCreating && !isEditing && !showOrderDetails
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('create');
+                setIsCreating(true);
+                setIsEditing(false);
+                setShowOrderDetails(false);
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'create' || isCreating
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Create/Edit
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('details');
+                setIsCreating(false);
+                setIsEditing(false);
+              }}
+              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'details' && selectedOrder && !isEditing
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              disabled={!selectedOrder}
+            >
+              Details
+            </button>
+          </nav>
         </div>
-      )}
-
-      {/* Details Tab */}
-      {activeTab === 1 && (
-        <div className="mt-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">
-            Sales Order Details
-          </h2>
-          {selectedSalesOrder ? (
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="order_number" className="block text-sm font-medium text-gray-700 mb-1">
-                  Order Number
-                </label>
-                <input
-                  id="order_number"
-                  type="text"
-                  value={selectedSalesOrder.order_number}
-                  disabled
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="customer_detail" className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer
-                </label>
-                <input
-                  id="customer_detail"
-                  type="text"
-                  value={selectedSalesOrder.customer}
-                  disabled={!isEditing}
-                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
-                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-                  } sm:text-sm`}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="date_detail" className="block text-sm font-medium text-gray-700 mb-1">
-                  Date
-                </label>
-                <input
-                  id="date_detail"
-                  type="date"
-                  value={selectedSalesOrder.date}
-                  disabled={!isEditing}
-                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
-                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-                  } sm:text-sm`}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="total_amount_detail" className="block text-sm font-medium text-gray-700 mb-1">
-                  Total Amount
-                </label>
-                <input
-                  id="total_amount_detail"
-                  type="text"
-                  value={selectedSalesOrder.totalAmount}
-                  disabled
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm"
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="discount_detail" className="block text-sm font-medium text-gray-700 mb-1">
-                  Discount
-                </label>
-                <input
-                  id="discount_detail"
-                  type="text"
-                  value={selectedSalesOrder.discount}
-                  disabled={!isEditing}
-                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
-                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-                  } sm:text-sm`}
-                />
-              </div>
-              
-              <div>
-                <label htmlFor="currency_detail" className="block text-sm font-medium text-gray-700 mb-1">
-                  Currency
-                </label>
-                <input
-                  id="currency_detail"
-                  type="text"
-                  value={selectedSalesOrder.currency}
-                  disabled={!isEditing}
-                  className={`block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm ${
-                    !isEditing ? 'bg-gray-50 text-gray-500' : 'focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-                  } sm:text-sm`}
-                />
-              </div>
-              
-              <div className="pt-4">
-                {isEditing ? (
-                  <div className="flex space-x-4">
+        
+        {/* Content */}
+        {renderContent()}
+      </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <Transition appear show={deleteDialogOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={() => setDeleteDialogOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+          
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                    Delete Sales Order
+                  </Dialog.Title>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">
+                      Are you sure you want to delete order #{orderToDelete?.order_number}? This action cannot be undone.
+                    </p>
+                  </div>
+                  
+                  <div className="mt-4 flex justify-end space-x-3">
                     <button
                       type="button"
-                      onClick={handleSaveEdit}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Save
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCancelEdit}
-                      className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                      className="inline-flex justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      onClick={() => setDeleteDialogOpen(false)}
                     >
                       Cancel
                     </button>
-                  </div>
-                ) : (
-                  <div className="flex space-x-4">
                     <button
                       type="button"
-                      onClick={handleEdit}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleDelete}
-                      className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                      onClick={handleDeleteOrder}
                     >
                       Delete
                     </button>
                   </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500 italic">Select a sales order from the list to view details</p>
-          )}
-        </div>
-      )}
-
-      {/* List Tab */}
-      {activeTab === 2 && (
-        <div className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-medium text-gray-900">
-              Sales Order List
-            </h2>
-            
-            <div className="relative">
-              <button
-                type="button"
-                onClick={handleExportClick}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                Export
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-              
-              {exportMenuOpen && (
-                <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                  <div className="py-1" role="menu" aria-orientation="vertical">
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => handleExport('PDF')}
-                    >
-                      PDF
-                    </button>
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => handleExport('CSV')}
-                    >
-                      CSV
-                    </button>
-                    <button
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      onClick={() => handleExport('Excel')}
-                    >
-                      Excel
-                    </button>
-                  </div>
-                </div>
-              )}
+                </Dialog.Panel>
+              </Transition.Child>
             </div>
           </div>
-          
-          <div className="overflow-x-auto rounded-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order Number
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Amount
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {salesOrders.length > 0 ? (
-                  salesOrders.map((salesOrder) => (
-                    <tr 
-                      key={salesOrder.id} 
-                      onClick={() => handleSalesOrderSelect(salesOrder)}
-                      className="hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {salesOrder.order_number}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {salesOrder.customer}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(salesOrder.date).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {salesOrder.totalAmount} {salesOrder.currency}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-4 text-sm text-gray-500 text-center">
-                      No sales orders found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {deleteDialogOpen && (
-        <div className="fixed z-10 inset-0 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => setDeleteDialogOpen(false)}></div>
-            </div>
-
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
-                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                    <svg className="h-6 w-6 text-red-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                  </div>
-                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                      Confirm Delete
-                    </h3>
-                    <div className="mt-2">
-                      <p className="text-sm text-gray-500">
-                        Are you sure you want to delete this sales order? This action cannot be undone.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button 
-                  type="button" 
-                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={handleConfirmDelete}
-                >
-                  Delete
-                </button>
-                <button 
-                  type="button" 
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                  onClick={() => setDeleteDialogOpen(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        </Dialog>
+      </Transition>
     </div>
   );
 };

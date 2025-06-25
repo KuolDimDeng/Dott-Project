@@ -199,43 +199,9 @@ class ProductViewSet(viewsets.ModelViewSet):
                 )
 
 class ServiceViewSet(viewsets.ModelViewSet):
+    queryset = Service.objects.all()  # TenantManager handles filtering automatically
     serializer_class = ServiceSerializer
     permission_classes = [IsAuthenticated]
-    
-    def get_queryset(self):
-        """
-        Get queryset with proper tenant context and optimized queries
-        """
-        import logging
-        import time
-        logger = logging.getLogger(__name__)
-        
-        start_time = time.time()
-        
-        try:
-            # Log tenant information if available
-            tenant_id = getattr(self.request, 'tenant_id', None)
-            if tenant_id:
-                logger.debug(f"Request has tenant_id: {tenant_id}")
-            else:
-                logger.debug("No tenant_id found in request")
-            
-            # Services don't have TenantManager, so they need regular filtering
-            queryset = Service.objects.all()
-            
-            # Apply any filters from query parameters
-            if self.request.query_params.get('is_recurring'):
-                queryset = queryset.filter(
-                    is_recurring=self.request.query_params.get('is_recurring').lower() == 'true'
-                )
-            
-            logger.debug(f"Service queryset fetched in {time.time() - start_time:.4f}s")
-            return queryset
-            
-        except Exception as e:
-            logger.error(f"Error getting service queryset: {str(e)}", exc_info=True)
-            # Return empty queryset on error
-            return Service.objects.none()
     
     def list(self, request, *args, **kwargs):
         """Override list method to add better error handling"""
