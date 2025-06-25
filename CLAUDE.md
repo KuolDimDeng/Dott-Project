@@ -329,6 +329,30 @@ if (plan.id === 'free') {
 
 **When to add new issues**: Any problem that takes >15 minutes to debug or occurs multiple times
 
+## Role-Based Access Control (RBAC) - 2025-01-25
+- **Implementation**: Complete RBAC system with granular page-level permissions
+- **User Roles**:
+  - OWNER: First user, full access, exclusive billing/account closure rights
+  - ADMIN: Near-full access, cannot access billing or close account
+  - USER: Restricted access based on assigned permissions
+- **Permission Levels**: Read, Write, Edit, Delete per page
+- **Page Categories**:
+  - Sales: Products, Services, Customers, Invoices, Inventory
+  - Finance: Payments, Expenses, Reports
+  - HR: Employees, Payroll, Timesheets, Benefits
+  - System: Settings, User Management (Owner/Admin only)
+- **Key Features**:
+  - Auth0 email invitations with password reset flow
+  - Dynamic menu filtering based on permissions
+  - Middleware protection for all routes
+  - Access denied page with clear messaging
+  - Granular permission assignment UI
+- **Files**:
+  - Backend: `/custom_auth/views/rbac_views.py`, models, migrations
+  - Frontend: `/settings/users/page.js`, `/hooks/usePermissions.js`
+  - Middleware: `/middleware/permissionChecker.js`
+- **Documentation**: `/docs/RBAC_IMPLEMENTATION.md`
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
