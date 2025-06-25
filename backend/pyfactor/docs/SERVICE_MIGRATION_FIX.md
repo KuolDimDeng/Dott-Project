@@ -13,29 +13,45 @@ LINE 1: SELECT "inventory_service"."tenant_id", "inventory_service"....
 The Django migration `0007_add_tenant_to_service.py` exists but hasn't been applied to the production database on Render.
 
 ## Solution
+
+### IMPORTANT: Fix Migration Conflicts First
+There are conflicting migrations in the `custom_auth` app that must be resolved:
+```
+Conflicting migrations detected; multiple leaf nodes in the migration graph: 
+(0004_set_first_user_as_owner, 0010_add_subscription_plan_to_user in custom_auth)
+```
+
+### Step-by-Step Fix
 Run the pending migration on the backend:
 
 ### Option 1: Via Render Shell (Recommended)
 1. Go to Render dashboard: https://dashboard.render.com
 2. Navigate to the `dott-api` service
 3. Click on "Shell" tab
-4. Run these commands:
+4. Run these commands IN ORDER:
 ```bash
-# Check current migration status
-python manage.py showmigrations inventory
+# Step 1: Merge conflicting migrations
+python manage.py makemigrations --merge
 
-# Apply the specific migration
-python manage.py migrate inventory 0007_add_tenant_to_service
-
-# Or apply all pending migrations
+# Step 2: Apply all migrations (this will include the inventory migration)
 python manage.py migrate
+
+# Step 3: Verify the fix
+python manage.py dbshell
+# Then run: \d inventory_service
+# Look for the tenant_id column
 ```
 
-### Option 2: Using the Fix Script
+### Option 2: Using the Comprehensive Fix Script
 1. In Render shell, run:
 ```bash
-python manage.py shell < scripts/apply_service_tenant_migration.py
+python manage.py shell < scripts/fix_migration_conflicts_and_service.py
 ```
+This script will:
+- Detect and merge conflicting migrations
+- Apply all pending migrations
+- Verify the tenant_id column exists
+- Check for other configuration issues
 
 ## Verification
 After running the migration, verify it worked:
