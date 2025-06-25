@@ -1010,7 +1010,7 @@ const SalesOrderManagement = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="p-6 bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-6">
         <h1 className="text-2xl font-bold text-black mb-6">Sales Order Management</h1>
         
