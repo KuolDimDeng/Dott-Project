@@ -1035,6 +1035,17 @@ const MainListItems = ({
 
   // Function to check if user can see menu item
   const canSeeMenuItem = (item) => {
+    // Debug logging for Sales menu
+    if (item.label === 'Sales') {
+      console.log('[canSeeMenuItem] Sales menu debug:', {
+        user: user,
+        userRole: user?.role,
+        isLoading: isLoading,
+        isOwnerOrAdmin: isOwnerOrAdmin(),
+        subItemsCount: item.subItems?.length
+      });
+    }
+    
     // If still loading or user is OWNER/ADMIN, show all items
     if (isLoading || isOwnerOrAdmin()) {
       return true;
@@ -1065,6 +1076,15 @@ const MainListItems = ({
   // Function to filter subItems based on permissions
   const filterSubItems = (subItems) => {
     if (!subItems) return [];
+    
+    // Debug logging
+    console.log('[filterSubItems] Debug:', {
+      user: user,
+      userRole: user?.role,
+      isLoading: isLoading,
+      isOwnerOrAdmin: isOwnerOrAdmin(),
+      subItemsCount: subItems.length
+    });
     
     // If still loading or user is OWNER/ADMIN, show all items
     if (isLoading || isOwnerOrAdmin()) {
