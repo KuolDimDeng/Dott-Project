@@ -18,9 +18,6 @@ const nextConfig = {
   // Enable standalone output for Docker
   output: 'standalone',
   
-  // SWC is now the default in Next.js 13+
-  swcMinify: true,
-  
   // Optimize for Render's infrastructure
   experimental: {
     // Server actions configuration (Next.js 15 format)
@@ -35,11 +32,6 @@ const nextConfig = {
     // Reduce memory usage during build
     workerThreads: false,
     cpus: 2, // Limit CPU usage for Render
-    
-    // Speed up builds
-    turbotrace: {
-      contextDirectory: process.cwd(),
-    },
   },
   
   // Environment variables (minimal set)
