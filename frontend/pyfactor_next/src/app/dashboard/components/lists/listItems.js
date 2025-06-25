@@ -946,7 +946,8 @@ const MainListItems = ({
 
   // Render the sub-menu using Tailwind instead of MUI components
   const renderSubMenu = (items, parentMenu) => {
-    const filteredItems = filterSubItems(items);
+    // For OWNER users, don't filter sub-items at all
+    const filteredItems = (user?.role === 'OWNER' || user?.role === 'ADMIN') ? items : filterSubItems(items);
     
     if (filteredItems.length === 0) {
       return null;
@@ -1046,8 +1047,13 @@ const MainListItems = ({
       });
     }
     
-    // If still loading or user is OWNER/ADMIN, show all items
-    if (isLoading || isOwnerOrAdmin()) {
+    // If user is OWNER or ADMIN, always show all items
+    if (user?.role === 'OWNER' || user?.role === 'ADMIN') {
+      return true;
+    }
+    
+    // If still loading, show all items
+    if (isLoading) {
       return true;
     }
     
