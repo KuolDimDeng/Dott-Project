@@ -120,10 +120,21 @@ const ServiceManagement = () => {
           return;
         }
         
-        console.log('[ServiceManagement] Fetched services:', data?.length || 0);
+        // Handle both paginated and direct array responses
+        let servicesList = [];
+        if (Array.isArray(data)) {
+          servicesList = data;  // Direct array response
+        } else if (data && Array.isArray(data.results)) {
+          servicesList = data.results;  // Django paginated response
+          console.log('[ServiceManagement] Paginated response - count:', data.count);
+        } else if (data && Array.isArray(data.data)) {
+          servicesList = data.data;  // Alternative format
+        }
+        
+        console.log('[ServiceManagement] Fetched services:', servicesList.length);
         
         if (isMounted.current) {
-          setServices(Array.isArray(data) ? data : []);
+          setServices(servicesList);
           setServiceError(null);
         }
       } catch (apiError) {
