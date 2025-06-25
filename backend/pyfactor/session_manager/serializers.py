@@ -56,6 +56,7 @@ class SessionSerializer(serializers.ModelSerializer):
             'id': obj.user.id,
             'email': obj.user.email,
             'name': getattr(obj.user, 'name', ''),
+            'role': getattr(obj.user, 'role', 'USER'),  # Include user role
             'given_name': getattr(obj.user, 'given_name', getattr(obj.user, 'first_name', '')),
             'family_name': getattr(obj.user, 'family_name', getattr(obj.user, 'last_name', '')),
             'picture': getattr(obj.user, 'picture', ''),

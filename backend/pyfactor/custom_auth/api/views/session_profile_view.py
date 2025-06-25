@@ -31,7 +31,9 @@ class SessionUserProfileView(APIView):
             
             # Get user's tenant
             tenant = None
-            user_role = 'owner'  # Default role
+            # Get actual role from user model
+            user_role = user.role if hasattr(user, 'role') else 'USER'
+            logger.info(f"🔥 [SESSION_USER_PROFILE] User Role: {user_role}")
             
             try:
                 # First check if user has a direct tenant relationship
@@ -51,8 +53,8 @@ class SessionUserProfileView(APIView):
                         user.tenant = tenant
                         user.save(update_fields=['tenant'])
                 
-                if tenant:
-                    user_role = 'owner'
+                # Note: We no longer override role based on tenant ownership
+                # The user's actual role from the database is used
                     
             except Exception as e:
                 logger.warning(f"🔥 [SESSION_USER_PROFILE] Error getting tenant: {str(e)}")

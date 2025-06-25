@@ -206,6 +206,15 @@ class SessionService:
             
             print(f"[SessionService] User subscription plan: {subscription_plan}")
             
+            # Get user role and add to session data
+            user_role = user.role if hasattr(user, 'role') else 'USER'
+            print(f"[SessionService] User role: {user_role}")
+            
+            # Ensure session_data is included in kwargs
+            if 'session_data' not in kwargs:
+                kwargs['session_data'] = {}
+            kwargs['session_data']['user_role'] = user_role
+            
             # Create session
             with transaction.atomic():
                 session = UserSession.objects.create(
@@ -452,6 +461,7 @@ class SessionService:
                 'session_id': str(session.session_id),
                 'user_id': session.user_id,
                 'user_email': session.user.email,
+                'user_role': session.session_data.get('user_role', 'USER'),  # Include user role
                 'tenant_id': str(session.tenant_id) if session.tenant else None,
                 'needs_onboarding': session.needs_onboarding,
                 'onboarding_completed': session.onboarding_completed,

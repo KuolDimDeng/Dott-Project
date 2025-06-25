@@ -102,7 +102,8 @@ class SignupView(APIView):
                         'is_active': True,
                         'first_name': first_name,
                         'last_name': last_name,
-                        'name': full_name if hasattr(User, 'name') else None
+                        'name': full_name if hasattr(User, 'name') else None,
+                        'role': 'OWNER' if user_role == 'owner' else 'USER'  # Set role based on signup type
                     }
                 )
 
@@ -110,6 +111,11 @@ class SignupView(APIView):
                     # Update existing user
                     user.is_active = True
                     update_fields = ['is_active']
+                    
+                    # Update role if user is becoming an owner
+                    if user_role == 'owner' and user.role != 'OWNER':
+                        user.role = 'OWNER'
+                        update_fields.append('role')
                     
                     # Update Auth0 sub if the field exists
                     if hasattr(user, 'auth0_sub') and auth0_sub:

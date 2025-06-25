@@ -135,6 +135,7 @@ class SessionCreateView(APIView):
                     'id': user.id,
                     'email': user.email,
                     'name': getattr(user, 'name', ''),
+                    'role': getattr(user, 'role', 'USER'),  # Include user role
                 },
                 'tenant': {
                     'id': str(session.tenant.id) if session.tenant else None,
