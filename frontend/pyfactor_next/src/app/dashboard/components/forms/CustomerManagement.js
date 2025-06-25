@@ -709,7 +709,7 @@ const CustomerManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4">Customer Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-4">👥 Customer Management</h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 mb-8">

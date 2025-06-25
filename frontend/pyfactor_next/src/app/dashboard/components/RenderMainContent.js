@@ -141,6 +141,7 @@ const ProfitAndLossAnalysis = enhancedLazy(() => import('./forms/ProfitAndLossAn
 const CashFlowAnalysis = enhancedLazy(() => import('./forms/CashFlowAnalysis.js'), 'Cash Flow Analysis');
 const BudgetVsActualAnalysis = enhancedLazy(() => import('./forms/BudgetVsActualAnalysis.js'), 'Budget vs Actual Analysis');
 const SalesAnalysis = enhancedLazy(() => import('./forms/SalesAnalysis.js'), 'Sales Analysis');
+const SalesDashboard = enhancedLazy(() => import('./forms/SalesDashboard.js'), 'Sales Dashboard');
 const ExpenseAnalysis = enhancedLazy(() => import('./forms/ExpenseAnalysis.js'), 'Expense Analysis');
 const KPIDashboard = enhancedLazy(() => import('./dashboards/KPIDashboard'), 'KPI Dashboard');
 const BalanceSheetAnalysis = enhancedLazy(() => import('./forms/BalanceSheetAnalysis.js'), 'Balance Sheet Analysis');
@@ -1933,7 +1934,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={salesComponentKey}>
-              {view === 'sales-dashboard' && <SalesAnalysis />}
+              {view === 'sales-dashboard' && <SalesDashboard />}
               {view === 'sales-products' && <SalesProductManagement />}
               {view === 'sales-services' && <ServiceManagement />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}

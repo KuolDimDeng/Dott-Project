@@ -1,75 +1,251 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { getCacheValue } from '@/utils/appCache';
-import axiosInstance from '@/utils/apiClient';
+import { 
+  orderApi, 
+  invoiceApi, 
+  customerApi, 
+  productApi, 
+  serviceApi,
+  estimateApi 
+} from '@/utils/apiClient';
+import { getSecureTenantId } from '@/utils/tenantUtils';
+import { logger } from '@/utils/logger';
+import { format } from 'date-fns';
 
 const SalesDashboard = () => {
-  const [dashboardData, setDashboardData] = useState({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalCustomers: 0,
-    topProducts: [],
-    recentOrders: [],
-    monthlySales: [],
-    customerGrowth: [],
-    productPerformance: []
-  });
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPeriod, setSelectedPeriod] = useState('month'); // week, month, quarter, year
+  const [selectedPeriod, setSelectedPeriod] = useState('month');
+  
+  // Dashboard metrics state
+  const [metrics, setMetrics] = useState({
+    products: { total: 0, active: 0, lowStock: 0, value: 0 },
+    services: { total: 0, active: 0, recurring: 0, value: 0 },
+    orders: { total: 0, pending: 0, completed: 0, totalValue: 0 },
+    invoices: { total: 0, paid: 0, unpaid: 0, overdue: 0, totalValue: 0 },
+    estimates: { total: 0, draft: 0, sent: 0, accepted: 0, totalValue: 0 },
+    customers: { total: 0, active: 0, new: 0, totalRevenue: 0 }
+  });
 
-  useEffect(() => {
-    console.log('[SalesDashboard] Component mounted, fetching dashboard data...');
-    fetchDashboardData();
-  }, [selectedPeriod]);
+  // Recent items for quick access
+  const [recentItems, setRecentItems] = useState({
+    orders: [],
+    invoices: [],
+    estimates: [],
+    customers: []
+  });
 
-  const fetchDashboardData = async () => {
+  // Chart data
+  const [chartData, setChartData] = useState({
+    salesTrend: [],
+    topProducts: [],
+    topServices: [],
+    customerGrowth: []
+  });
+
+  // Fetch all dashboard data
+  const fetchDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('[SalesDashboard] Fetching dashboard data for period:', selectedPeriod);
+      const tenantId = getSecureTenantId();
       
-      // Fetch dashboard metrics - backend handles tenant context
-      const [ordersRes, customersRes, productsRes, revenueRes] = await Promise.all([
-        axiosInstance.get('/sales/orders/', {
-          params: { limit: 10 }
-        }),
-        axiosInstance.get('/customers/'),
-        axiosInstance.get('/inventory/products/'),
-        axiosInstance.get('/sales/revenue/', {
-          params: { period: selectedPeriod }
-        })
+      logger.info('[SalesDashboard] Fetching dashboard data...');
+      
+      // Fetch all data in parallel
+      const [
+        productsRes,
+        servicesRes,
+        ordersRes,
+        invoicesRes,
+        estimatesRes,
+        customersRes
+      ] = await Promise.allSettled([
+        productApi.getAll(),
+        serviceApi.getAll(),
+        orderApi.getAll(),
+        invoiceApi.getAll(),
+        estimateApi.getAll(),
+        customerApi.getAll()
       ]);
 
-      console.log('[SalesDashboard] Received data:', {
-        orders: ordersRes.data?.length || 0,
-        customers: customersRes.data?.length || 0,
-        products: productsRes.data?.length || 0,
-        revenue: revenueRes.data
-      });
+      // Process products
+      if (productsRes.status === 'fulfilled') {
+        const products = productsRes.value || [];
+        const activeProducts = products.filter(p => p.is_active !== false);
+        const lowStockProducts = products.filter(p => p.stock_quantity < (p.reorder_level || 10));
+        const totalValue = products.reduce((sum, p) => sum + (p.price * p.stock_quantity || 0), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          products: {
+            total: products.length,
+            active: activeProducts.length,
+            lowStock: lowStockProducts.length,
+            value: totalValue
+          }
+        }));
+      }
 
-      // Process the data
-      const processedData = {
-        totalRevenue: revenueRes.data?.total || 0,
-        totalOrders: ordersRes.data?.length || 0,
-        totalCustomers: customersRes.data?.length || 0,
-        topProducts: productsRes.data?.slice(0, 5) || [],
-        recentOrders: ordersRes.data?.slice(0, 10) || [],
-        monthlySales: revenueRes.data?.monthly || [],
-        customerGrowth: customersRes.data?.growth || [],
-        productPerformance: productsRes.data?.performance || []
-      };
+      // Process services
+      if (servicesRes.status === 'fulfilled') {
+        const services = servicesRes.value || [];
+        const activeServices = services.filter(s => s.is_active !== false);
+        const recurringServices = services.filter(s => s.is_recurring);
+        const totalValue = services.reduce((sum, s) => sum + (s.price || 0), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          services: {
+            total: services.length,
+            active: activeServices.length,
+            recurring: recurringServices.length,
+            value: totalValue
+          }
+        }));
+      }
 
-      setDashboardData(processedData);
-      console.log('[SalesDashboard] Dashboard data updated successfully');
+      // Process orders
+      if (ordersRes.status === 'fulfilled') {
+        const orders = ordersRes.value || [];
+        const pendingOrders = orders.filter(o => o.status === 'pending');
+        const completedOrders = orders.filter(o => o.status === 'completed');
+        const totalValue = orders.reduce((sum, o) => sum + (parseFloat(o.total_amount) || 0), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          orders: {
+            total: orders.length,
+            pending: pendingOrders.length,
+            completed: completedOrders.length,
+            totalValue: totalValue
+          }
+        }));
+
+        // Get recent orders
+        setRecentItems(prev => ({
+          ...prev,
+          orders: orders.slice(0, 5).map(order => ({
+            id: order.id,
+            number: order.order_number,
+            customer: order.customer_name,
+            amount: order.total_amount,
+            status: order.status,
+            date: order.order_date || order.created_at
+          }))
+        }));
+      }
+
+      // Process invoices
+      if (invoicesRes.status === 'fulfilled') {
+        const invoices = invoicesRes.value || [];
+        const paidInvoices = invoices.filter(i => i.is_paid || i.status === 'paid');
+        const unpaidInvoices = invoices.filter(i => !i.is_paid && i.status !== 'paid');
+        const overdueInvoices = unpaidInvoices.filter(i => new Date(i.due_date) < new Date());
+        const totalValue = invoices.reduce((sum, i) => sum + (parseFloat(i.total_amount || i.totalAmount) || 0), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          invoices: {
+            total: invoices.length,
+            paid: paidInvoices.length,
+            unpaid: unpaidInvoices.length,
+            overdue: overdueInvoices.length,
+            totalValue: totalValue
+          }
+        }));
+
+        // Get recent invoices
+        setRecentItems(prev => ({
+          ...prev,
+          invoices: invoices.slice(0, 5).map(invoice => ({
+            id: invoice.id,
+            number: invoice.invoice_num,
+            customer: invoice.customer_name,
+            amount: invoice.total_amount || invoice.totalAmount,
+            status: invoice.is_paid ? 'paid' : 'unpaid',
+            dueDate: invoice.due_date
+          }))
+        }));
+      }
+
+      // Process estimates
+      if (estimatesRes.status === 'fulfilled') {
+        const estimates = estimatesRes.value || [];
+        const draftEstimates = estimates.filter(e => e.status === 'draft');
+        const sentEstimates = estimates.filter(e => e.status === 'sent');
+        const acceptedEstimates = estimates.filter(e => e.status === 'accepted');
+        const totalValue = estimates.reduce((sum, e) => sum + (parseFloat(e.total_amount || e.totalAmount) || 0), 0);
+        
+        setMetrics(prev => ({
+          ...prev,
+          estimates: {
+            total: estimates.length,
+            draft: draftEstimates.length,
+            sent: sentEstimates.length,
+            accepted: acceptedEstimates.length,
+            totalValue: totalValue
+          }
+        }));
+
+        // Get recent estimates
+        setRecentItems(prev => ({
+          ...prev,
+          estimates: estimates.slice(0, 5).map(estimate => ({
+            id: estimate.id,
+            number: estimate.estimate_num,
+            customer: estimate.customer_name,
+            amount: estimate.total_amount || estimate.totalAmount,
+            status: estimate.status,
+            date: estimate.estimate_date || estimate.created_at
+          }))
+        }));
+      }
+
+      // Process customers
+      if (customersRes.status === 'fulfilled') {
+        const customers = customersRes.value || [];
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const newCustomers = customers.filter(c => new Date(c.created_at) > thirtyDaysAgo);
+        
+        setMetrics(prev => ({
+          ...prev,
+          customers: {
+            total: customers.length,
+            active: customers.length, // You might want to define what makes a customer "active"
+            new: newCustomers.length,
+            totalRevenue: 0 // This would need to be calculated from orders/invoices
+          }
+        }));
+
+        // Get recent customers
+        setRecentItems(prev => ({
+          ...prev,
+          customers: customers.slice(0, 5).map(customer => ({
+            id: customer.id,
+            name: customer.name || customer.customerName || `${customer.first_name} ${customer.last_name}`,
+            email: customer.email,
+            phone: customer.phone,
+            createdAt: customer.created_at
+          }))
+        }));
+      }
+
+      logger.info('[SalesDashboard] Dashboard data loaded successfully');
     } catch (error) {
-      console.error('[SalesDashboard] Error fetching dashboard data:', error);
+      logger.error('[SalesDashboard] Error fetching dashboard data:', error);
       toast.error('Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedPeriod]);
 
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -77,226 +253,269 @@ const SalesDashboard = () => {
     }).format(amount || 0);
   };
 
-  const MetricCard = ({ title, value, icon, color = 'blue', trend = null }) => {
-    return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className={`text-2xl font-bold text-${color}-600 mt-2`}>{value}</p>
-            {trend && (
-              <div className="flex items-center mt-2">
-                <span className={`text-sm ${trend > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {trend > 0 ? '↑' : '↓'} {Math.abs(trend)}%
-                </span>
-                <span className="text-xs text-gray-500 ml-2">vs last period</span>
+  // Metric Card Component
+  const MetricCard = ({ title, value, subValue, icon, color, trend }) => (
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-full bg-${color}-100`}>
+          <span className="text-2xl">{icon}</span>
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+            <span>{trend >= 0 ? '↑' : '↓'}</span>
+            <span className="ml-1">{Math.abs(trend)}%</span>
+          </div>
+        )}
+      </div>
+      <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
+      <p className="text-2xl font-bold text-gray-900 mt-2">{value}</p>
+      {subValue && <p className="text-sm text-gray-600 mt-1">{subValue}</p>}
+    </div>
+  );
+
+  // Recent Items Component
+  const RecentItemsList = ({ title, items, type }) => (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">{title}</h3>
+      <div className="space-y-3">
+        {items.length === 0 ? (
+          <p className="text-gray-500 text-sm">No {type} yet</p>
+        ) : (
+          items.map((item, index) => (
+            <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {item.number || item.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {item.customer || item.email}
+                </p>
               </div>
-            )}
-          </div>
-          <div className={`p-3 bg-${color}-100 rounded-full`}>
-            {icon}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const RecentOrdersTable = ({ orders }) => {
-    return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold">Recent Orders</h3>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Order ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {orders.length > 0 ? (
-                orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {order.order_number || `ORD-${order.id}`}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {order.customer_name || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(order.order_date).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        order.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {order.status || 'draft'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(order.total_amount)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                    No recent orders
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    );
-  };
-
-  const TopProductsList = ({ products }) => {
-    return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h3 className="text-lg font-semibold">Top Products</h3>
-        </div>
-        <div className="p-6">
-          {products.length > 0 ? (
-            <div className="space-y-4">
-              {products.map((product, index) => (
-                <div key={product.id} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <span className="text-sm font-medium text-gray-900 mr-4">
-                      {index + 1}.
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {product.name || product.product_name}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {product.sales_count || 0} sales
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">
-                      {formatCurrency(product.total_revenue || 0)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+              <div className="text-right">
+                <p className="text-sm font-medium text-gray-900">
+                  {item.amount ? formatCurrency(item.amount) : ''}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {item.status || (item.date ? format(new Date(item.date), 'MMM dd') : '')}
+                </p>
+              </div>
             </div>
-          ) : (
-            <p className="text-center text-gray-500">No product data available</p>
-          )}
-        </div>
+          ))
+        )}
       </div>
-    );
-  };
+    </div>
+  );
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Sales Dashboard</h1>
+    <div className="p-6 bg-gray-50">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-black">📊 Sales Dashboard</h1>
+        <p className="text-gray-600 mt-1">Overview of your sales performance and metrics</p>
+      </div>
+
+      {/* Period Selector */}
+      <div className="mb-6 flex justify-end">
         <select
           value={selectedPeriod}
           onChange={(e) => setSelectedPeriod(e.target.value)}
-          className="px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="week">Last Week</option>
-          <option value="month">Last Month</option>
-          <option value="quarter">Last Quarter</option>
-          <option value="year">Last Year</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="quarter">This Quarter</option>
+          <option value="year">This Year</option>
         </select>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Main Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
         <MetricCard
-          title="Total Revenue"
-          value={formatCurrency(dashboardData.totalRevenue)}
+          title="Products"
+          value={metrics.products.total}
+          subValue={`${metrics.products.active} active`}
+          icon="📦"
           color="blue"
-          icon={
-            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          trend={5.2}
         />
         <MetricCard
-          title="Total Orders"
-          value={dashboardData.totalOrders}
-          color="green"
-          icon={
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-          }
-          trend={2.1}
-        />
-        <MetricCard
-          title="Total Customers"
-          value={dashboardData.totalCustomers}
+          title="Services"
+          value={metrics.services.total}
+          subValue={`${metrics.services.recurring} recurring`}
+          icon="🛠️"
           color="purple"
-          icon={
-            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-          }
-          trend={8.3}
         />
         <MetricCard
-          title="Products Sold"
-          value={dashboardData.topProducts.length}
-          color="orange"
-          icon={
-            <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-          }
-          trend={-1.5}
+          title="Orders"
+          value={metrics.orders.total}
+          subValue={formatCurrency(metrics.orders.totalValue)}
+          icon="🛒"
+          color="green"
+        />
+        <MetricCard
+          title="Invoices"
+          value={metrics.invoices.total}
+          subValue={`${metrics.invoices.unpaid} unpaid`}
+          icon="📄"
+          color="yellow"
+        />
+        <MetricCard
+          title="Estimates"
+          value={metrics.estimates.total}
+          subValue={`${metrics.estimates.sent} sent`}
+          icon="📋"
+          color="indigo"
+        />
+        <MetricCard
+          title="Customers"
+          value={metrics.customers.total}
+          subValue={`${metrics.customers.new} new`}
+          icon="👥"
+          color="pink"
         />
       </div>
 
-      {/* Charts and Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentOrdersTable orders={dashboardData.recentOrders} />
-        <TopProductsList products={dashboardData.topProducts} />
+      {/* Financial Overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">💰 Revenue Overview</h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-gray-600">Total Orders Value</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(metrics.orders.totalValue)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Outstanding Invoices</p>
+              <p className="text-xl font-semibold text-yellow-600">
+                {formatCurrency(metrics.invoices.totalValue * (metrics.invoices.unpaid / metrics.invoices.total || 0))}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Pending Estimates</p>
+              <p className="text-xl font-semibold text-blue-600">{formatCurrency(metrics.estimates.totalValue)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">📊 Quick Stats</h3>
+          <div className="space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Pending Orders</span>
+              <span className="text-sm font-semibold text-orange-600">{metrics.orders.pending}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Overdue Invoices</span>
+              <span className="text-sm font-semibold text-red-600">{metrics.invoices.overdue}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Low Stock Products</span>
+              <span className="text-sm font-semibold text-yellow-600">{metrics.products.lowStock}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Draft Estimates</span>
+              <span className="text-sm font-semibold text-gray-600">{metrics.estimates.draft}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">🎯 Conversion Rates</h3>
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-gray-600">Estimate → Order</span>
+                <span className="text-sm font-semibold">
+                  {metrics.estimates.total > 0 
+                    ? `${Math.round((metrics.estimates.accepted / metrics.estimates.total) * 100)}%`
+                    : '0%'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-green-600 h-2 rounded-full"
+                  style={{ width: `${metrics.estimates.total > 0 ? (metrics.estimates.accepted / metrics.estimates.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-sm text-gray-600">Invoice Payment</span>
+                <span className="text-sm font-semibold">
+                  {metrics.invoices.total > 0 
+                    ? `${Math.round((metrics.invoices.paid / metrics.invoices.total) * 100)}%`
+                    : '0%'}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-blue-600 h-2 rounded-full"
+                  style={{ width: `${metrics.invoices.total > 0 ? (metrics.invoices.paid / metrics.invoices.total) * 100 : 0}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Additional Analytics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Sales Trends</h3>
-        <div className="h-64 flex items-center justify-center text-gray-500">
-          {/* Placeholder for chart */}
-          <p>Sales chart will be implemented here</p>
+      {/* Recent Items */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+        <RecentItemsList 
+          title="🛒 Recent Orders" 
+          items={recentItems.orders} 
+          type="orders"
+        />
+        <RecentItemsList 
+          title="📄 Recent Invoices" 
+          items={recentItems.invoices} 
+          type="invoices"
+        />
+        <RecentItemsList 
+          title="📋 Recent Estimates" 
+          items={recentItems.estimates} 
+          type="estimates"
+        />
+        <RecentItemsList 
+          title="👥 New Customers" 
+          items={recentItems.customers} 
+          type="customers"
+        />
+      </div>
+
+      {/* Quick Actions */}
+      <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">⚡ Quick Actions</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors">
+            <span className="text-2xl mb-2 block">📦</span>
+            <span className="text-sm text-gray-700">Add Product</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-colors">
+            <span className="text-2xl mb-2 block">🛠️</span>
+            <span className="text-sm text-gray-700">Add Service</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-colors">
+            <span className="text-2xl mb-2 block">🛒</span>
+            <span className="text-sm text-gray-700">New Order</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-yellow-500 hover:bg-yellow-50 transition-colors">
+            <span className="text-2xl mb-2 block">📄</span>
+            <span className="text-sm text-gray-700">Create Invoice</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors">
+            <span className="text-2xl mb-2 block">📋</span>
+            <span className="text-sm text-gray-700">New Estimate</span>
+          </button>
+          <button className="p-4 text-center border-2 border-dashed border-gray-300 rounded-lg hover:border-pink-500 hover:bg-pink-50 transition-colors">
+            <span className="text-2xl mb-2 block">👥</span>
+            <span className="text-sm text-gray-700">Add Customer</span>
+          </button>
         </div>
       </div>
     </div>

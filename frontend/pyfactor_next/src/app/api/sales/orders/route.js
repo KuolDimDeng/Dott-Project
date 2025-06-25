@@ -49,8 +49,34 @@ export async function GET(request) {
     
     const data = await response.json();
     
-    logger.info('[Orders API] Successfully fetched orders');
-    return NextResponse.json(data);
+    // Transform backend response to match frontend expectations
+    let transformedData = data;
+    
+    // Handle paginated response
+    if (data.results && Array.isArray(data.results)) {
+      transformedData = {
+        ...data,
+        results: data.results.map(order => ({
+          ...order,
+          customer_id: order.customer,
+          order_date: order.date,
+          order_number: order.order_number || order.id,
+          total_amount: order.total_amount || order.totalAmount || order.total
+        }))
+      };
+    } else if (Array.isArray(data)) {
+      // Handle non-paginated array response
+      transformedData = data.map(order => ({
+        ...order,
+        customer_id: order.customer,
+        order_date: order.date,
+        order_number: order.order_number || order.id,
+        total_amount: order.total_amount || order.totalAmount || order.total
+      }));
+    }
+    
+    logger.info('[Orders API] Successfully fetched and transformed orders');
+    return NextResponse.json(transformedData);
     
   } catch (error) {
     logger.error('[Orders API] Error:', error);
@@ -76,6 +102,30 @@ export async function POST(request) {
     const body = await request.json();
     logger.info('[Orders API] Creating order with data:', body);
     
+    // Transform frontend data to match backend expectations
+    const backendData = {
+      customer: body.customer_id,  // Backend expects 'customer' not 'customer_id'
+      date: body.order_date,       // Backend expects 'date' not 'order_date'
+      due_date: body.due_date,
+      status: body.status || 'pending',
+      payment_terms: body.payment_terms,
+      discount: body.discount_percentage || 0,
+      discount_percentage: body.discount_percentage || 0,
+      shipping_cost: body.shipping_cost || 0,
+      tax_rate: body.tax_rate || 0,
+      notes: body.notes || '',
+      items: body.items?.map(item => ({
+        item_type: item.type || 'product',
+        product: item.type === 'product' ? item.item_id : null,
+        service: item.type === 'service' ? item.item_id : null,
+        description: item.description || item.name || 'Item',  // Ensure description is not blank
+        quantity: item.quantity || 1,
+        unit_price: item.unit_price || 0
+      })) || []
+    };
+    
+    logger.info('[Orders API] Transformed data for backend:', backendData);
+    
     // Forward request to Django backend (Django requires trailing slash)
     const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/sales/orders/`;
     
@@ -85,7 +135,7 @@ export async function POST(request) {
         'Content-Type': 'application/json',
         'Authorization': `Session ${sidCookie.value}`,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(backendData),
     });
     
     if (!response.ok) {
@@ -99,8 +149,17 @@ export async function POST(request) {
     
     const data = await response.json();
     
-    logger.info('[Orders API] Order created successfully:', data);
-    return NextResponse.json(data, { status: 201 });
+    // Transform backend response to match frontend expectations
+    const transformedData = {
+      ...data,
+      customer_id: data.customer,
+      order_date: data.date,
+      order_number: data.order_number || data.id,
+      total_amount: data.total_amount || data.totalAmount || data.total
+    };
+    
+    logger.info('[Orders API] Order created successfully:', transformedData);
+    return NextResponse.json(transformedData, { status: 201 });
     
   } catch (error) {
     logger.error('[Orders API] Error:', error);

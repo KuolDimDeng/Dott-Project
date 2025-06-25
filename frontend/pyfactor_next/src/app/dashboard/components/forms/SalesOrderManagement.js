@@ -1027,7 +1027,7 @@ const SalesOrderManagement = () => {
   return (
     <div className="p-6 bg-gray-50">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h1 className="text-2xl font-bold text-black mb-6">Sales Order Management</h1>
+        <h1 className="text-2xl font-bold text-black mb-6">🛒 Sales Order Management</h1>
         
         {/* Tab Navigation */}
         <div className="border-b border-gray-200 mb-6">

@@ -2672,7 +2672,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
       `}</style>
       
       <h1 className="text-2xl font-bold text-black mb-4">
-        Product Management
+        📦 Product Management
       </h1>
       
       {/* Summary Cards */}

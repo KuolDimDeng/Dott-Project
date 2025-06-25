@@ -888,7 +888,7 @@ const ServiceManagement = () => {
 
   return (
     <div className="p-6 bg-gray-50">
-      <h1 className="text-2xl font-bold text-black mb-4">Service Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-4">🛠️ Service Management</h1>
       
       {/* Service Error/Maintenance Notice */}
       {serviceError && (

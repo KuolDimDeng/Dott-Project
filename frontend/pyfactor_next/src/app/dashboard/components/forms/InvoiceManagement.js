@@ -917,7 +917,7 @@ const InvoiceManagement = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold text-black mb-6">Invoice Management</h1>
+      <h1 className="text-2xl font-bold text-black mb-6">📄 Invoice Management</h1>
       
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
