@@ -7,12 +7,7 @@ const DJANGO_API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.dottapps.
 /**
  * Proxy route for Django inventory services API
  * Following the industry standard pattern: Frontend → Local Proxy → Django Backend
- * 
- * TEMPORARY: Due to backend issues, using localStorage for demo purposes
  */
-
-// Temporary in-memory storage until backend is fixed
-const tempServices = new Map();
 
 export async function GET(request) {
   try {
@@ -27,33 +22,48 @@ export async function GET(request) {
       );
     }
 
-    // Try Django backend first
-    try {
-      const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Session ${sidCookie.value}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Services Proxy] Backend error:', response.status, errorData);
+      
+      // Return proper error message for frontend to handle
+      if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            error: 'Service temporarily unavailable', 
+            details: 'The service management feature is currently being upgraded. Please try again later.',
+            code: 'SERVICE_UNAVAILABLE'
+          },
+          { status: 503 }
+        );
       }
-    } catch (backendError) {
-      console.warn('[Services Proxy] Backend unavailable, using temporary storage');
+      
+      return NextResponse.json(
+        { error: 'Failed to fetch services', details: errorData },
+        { status: response.status }
+      );
     }
 
-    // TEMPORARY: Return services from memory storage
-    const services = Array.from(tempServices.values());
-    console.log('[Services Proxy] Returning temporary services:', services.length);
-    return NextResponse.json(services);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('[Services Proxy] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch services', message: error.message },
-      { status: 500 }
+      { 
+        error: 'Service temporarily unavailable', 
+        details: 'Unable to connect to the service. Please try again later.',
+        code: 'CONNECTION_ERROR'
+      },
+      { status: 503 }
     );
   }
 }
@@ -74,44 +84,49 @@ export async function POST(request) {
     // Get request body
     const body = await request.json();
 
-    // Try Django backend first
-    try {
-      const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Session ${sidCookie.value}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Services Proxy] Backend error:', response.status, errorData);
+      
+      // Return proper error message for frontend to handle
+      if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            error: 'Service temporarily unavailable', 
+            details: 'The service management feature is currently being upgraded. Please try again later.',
+            code: 'SERVICE_UNAVAILABLE'
+          },
+          { status: 503 }
+        );
       }
-    } catch (backendError) {
-      console.warn('[Services Proxy] Backend unavailable, using temporary storage');
+      
+      return NextResponse.json(
+        { error: 'Failed to create service', details: errorData },
+        { status: response.status }
+      );
     }
 
-    // TEMPORARY: Create service in memory
-    const newService = {
-      id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      ...body,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      is_active: body.is_for_sale !== false,
-      service_code: `SRV-${Date.now().toString().slice(-6)}`
-    };
-
-    tempServices.set(newService.id, newService);
-    
-    console.log('[Services Proxy] Created temporary service:', newService.id);
-    return NextResponse.json(newService, { status: 201 });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('[Services Proxy] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to create service', message: error.message },
-      { status: 500 }
+      { 
+        error: 'Service temporarily unavailable', 
+        details: 'Unable to connect to the service. Please try again later.',
+        code: 'CONNECTION_ERROR'
+      },
+      { status: 503 }
     );
   }
 }
@@ -143,50 +158,49 @@ export async function PUT(request) {
     // Get request body
     const body = await request.json();
 
-    // Try Django backend first
-    try {
-      const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${serviceId}/`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Session ${sidCookie.value}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${serviceId}/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
 
-      if (response.ok) {
-        const data = await response.json();
-        return NextResponse.json(data);
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Services Proxy] Backend error:', response.status, errorData);
+      
+      // Return proper error message for frontend to handle
+      if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            error: 'Service temporarily unavailable', 
+            details: 'The service management feature is currently being upgraded. Please try again later.',
+            code: 'SERVICE_UNAVAILABLE'
+          },
+          { status: 503 }
+        );
       }
-    } catch (backendError) {
-      console.warn('[Services Proxy] Backend unavailable, using temporary storage');
-    }
-
-    // TEMPORARY: Update service in memory
-    const existingService = tempServices.get(serviceId);
-    if (!existingService) {
+      
       return NextResponse.json(
-        { error: 'Service not found' },
-        { status: 404 }
+        { error: 'Failed to update service', details: errorData },
+        { status: response.status }
       );
     }
 
-    const updatedService = {
-      ...existingService,
-      ...body,
-      id: serviceId,
-      updated_at: new Date().toISOString()
-    };
-
-    tempServices.set(serviceId, updatedService);
-    
-    console.log('[Services Proxy] Updated temporary service:', serviceId);
-    return NextResponse.json(updatedService);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('[Services Proxy] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to update service', message: error.message },
-      { status: 500 }
+      { 
+        error: 'Service temporarily unavailable', 
+        details: 'Unable to connect to the service. Please try again later.',
+        code: 'CONNECTION_ERROR'
+      },
+      { status: 503 }
     );
   }
 }
@@ -215,39 +229,46 @@ export async function DELETE(request) {
       );
     }
 
-    // Try Django backend first
-    try {
-      const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${serviceId}/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Session ${sidCookie.value}`,
-        },
-      });
+    // Forward request to Django backend
+    const response = await fetch(`${DJANGO_API_URL}/api/inventory/services/${serviceId}/`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Session ${sidCookie.value}`,
+      },
+    });
 
-      if (response.ok) {
-        return NextResponse.json({ success: true });
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('[Services Proxy] Backend error:', response.status, errorData);
+      
+      // Return proper error message for frontend to handle
+      if (response.status === 500) {
+        return NextResponse.json(
+          { 
+            error: 'Service temporarily unavailable', 
+            details: 'The service management feature is currently being upgraded. Please try again later.',
+            code: 'SERVICE_UNAVAILABLE'
+          },
+          { status: 503 }
+        );
       }
-    } catch (backendError) {
-      console.warn('[Services Proxy] Backend unavailable, using temporary storage');
-    }
-
-    // TEMPORARY: Delete from memory
-    if (!tempServices.has(serviceId)) {
+      
       return NextResponse.json(
-        { error: 'Service not found' },
-        { status: 404 }
+        { error: 'Failed to delete service', details: errorData },
+        { status: response.status }
       );
     }
 
-    tempServices.delete(serviceId);
-    
-    console.log('[Services Proxy] Deleted temporary service:', serviceId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('[Services Proxy] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to delete service', message: error.message },
-      { status: 500 }
+      { 
+        error: 'Service temporarily unavailable', 
+        details: 'Unable to connect to the service. Please try again later.',
+        code: 'CONNECTION_ERROR'
+      },
+      { status: 503 }
     );
   }
 }
