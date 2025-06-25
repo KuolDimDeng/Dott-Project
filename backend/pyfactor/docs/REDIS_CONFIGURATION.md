@@ -6,6 +6,8 @@ The backend is showing Redis connection errors:
 Error -2 connecting to your-redis-host:6379. Name or service not known
 ```
 
+**Root Cause**: The error message "your-redis-host" appears when the REDIS_URL/REDIS_HOST environment variable is not set in production. This is not a hardcoded value but rather how the error is displayed when the host is None/empty.
+
 ## Solution
 
 ### 1. Redis Service Details (Render)
