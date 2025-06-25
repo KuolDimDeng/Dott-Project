@@ -2218,7 +2218,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
                     ? 'bg-green-100 text-green-800' 
                     : 'bg-red-100 text-red-800'
                 }`}>
-                  {product.quantity > 0 ? 'In Stock' : 'Out of Stock'}
+                  {(product.quantity || product.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -2691,7 +2691,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             In Stock
           </h2>
           <p className="text-3xl font-bold text-green-600 mt-2">
-            {Array.isArray(products) ? products.filter(p => p.stock_quantity > 0).length : 0}
+            {Array.isArray(products) ? products.filter(p => (p.quantity || p.stock_quantity || 0) > 0).length : 0}
           </p>
         </div>
         
@@ -2700,7 +2700,7 @@ const ProductManagement = ({ isNewProduct = false, mode = 'list', product = null
             Out of Stock
           </h2>
           <p className="text-3xl font-bold text-red-600 mt-2">
-            {Array.isArray(products) ? products.filter(p => !p.stock_quantity || p.stock_quantity <= 0).length : 0}
+            {Array.isArray(products) ? products.filter(p => !((p.quantity || p.stock_quantity || 0) > 0)).length : 0}
           </p>
         </div>
       </div>
