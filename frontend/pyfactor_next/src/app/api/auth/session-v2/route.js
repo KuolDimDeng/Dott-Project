@@ -81,7 +81,8 @@ export async function GET(request) {
         given_name: userData.given_name,
         family_name: userData.family_name,
         business_name: userData.business_name,
-        subscription_plan: userData.subscription_plan
+        subscription_plan: userData.subscription_plan,
+        role: userData.role
       },
       tenantData: {
         id: tenantData.id,
