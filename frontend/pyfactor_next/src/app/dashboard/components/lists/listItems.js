@@ -175,19 +175,6 @@ const MainListItems = ({
   const [activeItem, setActiveItem] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(null);
   
-  // Debug logging
-  useEffect(() => {
-    console.log('[MainListItems] User data:', user);
-    console.log('[MainListItems] User role:', user?.role);
-    console.log('[MainListItems] Is owner or admin:', isOwnerOrAdmin());
-    console.log('[MainListItems] Menu items count:', menuItems.length);
-    
-    // Log Sales menu sub-items
-    const salesMenu = menuItems.find(item => item.label === 'Sales');
-    if (salesMenu) {
-      console.log('[MainListItems] Sales menu sub-items:', salesMenu.subItems?.map(si => si.label));
-    }
-  }, [user, menuItems]);
 
   // Check if we're on mobile/small screens
   useEffect(() => {
@@ -793,47 +780,54 @@ const MainListItems = ({
     },
   ];
 
-  // Add Settings menu for OWNER and ADMIN users
-  if (isOwnerOrAdmin()) {
-    menuItems.push({
-      icon: <NavIcons.Settings className="w-5 h-5" />,
-      label: 'Settings',
-      subItems: [
-        { 
-          label: 'Users', 
-          path: '/settings/users',
-          onClick: () => {
-            if (typeof handleSettingsClick === 'function') {
-              handleSettingsClick('users');
-            }
-          }, 
-          value: 'users' 
-        },
-        ...(user?.role === 'OWNER' ? [
+  // Create a memoized version of menuItems that includes Settings for OWNER/ADMIN
+  const finalMenuItems = useMemo(() => {
+    const items = [...menuItems];
+    
+    // Add Settings menu for OWNER and ADMIN users
+    if (user && (user.role === 'OWNER' || user.role === 'ADMIN')) {
+      items.push({
+        icon: <NavIcons.Settings className="w-5 h-5" />,
+        label: 'Settings',
+        subItems: [
           { 
-            label: 'Subscription', 
-            path: '/settings/subscription',
+            label: 'Users', 
+            path: '/settings/users',
             onClick: () => {
               if (typeof handleSettingsClick === 'function') {
-                handleSettingsClick('subscription');
+                handleSettingsClick('users');
               }
             }, 
-            value: 'subscription' 
+            value: 'users' 
           },
-          { 
-            label: 'Close Account', 
-            path: '/settings/close-account',
-            onClick: () => {
-              if (typeof handleSettingsClick === 'function') {
-                handleSettingsClick('close-account');
-              }
-            }, 
-            value: 'close-account' 
-          }
-        ] : [])
-      ],
-    });
-  }
+          ...(user.role === 'OWNER' ? [
+            { 
+              label: 'Subscription', 
+              path: '/settings/subscription',
+              onClick: () => {
+                if (typeof handleSettingsClick === 'function') {
+                  handleSettingsClick('subscription');
+                }
+              }, 
+              value: 'subscription' 
+            },
+            { 
+              label: 'Close Account', 
+              path: '/settings/close-account',
+              onClick: () => {
+                if (typeof handleSettingsClick === 'function') {
+                  handleSettingsClick('close-account');
+                }
+              }, 
+              value: 'close-account' 
+            }
+          ] : [])
+        ],
+      });
+    }
+    
+    return items;
+  }, [user, handleSettingsClick]);
 
   const createOptions = [
     {
@@ -1150,7 +1144,7 @@ const MainListItems = ({
         >
           <nav className="w-full" aria-label="Main Navigation">
             <ul className="w-full space-y-0.5 px-3">
-              {menuItems.map((item, index) => renderFilteredMenuItem(item, index))}
+              {finalMenuItems.map((item, index) => renderFilteredMenuItem(item, index))}
             </ul>
           </nav>
         </div>
