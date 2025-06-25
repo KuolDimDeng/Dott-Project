@@ -402,11 +402,21 @@ const InvoiceForm = ({ mode = 'create' }) => {
                 disabled={customersLoading}
               >
                 <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={String(customer.id)}>
-                    {customer.customerName || `${customer.first_name} ${customer.last_name}`}
-                  </option>
-                ))}
+                {customers.map((customer) => {
+                  const customerId = customer.customer_id || customer.customer_number || customer.id;
+                  const fullName = customer.name || 
+                                  customer.full_name || 
+                                  (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') ||
+                                  customer.customerName || 
+                                  customer.customer_name || 
+                                  customer.email || 
+                                  'Unknown Customer';
+                  return (
+                    <option key={customer.id} value={String(customer.id)}>
+                      {customerId}: {fullName}
+                    </option>
+                  );
+                })}
               </select>
             </div>
             {customersError && (

@@ -2,6 +2,64 @@
 
 *This document contains recurring issues and their proven solutions to prevent re-debugging.*
 
+## 🔧 **Issue: Customer Dropdown Shows Email Instead of Name**
+
+**Symptoms:**
+- Customer dropdown displays email addresses only
+- User wants format: "{customer_id}: Full Name" (e.g., "CUST-001: Kuol Deng")
+- Affects Sales Orders, Invoices, Estimates modules
+- Customer names available in data but not displayed properly
+
+**Root Cause Analysis:**
+- Dropdown rendering logic only accessing `customer.email`
+- Customer data has multiple name fields: `name`, `full_name`, `customerName`, `first_name + last_name`
+- No fallback logic for different customer data structures
+
+**Solution (Proven Fix):**
+```javascript
+// In any management component (SalesOrderManagement.js, InvoiceManagement.js, etc.)
+
+// ✅ CORRECT - Handle multiple name formats with fallback
+{customers.map(customer => {
+  const customerId = customer.customer_id || customer.customer_number || customer.id;
+  const fullName = customer.name || 
+                  customer.full_name || 
+                  (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') ||
+                  customer.customerName || 
+                  customer.customer_name || 
+                  customer.email || 
+                  'Unknown Customer';
+  return (
+    <option key={customer.id} value={customer.id}>
+      {customerId}: {fullName}
+    </option>
+  );
+})}
+
+// ❌ WRONG - Only shows email
+<option key={customer.id} value={customer.id}>
+  {customer.email}
+</option>
+```
+
+**Apply Same Fix To:**
+1. **Dropdown Selection**: Customer selection in forms
+2. **List Display**: Show customer name in data tables
+3. **Details View**: Display full customer info in detail sections
+
+**Files Commonly Affected:**
+- `/src/app/dashboard/components/forms/SalesOrderManagement.js`
+- `/src/app/dashboard/components/forms/InvoiceManagement.js`
+- `/src/app/dashboard/components/forms/EstimateManagement.js`
+- `/src/app/dashboard/components/forms/PaymentManagement.js`
+
+**Prevention:**
+- Create reusable `getCustomerDisplayName()` utility function
+- Standardize customer data structure from backend
+- Always handle multiple name field variations
+
+---
+
 ## 🔧 **Issue: Module Creates Successfully But Fetching Returns Empty Results**
 
 **Symptoms:**

@@ -450,11 +450,21 @@ const EstimateManagement = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="">Select a customer</option>
-              {customers.map(customer => (
-                <option key={customer.id} value={customer.id}>
-                  {customer.name}
-                </option>
-              ))}
+              {customers.map(customer => {
+                const customerId = customer.customer_id || customer.customer_number || customer.id;
+                const fullName = customer.name || 
+                                customer.full_name || 
+                                (customer.first_name && customer.last_name ? `${customer.first_name} ${customer.last_name}` : '') ||
+                                customer.customerName || 
+                                customer.customer_name || 
+                                customer.email || 
+                                'Unknown Customer';
+                return (
+                  <option key={customer.id} value={customer.id}>
+                    {customerId}: {fullName}
+                  </option>
+                );
+              })}
             </select>
           </div>
           
@@ -774,7 +784,20 @@ const EstimateManagement = () => {
           
           <div>
             <h3 className="text-sm font-medium text-gray-500">Customer</h3>
-            <p className="mt-1 text-sm text-gray-900">{selectedEstimate.customer?.name || 'N/A'}</p>
+            <p className="mt-1 text-sm text-gray-900">
+              {(() => {
+                if (!selectedEstimate.customer) return 'N/A';
+                const customerId = selectedEstimate.customer.customer_id || selectedEstimate.customer.customer_number || selectedEstimate.customer.id;
+                const fullName = selectedEstimate.customer.name || 
+                                selectedEstimate.customer.full_name || 
+                                (selectedEstimate.customer.first_name && selectedEstimate.customer.last_name ? `${selectedEstimate.customer.first_name} ${selectedEstimate.customer.last_name}` : '') ||
+                                selectedEstimate.customer.customerName || 
+                                selectedEstimate.customer.customer_name || 
+                                selectedEstimate.customer.email || 
+                                'Unknown Customer';
+                return `${customerId}: ${fullName}`;
+              })()}
+            </p>
           </div>
           
           <div>
@@ -944,7 +967,20 @@ const EstimateManagement = () => {
                 <div className="text-sm font-medium text-black">{estimate.estimate_num}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-black">{estimate.customer?.name || 'N/A'}</div>
+                <div className="text-sm text-black">
+                  {(() => {
+                    if (!estimate.customer) return 'N/A';
+                    const customerId = estimate.customer.customer_id || estimate.customer.customer_number || estimate.customer.id;
+                    const fullName = estimate.customer.name || 
+                                    estimate.customer.full_name || 
+                                    (estimate.customer.first_name && estimate.customer.last_name ? `${estimate.customer.first_name} ${estimate.customer.last_name}` : '') ||
+                                    estimate.customer.customerName || 
+                                    estimate.customer.customer_name || 
+                                    estimate.customer.email || 
+                                    'Unknown Customer';
+                    return `${customerId}: ${fullName}`;
+                  })()}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="text-sm text-black">
