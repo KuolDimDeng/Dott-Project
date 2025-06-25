@@ -1,4 +1,4 @@
-#\!/usr/bin/env python
+#!/usr/bin/env python
 """
 Quick script to fix kdeng@dottapps.com role to OWNER
 Run this on the backend server to fix the role issue
@@ -23,5 +23,4 @@ if user:
     sessions_deleted = Session.objects.all().delete()
     print(f"Cleared {sessions_deleted[0]} sessions")
 else:
-    print("User kdeng@dottapps.com not found\!")
-EOF < /dev/null
+    print("User kdeng@dottapps.com not found!")
