@@ -72,6 +72,7 @@ const ServiceManagement = () => {
     billing_cycle: 'monthly', // was duration_unit
     is_for_sale: true, // was is_active
     is_recurring: false,
+    category: '',
     notes: '' // keep for frontend display
   });
 
@@ -98,9 +99,7 @@ const ServiceManagement = () => {
       
       try {
         const response = await fetch('/api/inventory/services', {
-          headers: {
-            'x-tenant-id': tenantId
-          }
+          credentials: 'include'
         });
         
         if (!response.ok) {
@@ -159,9 +158,9 @@ const ServiceManagement = () => {
       const response = await fetch('/api/inventory/services', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantId
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
@@ -171,7 +170,8 @@ const ServiceManagement = () => {
           duration: formData.duration,
           billing_cycle: formData.billing_cycle,
           is_for_sale: formData.is_for_sale,
-          is_recurring: formData.is_recurring
+          is_recurring: formData.is_recurring,
+          category: formData.category
         })
       });
       
@@ -195,6 +195,7 @@ const ServiceManagement = () => {
         billing_cycle: 'monthly',
         is_for_sale: true,
         is_recurring: false,
+        category: '',
         notes: ''
       });
       setIsCreating(false);
@@ -215,13 +216,12 @@ const ServiceManagement = () => {
     try {
       setIsSubmitting(true);
       
-      const tenantId = getSecureTenantId();
-      const response = await fetch(`/api/inventory/services/${selectedService.id}`, {
+      const response = await fetch(`/api/inventory/services?id=${selectedService.id}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'x-tenant-id': tenantId
+          'Content-Type': 'application/json'
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
@@ -231,7 +231,8 @@ const ServiceManagement = () => {
           duration: formData.duration,
           billing_cycle: formData.billing_cycle,
           is_for_sale: formData.is_for_sale,
-          is_recurring: formData.is_recurring
+          is_recurring: formData.is_recurring,
+          category: formData.category
         })
       });
       
@@ -262,12 +263,9 @@ const ServiceManagement = () => {
     console.log('[ServiceManagement] Deleting service:', serviceToDelete.id);
     
     try {
-      const tenantId = getSecureTenantId();
-      const response = await fetch(`/api/inventory/services/${serviceToDelete.id}`, {
+      const response = await fetch(`/api/inventory/services?id=${serviceToDelete.id}`, {
         method: 'DELETE',
-        headers: {
-          'x-tenant-id': tenantId
-        }
+        credentials: 'include'
       });
       
       if (!response.ok) {
@@ -314,6 +312,7 @@ const ServiceManagement = () => {
       billing_cycle: service.billing_cycle || service.duration_unit || 'monthly',
       is_for_sale: service.is_for_sale !== undefined ? service.is_for_sale : (service.is_active !== false),
       is_recurring: service.is_recurring || false,
+      category: service.category || '',
       notes: service.notes || ''
     });
     setIsEditing(true);
@@ -336,6 +335,22 @@ const ServiceManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              Service Name
+              <FieldTooltip text="Enter a clear, descriptive name for your service (e.g., 'Website Development', 'Monthly Maintenance', 'Consulting')" />
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleFormChange}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Service name"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Category
               <FieldTooltip text="Group similar services together for better organization and reporting (e.g., 'Consulting', 'Training', 'Support')" />
             </label>
@@ -347,6 +362,99 @@ const ServiceManagement = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Service category"
             />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price
+              <FieldTooltip text="Enter the price you charge for this service. For hourly services, enter the hourly rate." />
+            </label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleFormChange}
+              step="0.01"
+              min="0"
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Sales Tax (%)
+              <FieldTooltip text="Enter the tax percentage for this service. Leave as 0 if tax-exempt." />
+            </label>
+            <input
+              type="number"
+              name="salestax"
+              value={formData.salestax}
+              onChange={handleFormChange}
+              step="0.01"
+              min="0"
+              max="100"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Unit
+              <FieldTooltip text="How is this service measured? (e.g., 'hour', 'session', 'project', 'month')" />
+            </label>
+            <input
+              type="text"
+              name="unit"
+              value={formData.unit}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., hour, session, month"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Duration
+              <FieldTooltip text="How long does this service typically take? (e.g., '1', '2.5', '8')" />
+            </label>
+            <input
+              type="text"
+              name="duration"
+              value={formData.duration}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="e.g., 1, 2.5, 8"
+            />
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Billing Cycle
+              <FieldTooltip text="For recurring services, how often is the customer billed?" />
+            </label>
+            <select
+              name="billing_cycle"
+              value={formData.billing_cycle}
+              onChange={handleFormChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="one-time">One-time</option>
+              <option value="hourly">Hourly</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarterly">Quarterly</option>
+              <option value="yearly">Yearly</option>
+            </select>
           </div>
         </div>
         
@@ -425,6 +533,7 @@ const ServiceManagement = () => {
                 billing_cycle: 'monthly',
                 is_for_sale: true,
                 is_recurring: false,
+                category: '',
                 notes: ''
               });
             }}
