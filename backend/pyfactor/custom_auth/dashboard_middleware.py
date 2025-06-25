@@ -83,11 +83,11 @@ class DashboardMigrationMiddleware:
                 business_id = pending_setup.get('business_id')
                 
                 # Import the task here to avoid circular imports
-                from onboarding.tasks import setup_user_schema_task
+                from onboarding.tasks import setup_user_tenant_task
                 
                 # Trigger setup task
                 logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Dashboard accessed with incomplete schema. Triggering setup for user {request.user.id}")
-                task = setup_user_schema_task.delay(str(request.user.id), business_id)
+                task = setup_user_tenant_task.delay(str(request.user.id), business_id)
                 logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Setup task triggered with ID: {task.id}")
                 
                 # Add message about setup in progress
@@ -130,9 +130,9 @@ class DashboardMigrationMiddleware:
                                 has_deferred_marker = cursor.fetchone()[0] > 0
                                 
                                 if has_deferred_marker:
-                                    # Use setup_user_schema_task for schemas with deferred migrations
-                                    from onboarding.tasks import setup_user_schema_task
-                                    task = setup_user_schema_task.delay(str(request.user.id), None)
+                                    # Use setup_user_tenant_task for schemas with deferred migrations
+                                    from onboarding.tasks import setup_user_tenant_task
+                                    task = setup_user_tenant_task.delay(str(request.user.id), None)
                                     logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Setup task triggered with ID: {task.id}")
                                 else:
                                     # Fall back to migrate_tenant_schema for other cases
@@ -141,8 +141,8 @@ class DashboardMigrationMiddleware:
                                     logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Migration task triggered with ID: {task.id}")
                             else:
                                 # No migrations table, use full setup task
-                                from onboarding.tasks import setup_user_schema_task
-                                task = setup_user_schema_task.delay(str(request.user.id), None)
+                                from onboarding.tasks import setup_user_tenant_task
+                                task = setup_user_tenant_task.delay(str(request.user.id), None)
                                 logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Setup task triggered with ID: {task.id}")
                         
                         # Add a message to the request to inform the user
@@ -165,8 +165,8 @@ class DashboardMigrationMiddleware:
                 pending_setup = request.session.get('pending_schema_setup', {})
             if pending_setup and pending_setup.get('business_id'):
                 # Trigger setup task
-                from onboarding.tasks import setup_user_schema_task
-                task = setup_user_schema_task.delay(str(request.user.id), pending_setup.get('business_id'))
+                from onboarding.tasks import setup_user_tenant_task
+                task = setup_user_tenant_task.delay(str(request.user.id), pending_setup.get('business_id'))
                 logger.info(f"[DASHBOARD-MIGRATION-{middleware_id}] Setup task triggered for onboarded user without tenant: {task.id}")
             else:
                 logger.error(f"[DASHBOARD-MIGRATION-{middleware_id}] Cannot trigger setup - no business_id in pending_setup")

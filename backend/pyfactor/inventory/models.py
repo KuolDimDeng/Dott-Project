@@ -145,7 +145,7 @@ class CustomChargePlan(models.Model):
         period = self.custom_period if self.period == 'custom' else self.get_period_display()
         return f"{self.name}: {self.quantity} {unit} per {period} for {self.price}"
 
-class Item(models.Model):
+class Item(TenantAwareModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True, null=True)
@@ -258,17 +258,18 @@ class Service(Item):
     duration = models.DurationField(null=True, blank=True)
     is_recurring = models.BooleanField(default=False, db_index=True)
     
-    # Use the default manager for backwards compatibility
-    objects = models.Manager()
+    # Use TenantManager for tenant isolation
+    objects = TenantManager()
     
     # Add the optimized manager
     from .service_managers import OptimizedServiceManager
     optimized = OptimizedServiceManager()
 
     class Meta:
+        db_table = 'inventory_service'
         indexes = [
-            models.Index(fields=['name']),
-            models.Index(fields=['service_code']),
+            models.Index(fields=['tenant_id', 'name']),
+            models.Index(fields=['tenant_id', 'service_code']),
             models.Index(fields=['is_recurring']),
             models.Index(fields=['is_for_sale', 'price']),
             models.Index(fields=['created_at']),
@@ -286,7 +287,6 @@ class Service(Item):
         
         # Log the current database connection and schema
         from django.db import connection
-        from pyfactor.db_routers import TenantSchemaRouter
         
         # Get optimized connection for the current schema
         with connection.cursor() as cursor:
