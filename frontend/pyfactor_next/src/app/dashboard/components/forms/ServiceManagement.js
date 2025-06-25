@@ -8,6 +8,43 @@ import { getCacheValue } from '@/utils/appCache';
 import { getSecureTenantId } from '@/utils/tenantUtils';
 import { logger } from '@/utils/logger';
 
+// Tooltip component for field help
+const FieldTooltip = ({ text, position = 'top' }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <div
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onClick={() => setShowTooltip(!showTooltip)} // For mobile
+        className="cursor-help"
+      >
+        <svg className="w-4 h-4 text-gray-400 hover:text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+        </svg>
+      </div>
+      
+      {showTooltip && (
+        <div className={`absolute z-50 ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-0 w-72`}>
+          <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+            <div className="relative">
+              {text}
+              <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-4`}>
+                <div className={`${position === 'top' ? '' : 'rotate-180'}`}>
+                  <svg className="w-2 h-2 text-gray-900" fill="currentColor" viewBox="0 0 8 4">
+                    <path d="M0 0l4 4 4-4z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const ServiceManagement = () => {
   // State management
   const [services, setServices] = useState([]);
@@ -299,97 +336,8 @@ const ServiceManagement = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Service Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleFormChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter service name"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Unit
-            </label>
-            <input
-              type="text"
-              name="unit"
-              value={formData.unit}
-              onChange={handleFormChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Service unit (e.g., hour, session, etc.)"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Price <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleFormChange}
-              required
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Sales Tax
-            </label>
-            <input
-              type="number"
-              name="salestax"
-              value={formData.salestax}
-              onChange={handleFormChange}
-              min="0"
-              step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0.00"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Duration
-            </label>
-            <div className="flex space-x-2">
-              <input
-                type="number"
-                name="duration"
-                value={formData.duration}
-                onChange={handleFormChange}
-                min="0"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="0"
-              />
-              <select
-                name="billing_cycle"
-              value={formData.billing_cycle}
-                onChange={handleFormChange}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="yearly">Yearly</option>
-                <option value="one-time">One Time</option>
-              </select>
-            </div>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
               Category
+              <FieldTooltip text="Group similar services together for better organization and reporting (e.g., 'Consulting', 'Training', 'Support')" />
             </label>
             <input
               type="text"
@@ -441,6 +389,7 @@ const ServiceManagement = () => {
           />
           <label htmlFor="is_for_sale" className="ml-2 block text-sm text-gray-900">
             Available for Sale
+            <FieldTooltip text="Enable this to make the service available for customers to purchase. Disable to temporarily hide the service." position="bottom" />
           </label>
         </div>
         
@@ -455,6 +404,7 @@ const ServiceManagement = () => {
           />
           <label htmlFor="is_recurring" className="ml-2 block text-sm text-gray-900">
             Recurring Service
+            <FieldTooltip text="Enable this if the service is billed on a recurring basis (monthly, quarterly, yearly). The billing cycle determines the frequency." position="bottom" />
           </label>
         </div>
         

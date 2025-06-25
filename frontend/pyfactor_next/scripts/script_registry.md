@@ -24,6 +24,7 @@ This document tracks all scripts used for the pyfactor project, their execution 
 | Version0002_fix_inventory_stock_count_display_ProductManagement.js | Fix stock summary showing incorrect counts (0 In Stock) by using correct field name | 2025-01-25 | ✅ Executed |
 | Version0003_refactor_service_management_remove_popups_ServiceManagement.js | Refactor Service Management to remove popups and match Product Management patterns | 2025-01-25 | ✅ Executed |
 | Version0004_fix_service_api_schema_mismatch_ServiceManagement.js | Fix Service Management schema to match database fields | 2025-01-25 | ✅ Executed |
+| Version0005_add_tooltips_to_service_management_ServiceManagement.js | Add helpful tooltips to Service Management form fields | 2025-01-25 | ✅ Executed |
 | Version0141_commit_and_deploy_auth_flow_logging_fixed.mjs | Commit and deploy the comprehensive auth flow logging (fixed paths) | 2025-06-07 | 🔄 Pending Execution |
 | Version0140_add_comprehensive_auth_flow_logging_fixed.mjs | Add detailed debug logging throughout the auth flow with fixed paths | 2025-06-07 | ✅ Completed |
 | Version0138_add_comprehensive_auth_flow_logging.mjs | Add detailed debug logging throughout the auth and onboarding flow | 2025-06-07 | 🔄 Pending Execution |
