@@ -134,4 +134,7 @@ urlpatterns = [
     # Debug endpoints for RLS
     path('debug/rls/', rls_debug_view, name='rls_debug'),
     path('debug/rls/fix/', fix_rls_view, name='rls_fix'),
+    
+    # RBAC endpoints
+    path('rbac/', include('custom_auth.urls_rbac')),
 ]

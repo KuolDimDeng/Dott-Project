@@ -20,6 +20,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { getCacheValue, setCacheValue } from '@/utils/appCache';
 import { logger } from '@/utils/logger';
+import { usePermissions } from '@/hooks/usePermissions';
 
 // SVG Icons for menu items
 const NavIcons = {
@@ -157,6 +158,7 @@ const MainListItems = ({
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
 }) => {
+  const { canAccessRoute, isOwnerOrAdmin } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');
   const [buttonWidth, setButtonWidth] = useState(0);
   const paperRef = useRef(null);
@@ -311,9 +313,10 @@ const MainListItems = ({
       icon: <NavIcons.Sales className="w-5 h-5" />,
       label: 'Sales',
       subItems: [
-        { label: 'Dashboard', onClick: handleSalesClick, value: 'dashboard' },
+        { label: 'Dashboard', onClick: handleSalesClick, value: 'dashboard', path: '/dashboard/sales' },
         { 
         label: 'Products', 
+        path: '/dashboard/products',
         onClick: (value) => {
           // Create navigation event for products
           const navigationKey = `nav-${Date.now()}`;
@@ -336,6 +339,7 @@ const MainListItems = ({
       },
       { 
         label: 'Services', 
+        path: '/dashboard/services',
         onClick: (value) => {
           // Create navigation event for services
           const navigationKey = `nav-${Date.now()}`;
@@ -358,6 +362,7 @@ const MainListItems = ({
       },
       { 
         label: 'Customers', 
+        path: '/dashboard/customers',
         onClick: (value) => {
           // Create navigation event for customers
           const navigationKey = `nav-${Date.now()}`;
@@ -489,9 +494,10 @@ const MainListItems = ({
       icon: <NavIcons.Inventory className="w-5 h-5" />,
       label: 'Inventory',
       subItems: [
-        { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard' },
+        { label: 'Dashboard', onClick: handleInventoryClick, value: 'inventorydashboard', path: '/dashboard/inventory' },
         { 
           label: 'Stock Adjustments', 
+          path: '/dashboard/inventory',
           onClick: (value) => {
             // Call the inventory click handler with the appropriate value
             if (typeof handleInventoryClick === 'function') {
@@ -611,9 +617,10 @@ const MainListItems = ({
       icon: <NavIcons.People className="w-5 h-5" />,
       label: 'HR',
       subItems: [
-        { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard' },
+        { label: 'Dashboard', onClick: handleHRClick, value: 'dashboard', path: '/dashboard/hr' },
         { 
           label: 'Employees', 
+          path: '/dashboard/employees',
           onClick: () => {
             console.log('[listItems] Employees menu item clicked');
             // Dispatch a standardized navigation event
@@ -677,6 +684,7 @@ const MainListItems = ({
         },
         { 
           label: 'Benefits', 
+          path: '/dashboard/benefits',
           onClick: () => {
             console.log('[DEBUG] Benefits menu item clicked - Start');
             
@@ -708,8 +716,8 @@ const MainListItems = ({
             console.log('[DEBUG] Benefits menu item clicked - End');
           }
         },
-        { label: 'Reports', onClick: handleHRClick, value: 'reports' },
-        { label: 'Performance', onClick: handleHRClick, value: 'performance' },
+        { label: 'Reports', onClick: handleHRClick, value: 'reports', path: '/dashboard/reports' },
+        { label: 'Performance', onClick: handleHRClick, value: 'performance', path: '/dashboard/hr' },
       ],
     },
     {
@@ -880,10 +888,17 @@ const MainListItems = ({
   );
 
   // Render the sub-menu using Tailwind instead of MUI components
-  const renderSubMenu = (items, parentMenu) => (
-    <CollapsibleMenu isOpen={openMenu === parentMenu}>
-      <ul className="pl-10 mt-1">
-        {items.map((item, index) => (
+  const renderSubMenu = (items, parentMenu) => {
+    const filteredItems = filterSubItems(items);
+    
+    if (filteredItems.length === 0) {
+      return null;
+    }
+    
+    return (
+      <CollapsibleMenu isOpen={openMenu === parentMenu}>
+        <ul className="pl-10 mt-1">
+          {filteredItems.map((item, index) => (
           <li key={index}>
             <button
               className={`flex items-center w-full text-left px-4 py-2 text-sm rounded-md
@@ -918,7 +933,8 @@ const MainListItems = ({
         ))}
       </ul>
     </CollapsibleMenu>
-  );
+    );
+  };
 
   // Listen for navigation events from other components
   useEffect(() => {
@@ -960,8 +976,46 @@ const MainListItems = ({
     };
   }, [isIconOnly]);
 
+  // Function to check if user can see menu item
+  const canSeeMenuItem = (item) => {
+    // Always show create new and dashboard
+    if (item.label === 'Create New' || item.label === 'Dashboard') {
+      return true;
+    }
+    
+    // For items with subItems, check if user can access any subitem
+    if (item.subItems) {
+      return item.subItems.some(subItem => {
+        if (!subItem.path) return true; // If no path defined, show it
+        return canAccessRoute(subItem.path);
+      });
+    }
+    
+    // For direct items with paths
+    if (item.path) {
+      return canAccessRoute(item.path);
+    }
+    
+    // Default to showing the item
+    return true;
+  };
+  
+  // Function to filter subItems based on permissions
+  const filterSubItems = (subItems) => {
+    if (!subItems) return [];
+    
+    return subItems.filter(subItem => {
+      if (!subItem.path) return true; // If no path defined, show it
+      return canAccessRoute(subItem.path);
+    });
+  };
+  
   // Filter menuItems before rendering
   const renderFilteredMenuItem = (item, index) => {
+    // Check if user can see this menu item
+    if (!canSeeMenuItem(item)) {
+      return null;
+    }
     return (
       <li
         key={index}

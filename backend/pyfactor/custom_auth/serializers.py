@@ -3,7 +3,7 @@ import uuid
 from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from rest_framework import serializers
-from .models import User, Tenant
+from .models import User, Tenant, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
 from users.models import Subscription
 
 class TenantSerializer(serializers.ModelSerializer):
@@ -234,3 +234,103 @@ class CustomAuthTokenSerializer(serializers.Serializer):
 class SocialLoginSerializer(serializers.Serializer):
     provider = serializers.CharField(required=True)
     access_token = serializers.CharField(required=True)
+
+
+# RBAC Serializers
+
+class PagePermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PagePermission
+        fields = ['id', 'name', 'path', 'category', 'description', 'is_active']
+
+
+class UserPageAccessSerializer(serializers.ModelSerializer):
+    page = PagePermissionSerializer(read_only=True)
+    page_id = serializers.UUIDField(write_only=True)
+    
+    class Meta:
+        model = UserPageAccess
+        fields = ['id', 'page', 'page_id', 'can_read', 'can_write', 'can_edit', 'can_delete', 'granted_at']
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    page_access = UserPageAccessSerializer(many=True, read_only=True)
+    full_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'full_name',
+            'role', 'is_active', 'date_joined', 'page_access',
+            'onboarding_completed', 'subscription_plan'
+        ]
+        read_only_fields = ['id', 'date_joined', 'email']
+    
+    def get_full_name(self, obj):
+        return f"{obj.first_name or ''} {obj.last_name or ''}".strip() or obj.email
+
+
+class CreateUserInvitationSerializer(serializers.ModelSerializer):
+    page_permissions = serializers.DictField(child=serializers.DictField(), required=False)
+    
+    class Meta:
+        model = UserInvitation
+        fields = ['email', 'role', 'page_permissions']
+    
+    def validate_email(self, value):
+        # Check if user already exists in the tenant
+        request = self.context.get('request')
+        if request and hasattr(request, 'tenant'):
+            if User.objects.filter(email=value, tenant=request.tenant).exists():
+                raise serializers.ValidationError("A user with this email already exists in your organization.")
+        return value
+    
+    def validate_role(self, value):
+        # Prevent creating OWNER role
+        if value == 'OWNER':
+            raise serializers.ValidationError("Cannot assign Owner role. Each organization can only have one owner.")
+        return value
+
+
+class UserInvitationSerializer(serializers.ModelSerializer):
+    invited_by_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = UserInvitation
+        fields = [
+            'id', 'email', 'role', 'status', 'created_at', 'sent_at',
+            'accepted_at', 'expires_at', 'invited_by_name'
+        ]
+    
+    def get_invited_by_name(self, obj):
+        return f"{obj.invited_by.first_name or ''} {obj.invited_by.last_name or ''}".strip() or obj.invited_by.email
+
+
+class UpdateUserPermissionsSerializer(serializers.Serializer):
+    """Serializer for updating user permissions"""
+    user_id = serializers.UUIDField()
+    role = serializers.ChoiceField(choices=['ADMIN', 'USER'], required=False)
+    page_permissions = serializers.ListField(
+        child=serializers.DictField(),
+        required=False
+    )
+    
+    def validate_page_permissions(self, value):
+        """Validate page permissions structure"""
+        for perm in value:
+            if not all(key in perm for key in ['page_id', 'can_read', 'can_write', 'can_edit', 'can_delete']):
+                raise serializers.ValidationError(
+                    "Each permission must have page_id, can_read, can_write, can_edit, and can_delete"
+                )
+        return value
+
+
+class RoleTemplateSerializer(serializers.ModelSerializer):
+    pages_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = RoleTemplate
+        fields = ['id', 'name', 'description', 'pages_count', 'is_active', 'created_at']
+    
+    def get_pages_count(self, obj):
+        return obj.pages.count()

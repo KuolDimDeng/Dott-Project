@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { addSecurityHeaders } from './utils/securityHeaders';
+import { checkPagePermissions } from './middleware/permissionChecker';
 
 // Simplified middleware for security headers and auth route optimization
 export async function middleware(request) {
@@ -94,6 +95,42 @@ export async function middleware(request) {
     }
   } else if (!isProtectedPath) {
     console.log('[Middleware] Not a protected path, allowing access');
+  }
+  
+  // Check for protected dashboard and settings routes
+  if (pathname.includes('/dashboard') || pathname.includes('/settings')) {
+    console.log('[Middleware] Checking permissions for protected route');
+    
+    // Skip permission check for API routes
+    if (!pathname.startsWith('/api/')) {
+      // Get session data to check permissions
+      const sessionCookie = cookies.get('sid') || cookies.get('session_token');
+      
+      if (sessionCookie) {
+        try {
+          // Fetch session data from API
+          const baseUrl = request.nextUrl.origin;
+          const sessionResponse = await fetch(`${baseUrl}/api/auth/session-v2`, {
+            headers: {
+              'Cookie': request.headers.get('cookie') || ''
+            }
+          });
+          
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            
+            // Check permissions
+            const permissionResponse = await checkPagePermissions(request, sessionData);
+            if (permissionResponse.status === 307 || permissionResponse.status === 302) {
+              // Permission denied, return redirect response
+              return permissionResponse;
+            }
+          }
+        } catch (error) {
+          console.error('[Middleware] Error checking permissions:', error);
+        }
+      }
+    }
   }
   
   // For all other routes, apply security headers and continue normally

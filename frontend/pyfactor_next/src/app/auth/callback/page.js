@@ -22,6 +22,11 @@ export default function Auth0CallbackPage() {
       try {
         setStatus('Verifying authentication...');
         
+        // Check for invitation data from sessionStorage
+        const invitationToken = sessionStorage.getItem('invitation_token');
+        const invitationEmail = sessionStorage.getItem('invitation_email');
+        const invitationData = sessionStorage.getItem('invitation_data');
+        
         // Check if we have a session token from the URL params
         const urlParams = new URLSearchParams(window.location.search);
         const sessionToken = urlParams.get('session_token');
@@ -140,6 +145,51 @@ export default function Auth0CallbackPage() {
           needsOnboarding: backendUser.needsOnboarding,
           redirectUrl: backendUser.redirectUrl
         });
+        
+        // Check if this is an invitation acceptance flow
+        if (invitationToken && invitationEmail) {
+          console.log('[Auth0Callback] Processing invitation acceptance');
+          setStatus('Accepting invitation...');
+          
+          try {
+            const acceptResponse = await fetch('/api/auth/accept-invitation', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+              body: JSON.stringify({
+                token: invitationToken,
+                email: invitationEmail
+              })
+            });
+            
+            if (acceptResponse.ok) {
+              const acceptResult = await acceptResponse.json();
+              console.log('[Auth0Callback] Invitation accepted successfully:', acceptResult);
+              
+              // Update backend user with invitation data
+              backendUser.tenantId = acceptResult.tenantId;
+              backendUser.role = acceptResult.role;
+              backendUser.needsOnboarding = false; // Invited users skip onboarding
+              backendUser.onboardingCompleted = true;
+              
+              // Clear invitation data from sessionStorage
+              sessionStorage.removeItem('invitation_token');
+              sessionStorage.removeItem('invitation_email');
+              sessionStorage.removeItem('invitation_data');
+              
+              // Override redirect URL to go directly to dashboard
+              backendUser.redirectUrl = `/${acceptResult.tenantId}/dashboard`;
+            } else {
+              console.error('[Auth0Callback] Failed to accept invitation');
+              // Continue with normal flow if invitation acceptance fails
+            }
+          } catch (error) {
+            console.error('[Auth0Callback] Error accepting invitation:', error);
+            // Continue with normal flow if invitation acceptance fails
+          }
+        }
         
         console.log('[Auth0Callback] User profile loaded:', {
           email: backendUser.email,

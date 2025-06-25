@@ -120,6 +120,8 @@ export async function GET(request) {
     const connection = searchParams.get('connection') || 'google-oauth2';
     const loginHint = searchParams.get('login_hint');
     const returnUrl = searchParams.get('return_url');
+    const invitation = searchParams.get('invitation');
+    const email = searchParams.get('email');
     
     // Generate state and PKCE values
     const state = crypto.randomBytes(32).toString('base64url');
@@ -146,9 +148,15 @@ export async function GET(request) {
       authParams.append('connection', connection);
     }
     
-    // Add login hint if provided
-    if (loginHint) {
-      authParams.append('login_hint', loginHint);
+    // Add login hint if provided (use email from invitation if available)
+    if (email || loginHint) {
+      authParams.append('login_hint', email || loginHint);
+    }
+    
+    // For invitations, use email/password connection
+    if (invitation && email) {
+      authParams.set('connection', 'Username-Password-Authentication');
+      authParams.set('login_hint', email);
     }
     
     const authUrl = `https://${auth0Domain}/authorize?${authParams.toString()}`;
@@ -169,6 +177,11 @@ export async function GET(request) {
     // Store return URL if provided
     if (returnUrl) {
       response.headers.append('Set-Cookie', `auth0_return_url=${encodeURIComponent(returnUrl)}; ${cookieOptions}`);
+    }
+    
+    // Store invitation token if provided
+    if (invitation) {
+      response.headers.append('Set-Cookie', `auth0_invitation=${invitation}; ${cookieOptions}`);
     }
     
     return response;

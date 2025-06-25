@@ -103,8 +103,13 @@ class User(AbstractUser):
     phone_number = models.CharField(max_length=20, null=True, blank=True)
     business_id = models.UUIDField(null=True, blank=True)
     
-    # Add role field with default value
-    role = models.CharField(max_length=50, default='owner')
+    # Role field with choices
+    ROLE_CHOICES = [
+        ('OWNER', 'Owner'),
+        ('ADMIN', 'Admin'),
+        ('USER', 'User'),
+    ]
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='USER')
     
     # Onboarding status - single source of truth
     onboarding_completed = models.BooleanField(default=False, help_text='Whether user has completed onboarding')
@@ -180,3 +185,103 @@ class AccountDeletionLog(models.Model):
     
     def __str__(self):
         return f"Deletion log for {self.user_email} on {self.deletion_date}"
+
+
+class PagePermission(models.Model):
+    """Defines available pages in the system"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    path = models.CharField(max_length=255)  # e.g., '/dashboard/products'
+    category = models.CharField(max_length=50)  # e.g., 'Sales', 'HR', 'Finance'
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'page_permissions'
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return f"{self.category} - {self.name}"
+
+
+class UserPageAccess(models.Model):
+    """Defines which pages a user can access and with what permissions"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='page_access')
+    page = models.ForeignKey(PagePermission, on_delete=models.CASCADE)
+    can_read = models.BooleanField(default=True)
+    can_write = models.BooleanField(default=False)
+    can_edit = models.BooleanField(default=False)
+    can_delete = models.BooleanField(default=False)
+    granted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='granted_permissions')
+    granted_at = models.DateTimeField(auto_now_add=True)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    
+    class Meta:
+        db_table = 'user_page_access'
+        unique_together = ['user', 'page', 'tenant']
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.page.name}"
+
+
+class RoleTemplate(models.Model):
+    """Pre-defined role templates for quick assignment"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)  # e.g., 'Sales Representative', 'HR Manager'
+    description = models.TextField()
+    pages = models.ManyToManyField(PagePermission, through='RoleTemplatePages')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'role_templates'
+    
+    def __str__(self):
+        return self.name
+
+
+class RoleTemplatePages(models.Model):
+    """Defines default permissions for role templates"""
+    template = models.ForeignKey(RoleTemplate, on_delete=models.CASCADE)
+    page = models.ForeignKey(PagePermission, on_delete=models.CASCADE)
+    can_read = models.BooleanField(default=True)
+    can_write = models.BooleanField(default=False)
+    can_edit = models.BooleanField(default=False)
+    can_delete = models.BooleanField(default=False)
+    
+    class Meta:
+        db_table = 'role_template_pages'
+        unique_together = ['template', 'page']
+
+
+class UserInvitation(models.Model):
+    """Track user invitations sent via Auth0"""
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField()
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=User.ROLE_CHOICES, default='USER')
+    invitation_token = models.CharField(max_length=255, unique=True)
+    status = models.CharField(max_length=20, choices=[
+        ('pending', 'Pending'),
+        ('sent', 'Sent'),
+        ('accepted', 'Accepted'),
+        ('expired', 'Expired'),
+        ('cancelled', 'Cancelled')
+    ], default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    
+    # Store intended page permissions
+    page_permissions = models.JSONField(default=dict, blank=True)  # {page_id: {read: true, write: false, ...}}
+    
+    class Meta:
+        db_table = 'user_invitations'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Invitation to {self.email} by {self.invited_by.email}"

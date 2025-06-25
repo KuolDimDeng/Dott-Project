@@ -158,9 +158,10 @@ class TenantCreateView(APIView):
                         setup_status='pending'
                     )
                     
-                    # Link tenant to user
+                    # Link tenant to user and set as OWNER
                     user.tenant_id = tenant.id
-                    user.save(update_fields=['tenant_id'])
+                    user.role = 'OWNER'  # Set first user as owner
+                    user.save(update_fields=['tenant_id', 'role'])
             
             # Create schema in database
             with connection.cursor() as cursor:
@@ -191,7 +192,7 @@ class TenantCreateView(APIView):
                         confirmation_token UUID NOT NULL DEFAULT gen_random_uuid(),
                         is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
                         stripe_customer_id VARCHAR(255) NULL,
-                        role VARCHAR(20) NOT NULL DEFAULT 'owner',
+                        role VARCHAR(20) NOT NULL DEFAULT 'OWNER',
                         occupation VARCHAR(50) NOT NULL DEFAULT 'owner',
                         tenant_id UUID NULL,
                         cognito_sub VARCHAR(36) NULL

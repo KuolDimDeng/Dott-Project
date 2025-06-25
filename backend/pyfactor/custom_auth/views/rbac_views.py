@@ -1,0 +1,535 @@
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db import transaction
+from django.utils import timezone
+from django.conf import settings
+from datetime import timedelta
+import secrets
+import logging
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
+
+from ..models import User, PagePermission, UserPageAccess, UserInvitation, RoleTemplate
+from ..serializers import (
+    UserListSerializer, PagePermissionSerializer, UserPageAccessSerializer,
+    CreateUserInvitationSerializer, UserInvitationSerializer,
+    UpdateUserPermissionsSerializer, RoleTemplateSerializer
+)
+from ..auth0_service import create_auth0_user_with_invitation, send_auth0_invitation_email
+
+logger = logging.getLogger(__name__)
+
+
+class IsOwnerOrAdmin(permissions.BasePermission):
+    """Custom permission to only allow owners and admins to manage users"""
+    
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.role in ['OWNER', 'ADMIN']
+
+
+class UserManagementViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing users within a tenant"""
+    serializer_class = UserListSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    def get_queryset(self):
+        """Get users for the current tenant only"""
+        return User.objects.filter(
+            tenant=self.request.user.tenant
+        ).select_related('tenant').prefetch_related('page_access__page')
+    
+    @action(detail=True, methods=['post'])
+    def update_permissions(self, request, pk=None):
+        """Update user role and permissions"""
+        user = self.get_object()
+        
+        # Prevent changing owner role
+        if user.role == 'OWNER':
+            return Response(
+                {"error": "Cannot modify owner permissions"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Prevent non-owners from modifying admins
+        if user.role == 'ADMIN' and request.user.role != 'OWNER':
+            return Response(
+                {"error": "Only owners can modify admin permissions"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = UpdateUserPermissionsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        with transaction.atomic():
+            # Update role if provided
+            new_role = serializer.validated_data.get('role')
+            if new_role and new_role != user.role:
+                user.role = new_role
+                user.save()
+            
+            # Update page permissions
+            page_permissions = serializer.validated_data.get('page_permissions', [])
+            
+            # Clear existing permissions
+            UserPageAccess.objects.filter(user=user, tenant=request.user.tenant).delete()
+            
+            # Create new permissions
+            for perm_data in page_permissions:
+                UserPageAccess.objects.create(
+                    user=user,
+                    page_id=perm_data['page_id'],
+                    can_read=perm_data['can_read'],
+                    can_write=perm_data['can_write'],
+                    can_edit=perm_data['can_edit'],
+                    can_delete=perm_data['can_delete'],
+                    tenant=request.user.tenant,
+                    granted_by=request.user
+                )
+        
+        # Return updated user
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def deactivate(self, request, pk=None):
+        """Deactivate a user"""
+        user = self.get_object()
+        
+        if user.role == 'OWNER':
+            return Response(
+                {"error": "Cannot deactivate the owner"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        user.is_active = False
+        user.save()
+        
+        return Response({"status": "User deactivated"})
+    
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        """Activate a user"""
+        user = self.get_object()
+        
+        user.is_active = True
+        user.save()
+        
+        return Response({"status": "User activated"})
+
+
+class PagePermissionViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for listing available pages"""
+    queryset = PagePermission.objects.filter(is_active=True)
+    serializer_class = PagePermissionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filter pages based on user role"""
+        queryset = super().get_queryset()
+        
+        # Hide system pages from non-admins/owners
+        if self.request.user.role == 'USER':
+            queryset = queryset.exclude(category='System')
+        
+        # Hide owner-only pages from admins
+        if self.request.user.role == 'ADMIN':
+            queryset = queryset.exclude(path__in=[
+                '/settings/subscription',
+                '/settings/close-account'
+            ])
+        
+        return queryset
+
+
+class UserInvitationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing user invitations"""
+    serializer_class = UserInvitationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    def get_queryset(self):
+        """Get invitations for the current tenant"""
+        return UserInvitation.objects.filter(
+            tenant=self.request.user.tenant
+        ).select_related('invited_by')
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateUserInvitationSerializer
+        return UserInvitationSerializer
+    
+    def create(self, request, *args, **kwargs):
+        """Create and send user invitation"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Create invitation
+        invitation = UserInvitation.objects.create(
+            email=serializer.validated_data['email'],
+            role=serializer.validated_data['role'],
+            invited_by=request.user,
+            tenant=request.user.tenant,
+            invitation_token=secrets.token_urlsafe(32),
+            expires_at=timezone.now() + timedelta(days=7),
+            page_permissions=serializer.validated_data.get('page_permissions', {})
+        )
+        
+        # Create Auth0 user and send invitation
+        try:
+            # Create user in Auth0 with invitation metadata
+            auth0_user = create_auth0_user_with_invitation(
+                email=invitation.email,
+                role=invitation.role,
+                tenant_id=invitation.tenant.id,
+                invitation_token=invitation.invitation_token
+            )
+            
+            if auth0_user:
+                # Generate invitation acceptance URL
+                frontend_url = getattr(settings, 'FRONTEND_URL', 'https://dottapps.com')
+                accept_url = f"{frontend_url}/auth/accept-invitation?token={invitation.invitation_token}&email={invitation.email}"
+                
+                # Send password reset ticket as invitation
+                ticket_url = send_auth0_invitation_email(invitation.email, accept_url)
+                
+                if ticket_url:
+                    # Send custom invitation email with the ticket URL
+                    self._send_invitation_email(invitation, ticket_url)
+                    
+                    invitation.status = 'sent'
+                    invitation.sent_at = timezone.now()
+                    invitation.save()
+                    
+                    logger.info(f"[RBAC] Successfully sent invitation to {invitation.email}")
+                else:
+                    logger.error(f"[RBAC] Failed to create Auth0 password reset ticket for {invitation.email}")
+                    invitation.status = 'failed'
+                    invitation.save()
+            else:
+                logger.error(f"[RBAC] Failed to create Auth0 user for {invitation.email}")
+                invitation.status = 'failed'
+                invitation.save()
+                
+        except Exception as e:
+            logger.error(f"[RBAC] Error sending invitation: {str(e)}")
+            invitation.status = 'failed'
+            invitation.save()
+        
+        return Response(
+            UserInvitationSerializer(invitation).data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    @action(detail=True, methods=['post'])
+    def resend(self, request, pk=None):
+        """Resend invitation email"""
+        invitation = self.get_object()
+        
+        if invitation.status == 'accepted':
+            return Response(
+                {"error": "Invitation already accepted"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generate new token and extend expiry
+        invitation.invitation_token = secrets.token_urlsafe(32)
+        invitation.expires_at = timezone.now() + timedelta(days=7)
+        
+        try:
+            # Update Auth0 user metadata with new invitation token
+            auth0_user = create_auth0_user_with_invitation(
+                email=invitation.email,
+                role=invitation.role,
+                tenant_id=invitation.tenant.id,
+                invitation_token=invitation.invitation_token
+            )
+            
+            if auth0_user:
+                # Generate new invitation acceptance URL
+                frontend_url = getattr(settings, 'FRONTEND_URL', 'https://dottapps.com')
+                accept_url = f"{frontend_url}/auth/accept-invitation?token={invitation.invitation_token}&email={invitation.email}"
+                
+                # Send new password reset ticket
+                ticket_url = send_auth0_invitation_email(invitation.email, accept_url)
+                
+                if ticket_url:
+                    # Send invitation email
+                    self._send_invitation_email(invitation, ticket_url)
+                    
+                    invitation.status = 'sent'
+                    invitation.sent_at = timezone.now()
+                    invitation.save()
+                    
+                    logger.info(f"[RBAC] Successfully resent invitation to {invitation.email}")
+                    return Response({"status": "Invitation resent"})
+                else:
+                    logger.error(f"[RBAC] Failed to create Auth0 password reset ticket for {invitation.email}")
+                    return Response(
+                        {"error": "Failed to send invitation email"},
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                    )
+            else:
+                logger.error(f"[RBAC] Failed to update Auth0 user for {invitation.email}")
+                return Response(
+                    {"error": "Failed to update user invitation"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+                
+        except Exception as e:
+            logger.error(f"[RBAC] Error resending invitation: {str(e)}")
+            return Response(
+                {"error": "Failed to resend invitation"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        """Cancel invitation"""
+        invitation = self.get_object()
+        
+        if invitation.status == 'accepted':
+            return Response(
+                {"error": "Cannot cancel accepted invitation"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        invitation.status = 'cancelled'
+        invitation.save()
+        
+        return Response({"status": "Invitation cancelled"})
+    
+    @action(detail=False, methods=['post'])
+    def verify(self, request):
+        """Verify invitation token"""
+        token = request.data.get('token')
+        email = request.data.get('email')
+        
+        if not token or not email:
+            return Response(
+                {"error": "Token and email are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            invitation = UserInvitation.objects.get(
+                invitation_token=token,
+                email__iexact=email,
+                status='sent'
+            )
+            
+            # Check if invitation has expired
+            if invitation.expires_at < timezone.now():
+                return Response(
+                    {"error": "Invitation has expired"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Return invitation details
+            return Response({
+                "tenant_name": invitation.tenant.name,
+                "role": invitation.role,
+                "invited_by_name": invitation.invited_by.full_name or invitation.invited_by.email,
+                "page_permissions": invitation.page_permissions,
+                "expires_at": invitation.expires_at
+            })
+            
+        except UserInvitation.DoesNotExist:
+            return Response(
+                {"error": "Invalid invitation"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(detail=False, methods=['post'])
+    def accept(self, request):
+        """Accept invitation and create user account"""
+        token = request.data.get('token')
+        email = request.data.get('email')
+        
+        if not token or not email:
+            return Response(
+                {"error": "Token and email are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Get invitation
+            invitation = UserInvitation.objects.get(
+                invitation_token=token,
+                email__iexact=email,
+                status='sent'
+            )
+            
+            # Check if invitation has expired
+            if invitation.expires_at < timezone.now():
+                return Response(
+                    {"error": "Invitation has expired"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if user is authenticated
+            if not request.user.is_authenticated:
+                return Response(
+                    {"error": "User must be authenticated"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+            
+            # Verify the authenticated user's email matches the invitation
+            if request.user.email.lower() != invitation.email.lower():
+                return Response(
+                    {"error": "Authenticated user email does not match invitation"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            with transaction.atomic():
+                # Update user with tenant and role
+                user = request.user
+                user.tenant = invitation.tenant
+                user.role = invitation.role
+                user.save()
+                
+                # Create page permissions
+                if invitation.page_permissions:
+                    for page_id, permissions in invitation.page_permissions.items():
+                        try:
+                            page = PagePermission.objects.get(id=page_id)
+                            UserPageAccess.objects.create(
+                                user=user,
+                                page=page,
+                                can_read=permissions.get('can_read', False),
+                                can_write=permissions.get('can_write', False),
+                                can_edit=permissions.get('can_edit', False),
+                                can_delete=permissions.get('can_delete', False)
+                            )
+                        except PagePermission.DoesNotExist:
+                            logger.warning(f"Page permission {page_id} not found")
+                
+                # Mark invitation as accepted
+                invitation.status = 'accepted'
+                invitation.accepted_at = timezone.now()
+                invitation.save()
+                
+                # Get user's permissions
+                user_permissions = []
+                for access in user.page_access.all():
+                    user_permissions.append({
+                        'page_id': str(access.page.id),
+                        'path': access.page.path,
+                        'can_read': access.can_read,
+                        'can_write': access.can_write,
+                        'can_edit': access.can_edit,
+                        'can_delete': access.can_delete
+                    })
+                
+                return Response({
+                    "success": True,
+                    "tenant_id": str(invitation.tenant.id),
+                    "role": user.role,
+                    "permissions": user_permissions
+                })
+                
+        except UserInvitation.DoesNotExist:
+            return Response(
+                {"error": "Invalid invitation"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            logger.error(f"[RBAC] Error accepting invitation: {str(e)}")
+            return Response(
+                {"error": "Failed to accept invitation"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def _send_invitation_email(self, invitation, ticket_url):
+        """Send custom invitation email"""
+        try:
+            subject = f"You've been invited to join {invitation.tenant.name}"
+            
+            # Email context
+            context = {
+                'user_name': invitation.invited_by.full_name or invitation.invited_by.email,
+                'business_name': invitation.tenant.name,
+                'role': invitation.role,
+                'invitation_url': ticket_url,
+                'expires_at': invitation.expires_at.strftime('%B %d, %Y'),
+            }
+            
+            # HTML message
+            html_message = f"""
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2>Welcome to {context['business_name']}!</h2>
+                <p>Hello,</p>
+                <p>{context['user_name']} has invited you to join {context['business_name']} as a {context['role']}.</p>
+                <p>To accept this invitation and set up your account, please click the button below:</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{context['invitation_url']}" 
+                       style="background-color: #0066cc; color: white; padding: 12px 30px; 
+                              text-decoration: none; border-radius: 5px; display: inline-block;">
+                        Accept Invitation
+                    </a>
+                </div>
+                <p>This invitation will expire on {context['expires_at']}.</p>
+                <p>If you have any questions, please contact {context['user_name']}.</p>
+                <hr style="margin: 30px 0;">
+                <p style="color: #666; font-size: 12px;">
+                    If you didn't expect this invitation, you can safely ignore this email.
+                </p>
+            </div>
+            """
+            
+            # Plain text message
+            plain_message = f"""
+Welcome to {context['business_name']}!
+
+{context['user_name']} has invited you to join {context['business_name']} as a {context['role']}.
+
+To accept this invitation and set up your account, please visit:
+{context['invitation_url']}
+
+This invitation will expire on {context['expires_at']}.
+
+If you have any questions, please contact {context['user_name']}.
+
+If you didn't expect this invitation, you can safely ignore this email.
+            """
+            
+            # Send email
+            send_mail(
+                subject=subject,
+                message=plain_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[invitation.email],
+                html_message=html_message,
+                fail_silently=False
+            )
+            
+            logger.info(f"[RBAC] Invitation email sent to {invitation.email}")
+            
+        except Exception as e:
+            logger.error(f"[RBAC] Failed to send invitation email: {str(e)}")
+            raise
+
+
+class RoleTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    """ViewSet for role templates"""
+    queryset = RoleTemplate.objects.filter(is_active=True).prefetch_related('pages')
+    serializer_class = RoleTemplateSerializer
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    
+    @action(detail=True, methods=['get'])
+    def permissions(self, request, pk=None):
+        """Get detailed permissions for a role template"""
+        template = self.get_object()
+        
+        permissions = []
+        for template_page in template.roletemplatepages_set.select_related('page'):
+            permissions.append({
+                'page': PagePermissionSerializer(template_page.page).data,
+                'can_read': template_page.can_read,
+                'can_write': template_page.can_write,
+                'can_edit': template_page.can_edit,
+                'can_delete': template_page.can_delete
+            })
+        
+        return Response(permissions)
