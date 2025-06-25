@@ -158,7 +158,7 @@ const MainListItems = ({
   borderRightColor = 'transparent',
   borderRightWidth = '0px',
 }) => {
-  const { canAccessRoute, isOwnerOrAdmin } = usePermissions();
+  const { canAccessRoute, isOwnerOrAdmin, user } = usePermissions();
   const [openMenu, setOpenMenu] = useState('');
   const [buttonWidth, setButtonWidth] = useState(0);
   const paperRef = useRef(null);
@@ -167,6 +167,13 @@ const MainListItems = ({
   const isMobile = useRef(window.innerWidth < 640);
   const [activeItem, setActiveItem] = useState(null);
   const [openTooltip, setOpenTooltip] = useState(null);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('[MainListItems] User data:', user);
+    console.log('[MainListItems] User role:', user?.role);
+    console.log('[MainListItems] Is owner or admin:', isOwnerOrAdmin());
+  }, [user]);
 
   // Check if we're on mobile/small screens
   useEffect(() => {

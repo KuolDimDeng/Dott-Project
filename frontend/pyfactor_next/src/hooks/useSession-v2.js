@@ -22,6 +22,9 @@ export function useSession() {
       setError(null);
       
       const sessionData = await sessionManagerEnhanced.getSession();
+      console.log('[useSession] Session data loaded:', sessionData);
+      console.log('[useSession] User data:', sessionData?.user);
+      console.log('[useSession] User role:', sessionData?.user?.role);
       setSession(sessionData);
     } catch (err) {
       console.error('[useSession] Error loading session:', err);
