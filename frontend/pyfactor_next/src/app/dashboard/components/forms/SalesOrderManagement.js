@@ -150,6 +150,7 @@ const SalesOrderManagement = () => {
         } else if (data && Array.isArray(data.results)) {
           customersList = data.results;
         }
+        console.log('[SalesOrderManagement] Customers loaded:', customersList);
         setCustomers(customersList);
       }
     } catch (error) {
@@ -411,7 +412,7 @@ const SalesOrderManagement = () => {
             <option value="">Select a customer</option>
             {customers.map(customer => (
               <option key={customer.id} value={customer.id}>
-                {customer.name || customer.customerName}
+                {customer.name || customer.customerName || customer.customer_name || customer.email || 'Unknown Customer'}
               </option>
             ))}
           </select>
