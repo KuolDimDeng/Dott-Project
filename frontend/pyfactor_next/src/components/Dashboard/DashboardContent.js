@@ -710,13 +710,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     console.log('[DashboardContent] handleMenuItemClick called with option:', option);
     handleCloseCreateMenu();
     
-    // Handle Product and Service inline like their Sales menu counterparts
+    // Handle Product, Service, and Estimate inline like their Sales menu counterparts
     if (option === 'Product') {
       console.log('[DashboardContent] Redirecting to Products management');
       handleSalesClick('products');
     } else if (option === 'Service') {
       console.log('[DashboardContent] Redirecting to Services management');
       handleSalesClick('services');
+    } else if (option === 'Estimate') {
+      console.log('[DashboardContent] Redirecting to Estimates management');
+      handleSalesClick('estimates');
     } else {
       console.log('[DashboardContent] Showing create options for:', option);
       handleShowCreateOptions(option);

@@ -1872,8 +1872,8 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
 
-      // Additional case for createOptions - but skip Product and Service as they're handled by showProductManagement/showServiceManagement
-      if (showCreateOptions && selectedOption !== 'Product' && selectedOption !== 'Service') {
+      // Additional case for createOptions - but skip Product, Service, and Estimate as they're handled by their respective management views
+      if (showCreateOptions && selectedOption !== 'Product' && selectedOption !== 'Service' && selectedOption !== 'Estimate') {
         const createComponentKey = `create-${selectedOption}-${navigationKey || 'default'}`;
         return (
           <ContentWrapperWithKey>
