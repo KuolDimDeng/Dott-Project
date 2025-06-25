@@ -593,7 +593,10 @@ const ServiceManagement = () => {
     
     return (
       <table className="min-w-full divide-y divide-gray-200">
-        <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Unit</th>
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Name</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Unit</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Price</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Duration</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-black uppercase tracking-wider">Category</th>
