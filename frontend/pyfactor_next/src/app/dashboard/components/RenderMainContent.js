@@ -1872,15 +1872,13 @@ const RenderMainContent = React.memo(function RenderMainContent({
         }
       }
 
-      // Additional case for createOptions
-      if (showCreateOptions) {
+      // Additional case for createOptions - but skip Product and Service as they're handled by showProductManagement/showServiceManagement
+      if (showCreateOptions && selectedOption !== 'Product' && selectedOption !== 'Service') {
         const createComponentKey = `create-${selectedOption}-${navigationKey || 'default'}`;
         return (
           <ContentWrapperWithKey>
             <SuspenseWithCleanup componentKey={createComponentKey}>
               {selectedOption === 'Transaction' && <TransactionForm />}
-              {selectedOption === 'Product' && <CreateProductManagement />}
-              {selectedOption === 'Service' && <ServiceManagement mode="create" />}
               {selectedOption === 'Invoice' && <InvoiceManagement newInvoice={true} mode="create" />}
               {selectedOption === 'Bill' && <BillManagement newBill={true} />}
               {selectedOption === 'Estimate' && <EstimateManagement newEstimate={true} />}
@@ -1937,7 +1935,7 @@ const RenderMainContent = React.memo(function RenderMainContent({
             <SuspenseWithCleanup componentKey={salesComponentKey}>
               {view === 'sales-dashboard' && <SalesAnalysis />}
               {view === 'sales-products' && <SalesProductManagement />}
-              {view === 'sales-services' && <ServicesList />}
+              {view === 'sales-services' && <ServiceManagement />}
               {view === 'sales-reports' && <ReportDisplay type="sales" />}
             </SuspenseWithCleanup>
           </ContentWrapperWithKey>

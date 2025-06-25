@@ -707,14 +707,18 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
   }, [setShowCreateMenu]);
 
   const handleMenuItemClick = useCallback((option) => {
+    console.log('[DashboardContent] handleMenuItemClick called with option:', option);
     handleCloseCreateMenu();
     
     // Handle Product and Service inline like their Sales menu counterparts
     if (option === 'Product') {
+      console.log('[DashboardContent] Redirecting to Products management');
       handleSalesClick('products');
     } else if (option === 'Service') {
+      console.log('[DashboardContent] Redirecting to Services management');
       handleSalesClick('services');
     } else {
+      console.log('[DashboardContent] Showing create options for:', option);
       handleShowCreateOptions(option);
     }
   }, [handleCloseCreateMenu, handleShowCreateOptions, handleSalesClick]);
