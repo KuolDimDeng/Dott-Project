@@ -708,8 +708,16 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
 
   const handleMenuItemClick = useCallback((option) => {
     handleCloseCreateMenu();
-    handleShowCreateOptions(option);
-  }, [handleCloseCreateMenu, handleShowCreateOptions]);
+    
+    // Handle Product and Service inline like their Sales menu counterparts
+    if (option === 'Product') {
+      handleSalesClick('products');
+    } else if (option === 'Service') {
+      handleSalesClick('services');
+    } else {
+      handleShowCreateOptions(option);
+    }
+  }, [handleCloseCreateMenu, handleShowCreateOptions, handleSalesClick]);
 
   const handleUserProfileClick = useCallback(() => {
     setShowMyAccount(true);
@@ -1136,8 +1144,8 @@ function DashboardContent({ setupStatus = 'pending', customContent, mockData, us
     selectedOption,
     selectedSettingsOption,
     navigationKey,
-    showProductManagement: view === 'inventory-products',
-    showServiceManagement: view === 'services',
+    showProductManagement: view === 'inventory-products' || view === 'sales-products' || uiState.showProductManagement,
+    showServiceManagement: view === 'services' || view === 'sales-services' || uiState.showServiceManagement,
     showInvoiceManagement: view === 'invoices' || view === 'invoice-management' || uiState.showInvoiceManagement,
     showBillManagement: view === 'bills',
     showEstimateManagement: view === 'estimates' || view === 'estimate-management',
