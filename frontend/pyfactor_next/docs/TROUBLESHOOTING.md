@@ -6,50 +6,74 @@
 
 # Database Migration Issues
 
-## Missing Column Error: sales_salesorder.due_date
+## Missing Multiple Columns in sales_salesorder Table
 
-**Issue**: Creating sales orders fails with database error.
+**Issue**: Creating sales orders fails with database errors for missing columns.
 
-**Error Message**:
+**Error Messages**:
 ```
 django.db.utils.ProgrammingError: column sales_salesorder.due_date does not exist
+django.db.utils.ProgrammingError: column sales_salesorder.payment_terms does not exist
 ```
 
 **Symptoms**:
 - Sales order creation returns 500 error
-- Backend logs show missing column error
-- Field exists in Django model but not in database
+- Backend logs show missing column errors
+- Multiple fields exist in Django model but not in database
 
 **Root Cause**:
-- Django model was updated to include `due_date` field
-- Database migration was not run to add the column
+- Django SalesOrder model has been updated with new fields
+- Database migrations were not run to add the columns
+- Multiple fields are missing: payment_terms, due_date, subtotal, tax_total, tax_rate, discount_percentage, shipping_cost, total, total_amount, notes, estimate_id
 
 **Solution**:
-1. Connect to backend shell (Render or local):
+1. First, resolve any migration conflicts:
+   ```bash
+   python manage.py makemigrations --merge
+   python manage.py migrate custom_auth
+   ```
+
+2. Check migration status:
    ```bash
    python manage.py showmigrations sales
    ```
 
-2. Apply the migration:
+3. Apply the comprehensive migration:
    ```bash
-   python manage.py migrate sales 0004
+   python manage.py migrate sales 0005
    ```
 
-3. Verify the column was added:
+4. Verify all columns were added:
    ```bash
    python manage.py dbshell
    \d sales_salesorder
    ```
 
 **Migration Details**:
-- File: `/backend/pyfactor/sales/migrations/0004_add_salesorder_due_date.py`
-- Adds `due_date` DateField with default of current date + 30 days
-- All existing records will get the default value
+- File: `/backend/pyfactor/sales/migrations/0005_add_missing_salesorder_fields.py`
+- Adds ALL missing fields in one migration
+- Uses conditional SQL to safely check if columns exist before adding
+- Safe to run multiple times
+- Default values provided for all fields
+
+**Fields Added**:
+- `payment_terms`: VARCHAR(50), default 'net_30'
+- `due_date`: DATE, default current date + 30 days
+- `subtotal`: DECIMAL(19,4), default 0
+- `tax_total`: DECIMAL(19,4), default 0
+- `tax_rate`: DECIMAL(5,2), default 0
+- `discount_percentage`: DECIMAL(5,2), default 0
+- `shipping_cost`: DECIMAL(10,2), default 0
+- `total`: DECIMAL(19,4), default 0
+- `total_amount`: DECIMAL(19,4), default 0
+- `notes`: TEXT, nullable
+- `estimate_id`: UUID, nullable
 
 **Prevention**:
 - Always run migrations after model changes
 - Check migration status before deploying
 - Use `python manage.py makemigrations --check` in CI/CD
+- Keep database schema in sync with Django models
 
 ---
 

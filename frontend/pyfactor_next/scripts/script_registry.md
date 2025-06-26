@@ -497,6 +497,22 @@ This document tracks all scripts used for the pyfactor project, their execution 
   - Added new endpoints: /api/onboarding/payment-pending/ and /api/onboarding/complete-payment/
   - Modified complete-all route to skip completion for paid tiers until payment
   - Updated complete-payment route to properly mark onboarding complete after payment
+
+### Version0001_fix_salesorder_due_date.py
+- **Purpose**: Fix missing due_date column in sales_salesorder table
+- **Created**: 2025-01-26
+- **Migration**: 0004_add_salesorder_due_date
+- **Changes**: Adds due_date DateField with default of current date + 30 days
+
+### Version0002_fix_all_salesorder_missing_fields.py
+- **Purpose**: Fix ALL missing columns in sales_salesorder table
+- **Created**: 2025-01-26
+- **Migration**: 0005_add_missing_salesorder_fields
+- **Changes**: Comprehensive migration to add all missing fields:
+  - payment_terms, due_date, subtotal, tax_total, tax_rate
+  - discount_percentage, shipping_cost, total, total_amount
+  - notes, estimate_id
+- **Note**: Uses conditional SQL to safely check existence before adding columns
   - Updated TenantLayout to redirect to payment page for pending payments
   - Updated payment form to call complete-payment endpoint after successful payment
   - Prevents users from bypassing payment by clicking back button
